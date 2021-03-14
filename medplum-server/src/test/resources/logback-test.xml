@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{ISO8601} %p - %m%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="io.netty" level="WARN" />
+    <logger name="com.medplum" level="DEBUG" />
+    <root level="WARN">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
