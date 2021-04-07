@@ -1,5 +1,7 @@
 package com.medplum.fhir;
 
+import static com.medplum.fhir.FhirMediaType.*;
+
 import java.net.URI;
 import java.util.Objects;
 
@@ -13,7 +15,6 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
 public class FhirClient {
-    public static final String FHIR_JSON_CONTENT_TYPE = "application/fhir+json";
     private final URI baseUri;
     private final Client client;
     private final String bearerToken;
@@ -64,7 +65,7 @@ public class FhirClient {
     }
 
     public Response get(final String uri) {
-        final Builder builder = target(uri).request().accept(FHIR_JSON_CONTENT_TYPE);
+        final Builder builder = target(uri).request().accept(APPLICATION_FHIR_JSON);
         if (bearerToken != null) {
             builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
         }
@@ -73,11 +74,11 @@ public class FhirClient {
     }
 
     public Response post(final String uri, final JsonObject data) {
-        final Builder builder = target(uri).request().accept(FHIR_JSON_CONTENT_TYPE);
+        final Builder builder = target(uri).request().accept(APPLICATION_FHIR_JSON);
         if (bearerToken != null) {
             builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
         }
-        return builder.post(Entity.entity(data, FHIR_JSON_CONTENT_TYPE));
+        return builder.post(Entity.entity(data, APPLICATION_FHIR_JSON));
 //        return target(uri).request().accept(FHIR_JSON_CONTENT_TYPE).post(Entity.entity(data, FHIR_JSON_CONTENT_TYPE));
     }
 }

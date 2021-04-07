@@ -1,5 +1,7 @@
 package com.medplum.server.fhir;
 
+import static com.medplum.fhir.FhirMediaType.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -19,7 +21,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 
-import com.medplum.fhir.FhirClient;
+import com.medplum.fhir.FhirMediaType;
 import com.medplum.fhir.StandardOperations;
 import com.medplum.fhir.types.Binary;
 import com.medplum.fhir.types.OperationOutcome;
@@ -28,7 +30,7 @@ import com.medplum.server.fhir.repo.Repository;
 import com.medplum.server.security.SecurityUser;
 
 @Path("/fhir/R4/Binary")
-@Produces(Fhir.FHIR_JSON_CONTENT_TYPE)
+@Produces(FhirMediaType.APPLICATION_FHIR_JSON)
 public class R4BinaryEndpoint {
 
     @Inject
@@ -64,7 +66,7 @@ public class R4BinaryEndpoint {
         final OperationOutcome outcome = repo.read(getUser(), Binary.RESOURCE_TYPE, id);
         if (!outcome.isOk()) {
             return Response.status(outcome.status())
-                    .type(FhirClient.FHIR_JSON_CONTENT_TYPE)
+                    .type(APPLICATION_FHIR_JSON)
                     .entity(outcome)
                     .build();
         }
@@ -82,7 +84,7 @@ public class R4BinaryEndpoint {
         final OperationOutcome outcome = repo.readVersion(getUser(), Binary.RESOURCE_TYPE, id, vid);
         if (!outcome.isOk()) {
             return Response.status(outcome.status())
-                    .type(FhirClient.FHIR_JSON_CONTENT_TYPE)
+                    .type(APPLICATION_FHIR_JSON)
                     .entity(outcome)
                     .build();
         }

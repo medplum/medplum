@@ -12,6 +12,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.junit.Test;
 
+import com.medplum.fhir.FhirMediaType;
 import com.medplum.server.BaseTest;
 
 public class R4EndpointTest extends BaseTest {
@@ -20,14 +21,14 @@ public class R4EndpointTest extends BaseTest {
     public void testMetadata() {
         final Response response = fhir().get("/metadata");
         assertEquals(200, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testCreate() {
         final Response response = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
         assertEquals(201, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response.getHeaderString(HttpHeaders.LOCATION));
         assertNotNull(response.getHeaderString(HttpHeaders.ETAG));
     }
@@ -36,35 +37,35 @@ public class R4EndpointTest extends BaseTest {
     public void testCreateMissingProperty() {
         final Response response = fhir().post("/Patient", Json.createObjectBuilder().build());
         assertEquals(400, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testReadNotFound() {
         final Response response = fhir().get("/Patient/does-not-exist");
         assertEquals(404, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testReadHistoryNotFound() {
         final Response response = fhir().get("/Patient/does-not-exist/_history");
         assertEquals(404, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testReadVersionNotFound() {
         final Response response = fhir().get("/Patient/does-not-exist/_history/version-does-not-exist");
         assertEquals(404, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testRead() {
         final Response response1 = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
         assertEquals(201, response1.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response1.getHeaderString(HttpHeaders.LOCATION));
 
         final String[] path = URI.create(response1.getHeaderString(HttpHeaders.LOCATION)).getPath().split("/");
@@ -78,14 +79,14 @@ public class R4EndpointTest extends BaseTest {
 
         final Response response2 = fhir().get("/Patient/" + id);
         assertEquals(200, response2.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response2.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response2.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testReadUnauthorized() {
         final Response response1 = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
         assertEquals(201, response1.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response1.getHeaderString(HttpHeaders.LOCATION));
 
         final String[] path = URI.create(response1.getHeaderString(HttpHeaders.LOCATION)).getPath().split("/");
@@ -108,7 +109,7 @@ public class R4EndpointTest extends BaseTest {
     public void testReadHistory() {
         final Response response1 = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
         assertEquals(201, response1.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response1.getHeaderString(HttpHeaders.LOCATION));
 
         final String[] path = URI.create(response1.getHeaderString(HttpHeaders.LOCATION)).getPath().split("/");
@@ -122,14 +123,14 @@ public class R4EndpointTest extends BaseTest {
 
         final Response response2 = fhir().get("/Patient/" + id + "/_history");
         assertEquals(200, response2.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response2.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response2.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testVersion() {
         final Response response1 = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
         assertEquals(201, response1.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response1.getHeaderString(HttpHeaders.LOCATION));
 
         final String[] path = URI.create(response1.getHeaderString(HttpHeaders.LOCATION)).getPath().split("/");
@@ -144,7 +145,7 @@ public class R4EndpointTest extends BaseTest {
 
         final Response response2 = fhir().get("/Patient/" + id + "/_history/" + vid);
         assertEquals(200, response2.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response2.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response2.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
@@ -157,7 +158,7 @@ public class R4EndpointTest extends BaseTest {
         // Ensure search returns at least 3 patients
         final Response response = fhir().get("/Patient");
         assertEquals(200, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
         final JsonObject json = response.readEntity(JsonObject.class);
         assertEquals("searchset", json.getString("type"));
@@ -182,7 +183,7 @@ public class R4EndpointTest extends BaseTest {
         // Search by ID, should only return exactly one result
         final Response response = fhir().get("/Patient?_id=" + id);
         assertEquals(200, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
         final JsonObject json = response.readEntity(JsonObject.class);
         assertEquals("searchset", json.getString("type"));

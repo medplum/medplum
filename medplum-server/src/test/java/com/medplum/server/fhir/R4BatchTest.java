@@ -12,6 +12,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.junit.Test;
 
+import com.medplum.fhir.FhirMediaType;
 import com.medplum.fhir.types.Bundle;
 import com.medplum.fhir.types.Bundle.BundleEntry;
 import com.medplum.fhir.types.OperationOutcome;
@@ -23,7 +24,7 @@ public class R4BatchTest extends BaseTest {
     public void testCreateBatchMissingType() {
         final Response response = fhir().post("/", Json.createObjectBuilder().add("resourceType", "Bundle").build());
         assertEquals(400, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertTrue(response.readEntity(String.class).contains("Missing bundle type"));
     }
 
@@ -31,7 +32,7 @@ public class R4BatchTest extends BaseTest {
     public void testCreateBatchInvalidType() {
         final Response response = fhir().post("/", Json.createObjectBuilder().add("resourceType", "Bundle").add("type", "foo").build());
         assertEquals(400, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertTrue(response.readEntity(String.class).contains("Unrecognized bundle type 'foo'"));
     }
 
@@ -39,7 +40,7 @@ public class R4BatchTest extends BaseTest {
     public void testCreateBatchMissingEntry() {
         final Response response = fhir().post("/", Json.createObjectBuilder().add("resourceType", "Bundle").add("type", "batch").build());
         assertEquals(400, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
         final OperationOutcome outcome = response.readEntity(OperationOutcome.class);
         assertNotNull(outcome);
@@ -50,7 +51,7 @@ public class R4BatchTest extends BaseTest {
     public void testCreateBatchInvalidEntry() {
         final Response response = fhir().post("/", Json.createObjectBuilder().add("resourceType", "Bundle").add("type", "batch").add("entry", 123).build());
         assertEquals(400, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
         final OperationOutcome outcome = response.readEntity(OperationOutcome.class);
         assertNotNull(outcome);
@@ -61,14 +62,14 @@ public class R4BatchTest extends BaseTest {
     public void testCreateEmptyBatch() {
         final Response response = fhir().post("/", Bundle.create().type("batch").entry(Collections.emptyList()).build());
         assertEquals(200, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testCreateEmptyTransaction() {
         final Response response = fhir().post("/", Bundle.create().type("transaction").entry(Collections.emptyList()).build());
         assertEquals(200, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
@@ -80,7 +81,7 @@ public class R4BatchTest extends BaseTest {
                         .build()))
                 .build());
         assertEquals(200, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
@@ -92,7 +93,7 @@ public class R4BatchTest extends BaseTest {
                         .build()))
                 .build());
         assertEquals(200, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
@@ -110,6 +111,6 @@ public class R4BatchTest extends BaseTest {
                         .build()))
                 .build());
         assertEquals(200, response.getStatus());
-        assertEquals(Fhir.FHIR_JSON_CONTENT_TYPE, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 }

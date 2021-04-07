@@ -10,6 +10,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.Context;
 
+import com.medplum.fhir.FhirMediaType;
 import com.medplum.fhir.JsonUtils;
 import com.medplum.fhir.types.CapabilityStatement;
 import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementImplementation;
@@ -19,7 +20,7 @@ import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementSoftware;
 import com.medplum.server.ConfigSettings;
 
 @Path("/fhir/R4/metadata")
-@Produces(Fhir.FHIR_JSON_CONTENT_TYPE)
+@Produces(FhirMediaType.APPLICATION_FHIR_JSON)
 @PermitAll
 public class R4CapabilityStatement {
     private static CapabilityStatement stmt;

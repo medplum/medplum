@@ -20,13 +20,13 @@ import org.jose4j.jwt.MalformedClaimException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.medplum.fhir.FhirMediaType;
 import com.medplum.fhir.StandardOperations;
 import com.medplum.fhir.types.ContactPoint;
 import com.medplum.fhir.types.FhirResource;
 import com.medplum.fhir.types.HumanName;
 import com.medplum.fhir.types.Patient;
 import com.medplum.fhir.types.Reference;
-import com.medplum.server.fhir.Fhir;
 import com.medplum.server.fhir.repo.Repository;
 import com.medplum.server.security.SecurityUser;
 
@@ -61,7 +61,7 @@ public class UserInfoEndpoint {
             LOG.debug("{}", ex.getMessage(), ex);
             throw new NotAuthorizedException(
                     Response.status(Status.UNAUTHORIZED)
-                        .type(Fhir.FHIR_JSON_CONTENT_TYPE)
+                        .type(FhirMediaType.APPLICATION_FHIR_JSON)
                         .entity(StandardOperations.security("Access denied"))
                         .build());
         }
