@@ -37,3 +37,9 @@ target/
 # Local files for FileSystemBinaryStorage
 binary/
 
+# Node/npm
+node_modules/
+
+# Webpack output
+dist/
+
