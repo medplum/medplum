@@ -40,6 +40,12 @@ binary/
 # Node/npm
 node_modules/
 
+# Components output
+medplum-components/lib/
+
 # Webpack output
 dist/
+
+# Storybook output
+storybook-static/
 

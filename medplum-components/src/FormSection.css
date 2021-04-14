@@ -1,0 +1,20 @@
+
+
+fieldset {
+  border: 1px solid var(--medplum-gray-300);
+  border-radius: 6px;
+  margin: 6px 0 16px 0;
+  padding: 8px;
+}
+
+fieldset small {
+  display: block;
+  margin: 2px 0 4px 0;
+  padding: 2px 0 4px 0;
+}
+
+fieldset input,
+fieldset select,
+fieldset table {
+  width: 100%;
+}

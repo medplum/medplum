@@ -10,6 +10,7 @@
     "declaration": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "composite": true,
     "forceConsistentCasingInFileNames": true
   },
   "references": [],

@@ -1,0 +1,10 @@
+header, header div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bold;
+}
+
+header svg {
+  margin-right: 8px;
+}

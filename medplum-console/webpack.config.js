@@ -1,9 +1,9 @@
 const path = require('path');
-// const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-  entry: './src/index.ts',
+  entry: './src/index.tsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'js/[name].[contenthash].js',
@@ -13,10 +13,10 @@ module.exports = {
     extensions: ['.ts', '.tsx', '.js']
   },
   plugins: [
-    // new HtmlWebpackPlugin({
-    //   template: 'index.html',
-    //   favicon: 'favicon.ico'
-    // }),
+    new HtmlWebpackPlugin({
+      template: 'index.html',
+      favicon: 'favicon.ico'
+    }),
     new MiniCssExtractPlugin({
       filename: 'css/[name].[contenthash].css',
     }),
