@@ -46,4 +46,40 @@ public class SearchRequest {
 
         return b.build();
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder b = new StringBuilder();
+        b.append("SearchRequest {\n");
+        b.append("  resourceType=" + resourceType + ",\n");
+
+        if (filters == null || filters.isEmpty()) {
+            b.append("  filters=[],\n");
+        } else {
+            b.append("  filters=[\n");
+            for (final Filter filter : filters) {
+                b.append("    ");
+                b.append(filter);
+                b.append(",\n");
+            }
+            b.append("  ],\n");
+        }
+
+        if (sortRules == null || sortRules.isEmpty()) {
+            b.append("  sortRules=[],\n");
+        } else {
+            b.append("  sortRules=[\n");
+            for (final SortRule sortRule : sortRules) {
+                b.append("    ");
+                b.append(sortRule);
+                b.append(",\n");
+            }
+            b.append("  ],\n");
+        }
+
+        b.append("  page=" + page + ",\n");
+        b.append("  count=" + count + ",\n");
+        b.append("}");
+        return b.toString();
+    }
 }

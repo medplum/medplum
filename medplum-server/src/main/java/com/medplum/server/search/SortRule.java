@@ -16,4 +16,9 @@ public class SortRule {
     public boolean isDescending() {
         return descending;
     }
+
+    @Override
+    public String toString() {
+        return "SortRule { code=" + code + ", descending=" + descending + " }";
+    }
 }

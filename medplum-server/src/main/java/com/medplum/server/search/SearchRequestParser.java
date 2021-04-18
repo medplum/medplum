@@ -64,6 +64,9 @@ public class SearchRequestParser {
 
         default:
             final SearchParameter param = SearchParameters.getParameter(resourceType, key);
+            System.out.println("resourceType=" + resourceType);
+            System.out.println("key=" + key);
+            System.out.println("param=" + param);
             if (param != null) {
                 parseParameter(param, value);
             }
@@ -137,6 +140,19 @@ public class SearchRequestParser {
     }
 
     private void parseString(final SearchParameter param, final String value) {
+        Operation op = Operation.EQUALS;
+        String num = value;
+
+        if (value.startsWith("eq")) {
+            op = Operation.EQUALS;
+            num = value.substring(2);
+
+        } else if (value.startsWith("ne")) {
+            op = Operation.NOT_EQUALS;
+            num = value.substring(2);
+        }
+
+        filters.add(new Filter(param, op, num));
 
     }
 

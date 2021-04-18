@@ -24,4 +24,9 @@ public class Filter {
     public String getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "Filter { searchParam=" + searchParam.name() + ", op=" + op + ", value=" + value + "}";
+    }
 }

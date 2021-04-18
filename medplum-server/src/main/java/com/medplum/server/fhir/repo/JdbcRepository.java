@@ -11,23 +11,17 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import jakarta.inject.Inject;
 import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonPatch;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import jakarta.json.JsonValue.ValueType;
-import jakarta.ws.rs.core.Response.Status;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +32,6 @@ import com.medplum.fhir.JsonUtils;
 import com.medplum.fhir.StandardOperations;
 import com.medplum.fhir.types.Bundle;
 import com.medplum.fhir.types.Bundle.BundleEntry;
-import com.medplum.fhir.types.Bundle.BundleResponse;
 import com.medplum.fhir.types.FhirResource;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.fhir.types.Reference;
@@ -48,6 +41,12 @@ import com.medplum.server.search.SearchParameters;
 import com.medplum.server.search.SearchRequest;
 import com.medplum.server.search.SortRule;
 import com.medplum.server.security.SecurityUser;
+import com.medplum.server.sql.CreateTableQuery;
+import com.medplum.server.sql.CreateTableQuery.ColumnDefinition;
+import com.medplum.server.sql.InsertQuery;
+import com.medplum.server.sql.Parameter;
+import com.medplum.server.sql.SqlBuilder;
+import com.medplum.server.sql.UpdateQuery;
 
 public class JdbcRepository implements Repository, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(JdbcRepository.class);
@@ -55,6 +54,11 @@ public class JdbcRepository implements Repository, Closeable {
     private static final String COLUMN_VERSION_ID = "VERSIONID";
     private static final String COLUMN_LAST_UPDATED = "LASTUPDATED";
     private static final String COLUMN_CONTENT = "CONTENT";
+    private static final String COLUMN_TYPE_UUID = "BINARY(16) NOT NULL";
+    private static final String COLUMN_TYPE_DATETIME = "DATETIME NOT NULL";
+    private static final String COLUMN_TYPE_TEXT = "TEXT NOT NULL";
+    private static final String COLUMN_TYPE_VARCHAR128 = "VARCHAR(128) NOT NULL";
+    private static final String PRIMARY_KEY = " PRIMARY KEY";
     private final Connection conn;
 
     @Inject
@@ -74,47 +78,25 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     private void createResourceTable(final String resourceType) throws SQLException {
-        try (final Statement stmt = conn.createStatement()) {
-            final List<SearchParameter> searchParams = SearchParameters.getParameters(resourceType);
+        final CreateTableQuery.Builder builder = new CreateTableQuery.Builder(getTableName(resourceType))
+                .column(COLUMN_ID, COLUMN_TYPE_UUID + PRIMARY_KEY)
+                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_DATETIME)
+                .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT);
 
-            final StringBuilder sql = new StringBuilder();
-            sql.append("CREATE TABLE IF NOT EXISTS ");
-            sql.append(stmt.enquoteIdentifier(getTableName(resourceType), true));
-            sql.append(" (");
-            sql.append(COLUMN_ID + " BINARY(16) NOT NULL PRIMARY KEY,");
-            sql.append(COLUMN_LAST_UPDATED + " DATETIME NOT NULL,");
-            sql.append(COLUMN_CONTENT + " TEXT NOT NULL");
-
-            for (final SearchParameter searchParam : searchParams) {
-                sql.append(",");
-                sql.append(stmt.enquoteIdentifier(getColumnName(searchParam.code()), true));
-                sql.append(" VARCHAR(128)");
-            }
-
-            sql.append(")");
-
-            LOG.debug("{}", sql);
-
-            stmt.executeUpdate(sql.toString());
+        for (final SearchParameter searchParam : SearchParameters.getParameters(resourceType)) {
+            builder.column(getColumnName(searchParam.code()), COLUMN_TYPE_VARCHAR128);
         }
+
+        executeCreateTable(builder.build());
     }
 
     private void createHistoryTable(final String resourceType) throws SQLException {
-        try (final Statement stmt = conn.createStatement()) {
-            final StringBuilder sql = new StringBuilder();
-            sql.append("CREATE TABLE IF NOT EXISTS ");
-            sql.append(stmt.enquoteIdentifier(getHistoryTableName(resourceType), true));
-            sql.append(" (");
-            sql.append(COLUMN_VERSION_ID + " BINARY(16) NOT NULL PRIMARY KEY,");
-            sql.append(COLUMN_ID + " BINARY(16) NOT NULL,");
-            sql.append(COLUMN_LAST_UPDATED + " DATETIME NOT NULL,");
-            sql.append(COLUMN_CONTENT + " TEXT NOT NULL");
-            sql.append(")");
-
-            LOG.debug("{}", sql);
-
-            stmt.executeUpdate(sql.toString());
-        }
+        executeCreateTable(new CreateTableQuery.Builder(getHistoryTableName(resourceType))
+                .column(COLUMN_VERSION_ID, COLUMN_TYPE_UUID + PRIMARY_KEY)
+                .column(COLUMN_ID, COLUMN_TYPE_UUID)
+                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_DATETIME)
+                .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT)
+                .build());
     }
 
     @Override
@@ -312,44 +294,18 @@ public class JdbcRepository implements Repository, Closeable {
             final Instant lastUpdated,
             final JsonObject resource) {
 
-        final List<SearchParameter> searchParams = SearchParameters.getParameters(resourceType);
+        final InsertQuery.Builder builder = new InsertQuery.Builder(getTableName(resourceType))
+                .value(COLUMN_ID, id, Types.BINARY)
+                .value(COLUMN_LAST_UPDATED, lastUpdated, Types.TIMESTAMP)
+                .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
-        try (final Statement formatter = conn.createStatement()) {
-            final StringBuilder sql = new StringBuilder();
-            sql.append("INSERT INTO ");
-            sql.append(formatter.enquoteIdentifier(getTableName(resourceType), true));
-            sql.append(" (" + COLUMN_ID + "," + COLUMN_LAST_UPDATED + "," + COLUMN_CONTENT);
+        for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
+            builder.value(getColumnName(param.code()), evalAsString(param.expression(), resource), Types.VARCHAR);
+        }
 
-            for (final SearchParameter searchParam : searchParams) {
-                sql.append(",");
-                sql.append(formatter.enquoteIdentifier(getColumnName(searchParam.code()), true));
-            }
-
-            sql.append(") VALUES (?,?,?");
-
-            for (int i = 0; i < searchParams.size(); i++) {
-                sql.append(",?");
-            }
-
-            sql.append(")");
-
-            LOG.debug("{}", sql);
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                int i = 1;
-                stmt.setObject(i++, id, Types.BINARY);
-                stmt.setObject(i++, lastUpdated, Types.TIMESTAMP);
-                stmt.setString(i++, resource.toString());
-
-                for (final SearchParameter param : searchParams) {
-                    stmt.setString(i++, evalAsString(param.expression(), resource));
-                }
-
-                stmt.executeUpdate();
-                writeVersion(resourceType, id, versionId, lastUpdated, resource);
-                conn.commit();
-            }
-
+        try {
+            executeInsert(builder.build());
+            writeVersion(resourceType, id, versionId, lastUpdated, resource);
             return StandardOperations.created(resource);
 
         } catch (final SQLException ex) {
@@ -365,42 +321,23 @@ public class JdbcRepository implements Repository, Closeable {
             final Instant lastUpdated,
             final JsonObject resource) {
 
-        final List<SearchParameter> searchParams = SearchParameters.getParameters(resourceType);
+        final UpdateQuery.Builder builder = new UpdateQuery.Builder(getTableName(resourceType))
+                .value(COLUMN_LAST_UPDATED, lastUpdated, Types.TIMESTAMP)
+                .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
-        try (final Statement formatter = conn.createStatement()) {
-            final StringBuilder sql = new StringBuilder();
-            sql.append("UPDATE ");
-            sql.append(formatter.enquoteIdentifier(getTableName(resourceType), true));
-            sql.append(" SET " + COLUMN_LAST_UPDATED + "=?, " + COLUMN_CONTENT + "=?");
+        for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
+            builder.value(getColumnName(param.code()), evalAsString(param.expression(), resource), Types.VARCHAR);
+        }
 
-            for (final SearchParameter searchParam : searchParams) {
-                sql.append(",");
-                sql.append(formatter.enquoteIdentifier(getColumnName(searchParam.code()), true));
-                sql.append("=?");
-            }
+        builder.condition(COLUMN_ID, id, Types.BINARY);
 
-            sql.append(" WHERE " + COLUMN_ID + "=?");
-
-            LOG.debug("{}", sql);
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                int i = 1;
-                stmt.setObject(i++, lastUpdated, Types.TIMESTAMP);
-                stmt.setString(i++, resource.toString());
-
-                for (final SearchParameter param : searchParams) {
-                    stmt.setString(i++, evalAsString(param.expression(), resource));
-                }
-
-                stmt.setObject(i++, id, Types.BINARY);
-                stmt.executeUpdate();
-                writeVersion(resourceType, id, versionId, lastUpdated, resource);
-                conn.commit();
-            }
-            return StandardOperations.created(resource);
+        try {
+            executeUpdate(builder.build());
+            writeVersion(resourceType, id, versionId, lastUpdated, resource);
+            return StandardOperations.ok(resource);
 
         } catch (final SQLException ex) {
-            LOG.error("Error updating resource: {}", ex.getMessage(), ex);
+            LOG.error("Error creating resource: {}", ex.getMessage(), ex);
             return StandardOperations.invalid(ex.getMessage());
         }
     }
@@ -413,23 +350,12 @@ public class JdbcRepository implements Repository, Closeable {
             final JsonObject resource)
                     throws SQLException {
 
-        try (final Statement formatter = conn.createStatement()) {
-            final StringBuilder sql = new StringBuilder();
-            sql.append("INSERT INTO ");
-            sql.append(formatter.enquoteIdentifier(getHistoryTableName(resourceType), true));
-            sql.append(" (" + COLUMN_VERSION_ID + "," + COLUMN_ID + "," + COLUMN_LAST_UPDATED + "," + COLUMN_CONTENT + ") VALUES (?,?,?,?)");
-
-            LOG.debug("{}", sql);
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                int i = 1;
-                stmt.setObject(i++, versionId, Types.BINARY);
-                stmt.setObject(i++, id, Types.BINARY);
-                stmt.setObject(i++, lastUpdated, Types.TIMESTAMP);
-                stmt.setString(i++, resource.toString());
-                stmt.executeUpdate();
-            }
-        }
+        executeInsert(new InsertQuery.Builder(getHistoryTableName(resourceType))
+                .value(COLUMN_VERSION_ID, versionId, Types.BINARY)
+                .value(COLUMN_ID, id, Types.BINARY)
+                .value(COLUMN_LAST_UPDATED, lastUpdated, Types.TIMESTAMP)
+                .value(COLUMN_CONTENT, resource.toString(), Types.VARCHAR)
+                .build());
     }
 
     @Override
@@ -457,7 +383,11 @@ public class JdbcRepository implements Repository, Closeable {
             for (final Filter filter : searchRequest.getFilters()) {
                 sql.append(first ? " WHERE " : " AND ");
                 sql.append(formatter.enquoteIdentifier(getColumnName(filter.getSearchParam().code()), true));
-                sql.append("=?");
+                if (filter.getSearchParam().type().equals("string")) {
+                    sql.append(" LIKE ?");
+                } else {
+                    sql.append("=?");
+                }
                 first = false;
             }
 
@@ -481,6 +411,8 @@ public class JdbcRepository implements Repository, Closeable {
             for (final Filter filter : searchRequest.getFilters()) {
                 if (filter.getSearchParam().code().equals("_id")) {
                     stmt.setObject(i, UUID.fromString(filter.getValue()), Types.BINARY);
+                } else if (filter.getSearchParam().type().equals("string")) {
+                    stmt.setString(i, "%" + filter.getValue() + "%");
                 } else {
                     stmt.setString(i, filter.getValue());
                 }
@@ -505,44 +437,7 @@ public class JdbcRepository implements Repository, Closeable {
 
     @Override
     public OperationOutcome createBatch(final SecurityUser user, final JsonObject data) {
-        final Bundle bundle = new Bundle(data);
-
-        final String bundleType = bundle.type();
-        if (bundleType == null || bundleType.isBlank()) {
-            return StandardOperations.invalid("Missing bundle type");
-        }
-
-        if (!bundleType.equals("batch") && !bundleType.equals("transaction")) {
-            return StandardOperations.invalid("Unrecognized bundle type '" + bundleType + "'");
-        }
-
-        final List<BundleEntry> entries = bundle.entry();
-        if (entries == null) {
-            return StandardOperations.invalid("Missing bundle entry");
-        }
-
-        final Map<String, String> ids = findIds(entries);
-        if (!ids.isEmpty() && !bundleType.equals("transaction")) {
-            return StandardOperations.invalid("Can only use local IDs ('urn:uuid:') in transaction");
-        }
-
-        final List<BundleEntry> result = new ArrayList<>();
-        for (final BundleEntry entry : new Bundle(rewriteIdsInObject(data, ids)).entry()) {
-            final FhirResource resource = entry.resource(FhirResource.class);
-            final String resourceType = resource.resourceType();
-            final String providedId = resource.id();
-            final OperationOutcome entryOutcome = providedId == null || providedId.isBlank() ?
-                    create(user, resourceType, resource) :
-                    update(user, resourceType, providedId, resource);
-            result.add(BundleEntry.create()
-                    .response(BundleResponse.create()
-                            .status(Status.fromStatusCode(entryOutcome.status()).toString())
-                            .location(entryOutcome.resource().createReference().reference())
-                            .build())
-                    .build());
-        }
-
-        return StandardOperations.ok(Bundle.create().type(bundleType + "-response").entry(result).build());
+        return new BatchExecutor(this).createBatch(user, data);
     }
 
     @Override
@@ -618,59 +513,119 @@ public class JdbcRepository implements Repository, Closeable {
         return result.length() > 127 ? result.substring(0, 127) : result;
     }
 
-    private static Map<String, String> findIds(final List<BundleEntry> entries) {
-        final Map<String, String> result = new HashMap<>();
+    private void executeCreateTable(final CreateTableQuery createTableQuery) throws SQLException {
+        try (final SqlBuilder sql = new SqlBuilder(conn)) {
+            sql.append("CREATE TABLE IF NOT EXISTS ");
+            sql.appendIdentifier(createTableQuery.getTableName());
+            sql.append(" (");
 
-        for (final BundleEntry entry : entries) {
-            final String fullUrl = entry.fullUrl();
-            if (fullUrl == null || !fullUrl.startsWith("urn:uuid:")) {
-                continue;
+            boolean first = true;
+            for (final ColumnDefinition column : createTableQuery.getColumns()) {
+                if (!first) {
+                    sql.append(",");
+                }
+                sql.appendIdentifier(column.getColumnName());
+                sql.append(" ");
+                sql.append(column.getColumnType());
+                first = false;
             }
 
-            // Direct ID: replace local value with generated ID
-            final String inputId = fullUrl.substring("urn:uuid:".length());
-            final String outputId = generateId();
-            result.put(inputId, outputId);
+            sql.append(")");
+            LOG.debug("{}", sql);
 
-            // Reference: replace prefixed value with reference string
-            result.put(fullUrl, entry.resource(FhirResource.class).resourceType() + "/" + outputId);
-        }
-
-        return result;
-    }
-
-    private static JsonValue rewriteIds(final JsonValue input, final Map<String, String> ids) {
-        switch (input.getValueType()) {
-        case ARRAY:
-            return rewriteIdsInArray(input.asJsonArray(), ids);
-        case OBJECT:
-            return rewriteIdsInObject(input.asJsonObject(), ids);
-        case STRING:
-            return rewriteIdsInString((JsonString) input, ids);
-        default:
-            return input;
+            try (final Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(sql.toString());
+            }
         }
     }
 
-    private static JsonArray rewriteIdsInArray(final JsonArray input, final Map<String, String> ids) {
-        final JsonArrayBuilder b = Json.createArrayBuilder();
-        for (final JsonValue value : input) {
-            b.add(rewriteIds(value, ids));
+    private int executeInsert(final InsertQuery insertQuery) throws SQLException {
+        final List<Parameter> values = insertQuery.getValues();
+
+        try (final SqlBuilder sql = new SqlBuilder(conn)) {
+            sql.append("INSERT INTO ");
+            sql.appendIdentifier(insertQuery.getTableName());
+            sql.append(" (");
+
+            boolean first = true;
+            for (final Parameter value : values) {
+                if (!first) {
+                    sql.append(",");
+                }
+                sql.appendIdentifier(value.getColumnName());
+                first = false;
+            }
+
+            sql.append(") VALUES (");
+
+            for (int i = 0; i < values.size(); i++) {
+                if (i > 0) {
+                    sql.append(",");
+                }
+                sql.append("?");
+            }
+
+            sql.append(")");
+
+            LOG.debug("{}", sql);
+
+            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                int i = 1;
+                for (final Parameter value : values) {
+                    stmt.setObject(i++, value.getValue(), value.getValueType());
+                }
+                final int result = stmt.executeUpdate();
+                conn.commit();
+                return result;
+            }
         }
-        return b.build();
     }
 
-    private static JsonObject rewriteIdsInObject(final JsonObject input, final Map<String, String> ids) {
-        final JsonObjectBuilder b = Json.createObjectBuilder();
-        for (final Entry<String, JsonValue> entry : input.entrySet()) {
-            b.add(entry.getKey(), rewriteIds(entry.getValue(), ids));
-        }
-        return b.build();
-    }
+    private int executeUpdate(final UpdateQuery updateQuery) throws SQLException {
+        final List<Parameter> values = updateQuery.getValues();
+        final List<Parameter> conditions = updateQuery.getConditions();
 
-    private static JsonString rewriteIdsInString(final JsonString input, final Map<String, String> ids) {
-        final String inputStr = input.getString();
-        final String outputStr = ids.get(inputStr);
-        return outputStr != null ? Json.createValue(outputStr) : input;
+        try (final SqlBuilder sql = new SqlBuilder(conn)) {
+            sql.append("UPDATE ");
+            sql.appendIdentifier(updateQuery.getTableName());
+            sql.append(" SET ");
+
+            boolean first = true;
+            for (final Parameter value : values) {
+                if (!first) {
+                    sql.append(",");
+                }
+                sql.appendIdentifier(value.getColumnName());
+                sql.append("=?");
+                first = false;
+            }
+
+            first = true;
+            for (final Parameter condition : conditions) {
+                if (first) {
+                    sql.append(" WHERE ");
+                } else {
+                    sql.append(" AND ");
+                }
+                sql.appendIdentifier(condition.getColumnName());
+                sql.append("=?");
+                first = false;
+            }
+
+            LOG.debug("{}", sql);
+
+            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                int i = 1;
+                for (final Parameter value : values) {
+                    stmt.setObject(i++, value.getValue(), value.getValueType());
+                }
+                for (final Parameter condition : conditions) {
+                    stmt.setObject(i++, condition.getValue(), condition.getValueType());
+                }
+                final int result = stmt.executeUpdate();
+                conn.commit();
+                return result;
+            }
+        }
     }
 }
