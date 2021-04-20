@@ -45,6 +45,7 @@ medplum-components/lib/
 
 # Webpack output
 dist/
+lib/
 
 # Storybook output
 storybook-static/
