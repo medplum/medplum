@@ -4,7 +4,7 @@ fieldset {
   border: 1px solid var(--medplum-gray-300);
   border-radius: 6px;
   margin: 6px 0 16px 0;
-  padding: 8px;
+  padding: 2px 8px 8px 8px;
 }
 
 fieldset small {

@@ -13,16 +13,15 @@ export interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ user, onLogin, onLogout, onCreateAccount }) => (
   <header>
     <div>
-      <a href="#"><Logo width={24} height={24} /></a>
-      <a href="#">MedPlum</a>
+      <a href="#"><Logo width={24} height={24} />MedPlum</a>
     </div>
     <div>
       {user ? (
-        <Button size="small" onClick={onLogout}>Log out</Button>
+        <a href="#">Profile</a>
       ) : (
         <>
-          <Button size="small" onClick={onLogin}>Log in</Button>
-          <Button primary size="small" onClick={onCreateAccount}>Sign up</Button>
+        <a href="#">Login</a>
+        <a href="#">Register</a>
         </>
       )}
     </div>

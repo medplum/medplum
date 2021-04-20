@@ -10,6 +10,9 @@
     ],
     [
       "@babel/plugin-transform-react-jsx"
+    ],
+    [
+      "@babel/plugin-transform-regenerator"
     ]
   ]
 }

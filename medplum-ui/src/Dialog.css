@@ -1,0 +1,70 @@
+.modal-dialog {
+  background:var(--medplum-gray-600);
+  border: 1px solid var(--medplum-gray-700);
+  color: var(--medplum-foreground);
+  padding: 0;
+  position: absolute;
+  z-index:21;
+  box-shadow: var(--medplum-shadow) 0 2px 6px;
+  outline:0;
+}
+
+.modal-dialog a,
+.modal-dialog a:link,
+.modal-dialog a:visited  {
+  color: var(--medplum-blue-800);
+  cursor: pointer;
+}
+
+.modal-dialog-bg {
+  background: rgba(0,0,0,0.5);
+  left: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index:20;
+}
+
+.modal-dialog-title {
+  background:var(--medplum-gray-800);
+  color: var(--medplum-surface);
+  cursor: pointer;
+
+  /* Add padding on the right to ensure the close button has room. */
+  padding: 6px 31px 6px 8px;
+
+  position: relative;
+}
+
+.modal-dialog-title-close {
+  background: url("https://static.medplum.com/img/gmail-icons.png") no-repeat 0 -373px;
+  cursor: pointer;
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+}
+
+.modal-dialog-title-close:hover {
+    background-color:var(--medplum-gray-700);
+}
+
+.modal-dialog-content {
+  text-align: center;
+  background-color: var(--medplum-surface);
+  padding: 8px;
+}
+
+.modal-dialog-buttons {
+  text-align: right;
+  background-color: var(--medplum-gray-100);
+  border-top:1px solid var(--medplum-gray-400);
+  padding: 8px;
+}
+
+.modal-dialog-buttons button {
+  padding: 1px 6px;
+}

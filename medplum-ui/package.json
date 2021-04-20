@@ -1,7 +1,7 @@
 {
-  "name": "medplum-components",
+  "name": "medplum-ui",
   "version": "0.0.1",
-  "description": "MedPlum Components Library",
+  "description": "MedPlum React Component Library",
   "scripts": {
     "dev": "start-storybook -p 6006",
     "build": "tsc && npm run copyfiles",
@@ -26,8 +26,17 @@
     "@storybook/react": "^6.2.7",
     "@types/node": "^14.14.37",
     "@types/react": "^17.0.3",
+    "@types/react-dom": "^17.0.3",
     "copyfiles": "^2.4.1",
+    "medplum": "^0.0.1",
     "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "typescript": "^4.2.4"
+  },
+  "peerDependencies": {
+    "medplum": "^0.0.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "typescript": "^4.2.4"
   },
   "files": [
