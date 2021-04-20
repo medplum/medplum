@@ -45,4 +45,23 @@ public class IdUtils {
         final ByteBuffer bb = ByteBuffer.wrap(b);
         return new UUID(bb.getLong(), bb.getLong());
     }
+
+    /**
+     * Tries to parse a UUID string.
+     * Returns null on failure.
+     *
+     * @param id The UUID string.
+     * @return The UUID on success; null on failure.
+     */
+    public static UUID tryParseId(final String id) {
+        if (id == null || id.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(id);
+        } catch (final IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
 }

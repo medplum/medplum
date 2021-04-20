@@ -57,7 +57,7 @@ public class JdbcRepository implements Repository, Closeable {
     private static final String COLUMN_TYPE_UUID = "BINARY(16) NOT NULL";
     private static final String COLUMN_TYPE_DATETIME = "DATETIME NOT NULL";
     private static final String COLUMN_TYPE_TEXT = "TEXT NOT NULL";
-    private static final String COLUMN_TYPE_VARCHAR128 = "VARCHAR(128) NOT NULL";
+    private static final String COLUMN_TYPE_VARCHAR128 = "VARCHAR(128)";
     private static final String PRIMARY_KEY = " PRIMARY KEY";
     private final Connection conn;
 
@@ -410,7 +410,7 @@ public class JdbcRepository implements Repository, Closeable {
             int i = 1;
             for (final Filter filter : searchRequest.getFilters()) {
                 if (filter.getSearchParam().code().equals("_id")) {
-                    stmt.setObject(i, UUID.fromString(filter.getValue()), Types.BINARY);
+                    stmt.setObject(i, tryParseId(filter.getValue()), Types.BINARY);
                 } else if (filter.getSearchParam().type().equals("string")) {
                     stmt.setString(i, "%" + filter.getValue() + "%");
                 } else {
@@ -461,17 +461,6 @@ public class JdbcRepository implements Repository, Closeable {
             conn.close();
         } catch (final SQLException ex) {
             LOG.error("Error closing: {}", ex.getMessage(), ex);
-        }
-    }
-
-    private static UUID tryParseId(final String id) {
-        if (id == null || id.isBlank()) {
-            return null;
-        }
-        try {
-            return UUID.fromString(id);
-        } catch (final IllegalArgumentException ex) {
-            return null;
         }
     }
 

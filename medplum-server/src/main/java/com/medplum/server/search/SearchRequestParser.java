@@ -47,6 +47,7 @@ public class SearchRequestParser {
     private void parseKeyValue(final String key, final String value) {
         switch (key) {
         case "_id":
+        case "id":
             filters.add(new Filter(SearchParameters.getParameter("Resource", "_id"), Operation.EQUALS, value));
             break;
 

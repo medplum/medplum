@@ -37,12 +37,16 @@ public class FhirSchema {
         return resourceTypes;
     }
 
+    public static JsonObject getResourceTypeSchema(final String resourceType) {
+        return definitions.getJsonObject(resourceType);
+    }
+
     public static OperationOutcome validate(final String resourceType) {
         if (resourceType == null || resourceType.isBlank()) {
             return error("Resource type is null");
         }
 
-        final JsonObject definition = definitions.getJsonObject(resourceType);
+        final JsonObject definition = getResourceTypeSchema(resourceType);
         if (definition == null) {
             return error("Unknown resource type '" + resourceType + "'");
         }
@@ -60,7 +64,7 @@ public class FhirSchema {
             return error("Missing resource type");
         }
 
-        final JsonObject definition = definitions.getJsonObject(resourceType);
+        final JsonObject definition = getResourceTypeSchema(resourceType);
         if (definition == null) {
             return error("Unknown resource type '" + resourceType + "'");
         }

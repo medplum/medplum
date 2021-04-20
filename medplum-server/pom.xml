@@ -14,6 +14,7 @@
         <aws.version>2.15.56</aws.version>
         <bcrypt.version>0.4</bcrypt.version>
         <checkstyle.version>8.36.2</checkstyle.version>
+        <graphql.version>2021-04-11T23-47-53-93cc5158</graphql.version>
         <h2.version>1.4.200</h2.version>
         <hikaricp.version>4.0.3</hikaricp.version>
         <jacoco.version>0.8.6</jacoco.version>
@@ -41,6 +42,11 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java</artifactId>
+            <version>${graphql.version}</version>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
