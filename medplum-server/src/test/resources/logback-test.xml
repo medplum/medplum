@@ -7,7 +7,7 @@
         </encoder>
     </appender>
     <logger name="io.netty" level="WARN" />
-    <logger name="com.medplum" level="DEBUG" />
+    <logger name="com.medplum" level="WARN" />
     <root level="WARN">
         <appender-ref ref="STDOUT" />
     </root>

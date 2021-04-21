@@ -72,33 +72,43 @@
         </site>
     </distributionManagement>
     <properties>
+        <aws.version>2.16.44</aws.version>
         <bcrypt.version>0.4</bcrypt.version>
-        <classgraph.version>4.8.98</classgraph.version>
-        <commons-codec.version>1.15</commons-codec.version>
-        <commons-fileupload.version>1.4</commons-fileupload.version>
-        <commons-lang3.version>3.11</commons-lang3.version>
+        <checkstyle.version>8.41.1</checkstyle.version>
         <dockerfile.version>1.4.0</dockerfile.version>
         <eclipselink.version>3.0.0</eclipselink.version>
+        <graphql.version>2021-04-19T03-51-46-d783ec7e</graphql.version>
         <h2.version>1.4.200</h2.version>
+        <hikaricp.version>4.0.3</hikaricp.version>
+        <httpcomponents-client.version>4.5.13</httpcomponents-client.version>
+        <httpcomponents-core.version>4.4.14</httpcomponents-core.version>
+        <jacoco.version>0.8.6</jacoco.version>
         <jakarta-annotation.version>2.0.0</jakarta-annotation.version>
         <jakarta-cdi.version>3.0.0-M4</jakarta-cdi.version>
-        <jakarta-inject-tck.version>2.0.1</jakarta-inject-tck.version>
         <jakarta-inject.version>2.0.0</jakarta-inject.version>
+        <jakarta-json.version>2.0.0</jakarta-json.version>
         <jakarta-persistence.version>3.0.0</jakarta-persistence.version>
         <jakarta-rs.version>3.0.0</jakarta-rs.version>
         <jakarta-servlet.version>5.0.0</jakarta-servlet.version>
         <jakarta-validation.version>3.0.0</jakarta-validation.version>
         <jakarta-websocket.version>2.0.0</jakarta-websocket.version>
+        <jakarta.ws.rs.version>3.0.0</jakarta.ws.rs.version>
+        <jersey.version>3.0.1</jersey.version>
+        <jose4j.version>0.7.7</jose4j.version>
         <junit.version>5.7.0</junit.version>
+        <junit4.version>4.13.2</junit4.version>
         <kotlin.version>1.4.21</kotlin.version>
-        <liquibase.version>4.2.2</liquibase.version>
+        <liquibase.version>4.3.4</liquibase.version>
         <logback.version>1.2.3</logback.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <mockito.version>3.6.28</mockito.version>
+        <medplum.sdk.version>0.0.1-SNAPSHOT</medplum.sdk.version>
+        <mockito.version>3.9.0</mockito.version>
         <mustache.version>0.9.7</mustache.version>
         <netty.version>4.1.56.Final</netty.version>
+        <postgresql.version>42.2.19</postgresql.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <reactive.version>1.0.3</reactive.version>
         <shade.version>3.1.0</shade.version>
         <site.basedir>${session.executionRootDirectory}/src/site/</site.basedir>
         <slf4j.version>1.7.30</slf4j.version>
@@ -109,7 +119,7 @@
         <sonar.language>java</sonar.language>
         <sonar.organization>medplum-github</sonar.organization>
         <undertow.version>2.2.3.Final</undertow.version>
-        <yasson.version>2.0.1</yasson.version>
+        <yasson.version>2.0.2</yasson.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -119,9 +129,19 @@
                 <version>${logback.version}</version>
             </dependency>
             <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.github.spullara.mustache.java</groupId>
                 <artifactId>compiler</artifactId>
                 <version>${mustache.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.graphql-java</groupId>
+                <artifactId>graphql-java</artifactId>
+                <version>${graphql.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.h2database</groupId>
@@ -130,175 +150,48 @@
             </dependency>
             <dependency>
                 <groupId>com.medplum</groupId>
-                <artifactId>medplum-cdi</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-commons</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
                 <artifactId>medplum-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-dao</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-json</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-liquibase</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-mustache</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-netty</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-nio</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-persistence</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-security</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-servlet</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-undertow</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-undertow-websocket</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-validation</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.medplum</groupId>
-                <artifactId>medplum-view</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>commons-codec</groupId>
-                <artifactId>commons-codec</artifactId>
-                <version>${commons-codec.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>commons-fileupload</groupId>
-                <artifactId>commons-fileupload</artifactId>
-                <version>${commons-fileupload.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.classgraph</groupId>
-                <artifactId>classgraph</artifactId>
-                <version>${classgraph.version}</version>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>${hikaricp.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http</artifactId>
+                <artifactId>netty-all</artifactId>
                 <version>${netty.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport-native-epoll</artifactId>
-                <version>${netty.version}</version>
-                <classifier>linux-x86_64</classifier>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport-native-kqueue</artifactId>
-                <version>${netty.version}</version>
-                <classifier>osx-x86_64</classifier>
-            </dependency>
-            <dependency>
-                <groupId>io.undertow</groupId>
-                <artifactId>undertow-core</artifactId>
-                <version>${undertow.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.annotation</groupId>
-                <artifactId>jakarta.annotation-api</artifactId>
-                <version>${jakarta-annotation.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.enterprise</groupId>
-                <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                <version>${jakarta-cdi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.inject</groupId>
-                <artifactId>jakarta.inject-api</artifactId>
-                <version>${jakarta-inject.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.inject</groupId>
-                <artifactId>jakarta.inject-tck</artifactId>
-                <version>${jakarta-inject-tck.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.persistence</groupId>
-                <artifactId>jakarta.persistence-api</artifactId>
-                <version>${jakarta-persistence.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.servlet</groupId>
-                <artifactId>jakarta.servlet-api</artifactId>
-                <version>${jakarta-servlet.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.validation</groupId>
-                <artifactId>jakarta.validation-api</artifactId>
-                <version>${jakarta-validation.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.websocket</groupId>
-                <artifactId>jakarta.websocket-api</artifactId>
-                <version>${jakarta-websocket.version}</version>
+                <groupId>jakarta.json</groupId>
+                <artifactId>jakarta.json-api</artifactId>
+                <version>${jakarta-json.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.ws.rs</groupId>
                 <artifactId>jakarta.ws.rs-api</artifactId>
-                <version>${jakarta-rs.version}</version>
+                <version>${jakarta.ws.rs.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang3.version}</version>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpcomponents-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcomponents-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bitbucket.b_c</groupId>
+                <artifactId>jose4j</artifactId>
+                <version>${jose4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse</groupId>
@@ -311,18 +204,54 @@
                 <version>${eclipselink.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-stdlib</artifactId>
-                <version>${kotlin.version}</version>
+                <groupId>org.glassfish.jersey.containers</groupId>
+                <artifactId>jersey-container-netty-http</artifactId>
+                <version>${jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-test-junit</artifactId>
-                <version>${kotlin.version}</version>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-client</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.ext</groupId>
+                <artifactId>jersey-mvc-mustache</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.inject</groupId>
+                <artifactId>jersey-hk2</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.media</groupId>
+                <artifactId>jersey-media-json-binding</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.test-framework</groupId>
+                <artifactId>jersey-test-framework-core</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.test-framework.providers</groupId>
+                <artifactId>jersey-test-framework-provider-netty</artifactId>
+                <version>${jersey.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.vintage</groupId>
+                <artifactId>junit-vintage-engine</artifactId>
                 <version>${junit.version}</version>
             </dependency>
             <dependency>
@@ -352,16 +281,65 @@
                 <version>${mockito.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.reactivestreams</groupId>
+                <artifactId>reactive-streams</artifactId>
+                <version>${reactive.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>cloudfront</artifactId>
+                <version>${aws.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>elastictranscoder</artifactId>
+                <version>${aws.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>netty-nio-client</artifactId>
+                <version>${aws.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3</artifactId>
+                <version>${aws.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>ses</artifactId>
+                <version>${aws.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>sns</artifactId>
+                <version>${aws.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>ssm</artifactId>
+                <version>${aws.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
     <build>
         <plugins>
-            <!--
-            Undertow dependencies currently broken
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -380,7 +358,6 @@
                     </execution>
                 </executions>
             </plugin>
-            -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -456,8 +433,8 @@
                         </configuration>
                     </execution>
                 </executions>
-		</plugin>
-	-->
+            </plugin>
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
