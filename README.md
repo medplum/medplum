@@ -1,4 +1,47 @@
-# medplum
+# MedPlum
+
+MedPlum is a healthcare platform that helps you quickly develop high-quality compliant applications.  MedPlum includes a FHIR server, React component library, and developer console.
+
+## Getting Started
+
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+
+### Prerequisites
+
+* Java 11+
+* Maven
+* Node/npm
+* Lerna
+* Postgres
+
+### Installing
+
+Install and build the Maven projects:
+
+```
+mvn clean install
+```
+
+Install and build the Node projects:
+
+```
+lerna bootstrap
+lerna run build
+```
+
+Run the FHIR server:
+
+```
+cd medplum-server
+mvn exec:java
+```
+
+Run the console:
+
+```
+cd medplum-console
+npm run dev
+```
 
 ## Maven Cheatsheet
 
