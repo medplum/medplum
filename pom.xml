@@ -117,10 +117,10 @@
         <sonar.coverage.jacoco.xmlReportPaths>${user.dir}/medplum-coverage/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.exclusions>medplum-examples/**/*,src/main/java/com/example/**/*</sonar.exclusions>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.java.source>1.8</sonar.java.source>
+        <sonar.java.source>11</sonar.java.source>
         <sonar.language>java</sonar.language>
-        <sonar.organization>medplum-github</sonar.organization>
-        <undertow.version>2.2.3.Final</undertow.version>
+        <sonar.organization>medplum</sonar.organization>
+        <sonar.projectKey>medplum_medplum</sonar.projectKey>
         <yasson.version>2.0.2</yasson.version>
     </properties>
     <dependencyManagement>
