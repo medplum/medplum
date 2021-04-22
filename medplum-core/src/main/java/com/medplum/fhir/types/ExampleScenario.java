@@ -762,6 +762,14 @@ public class ExampleScenario extends FhirResource {
         }
 
         /**
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
+         */
+        public String id() {
+            return getString(PROPERTY_ID);
+        }
+
+        /**
          * May be used to represent additional information that is not part of
          * the basic definition of the element and that modifies the
          * understanding of the element in which it is contained and/or the
@@ -787,6 +795,13 @@ public class ExampleScenario extends FhirResource {
          */
         public String resourceId() {
             return getString(PROPERTY_RESOURCEID);
+        }
+
+        /**
+         * The type of the resource.
+         */
+        public String resourceType() {
+            return getString(PROPERTY_RESOURCETYPE);
         }
 
         /**

@@ -44,6 +44,10 @@ public class FhirType {
         return outputName;
     }
 
+    public String getQualifiedName() {
+        return parentType == null ? outputName : parentType + "." + outputName;
+    }
+
     public List<Property> getProperties() {
         return properties;
     }

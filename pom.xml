@@ -119,7 +119,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.java.source>11</sonar.java.source>
         <sonar.language>java</sonar.language>
-        <sonar.moduleKey>${artifactId}</sonar.moduleKey>
+        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
         <sonar.organization>medplum</sonar.organization>
         <sonar.projectKey>medplum_medplum</sonar.projectKey>
         <yasson.version>2.0.2</yasson.version>
