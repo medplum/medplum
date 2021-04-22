@@ -39,6 +39,7 @@
         </developer>
     </developers>
     <modules>
+        <module>medplum-cdk</module>
         <module>medplum-core</module>
         <module>medplum-generator</module>
         <module>medplum-server</module>
@@ -74,6 +75,7 @@
     <properties>
         <aws.version>2.16.44</aws.version>
         <bcrypt.version>0.4</bcrypt.version>
+        <cdk.version>1.94.1</cdk.version>
         <checkstyle.version>8.41.1</checkstyle.version>
         <dockerfile.version>1.4.0</dockerfile.version>
         <eclipselink.version>3.0.0</eclipselink.version>
@@ -250,6 +252,11 @@
                 <version>${junit.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.junit.vintage</groupId>
                 <artifactId>junit-vintage-engine</artifactId>
                 <version>${junit.version}</version>
@@ -294,6 +301,11 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>core</artifactId>
+                <version>${cdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
