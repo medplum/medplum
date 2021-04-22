@@ -41,6 +41,7 @@
     <modules>
         <module>medplum-cdk</module>
         <module>medplum-core</module>
+        <module>medplum-coverage</module>
         <module>medplum-generator</module>
         <module>medplum-server</module>
     </modules>
@@ -85,15 +86,8 @@
         <httpcomponents-client.version>4.5.13</httpcomponents-client.version>
         <httpcomponents-core.version>4.4.14</httpcomponents-core.version>
         <jacoco.version>0.8.6</jacoco.version>
-        <jakarta-annotation.version>2.0.0</jakarta-annotation.version>
-        <jakarta-cdi.version>3.0.0-M4</jakarta-cdi.version>
-        <jakarta-inject.version>2.0.0</jakarta-inject.version>
         <jakarta-json.version>2.0.0</jakarta-json.version>
-        <jakarta-persistence.version>3.0.0</jakarta-persistence.version>
         <jakarta-rs.version>3.0.0</jakarta-rs.version>
-        <jakarta-servlet.version>5.0.0</jakarta-servlet.version>
-        <jakarta-validation.version>3.0.0</jakarta-validation.version>
-        <jakarta-websocket.version>2.0.0</jakarta-websocket.version>
         <jakarta.ws.rs.version>3.0.0</jakarta.ws.rs.version>
         <jersey.version>3.0.1</jersey.version>
         <jose4j.version>0.7.7</jose4j.version>
@@ -154,6 +148,16 @@
             <dependency>
                 <groupId>com.medplum</groupId>
                 <artifactId>medplum-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.medplum</groupId>
+                <artifactId>medplum-generator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.medplum</groupId>
+                <artifactId>medplum-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

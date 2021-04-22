@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.medplum</groupId>
+        <artifactId>medplum</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <artifactId>medplum-coverage</artifactId>
+    <packaging>pom</packaging>
+    <name>medplum-coverage</name>
+    <description>MedPlum coverage</description>
+    <dependencies>
+        <dependency>
+            <groupId>com.medplum</groupId>
+            <artifactId>medplum-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.medplum</groupId>
+            <artifactId>medplum-generator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.medplum</groupId>
+            <artifactId>medplum-server</artifactId>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>report-aggregate</id>
+                        <goals>
+                            <goal>report-aggregate</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
