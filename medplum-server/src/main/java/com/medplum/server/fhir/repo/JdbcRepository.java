@@ -127,18 +127,20 @@ public class JdbcRepository implements Repository, Closeable {
             sql.append(formatter.enquoteIdentifier(getTableName(resourceType), true));
             sql.append(" WHERE " + COLUMN_ID + "=?");
 
-            final PreparedStatement stmt = conn.prepareStatement(sql.toString());
-            stmt.setObject(1, uuid, Types.BINARY);
-
             LOG.debug("{}", sql);
 
-            final ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                final String content = rs.getString(1);
-                final JsonObject data = JsonUtils.readJsonString(content);
-                return StandardOperations.ok(data);
-            } else {
-                return StandardOperations.notFound();
+            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                stmt.setObject(1, uuid, Types.BINARY);
+
+                try (final ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        final String content = rs.getString(1);
+                        final JsonObject data = JsonUtils.readJsonString(content);
+                        return StandardOperations.ok(data);
+                    } else {
+                        return StandardOperations.notFound();
+                    }
+                }
             }
 
         } catch (final SQLException ex) {
@@ -175,15 +177,18 @@ public class JdbcRepository implements Repository, Closeable {
 
             LOG.debug("{}", sql);
 
-            final PreparedStatement stmt = conn.prepareStatement(sql.toString());
-            stmt.setObject(1, uuid, Types.BINARY);
-
-            final ResultSet rs = stmt.executeQuery();
             final List<BundleEntry> results = new ArrayList<>();
-            while (rs.next()) {
-                final String content = rs.getString(1);
-                final JsonObject data = JsonUtils.readJsonString(content);
-                results.add(BundleEntry.create().resource(data).build());
+
+            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                stmt.setObject(1, uuid, Types.BINARY);
+
+                try (final ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        final String content = rs.getString(1);
+                        final JsonObject data = JsonUtils.readJsonString(content);
+                        results.add(BundleEntry.create().resource(data).build());
+                    }
+                }
             }
 
             return StandardOperations.ok(Bundle.create().type("history").entry(results).build());
@@ -218,19 +223,21 @@ public class JdbcRepository implements Repository, Closeable {
             sql.append(" WHERE " + COLUMN_ID + "=?");
             sql.append(" AND " + COLUMN_VERSION_ID + "=?");
 
-            final PreparedStatement stmt = conn.prepareStatement(sql.toString());
-            stmt.setObject(1, uuid, Types.BINARY);
-            stmt.setObject(2, versionUuid, Types.BINARY);
-
             LOG.debug("{}", sql);
 
-            final ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                final String content = rs.getString(1);
-                final JsonObject data = JsonUtils.readJsonString(content);
-                return StandardOperations.ok(data);
-            } else {
-                return StandardOperations.notFound();
+            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                stmt.setObject(1, uuid, Types.BINARY);
+                stmt.setObject(2, versionUuid, Types.BINARY);
+
+                try (final ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        final String content = rs.getString(1);
+                        final JsonObject data = JsonUtils.readJsonString(content);
+                        return StandardOperations.ok(data);
+                    } else {
+                        return StandardOperations.notFound();
+                    }
+                }
             }
 
         } catch (final SQLException ex) {
@@ -406,25 +413,28 @@ public class JdbcRepository implements Repository, Closeable {
 
             LOG.debug("{}", sql);
 
-            final PreparedStatement stmt = conn.prepareStatement(sql.toString());
-            int i = 1;
-            for (final Filter filter : searchRequest.getFilters()) {
-                if (filter.getSearchParam().code().equals("_id")) {
-                    stmt.setObject(i, tryParseId(filter.getValue()), Types.BINARY);
-                } else if (filter.getSearchParam().type().equals("string")) {
-                    stmt.setString(i, "%" + filter.getValue() + "%");
-                } else {
-                    stmt.setString(i, filter.getValue());
-                }
-                i++;
-            }
-
-            final ResultSet rs = stmt.executeQuery();
             final List<BundleEntry> results = new ArrayList<>();
-            while (rs.next()) {
-                final String content = rs.getString(1);
-                final JsonObject data = JsonUtils.readJsonString(content);
-                results.add(BundleEntry.create().resource(data).build());
+
+            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                int i = 1;
+                for (final Filter filter : searchRequest.getFilters()) {
+                    if (filter.getSearchParam().code().equals("_id")) {
+                        stmt.setObject(i, tryParseId(filter.getValue()), Types.BINARY);
+                    } else if (filter.getSearchParam().type().equals("string")) {
+                        stmt.setString(i, "%" + filter.getValue() + "%");
+                    } else {
+                        stmt.setString(i, filter.getValue());
+                    }
+                    i++;
+                }
+
+                try (final ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        final String content = rs.getString(1);
+                        final JsonObject data = JsonUtils.readJsonString(content);
+                        results.add(BundleEntry.create().resource(data).build());
+                    }
+                }
             }
 
             return StandardOperations.ok(Bundle.create().type("searchset").entry(results).build());

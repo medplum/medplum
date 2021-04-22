@@ -258,7 +258,7 @@ public class OAuthService {
 
         final JwtClaims claims = new JwtClaims();
         claims.setIssuer(getIssuer());
-        claims.setExpirationTimeMinutesInTheFuture(60 * expirationHours);
+        claims.setExpirationTimeMinutesInTheFuture(60.0f * expirationHours);
         claims.setJwtId(jwtId);
         claims.setIssuedAtToNow();
         claims.setNotBeforeMinutesInThePast(2);
