@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -48,7 +46,10 @@ public class SubstanceSourceMaterial extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -62,37 +63,58 @@ public class SubstanceSourceMaterial extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * General high level classification of the source material specific to the origin of the material.
+     * General high level classification of the source material specific to
+     * the origin of the material.
      */
     public CodeableConcept sourceMaterialClass() {
         return getObject(CodeableConcept.class, PROPERTY_SOURCEMATERIALCLASS);
     }
 
     /**
-     * The type of the source material shall be specified based on a controlled vocabulary. For vaccines, this subclause refers to the class of infectious agent.
+     * The type of the source material shall be specified based on a
+     * controlled vocabulary. For vaccines, this subclause refers to the
+     * class of infectious agent.
      */
     public CodeableConcept sourceMaterialType() {
         return getObject(CodeableConcept.class, PROPERTY_SOURCEMATERIALTYPE);
@@ -106,21 +128,25 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The unique identifier associated with the source material parent organism shall be specified.
+     * The unique identifier associated with the source material parent
+     * organism shall be specified.
      */
     public Identifier organismId() {
         return getObject(Identifier.class, PROPERTY_ORGANISMID);
     }
 
     /**
-     * The organism accepted Scientific name shall be provided based on the organism taxonomy.
+     * The organism accepted Scientific name shall be provided based on the
+     * organism taxonomy.
      */
     public String organismName() {
         return getString(PROPERTY_ORGANISMNAME);
     }
 
     /**
-     * The parent of the herbal drug Ginkgo biloba, Leaf is the substance ID of the substance (fresh) of Ginkgo biloba L. or Ginkgo biloba L. (Whole plant).
+     * The parent of the herbal drug Ginkgo biloba, Leaf is the substance ID
+     * of the substance (fresh) of Ginkgo biloba L. or Ginkgo biloba L.
+     * (Whole plant).
      */
     public java.util.List<Identifier> parentSubstanceId() {
         return getList(Identifier.class, PROPERTY_PARENTSUBSTANCEID);
@@ -134,35 +160,53 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The country where the plant material is harvested or the countries where the plasma is sourced from as laid down in accordance with the Plasma Master File. For “Plasma-derived substances” the attribute country of origin provides information about the countries used for the manufacturing of the Cryopoor plama or Crioprecipitate.
+     * The country where the plant material is harvested or the countries
+     * where the plasma is sourced from as laid down in accordance with the
+     * Plasma Master File. For “Plasma-derived substances” the attribute
+     * country of origin provides information about the countries used for
+     * the manufacturing of the Cryopoor plama or Crioprecipitate.
      */
     public java.util.List<CodeableConcept> countryOfOrigin() {
         return getList(CodeableConcept.class, PROPERTY_COUNTRYOFORIGIN);
     }
 
     /**
-     * The place/region where the plant is harvested or the places/regions where the animal source material has its habitat.
+     * The place/region where the plant is harvested or the places/regions
+     * where the animal source material has its habitat.
      */
     public java.util.List<String> geographicalLocation() {
         return getList(String.class, PROPERTY_GEOGRAPHICALLOCATION);
     }
 
     /**
-     * Stage of life for animals, plants, insects and microorganisms. This information shall be provided only when the substance is significantly different in these stages (e.g. foetal bovine serum).
+     * Stage of life for animals, plants, insects and microorganisms. This
+     * information shall be provided only when the substance is significantly
+     * different in these stages (e.g. foetal bovine serum).
      */
     public CodeableConcept developmentStage() {
         return getObject(CodeableConcept.class, PROPERTY_DEVELOPMENTSTAGE);
     }
 
     /**
-     * Many complex materials are fractions of parts of plants, animals, or minerals. Fraction elements are often necessary to define both Substances and Specified Group 1 Substances. For substances derived from Plants, fraction information will be captured at the Substance information level ( . Oils, Juices and Exudates). Additional information for Extracts, such as extraction solvent composition, will be captured at the Specified Substance Group 1 information level. For plasma-derived products fraction information will be captured at the Substance and the Specified Substance Group 1 levels.
+     * Many complex materials are fractions of parts of plants, animals, or
+     * minerals. Fraction elements are often necessary to define both
+     * Substances and Specified Group 1 Substances. For substances derived
+     * from Plants, fraction information will be captured at the Substance
+     * information level ( . Oils, Juices and Exudates). Additional
+     * information for Extracts, such as extraction solvent composition, will
+     * be captured at the Specified Substance Group 1 information level. For
+     * plasma-derived products fraction information will be captured at the
+     * Substance and the Specified Substance Group 1 levels.
      */
     public java.util.List<SubstanceSourceMaterialFractionDescription> fractionDescription() {
         return getList(SubstanceSourceMaterialFractionDescription.class, PROPERTY_FRACTIONDESCRIPTION);
     }
 
     /**
-     * This subclause describes the organism which the substance is derived from. For vaccines, the parent organism shall be specified based on these subclause elements. As an example, full taxonomy will be described for the Substance Name: ., Leaf.
+     * This subclause describes the organism which the substance is derived
+     * from. For vaccines, the parent organism shall be specified based on
+     * these subclause elements. As an example, full taxonomy will be
+     * described for the Substance Name: ., Leaf.
      */
     public SubstanceSourceMaterialOrganism organism() {
         return getObject(SubstanceSourceMaterialOrganism.class, PROPERTY_ORGANISM);
@@ -315,30 +359,50 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The type of author of an organism species shall be specified. The parenthetical author of an organism species refers to the first author who published the plant/animal name (of any rank). The primary author of an organism species refers to the first author(s), who validly published the plant/animal name.
+         * The type of author of an organism species shall be specified. The
+         * parenthetical author of an organism species refers to the first author
+         * who published the plant/animal name (of any rank). The primary author
+         * of an organism species refers to the first author(s), who validly
+         * published the plant/animal name.
          */
         public CodeableConcept authorType() {
             return getObject(CodeableConcept.class, PROPERTY_AUTHORTYPE);
         }
 
         /**
-         * The author of an organism species shall be specified. The author year of an organism shall also be specified when applicable; refers to the year in which the first author(s) published the infraspecific plant/animal name (of any rank).
+         * The author of an organism species shall be specified. The author year
+         * of an organism shall also be specified when applicable; refers to the
+         * year in which the first author(s) published the infraspecific
+         * plant/animal name (of any rank).
          */
         public String authorDescription() {
             return getString(PROPERTY_AUTHORDESCRIPTION);
@@ -401,30 +465,46 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * This element is capturing information about the fraction of a plant part, or human plasma for fractionation.
+         * This element is capturing information about the fraction of a plant
+         * part, or human plasma for fractionation.
          */
         public String fraction() {
             return getString(PROPERTY_FRACTION);
         }
 
         /**
-         * The specific type of the material constituting the component. For Herbal preparations the particulars of the extracts (liquid/dry) is described in Specified Substance Group 1.
+         * The specific type of the material constituting the component. For
+         * Herbal preparations the particulars of the extracts (liquid/dry) is
+         * described in Specified Substance Group 1.
          */
         public CodeableConcept materialType() {
             return getObject(CodeableConcept.class, PROPERTY_MATERIALTYPE);
@@ -490,44 +570,65 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The identifier of the maternal species constituting the hybrid organism shall be specified based on a controlled vocabulary. For plants, the parents aren’t always known, and it is unlikely that it will be known which is maternal and which is paternal.
+         * The identifier of the maternal species constituting the hybrid
+         * organism shall be specified based on a controlled vocabulary. For
+         * plants, the parents aren’t always known, and it is unlikely that it
+         * will be known which is maternal and which is paternal.
          */
         public String maternalOrganismId() {
             return getString(PROPERTY_MATERNALORGANISMID);
         }
 
         /**
-         * The name of the maternal species constituting the hybrid organism shall be specified. For plants, the parents aren’t always known, and it is unlikely that it will be known which is maternal and which is paternal.
+         * The name of the maternal species constituting the hybrid organism
+         * shall be specified. For plants, the parents aren’t always known, and
+         * it is unlikely that it will be known which is maternal and which is
+         * paternal.
          */
         public String maternalOrganismName() {
             return getString(PROPERTY_MATERNALORGANISMNAME);
         }
 
         /**
-         * The identifier of the paternal species constituting the hybrid organism shall be specified based on a controlled vocabulary.
+         * The identifier of the paternal species constituting the hybrid
+         * organism shall be specified based on a controlled vocabulary.
          */
         public String paternalOrganismId() {
             return getString(PROPERTY_PATERNALORGANISMID);
         }
 
         /**
-         * The name of the paternal species constituting the hybrid organism shall be specified.
+         * The name of the paternal species constituting the hybrid organism
+         * shall be specified.
          */
         public String paternalOrganismName() {
             return getString(PROPERTY_PATERNALORGANISMNAME);
@@ -618,16 +719,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -641,14 +755,18 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The genus of an organism shall be specified; refers to the Latin epithet of the genus element of the plant/animal scientific name; it is present in names for genera, species and infraspecies.
+         * The genus of an organism shall be specified; refers to the Latin
+         * epithet of the genus element of the plant/animal scientific name; it
+         * is present in names for genera, species and infraspecies.
          */
         public CodeableConcept genus() {
             return getObject(CodeableConcept.class, PROPERTY_GENUS);
         }
 
         /**
-         * The species of an organism shall be specified; refers to the Latin epithet of the species of the plant/animal; it is present in names for species and infraspecies.
+         * The species of an organism shall be specified; refers to the Latin
+         * epithet of the species of the plant/animal; it is present in names for
+         * species and infraspecies.
          */
         public CodeableConcept species() {
             return getObject(CodeableConcept.class, PROPERTY_SPECIES);
@@ -662,7 +780,10 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The intraspecific description of an organism shall be specified based on a controlled vocabulary. For Influenza Vaccine, the intraspecific description shall contain the syntax of the antigen in line with the WHO convention.
+         * The intraspecific description of an organism shall be specified based
+         * on a controlled vocabulary. For Influenza Vaccine, the intraspecific
+         * description shall contain the syntax of the antigen in line with the
+         * WHO convention.
          */
         public String intraspecificDescription() {
             return getString(PROPERTY_INTRASPECIFICDESCRIPTION);
@@ -778,16 +899,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -810,7 +944,7 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         /**
          * The class of an organism shall be specified.
          */
-        public CodeableConcept class_() {
+        public CodeableConcept classValue() {
             return getObject(CodeableConcept.class, PROPERTY_CLASS);
         }
 
@@ -852,8 +986,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
                 return this;
             }
 
-            public Builder class_(final CodeableConcept class_) {
-                b.add(PROPERTY_CLASS, class_);
+            public Builder classValue(final CodeableConcept classValue) {
+                b.add(PROPERTY_CLASS, classValue);
                 return this;
             }
 
@@ -888,16 +1022,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -911,7 +1058,9 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The detailed anatomic location when the part can be extracted from different anatomical locations of the organism. Multiple alternative locations may apply.
+         * The detailed anatomic location when the part can be extracted from
+         * different anatomical locations of the organism. Multiple alternative
+         * locations may apply.
          */
         public CodeableConcept partLocation() {
             return getObject(CodeableConcept.class, PROPERTY_PARTLOCATION);

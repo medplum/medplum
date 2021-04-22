@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -35,14 +33,16 @@ public class SampledData extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * The base quantity that a measured value of zero represents. In addition, this provides the units of the entire measurement series.
+     * The base quantity that a measured value of zero represents. In
+     * addition, this provides the units of the entire measurement series.
      */
     public Quantity origin() {
         return getObject(Quantity.class, PROPERTY_ORIGIN);
@@ -56,35 +56,45 @@ public class SampledData extends FhirResource {
     }
 
     /**
-     * A correction factor that is applied to the sampled data points before they are added to the origin.
+     * A correction factor that is applied to the sampled data points before
+     * they are added to the origin.
      */
     public Double factor() {
         return data.getJsonNumber(PROPERTY_FACTOR).doubleValue();
     }
 
     /**
-     * The lower limit of detection of the measured points. This is needed if any of the data points have the value "L" (lower than detection limit).
+     * The lower limit of detection of the measured points. This is needed if
+     * any of the data points have the value "L" (lower than detection
+     * limit).
      */
     public Double lowerLimit() {
         return data.getJsonNumber(PROPERTY_LOWERLIMIT).doubleValue();
     }
 
     /**
-     * The upper limit of detection of the measured points. This is needed if any of the data points have the value "U" (higher than detection limit).
+     * The upper limit of detection of the measured points. This is needed if
+     * any of the data points have the value "U" (higher than detection
+     * limit).
      */
     public Double upperLimit() {
         return data.getJsonNumber(PROPERTY_UPPERLIMIT).doubleValue();
     }
 
     /**
-     * The number of sample points at each time point. If this value is greater than one, then the dimensions will be interlaced - all the sample points for a point in time will be recorded at once.
+     * The number of sample points at each time point. If this value is
+     * greater than one, then the dimensions will be interlaced - all the
+     * sample points for a point in time will be recorded at once.
      */
     public Integer dimensions() {
         return data.getInt(PROPERTY_DIMENSIONS);
     }
 
     /**
-     * A series of data points which are decimal values separated by a single space (character u20). The special values "E" (error), "L" (below detection limit) and "U" (above detection limit) can also be used in place of a decimal value.
+     * A series of data points which are decimal values separated by a single
+     * space (character u20). The special values "E" (error), "L" (below
+     * detection limit) and "U" (above detection limit) can also be used in
+     * place of a decimal value.
      */
     public String data() {
         return getString(PROPERTY_DATA);

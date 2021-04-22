@@ -5,11 +5,7 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 public class Login extends FhirResource {
     public static final String RESOURCE_TYPE = "Login";
@@ -33,28 +29,29 @@ public class Login extends FhirResource {
     }
 
     /**
-     * The client requesting the code
+     * The client requesting the code.
      */
     public Reference client() {
         return getObject(Reference.class, PROPERTY_CLIENT);
     }
 
     /**
-     * The user requesting the code
+     * The user requesting the code.
      */
     public Reference user() {
         return getObject(Reference.class, PROPERTY_USER);
     }
 
     /**
-     * Reference to the user's FHIR identity for this login (patient, practitioner, etc)
+     * Reference to the user's FHIR identity for this login (patient,
+     * practitioner, etc).
      */
     public Reference profile() {
         return getObject(Reference.class, PROPERTY_PROFILE);
     }
 
     /**
-     * OAuth scope
+     * OAuth scope or scopes.
      */
     public String scope() {
         return getString(PROPERTY_SCOPE);

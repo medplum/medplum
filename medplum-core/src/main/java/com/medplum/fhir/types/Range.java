@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -30,7 +28,8 @@ public class Range extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);

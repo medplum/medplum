@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -69,7 +67,10 @@ public class MedicationRequest extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -83,37 +84,61 @@ public class MedicationRequest extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Identifiers associated with this medication request that are defined by business processes and/or used to refer to it when a direct URL reference to the resource itself is not appropriate. They are business identifiers assigned to this resource by the performer or other systems and remain constant as the resource is updated and propagates from server to server.
+     * Identifiers associated with this medication request that are defined
+     * by business processes and/or used to refer to it when a direct URL
+     * reference to the resource itself is not appropriate. They are business
+     * identifiers assigned to this resource by the performer or other
+     * systems and remain constant as the resource is updated and propagates
+     * from server to server.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
     }
 
     /**
-     * A code specifying the current state of the order.  Generally, this will be active or completed state.
+     * A code specifying the current state of the order.  Generally, this
+     * will be active or completed state.
      */
     public String status() {
         return getString(PROPERTY_STATUS);
@@ -134,112 +159,135 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Indicates the type of medication request (for example, where the medication is expected to be consumed or administered (i.e. inpatient or outpatient)).
+     * Indicates the type of medication request (for example, where the
+     * medication is expected to be consumed or administered (i.e. inpatient
+     * or outpatient)).
      */
     public java.util.List<CodeableConcept> category() {
         return getList(CodeableConcept.class, PROPERTY_CATEGORY);
     }
 
     /**
-     * Indicates how quickly the Medication Request should be addressed with respect to other requests.
+     * Indicates how quickly the Medication Request should be addressed with
+     * respect to other requests.
      */
     public String priority() {
         return getString(PROPERTY_PRIORITY);
     }
 
     /**
-     * If true indicates that the provider is asking for the medication request not to occur.
+     * If true indicates that the provider is asking for the medication
+     * request not to occur.
      */
     public Boolean doNotPerform() {
         return data.getBoolean(PROPERTY_DONOTPERFORM);
     }
 
     /**
-     * Indicates if this record was captured as a secondary 'reported' record rather than as an original primary source-of-truth record.  It may also indicate the source of the report.
+     * Indicates if this record was captured as a secondary 'reported' record
+     * rather than as an original primary source-of-truth record.  It may
+     * also indicate the source of the report.
      */
     public Boolean reportedBoolean() {
         return data.getBoolean(PROPERTY_REPORTEDBOOLEAN);
     }
 
     /**
-     * Indicates if this record was captured as a secondary 'reported' record rather than as an original primary source-of-truth record.  It may also indicate the source of the report.
+     * Indicates if this record was captured as a secondary 'reported' record
+     * rather than as an original primary source-of-truth record.  It may
+     * also indicate the source of the report.
      */
     public Reference reportedReference() {
         return getObject(Reference.class, PROPERTY_REPORTEDREFERENCE);
     }
 
     /**
-     * Identifies the medication being requested. This is a link to a resource that represents the medication which may be the details of the medication or simply an attribute carrying a code that identifies the medication from a known list of medications.
+     * Identifies the medication being requested. This is a link to a
+     * resource that represents the medication which may be the details of
+     * the medication or simply an attribute carrying a code that identifies
+     * the medication from a known list of medications.
      */
     public CodeableConcept medicationCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_MEDICATIONCODEABLECONCEPT);
     }
 
     /**
-     * Identifies the medication being requested. This is a link to a resource that represents the medication which may be the details of the medication or simply an attribute carrying a code that identifies the medication from a known list of medications.
+     * Identifies the medication being requested. This is a link to a
+     * resource that represents the medication which may be the details of
+     * the medication or simply an attribute carrying a code that identifies
+     * the medication from a known list of medications.
      */
     public Reference medicationReference() {
         return getObject(Reference.class, PROPERTY_MEDICATIONREFERENCE);
     }
 
     /**
-     * A link to a resource representing the person or set of individuals to whom the medication will be given.
+     * A link to a resource representing the person or set of individuals to
+     * whom the medication will be given.
      */
     public Reference subject() {
         return getObject(Reference.class, PROPERTY_SUBJECT);
     }
 
     /**
-     * The Encounter during which this [x] was created or to which the creation of this record is tightly associated.
+     * The Encounter during which this [x] was created or to which the
+     * creation of this record is tightly associated.
      */
     public Reference encounter() {
         return getObject(Reference.class, PROPERTY_ENCOUNTER);
     }
 
     /**
-     * Include additional information (for example, patient height and weight) that supports the ordering of the medication.
+     * Include additional information (for example, patient height and
+     * weight) that supports the ordering of the medication.
      */
     public java.util.List<Reference> supportingInformation() {
         return getList(Reference.class, PROPERTY_SUPPORTINGINFORMATION);
     }
 
     /**
-     * The date (and perhaps time) when the prescription was initially written or authored on.
+     * The date (and perhaps time) when the prescription was initially
+     * written or authored on.
      */
     public java.time.Instant authoredOn() {
         return java.time.Instant.parse(data.getString(PROPERTY_AUTHOREDON));
     }
 
     /**
-     * The individual, organization, or device that initiated the request and has responsibility for its activation.
+     * The individual, organization, or device that initiated the request and
+     * has responsibility for its activation.
      */
     public Reference requester() {
         return getObject(Reference.class, PROPERTY_REQUESTER);
     }
 
     /**
-     * The specified desired performer of the medication treatment (e.g. the performer of the medication administration).
+     * The specified desired performer of the medication treatment (e.g. the
+     * performer of the medication administration).
      */
     public Reference performer() {
         return getObject(Reference.class, PROPERTY_PERFORMER);
     }
 
     /**
-     * Indicates the type of performer of the administration of the medication.
+     * Indicates the type of performer of the administration of the
+     * medication.
      */
     public CodeableConcept performerType() {
         return getObject(CodeableConcept.class, PROPERTY_PERFORMERTYPE);
     }
 
     /**
-     * The person who entered the order on behalf of another individual for example in the case of a verbal or a telephone order.
+     * The person who entered the order on behalf of another individual for
+     * example in the case of a verbal or a telephone order.
      */
     public Reference recorder() {
         return getObject(Reference.class, PROPERTY_RECORDER);
     }
 
     /**
-     * The reason or the indication for ordering or not ordering the medication.
+     * The reason or the indication for ordering or not ordering the
+     * medication.
      */
     public java.util.List<CodeableConcept> reasonCode() {
         return getList(CodeableConcept.class, PROPERTY_REASONCODE);
@@ -253,49 +301,60 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The URL pointing to a protocol, guideline, orderset, or other definition that is adhered to in whole or in part by this MedicationRequest.
+     * The URL pointing to a protocol, guideline, orderset, or other
+     * definition that is adhered to in whole or in part by this
+     * MedicationRequest.
      */
     public java.util.List<String> instantiatesCanonical() {
         return getList(String.class, PROPERTY_INSTANTIATESCANONICAL);
     }
 
     /**
-     * The URL pointing to an externally maintained protocol, guideline, orderset or other definition that is adhered to in whole or in part by this MedicationRequest.
+     * The URL pointing to an externally maintained protocol, guideline,
+     * orderset or other definition that is adhered to in whole or in part by
+     * this MedicationRequest.
      */
     public java.util.List<String> instantiatesUri() {
         return getList(String.class, PROPERTY_INSTANTIATESURI);
     }
 
     /**
-     * A plan or request that is fulfilled in whole or in part by this medication request.
+     * A plan or request that is fulfilled in whole or in part by this
+     * medication request.
      */
     public java.util.List<Reference> basedOn() {
         return getList(Reference.class, PROPERTY_BASEDON);
     }
 
     /**
-     * A shared identifier common to all requests that were authorized more or less simultaneously by a single author, representing the identifier of the requisition or prescription.
+     * A shared identifier common to all requests that were authorized more
+     * or less simultaneously by a single author, representing the identifier
+     * of the requisition or prescription.
      */
     public Identifier groupIdentifier() {
         return getObject(Identifier.class, PROPERTY_GROUPIDENTIFIER);
     }
 
     /**
-     * The description of the overall patte3rn of the administration of the medication to the patient.
+     * The description of the overall patte3rn of the administration of the
+     * medication to the patient.
      */
     public CodeableConcept courseOfTherapyType() {
         return getObject(CodeableConcept.class, PROPERTY_COURSEOFTHERAPYTYPE);
     }
 
     /**
-     * Insurance plans, coverage extensions, pre-authorizations and/or pre-determinations that may be required for delivering the requested service.
+     * Insurance plans, coverage extensions, pre-authorizations and/or
+     * pre-determinations that may be required for delivering the requested
+     * service.
      */
     public java.util.List<Reference> insurance() {
         return getList(Reference.class, PROPERTY_INSURANCE);
     }
 
     /**
-     * Extra information about the prescription that could not be conveyed by the other attributes.
+     * Extra information about the prescription that could not be conveyed by
+     * the other attributes.
      */
     public java.util.List<Annotation> note() {
         return getList(Annotation.class, PROPERTY_NOTE);
@@ -309,35 +368,49 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Indicates the specific details for the dispense or medication supply part of a medication request (also known as a Medication Prescription or Medication Order).  Note that this information is not always sent with the order.  There may be in some settings (e.g. hospitals) institutional or system support for completing the dispense details in the pharmacy department.
+     * Indicates the specific details for the dispense or medication supply
+     * part of a medication request (also known as a Medication Prescription
+     * or Medication Order).  Note that this information is not always sent
+     * with the order.  There may be in some settings (e.g. hospitals)
+     * institutional or system support for completing the dispense details in
+     * the pharmacy department.
      */
     public MedicationRequestDispenseRequest dispenseRequest() {
         return getObject(MedicationRequestDispenseRequest.class, PROPERTY_DISPENSEREQUEST);
     }
 
     /**
-     * Indicates whether or not substitution can or should be part of the dispense. In some cases, substitution must happen, in other cases substitution must not happen. This block explains the prescriber's intent. If nothing is specified substitution may be done.
+     * Indicates whether or not substitution can or should be part of the
+     * dispense. In some cases, substitution must happen, in other cases
+     * substitution must not happen. This block explains the prescriber's
+     * intent. If nothing is specified substitution may be done.
      */
     public MedicationRequestSubstitution substitution() {
         return getObject(MedicationRequestSubstitution.class, PROPERTY_SUBSTITUTION);
     }
 
     /**
-     * A link to a resource representing an earlier order related order or prescription.
+     * A link to a resource representing an earlier order related order or
+     * prescription.
      */
     public Reference priorPrescription() {
         return getObject(Reference.class, PROPERTY_PRIORPRESCRIPTION);
     }
 
     /**
-     * Indicates an actual or potential clinical issue with or between one or more active or proposed clinical actions for a patient; e.g. Drug-drug interaction, duplicate therapy, dosage alert etc.
+     * Indicates an actual or potential clinical issue with or between one or
+     * more active or proposed clinical actions for a patient; e.g. Drug-drug
+     * interaction, duplicate therapy, dosage alert etc.
      */
     public java.util.List<Reference> detectedIssue() {
         return getList(Reference.class, PROPERTY_DETECTEDISSUE);
     }
 
     /**
-     * Links to Provenance records for past versions of this resource or fulfilling request or event resources that identify key state transitions or updates that are likely to be relevant to a user looking at the current version of the resource.
+     * Links to Provenance records for past versions of this resource or
+     * fulfilling request or event resources that identify key state
+     * transitions or updates that are likely to be relevant to a user
+     * looking at the current version of the resource.
      */
     public java.util.List<Reference> eventHistory() {
         return getList(Reference.class, PROPERTY_EVENTHISTORY);
@@ -593,44 +666,67 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Indicates the quantity or duration for the first dispense of the medication.
+         * Indicates the quantity or duration for the first dispense of the
+         * medication.
          */
         public MedicationRequestInitialFill initialFill() {
             return getObject(MedicationRequestInitialFill.class, PROPERTY_INITIALFILL);
         }
 
         /**
-         * The minimum period of time that must occur between dispenses of the medication.
+         * The minimum period of time that must occur between dispenses of the
+         * medication.
          */
         public Duration dispenseInterval() {
             return getObject(Duration.class, PROPERTY_DISPENSEINTERVAL);
         }
 
         /**
-         * This indicates the validity period of a prescription (stale dating the Prescription).
+         * This indicates the validity period of a prescription (stale dating the
+         * Prescription).
          */
         public Period validityPeriod() {
             return getObject(Period.class, PROPERTY_VALIDITYPERIOD);
         }
 
         /**
-         * An integer indicating the number of times, in addition to the original dispense, (aka refills or repeats) that the patient can receive the prescribed medication. Usage Notes: This integer does not include the original order dispense. This means that if an order indicates dispense 30 tablets plus "3 repeats", then the order can be dispensed a total of 4 times and the patient can receive a total of 120 tablets.  A prescriber may explicitly say that zero refills are permitted after the initial dispense.
+         * An integer indicating the number of times, in addition to the original
+         * dispense, (aka refills or repeats) that the patient can receive the
+         * prescribed medication. Usage Notes: This integer does not include the
+         * original order dispense. This means that if an order indicates
+         * dispense 30 tablets plus "3 repeats", then the order can be dispensed
+         * a total of 4 times and the patient can receive a total of 120 tablets.
+         * A prescriber may explicitly say that zero refills are permitted after
+         * the initial dispense.
          */
         public Integer numberOfRepeatsAllowed() {
             return data.getInt(PROPERTY_NUMBEROFREPEATSALLOWED);
@@ -644,14 +740,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Identifies the period time over which the supplied product is expected to be used, or the length of time the dispense is expected to last.
+         * Identifies the period time over which the supplied product is expected
+         * to be used, or the length of time the dispense is expected to last.
          */
         public Duration expectedSupplyDuration() {
             return getObject(Duration.class, PROPERTY_EXPECTEDSUPPLYDURATION);
         }
 
         /**
-         * Indicates the intended dispensing Organization specified by the prescriber.
+         * Indicates the intended dispensing Organization specified by the
+         * prescriber.
          */
         public Reference performer() {
             return getObject(Reference.class, PROPERTY_PERFORMER);
@@ -739,16 +837,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -826,37 +937,53 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * True if the prescriber allows a different drug to be dispensed from what was prescribed.
+         * True if the prescriber allows a different drug to be dispensed from
+         * what was prescribed.
          */
         public Boolean allowedBoolean() {
             return data.getBoolean(PROPERTY_ALLOWEDBOOLEAN);
         }
 
         /**
-         * True if the prescriber allows a different drug to be dispensed from what was prescribed.
+         * True if the prescriber allows a different drug to be dispensed from
+         * what was prescribed.
          */
         public CodeableConcept allowedCodeableConcept() {
             return getObject(CodeableConcept.class, PROPERTY_ALLOWEDCODEABLECONCEPT);
         }
 
         /**
-         * Indicates the reason for the substitution, or why substitution must or must not be performed.
+         * Indicates the reason for the substitution, or why substitution must or
+         * must not be performed.
          */
         public CodeableConcept reason() {
             return getObject(CodeableConcept.class, PROPERTY_REASON);

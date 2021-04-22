@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -52,7 +50,10 @@ public class NutritionOrder extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -66,51 +67,76 @@ public class NutritionOrder extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Identifiers assigned to this order by the order sender or by the order receiver.
+     * Identifiers assigned to this order by the order sender or by the order
+     * receiver.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
     }
 
     /**
-     * The URL pointing to a FHIR-defined protocol, guideline, orderset or other definition that is adhered to in whole or in part by this NutritionOrder.
+     * The URL pointing to a FHIR-defined protocol, guideline, orderset or
+     * other definition that is adhered to in whole or in part by this
+     * NutritionOrder.
      */
     public java.util.List<String> instantiatesCanonical() {
         return getList(String.class, PROPERTY_INSTANTIATESCANONICAL);
     }
 
     /**
-     * The URL pointing to an externally maintained protocol, guideline, orderset or other definition that is adhered to in whole or in part by this NutritionOrder.
+     * The URL pointing to an externally maintained protocol, guideline,
+     * orderset or other definition that is adhered to in whole or in part by
+     * this NutritionOrder.
      */
     public java.util.List<String> instantiatesUri() {
         return getList(String.class, PROPERTY_INSTANTIATESURI);
     }
 
     /**
-     * The URL pointing to a protocol, guideline, orderset or other definition that is adhered to in whole or in part by this NutritionOrder.
+     * The URL pointing to a protocol, guideline, orderset or other
+     * definition that is adhered to in whole or in part by this
+     * NutritionOrder.
      */
     public java.util.List<String> instantiates() {
         return getList(String.class, PROPERTY_INSTANTIATES);
@@ -124,21 +150,24 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Indicates the level of authority/intentionality associated with the NutrionOrder and where the request fits into the workflow chain.
+     * Indicates the level of authority/intentionality associated with the
+     * NutrionOrder and where the request fits into the workflow chain.
      */
     public String intent() {
         return getString(PROPERTY_INTENT);
     }
 
     /**
-     * The person (patient) who needs the nutrition order for an oral diet, nutritional supplement and/or enteral or formula feeding.
+     * The person (patient) who needs the nutrition order for an oral diet,
+     * nutritional supplement and/or enteral or formula feeding.
      */
     public Reference patient() {
         return getObject(Reference.class, PROPERTY_PATIENT);
     }
 
     /**
-     * An encounter that provides additional information about the healthcare context in which this request is made.
+     * An encounter that provides additional information about the healthcare
+     * context in which this request is made.
      */
     public Reference encounter() {
         return getObject(Reference.class, PROPERTY_ENCOUNTER);
@@ -152,28 +181,45 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The practitioner that holds legal responsibility for ordering the diet, nutritional supplement, or formula feedings.
+     * The practitioner that holds legal responsibility for ordering the
+     * diet, nutritional supplement, or formula feedings.
      */
     public Reference orderer() {
         return getObject(Reference.class, PROPERTY_ORDERER);
     }
 
     /**
-     * A link to a record of allergies or intolerances  which should be included in the nutrition order.
+     * A link to a record of allergies or intolerances  which should be
+     * included in the nutrition order.
      */
     public java.util.List<Reference> allergyIntolerance() {
         return getList(Reference.class, PROPERTY_ALLERGYINTOLERANCE);
     }
 
     /**
-     * This modifier is used to convey order-specific modifiers about the type of food that should be given. These can be derived from patient allergies, intolerances, or preferences such as Halal, Vegan or Kosher. This modifier applies to the entire nutrition order inclusive of the oral diet, nutritional supplements and enteral formula feedings.
+     * This modifier is used to convey order-specific modifiers about the
+     * type of food that should be given. These can be derived from patient
+     * allergies, intolerances, or preferences such as Halal, Vegan or
+     * Kosher. This modifier applies to the entire nutrition order inclusive
+     * of the oral diet, nutritional supplements and enteral formula
+     * feedings.
      */
     public java.util.List<CodeableConcept> foodPreferenceModifier() {
         return getList(CodeableConcept.class, PROPERTY_FOODPREFERENCEMODIFIER);
     }
 
     /**
-     * This modifier is used to convey Order-specific modifier about the type of oral food or oral fluids that should not be given. These can be derived from patient allergies, intolerances, or preferences such as No Red Meat, No Soy or No Wheat or  Gluten-Free.  While it should not be necessary to repeat allergy or intolerance information captured in the referenced AllergyIntolerance resource in the excludeFoodModifier, this element may be used to convey additional specificity related to foods that should be eliminated from the patient’s diet for any reason.  This modifier applies to the entire nutrition order inclusive of the oral diet, nutritional supplements and enteral formula feedings.
+     * This modifier is used to convey Order-specific modifier about the type
+     * of oral food or oral fluids that should not be given. These can be
+     * derived from patient allergies, intolerances, or preferences such as
+     * No Red Meat, No Soy or No Wheat or  Gluten-Free.  While it should not
+     * be necessary to repeat allergy or intolerance information captured in
+     * the referenced AllergyIntolerance resource in the excludeFoodModifier,
+     * this element may be used to convey additional specificity related to
+     * foods that should be eliminated from the patient’s diet for any
+     * reason.  This modifier applies to the entire nutrition order inclusive
+     * of the oral diet, nutritional supplements and enteral formula
+     * feedings.
      */
     public java.util.List<CodeableConcept> excludeFoodModifier() {
         return getList(CodeableConcept.class, PROPERTY_EXCLUDEFOODMODIFIER);
@@ -187,21 +233,24 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Oral nutritional products given in order to add further nutritional value to the patient's diet.
+     * Oral nutritional products given in order to add further nutritional
+     * value to the patient's diet.
      */
     public java.util.List<NutritionOrderSupplement> supplement() {
         return getList(NutritionOrderSupplement.class, PROPERTY_SUPPLEMENT);
     }
 
     /**
-     * Feeding provided through the gastrointestinal tract via a tube, catheter, or stoma that delivers nutrition distal to the oral cavity.
+     * Feeding provided through the gastrointestinal tract via a tube,
+     * catheter, or stoma that delivers nutrition distal to the oral cavity.
      */
     public NutritionOrderEnteralFormula enteralFormula() {
         return getObject(NutritionOrderEnteralFormula.class, PROPERTY_ENTERALFORMULA);
     }
 
     /**
-     * Comments made about the {{title}} by the requester, performer, subject or other participants.
+     * Comments made about the {{title}} by the requester, performer, subject
+     * or other participants.
      */
     public java.util.List<Annotation> note() {
         return getList(Annotation.class, PROPERTY_NOTE);
@@ -369,44 +418,61 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The time period and frequency at which the enteral formula should be delivered to the patient.
+         * The time period and frequency at which the enteral formula should be
+         * delivered to the patient.
          */
         public Timing schedule() {
             return getObject(Timing.class, PROPERTY_SCHEDULE);
         }
 
         /**
-         * The volume of formula to provide to the patient per the specified administration schedule.
+         * The volume of formula to provide to the patient per the specified
+         * administration schedule.
          */
         public Quantity quantity() {
             return getObject(Quantity.class, PROPERTY_QUANTITY);
         }
 
         /**
-         * The rate of administration of formula via a feeding pump, e.g. 60 mL per hour, according to the specified schedule.
+         * The rate of administration of formula via a feeding pump, e.g. 60 mL
+         * per hour, according to the specified schedule.
          */
         public Quantity rateQuantity() {
             return getObject(Quantity.class, PROPERTY_RATEQUANTITY);
         }
 
         /**
-         * The rate of administration of formula via a feeding pump, e.g. 60 mL per hour, according to the specified schedule.
+         * The rate of administration of formula via a feeding pump, e.g. 60 mL
+         * per hour, according to the specified schedule.
          */
         public Ratio rateRatio() {
             return getObject(Ratio.class, PROPERTY_RATERATIO);
@@ -486,79 +552,109 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The type of enteral or infant formula such as an adult standard formula with fiber or a soy-based infant formula.
+         * The type of enteral or infant formula such as an adult standard
+         * formula with fiber or a soy-based infant formula.
          */
         public CodeableConcept baseFormulaType() {
             return getObject(CodeableConcept.class, PROPERTY_BASEFORMULATYPE);
         }
 
         /**
-         * The product or brand name of the enteral or infant formula product such as "ACME Adult Standard Formula".
+         * The product or brand name of the enteral or infant formula product
+         * such as "ACME Adult Standard Formula".
          */
         public String baseFormulaProductName() {
             return getString(PROPERTY_BASEFORMULAPRODUCTNAME);
         }
 
         /**
-         * Indicates the type of modular component such as protein, carbohydrate, fat or fiber to be provided in addition to or mixed with the base formula.
+         * Indicates the type of modular component such as protein, carbohydrate,
+         * fat or fiber to be provided in addition to or mixed with the base
+         * formula.
          */
         public CodeableConcept additiveType() {
             return getObject(CodeableConcept.class, PROPERTY_ADDITIVETYPE);
         }
 
         /**
-         * The product or brand name of the type of modular component to be added to the formula.
+         * The product or brand name of the type of modular component to be added
+         * to the formula.
          */
         public String additiveProductName() {
             return getString(PROPERTY_ADDITIVEPRODUCTNAME);
         }
 
         /**
-         * The amount of energy (calories) that the formula should provide per specified volume, typically per mL or fluid oz.  For example, an infant may require a formula that provides 24 calories per fluid ounce or an adult may require an enteral formula that provides 1.5 calorie/mL.
+         * The amount of energy (calories) that the formula should provide per
+         * specified volume, typically per mL or fluid oz.  For example, an
+         * infant may require a formula that provides 24 calories per fluid ounce
+         * or an adult may require an enteral formula that provides 1.5
+         * calorie/mL.
          */
         public Quantity caloricDensity() {
             return getObject(Quantity.class, PROPERTY_CALORICDENSITY);
         }
 
         /**
-         * The route or physiological path of administration into the patient's gastrointestinal  tract for purposes of providing the formula feeding, e.g. nasogastric tube.
+         * The route or physiological path of administration into the patient's
+         * gastrointestinal  tract for purposes of providing the formula feeding,
+         * e.g. nasogastric tube.
          */
         public CodeableConcept routeofAdministration() {
             return getObject(CodeableConcept.class, PROPERTY_ROUTEOFADMINISTRATION);
         }
 
         /**
-         * Formula administration instructions as structured data.  This repeating structure allows for changing the administration rate or volume over time for both bolus and continuous feeding.  An example of this would be an instruction to increase the rate of continuous feeding every 2 hours.
+         * Formula administration instructions as structured data.  This
+         * repeating structure allows for changing the administration rate or
+         * volume over time for both bolus and continuous feeding.  An example of
+         * this would be an instruction to increase the rate of continuous
+         * feeding every 2 hours.
          */
         public java.util.List<NutritionOrderAdministration> administration() {
             return getList(NutritionOrderAdministration.class, PROPERTY_ADMINISTRATION);
         }
 
         /**
-         * The maximum total quantity of formula that may be administered to a subject over the period of time, e.g. 1440 mL over 24 hours.
+         * The maximum total quantity of formula that may be administered to a
+         * subject over the period of time, e.g. 1440 mL over 24 hours.
          */
         public Quantity maxVolumeToDeliver() {
             return getObject(Quantity.class, PROPERTY_MAXVOLUMETODELIVER);
         }
 
         /**
-         * Free text formula administration, feeding instructions or additional instructions or information.
+         * Free text formula administration, feeding instructions or additional
+         * instructions or information.
          */
         public String administrationInstruction() {
             return getString(PROPERTY_ADMINISTRATIONINSTRUCTION);
@@ -656,16 +752,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -746,58 +855,79 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The kind of diet or dietary restriction such as fiber restricted diet or diabetic diet.
+         * The kind of diet or dietary restriction such as fiber restricted diet
+         * or diabetic diet.
          */
         public java.util.List<CodeableConcept> type() {
             return getList(CodeableConcept.class, PROPERTY_TYPE);
         }
 
         /**
-         * The time period and frequency at which the diet should be given.  The diet should be given for the combination of all schedules if more than one schedule is present.
+         * The time period and frequency at which the diet should be given.  The
+         * diet should be given for the combination of all schedules if more than
+         * one schedule is present.
          */
         public java.util.List<Timing> schedule() {
             return getList(Timing.class, PROPERTY_SCHEDULE);
         }
 
         /**
-         * Class that defines the quantity and type of nutrient modifications (for example carbohydrate, fiber or sodium) required for the oral diet.
+         * Class that defines the quantity and type of nutrient modifications
+         * (for example carbohydrate, fiber or sodium) required for the oral
+         * diet.
          */
         public java.util.List<NutritionOrderNutrient> nutrient() {
             return getList(NutritionOrderNutrient.class, PROPERTY_NUTRIENT);
         }
 
         /**
-         * Class that describes any texture modifications required for the patient to safely consume various types of solid foods.
+         * Class that describes any texture modifications required for the
+         * patient to safely consume various types of solid foods.
          */
         public java.util.List<NutritionOrderTexture> texture() {
             return getList(NutritionOrderTexture.class, PROPERTY_TEXTURE);
         }
 
         /**
-         * The required consistency (e.g. honey-thick, nectar-thick, thin, thickened.) of liquids or fluids served to the patient.
+         * The required consistency (e.g. honey-thick, nectar-thick, thin,
+         * thickened.) of liquids or fluids served to the patient.
          */
         public java.util.List<CodeableConcept> fluidConsistencyType() {
             return getList(CodeableConcept.class, PROPERTY_FLUIDCONSISTENCYTYPE);
         }
 
         /**
-         * Free text or additional instructions or information pertaining to the oral diet.
+         * Free text or additional instructions or information pertaining to the
+         * oral diet.
          */
         public String instruction() {
             return getString(PROPERTY_INSTRUCTION);
@@ -883,37 +1013,54 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The kind of nutritional supplement product required such as a high protein or pediatric clear liquid supplement.
+         * The kind of nutritional supplement product required such as a high
+         * protein or pediatric clear liquid supplement.
          */
         public CodeableConcept type() {
             return getObject(CodeableConcept.class, PROPERTY_TYPE);
         }
 
         /**
-         * The product or brand name of the nutritional supplement such as "Acme Protein Shake".
+         * The product or brand name of the nutritional supplement such as "Acme
+         * Protein Shake".
          */
         public String productName() {
             return getString(PROPERTY_PRODUCTNAME);
         }
 
         /**
-         * The time period and frequency at which the supplement(s) should be given.  The supplement should be given for the combination of all schedules if more than one schedule is present.
+         * The time period and frequency at which the supplement(s) should be
+         * given.  The supplement should be given for the combination of all
+         * schedules if more than one schedule is present.
          */
         public java.util.List<Timing> schedule() {
             return getList(Timing.class, PROPERTY_SCHEDULE);
@@ -927,7 +1074,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Free text or additional instructions or information pertaining to the oral supplement.
+         * Free text or additional instructions or information pertaining to the
+         * oral supplement.
          */
         public String instruction() {
             return getString(PROPERTY_INSTRUCTION);
@@ -1005,30 +1153,45 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Any texture modifications (for solid foods) that should be made, e.g. easy to chew, chopped, ground, and pureed.
+         * Any texture modifications (for solid foods) that should be made, e.g.
+         * easy to chew, chopped, ground, and pureed.
          */
         public CodeableConcept modifier() {
             return getObject(CodeableConcept.class, PROPERTY_MODIFIER);
         }
 
         /**
-         * The food type(s) (e.g. meats, all foods)  that the texture modification applies to.  This could be all foods types.
+         * The food type(s) (e.g. meats, all foods)  that the texture
+         * modification applies to.  This could be all foods types.
          */
         public CodeableConcept foodType() {
             return getObject(CodeableConcept.class, PROPERTY_FOODTYPE);

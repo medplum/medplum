@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -30,7 +28,8 @@ public class ContactDetail extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
@@ -44,7 +43,8 @@ public class ContactDetail extends FhirResource {
     }
 
     /**
-     * The contact details for the individual (if a name was provided) or the organization.
+     * The contact details for the individual (if a name was provided) or the
+     * organization.
      */
     public java.util.List<ContactPoint> telecom() {
         return getList(ContactPoint.class, PROPERTY_TELECOM);

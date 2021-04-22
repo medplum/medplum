@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -35,7 +33,8 @@ public class RelatedArtifact extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
@@ -49,42 +48,48 @@ public class RelatedArtifact extends FhirResource {
     }
 
     /**
-     * A short label that can be used to reference the citation from elsewhere in the containing artifact, such as a footnote index.
+     * A short label that can be used to reference the citation from
+     * elsewhere in the containing artifact, such as a footnote index.
      */
     public String label() {
         return getString(PROPERTY_LABEL);
     }
 
     /**
-     * A brief description of the document or knowledge resource being referenced, suitable for display to a consumer.
+     * A brief description of the document or knowledge resource being
+     * referenced, suitable for display to a consumer.
      */
     public String display() {
         return getString(PROPERTY_DISPLAY);
     }
 
     /**
-     * A bibliographic citation for the related artifact. This text SHOULD be formatted according to an accepted citation format.
+     * A bibliographic citation for the related artifact. This text SHOULD be
+     * formatted according to an accepted citation format.
      */
     public String citation() {
         return getString(PROPERTY_CITATION);
     }
 
     /**
-     * A url for the artifact that can be followed to access the actual content.
+     * A url for the artifact that can be followed to access the actual
+     * content.
      */
     public String url() {
         return getString(PROPERTY_URL);
     }
 
     /**
-     * The document being referenced, represented as an attachment. This is exclusive with the resource element.
+     * The document being referenced, represented as an attachment. This is
+     * exclusive with the resource element.
      */
     public Attachment document() {
         return getObject(Attachment.class, PROPERTY_DOCUMENT);
     }
 
     /**
-     * The related resource, such as a library, value set, profile, or other knowledge resource.
+     * The related resource, such as a library, value set, profile, or other
+     * knowledge resource.
      */
     public String resource() {
         return getString(PROPERTY_RESOURCE);

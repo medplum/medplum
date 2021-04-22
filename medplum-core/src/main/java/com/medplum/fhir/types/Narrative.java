@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -30,14 +28,17 @@ public class Narrative extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * The status of the narrative - whether it's entirely generated (from just the defined data or the extensions too), or whether a human authored it and it may contain additional data.
+     * The status of the narrative - whether it's entirely generated (from
+     * just the defined data or the extensions too), or whether a human
+     * authored it and it may contain additional data.
      */
     public String status() {
         return getString(PROPERTY_STATUS);

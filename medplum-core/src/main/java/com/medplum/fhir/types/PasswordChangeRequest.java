@@ -5,11 +5,7 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 public class PasswordChangeRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "PasswordChangeRequest";
@@ -31,14 +27,15 @@ public class PasswordChangeRequest extends FhirResource {
     }
 
     /**
-     * The user requesting the code
+     * The user requesting the password change.
      */
     public Reference user() {
         return getObject(Reference.class, PROPERTY_USER);
     }
 
     /**
-     * Redirect URI
+     * Redirect URI used when redirecting a client back to the client
+     * application.
      */
     public String redirectUri() {
         return getString(PROPERTY_REDIRECTURI);

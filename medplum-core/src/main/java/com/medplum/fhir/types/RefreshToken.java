@@ -5,11 +5,7 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 public class RefreshToken extends FhirResource {
     public static final String RESOURCE_TYPE = "RefreshToken";
@@ -32,21 +28,21 @@ public class RefreshToken extends FhirResource {
     }
 
     /**
-     * The client requesting the code
+     * The client requesting the code.
      */
     public Reference client() {
         return getObject(Reference.class, PROPERTY_CLIENT);
     }
 
     /**
-     * The user requesting the code
+     * The user requesting the code.
      */
     public Reference user() {
         return getObject(Reference.class, PROPERTY_USER);
     }
 
     /**
-     * OAuth scope
+     * OAuth scope or scopes.
      */
     public String scope() {
         return getString(PROPERTY_SCOPE);

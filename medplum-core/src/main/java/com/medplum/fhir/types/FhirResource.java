@@ -15,14 +15,17 @@ public class FhirResource extends FhirObject {
     }
 
     /**
-     * The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.
+     * The logical id of the resource, as used in the URL for the resource. Once
+     * assigned, this value never changes.
      */
     public String id() {
         return getString("id");
     }
 
     /**
-     * The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.
+     * The metadata about the resource. This is content that is maintained by the
+     * infrastructure. Changes to the content might not always be associated with
+     * version changes to the resource.
      */
     public Meta meta() {
         return getObject(Meta.class, "meta");
@@ -35,7 +38,7 @@ public class FhirResource extends FhirObject {
                 .build();
     }
 
-    public static abstract class Builder {
+    public abstract static class Builder {
         protected final JsonObjectBuilder b;
 
         protected Builder(final String resourceType) {

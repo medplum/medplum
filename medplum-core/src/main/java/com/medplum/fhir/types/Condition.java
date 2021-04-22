@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -60,7 +58,10 @@ public class Condition extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -74,30 +75,50 @@ public class Condition extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Business identifiers assigned to this condition by the performer or other systems which remain constant as the resource is updated and propagates from server to server.
+     * Business identifiers assigned to this condition by the performer or
+     * other systems which remain constant as the resource is updated and
+     * propagates from server to server.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
@@ -111,7 +132,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The verification status to support the clinical status of the condition.
+     * The verification status to support the clinical status of the
+     * condition.
      */
     public CodeableConcept verificationStatus() {
         return getObject(CodeableConcept.class, PROPERTY_VERIFICATIONSTATUS);
@@ -125,7 +147,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * A subjective assessment of the severity of the condition as evaluated by the clinician.
+     * A subjective assessment of the severity of the condition as evaluated
+     * by the clinician.
      */
     public CodeableConcept severity() {
         return getObject(CodeableConcept.class, PROPERTY_SEVERITY);
@@ -146,98 +169,122 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Indicates the patient or group who the condition record is associated with.
+     * Indicates the patient or group who the condition record is associated
+     * with.
      */
     public Reference subject() {
         return getObject(Reference.class, PROPERTY_SUBJECT);
     }
 
     /**
-     * The Encounter during which this Condition was created or to which the creation of this record is tightly associated.
+     * The Encounter during which this Condition was created or to which the
+     * creation of this record is tightly associated.
      */
     public Reference encounter() {
         return getObject(Reference.class, PROPERTY_ENCOUNTER);
     }
 
     /**
-     * Estimated or actual date or date-time  the condition began, in the opinion of the clinician.
+     * Estimated or actual date or date-time  the condition began, in the
+     * opinion of the clinician.
      */
     public String onsetDateTime() {
         return getString(PROPERTY_ONSETDATETIME);
     }
 
     /**
-     * Estimated or actual date or date-time  the condition began, in the opinion of the clinician.
+     * Estimated or actual date or date-time  the condition began, in the
+     * opinion of the clinician.
      */
     public Age onsetAge() {
         return getObject(Age.class, PROPERTY_ONSETAGE);
     }
 
     /**
-     * Estimated or actual date or date-time  the condition began, in the opinion of the clinician.
+     * Estimated or actual date or date-time  the condition began, in the
+     * opinion of the clinician.
      */
     public Period onsetPeriod() {
         return getObject(Period.class, PROPERTY_ONSETPERIOD);
     }
 
     /**
-     * Estimated or actual date or date-time  the condition began, in the opinion of the clinician.
+     * Estimated or actual date or date-time  the condition began, in the
+     * opinion of the clinician.
      */
     public Range onsetRange() {
         return getObject(Range.class, PROPERTY_ONSETRANGE);
     }
 
     /**
-     * Estimated or actual date or date-time  the condition began, in the opinion of the clinician.
+     * Estimated or actual date or date-time  the condition began, in the
+     * opinion of the clinician.
      */
     public String onsetString() {
         return getString(PROPERTY_ONSETSTRING);
     }
 
     /**
-     * The date or estimated date that the condition resolved or went into remission. This is called "abatement" because of the many overloaded connotations associated with "remission" or "resolution" - Conditions are never really resolved, but they can abate.
+     * The date or estimated date that the condition resolved or went into
+     * remission. This is called "abatement" because of the many overloaded
+     * connotations associated with "remission" or "resolution" - Conditions
+     * are never really resolved, but they can abate.
      */
     public String abatementDateTime() {
         return getString(PROPERTY_ABATEMENTDATETIME);
     }
 
     /**
-     * The date or estimated date that the condition resolved or went into remission. This is called "abatement" because of the many overloaded connotations associated with "remission" or "resolution" - Conditions are never really resolved, but they can abate.
+     * The date or estimated date that the condition resolved or went into
+     * remission. This is called "abatement" because of the many overloaded
+     * connotations associated with "remission" or "resolution" - Conditions
+     * are never really resolved, but they can abate.
      */
     public Age abatementAge() {
         return getObject(Age.class, PROPERTY_ABATEMENTAGE);
     }
 
     /**
-     * The date or estimated date that the condition resolved or went into remission. This is called "abatement" because of the many overloaded connotations associated with "remission" or "resolution" - Conditions are never really resolved, but they can abate.
+     * The date or estimated date that the condition resolved or went into
+     * remission. This is called "abatement" because of the many overloaded
+     * connotations associated with "remission" or "resolution" - Conditions
+     * are never really resolved, but they can abate.
      */
     public Period abatementPeriod() {
         return getObject(Period.class, PROPERTY_ABATEMENTPERIOD);
     }
 
     /**
-     * The date or estimated date that the condition resolved or went into remission. This is called "abatement" because of the many overloaded connotations associated with "remission" or "resolution" - Conditions are never really resolved, but they can abate.
+     * The date or estimated date that the condition resolved or went into
+     * remission. This is called "abatement" because of the many overloaded
+     * connotations associated with "remission" or "resolution" - Conditions
+     * are never really resolved, but they can abate.
      */
     public Range abatementRange() {
         return getObject(Range.class, PROPERTY_ABATEMENTRANGE);
     }
 
     /**
-     * The date or estimated date that the condition resolved or went into remission. This is called "abatement" because of the many overloaded connotations associated with "remission" or "resolution" - Conditions are never really resolved, but they can abate.
+     * The date or estimated date that the condition resolved or went into
+     * remission. This is called "abatement" because of the many overloaded
+     * connotations associated with "remission" or "resolution" - Conditions
+     * are never really resolved, but they can abate.
      */
     public String abatementString() {
         return getString(PROPERTY_ABATEMENTSTRING);
     }
 
     /**
-     * The recordedDate represents when this particular Condition record was created in the system, which is often a system-generated date.
+     * The recordedDate represents when this particular Condition record was
+     * created in the system, which is often a system-generated date.
      */
     public java.time.Instant recordedDate() {
         return java.time.Instant.parse(data.getString(PROPERTY_RECORDEDDATE));
     }
 
     /**
-     * Individual who recorded the record and takes responsibility for its content.
+     * Individual who recorded the record and takes responsibility for its
+     * content.
      */
     public Reference recorder() {
         return getObject(Reference.class, PROPERTY_RECORDER);
@@ -251,21 +298,26 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Clinical stage or grade of a condition. May include formal severity assessments.
+     * Clinical stage or grade of a condition. May include formal severity
+     * assessments.
      */
     public java.util.List<ConditionStage> stage() {
         return getList(ConditionStage.class, PROPERTY_STAGE);
     }
 
     /**
-     * Supporting evidence / manifestations that are the basis of the Condition's verification status, such as evidence that confirmed or refuted the condition.
+     * Supporting evidence / manifestations that are the basis of the
+     * Condition's verification status, such as evidence that confirmed or
+     * refuted the condition.
      */
     public java.util.List<ConditionEvidence> evidence() {
         return getList(ConditionEvidence.class, PROPERTY_EVIDENCE);
     }
 
     /**
-     * Additional information about the Condition. This is a general notes/comments entry  for description of the Condition, its diagnosis and prognosis.
+     * Additional information about the Condition. This is a general
+     * notes/comments entry  for description of the Condition, its diagnosis
+     * and prognosis.
      */
     public java.util.List<Annotation> note() {
         return getList(Annotation.class, PROPERTY_NOTE);
@@ -471,23 +523,37 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * A manifestation or symptom that led to the recording of this condition.
+         * A manifestation or symptom that led to the recording of this
+         * condition.
          */
         public java.util.List<CodeableConcept> code() {
             return getList(CodeableConcept.class, PROPERTY_CODE);
@@ -558,30 +624,45 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * A simple summary of the stage such as "Stage 3". The determination of the stage is disease-specific.
+         * A simple summary of the stage such as "Stage 3". The determination of
+         * the stage is disease-specific.
          */
         public CodeableConcept summary() {
             return getObject(CodeableConcept.class, PROPERTY_SUMMARY);
         }
 
         /**
-         * Reference to a formal record of the evidence on which the staging assessment is based.
+         * Reference to a formal record of the evidence on which the staging
+         * assessment is based.
          */
         public java.util.List<Reference> assessment() {
             return getList(Reference.class, PROPERTY_ASSESSMENT);

@@ -5,11 +5,7 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 public class ClientApplication extends FhirResource {
     public static final String RESOURCE_TYPE = "ClientApplication";
@@ -31,14 +27,15 @@ public class ClientApplication extends FhirResource {
     }
 
     /**
-     * Client secret
+     * Client secret string used to verify the identity of a client.
      */
     public String secret() {
         return getString(PROPERTY_SECRET);
     }
 
     /**
-     * Redirect URI
+     * Redirect URI used when redirecting a client back to the client
+     * application.
      */
     public String redirectUri() {
         return getString(PROPERTY_REDIRECTURI);

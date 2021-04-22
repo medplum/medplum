@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -56,7 +54,10 @@ public class MedicationAdministration extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -70,37 +71,61 @@ public class MedicationAdministration extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Identifiers associated with this Medication Administration that are defined by business processes and/or used to refer to it when a direct URL reference to the resource itself is not appropriate. They are business identifiers assigned to this resource by the performer or other systems and remain constant as the resource is updated and propagates from server to server.
+     * Identifiers associated with this Medication Administration that are
+     * defined by business processes and/or used to refer to it when a direct
+     * URL reference to the resource itself is not appropriate. They are
+     * business identifiers assigned to this resource by the performer or
+     * other systems and remain constant as the resource is updated and
+     * propagates from server to server.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
     }
 
     /**
-     * A protocol, guideline, orderset, or other definition that was adhered to in whole or in part by this event.
+     * A protocol, guideline, orderset, or other definition that was adhered
+     * to in whole or in part by this event.
      */
     public java.util.List<String> instantiates() {
         return getList(String.class, PROPERTY_INSTANTIATES);
@@ -114,7 +139,10 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Will generally be set to show that the administration has been completed.  For some long running administrations such as infusions, it is possible for an administration to be started but not completed or it may be paused while some other process is under way.
+     * Will generally be set to show that the administration has been
+     * completed.  For some long running administrations such as infusions,
+     * it is possible for an administration to be started but not completed
+     * or it may be paused while some other process is under way.
      */
     public String status() {
         return getString(PROPERTY_STATUS);
@@ -128,21 +156,28 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Indicates where the medication is expected to be consumed or administered.
+     * Indicates where the medication is expected to be consumed or
+     * administered.
      */
     public CodeableConcept category() {
         return getObject(CodeableConcept.class, PROPERTY_CATEGORY);
     }
 
     /**
-     * Identifies the medication that was administered. This is either a link to a resource representing the details of the medication or a simple attribute carrying a code that identifies the medication from a known list of medications.
+     * Identifies the medication that was administered. This is either a link
+     * to a resource representing the details of the medication or a simple
+     * attribute carrying a code that identifies the medication from a known
+     * list of medications.
      */
     public CodeableConcept medicationCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_MEDICATIONCODEABLECONCEPT);
     }
 
     /**
-     * Identifies the medication that was administered. This is either a link to a resource representing the details of the medication or a simple attribute carrying a code that identifies the medication from a known list of medications.
+     * Identifies the medication that was administered. This is either a link
+     * to a resource representing the details of the medication or a simple
+     * attribute carrying a code that identifies the medication from a known
+     * list of medications.
      */
     public Reference medicationReference() {
         return getObject(Reference.class, PROPERTY_MEDICATIONREFERENCE);
@@ -156,35 +191,44 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The visit, admission, or other contact between patient and health care provider during which the medication administration was performed.
+     * The visit, admission, or other contact between patient and health care
+     * provider during which the medication administration was performed.
      */
     public Reference context() {
         return getObject(Reference.class, PROPERTY_CONTEXT);
     }
 
     /**
-     * Additional information (for example, patient height and weight) that supports the administration of the medication.
+     * Additional information (for example, patient height and weight) that
+     * supports the administration of the medication.
      */
     public java.util.List<Reference> supportingInformation() {
         return getList(Reference.class, PROPERTY_SUPPORTINGINFORMATION);
     }
 
     /**
-     * A specific date/time or interval of time during which the administration took place (or did not take place, when the 'notGiven' attribute is true). For many administrations, such as swallowing a tablet the use of dateTime is more appropriate.
+     * A specific date/time or interval of time during which the
+     * administration took place (or did not take place, when the 'notGiven'
+     * attribute is true). For many administrations, such as swallowing a
+     * tablet the use of dateTime is more appropriate.
      */
     public String effectiveDateTime() {
         return getString(PROPERTY_EFFECTIVEDATETIME);
     }
 
     /**
-     * A specific date/time or interval of time during which the administration took place (or did not take place, when the 'notGiven' attribute is true). For many administrations, such as swallowing a tablet the use of dateTime is more appropriate.
+     * A specific date/time or interval of time during which the
+     * administration took place (or did not take place, when the 'notGiven'
+     * attribute is true). For many administrations, such as swallowing a
+     * tablet the use of dateTime is more appropriate.
      */
     public Period effectivePeriod() {
         return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
     }
 
     /**
-     * Indicates who or what performed the medication administration and how they were involved.
+     * Indicates who or what performed the medication administration and how
+     * they were involved.
      */
     public java.util.List<MedicationAdministrationPerformer> performer() {
         return getList(MedicationAdministrationPerformer.class, PROPERTY_PERFORMER);
@@ -198,42 +242,48 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Condition or observation that supports why the medication was administered.
+     * Condition or observation that supports why the medication was
+     * administered.
      */
     public java.util.List<Reference> reasonReference() {
         return getList(Reference.class, PROPERTY_REASONREFERENCE);
     }
 
     /**
-     * The original request, instruction or authority to perform the administration.
+     * The original request, instruction or authority to perform the
+     * administration.
      */
     public Reference request() {
         return getObject(Reference.class, PROPERTY_REQUEST);
     }
 
     /**
-     * The device used in administering the medication to the patient.  For example, a particular infusion pump.
+     * The device used in administering the medication to the patient.  For
+     * example, a particular infusion pump.
      */
     public java.util.List<Reference> device() {
         return getList(Reference.class, PROPERTY_DEVICE);
     }
 
     /**
-     * Extra information about the medication administration that is not conveyed by the other attributes.
+     * Extra information about the medication administration that is not
+     * conveyed by the other attributes.
      */
     public java.util.List<Annotation> note() {
         return getList(Annotation.class, PROPERTY_NOTE);
     }
 
     /**
-     * Describes the medication dosage information details e.g. dose, rate, site, route, etc.
+     * Describes the medication dosage information details e.g. dose, rate,
+     * site, route, etc.
      */
     public MedicationAdministrationDosage dosage() {
         return getObject(MedicationAdministrationDosage.class, PROPERTY_DOSAGE);
     }
 
     /**
-     * A summary of the events of interest that have occurred, such as when the administration was verified.
+     * A summary of the events of interest that have occurred, such as when
+     * the administration was verified.
      */
     public java.util.List<Reference> eventHistory() {
         return getList(Reference.class, PROPERTY_EVENTHISTORY);
@@ -424,65 +474,98 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Free text dosage can be used for cases where the dosage administered is too complex to code. When coded dosage is present, the free text dosage may still be present for display to humans.The dosage instructions should reflect the dosage of the medication that was administered.
+         * Free text dosage can be used for cases where the dosage administered
+         * is too complex to code. When coded dosage is present, the free text
+         * dosage may still be present for display to humans.The dosage
+         * instructions should reflect the dosage of the medication that was
+         * administered.
          */
         public String text() {
             return getString(PROPERTY_TEXT);
         }
 
         /**
-         * A coded specification of the anatomic site where the medication first entered the body.  For example, "left arm".
+         * A coded specification of the anatomic site where the medication first
+         * entered the body.  For example, "left arm".
          */
         public CodeableConcept site() {
             return getObject(CodeableConcept.class, PROPERTY_SITE);
         }
 
         /**
-         * A code specifying the route or physiological path of administration of a therapeutic agent into or onto the patient.  For example, topical, intravenous, etc.
+         * A code specifying the route or physiological path of administration of
+         * a therapeutic agent into or onto the patient.  For example, topical,
+         * intravenous, etc.
          */
         public CodeableConcept route() {
             return getObject(CodeableConcept.class, PROPERTY_ROUTE);
         }
 
         /**
-         * A coded value indicating the method by which the medication is intended to be or was introduced into or on the body.  This attribute will most often NOT be populated.  It is most commonly used for injections.  For example, Slow Push, Deep IV.
+         * A coded value indicating the method by which the medication is
+         * intended to be or was introduced into or on the body.  This attribute
+         * will most often NOT be populated.  It is most commonly used for
+         * injections.  For example, Slow Push, Deep IV.
          */
         public CodeableConcept method() {
             return getObject(CodeableConcept.class, PROPERTY_METHOD);
         }
 
         /**
-         * The amount of the medication given at one administration event.   Use this value when the administration is essentially an instantaneous event such as a swallowing a tablet or giving an injection.
+         * The amount of the medication given at one administration event.   Use
+         * this value when the administration is essentially an instantaneous
+         * event such as a swallowing a tablet or giving an injection.
          */
         public Quantity dose() {
             return getObject(Quantity.class, PROPERTY_DOSE);
         }
 
         /**
-         * Identifies the speed with which the medication was or will be introduced into the patient.  Typically, the rate for an infusion e.g. 100 ml per 1 hour or 100 ml/hr.  May also be expressed as a rate per unit of time, e.g. 500 ml per 2 hours.  Other examples:  200 mcg/min or 200 mcg/1 minute; 1 liter/8 hours.
+         * Identifies the speed with which the medication was or will be
+         * introduced into the patient.  Typically, the rate for an infusion e.g.
+         * 100 ml per 1 hour or 100 ml/hr.  May also be expressed as a rate per
+         * unit of time, e.g. 500 ml per 2 hours.  Other examples:  200 mcg/min
+         * or 200 mcg/1 minute; 1 liter/8 hours.
          */
         public Ratio rateRatio() {
             return getObject(Ratio.class, PROPERTY_RATERATIO);
         }
 
         /**
-         * Identifies the speed with which the medication was or will be introduced into the patient.  Typically, the rate for an infusion e.g. 100 ml per 1 hour or 100 ml/hr.  May also be expressed as a rate per unit of time, e.g. 500 ml per 2 hours.  Other examples:  200 mcg/min or 200 mcg/1 minute; 1 liter/8 hours.
+         * Identifies the speed with which the medication was or will be
+         * introduced into the patient.  Typically, the rate for an infusion e.g.
+         * 100 ml per 1 hour or 100 ml/hr.  May also be expressed as a rate per
+         * unit of time, e.g. 500 ml per 2 hours.  Other examples:  200 mcg/min
+         * or 200 mcg/1 minute; 1 liter/8 hours.
          */
         public Quantity rateQuantity() {
             return getObject(Quantity.class, PROPERTY_RATEQUANTITY);
@@ -570,23 +653,37 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Distinguishes the type of involvement of the performer in the medication administration.
+         * Distinguishes the type of involvement of the performer in the
+         * medication administration.
          */
         public CodeableConcept function() {
             return getObject(CodeableConcept.class, PROPERTY_FUNCTION);

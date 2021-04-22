@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -30,7 +28,8 @@ public class CodeableConcept extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
@@ -44,7 +43,9 @@ public class CodeableConcept extends FhirResource {
     }
 
     /**
-     * A human language representation of the concept as seen/selected/uttered by the user who entered the data and/or which represents the intended meaning of the user.
+     * A human language representation of the concept as
+     * seen/selected/uttered by the user who entered the data and/or which
+     * represents the intended meaning of the user.
      */
     public String text() {
         return getString(PROPERTY_TEXT);

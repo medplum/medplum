@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -33,21 +31,26 @@ public class Distance extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * The value of the measured amount. The value includes an implicit precision in the presentation of the value.
+     * The value of the measured amount. The value includes an implicit
+     * precision in the presentation of the value.
      */
     public Double value() {
         return data.getJsonNumber(PROPERTY_VALUE).doubleValue();
     }
 
     /**
-     * How the value should be understood and represented - whether the actual value is greater or less than the stated value due to measurement issues; e.g. if the comparator is "<" , then the real value is < stated value.
+     * How the value should be understood and represented - whether the
+     * actual value is greater or less than the stated value due to
+     * measurement issues; e.g. if the comparator is "<" , then the real
+     * value is < stated value.
      */
     public String comparator() {
         return getString(PROPERTY_COMPARATOR);
@@ -61,14 +64,16 @@ public class Distance extends FhirResource {
     }
 
     /**
-     * The identification of the system that provides the coded form of the unit.
+     * The identification of the system that provides the coded form of the
+     * unit.
      */
     public String system() {
         return getString(PROPERTY_SYSTEM);
     }
 
     /**
-     * A computer processable form of the unit in some unit representation system.
+     * A computer processable form of the unit in some unit representation
+     * system.
      */
     public String code() {
         return getString(PROPERTY_CODE);

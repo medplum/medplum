@@ -5,11 +5,7 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 public class User extends FhirResource {
     public static final String RESOURCE_TYPE = "User";
@@ -33,28 +29,28 @@ public class User extends FhirResource {
     }
 
     /**
-     * User email
+     * User email.
      */
     public String email() {
         return getString(PROPERTY_EMAIL);
     }
 
     /**
-     * Encrypted hash of the user's password
+     * Encrypted hash of the user's password.
      */
     public String passwordHash() {
         return getString(PROPERTY_PASSWORDHASH);
     }
 
     /**
-     * Optional reference to the user's patient identity
+     * Optional reference to the user's patient identity.
      */
     public Reference patient() {
         return getObject(Reference.class, PROPERTY_PATIENT);
     }
 
     /**
-     * Optional reference to the user's practitioner identity
+     * Optional reference to the user's practitioner identity.
      */
     public Reference practitioner() {
         return getObject(Reference.class, PROPERTY_PRACTITIONER);

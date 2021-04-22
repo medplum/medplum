@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -33,42 +31,48 @@ public class UsageContext extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * A code that identifies the type of context being specified by this usage context.
+     * A code that identifies the type of context being specified by this
+     * usage context.
      */
     public Coding code() {
         return getObject(Coding.class, PROPERTY_CODE);
     }
 
     /**
-     * A value that defines the context specified in this context of use. The interpretation of the value is defined by the code.
+     * A value that defines the context specified in this context of use. The
+     * interpretation of the value is defined by the code.
      */
     public CodeableConcept valueCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
     }
 
     /**
-     * A value that defines the context specified in this context of use. The interpretation of the value is defined by the code.
+     * A value that defines the context specified in this context of use. The
+     * interpretation of the value is defined by the code.
      */
     public Quantity valueQuantity() {
         return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
     }
 
     /**
-     * A value that defines the context specified in this context of use. The interpretation of the value is defined by the code.
+     * A value that defines the context specified in this context of use. The
+     * interpretation of the value is defined by the code.
      */
     public Range valueRange() {
         return getObject(Range.class, PROPERTY_VALUERANGE);
     }
 
     /**
-     * A value that defines the context specified in this context of use. The interpretation of the value is defined by the code.
+     * A value that defines the context specified in this context of use. The
+     * interpretation of the value is defined by the code.
      */
     public Reference valueReference() {
         return getObject(Reference.class, PROPERTY_VALUEREFERENCE);

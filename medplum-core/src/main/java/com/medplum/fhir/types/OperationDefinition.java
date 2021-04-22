@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -61,7 +59,10 @@ public class OperationDefinition extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -75,58 +76,93 @@ public class OperationDefinition extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * An absolute URI that is used to identify this operation definition when it is referenced in a specification, model, design or an instance; also called its canonical identifier. This SHOULD be globally unique and SHOULD be a literal address at which at which an authoritative instance of this operation definition is (or will be) published. This URL can be the target of a canonical reference. It SHALL remain the same when the operation definition is stored on different servers.
+     * An absolute URI that is used to identify this operation definition
+     * when it is referenced in a specification, model, design or an
+     * instance; also called its canonical identifier. This SHOULD be
+     * globally unique and SHOULD be a literal address at which at which an
+     * authoritative instance of this operation definition is (or will be)
+     * published. This URL can be the target of a canonical reference. It
+     * SHALL remain the same when the operation definition is stored on
+     * different servers.
      */
     public String url() {
         return getString(PROPERTY_URL);
     }
 
     /**
-     * The identifier that is used to identify this version of the operation definition when it is referenced in a specification, model, design or instance. This is an arbitrary value managed by the operation definition author and is not expected to be globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a managed version is not available. There is also no expectation that versions can be placed in a lexicographical sequence.
+     * The identifier that is used to identify this version of the operation
+     * definition when it is referenced in a specification, model, design or
+     * instance. This is an arbitrary value managed by the operation
+     * definition author and is not expected to be globally unique. For
+     * example, it might be a timestamp (e.g. yyyymmdd) if a managed version
+     * is not available. There is also no expectation that versions can be
+     * placed in a lexicographical sequence.
      */
     public String version() {
         return getString(PROPERTY_VERSION);
     }
 
     /**
-     * A natural language name identifying the operation definition. This name should be usable as an identifier for the module by machine processing applications such as code generation.
+     * A natural language name identifying the operation definition. This
+     * name should be usable as an identifier for the module by machine
+     * processing applications such as code generation.
      */
     public String name() {
         return getString(PROPERTY_NAME);
     }
 
     /**
-     * A short, descriptive, user-friendly title for the operation definition.
+     * A short, descriptive, user-friendly title for the operation
+     * definition.
      */
     public String title() {
         return getString(PROPERTY_TITLE);
     }
 
     /**
-     * The status of this operation definition. Enables tracking the life-cycle of the content.
+     * The status of this operation definition. Enables tracking the
+     * life-cycle of the content.
      */
     public String status() {
         return getString(PROPERTY_STATUS);
@@ -140,63 +176,79 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * A Boolean value to indicate that this operation definition is authored for testing purposes (or education/evaluation/marketing) and is not intended to be used for genuine usage.
+     * A Boolean value to indicate that this operation definition is authored
+     * for testing purposes (or education/evaluation/marketing) and is not
+     * intended to be used for genuine usage.
      */
     public Boolean experimental() {
         return data.getBoolean(PROPERTY_EXPERIMENTAL);
     }
 
     /**
-     * The date  (and optionally time) when the operation definition was published. The date must change when the business version changes and it must change if the status code changes. In addition, it should change when the substantive content of the operation definition changes.
+     * The date  (and optionally time) when the operation definition was
+     * published. The date must change when the business version changes and
+     * it must change if the status code changes. In addition, it should
+     * change when the substantive content of the operation definition
+     * changes.
      */
     public java.time.Instant date() {
         return java.time.Instant.parse(data.getString(PROPERTY_DATE));
     }
 
     /**
-     * The name of the organization or individual that published the operation definition.
+     * The name of the organization or individual that published the
+     * operation definition.
      */
     public String publisher() {
         return getString(PROPERTY_PUBLISHER);
     }
 
     /**
-     * Contact details to assist a user in finding and communicating with the publisher.
+     * Contact details to assist a user in finding and communicating with the
+     * publisher.
      */
     public java.util.List<ContactDetail> contact() {
         return getList(ContactDetail.class, PROPERTY_CONTACT);
     }
 
     /**
-     * A free text natural language description of the operation definition from a consumer's perspective.
+     * A free text natural language description of the operation definition
+     * from a consumer's perspective.
      */
     public String description() {
         return getString(PROPERTY_DESCRIPTION);
     }
 
     /**
-     * The content was developed with a focus and intent of supporting the contexts that are listed. These contexts may be general categories (gender, age, ...) or may be references to specific programs (insurance plans, studies, ...) and may be used to assist with indexing and searching for appropriate operation definition instances.
+     * The content was developed with a focus and intent of supporting the
+     * contexts that are listed. These contexts may be general categories
+     * (gender, age, ...) or may be references to specific programs
+     * (insurance plans, studies, ...) and may be used to assist with
+     * indexing and searching for appropriate operation definition instances.
      */
     public java.util.List<UsageContext> useContext() {
         return getList(UsageContext.class, PROPERTY_USECONTEXT);
     }
 
     /**
-     * A legal or geographic region in which the operation definition is intended to be used.
+     * A legal or geographic region in which the operation definition is
+     * intended to be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
         return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
     }
 
     /**
-     * Explanation of why this operation definition is needed and why it has been designed as it has.
+     * Explanation of why this operation definition is needed and why it has
+     * been designed as it has.
      */
     public String purpose() {
         return getString(PROPERTY_PURPOSE);
     }
 
     /**
-     * Whether the operation affects state. Side effects such as producing audit trail entries do not count as 'affecting  state'.
+     * Whether the operation affects state. Side effects such as producing
+     * audit trail entries do not count as 'affecting  state'.
      */
     public Boolean affectsState() {
         return data.getBoolean(PROPERTY_AFFECTSSTATE);
@@ -217,7 +269,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Indicates that this operation definition is a constraining profile on the base.
+     * Indicates that this operation definition is a constraining profile on
+     * the base.
      */
     public String base() {
         return getString(PROPERTY_BASE);
@@ -231,35 +284,44 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Indicates whether this operation or named query can be invoked at the system level (e.g. without needing to choose a resource type for the context).
+     * Indicates whether this operation or named query can be invoked at the
+     * system level (e.g. without needing to choose a resource type for the
+     * context).
      */
     public Boolean system() {
         return data.getBoolean(PROPERTY_SYSTEM);
     }
 
     /**
-     * Indicates whether this operation or named query can be invoked at the resource type level for any given resource type level (e.g. without needing to choose a specific resource id for the context).
+     * Indicates whether this operation or named query can be invoked at the
+     * resource type level for any given resource type level (e.g. without
+     * needing to choose a specific resource id for the context).
      */
     public Boolean type() {
         return data.getBoolean(PROPERTY_TYPE);
     }
 
     /**
-     * Indicates whether this operation can be invoked on a particular instance of one of the given types.
+     * Indicates whether this operation can be invoked on a particular
+     * instance of one of the given types.
      */
     public Boolean instance() {
         return data.getBoolean(PROPERTY_INSTANCE);
     }
 
     /**
-     * Additional validation information for the in parameters - a single profile that covers all the parameters. The profile is a constraint on the parameters resource as a whole.
+     * Additional validation information for the in parameters - a single
+     * profile that covers all the parameters. The profile is a constraint on
+     * the parameters resource as a whole.
      */
     public String inputProfile() {
         return getString(PROPERTY_INPUTPROFILE);
     }
 
     /**
-     * Additional validation information for the out parameters - a single profile that covers all the parameters. The profile is a constraint on the parameters resource.
+     * Additional validation information for the out parameters - a single
+     * profile that covers all the parameters. The profile is a constraint on
+     * the parameters resource.
      */
     public String outputProfile() {
         return getString(PROPERTY_OUTPUTPROFILE);
@@ -273,7 +335,9 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Defines an appropriate combination of parameters to use when invoking this operation, to help code generators when generating overloaded parameter sets for this operation.
+     * Defines an appropriate combination of parameters to use when invoking
+     * this operation, to help code generators when generating overloaded
+     * parameter sets for this operation.
      */
     public java.util.List<OperationDefinitionOverload> overload() {
         return getList(OperationDefinitionOverload.class, PROPERTY_OVERLOAD);
@@ -484,30 +548,46 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Indicates the degree of conformance expectations associated with this binding - that is, the degree to which the provided value set must be adhered to in the instances.
+         * Indicates the degree of conformance expectations associated with this
+         * binding - that is, the degree to which the provided value set must be
+         * adhered to in the instances.
          */
         public String strength() {
             return getString(PROPERTY_STRENGTH);
         }
 
         /**
-         * Points to the value set or external definition (e.g. implicit value set) that identifies the set of codes to be used.
+         * Points to the value set or external definition (e.g. implicit value
+         * set) that identifies the set of codes to be used.
          */
         public String valueSet() {
             return getString(PROPERTY_VALUESET);
@@ -570,16 +650,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -665,16 +758,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -695,14 +801,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The minimum number of times this parameter SHALL appear in the request or response.
+         * The minimum number of times this parameter SHALL appear in the request
+         * or response.
          */
         public Integer min() {
             return data.getInt(PROPERTY_MIN);
         }
 
         /**
-         * The maximum number of times this element is permitted to appear in the request or response.
+         * The maximum number of times this element is permitted to appear in the
+         * request or response.
          */
         public String max() {
             return getString(PROPERTY_MAX);
@@ -723,28 +831,39 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Used when the type is "Reference" or "canonical", and identifies a profile structure or implementation Guide that applies to the target of the reference this parameter refers to. If any profiles are specified, then the content must conform to at least one of them. The URL can be a local reference - to a contained StructureDefinition, or a reference to another StructureDefinition or Implementation Guide by a canonical URL. When an implementation guide is specified, the target resource SHALL conform to at least one profile defined in the implementation guide.
+         * Used when the type is "Reference" or "canonical", and identifies a
+         * profile structure or implementation Guide that applies to the target
+         * of the reference this parameter refers to. If any profiles are
+         * specified, then the content must conform to at least one of them. The
+         * URL can be a local reference - to a contained StructureDefinition, or
+         * a reference to another StructureDefinition or Implementation Guide by
+         * a canonical URL. When an implementation guide is specified, the target
+         * resource SHALL conform to at least one profile defined in the
+         * implementation guide.
          */
         public java.util.List<String> targetProfile() {
             return getList(String.class, PROPERTY_TARGETPROFILE);
         }
 
         /**
-         * How the parameter is understood as a search parameter. This is only used if the parameter type is 'string'.
+         * How the parameter is understood as a search parameter. This is only
+         * used if the parameter type is 'string'.
          */
         public String searchType() {
             return getString(PROPERTY_SEARCHTYPE);
         }
 
         /**
-         * Binds to a value set if this parameter is coded (code, Coding, CodeableConcept).
+         * Binds to a value set if this parameter is coded (code, Coding,
+         * CodeableConcept).
          */
         public OperationDefinitionBinding binding() {
             return getObject(OperationDefinitionBinding.class, PROPERTY_BINDING);
         }
 
         /**
-         * Identifies other resource parameters within the operation invocation that are expected to resolve to this resource.
+         * Identifies other resource parameters within the operation invocation
+         * that are expected to resolve to this resource.
          */
         public java.util.List<OperationDefinitionReferencedFrom> referencedFrom() {
             return getList(OperationDefinitionReferencedFrom.class, PROPERTY_REFERENCEDFROM);
@@ -859,30 +978,46 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The name of the parameter or dot-separated path of parameter names pointing to the resource parameter that is expected to contain a reference to this resource.
+         * The name of the parameter or dot-separated path of parameter names
+         * pointing to the resource parameter that is expected to contain a
+         * reference to this resource.
          */
         public String source() {
             return getString(PROPERTY_SOURCE);
         }
 
         /**
-         * The id of the element in the referencing resource that is expected to resolve to this resource.
+         * The id of the element in the referencing resource that is expected to
+         * resolve to this resource.
          */
         public String sourceId() {
             return getString(PROPERTY_SOURCEID);

@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -34,16 +32,29 @@ public class Population extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the element and that modifies the
+     * understanding of the element in which it is contained and/or the
+     * understanding of the containing element's descendants. Usually
+     * modifier elements provide negation or qualification. To make the use
+     * of extensions safe and manageable, there is a strict set of governance
+     * applied to the definition and use of extensions. Though any
+     * implementer can define an extension, there is a set of requirements
+     * that SHALL be met as part of the definition of the extension.
+     * Applications processing a resource are required to check for modifier
+     * extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -78,7 +89,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The existing physiological conditions of the specific population to which this applies.
+     * The existing physiological conditions of the specific population to
+     * which this applies.
      */
     public CodeableConcept physiologicalCondition() {
         return getObject(CodeableConcept.class, PROPERTY_PHYSIOLOGICALCONDITION);

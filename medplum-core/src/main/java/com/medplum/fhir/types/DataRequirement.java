@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -37,65 +35,86 @@ public class DataRequirement extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * The type of the required data, specified as the type name of a resource. For profiles, this value is set to the type of the base resource of the profile.
+     * The type of the required data, specified as the type name of a
+     * resource. For profiles, this value is set to the type of the base
+     * resource of the profile.
      */
     public String type() {
         return getString(PROPERTY_TYPE);
     }
 
     /**
-     * The profile of the required data, specified as the uri of the profile definition.
+     * The profile of the required data, specified as the uri of the profile
+     * definition.
      */
     public java.util.List<String> profile() {
         return getList(String.class, PROPERTY_PROFILE);
     }
 
     /**
-     * The intended subjects of the data requirement. If this element is not provided, a Patient subject is assumed.
+     * The intended subjects of the data requirement. If this element is not
+     * provided, a Patient subject is assumed.
      */
     public CodeableConcept subjectCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_SUBJECTCODEABLECONCEPT);
     }
 
     /**
-     * The intended subjects of the data requirement. If this element is not provided, a Patient subject is assumed.
+     * The intended subjects of the data requirement. If this element is not
+     * provided, a Patient subject is assumed.
      */
     public Reference subjectReference() {
         return getObject(Reference.class, PROPERTY_SUBJECTREFERENCE);
     }
 
     /**
-     * Indicates that specific elements of the type are referenced by the knowledge module and must be supported by the consumer in order to obtain an effective evaluation. This does not mean that a value is required for this element, only that the consuming system must understand the element and be able to provide values for it if they are available. 
-
-The value of mustSupport SHALL be a FHIRPath resolveable on the type of the DataRequirement. The path SHALL consist only of identifiers, constant indexers, and .resolve() (see the [Simple FHIRPath Profile](fhirpath.html#simple) for full details).
+     * Indicates that specific elements of the type are referenced by the
+     * knowledge module and must be supported by the consumer in order to
+     * obtain an effective evaluation. This does not mean that a value is
+     * required for this element, only that the consuming system must
+     * understand the element and be able to provide values for it if they
+     * are available. 
+     *
+     * The value of mustSupport SHALL be a FHIRPath resolveable on the type
+     * of the DataRequirement. The path SHALL consist only of identifiers,
+     * constant indexers, and .resolve() (see the [Simple FHIRPath
+     * Profile](fhirpath.html#simple) for full details).
      */
     public java.util.List<String> mustSupport() {
         return getList(String.class, PROPERTY_MUSTSUPPORT);
     }
 
     /**
-     * Code filters specify additional constraints on the data, specifying the value set of interest for a particular element of the data. Each code filter defines an additional constraint on the data, i.e. code filters are AND'ed, not OR'ed.
+     * Code filters specify additional constraints on the data, specifying
+     * the value set of interest for a particular element of the data. Each
+     * code filter defines an additional constraint on the data, i.e. code
+     * filters are AND'ed, not OR'ed.
      */
     public java.util.List<DataRequirementCodeFilter> codeFilter() {
         return getList(DataRequirementCodeFilter.class, PROPERTY_CODEFILTER);
     }
 
     /**
-     * Date filters specify additional constraints on the data in terms of the applicable date range for specific elements. Each date filter specifies an additional constraint on the data, i.e. date filters are AND'ed, not OR'ed.
+     * Date filters specify additional constraints on the data in terms of
+     * the applicable date range for specific elements. Each date filter
+     * specifies an additional constraint on the data, i.e. date filters are
+     * AND'ed, not OR'ed.
      */
     public java.util.List<DataRequirementDateFilter> dateFilter() {
         return getList(DataRequirementDateFilter.class, PROPERTY_DATEFILTER);
     }
 
     /**
-     * Specifies a maximum number of results that are required (uses the _count search parameter).
+     * Specifies a maximum number of results that are required (uses the
+     * _count search parameter).
      */
     public Integer limit() {
         return data.getInt(PROPERTY_LIMIT);
@@ -196,44 +215,74 @@ The value of mustSupport SHALL be a FHIRPath resolveable on the type of the Data
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The code-valued attribute of the filter. The specified path SHALL be a FHIRPath resolveable on the specified type of the DataRequirement, and SHALL consist only of identifiers, constant indexers, and .resolve(). The path is allowed to contain qualifiers (.) to traverse sub-elements, as well as indexers ([x]) to traverse multiple-cardinality sub-elements (see the [Simple FHIRPath Profile](fhirpath.html#simple) for full details). Note that the index must be an integer constant. The path must resolve to an element of type code, Coding, or CodeableConcept.
+         * The code-valued attribute of the filter. The specified path SHALL be a
+         * FHIRPath resolveable on the specified type of the DataRequirement, and
+         * SHALL consist only of identifiers, constant indexers, and .resolve().
+         * The path is allowed to contain qualifiers (.) to traverse
+         * sub-elements, as well as indexers ([x]) to traverse
+         * multiple-cardinality sub-elements (see the [Simple FHIRPath
+         * Profile](fhirpath.html#simple) for full details). Note that the index
+         * must be an integer constant. The path must resolve to an element of
+         * type code, Coding, or CodeableConcept.
          */
         public String path() {
             return getString(PROPERTY_PATH);
         }
 
         /**
-         * A token parameter that refers to a search parameter defined on the specified type of the DataRequirement, and which searches on elements of type code, Coding, or CodeableConcept.
+         * A token parameter that refers to a search parameter defined on the
+         * specified type of the DataRequirement, and which searches on elements
+         * of type code, Coding, or CodeableConcept.
          */
         public String searchParam() {
             return getString(PROPERTY_SEARCHPARAM);
         }
 
         /**
-         * The valueset for the code filter. The valueSet and code elements are additive. If valueSet is specified, the filter will return only those data items for which the value of the code-valued element specified in the path is a member of the specified valueset.
+         * The valueset for the code filter. The valueSet and code elements are
+         * additive. If valueSet is specified, the filter will return only those
+         * data items for which the value of the code-valued element specified in
+         * the path is a member of the specified valueset.
          */
         public String valueSet() {
             return getString(PROPERTY_VALUESET);
         }
 
         /**
-         * The codes for the code filter. If values are given, the filter will return only those data items for which the code-valued attribute specified by the path has a value that is one of the specified codes. If codes are specified in addition to a value set, the filter returns items matching a code in the value set or one of the specified codes.
+         * The codes for the code filter. If values are given, the filter will
+         * return only those data items for which the code-valued attribute
+         * specified by the path has a value that is one of the specified codes.
+         * If codes are specified in addition to a value set, the filter returns
+         * items matching a code in the value set or one of the specified codes.
          */
         public java.util.List<Coding> code() {
             return getList(Coding.class, PROPERTY_CODE);
@@ -309,51 +358,89 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The date-valued attribute of the filter. The specified path SHALL be a FHIRPath resolveable on the specified type of the DataRequirement, and SHALL consist only of identifiers, constant indexers, and .resolve(). The path is allowed to contain qualifiers (.) to traverse sub-elements, as well as indexers ([x]) to traverse multiple-cardinality sub-elements (see the [Simple FHIRPath Profile](fhirpath.html#simple) for full details). Note that the index must be an integer constant. The path must resolve to an element of type date, dateTime, Period, Schedule, or Timing.
+         * The date-valued attribute of the filter. The specified path SHALL be a
+         * FHIRPath resolveable on the specified type of the DataRequirement, and
+         * SHALL consist only of identifiers, constant indexers, and .resolve().
+         * The path is allowed to contain qualifiers (.) to traverse
+         * sub-elements, as well as indexers ([x]) to traverse
+         * multiple-cardinality sub-elements (see the [Simple FHIRPath
+         * Profile](fhirpath.html#simple) for full details). Note that the index
+         * must be an integer constant. The path must resolve to an element of
+         * type date, dateTime, Period, Schedule, or Timing.
          */
         public String path() {
             return getString(PROPERTY_PATH);
         }
 
         /**
-         * A date parameter that refers to a search parameter defined on the specified type of the DataRequirement, and which searches on elements of type date, dateTime, Period, Schedule, or Timing.
+         * A date parameter that refers to a search parameter defined on the
+         * specified type of the DataRequirement, and which searches on elements
+         * of type date, dateTime, Period, Schedule, or Timing.
          */
         public String searchParam() {
             return getString(PROPERTY_SEARCHPARAM);
         }
 
         /**
-         * The value of the filter. If period is specified, the filter will return only those data items that fall within the bounds determined by the Period, inclusive of the period boundaries. If dateTime is specified, the filter will return only those data items that are equal to the specified dateTime. If a Duration is specified, the filter will return only those data items that fall within Duration before now.
+         * The value of the filter. If period is specified, the filter will
+         * return only those data items that fall within the bounds determined by
+         * the Period, inclusive of the period boundaries. If dateTime is
+         * specified, the filter will return only those data items that are equal
+         * to the specified dateTime. If a Duration is specified, the filter will
+         * return only those data items that fall within Duration before now.
          */
         public String valueDateTime() {
             return getString(PROPERTY_VALUEDATETIME);
         }
 
         /**
-         * The value of the filter. If period is specified, the filter will return only those data items that fall within the bounds determined by the Period, inclusive of the period boundaries. If dateTime is specified, the filter will return only those data items that are equal to the specified dateTime. If a Duration is specified, the filter will return only those data items that fall within Duration before now.
+         * The value of the filter. If period is specified, the filter will
+         * return only those data items that fall within the bounds determined by
+         * the Period, inclusive of the period boundaries. If dateTime is
+         * specified, the filter will return only those data items that are equal
+         * to the specified dateTime. If a Duration is specified, the filter will
+         * return only those data items that fall within Duration before now.
          */
         public Period valuePeriod() {
             return getObject(Period.class, PROPERTY_VALUEPERIOD);
         }
 
         /**
-         * The value of the filter. If period is specified, the filter will return only those data items that fall within the bounds determined by the Period, inclusive of the period boundaries. If dateTime is specified, the filter will return only those data items that are equal to the specified dateTime. If a Duration is specified, the filter will return only those data items that fall within Duration before now.
+         * The value of the filter. If period is specified, the filter will
+         * return only those data items that fall within the bounds determined by
+         * the Period, inclusive of the period boundaries. If dateTime is
+         * specified, the filter will return only those data items that are equal
+         * to the specified dateTime. If a Duration is specified, the filter will
+         * return only those data items that fall within Duration before now.
          */
         public Duration valueDuration() {
             return getObject(Duration.class, PROPERTY_VALUEDURATION);
@@ -431,23 +518,40 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The attribute of the sort. The specified path must be resolvable from the type of the required data. The path is allowed to contain qualifiers (.) to traverse sub-elements, as well as indexers ([x]) to traverse multiple-cardinality sub-elements. Note that the index must be an integer constant.
+         * The attribute of the sort. The specified path must be resolvable from
+         * the type of the required data. The path is allowed to contain
+         * qualifiers (.) to traverse sub-elements, as well as indexers ([x]) to
+         * traverse multiple-cardinality sub-elements. Note that the index must
+         * be an integer constant.
          */
         public String path() {
             return getString(PROPERTY_PATH);

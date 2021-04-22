@@ -27,7 +27,7 @@ public class StandardOperations {
     public static final String CODE_INVALID = "invalid";
     public static final String CODE_SECURITY = "security";
     public static final String CODE_PROCESSING = "processing";
-    public static final String CODE_EXCEPTION ="exception";
+    public static final String CODE_EXCEPTION = "exception";
 
     public static OperationOutcome ok() {
         return OperationOutcome.create()

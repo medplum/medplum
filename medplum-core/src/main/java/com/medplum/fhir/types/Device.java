@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -61,7 +59,10 @@ public class Device extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -75,30 +76,49 @@ public class Device extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Unique instance identifiers assigned to a device by manufacturers other organizations or owners.
+     * Unique instance identifiers assigned to a device by manufacturers
+     * other organizations or owners.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
@@ -112,7 +132,10 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Unique device identifier (UDI) assigned to device label or package.  Note that the Device may include multiple udiCarriers as it either may include just the udiCarrier for the jurisdiction it is sold, or for multiple jurisdictions it could have been sold.
+     * Unique device identifier (UDI) assigned to device label or package. 
+     * Note that the Device may include multiple udiCarriers as it either may
+     * include just the udiCarrier for the jurisdiction it is sold, or for
+     * multiple jurisdictions it could have been sold.
      */
     public java.util.List<DeviceUdiCarrier> udiCarrier() {
         return getList(DeviceUdiCarrier.class, PROPERTY_UDICARRIER);
@@ -133,7 +156,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The distinct identification string as required by regulation for a human cell, tissue, or cellular and tissue-based product.
+     * The distinct identification string as required by regulation for a
+     * human cell, tissue, or cellular and tissue-based product.
      */
     public String distinctIdentifier() {
         return getString(PROPERTY_DISTINCTIDENTIFIER);
@@ -154,7 +178,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The date and time beyond which this device is no longer valid or should not be used (if applicable).
+     * The date and time beyond which this device is no longer valid or
+     * should not be used (if applicable).
      */
     public java.time.Instant expirationDate() {
         return java.time.Instant.parse(data.getString(PROPERTY_EXPIRATIONDATE));
@@ -168,14 +193,19 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The serial number assigned by the organization when the device was manufactured.
+     * The serial number assigned by the organization when the device was
+     * manufactured.
      */
     public String serialNumber() {
         return getString(PROPERTY_SERIALNUMBER);
     }
 
     /**
-     * This represents the manufacturer's name of the device as provided by the device, from a UDI label, or by a person describing the Device.  This typically would be used when a person provides the name(s) or when the device represents one of the names available from DeviceDefinition.
+     * This represents the manufacturer's name of the device as provided by
+     * the device, from a UDI label, or by a person describing the Device. 
+     * This typically would be used when a person provides the name(s) or
+     * when the device represents one of the names available from
+     * DeviceDefinition.
      */
     public java.util.List<DeviceDeviceName> deviceName() {
         return getList(DeviceDeviceName.class, PROPERTY_DEVICENAME);
@@ -203,21 +233,25 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The capabilities supported on a  device, the standards to which the device conforms for a particular purpose, and used for the communication.
+     * The capabilities supported on a  device, the standards to which the
+     * device conforms for a particular purpose, and used for the
+     * communication.
      */
     public java.util.List<DeviceSpecialization> specialization() {
         return getList(DeviceSpecialization.class, PROPERTY_SPECIALIZATION);
     }
 
     /**
-     * The actual design of the device or software version running on the device.
+     * The actual design of the device or software version running on the
+     * device.
      */
     public java.util.List<DeviceVersion> version() {
         return getList(DeviceVersion.class, PROPERTY_VERSION);
     }
 
     /**
-     * The actual configuration settings of a device as it actually operates, e.g., regulation status, time properties.
+     * The actual configuration settings of a device as it actually operates,
+     * e.g., regulation status, time properties.
      */
     public java.util.List<DeviceProperty> property() {
         return getList(DeviceProperty.class, PROPERTY_PROPERTY);
@@ -231,14 +265,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * An organization that is responsible for the provision and ongoing maintenance of the device.
+     * An organization that is responsible for the provision and ongoing
+     * maintenance of the device.
      */
     public Reference owner() {
         return getObject(Reference.class, PROPERTY_OWNER);
     }
 
     /**
-     * Contact details for an organization or a particular human that is responsible for the device.
+     * Contact details for an organization or a particular human that is
+     * responsible for the device.
      */
     public java.util.List<ContactPoint> contact() {
         return getList(ContactPoint.class, PROPERTY_CONTACT);
@@ -259,14 +295,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Descriptive information, usage information or implantation information that is not captured in an existing element.
+     * Descriptive information, usage information or implantation information
+     * that is not captured in an existing element.
      */
     public java.util.List<Annotation> note() {
         return getList(Annotation.class, PROPERTY_NOTE);
     }
 
     /**
-     * Provides additional safety characteristics about a medical device.  For example devices containing latex.
+     * Provides additional safety characteristics about a medical device. 
+     * For example devices containing latex.
      */
     public java.util.List<CodeableConcept> safety() {
         return getList(CodeableConcept.class, PROPERTY_SAFETY);
@@ -484,16 +522,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -508,7 +559,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
 
         /**
          * The type of deviceName.
-UDILabelName | UserFriendlyName | PatientReportedName | ManufactureDeviceName | ModelName.
+         * UDILabelName | UserFriendlyName | PatientReportedName |
+         * ManufactureDeviceName | ModelName.
          */
         public String type() {
             return getString(PROPERTY_TYPE);
@@ -572,23 +624,37 @@ UDILabelName | UserFriendlyName | PatientReportedName | ManufactureDeviceName | 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Code that specifies the property DeviceDefinitionPropetyCode (Extensible).
+         * Code that specifies the property DeviceDefinitionPropetyCode
+         * (Extensible).
          */
         public CodeableConcept type() {
             return getObject(CodeableConcept.class, PROPERTY_TYPE);
@@ -670,16 +736,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -760,59 +839,83 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The device identifier (DI) is a mandatory, fixed portion of a UDI that identifies the labeler and the specific version or model of a device.
+         * The device identifier (DI) is a mandatory, fixed portion of a UDI that
+         * identifies the labeler and the specific version or model of a device.
          */
         public String deviceIdentifier() {
             return getString(PROPERTY_DEVICEIDENTIFIER);
         }
 
         /**
-         * Organization that is charged with issuing UDIs for devices.  For example, the US FDA issuers include :
-1) GS1: 
-http://hl7.org/fhir/NamingSystem/gs1-di, 
-2) HIBCC:
-http://hl7.org/fhir/NamingSystem/hibcc-dI, 
-3) ICCBBA for blood containers:
-http://hl7.org/fhir/NamingSystem/iccbba-blood-di, 
-4) ICCBA for other devices:
-http://hl7.org/fhir/NamingSystem/iccbba-other-di.
+         * Organization that is charged with issuing UDIs for devices.  For
+         * example, the US FDA issuers include :
+         * 1) GS1: 
+         * http://hl7.org/fhir/NamingSystem/gs1-di, 
+         * 2) HIBCC:
+         * http://hl7.org/fhir/NamingSystem/hibcc-dI, 
+         * 3) ICCBBA for blood containers:
+         * http://hl7.org/fhir/NamingSystem/iccbba-blood-di, 
+         * 4) ICCBA for other devices:
+         * http://hl7.org/fhir/NamingSystem/iccbba-other-di.
          */
         public String issuer() {
             return getString(PROPERTY_ISSUER);
         }
 
         /**
-         * The identity of the authoritative source for UDI generation within a  jurisdiction.  All UDIs are globally unique within a single namespace with the appropriate repository uri as the system.  For example,  UDIs of devices managed in the U.S. by the FDA, the value is  http://hl7.org/fhir/NamingSystem/fda-udi.
+         * The identity of the authoritative source for UDI generation within a 
+         * jurisdiction.  All UDIs are globally unique within a single namespace
+         * with the appropriate repository uri as the system.  For example,  UDIs
+         * of devices managed in the U.S. by the FDA, the value is 
+         * http://hl7.org/fhir/NamingSystem/fda-udi.
          */
         public String jurisdiction() {
             return getString(PROPERTY_JURISDICTION);
         }
 
         /**
-         * The full UDI carrier of the Automatic Identification and Data Capture (AIDC) technology representation of the barcode string as printed on the packaging of the device - e.g., a barcode or RFID.   Because of limitations on character sets in XML and the need to round-trip JSON data through XML, AIDC Formats *SHALL* be base64 encoded.
+         * The full UDI carrier of the Automatic Identification and Data Capture
+         * (AIDC) technology representation of the barcode string as printed on
+         * the packaging of the device - e.g., a barcode or RFID.   Because of
+         * limitations on character sets in XML and the need to round-trip JSON
+         * data through XML, AIDC Formats *SHALL* be base64 encoded.
          */
         public String carrierAIDC() {
             return getString(PROPERTY_CARRIERAIDC);
         }
 
         /**
-         * The full UDI carrier as the human readable form (HRF) representation of the barcode string as printed on the packaging of the device.
+         * The full UDI carrier as the human readable form (HRF) representation
+         * of the barcode string as printed on the packaging of the device.
          */
         public String carrierHRF() {
             return getString(PROPERTY_CARRIERHRF);
@@ -903,16 +1006,29 @@ http://hl7.org/fhir/NamingSystem/iccbba-other-di.
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);

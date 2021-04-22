@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -33,21 +31,24 @@ public class ContactPoint extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * Telecommunications form for contact point - what communications system is required to make use of the contact.
+     * Telecommunications form for contact point - what communications system
+     * is required to make use of the contact.
      */
     public String system() {
         return getString(PROPERTY_SYSTEM);
     }
 
     /**
-     * The actual contact point details, in a form that is meaningful to the designated communication system (i.e. phone number or email address).
+     * The actual contact point details, in a form that is meaningful to the
+     * designated communication system (i.e. phone number or email address).
      */
     public String value() {
         return getString(PROPERTY_VALUE);
@@ -61,7 +62,9 @@ public class ContactPoint extends FhirResource {
     }
 
     /**
-     * Specifies a preferred order in which to use a set of contacts. ContactPoints with lower rank values are more preferred than those with higher rank values.
+     * Specifies a preferred order in which to use a set of contacts.
+     * ContactPoints with lower rank values are more preferred than those
+     * with higher rank values.
      */
     public Integer rank() {
         return data.getInt(PROPERTY_RANK);

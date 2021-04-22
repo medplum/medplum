@@ -5,6 +5,8 @@ import java.util.List;
 
 import jakarta.json.JsonObject;
 
+import org.apache.commons.text.CaseUtils;
+
 public class Property {
     private static final List<String> RESERVED = Arrays.asList("abstract", "assert", "boolean", "break", "byte", "case",
             "catch", "char", "class", "const", "continue", "default", "do", "double", "else", "enum", "extends",
@@ -51,10 +53,14 @@ public class Property {
     }
 
     public String getOutputName() {
-        if (RESERVED.contains(inputName)) {
-            return inputName + "_";
+        String result = inputName;
+        if (result.contains("_")) {
+            result = CaseUtils.toCamelCase(result, false, '_');
         }
-        return inputName;
+        if (RESERVED.contains(result)) {
+            result = result + "Value";
+        }
+        return result;
     }
 
     public String getConstantName() {

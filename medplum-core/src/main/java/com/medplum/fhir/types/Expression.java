@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -33,21 +31,24 @@ public class Expression extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * A brief, natural language description of the condition that effectively communicates the intended semantics.
+     * A brief, natural language description of the condition that
+     * effectively communicates the intended semantics.
      */
     public String description() {
         return getString(PROPERTY_DESCRIPTION);
     }
 
     /**
-     * A short name assigned to the expression to allow for multiple reuse of the expression in the context where it is defined.
+     * A short name assigned to the expression to allow for multiple reuse of
+     * the expression in the context where it is defined.
      */
     public String name() {
         return getString(PROPERTY_NAME);

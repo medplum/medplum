@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -30,7 +28,8 @@ public class Period extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
@@ -44,7 +43,10 @@ public class Period extends FhirResource {
     }
 
     /**
-     * The end of the period. If the end of the period is missing, it means no end was known or planned at the time the instance was created. The start may be in the past, and the end date in the future, which means that period is expected/planned to end at that time.
+     * The end of the period. If the end of the period is missing, it means
+     * no end was known or planned at the time the instance was created. The
+     * start may be in the past, and the end date in the future, which means
+     * that period is expected/planned to end at that time.
      */
     public java.time.Instant end() {
         return java.time.Instant.parse(data.getString(PROPERTY_END));

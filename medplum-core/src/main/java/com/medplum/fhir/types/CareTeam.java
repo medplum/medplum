@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -48,7 +46,10 @@ public class CareTeam extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -62,30 +63,50 @@ public class CareTeam extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Business identifiers assigned to this care team by the performer or other systems which remain constant as the resource is updated and propagates from server to server.
+     * Business identifiers assigned to this care team by the performer or
+     * other systems which remain constant as the resource is updated and
+     * propagates from server to server.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
@@ -99,42 +120,49 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Identifies what kind of team.  This is to support differentiation between multiple co-existing teams, such as care plan team, episode of care team, longitudinal care team.
+     * Identifies what kind of team.  This is to support differentiation
+     * between multiple co-existing teams, such as care plan team, episode of
+     * care team, longitudinal care team.
      */
     public java.util.List<CodeableConcept> category() {
         return getList(CodeableConcept.class, PROPERTY_CATEGORY);
     }
 
     /**
-     * A label for human use intended to distinguish like teams.  E.g. the "red" vs. "green" trauma teams.
+     * A label for human use intended to distinguish like teams.  E.g. the
+     * "red" vs. "green" trauma teams.
      */
     public String name() {
         return getString(PROPERTY_NAME);
     }
 
     /**
-     * Identifies the patient or group whose intended care is handled by the team.
+     * Identifies the patient or group whose intended care is handled by the
+     * team.
      */
     public Reference subject() {
         return getObject(Reference.class, PROPERTY_SUBJECT);
     }
 
     /**
-     * The Encounter during which this CareTeam was created or to which the creation of this record is tightly associated.
+     * The Encounter during which this CareTeam was created or to which the
+     * creation of this record is tightly associated.
      */
     public Reference encounter() {
         return getObject(Reference.class, PROPERTY_ENCOUNTER);
     }
 
     /**
-     * Indicates when the team did (or is intended to) come into effect and end.
+     * Indicates when the team did (or is intended to) come into effect and
+     * end.
      */
     public Period period() {
         return getObject(Period.class, PROPERTY_PERIOD);
     }
 
     /**
-     * Identifies all people and organizations who are expected to be involved in the care team.
+     * Identifies all people and organizations who are expected to be
+     * involved in the care team.
      */
     public java.util.List<CareTeamParticipant> participant() {
         return getList(CareTeamParticipant.class, PROPERTY_PARTICIPANT);
@@ -162,7 +190,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * A central contact detail for the care team (that applies to all members).
+     * A central contact detail for the care team (that applies to all
+     * members).
      */
     public java.util.List<ContactPoint> telecom() {
         return getList(ContactPoint.class, PROPERTY_TELECOM);
@@ -317,30 +346,46 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Indicates specific responsibility of an individual within the care team, such as "Primary care physician", "Trained social worker counselor", "Caregiver", etc.
+         * Indicates specific responsibility of an individual within the care
+         * team, such as "Primary care physician", "Trained social worker
+         * counselor", "Caregiver", etc.
          */
         public java.util.List<CodeableConcept> role() {
             return getList(CodeableConcept.class, PROPERTY_ROLE);
         }
 
         /**
-         * The specific person or organization who is participating/expected to participate in the care team.
+         * The specific person or organization who is participating/expected to
+         * participate in the care team.
          */
         public Reference member() {
             return getObject(Reference.class, PROPERTY_MEMBER);
@@ -354,7 +399,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Indicates when the specific member or organization did (or is intended to) come into effect and end.
+         * Indicates when the specific member or organization did (or is intended
+         * to) come into effect and end.
          */
         public Period period() {
             return getObject(Period.class, PROPERTY_PERIOD);

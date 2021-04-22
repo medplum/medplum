@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -59,7 +57,10 @@ public class ResearchStudy extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -73,30 +74,49 @@ public class ResearchStudy extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Identifiers assigned to this research study by the sponsor or other systems.
+     * Identifiers assigned to this research study by the sponsor or other
+     * systems.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
@@ -110,14 +130,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The set of steps expected to be performed as part of the execution of the study.
+     * The set of steps expected to be performed as part of the execution of
+     * the study.
      */
     public java.util.List<Reference> protocol() {
         return getList(Reference.class, PROPERTY_PROTOCOL);
     }
 
     /**
-     * A larger research study of which this particular study is a component or step.
+     * A larger research study of which this particular study is a component
+     * or step.
      */
     public java.util.List<Reference> partOf() {
         return getList(Reference.class, PROPERTY_PARTOF);
@@ -131,42 +153,52 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The type of study based upon the intent of the study's activities. A classification of the intent of the study.
+     * The type of study based upon the intent of the study's activities. A
+     * classification of the intent of the study.
      */
     public CodeableConcept primaryPurposeType() {
         return getObject(CodeableConcept.class, PROPERTY_PRIMARYPURPOSETYPE);
     }
 
     /**
-     * The stage in the progression of a therapy from initial experimental use in humans in clinical trials to post-market evaluation.
+     * The stage in the progression of a therapy from initial experimental
+     * use in humans in clinical trials to post-market evaluation.
      */
     public CodeableConcept phase() {
         return getObject(CodeableConcept.class, PROPERTY_PHASE);
     }
 
     /**
-     * Codes categorizing the type of study such as investigational vs. observational, type of blinding, type of randomization, safety vs. efficacy, etc.
+     * Codes categorizing the type of study such as investigational vs.
+     * observational, type of blinding, type of randomization, safety vs.
+     * efficacy, etc.
      */
     public java.util.List<CodeableConcept> category() {
         return getList(CodeableConcept.class, PROPERTY_CATEGORY);
     }
 
     /**
-     * The medication(s), food(s), therapy(ies), device(s) or other concerns or interventions that the study is seeking to gain more information about.
+     * The medication(s), food(s), therapy(ies), device(s) or other concerns
+     * or interventions that the study is seeking to gain more information
+     * about.
      */
     public java.util.List<CodeableConcept> focus() {
         return getList(CodeableConcept.class, PROPERTY_FOCUS);
     }
 
     /**
-     * The condition that is the focus of the study.  For example, In a study to examine risk factors for Lupus, might have as an inclusion criterion "healthy volunteer", but the target condition code would be a Lupus SNOMED code.
+     * The condition that is the focus of the study.  For example, In a study
+     * to examine risk factors for Lupus, might have as an inclusion
+     * criterion "healthy volunteer", but the target condition code would be
+     * a Lupus SNOMED code.
      */
     public java.util.List<CodeableConcept> condition() {
         return getList(CodeableConcept.class, PROPERTY_CONDITION);
     }
 
     /**
-     * Contact details to assist a user in learning more about or engaging with the study.
+     * Contact details to assist a user in learning more about or engaging
+     * with the study.
      */
     public java.util.List<ContactDetail> contact() {
         return getList(ContactDetail.class, PROPERTY_CONTACT);
@@ -187,7 +219,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Indicates a country, state or other region where the study is taking place.
+     * Indicates a country, state or other region where the study is taking
+     * place.
      */
     public java.util.List<CodeableConcept> location() {
         return getList(CodeableConcept.class, PROPERTY_LOCATION);
@@ -201,28 +234,35 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Reference to a Group that defines the criteria for and quantity of subjects participating in the study.  E.g. " 200 female Europeans between the ages of 20 and 45 with early onset diabetes".
+     * Reference to a Group that defines the criteria for and quantity of
+     * subjects participating in the study.  E.g. " 200 female Europeans
+     * between the ages of 20 and 45 with early onset diabetes".
      */
     public java.util.List<Reference> enrollment() {
         return getList(Reference.class, PROPERTY_ENROLLMENT);
     }
 
     /**
-     * Identifies the start date and the expected (or actual, depending on status) end date for the study.
+     * Identifies the start date and the expected (or actual, depending on
+     * status) end date for the study.
      */
     public Period period() {
         return getObject(Period.class, PROPERTY_PERIOD);
     }
 
     /**
-     * An organization that initiates the investigation and is legally responsible for the study.
+     * An organization that initiates the investigation and is legally
+     * responsible for the study.
      */
     public Reference sponsor() {
         return getObject(Reference.class, PROPERTY_SPONSOR);
     }
 
     /**
-     * A researcher in a study who oversees multiple aspects of the study, such as concept development, protocol writing, protocol submission for IRB approval, participant recruitment, informed consent, data collection, analysis, interpretation and presentation.
+     * A researcher in a study who oversees multiple aspects of the study,
+     * such as concept development, protocol writing, protocol submission for
+     * IRB approval, participant recruitment, informed consent, data
+     * collection, analysis, interpretation and presentation.
      */
     public Reference principalInvestigator() {
         return getObject(Reference.class, PROPERTY_PRINCIPALINVESTIGATOR);
@@ -236,28 +276,34 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * A description and/or code explaining the premature termination of the study.
+     * A description and/or code explaining the premature termination of the
+     * study.
      */
     public CodeableConcept reasonStopped() {
         return getObject(CodeableConcept.class, PROPERTY_REASONSTOPPED);
     }
 
     /**
-     * Comments made about the study by the performer, subject or other participants.
+     * Comments made about the study by the performer, subject or other
+     * participants.
      */
     public java.util.List<Annotation> note() {
         return getList(Annotation.class, PROPERTY_NOTE);
     }
 
     /**
-     * Describes an expected sequence of events for one of the participants of a study.  E.g. Exposure to drug A, wash-out, exposure to drug B, wash-out, follow-up.
+     * Describes an expected sequence of events for one of the participants
+     * of a study.  E.g. Exposure to drug A, wash-out, exposure to drug B,
+     * wash-out, follow-up.
      */
     public java.util.List<ResearchStudyArm> arm() {
         return getList(ResearchStudyArm.class, PROPERTY_ARM);
     }
 
     /**
-     * A goal that the study is aiming to achieve in terms of a scientific question to be answered by the analysis of data collected during the study.
+     * A goal that the study is aiming to achieve in terms of a scientific
+     * question to be answered by the analysis of data collected during the
+     * study.
      */
     public java.util.List<ResearchStudyObjective> objective() {
         return getList(ResearchStudyObjective.class, PROPERTY_OBJECTIVE);
@@ -459,16 +505,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -482,14 +541,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Categorization of study arm, e.g. experimental, active comparator, placebo comparater.
+         * Categorization of study arm, e.g. experimental, active comparator,
+         * placebo comparater.
          */
         public CodeableConcept type() {
             return getObject(CodeableConcept.class, PROPERTY_TYPE);
         }
 
         /**
-         * A succinct description of the path through the study that would be followed by a subject adhering to this arm.
+         * A succinct description of the path through the study that would be
+         * followed by a subject adhering to this arm.
          */
         public String description() {
             return getString(PROPERTY_DESCRIPTION);
@@ -557,16 +618,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);

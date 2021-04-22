@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -61,7 +59,10 @@ public class FamilyMemberHistory extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -75,51 +76,76 @@ public class FamilyMemberHistory extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Business identifiers assigned to this family member history by the performer or other systems which remain constant as the resource is updated and propagates from server to server.
+     * Business identifiers assigned to this family member history by the
+     * performer or other systems which remain constant as the resource is
+     * updated and propagates from server to server.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
     }
 
     /**
-     * The URL pointing to a FHIR-defined protocol, guideline, orderset or other definition that is adhered to in whole or in part by this FamilyMemberHistory.
+     * The URL pointing to a FHIR-defined protocol, guideline, orderset or
+     * other definition that is adhered to in whole or in part by this
+     * FamilyMemberHistory.
      */
     public java.util.List<String> instantiatesCanonical() {
         return getList(String.class, PROPERTY_INSTANTIATESCANONICAL);
     }
 
     /**
-     * The URL pointing to an externally maintained protocol, guideline, orderset or other definition that is adhered to in whole or in part by this FamilyMemberHistory.
+     * The URL pointing to an externally maintained protocol, guideline,
+     * orderset or other definition that is adhered to in whole or in part by
+     * this FamilyMemberHistory.
      */
     public java.util.List<String> instantiatesUri() {
         return getList(String.class, PROPERTY_INSTANTIATESURI);
     }
 
     /**
-     * A code specifying the status of the record of the family history of a specific family member.
+     * A code specifying the status of the record of the family history of a
+     * specific family member.
      */
     public String status() {
         return getString(PROPERTY_STATUS);
@@ -140,21 +166,24 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The date (and possibly time) when the family member history was recorded or last updated.
+     * The date (and possibly time) when the family member history was
+     * recorded or last updated.
      */
     public java.time.Instant date() {
         return java.time.Instant.parse(data.getString(PROPERTY_DATE));
     }
 
     /**
-     * This will either be a name or a description; e.g. "Aunt Susan", "my cousin with the red hair".
+     * This will either be a name or a description; e.g. "Aunt Susan", "my
+     * cousin with the red hair".
      */
     public String name() {
         return getString(PROPERTY_NAME);
     }
 
     /**
-     * The type of relationship this person has to the patient (father, mother, brother etc.).
+     * The type of relationship this person has to the patient (father,
+     * mother, brother etc.).
      */
     public CodeableConcept relationship() {
         return getObject(CodeableConcept.class, PROPERTY_RELATIONSHIP);
@@ -189,21 +218,24 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The age of the relative at the time the family member history is recorded.
+     * The age of the relative at the time the family member history is
+     * recorded.
      */
     public Age ageAge() {
         return getObject(Age.class, PROPERTY_AGEAGE);
     }
 
     /**
-     * The age of the relative at the time the family member history is recorded.
+     * The age of the relative at the time the family member history is
+     * recorded.
      */
     public Range ageRange() {
         return getObject(Range.class, PROPERTY_AGERANGE);
     }
 
     /**
-     * The age of the relative at the time the family member history is recorded.
+     * The age of the relative at the time the family member history is
+     * recorded.
      */
     public String ageString() {
         return getString(PROPERTY_AGESTRING);
@@ -217,63 +249,75 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Deceased flag or the actual or approximate age of the relative at the time of death for the family member history record.
+     * Deceased flag or the actual or approximate age of the relative at the
+     * time of death for the family member history record.
      */
     public Boolean deceasedBoolean() {
         return data.getBoolean(PROPERTY_DECEASEDBOOLEAN);
     }
 
     /**
-     * Deceased flag or the actual or approximate age of the relative at the time of death for the family member history record.
+     * Deceased flag or the actual or approximate age of the relative at the
+     * time of death for the family member history record.
      */
     public Age deceasedAge() {
         return getObject(Age.class, PROPERTY_DECEASEDAGE);
     }
 
     /**
-     * Deceased flag or the actual or approximate age of the relative at the time of death for the family member history record.
+     * Deceased flag or the actual or approximate age of the relative at the
+     * time of death for the family member history record.
      */
     public Range deceasedRange() {
         return getObject(Range.class, PROPERTY_DECEASEDRANGE);
     }
 
     /**
-     * Deceased flag or the actual or approximate age of the relative at the time of death for the family member history record.
+     * Deceased flag or the actual or approximate age of the relative at the
+     * time of death for the family member history record.
      */
     public String deceasedDate() {
         return getString(PROPERTY_DECEASEDDATE);
     }
 
     /**
-     * Deceased flag or the actual or approximate age of the relative at the time of death for the family member history record.
+     * Deceased flag or the actual or approximate age of the relative at the
+     * time of death for the family member history record.
      */
     public String deceasedString() {
         return getString(PROPERTY_DECEASEDSTRING);
     }
 
     /**
-     * Describes why the family member history occurred in coded or textual form.
+     * Describes why the family member history occurred in coded or textual
+     * form.
      */
     public java.util.List<CodeableConcept> reasonCode() {
         return getList(CodeableConcept.class, PROPERTY_REASONCODE);
     }
 
     /**
-     * Indicates a Condition, Observation, AllergyIntolerance, or QuestionnaireResponse that justifies this family member history event.
+     * Indicates a Condition, Observation, AllergyIntolerance, or
+     * QuestionnaireResponse that justifies this family member history event.
      */
     public java.util.List<Reference> reasonReference() {
         return getList(Reference.class, PROPERTY_REASONREFERENCE);
     }
 
     /**
-     * This property allows a non condition-specific note to the made about the related person. Ideally, the note would be in the condition property, but this is not always possible.
+     * This property allows a non condition-specific note to the made about
+     * the related person. Ideally, the note would be in the condition
+     * property, but this is not always possible.
      */
     public java.util.List<Annotation> note() {
         return getList(Annotation.class, PROPERTY_NOTE);
     }
 
     /**
-     * The significant Conditions (or condition) that the family member had. This is a repeating section to allow a system to represent more than one condition per resource, though there is nothing stopping multiple resources - one per condition.
+     * The significant Conditions (or condition) that the family member had.
+     * This is a repeating section to allow a system to represent more than
+     * one condition per resource, though there is nothing stopping multiple
+     * resources - one per condition.
      */
     public java.util.List<FamilyMemberHistoryCondition> condition() {
         return getList(FamilyMemberHistoryCondition.class, PROPERTY_CONDITION);
@@ -490,72 +534,99 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The actual condition specified. Could be a coded condition (like MI or Diabetes) or a less specific string like 'cancer' depending on how much is known about the condition and the capabilities of the creating system.
+         * The actual condition specified. Could be a coded condition (like MI or
+         * Diabetes) or a less specific string like 'cancer' depending on how
+         * much is known about the condition and the capabilities of the creating
+         * system.
          */
         public CodeableConcept code() {
             return getObject(CodeableConcept.class, PROPERTY_CODE);
         }
 
         /**
-         * Indicates what happened following the condition.  If the condition resulted in death, deceased date is captured on the relation.
+         * Indicates what happened following the condition.  If the condition
+         * resulted in death, deceased date is captured on the relation.
          */
         public CodeableConcept outcome() {
             return getObject(CodeableConcept.class, PROPERTY_OUTCOME);
         }
 
         /**
-         * This condition contributed to the cause of death of the related person. If contributedToDeath is not populated, then it is unknown.
+         * This condition contributed to the cause of death of the related
+         * person. If contributedToDeath is not populated, then it is unknown.
          */
         public Boolean contributedToDeath() {
             return data.getBoolean(PROPERTY_CONTRIBUTEDTODEATH);
         }
 
         /**
-         * Either the age of onset, range of approximate age or descriptive string can be recorded.  For conditions with multiple occurrences, this describes the first known occurrence.
+         * Either the age of onset, range of approximate age or descriptive
+         * string can be recorded.  For conditions with multiple occurrences,
+         * this describes the first known occurrence.
          */
         public Age onsetAge() {
             return getObject(Age.class, PROPERTY_ONSETAGE);
         }
 
         /**
-         * Either the age of onset, range of approximate age or descriptive string can be recorded.  For conditions with multiple occurrences, this describes the first known occurrence.
+         * Either the age of onset, range of approximate age or descriptive
+         * string can be recorded.  For conditions with multiple occurrences,
+         * this describes the first known occurrence.
          */
         public Range onsetRange() {
             return getObject(Range.class, PROPERTY_ONSETRANGE);
         }
 
         /**
-         * Either the age of onset, range of approximate age or descriptive string can be recorded.  For conditions with multiple occurrences, this describes the first known occurrence.
+         * Either the age of onset, range of approximate age or descriptive
+         * string can be recorded.  For conditions with multiple occurrences,
+         * this describes the first known occurrence.
          */
         public Period onsetPeriod() {
             return getObject(Period.class, PROPERTY_ONSETPERIOD);
         }
 
         /**
-         * Either the age of onset, range of approximate age or descriptive string can be recorded.  For conditions with multiple occurrences, this describes the first known occurrence.
+         * Either the age of onset, range of approximate age or descriptive
+         * string can be recorded.  For conditions with multiple occurrences,
+         * this describes the first known occurrence.
          */
         public String onsetString() {
             return getString(PROPERTY_ONSETSTRING);
         }
 
         /**
-         * An area where general notes can be placed about this specific condition.
+         * An area where general notes can be placed about this specific
+         * condition.
          */
         public java.util.List<Annotation> note() {
             return getList(Annotation.class, PROPERTY_NOTE);

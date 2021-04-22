@@ -60985,11 +60985,11 @@
           "$ref": "#/definitions/string"
         },
         "secret": {
-          "description": "Client secret",
+          "description": "Client secret string used to verify the identity of a client.",
           "$ref": "#/definitions/string"
         },
         "redirectUri": {
-          "description": "Redirect URI",
+          "description": "Redirect URI used when redirecting a client back to the client application.",
           "$ref": "#/definitions/string"
         }
       },
@@ -61011,19 +61011,19 @@
           "$ref": "#/definitions/string"
         },
         "email": {
-          "description": "User email",
+          "description": "User email.",
           "$ref": "#/definitions/string"
         },
         "passwordHash": {
-          "description": "Encrypted hash of the user's password",
+          "description": "Encrypted hash of the user's password.",
           "$ref": "#/definitions/string"
         },
         "patient": {
-          "description": "Optional reference to the user's patient identity",
+          "description": "Optional reference to the user's patient identity.",
           "$ref": "#/definitions/Reference"
         },
         "practitioner": {
-          "description": "Optional reference to the user's practitioner identity",
+          "description": "Optional reference to the user's practitioner identity.",
           "$ref": "#/definitions/Reference"
         }
       },
@@ -61044,19 +61044,19 @@
           "$ref": "#/definitions/string"
         },
         "client": {
-          "description": "The client requesting the code",
+          "description": "The client requesting the code.",
           "$ref": "#/definitions/Reference"
         },
         "user": {
-          "description": "The user requesting the code",
+          "description": "The user requesting the code.",
           "$ref": "#/definitions/Reference"
         },
         "profile": {
-          "description": "Reference to the user's FHIR identity for this login (patient, practitioner, etc)",
+          "description": "Reference to the user's FHIR identity for this login (patient, practitioner, etc).",
           "$ref": "#/definitions/Reference"
         },
         "scope": {
-          "description": "OAuth scope",
+          "description": "OAuth scope or scopes.",
           "$ref": "#/definitions/string"
         }
       }
@@ -61073,15 +61073,15 @@
           "$ref": "#/definitions/string"
         },
         "client": {
-          "description": "The client requesting the code",
+          "description": "The client requesting the code.",
           "$ref": "#/definitions/Reference"
         },
         "user": {
-          "description": "The user requesting the code",
+          "description": "The user requesting the code.",
           "$ref": "#/definitions/Reference"
         },
         "scope": {
-          "description": "OAuth scope",
+          "description": "OAuth scope or scopes.",
           "$ref": "#/definitions/string"
         }
       }
@@ -61098,11 +61098,11 @@
           "$ref": "#/definitions/string"
         },
         "user": {
-          "description": "The user requesting the code",
+          "description": "The user requesting the password change.",
           "$ref": "#/definitions/Reference"
         },
         "redirectUri": {
-          "description": "Redirect URI",
+          "description": "Redirect URI used when redirecting a client back to the client application.",
           "$ref": "#/definitions/string"
         }
       }
@@ -61162,27 +61162,27 @@
           "$ref": "#/definitions/string"
         },
         "d": {
-          "description": "The exponent for the RSA private key",
+          "description": "The exponent for the RSA private key.",
           "$ref": "#/definitions/string"
         },
         "p": {
-          "description": "The first prime factor",
+          "description": "The first prime factor.",
           "$ref": "#/definitions/string"
         },
         "q": {
-          "description": "The second prime factor",
+          "description": "The second prime factor.",
           "$ref": "#/definitions/string"
         },
         "dp": {
-          "description": "The first factor CRT exponent",
+          "description": "The first factor CRT exponent.",
           "$ref": "#/definitions/string"
         },
         "dq": {
-          "description": "The second factor CRT exponent",
+          "description": "The second factor CRT exponent.",
           "$ref": "#/definitions/string"
         },
         "qi": {
-          "description": "The first CRT coefficient",
+          "description": "The first CRT coefficient.",
           "$ref": "#/definitions/string"
         }
       }

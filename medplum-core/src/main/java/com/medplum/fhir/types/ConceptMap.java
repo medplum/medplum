@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -55,7 +53,10 @@ public class ConceptMap extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -69,51 +70,85 @@ public class ConceptMap extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * An absolute URI that is used to identify this concept map when it is referenced in a specification, model, design or an instance; also called its canonical identifier. This SHOULD be globally unique and SHOULD be a literal address at which at which an authoritative instance of this concept map is (or will be) published. This URL can be the target of a canonical reference. It SHALL remain the same when the concept map is stored on different servers.
+     * An absolute URI that is used to identify this concept map when it is
+     * referenced in a specification, model, design or an instance; also
+     * called its canonical identifier. This SHOULD be globally unique and
+     * SHOULD be a literal address at which at which an authoritative
+     * instance of this concept map is (or will be) published. This URL can
+     * be the target of a canonical reference. It SHALL remain the same when
+     * the concept map is stored on different servers.
      */
     public String url() {
         return getString(PROPERTY_URL);
     }
 
     /**
-     * A formal identifier that is used to identify this concept map when it is represented in other formats, or referenced in a specification, model, design or an instance.
+     * A formal identifier that is used to identify this concept map when it
+     * is represented in other formats, or referenced in a specification,
+     * model, design or an instance.
      */
     public Identifier identifier() {
         return getObject(Identifier.class, PROPERTY_IDENTIFIER);
     }
 
     /**
-     * The identifier that is used to identify this version of the concept map when it is referenced in a specification, model, design or instance. This is an arbitrary value managed by the concept map author and is not expected to be globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a managed version is not available. There is also no expectation that versions can be placed in a lexicographical sequence.
+     * The identifier that is used to identify this version of the concept
+     * map when it is referenced in a specification, model, design or
+     * instance. This is an arbitrary value managed by the concept map author
+     * and is not expected to be globally unique. For example, it might be a
+     * timestamp (e.g. yyyymmdd) if a managed version is not available. There
+     * is also no expectation that versions can be placed in a
+     * lexicographical sequence.
      */
     public String version() {
         return getString(PROPERTY_VERSION);
     }
 
     /**
-     * A natural language name identifying the concept map. This name should be usable as an identifier for the module by machine processing applications such as code generation.
+     * A natural language name identifying the concept map. This name should
+     * be usable as an identifier for the module by machine processing
+     * applications such as code generation.
      */
     public String name() {
         return getString(PROPERTY_NAME);
@@ -127,98 +162,123 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The status of this concept map. Enables tracking the life-cycle of the content.
+     * The status of this concept map. Enables tracking the life-cycle of the
+     * content.
      */
     public String status() {
         return getString(PROPERTY_STATUS);
     }
 
     /**
-     * A Boolean value to indicate that this concept map is authored for testing purposes (or education/evaluation/marketing) and is not intended to be used for genuine usage.
+     * A Boolean value to indicate that this concept map is authored for
+     * testing purposes (or education/evaluation/marketing) and is not
+     * intended to be used for genuine usage.
      */
     public Boolean experimental() {
         return data.getBoolean(PROPERTY_EXPERIMENTAL);
     }
 
     /**
-     * The date  (and optionally time) when the concept map was published. The date must change when the business version changes and it must change if the status code changes. In addition, it should change when the substantive content of the concept map changes.
+     * The date  (and optionally time) when the concept map was published.
+     * The date must change when the business version changes and it must
+     * change if the status code changes. In addition, it should change when
+     * the substantive content of the concept map changes.
      */
     public java.time.Instant date() {
         return java.time.Instant.parse(data.getString(PROPERTY_DATE));
     }
 
     /**
-     * The name of the organization or individual that published the concept map.
+     * The name of the organization or individual that published the concept
+     * map.
      */
     public String publisher() {
         return getString(PROPERTY_PUBLISHER);
     }
 
     /**
-     * Contact details to assist a user in finding and communicating with the publisher.
+     * Contact details to assist a user in finding and communicating with the
+     * publisher.
      */
     public java.util.List<ContactDetail> contact() {
         return getList(ContactDetail.class, PROPERTY_CONTACT);
     }
 
     /**
-     * A free text natural language description of the concept map from a consumer's perspective.
+     * A free text natural language description of the concept map from a
+     * consumer's perspective.
      */
     public String description() {
         return getString(PROPERTY_DESCRIPTION);
     }
 
     /**
-     * The content was developed with a focus and intent of supporting the contexts that are listed. These contexts may be general categories (gender, age, ...) or may be references to specific programs (insurance plans, studies, ...) and may be used to assist with indexing and searching for appropriate concept map instances.
+     * The content was developed with a focus and intent of supporting the
+     * contexts that are listed. These contexts may be general categories
+     * (gender, age, ...) or may be references to specific programs
+     * (insurance plans, studies, ...) and may be used to assist with
+     * indexing and searching for appropriate concept map instances.
      */
     public java.util.List<UsageContext> useContext() {
         return getList(UsageContext.class, PROPERTY_USECONTEXT);
     }
 
     /**
-     * A legal or geographic region in which the concept map is intended to be used.
+     * A legal or geographic region in which the concept map is intended to
+     * be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
         return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
     }
 
     /**
-     * Explanation of why this concept map is needed and why it has been designed as it has.
+     * Explanation of why this concept map is needed and why it has been
+     * designed as it has.
      */
     public String purpose() {
         return getString(PROPERTY_PURPOSE);
     }
 
     /**
-     * A copyright statement relating to the concept map and/or its contents. Copyright statements are generally legal restrictions on the use and publishing of the concept map.
+     * A copyright statement relating to the concept map and/or its contents.
+     * Copyright statements are generally legal restrictions on the use and
+     * publishing of the concept map.
      */
     public String copyright() {
         return getString(PROPERTY_COPYRIGHT);
     }
 
     /**
-     * Identifier for the source value set that contains the concepts that are being mapped and provides context for the mappings.
+     * Identifier for the source value set that contains the concepts that
+     * are being mapped and provides context for the mappings.
      */
     public String sourceUri() {
         return getString(PROPERTY_SOURCEURI);
     }
 
     /**
-     * Identifier for the source value set that contains the concepts that are being mapped and provides context for the mappings.
+     * Identifier for the source value set that contains the concepts that
+     * are being mapped and provides context for the mappings.
      */
     public String sourceCanonical() {
         return getString(PROPERTY_SOURCECANONICAL);
     }
 
     /**
-     * The target value set provides context for the mappings. Note that the mapping is made between concepts, not between value sets, but the value set provides important context about how the concept mapping choices are made.
+     * The target value set provides context for the mappings. Note that the
+     * mapping is made between concepts, not between value sets, but the
+     * value set provides important context about how the concept mapping
+     * choices are made.
      */
     public String targetUri() {
         return getString(PROPERTY_TARGETURI);
     }
 
     /**
-     * The target value set provides context for the mappings. Note that the mapping is made between concepts, not between value sets, but the value set provides important context about how the concept mapping choices are made.
+     * The target value set provides context for the mappings. Note that the
+     * mapping is made between concepts, not between value sets, but the
+     * value set provides important context about how the concept mapping
+     * choices are made.
      */
     public String targetCanonical() {
         return getString(PROPERTY_TARGETCANONICAL);
@@ -408,44 +468,63 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * A reference to an element that holds a coded value that corresponds to a code system property. The idea is that the information model carries an element somewhere that is labeled to correspond with a code system property.
+         * A reference to an element that holds a coded value that corresponds to
+         * a code system property. The idea is that the information model carries
+         * an element somewhere that is labeled to correspond with a code system
+         * property.
          */
         public String property() {
             return getString(PROPERTY_PROPERTY);
         }
 
         /**
-         * An absolute URI that identifies the code system of the dependency code (if the source/dependency is a value set that crosses code systems).
+         * An absolute URI that identifies the code system of the dependency code
+         * (if the source/dependency is a value set that crosses code systems).
          */
         public String system() {
             return getString(PROPERTY_SYSTEM);
         }
 
         /**
-         * Identity (code or path) or the element/item/ValueSet/text that the map depends on / refers to.
+         * Identity (code or path) or the element/item/ValueSet/text that the map
+         * depends on / refers to.
          */
         public String value() {
             return getString(PROPERTY_VALUE);
         }
 
         /**
-         * The display for the code. The display is only provided to help editors when editing the concept map.
+         * The display for the code. The display is only provided to help editors
+         * when editing the concept map.
          */
         public String display() {
             return getString(PROPERTY_DISPLAY);
@@ -519,16 +598,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -542,7 +634,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The display for the code. The display is only provided to help editors when editing the concept map.
+         * The display for the code. The display is only provided to help editors
+         * when editing the concept map.
          */
         public String display() {
             return getString(PROPERTY_DISPLAY);
@@ -621,58 +714,78 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * An absolute URI that identifies the source system where the concepts to be mapped are defined.
+         * An absolute URI that identifies the source system where the concepts
+         * to be mapped are defined.
          */
         public String source() {
             return getString(PROPERTY_SOURCE);
         }
 
         /**
-         * The specific version of the code system, as determined by the code system authority.
+         * The specific version of the code system, as determined by the code
+         * system authority.
          */
         public String sourceVersion() {
             return getString(PROPERTY_SOURCEVERSION);
         }
 
         /**
-         * An absolute URI that identifies the target system that the concepts will be mapped to.
+         * An absolute URI that identifies the target system that the concepts
+         * will be mapped to.
          */
         public String target() {
             return getString(PROPERTY_TARGET);
         }
 
         /**
-         * The specific version of the code system, as determined by the code system authority.
+         * The specific version of the code system, as determined by the code
+         * system authority.
          */
         public String targetVersion() {
             return getString(PROPERTY_TARGETVERSION);
         }
 
         /**
-         * Mappings for an individual concept in the source to one or more concepts in the target.
+         * Mappings for an individual concept in the source to one or more
+         * concepts in the target.
          */
         public java.util.List<ConceptMapElement> element() {
             return getList(ConceptMapElement.class, PROPERTY_ELEMENT);
         }
 
         /**
-         * What to do when there is no mapping for the source concept. "Unmapped" does not include codes that are unmatched, and the unmapped element is ignored in a code is specified to have equivalence = unmatched.
+         * What to do when there is no mapping for the source concept. "Unmapped"
+         * does not include codes that are unmatched, and the unmapped element is
+         * ignored in a code is specified to have equivalence = unmatched.
          */
         public ConceptMapUnmapped unmapped() {
             return getObject(ConceptMapUnmapped.class, PROPERTY_UNMAPPED);
@@ -759,16 +872,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -782,35 +908,45 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The display for the code. The display is only provided to help editors when editing the concept map.
+         * The display for the code. The display is only provided to help editors
+         * when editing the concept map.
          */
         public String display() {
             return getString(PROPERTY_DISPLAY);
         }
 
         /**
-         * The equivalence between the source and target concepts (counting for the dependencies and products). The equivalence is read from target to source (e.g. the target is 'wider' than the source).
+         * The equivalence between the source and target concepts (counting for
+         * the dependencies and products). The equivalence is read from target to
+         * source (e.g. the target is 'wider' than the source).
          */
         public String equivalence() {
             return getString(PROPERTY_EQUIVALENCE);
         }
 
         /**
-         * A description of status/issues in mapping that conveys additional information not represented in  the structured data.
+         * A description of status/issues in mapping that conveys additional
+         * information not represented in  the structured data.
          */
         public String comment() {
             return getString(PROPERTY_COMMENT);
         }
 
         /**
-         * A set of additional dependencies for this mapping to hold. This mapping is only applicable if the specified element can be resolved, and it has the specified value.
+         * A set of additional dependencies for this mapping to hold. This
+         * mapping is only applicable if the specified element can be resolved,
+         * and it has the specified value.
          */
         public java.util.List<ConceptMapDependsOn> dependsOn() {
             return getList(ConceptMapDependsOn.class, PROPERTY_DEPENDSON);
         }
 
         /**
-         * A set of additional outcomes from this mapping to other elements. To properly execute this mapping, the specified element must be mapped to some data element or source that is in context. The mapping may still be useful without a place for the additional data elements, but the equivalence cannot be relied on.
+         * A set of additional outcomes from this mapping to other elements. To
+         * properly execute this mapping, the specified element must be mapped to
+         * some data element or source that is in context. The mapping may still
+         * be useful without a place for the additional data elements, but the
+         * equivalence cannot be relied on.
          */
         public java.util.List<ConceptMapDependsOn> product() {
             return getList(ConceptMapDependsOn.class, PROPERTY_PRODUCT);
@@ -895,44 +1031,66 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Defines which action to take if there is no match for the source concept in the target system designated for the group. One of 3 actions are possible: use the unmapped code (this is useful when doing a mapping between versions, and only a few codes have changed), use a fixed code (a default code), or alternatively, a reference to a different concept map can be provided (by canonical URL).
+         * Defines which action to take if there is no match for the source
+         * concept in the target system designated for the group. One of 3
+         * actions are possible: use the unmapped code (this is useful when doing
+         * a mapping between versions, and only a few codes have changed), use a
+         * fixed code (a default code), or alternatively, a reference to a
+         * different concept map can be provided (by canonical URL).
          */
         public String mode() {
             return getString(PROPERTY_MODE);
         }
 
         /**
-         * The fixed code to use when the mode = 'fixed'  - all unmapped codes are mapped to a single fixed code.
+         * The fixed code to use when the mode = 'fixed'  - all unmapped codes
+         * are mapped to a single fixed code.
          */
         public String code() {
             return getString(PROPERTY_CODE);
         }
 
         /**
-         * The display for the code. The display is only provided to help editors when editing the concept map.
+         * The display for the code. The display is only provided to help editors
+         * when editing the concept map.
          */
         public String display() {
             return getString(PROPERTY_DISPLAY);
         }
 
         /**
-         * The canonical reference to an additional ConceptMap resource instance to use for mapping if this ConceptMap resource contains no matching mapping for the source concept.
+         * The canonical reference to an additional ConceptMap resource instance
+         * to use for mapping if this ConceptMap resource contains no matching
+         * mapping for the source concept.
          */
         public String url() {
             return getString(PROPERTY_URL);

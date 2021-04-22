@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -35,7 +33,8 @@ public class HumanName extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
@@ -49,14 +48,17 @@ public class HumanName extends FhirResource {
     }
 
     /**
-     * Specifies the entire name as it should be displayed e.g. on an application UI. This may be provided instead of or as well as the specific parts.
+     * Specifies the entire name as it should be displayed e.g. on an
+     * application UI. This may be provided instead of or as well as the
+     * specific parts.
      */
     public String text() {
         return getString(PROPERTY_TEXT);
     }
 
     /**
-     * The part of a name that links to the genealogy. In some cultures (e.g. Eritrea) the family name of a son is the first name of his father.
+     * The part of a name that links to the genealogy. In some cultures (e.g.
+     * Eritrea) the family name of a son is the first name of his father.
      */
     public String family() {
         return getString(PROPERTY_FAMILY);
@@ -70,21 +72,26 @@ public class HumanName extends FhirResource {
     }
 
     /**
-     * Part of the name that is acquired as a title due to academic, legal, employment or nobility status, etc. and that appears at the start of the name.
+     * Part of the name that is acquired as a title due to academic, legal,
+     * employment or nobility status, etc. and that appears at the start of
+     * the name.
      */
     public java.util.List<String> prefix() {
         return getList(String.class, PROPERTY_PREFIX);
     }
 
     /**
-     * Part of the name that is acquired as a title due to academic, legal, employment or nobility status, etc. and that appears at the end of the name.
+     * Part of the name that is acquired as a title due to academic, legal,
+     * employment or nobility status, etc. and that appears at the end of the
+     * name.
      */
     public java.util.List<String> suffix() {
         return getList(String.class, PROPERTY_SUFFIX);
     }
 
     /**
-     * Indicates the period of time when this name was valid for the named person.
+     * Indicates the period of time when this name was valid for the named
+     * person.
      */
     public Period period() {
         return getObject(Period.class, PROPERTY_PERIOD);

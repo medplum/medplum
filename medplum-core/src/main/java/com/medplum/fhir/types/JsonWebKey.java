@@ -5,11 +5,7 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 public class JsonWebKey extends FhirResource {
     public static final String RESOURCE_TYPE = "JsonWebKey";
@@ -75,12 +71,14 @@ public class JsonWebKey extends FhirResource {
     /**
      * The operation(s) for which the key is intended to be used.
      */
-    public String key_ops() {
+    public String keyOps() {
         return getString(PROPERTY_KEY_OPS);
     }
 
     /**
-     * The x.509 certificate chain. The first entry in the array is the certificate to use for token verification; the other certificates can be used to verify this first certificate.
+     * The x.509 certificate chain. The first entry in the array is the
+     * certificate to use for token verification; the other certificates can
+     * be used to verify this first certificate.
      */
     public java.util.List<String> x5c() {
         return getList(String.class, PROPERTY_X5C);
@@ -115,42 +113,42 @@ public class JsonWebKey extends FhirResource {
     }
 
     /**
-     * The exponent for the RSA private key
+     * The exponent for the RSA private key.
      */
     public String d() {
         return getString(PROPERTY_D);
     }
 
     /**
-     * The first prime factor
+     * The first prime factor.
      */
     public String p() {
         return getString(PROPERTY_P);
     }
 
     /**
-     * The second prime factor
+     * The second prime factor.
      */
     public String q() {
         return getString(PROPERTY_Q);
     }
 
     /**
-     * The first factor CRT exponent
+     * The first factor CRT exponent.
      */
     public String dp() {
         return getString(PROPERTY_DP);
     }
 
     /**
-     * The second factor CRT exponent
+     * The second factor CRT exponent.
      */
     public String dq() {
         return getString(PROPERTY_DQ);
     }
 
     /**
-     * The first CRT coefficient
+     * The first CRT coefficient.
      */
     public String qi() {
         return getString(PROPERTY_QI);
@@ -196,8 +194,8 @@ public class JsonWebKey extends FhirResource {
             return this;
         }
 
-        public Builder key_ops(final String key_ops) {
-            b.add(PROPERTY_KEY_OPS, key_ops);
+        public Builder keyOps(final String keyOps) {
+            b.add(PROPERTY_KEY_OPS, keyOps);
             return this;
         }
 

@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -79,364 +77,416 @@ public class Extension extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * Source of the definition for the extension code - a logical name or a URL.
+     * Source of the definition for the extension code - a logical name or a
+     * URL.
      */
     public String url() {
         return getString(PROPERTY_URL);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueBase64Binary() {
         return getString(PROPERTY_VALUEBASE64BINARY);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Boolean valueBoolean() {
         return data.getBoolean(PROPERTY_VALUEBOOLEAN);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueCanonical() {
         return getString(PROPERTY_VALUECANONICAL);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueCode() {
         return getString(PROPERTY_VALUECODE);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueDate() {
         return getString(PROPERTY_VALUEDATE);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueDateTime() {
         return getString(PROPERTY_VALUEDATETIME);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Integer valueDecimal() {
         return data.getInt(PROPERTY_VALUEDECIMAL);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueId() {
         return getString(PROPERTY_VALUEID);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueInstant() {
         return getString(PROPERTY_VALUEINSTANT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Integer valueInteger() {
         return data.getInt(PROPERTY_VALUEINTEGER);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueMarkdown() {
         return getString(PROPERTY_VALUEMARKDOWN);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueOid() {
         return getString(PROPERTY_VALUEOID);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Integer valuePositiveInt() {
         return data.getInt(PROPERTY_VALUEPOSITIVEINT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueString() {
         return getString(PROPERTY_VALUESTRING);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueTime() {
         return getString(PROPERTY_VALUETIME);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Integer valueUnsignedInt() {
         return data.getInt(PROPERTY_VALUEUNSIGNEDINT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueUri() {
         return getString(PROPERTY_VALUEURI);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueUrl() {
         return getString(PROPERTY_VALUEURL);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueUuid() {
         return getString(PROPERTY_VALUEUUID);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Address valueAddress() {
         return getObject(Address.class, PROPERTY_VALUEADDRESS);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Age valueAge() {
         return getObject(Age.class, PROPERTY_VALUEAGE);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Annotation valueAnnotation() {
         return getObject(Annotation.class, PROPERTY_VALUEANNOTATION);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Attachment valueAttachment() {
         return getObject(Attachment.class, PROPERTY_VALUEATTACHMENT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public CodeableConcept valueCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Coding valueCoding() {
         return getObject(Coding.class, PROPERTY_VALUECODING);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public ContactPoint valueContactPoint() {
         return getObject(ContactPoint.class, PROPERTY_VALUECONTACTPOINT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Count valueCount() {
         return getObject(Count.class, PROPERTY_VALUECOUNT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Distance valueDistance() {
         return getObject(Distance.class, PROPERTY_VALUEDISTANCE);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Duration valueDuration() {
         return getObject(Duration.class, PROPERTY_VALUEDURATION);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public HumanName valueHumanName() {
         return getObject(HumanName.class, PROPERTY_VALUEHUMANNAME);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Identifier valueIdentifier() {
         return getObject(Identifier.class, PROPERTY_VALUEIDENTIFIER);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Money valueMoney() {
         return getObject(Money.class, PROPERTY_VALUEMONEY);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Period valuePeriod() {
         return getObject(Period.class, PROPERTY_VALUEPERIOD);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Quantity valueQuantity() {
         return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Range valueRange() {
         return getObject(Range.class, PROPERTY_VALUERANGE);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Ratio valueRatio() {
         return getObject(Ratio.class, PROPERTY_VALUERATIO);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Reference valueReference() {
         return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public SampledData valueSampledData() {
         return getObject(SampledData.class, PROPERTY_VALUESAMPLEDDATA);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Signature valueSignature() {
         return getObject(Signature.class, PROPERTY_VALUESIGNATURE);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Timing valueTiming() {
         return getObject(Timing.class, PROPERTY_VALUETIMING);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public ContactDetail valueContactDetail() {
         return getObject(ContactDetail.class, PROPERTY_VALUECONTACTDETAIL);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Contributor valueContributor() {
         return getObject(Contributor.class, PROPERTY_VALUECONTRIBUTOR);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public DataRequirement valueDataRequirement() {
         return getObject(DataRequirement.class, PROPERTY_VALUEDATAREQUIREMENT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Expression valueExpression() {
         return getObject(Expression.class, PROPERTY_VALUEEXPRESSION);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public ParameterDefinition valueParameterDefinition() {
         return getObject(ParameterDefinition.class, PROPERTY_VALUEPARAMETERDEFINITION);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public RelatedArtifact valueRelatedArtifact() {
         return getObject(RelatedArtifact.class, PROPERTY_VALUERELATEDARTIFACT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public TriggerDefinition valueTriggerDefinition() {
         return getObject(TriggerDefinition.class, PROPERTY_VALUETRIGGERDEFINITION);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public UsageContext valueUsageContext() {
         return getObject(UsageContext.class, PROPERTY_VALUEUSAGECONTEXT);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Dosage valueDosage() {
         return getObject(Dosage.class, PROPERTY_VALUEDOSAGE);
     }
 
     /**
-     * Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).
+     * Value of extension - must be one of a constrained set of the data
+     * types (see [Extensibility](extensibility.html) for a list).
      */
     public Meta valueMeta() {
         return getObject(Meta.class, PROPERTY_VALUEMETA);

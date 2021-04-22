@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -70,7 +68,10 @@ public class Contract extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -84,44 +85,65 @@ public class Contract extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Unique identifier for this Contract or a derivative that references a Source Contract.
+     * Unique identifier for this Contract or a derivative that references a
+     * Source Contract.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
     }
 
     /**
-     * Canonical identifier for this contract, represented as a URI (globally unique).
+     * Canonical identifier for this contract, represented as a URI (globally
+     * unique).
      */
     public String url() {
         return getString(PROPERTY_URL);
     }
 
     /**
-     * An edition identifier used for business purposes to label business significant variants.
+     * An edition identifier used for business purposes to label business
+     * significant variants.
      */
     public String version() {
         return getString(PROPERTY_VERSION);
@@ -135,28 +157,35 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Legal states of the formation of a legal instrument, which is a formally executed written document that can be formally attributed to its author, records and formally expresses a legally enforceable act, process, or contractual duty, obligation, or right, and therefore evidences that act, process, or agreement.
+     * Legal states of the formation of a legal instrument, which is a
+     * formally executed written document that can be formally attributed to
+     * its author, records and formally expresses a legally enforceable act,
+     * process, or contractual duty, obligation, or right, and therefore
+     * evidences that act, process, or agreement.
      */
     public CodeableConcept legalState() {
         return getObject(CodeableConcept.class, PROPERTY_LEGALSTATE);
     }
 
     /**
-     * The URL pointing to a FHIR-defined Contract Definition that is adhered to in whole or part by this Contract.
+     * The URL pointing to a FHIR-defined Contract Definition that is adhered
+     * to in whole or part by this Contract.
      */
     public Reference instantiatesCanonical() {
         return getObject(Reference.class, PROPERTY_INSTANTIATESCANONICAL);
     }
 
     /**
-     * The URL pointing to an externally maintained definition that is adhered to in whole or in part by this Contract.
+     * The URL pointing to an externally maintained definition that is
+     * adhered to in whole or in part by this Contract.
      */
     public String instantiatesUri() {
         return getString(PROPERTY_INSTANTIATESURI);
     }
 
     /**
-     * The minimal content derived from the basal information source at a specific stage in its lifecycle.
+     * The minimal content derived from the basal information source at a
+     * specific stage in its lifecycle.
      */
     public CodeableConcept contentDerivative() {
         return getObject(CodeableConcept.class, PROPERTY_CONTENTDERIVATIVE);
@@ -177,28 +206,36 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Event resulting in discontinuation or termination of this Contract instance by one or more parties to the contract.
+     * Event resulting in discontinuation or termination of this Contract
+     * instance by one or more parties to the contract.
      */
     public CodeableConcept expirationType() {
         return getObject(CodeableConcept.class, PROPERTY_EXPIRATIONTYPE);
     }
 
     /**
-     * The target entity impacted by or of interest to parties to the agreement.
+     * The target entity impacted by or of interest to parties to the
+     * agreement.
      */
     public java.util.List<Reference> subject() {
         return getList(Reference.class, PROPERTY_SUBJECT);
     }
 
     /**
-     * A formally or informally recognized grouping of people, principals, organizations, or jurisdictions formed for the purpose of achieving some form of collective action such as the promulgation, administration and enforcement of contracts and policies.
+     * A formally or informally recognized grouping of people, principals,
+     * organizations, or jurisdictions formed for the purpose of achieving
+     * some form of collective action such as the promulgation,
+     * administration and enforcement of contracts and policies.
      */
     public java.util.List<Reference> authority() {
         return getList(Reference.class, PROPERTY_AUTHORITY);
     }
 
     /**
-     * Recognized governance framework or system operating with a circumscribed scope in accordance with specified principles, policies, processes or procedures for managing rights, actions, or behaviors of parties or principals relative to resources.
+     * Recognized governance framework or system operating with a
+     * circumscribed scope in accordance with specified principles, policies,
+     * processes or procedures for managing rights, actions, or behaviors of
+     * parties or principals relative to resources.
      */
     public java.util.List<Reference> domain() {
         return getList(Reference.class, PROPERTY_DOMAIN);
@@ -212,112 +249,150 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * A natural language name identifying this Contract definition, derivative, or instance in any legal state. Provides additional information about its content. This name should be usable as an identifier for the module by machine processing applications such as code generation.
+     * A natural language name identifying this Contract definition,
+     * derivative, or instance in any legal state. Provides additional
+     * information about its content. This name should be usable as an
+     * identifier for the module by machine processing applications such as
+     * code generation.
      */
     public String name() {
         return getString(PROPERTY_NAME);
     }
 
     /**
-     * A short, descriptive, user-friendly title for this Contract definition, derivative, or instance in any legal state.t giving additional information about its content.
+     * A short, descriptive, user-friendly title for this Contract
+     * definition, derivative, or instance in any legal state.t giving
+     * additional information about its content.
      */
     public String title() {
         return getString(PROPERTY_TITLE);
     }
 
     /**
-     * An explanatory or alternate user-friendly title for this Contract definition, derivative, or instance in any legal state.t giving additional information about its content.
+     * An explanatory or alternate user-friendly title for this Contract
+     * definition, derivative, or instance in any legal state.t giving
+     * additional information about its content.
      */
     public String subtitle() {
         return getString(PROPERTY_SUBTITLE);
     }
 
     /**
-     * Alternative representation of the title for this Contract definition, derivative, or instance in any legal state., e.g., a domain specific contract number related to legislation.
+     * Alternative representation of the title for this Contract definition,
+     * derivative, or instance in any legal state., e.g., a domain specific
+     * contract number related to legislation.
      */
     public java.util.List<String> alias() {
         return getList(String.class, PROPERTY_ALIAS);
     }
 
     /**
-     * The individual or organization that authored the Contract definition, derivative, or instance in any legal state.
+     * The individual or organization that authored the Contract definition,
+     * derivative, or instance in any legal state.
      */
     public Reference author() {
         return getObject(Reference.class, PROPERTY_AUTHOR);
     }
 
     /**
-     * A selector of legal concerns for this Contract definition, derivative, or instance in any legal state.
+     * A selector of legal concerns for this Contract definition, derivative,
+     * or instance in any legal state.
      */
     public CodeableConcept scope() {
         return getObject(CodeableConcept.class, PROPERTY_SCOPE);
     }
 
     /**
-     * Narrows the range of legal concerns to focus on the achievement of specific contractual objectives.
+     * Narrows the range of legal concerns to focus on the achievement of
+     * specific contractual objectives.
      */
     public CodeableConcept topicCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_TOPICCODEABLECONCEPT);
     }
 
     /**
-     * Narrows the range of legal concerns to focus on the achievement of specific contractual objectives.
+     * Narrows the range of legal concerns to focus on the achievement of
+     * specific contractual objectives.
      */
     public Reference topicReference() {
         return getObject(Reference.class, PROPERTY_TOPICREFERENCE);
     }
 
     /**
-     * A high-level category for the legal instrument, whether constructed as a Contract definition, derivative, or instance in any legal state.  Provides additional information about its content within the context of the Contract's scope to distinguish the kinds of systems that would be interested in the contract.
+     * A high-level category for the legal instrument, whether constructed as
+     * a Contract definition, derivative, or instance in any legal state. 
+     * Provides additional information about its content within the context
+     * of the Contract's scope to distinguish the kinds of systems that would
+     * be interested in the contract.
      */
     public CodeableConcept type() {
         return getObject(CodeableConcept.class, PROPERTY_TYPE);
     }
 
     /**
-     * Sub-category for the Contract that distinguishes the kinds of systems that would be interested in the Contract within the context of the Contract's scope.
+     * Sub-category for the Contract that distinguishes the kinds of systems
+     * that would be interested in the Contract within the context of the
+     * Contract's scope.
      */
     public java.util.List<CodeableConcept> subType() {
         return getList(CodeableConcept.class, PROPERTY_SUBTYPE);
     }
 
     /**
-     * Precusory content developed with a focus and intent of supporting the formation a Contract instance, which may be associated with and transformable into a Contract.
+     * Precusory content developed with a focus and intent of supporting the
+     * formation a Contract instance, which may be associated with and
+     * transformable into a Contract.
      */
     public ContractContentDefinition contentDefinition() {
         return getObject(ContractContentDefinition.class, PROPERTY_CONTENTDEFINITION);
     }
 
     /**
-     * One or more Contract Provisions, which may be related and conveyed as a group, and may contain nested groups.
+     * One or more Contract Provisions, which may be related and conveyed as
+     * a group, and may contain nested groups.
      */
     public java.util.List<ContractTerm> term() {
         return getList(ContractTerm.class, PROPERTY_TERM);
     }
 
     /**
-     * Information that may be needed by/relevant to the performer in their execution of this term action.
+     * Information that may be needed by/relevant to the performer in their
+     * execution of this term action.
      */
     public java.util.List<Reference> supportingInfo() {
         return getList(Reference.class, PROPERTY_SUPPORTINGINFO);
     }
 
     /**
-     * Links to Provenance records for past versions of this Contract definition, derivative, or instance, which identify key state transitions or updates that are likely to be relevant to a user looking at the current version of the Contract.  The Provence.entity indicates the target that was changed in the update. http://build.fhir.org/provenance-definitions.html#Provenance.entity.
+     * Links to Provenance records for past versions of this Contract
+     * definition, derivative, or instance, which identify key state
+     * transitions or updates that are likely to be relevant to a user
+     * looking at the current version of the Contract.  The Provence.entity
+     * indicates the target that was changed in the update.
+     * http://build.fhir.org/provenance-definitions.html#Provenance.entity.
      */
     public java.util.List<Reference> relevantHistory() {
         return getList(Reference.class, PROPERTY_RELEVANTHISTORY);
     }
 
     /**
-     * Parties with legal standing in the Contract, including the principal parties, the grantor(s) and grantee(s), which are any person or organization bound by the contract, and any ancillary parties, which facilitate the execution of the contract such as a notary or witness.
+     * Parties with legal standing in the Contract, including the principal
+     * parties, the grantor(s) and grantee(s), which are any person or
+     * organization bound by the contract, and any ancillary parties, which
+     * facilitate the execution of the contract such as a notary or witness.
      */
     public java.util.List<ContractSigner> signer() {
         return getList(ContractSigner.class, PROPERTY_SIGNER);
     }
 
     /**
-     * The "patient friendly language" versionof the Contract in whole or in parts. "Patient friendly language" means the representation of the Contract and Contract Provisions in a manner that is readily accessible and understandable by a layperson in accordance with best practices for communication styles that ensure that those agreeing to or signing the Contract understand the roles, actions, obligations, responsibilities, and implication of the agreement.
+     * The "patient friendly language" versionof the Contract in whole or in
+     * parts. "Patient friendly language" means the representation of the
+     * Contract and Contract Provisions in a manner that is readily
+     * accessible and understandable by a layperson in accordance with best
+     * practices for communication styles that ensure that those agreeing to
+     * or signing the Contract understand the roles, actions, obligations,
+     * responsibilities, and implication of the agreement.
      */
     public java.util.List<ContractFriendly> friendly() {
         return getList(ContractFriendly.class, PROPERTY_FRIENDLY);
@@ -331,21 +406,28 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * List of Computable Policy Rule Language Representations of this Contract.
+     * List of Computable Policy Rule Language Representations of this
+     * Contract.
      */
     public java.util.List<ContractRule> rule() {
         return getList(ContractRule.class, PROPERTY_RULE);
     }
 
     /**
-     * Legally binding Contract: This is the signed and legally recognized representation of the Contract, which is considered the "source of truth" and which would be the basis for legal action related to enforcement of this Contract.
+     * Legally binding Contract: This is the signed and legally recognized
+     * representation of the Contract, which is considered the "source of
+     * truth" and which would be the basis for legal action related to
+     * enforcement of this Contract.
      */
     public Attachment legallyBindingAttachment() {
         return getObject(Attachment.class, PROPERTY_LEGALLYBINDINGATTACHMENT);
     }
 
     /**
-     * Legally binding Contract: This is the signed and legally recognized representation of the Contract, which is considered the "source of truth" and which would be the basis for legal action related to enforcement of this Contract.
+     * Legally binding Contract: This is the signed and legally recognized
+     * representation of the Contract, which is considered the "source of
+     * truth" and which would be the basis for legal action related to
+     * enforcement of this Contract.
      */
     public Reference legallyBindingReference() {
         return getObject(Reference.class, PROPERTY_LEGALLYBINDINGREFERENCE);
@@ -622,16 +704,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -645,7 +740,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Activity or service obligation to be done or not done, performed or not performed, effectuated or not by this Contract term.
+         * Activity or service obligation to be done or not done, performed or
+         * not performed, effectuated or not by this Contract term.
          */
         public CodeableConcept type() {
             return getObject(CodeableConcept.class, PROPERTY_TYPE);
@@ -659,14 +755,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Reason or purpose for the action stipulated by this Contract Provision.
+         * Reason or purpose for the action stipulated by this Contract
+         * Provision.
          */
         public CodeableConcept intent() {
             return getObject(CodeableConcept.class, PROPERTY_INTENT);
         }
 
         /**
-         * Id [identifier??] of the clause or question text related to this action in the referenced form or QuestionnaireResponse.
+         * Id [identifier??] of the clause or question text related to this
+         * action in the referenced form or QuestionnaireResponse.
          */
         public java.util.List<String> linkId() {
             return getList(String.class, PROPERTY_LINKID);
@@ -680,14 +778,17 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Encounter or Episode with primary association to specified term activity.
+         * Encounter or Episode with primary association to specified term
+         * activity.
          */
         public Reference context() {
             return getObject(Reference.class, PROPERTY_CONTEXT);
         }
 
         /**
-         * Id [identifier??] of the clause or question text related to the requester of this action in the referenced form or QuestionnaireResponse.
+         * Id [identifier??] of the clause or question text related to the
+         * requester of this action in the referenced form or
+         * QuestionnaireResponse.
          */
         public java.util.List<String> contextLinkId() {
             return getList(String.class, PROPERTY_CONTEXTLINKID);
@@ -715,77 +816,91 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Who or what initiated the action and has responsibility for its activation.
+         * Who or what initiated the action and has responsibility for its
+         * activation.
          */
         public java.util.List<Reference> requester() {
             return getList(Reference.class, PROPERTY_REQUESTER);
         }
 
         /**
-         * Id [identifier??] of the clause or question text related to the requester of this action in the referenced form or QuestionnaireResponse.
+         * Id [identifier??] of the clause or question text related to the
+         * requester of this action in the referenced form or
+         * QuestionnaireResponse.
          */
         public java.util.List<String> requesterLinkId() {
             return getList(String.class, PROPERTY_REQUESTERLINKID);
         }
 
         /**
-         * The type of individual that is desired or required to perform or not perform the action.
+         * The type of individual that is desired or required to perform or not
+         * perform the action.
          */
         public java.util.List<CodeableConcept> performerType() {
             return getList(CodeableConcept.class, PROPERTY_PERFORMERTYPE);
         }
 
         /**
-         * The type of role or competency of an individual desired or required to perform or not perform the action.
+         * The type of role or competency of an individual desired or required to
+         * perform or not perform the action.
          */
         public CodeableConcept performerRole() {
             return getObject(CodeableConcept.class, PROPERTY_PERFORMERROLE);
         }
 
         /**
-         * Indicates who or what is being asked to perform (or not perform) the ction.
+         * Indicates who or what is being asked to perform (or not perform) the
+         * ction.
          */
         public Reference performer() {
             return getObject(Reference.class, PROPERTY_PERFORMER);
         }
 
         /**
-         * Id [identifier??] of the clause or question text related to the reason type or reference of this  action in the referenced form or QuestionnaireResponse.
+         * Id [identifier??] of the clause or question text related to the reason
+         * type or reference of this  action in the referenced form or
+         * QuestionnaireResponse.
          */
         public java.util.List<String> performerLinkId() {
             return getList(String.class, PROPERTY_PERFORMERLINKID);
         }
 
         /**
-         * Rationale for the action to be performed or not performed. Describes why the action is permitted or prohibited.
+         * Rationale for the action to be performed or not performed. Describes
+         * why the action is permitted or prohibited.
          */
         public java.util.List<CodeableConcept> reasonCode() {
             return getList(CodeableConcept.class, PROPERTY_REASONCODE);
         }
 
         /**
-         * Indicates another resource whose existence justifies permitting or not permitting this action.
+         * Indicates another resource whose existence justifies permitting or not
+         * permitting this action.
          */
         public java.util.List<Reference> reasonReference() {
             return getList(Reference.class, PROPERTY_REASONREFERENCE);
         }
 
         /**
-         * Describes why the action is to be performed or not performed in textual form.
+         * Describes why the action is to be performed or not performed in
+         * textual form.
          */
         public java.util.List<String> reason() {
             return getList(String.class, PROPERTY_REASON);
         }
 
         /**
-         * Id [identifier??] of the clause or question text related to the reason type or reference of this  action in the referenced form or QuestionnaireResponse.
+         * Id [identifier??] of the clause or question text related to the reason
+         * type or reference of this  action in the referenced form or
+         * QuestionnaireResponse.
          */
         public java.util.List<String> reasonLinkId() {
             return getList(String.class, PROPERTY_REASONLINKID);
         }
 
         /**
-         * Comments made about the term action made by the requester, performer, subject or other participants.
+         * Comments made about the term action made by the requester, performer,
+         * subject or other participants.
          */
         public java.util.List<Annotation> note() {
             return getList(Annotation.class, PROPERTY_NOTE);
@@ -970,100 +1085,149 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public Boolean valueBoolean() {
             return data.getBoolean(PROPERTY_VALUEBOOLEAN);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public Integer valueDecimal() {
             return data.getInt(PROPERTY_VALUEDECIMAL);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public Integer valueInteger() {
             return data.getInt(PROPERTY_VALUEINTEGER);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public String valueDate() {
             return getString(PROPERTY_VALUEDATE);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public String valueDateTime() {
             return getString(PROPERTY_VALUEDATETIME);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public String valueTime() {
             return getString(PROPERTY_VALUETIME);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public String valueString() {
             return getString(PROPERTY_VALUESTRING);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public String valueUri() {
             return getString(PROPERTY_VALUEURI);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public Attachment valueAttachment() {
             return getObject(Attachment.class, PROPERTY_VALUEATTACHMENT);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public Coding valueCoding() {
             return getObject(Coding.class, PROPERTY_VALUECODING);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public Quantity valueQuantity() {
             return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
         }
 
         /**
-         * Response to an offer clause or question text,  which enables selection of values to be agreed to, e.g., the period of participation, the date of occupancy of a rental, warrently duration, or whether biospecimen may be used for further research.
+         * Response to an offer clause or question text,  which enables selection
+         * of values to be agreed to, e.g., the period of participation, the date
+         * of occupancy of a rental, warrently duration, or whether biospecimen
+         * may be used for further research.
          */
         public Reference valueReference() {
             return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
@@ -1189,16 +1353,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -1233,7 +1410,9 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Specifies the applicability of the term to an asset resource instance, and instances it refers to orinstances that refer to it, and/or are owned by the offeree.
+         * Specifies the applicability of the term to an asset resource instance,
+         * and instances it refers to orinstances that refer to it, and/or are
+         * owned by the offeree.
          */
         public Coding relationship() {
             return getObject(Coding.class, PROPERTY_RELATIONSHIP);
@@ -1247,7 +1426,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Description of the quality and completeness of the asset that imay be a factor in its valuation.
+         * Description of the quality and completeness of the asset that imay be
+         * a factor in its valuation.
          */
         public String condition() {
             return getString(PROPERTY_CONDITION);
@@ -1275,14 +1455,17 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Clause or question text (Prose Object) concerning the asset in a linked form, such as a QuestionnaireResponse used in the formation of the contract.
+         * Clause or question text (Prose Object) concerning the asset in a
+         * linked form, such as a QuestionnaireResponse used in the formation of
+         * the contract.
          */
         public String text() {
             return getString(PROPERTY_TEXT);
         }
 
         /**
-         * Id [identifier??] of the clause or question text about the asset in the referenced form or QuestionnaireResponse.
+         * Id [identifier??] of the clause or question text about the asset in
+         * the referenced form or QuestionnaireResponse.
          */
         public java.util.List<String> linkId() {
             return getList(String.class, PROPERTY_LINKID);
@@ -1435,23 +1618,38 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Precusory content structure and use, i.e., a boilerplate, template, application for a contract such as an insurance policy or benefits under a program, e.g., workers compensation.
+         * Precusory content structure and use, i.e., a boilerplate, template,
+         * application for a contract such as an insurance policy or benefits
+         * under a program, e.g., workers compensation.
          */
         public CodeableConcept type() {
             return getObject(CodeableConcept.class, PROPERTY_TYPE);
@@ -1465,28 +1663,36 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The  individual or organization that published the Contract precursor content.
+         * The  individual or organization that published the Contract precursor
+         * content.
          */
         public Reference publisher() {
             return getObject(Reference.class, PROPERTY_PUBLISHER);
         }
 
         /**
-         * The date (and optionally time) when the contract was published. The date must change when the business version changes and it must change if the status code changes. In addition, it should change when the substantive content of the contract changes.
+         * The date (and optionally time) when the contract was published. The
+         * date must change when the business version changes and it must change
+         * if the status code changes. In addition, it should change when the
+         * substantive content of the contract changes.
          */
         public java.time.Instant publicationDate() {
             return java.time.Instant.parse(data.getString(PROPERTY_PUBLICATIONDATE));
         }
 
         /**
-         * amended | appended | cancelled | disputed | entered-in-error | executable | executed | negotiable | offered | policy | rejected | renewed | revoked | resolved | terminated.
+         * amended | appended | cancelled | disputed | entered-in-error |
+         * executable | executed | negotiable | offered | policy | rejected |
+         * renewed | revoked | resolved | terminated.
          */
         public String publicationStatus() {
             return getString(PROPERTY_PUBLICATIONSTATUS);
         }
 
         /**
-         * A copyright statement relating to Contract precursor content. Copyright statements are generally legal restrictions on the use and publishing of the Contract precursor content.
+         * A copyright statement relating to Contract precursor content.
+         * Copyright statements are generally legal restrictions on the use and
+         * publishing of the Contract precursor content.
          */
         public String copyright() {
             return getString(PROPERTY_COPYRIGHT);
@@ -1570,30 +1776,46 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Asset context reference may include the creator, custodian, or owning Person or Organization (e.g., bank, repository),  location held, e.g., building,  jurisdiction.
+         * Asset context reference may include the creator, custodian, or owning
+         * Person or Organization (e.g., bank, repository),  location held, e.g.,
+         * building,  jurisdiction.
          */
         public Reference reference() {
             return getObject(Reference.class, PROPERTY_REFERENCE);
         }
 
         /**
-         * Coded representation of the context generally or of the Referenced entity, such as the asset holder type or location.
+         * Coded representation of the context generally or of the Referenced
+         * entity, such as the asset holder type or location.
          */
         public java.util.List<CodeableConcept> code() {
             return getList(CodeableConcept.class, PROPERTY_CODE);
@@ -1668,30 +1890,47 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Human readable rendering of this Contract in a format and representation intended to enhance comprehension and ensure understandability.
+         * Human readable rendering of this Contract in a format and
+         * representation intended to enhance comprehension and ensure
+         * understandability.
          */
         public Attachment contentAttachment() {
             return getObject(Attachment.class, PROPERTY_CONTENTATTACHMENT);
         }
 
         /**
-         * Human readable rendering of this Contract in a format and representation intended to enhance comprehension and ensure understandability.
+         * Human readable rendering of this Contract in a format and
+         * representation intended to enhance comprehension and ensure
+         * understandability.
          */
         public Reference contentReference() {
             return getObject(Reference.class, PROPERTY_CONTENTREFERENCE);
@@ -1754,16 +1993,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -1848,16 +2100,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -1878,21 +2143,26 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The owner of an asset has the residual control rights over the asset: the right to decide all usages of the asset in any way not inconsistent with a prior contract, custom, or law (Hart, 1995, p. 30).
+         * The owner of an asset has the residual control rights over the asset:
+         * the right to decide all usages of the asset in any way not
+         * inconsistent with a prior contract, custom, or law (Hart, 1995, p.
+         * 30).
          */
         public Reference topic() {
             return getObject(Reference.class, PROPERTY_TOPIC);
         }
 
         /**
-         * Type of Contract Provision such as specific requirements, purposes for actions, obligations, prohibitions, e.g. life time maximum benefit.
+         * Type of Contract Provision such as specific requirements, purposes for
+         * actions, obligations, prohibitions, e.g. life time maximum benefit.
          */
         public CodeableConcept type() {
             return getObject(CodeableConcept.class, PROPERTY_TYPE);
         }
 
         /**
-         * Type of choice made by accepting party with respect to an offer made by an offeror/ grantee.
+         * Type of choice made by accepting party with respect to an offer made
+         * by an offeror/ grantee.
          */
         public CodeableConcept decision() {
             return getObject(CodeableConcept.class, PROPERTY_DECISION);
@@ -1920,7 +2190,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The id of the clause or question text of the offer in the referenced questionnaire/response.
+         * The id of the clause or question text of the offer in the referenced
+         * questionnaire/response.
          */
         public java.util.List<String> linkId() {
             return getList(String.class, PROPERTY_LINKID);
@@ -2030,16 +2301,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -2116,30 +2400,45 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Computable Contract conveyed using a policy rule language (e.g. XACML, DKAL, SecPal).
+         * Computable Contract conveyed using a policy rule language (e.g. XACML,
+         * DKAL, SecPal).
          */
         public Attachment contentAttachment() {
             return getObject(Attachment.class, PROPERTY_CONTENTATTACHMENT);
         }
 
         /**
-         * Computable Contract conveyed using a policy rule language (e.g. XACML, DKAL, SecPal).
+         * Computable Contract conveyed using a policy rule language (e.g. XACML,
+         * DKAL, SecPal).
          */
         public Reference contentReference() {
             return getObject(Reference.class, PROPERTY_CONTENTREFERENCE);
@@ -2204,44 +2503,61 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Number used to link this term or term element to the applicable Security Label.
+         * Number used to link this term or term element to the applicable
+         * Security Label.
          */
         public java.util.List<Integer> number() {
             return getList(Integer.class, PROPERTY_NUMBER);
         }
 
         /**
-         * Security label privacy tag that species the level of confidentiality protection required for this term and/or term elements.
+         * Security label privacy tag that species the level of confidentiality
+         * protection required for this term and/or term elements.
          */
         public Coding classification() {
             return getObject(Coding.class, PROPERTY_CLASSIFICATION);
         }
 
         /**
-         * Security label privacy tag that species the applicable privacy and security policies governing this term and/or term elements.
+         * Security label privacy tag that species the applicable privacy and
+         * security policies governing this term and/or term elements.
          */
         public java.util.List<Coding> category() {
             return getList(Coding.class, PROPERTY_CATEGORY);
         }
 
         /**
-         * Security label privacy tag that species the manner in which term and/or term elements are to be protected.
+         * Security label privacy tag that species the manner in which term
+         * and/or term elements are to be protected.
          */
         public java.util.List<Coding> control() {
             return getList(Coding.class, PROPERTY_CONTROL);
@@ -2315,16 +2631,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -2413,16 +2742,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -2510,16 +2852,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -2540,7 +2895,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Relevant time or time-period when this Contract Provision is applicable.
+         * Relevant time or time-period when this Contract Provision is
+         * applicable.
          */
         public Period applies() {
             return getObject(Period.class, PROPERTY_APPLIES);
@@ -2561,14 +2917,18 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * A legal clause or condition contained within a contract that requires one or both parties to perform a particular requirement by some specified time or prevents one or both parties from performing a particular requirement by some specified time.
+         * A legal clause or condition contained within a contract that requires
+         * one or both parties to perform a particular requirement by some
+         * specified time or prevents one or both parties from performing a
+         * particular requirement by some specified time.
          */
         public CodeableConcept type() {
             return getObject(CodeableConcept.class, PROPERTY_TYPE);
         }
 
         /**
-         * A specialized legal clause or condition based on overarching contract type.
+         * A specialized legal clause or condition based on overarching contract
+         * type.
          */
         public CodeableConcept subType() {
             return getObject(CodeableConcept.class, PROPERTY_SUBTYPE);
@@ -2582,14 +2942,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Security labels that protect the handling of information about the term and its elements, which may be specifically identified..
+         * Security labels that protect the handling of information about the
+         * term and its elements, which may be specifically identified..
          */
         public java.util.List<ContractSecurityLabel> securityLabel() {
             return getList(ContractSecurityLabel.class, PROPERTY_SECURITYLABEL);
         }
 
         /**
-         * The matter of concern in the context of this provision of the agrement.
+         * The matter of concern in the context of this provision of the
+         * agrement.
          */
         public ContractOffer offer() {
             return getObject(ContractOffer.class, PROPERTY_OFFER);
@@ -2603,7 +2965,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * An actor taking a role in an activity for which it can be assigned some degree of responsibility for the activity taking place.
+         * An actor taking a role in an activity for which it can be assigned
+         * some degree of responsibility for the activity taking place.
          */
         public java.util.List<ContractAction> action() {
             return getList(ContractAction.class, PROPERTY_ACTION);
@@ -2741,16 +3104,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -2778,14 +3154,17 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Indicates the time during which this Contract ValuedItem information is effective.
+         * Indicates the time during which this Contract ValuedItem information
+         * is effective.
          */
         public java.time.Instant effectiveTime() {
             return java.time.Instant.parse(data.getString(PROPERTY_EFFECTIVETIME));
         }
 
         /**
-         * Specifies the units by which the Contract Valued Item is measured or counted, and quantifies the countable or measurable Contract Valued Item instances.
+         * Specifies the units by which the Contract Valued Item is measured or
+         * counted, and quantifies the countable or measurable Contract Valued
+         * Item instances.
          */
         public Quantity quantity() {
             return getObject(Quantity.class, PROPERTY_QUANTITY);
@@ -2799,21 +3178,31 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * A real number that represents a multiplier used in determining the overall value of the Contract Valued Item delivered. The concept of a Factor allows for a discount or surcharge multiplier to be applied to a monetary amount.
+         * A real number that represents a multiplier used in determining the
+         * overall value of the Contract Valued Item delivered. The concept of a
+         * Factor allows for a discount or surcharge multiplier to be applied to
+         * a monetary amount.
          */
         public Double factor() {
             return data.getJsonNumber(PROPERTY_FACTOR).doubleValue();
         }
 
         /**
-         * An amount that expresses the weighting (based on difficulty, cost and/or resource intensiveness) associated with the Contract Valued Item delivered. The concept of Points allows for assignment of point values for a Contract Valued Item, such that a monetary amount can be assigned to each point.
+         * An amount that expresses the weighting (based on difficulty, cost
+         * and/or resource intensiveness) associated with the Contract Valued
+         * Item delivered. The concept of Points allows for assignment of point
+         * values for a Contract Valued Item, such that a monetary amount can be
+         * assigned to each point.
          */
         public Double points() {
             return data.getJsonNumber(PROPERTY_POINTS).doubleValue();
         }
 
         /**
-         * Expresses the product of the Contract Valued Item unitQuantity and the unitPriceAmt. For example, the formula: unit Quantity * unit Price (Cost per Point) * factor Number  * points = net Amount. Quantity, factor and points are assumed to be 1 if not supplied.
+         * Expresses the product of the Contract Valued Item unitQuantity and the
+         * unitPriceAmt. For example, the formula: unit Quantity * unit Price
+         * (Cost per Point) * factor Number  * points = net Amount. Quantity,
+         * factor and points are assumed to be 1 if not supplied.
          */
         public Money net() {
             return getObject(Money.class, PROPERTY_NET);
@@ -2848,14 +3237,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Id  of the clause or question text related to the context of this valuedItem in the referenced form or QuestionnaireResponse.
+         * Id  of the clause or question text related to the context of this
+         * valuedItem in the referenced form or QuestionnaireResponse.
          */
         public java.util.List<String> linkId() {
             return getList(String.class, PROPERTY_LINKID);
         }
 
         /**
-         * A set of security labels that define which terms are controlled by this condition.
+         * A set of security labels that define which terms are controlled by
+         * this condition.
          */
         public java.util.List<Integer> securityLabelNumber() {
             return getList(Integer.class, PROPERTY_SECURITYLABELNUMBER);

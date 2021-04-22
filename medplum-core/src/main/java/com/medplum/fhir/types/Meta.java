@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -34,14 +32,17 @@ public class Meta extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * The version specific identifier, as it appears in the version portion of the URL. This value changes when the resource is created, updated, or deleted.
+     * The version specific identifier, as it appears in the version portion
+     * of the URL. This value changes when the resource is created, updated,
+     * or deleted.
      */
     public String versionId() {
         return getString(PROPERTY_VERSIONID);
@@ -55,28 +56,38 @@ public class Meta extends FhirResource {
     }
 
     /**
-     * A uri that identifies the source system of the resource. This provides a minimal amount of [[[Provenance]]] information that can be used to track or differentiate the source of information in the resource. The source may identify another FHIR server, document, message, database, etc.
+     * A uri that identifies the source system of the resource. This provides
+     * a minimal amount of [[[Provenance]]] information that can be used to
+     * track or differentiate the source of information in the resource. The
+     * source may identify another FHIR server, document, message, database,
+     * etc.
      */
     public String source() {
         return getString(PROPERTY_SOURCE);
     }
 
     /**
-     * A list of profiles (references to [[[StructureDefinition]]] resources) that this resource claims to conform to. The URL is a reference to [[[StructureDefinition.url]]].
+     * A list of profiles (references to [[[StructureDefinition]]] resources)
+     * that this resource claims to conform to. The URL is a reference to
+     * [[[StructureDefinition.url]]].
      */
     public java.util.List<String> profile() {
         return getList(String.class, PROPERTY_PROFILE);
     }
 
     /**
-     * Security labels applied to this resource. These tags connect specific resources to the overall security policy and infrastructure.
+     * Security labels applied to this resource. These tags connect specific
+     * resources to the overall security policy and infrastructure.
      */
     public java.util.List<Coding> security() {
         return getList(Coding.class, PROPERTY_SECURITY);
     }
 
     /**
-     * Tags applied to this resource. Tags are intended to be used to identify and relate resources to process and workflow, and applications are not required to consider the tags when interpreting the meaning of a resource.
+     * Tags applied to this resource. Tags are intended to be used to
+     * identify and relate resources to process and workflow, and
+     * applications are not required to consider the tags when interpreting
+     * the meaning of a resource.
      */
     public java.util.List<Coding> tag() {
         return getList(Coding.class, PROPERTY_TAG);

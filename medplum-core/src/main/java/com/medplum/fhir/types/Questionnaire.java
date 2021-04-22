@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -57,7 +55,10 @@ public class Questionnaire extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -71,51 +72,85 @@ public class Questionnaire extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * An absolute URI that is used to identify this questionnaire when it is referenced in a specification, model, design or an instance; also called its canonical identifier. This SHOULD be globally unique and SHOULD be a literal address at which at which an authoritative instance of this questionnaire is (or will be) published. This URL can be the target of a canonical reference. It SHALL remain the same when the questionnaire is stored on different servers.
+     * An absolute URI that is used to identify this questionnaire when it is
+     * referenced in a specification, model, design or an instance; also
+     * called its canonical identifier. This SHOULD be globally unique and
+     * SHOULD be a literal address at which at which an authoritative
+     * instance of this questionnaire is (or will be) published. This URL can
+     * be the target of a canonical reference. It SHALL remain the same when
+     * the questionnaire is stored on different servers.
      */
     public String url() {
         return getString(PROPERTY_URL);
     }
 
     /**
-     * A formal identifier that is used to identify this questionnaire when it is represented in other formats, or referenced in a specification, model, design or an instance.
+     * A formal identifier that is used to identify this questionnaire when
+     * it is represented in other formats, or referenced in a specification,
+     * model, design or an instance.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
     }
 
     /**
-     * The identifier that is used to identify this version of the questionnaire when it is referenced in a specification, model, design or instance. This is an arbitrary value managed by the questionnaire author and is not expected to be globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a managed version is not available. There is also no expectation that versions can be placed in a lexicographical sequence.
+     * The identifier that is used to identify this version of the
+     * questionnaire when it is referenced in a specification, model, design
+     * or instance. This is an arbitrary value managed by the questionnaire
+     * author and is not expected to be globally unique. For example, it
+     * might be a timestamp (e.g. yyyymmdd) if a managed version is not
+     * available. There is also no expectation that versions can be placed in
+     * a lexicographical sequence.
      */
     public String version() {
         return getString(PROPERTY_VERSION);
     }
 
     /**
-     * A natural language name identifying the questionnaire. This name should be usable as an identifier for the module by machine processing applications such as code generation.
+     * A natural language name identifying the questionnaire. This name
+     * should be usable as an identifier for the module by machine processing
+     * applications such as code generation.
      */
     public String name() {
         return getString(PROPERTY_NAME);
@@ -136,112 +171,137 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The status of this questionnaire. Enables tracking the life-cycle of the content.
+     * The status of this questionnaire. Enables tracking the life-cycle of
+     * the content.
      */
     public String status() {
         return getString(PROPERTY_STATUS);
     }
 
     /**
-     * A Boolean value to indicate that this questionnaire is authored for testing purposes (or education/evaluation/marketing) and is not intended to be used for genuine usage.
+     * A Boolean value to indicate that this questionnaire is authored for
+     * testing purposes (or education/evaluation/marketing) and is not
+     * intended to be used for genuine usage.
      */
     public Boolean experimental() {
         return data.getBoolean(PROPERTY_EXPERIMENTAL);
     }
 
     /**
-     * The types of subjects that can be the subject of responses created for the questionnaire.
+     * The types of subjects that can be the subject of responses created for
+     * the questionnaire.
      */
     public java.util.List<String> subjectType() {
         return getList(String.class, PROPERTY_SUBJECTTYPE);
     }
 
     /**
-     * The date  (and optionally time) when the questionnaire was published. The date must change when the business version changes and it must change if the status code changes. In addition, it should change when the substantive content of the questionnaire changes.
+     * The date  (and optionally time) when the questionnaire was published.
+     * The date must change when the business version changes and it must
+     * change if the status code changes. In addition, it should change when
+     * the substantive content of the questionnaire changes.
      */
     public java.time.Instant date() {
         return java.time.Instant.parse(data.getString(PROPERTY_DATE));
     }
 
     /**
-     * The name of the organization or individual that published the questionnaire.
+     * The name of the organization or individual that published the
+     * questionnaire.
      */
     public String publisher() {
         return getString(PROPERTY_PUBLISHER);
     }
 
     /**
-     * Contact details to assist a user in finding and communicating with the publisher.
+     * Contact details to assist a user in finding and communicating with the
+     * publisher.
      */
     public java.util.List<ContactDetail> contact() {
         return getList(ContactDetail.class, PROPERTY_CONTACT);
     }
 
     /**
-     * A free text natural language description of the questionnaire from a consumer's perspective.
+     * A free text natural language description of the questionnaire from a
+     * consumer's perspective.
      */
     public String description() {
         return getString(PROPERTY_DESCRIPTION);
     }
 
     /**
-     * The content was developed with a focus and intent of supporting the contexts that are listed. These contexts may be general categories (gender, age, ...) or may be references to specific programs (insurance plans, studies, ...) and may be used to assist with indexing and searching for appropriate questionnaire instances.
+     * The content was developed with a focus and intent of supporting the
+     * contexts that are listed. These contexts may be general categories
+     * (gender, age, ...) or may be references to specific programs
+     * (insurance plans, studies, ...) and may be used to assist with
+     * indexing and searching for appropriate questionnaire instances.
      */
     public java.util.List<UsageContext> useContext() {
         return getList(UsageContext.class, PROPERTY_USECONTEXT);
     }
 
     /**
-     * A legal or geographic region in which the questionnaire is intended to be used.
+     * A legal or geographic region in which the questionnaire is intended to
+     * be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
         return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
     }
 
     /**
-     * Explanation of why this questionnaire is needed and why it has been designed as it has.
+     * Explanation of why this questionnaire is needed and why it has been
+     * designed as it has.
      */
     public String purpose() {
         return getString(PROPERTY_PURPOSE);
     }
 
     /**
-     * A copyright statement relating to the questionnaire and/or its contents. Copyright statements are generally legal restrictions on the use and publishing of the questionnaire.
+     * A copyright statement relating to the questionnaire and/or its
+     * contents. Copyright statements are generally legal restrictions on the
+     * use and publishing of the questionnaire.
      */
     public String copyright() {
         return getString(PROPERTY_COPYRIGHT);
     }
 
     /**
-     * The date on which the resource content was approved by the publisher. Approval happens once when the content is officially approved for usage.
+     * The date on which the resource content was approved by the publisher.
+     * Approval happens once when the content is officially approved for
+     * usage.
      */
     public java.time.Instant approvalDate() {
         return java.time.Instant.parse(data.getString(PROPERTY_APPROVALDATE));
     }
 
     /**
-     * The date on which the resource content was last reviewed. Review happens periodically after approval but does not change the original approval date.
+     * The date on which the resource content was last reviewed. Review
+     * happens periodically after approval but does not change the original
+     * approval date.
      */
     public java.time.Instant lastReviewDate() {
         return java.time.Instant.parse(data.getString(PROPERTY_LASTREVIEWDATE));
     }
 
     /**
-     * The period during which the questionnaire content was or is planned to be in active use.
+     * The period during which the questionnaire content was or is planned to
+     * be in active use.
      */
     public Period effectivePeriod() {
         return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
     }
 
     /**
-     * An identifier for this question or group of questions in a particular terminology such as LOINC.
+     * An identifier for this question or group of questions in a particular
+     * terminology such as LOINC.
      */
     public java.util.List<Coding> code() {
         return getList(Coding.class, PROPERTY_CODE);
     }
 
     /**
-     * A particular question, question grouping or display text that is part of the questionnaire.
+     * A particular question, question grouping or display text that is part
+     * of the questionnaire.
      */
     public java.util.List<QuestionnaireItem> item() {
         return getList(QuestionnaireItem.class, PROPERTY_ITEM);
@@ -437,16 +497,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -495,7 +568,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Indicates whether the answer value is selected when the list of possible answers is initially shown.
+         * Indicates whether the answer value is selected when the list of
+         * possible answers is initially shown.
          */
         public Boolean initialSelected() {
             return data.getBoolean(PROPERTY_INITIALSELECTED);
@@ -593,23 +667,37 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The linkId for the question whose answer (or lack of answer) governs whether this item is enabled.
+         * The linkId for the question whose answer (or lack of answer) governs
+         * whether this item is enabled.
          */
         public String question() {
             return getString(PROPERTY_QUESTION);
@@ -623,70 +711,80 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public Boolean answerBoolean() {
             return data.getBoolean(PROPERTY_ANSWERBOOLEAN);
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public Integer answerDecimal() {
             return data.getInt(PROPERTY_ANSWERDECIMAL);
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public Integer answerInteger() {
             return data.getInt(PROPERTY_ANSWERINTEGER);
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public String answerDate() {
             return getString(PROPERTY_ANSWERDATE);
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public String answerDateTime() {
             return getString(PROPERTY_ANSWERDATETIME);
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public String answerTime() {
             return getString(PROPERTY_ANSWERTIME);
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public String answerString() {
             return getString(PROPERTY_ANSWERSTRING);
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public Coding answerCoding() {
             return getObject(Coding.class, PROPERTY_ANSWERCODING);
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public Quantity answerQuantity() {
             return getObject(Quantity.class, PROPERTY_ANSWERQUANTITY);
         }
 
         /**
-         * A value that the referenced question is tested using the specified operator in order for the item to be enabled.
+         * A value that the referenced question is tested using the specified
+         * operator in order for the item to be enabled.
          */
         public Reference answerReference() {
             return getObject(Reference.class, PROPERTY_ANSWERREFERENCE);
@@ -809,16 +907,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -1029,115 +1140,151 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * An identifier that is unique within the Questionnaire allowing linkage to the equivalent item in a QuestionnaireResponse resource.
+         * An identifier that is unique within the Questionnaire allowing linkage
+         * to the equivalent item in a QuestionnaireResponse resource.
          */
         public String linkId() {
             return getString(PROPERTY_LINKID);
         }
 
         /**
-         * This element is a URI that refers to an [[[ElementDefinition]]] that provides information about this item, including information that might otherwise be included in the instance of the Questionnaire resource. A detailed description of the construction of the URI is shown in Comments, below. If this element is present then the following element values MAY be derived from the Element Definition if the corresponding elements of this Questionnaire resource instance have no value:
-
-* code (ElementDefinition.code) 
-* type (ElementDefinition.type) 
-* required (ElementDefinition.min) 
-* repeats (ElementDefinition.max) 
-* maxLength (ElementDefinition.maxLength) 
-* answerValueSet (ElementDefinition.binding)
-* options (ElementDefinition.binding).
+         * This element is a URI that refers to an [[[ElementDefinition]]] that
+         * provides information about this item, including information that might
+         * otherwise be included in the instance of the Questionnaire resource. A
+         * detailed description of the construction of the URI is shown in
+         * Comments, below. If this element is present then the following element
+         * values MAY be derived from the Element Definition if the corresponding
+         * elements of this Questionnaire resource instance have no value:
+         *
+         * * code (ElementDefinition.code) 
+         * * type (ElementDefinition.type) 
+         * * required (ElementDefinition.min) 
+         * * repeats (ElementDefinition.max) 
+         * * maxLength (ElementDefinition.maxLength) 
+         * * answerValueSet (ElementDefinition.binding)
+         * * options (ElementDefinition.binding).
          */
         public String definition() {
             return getString(PROPERTY_DEFINITION);
         }
 
         /**
-         * A terminology code that corresponds to this group or question (e.g. a code from LOINC, which defines many questions and answers).
+         * A terminology code that corresponds to this group or question (e.g. a
+         * code from LOINC, which defines many questions and answers).
          */
         public java.util.List<Coding> code() {
             return getList(Coding.class, PROPERTY_CODE);
         }
 
         /**
-         * A short label for a particular group, question or set of display text within the questionnaire used for reference by the individual completing the questionnaire.
+         * A short label for a particular group, question or set of display text
+         * within the questionnaire used for reference by the individual
+         * completing the questionnaire.
          */
         public String prefix() {
             return getString(PROPERTY_PREFIX);
         }
 
         /**
-         * The name of a section, the text of a question or text content for a display item.
+         * The name of a section, the text of a question or text content for a
+         * display item.
          */
         public String text() {
             return getString(PROPERTY_TEXT);
         }
 
         /**
-         * The type of questionnaire item this is - whether text for display, a grouping of other items or a particular type of data to be captured (string, integer, coded choice, etc.).
+         * The type of questionnaire item this is - whether text for display, a
+         * grouping of other items or a particular type of data to be captured
+         * (string, integer, coded choice, etc.).
          */
         public String type() {
             return getString(PROPERTY_TYPE);
         }
 
         /**
-         * A constraint indicating that this item should only be enabled (displayed/allow answers to be captured) when the specified condition is true.
+         * A constraint indicating that this item should only be enabled
+         * (displayed/allow answers to be captured) when the specified condition
+         * is true.
          */
         public java.util.List<QuestionnaireEnableWhen> enableWhen() {
             return getList(QuestionnaireEnableWhen.class, PROPERTY_ENABLEWHEN);
         }
 
         /**
-         * Controls how multiple enableWhen values are interpreted -  whether all or any must be true.
+         * Controls how multiple enableWhen values are interpreted -  whether all
+         * or any must be true.
          */
         public String enableBehavior() {
             return getString(PROPERTY_ENABLEBEHAVIOR);
         }
 
         /**
-         * An indication, if true, that the item must be present in a "completed" QuestionnaireResponse.  If false, the item may be skipped when answering the questionnaire.
+         * An indication, if true, that the item must be present in a "completed"
+         * QuestionnaireResponse.  If false, the item may be skipped when
+         * answering the questionnaire.
          */
         public Boolean required() {
             return data.getBoolean(PROPERTY_REQUIRED);
         }
 
         /**
-         * An indication, if true, that the item may occur multiple times in the response, collecting multiple answers for questions or multiple sets of answers for groups.
+         * An indication, if true, that the item may occur multiple times in the
+         * response, collecting multiple answers for questions or multiple sets
+         * of answers for groups.
          */
         public Boolean repeats() {
             return data.getBoolean(PROPERTY_REPEATS);
         }
 
         /**
-         * An indication, when true, that the value cannot be changed by a human respondent to the Questionnaire.
+         * An indication, when true, that the value cannot be changed by a human
+         * respondent to the Questionnaire.
          */
         public Boolean readOnly() {
             return data.getBoolean(PROPERTY_READONLY);
         }
 
         /**
-         * The maximum number of characters that are permitted in the answer to be considered a "valid" QuestionnaireResponse.
+         * The maximum number of characters that are permitted in the answer to
+         * be considered a "valid" QuestionnaireResponse.
          */
         public Integer maxLength() {
             return data.getInt(PROPERTY_MAXLENGTH);
         }
 
         /**
-         * A reference to a value set containing a list of codes representing permitted answers for a "choice" or "open-choice" question.
+         * A reference to a value set containing a list of codes representing
+         * permitted answers for a "choice" or "open-choice" question.
          */
         public String answerValueSet() {
             return getString(PROPERTY_ANSWERVALUESET);
@@ -1151,14 +1298,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * One or more values that should be pre-populated in the answer when initially rendering the questionnaire for user input.
+         * One or more values that should be pre-populated in the answer when
+         * initially rendering the questionnaire for user input.
          */
         public java.util.List<QuestionnaireInitial> initial() {
             return getList(QuestionnaireInitial.class, PROPERTY_INITIAL);
         }
 
         /**
-         * Text, questions and other groups to be nested beneath a question or group.
+         * Text, questions and other groups to be nested beneath a question or
+         * group.
          */
         public java.util.List<QuestionnaireItem> item() {
             return getList(QuestionnaireItem.class, PROPERTY_ITEM);

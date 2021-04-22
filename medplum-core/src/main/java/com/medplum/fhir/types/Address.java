@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -38,7 +36,8 @@ public class Address extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
@@ -52,28 +51,35 @@ public class Address extends FhirResource {
     }
 
     /**
-     * Distinguishes between physical addresses (those you can visit) and mailing addresses (e.g. PO Boxes and care-of addresses). Most addresses are both.
+     * Distinguishes between physical addresses (those you can visit) and
+     * mailing addresses (e.g. PO Boxes and care-of addresses). Most
+     * addresses are both.
      */
     public String type() {
         return getString(PROPERTY_TYPE);
     }
 
     /**
-     * Specifies the entire address as it should be displayed e.g. on a postal label. This may be provided instead of or as well as the specific parts.
+     * Specifies the entire address as it should be displayed e.g. on a
+     * postal label. This may be provided instead of or as well as the
+     * specific parts.
      */
     public String text() {
         return getString(PROPERTY_TEXT);
     }
 
     /**
-     * This component contains the house number, apartment number, street name, street direction,  P.O. Box number, delivery hints, and similar address information.
+     * This component contains the house number, apartment number, street
+     * name, street direction,  P.O. Box number, delivery hints, and similar
+     * address information.
      */
     public java.util.List<String> line() {
         return getList(String.class, PROPERTY_LINE);
     }
 
     /**
-     * The name of the city, town, suburb, village or other community or delivery center.
+     * The name of the city, town, suburb, village or other community or
+     * delivery center.
      */
     public String city() {
         return getString(PROPERTY_CITY);
@@ -87,7 +93,9 @@ public class Address extends FhirResource {
     }
 
     /**
-     * Sub-unit of a country with limited sovereignty in a federally organized country. A code may be used if codes are in common use (e.g. US 2 letter state codes).
+     * Sub-unit of a country with limited sovereignty in a federally
+     * organized country. A code may be used if codes are in common use (e.g.
+     * US 2 letter state codes).
      */
     public String state() {
         return getString(PROPERTY_STATE);

@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -52,7 +50,10 @@ public class Goal extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -66,30 +67,50 @@ public class Goal extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Business identifiers assigned to this goal by the performer or other systems which remain constant as the resource is updated and propagates from server to server.
+     * Business identifiers assigned to this goal by the performer or other
+     * systems which remain constant as the resource is updated and
+     * propagates from server to server.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
@@ -103,7 +124,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Describes the progression, or lack thereof, towards the goal against the target.
+     * Describes the progression, or lack thereof, towards the goal against
+     * the target.
      */
     public CodeableConcept achievementStatus() {
         return getObject(CodeableConcept.class, PROPERTY_ACHIEVEMENTSTATUS);
@@ -117,21 +139,25 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Identifies the mutually agreed level of importance associated with reaching/sustaining the goal.
+     * Identifies the mutually agreed level of importance associated with
+     * reaching/sustaining the goal.
      */
     public CodeableConcept priority() {
         return getObject(CodeableConcept.class, PROPERTY_PRIORITY);
     }
 
     /**
-     * Human-readable and/or coded description of a specific desired objective of care, such as "control blood pressure" or "negotiate an obstacle course" or "dance with child at wedding".
+     * Human-readable and/or coded description of a specific desired
+     * objective of care, such as "control blood pressure" or "negotiate an
+     * obstacle course" or "dance with child at wedding".
      */
     public CodeableConcept description() {
         return getObject(CodeableConcept.class, PROPERTY_DESCRIPTION);
     }
 
     /**
-     * Identifies the patient, group or organization for whom the goal is being established.
+     * Identifies the patient, group or organization for whom the goal is
+     * being established.
      */
     public Reference subject() {
         return getObject(Reference.class, PROPERTY_SUBJECT);
@@ -159,7 +185,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Identifies when the current status.  I.e. When initially created, when achieved, when cancelled, etc.
+     * Identifies when the current status.  I.e. When initially created, when
+     * achieved, when cancelled, etc.
      */
     public java.time.Instant statusDate() {
         return java.time.Instant.parse(data.getString(PROPERTY_STATUSDATE));
@@ -180,7 +207,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The identified conditions and other health record elements that are intended to be addressed by the goal.
+     * The identified conditions and other health record elements that are
+     * intended to be addressed by the goal.
      */
     public java.util.List<Reference> addresses() {
         return getList(Reference.class, PROPERTY_ADDRESSES);
@@ -194,7 +222,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Identifies the change (or lack of change) at the point when the status of the goal is assessed.
+     * Identifies the change (or lack of change) at the point when the status
+     * of the goal is assessed.
      */
     public java.util.List<CodeableConcept> outcomeCode() {
         return getList(CodeableConcept.class, PROPERTY_OUTCOMECODE);
@@ -375,86 +404,144 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The parameter whose value is being tracked, e.g. body weight, blood pressure, or hemoglobin A1c level.
+         * The parameter whose value is being tracked, e.g. body weight, blood
+         * pressure, or hemoglobin A1c level.
          */
         public CodeableConcept measure() {
             return getObject(CodeableConcept.class, PROPERTY_MEASURE);
         }
 
         /**
-         * The target value of the focus to be achieved to signify the fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any focus value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any focus value at or above the low value.
+         * The target value of the focus to be achieved to signify the
+         * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+         * or both values of the range can be specified. When a low value is
+         * missing, it indicates that the goal is achieved at any focus value at
+         * or below the high value. Similarly, if the high value is missing, it
+         * indicates that the goal is achieved at any focus value at or above the
+         * low value.
          */
         public Quantity detailQuantity() {
             return getObject(Quantity.class, PROPERTY_DETAILQUANTITY);
         }
 
         /**
-         * The target value of the focus to be achieved to signify the fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any focus value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any focus value at or above the low value.
+         * The target value of the focus to be achieved to signify the
+         * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+         * or both values of the range can be specified. When a low value is
+         * missing, it indicates that the goal is achieved at any focus value at
+         * or below the high value. Similarly, if the high value is missing, it
+         * indicates that the goal is achieved at any focus value at or above the
+         * low value.
          */
         public Range detailRange() {
             return getObject(Range.class, PROPERTY_DETAILRANGE);
         }
 
         /**
-         * The target value of the focus to be achieved to signify the fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any focus value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any focus value at or above the low value.
+         * The target value of the focus to be achieved to signify the
+         * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+         * or both values of the range can be specified. When a low value is
+         * missing, it indicates that the goal is achieved at any focus value at
+         * or below the high value. Similarly, if the high value is missing, it
+         * indicates that the goal is achieved at any focus value at or above the
+         * low value.
          */
         public CodeableConcept detailCodeableConcept() {
             return getObject(CodeableConcept.class, PROPERTY_DETAILCODEABLECONCEPT);
         }
 
         /**
-         * The target value of the focus to be achieved to signify the fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any focus value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any focus value at or above the low value.
+         * The target value of the focus to be achieved to signify the
+         * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+         * or both values of the range can be specified. When a low value is
+         * missing, it indicates that the goal is achieved at any focus value at
+         * or below the high value. Similarly, if the high value is missing, it
+         * indicates that the goal is achieved at any focus value at or above the
+         * low value.
          */
         public String detailString() {
             return getString(PROPERTY_DETAILSTRING);
         }
 
         /**
-         * The target value of the focus to be achieved to signify the fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any focus value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any focus value at or above the low value.
+         * The target value of the focus to be achieved to signify the
+         * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+         * or both values of the range can be specified. When a low value is
+         * missing, it indicates that the goal is achieved at any focus value at
+         * or below the high value. Similarly, if the high value is missing, it
+         * indicates that the goal is achieved at any focus value at or above the
+         * low value.
          */
         public Boolean detailBoolean() {
             return data.getBoolean(PROPERTY_DETAILBOOLEAN);
         }
 
         /**
-         * The target value of the focus to be achieved to signify the fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any focus value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any focus value at or above the low value.
+         * The target value of the focus to be achieved to signify the
+         * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+         * or both values of the range can be specified. When a low value is
+         * missing, it indicates that the goal is achieved at any focus value at
+         * or below the high value. Similarly, if the high value is missing, it
+         * indicates that the goal is achieved at any focus value at or above the
+         * low value.
          */
         public Integer detailInteger() {
             return data.getInt(PROPERTY_DETAILINTEGER);
         }
 
         /**
-         * The target value of the focus to be achieved to signify the fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any focus value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any focus value at or above the low value.
+         * The target value of the focus to be achieved to signify the
+         * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+         * or both values of the range can be specified. When a low value is
+         * missing, it indicates that the goal is achieved at any focus value at
+         * or below the high value. Similarly, if the high value is missing, it
+         * indicates that the goal is achieved at any focus value at or above the
+         * low value.
          */
         public Ratio detailRatio() {
             return getObject(Ratio.class, PROPERTY_DETAILRATIO);
         }
 
         /**
-         * Indicates either the date or the duration after start by which the goal should be met.
+         * Indicates either the date or the duration after start by which the
+         * goal should be met.
          */
         public String dueDate() {
             return getString(PROPERTY_DUEDATE);
         }
 
         /**
-         * Indicates either the date or the duration after start by which the goal should be met.
+         * Indicates either the date or the duration after start by which the
+         * goal should be met.
          */
         public Duration dueDuration() {
             return getObject(Duration.class, PROPERTY_DUEDURATION);

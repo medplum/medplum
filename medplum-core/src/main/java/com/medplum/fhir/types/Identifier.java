@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -34,7 +32,8 @@ public class Identifier extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
@@ -48,21 +47,24 @@ public class Identifier extends FhirResource {
     }
 
     /**
-     * A coded type for the identifier that can be used to determine which identifier to use for a specific purpose.
+     * A coded type for the identifier that can be used to determine which
+     * identifier to use for a specific purpose.
      */
     public CodeableConcept type() {
         return getObject(CodeableConcept.class, PROPERTY_TYPE);
     }
 
     /**
-     * Establishes the namespace for the value - that is, a URL that describes a set values that are unique.
+     * Establishes the namespace for the value - that is, a URL that
+     * describes a set values that are unique.
      */
     public String system() {
         return getString(PROPERTY_SYSTEM);
     }
 
     /**
-     * The portion of the identifier typically relevant to the user and which is unique within the context of the system.
+     * The portion of the identifier typically relevant to the user and which
+     * is unique within the context of the system.
      */
     public String value() {
         return getString(PROPERTY_VALUE);

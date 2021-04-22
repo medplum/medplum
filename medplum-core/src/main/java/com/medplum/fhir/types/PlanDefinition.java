@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -67,7 +65,10 @@ public class PlanDefinition extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -81,51 +82,89 @@ public class PlanDefinition extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * An absolute URI that is used to identify this plan definition when it is referenced in a specification, model, design or an instance; also called its canonical identifier. This SHOULD be globally unique and SHOULD be a literal address at which at which an authoritative instance of this plan definition is (or will be) published. This URL can be the target of a canonical reference. It SHALL remain the same when the plan definition is stored on different servers.
+     * An absolute URI that is used to identify this plan definition when it
+     * is referenced in a specification, model, design or an instance; also
+     * called its canonical identifier. This SHOULD be globally unique and
+     * SHOULD be a literal address at which at which an authoritative
+     * instance of this plan definition is (or will be) published. This URL
+     * can be the target of a canonical reference. It SHALL remain the same
+     * when the plan definition is stored on different servers.
      */
     public String url() {
         return getString(PROPERTY_URL);
     }
 
     /**
-     * A formal identifier that is used to identify this plan definition when it is represented in other formats, or referenced in a specification, model, design or an instance.
+     * A formal identifier that is used to identify this plan definition when
+     * it is represented in other formats, or referenced in a specification,
+     * model, design or an instance.
      */
     public java.util.List<Identifier> identifier() {
         return getList(Identifier.class, PROPERTY_IDENTIFIER);
     }
 
     /**
-     * The identifier that is used to identify this version of the plan definition when it is referenced in a specification, model, design or instance. This is an arbitrary value managed by the plan definition author and is not expected to be globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a managed version is not available. There is also no expectation that versions can be placed in a lexicographical sequence. To provide a version consistent with the Decision Support Service specification, use the format Major.Minor.Revision (e.g. 1.0.0). For more information on versioning knowledge assets, refer to the Decision Support Service specification. Note that a version is required for non-experimental active artifacts.
+     * The identifier that is used to identify this version of the plan
+     * definition when it is referenced in a specification, model, design or
+     * instance. This is an arbitrary value managed by the plan definition
+     * author and is not expected to be globally unique. For example, it
+     * might be a timestamp (e.g. yyyymmdd) if a managed version is not
+     * available. There is also no expectation that versions can be placed in
+     * a lexicographical sequence. To provide a version consistent with the
+     * Decision Support Service specification, use the format
+     * Major.Minor.Revision (e.g. 1.0.0). For more information on versioning
+     * knowledge assets, refer to the Decision Support Service specification.
+     * Note that a version is required for non-experimental active artifacts.
      */
     public String version() {
         return getString(PROPERTY_VERSION);
     }
 
     /**
-     * A natural language name identifying the plan definition. This name should be usable as an identifier for the module by machine processing applications such as code generation.
+     * A natural language name identifying the plan definition. This name
+     * should be usable as an identifier for the module by machine processing
+     * applications such as code generation.
      */
     public String name() {
         return getString(PROPERTY_NAME);
@@ -139,182 +178,220 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * An explanatory or alternate title for the plan definition giving additional information about its content.
+     * An explanatory or alternate title for the plan definition giving
+     * additional information about its content.
      */
     public String subtitle() {
         return getString(PROPERTY_SUBTITLE);
     }
 
     /**
-     * A high-level category for the plan definition that distinguishes the kinds of systems that would be interested in the plan definition.
+     * A high-level category for the plan definition that distinguishes the
+     * kinds of systems that would be interested in the plan definition.
      */
     public CodeableConcept type() {
         return getObject(CodeableConcept.class, PROPERTY_TYPE);
     }
 
     /**
-     * The status of this plan definition. Enables tracking the life-cycle of the content.
+     * The status of this plan definition. Enables tracking the life-cycle of
+     * the content.
      */
     public String status() {
         return getString(PROPERTY_STATUS);
     }
 
     /**
-     * A Boolean value to indicate that this plan definition is authored for testing purposes (or education/evaluation/marketing) and is not intended to be used for genuine usage.
+     * A Boolean value to indicate that this plan definition is authored for
+     * testing purposes (or education/evaluation/marketing) and is not
+     * intended to be used for genuine usage.
      */
     public Boolean experimental() {
         return data.getBoolean(PROPERTY_EXPERIMENTAL);
     }
 
     /**
-     * A code or group definition that describes the intended subject of the plan definition.
+     * A code or group definition that describes the intended subject of the
+     * plan definition.
      */
     public CodeableConcept subjectCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_SUBJECTCODEABLECONCEPT);
     }
 
     /**
-     * A code or group definition that describes the intended subject of the plan definition.
+     * A code or group definition that describes the intended subject of the
+     * plan definition.
      */
     public Reference subjectReference() {
         return getObject(Reference.class, PROPERTY_SUBJECTREFERENCE);
     }
 
     /**
-     * The date  (and optionally time) when the plan definition was published. The date must change when the business version changes and it must change if the status code changes. In addition, it should change when the substantive content of the plan definition changes.
+     * The date  (and optionally time) when the plan definition was
+     * published. The date must change when the business version changes and
+     * it must change if the status code changes. In addition, it should
+     * change when the substantive content of the plan definition changes.
      */
     public java.time.Instant date() {
         return java.time.Instant.parse(data.getString(PROPERTY_DATE));
     }
 
     /**
-     * The name of the organization or individual that published the plan definition.
+     * The name of the organization or individual that published the plan
+     * definition.
      */
     public String publisher() {
         return getString(PROPERTY_PUBLISHER);
     }
 
     /**
-     * Contact details to assist a user in finding and communicating with the publisher.
+     * Contact details to assist a user in finding and communicating with the
+     * publisher.
      */
     public java.util.List<ContactDetail> contact() {
         return getList(ContactDetail.class, PROPERTY_CONTACT);
     }
 
     /**
-     * A free text natural language description of the plan definition from a consumer's perspective.
+     * A free text natural language description of the plan definition from a
+     * consumer's perspective.
      */
     public String description() {
         return getString(PROPERTY_DESCRIPTION);
     }
 
     /**
-     * The content was developed with a focus and intent of supporting the contexts that are listed. These contexts may be general categories (gender, age, ...) or may be references to specific programs (insurance plans, studies, ...) and may be used to assist with indexing and searching for appropriate plan definition instances.
+     * The content was developed with a focus and intent of supporting the
+     * contexts that are listed. These contexts may be general categories
+     * (gender, age, ...) or may be references to specific programs
+     * (insurance plans, studies, ...) and may be used to assist with
+     * indexing and searching for appropriate plan definition instances.
      */
     public java.util.List<UsageContext> useContext() {
         return getList(UsageContext.class, PROPERTY_USECONTEXT);
     }
 
     /**
-     * A legal or geographic region in which the plan definition is intended to be used.
+     * A legal or geographic region in which the plan definition is intended
+     * to be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
         return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
     }
 
     /**
-     * Explanation of why this plan definition is needed and why it has been designed as it has.
+     * Explanation of why this plan definition is needed and why it has been
+     * designed as it has.
      */
     public String purpose() {
         return getString(PROPERTY_PURPOSE);
     }
 
     /**
-     * A detailed description of how the plan definition is used from a clinical perspective.
+     * A detailed description of how the plan definition is used from a
+     * clinical perspective.
      */
     public String usage() {
         return getString(PROPERTY_USAGE);
     }
 
     /**
-     * A copyright statement relating to the plan definition and/or its contents. Copyright statements are generally legal restrictions on the use and publishing of the plan definition.
+     * A copyright statement relating to the plan definition and/or its
+     * contents. Copyright statements are generally legal restrictions on the
+     * use and publishing of the plan definition.
      */
     public String copyright() {
         return getString(PROPERTY_COPYRIGHT);
     }
 
     /**
-     * The date on which the resource content was approved by the publisher. Approval happens once when the content is officially approved for usage.
+     * The date on which the resource content was approved by the publisher.
+     * Approval happens once when the content is officially approved for
+     * usage.
      */
     public java.time.Instant approvalDate() {
         return java.time.Instant.parse(data.getString(PROPERTY_APPROVALDATE));
     }
 
     /**
-     * The date on which the resource content was last reviewed. Review happens periodically after approval but does not change the original approval date.
+     * The date on which the resource content was last reviewed. Review
+     * happens periodically after approval but does not change the original
+     * approval date.
      */
     public java.time.Instant lastReviewDate() {
         return java.time.Instant.parse(data.getString(PROPERTY_LASTREVIEWDATE));
     }
 
     /**
-     * The period during which the plan definition content was or is planned to be in active use.
+     * The period during which the plan definition content was or is planned
+     * to be in active use.
      */
     public Period effectivePeriod() {
         return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
     }
 
     /**
-     * Descriptive topics related to the content of the plan definition. Topics provide a high-level categorization of the definition that can be useful for filtering and searching.
+     * Descriptive topics related to the content of the plan definition.
+     * Topics provide a high-level categorization of the definition that can
+     * be useful for filtering and searching.
      */
     public java.util.List<CodeableConcept> topic() {
         return getList(CodeableConcept.class, PROPERTY_TOPIC);
     }
 
     /**
-     * An individiual or organization primarily involved in the creation and maintenance of the content.
+     * An individiual or organization primarily involved in the creation and
+     * maintenance of the content.
      */
     public java.util.List<ContactDetail> author() {
         return getList(ContactDetail.class, PROPERTY_AUTHOR);
     }
 
     /**
-     * An individual or organization primarily responsible for internal coherence of the content.
+     * An individual or organization primarily responsible for internal
+     * coherence of the content.
      */
     public java.util.List<ContactDetail> editor() {
         return getList(ContactDetail.class, PROPERTY_EDITOR);
     }
 
     /**
-     * An individual or organization primarily responsible for review of some aspect of the content.
+     * An individual or organization primarily responsible for review of some
+     * aspect of the content.
      */
     public java.util.List<ContactDetail> reviewer() {
         return getList(ContactDetail.class, PROPERTY_REVIEWER);
     }
 
     /**
-     * An individual or organization responsible for officially endorsing the content for use in some setting.
+     * An individual or organization responsible for officially endorsing the
+     * content for use in some setting.
      */
     public java.util.List<ContactDetail> endorser() {
         return getList(ContactDetail.class, PROPERTY_ENDORSER);
     }
 
     /**
-     * Related artifacts such as additional documentation, justification, or bibliographic references.
+     * Related artifacts such as additional documentation, justification, or
+     * bibliographic references.
      */
     public java.util.List<RelatedArtifact> relatedArtifact() {
         return getList(RelatedArtifact.class, PROPERTY_RELATEDARTIFACT);
     }
 
     /**
-     * A reference to a Library resource containing any formal logic used by the plan definition.
+     * A reference to a Library resource containing any formal logic used by
+     * the plan definition.
      */
     public java.util.List<String> library() {
         return getList(String.class, PROPERTY_LIBRARY);
     }
 
     /**
-     * Goals that describe what the activities within the plan are intended to achieve. For example, weight loss, restoring an activity of daily living, obtaining herd immunity via immunization, meeting a process improvement objective, etc.
+     * Goals that describe what the activities within the plan are intended
+     * to achieve. For example, weight loss, restoring an activity of daily
+     * living, obtaining herd immunity via immunization, meeting a process
+     * improvement objective, etc.
      */
     public java.util.List<PlanDefinitionGoal> goal() {
         return getList(PlanDefinitionGoal.class, PROPERTY_GOAL);
@@ -594,16 +671,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -624,28 +714,35 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * A brief description of the action used to provide a summary to display to the user.
+         * A brief description of the action used to provide a summary to display
+         * to the user.
          */
         public String description() {
             return getString(PROPERTY_DESCRIPTION);
         }
 
         /**
-         * A text equivalent of the action to be performed. This provides a human-interpretable description of the action when the definition is consumed by a system that might not be capable of interpreting it dynamically.
+         * A text equivalent of the action to be performed. This provides a
+         * human-interpretable description of the action when the definition is
+         * consumed by a system that might not be capable of interpreting it
+         * dynamically.
          */
         public String textEquivalent() {
             return getString(PROPERTY_TEXTEQUIVALENT);
         }
 
         /**
-         * Indicates how quickly the action should be addressed with respect to other actions.
+         * Indicates how quickly the action should be addressed with respect to
+         * other actions.
          */
         public String priority() {
             return getString(PROPERTY_PRIORITY);
         }
 
         /**
-         * A code that provides meaning for the action or action group. For example, a section may have a LOINC code for the section of a documentation template.
+         * A code that provides meaning for the action or action group. For
+         * example, a section may have a LOINC code for the section of a
+         * documentation template.
          */
         public java.util.List<CodeableConcept> code() {
             return getList(CodeableConcept.class, PROPERTY_CODE);
@@ -659,28 +756,33 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Didactic or other informational resources associated with the action that can be provided to the CDS recipient. Information resources can include inline text commentary and links to web resources.
+         * Didactic or other informational resources associated with the action
+         * that can be provided to the CDS recipient. Information resources can
+         * include inline text commentary and links to web resources.
          */
         public java.util.List<RelatedArtifact> documentation() {
             return getList(RelatedArtifact.class, PROPERTY_DOCUMENTATION);
         }
 
         /**
-         * Identifies goals that this action supports. The reference must be to a goal element defined within this plan definition.
+         * Identifies goals that this action supports. The reference must be to a
+         * goal element defined within this plan definition.
          */
         public java.util.List<String> goalId() {
             return getList(String.class, PROPERTY_GOALID);
         }
 
         /**
-         * A code or group definition that describes the intended subject of the action and its children, if any.
+         * A code or group definition that describes the intended subject of the
+         * action and its children, if any.
          */
         public CodeableConcept subjectCodeableConcept() {
             return getObject(CodeableConcept.class, PROPERTY_SUBJECTCODEABLECONCEPT);
         }
 
         /**
-         * A code or group definition that describes the intended subject of the action and its children, if any.
+         * A code or group definition that describes the intended subject of the
+         * action and its children, if any.
          */
         public Reference subjectReference() {
             return getObject(Reference.class, PROPERTY_SUBJECTREFERENCE);
@@ -694,7 +796,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * An expression that describes applicability criteria or start/stop conditions for the action.
+         * An expression that describes applicability criteria or start/stop
+         * conditions for the action.
          */
         public java.util.List<PlanDefinitionCondition> condition() {
             return getList(PlanDefinitionCondition.class, PROPERTY_CONDITION);
@@ -715,7 +818,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * A relationship to another action such as "before" or "30-60 minutes after start of".
+         * A relationship to another action such as "before" or "30-60 minutes
+         * after start of".
          */
         public java.util.List<PlanDefinitionRelatedAction> relatedAction() {
             return getList(PlanDefinitionRelatedAction.class, PROPERTY_RELATEDACTION);
@@ -813,35 +917,48 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * A reference to an ActivityDefinition that describes the action to be taken in detail, or a PlanDefinition that describes a series of actions to be taken.
+         * A reference to an ActivityDefinition that describes the action to be
+         * taken in detail, or a PlanDefinition that describes a series of
+         * actions to be taken.
          */
         public String definitionCanonical() {
             return getString(PROPERTY_DEFINITIONCANONICAL);
         }
 
         /**
-         * A reference to an ActivityDefinition that describes the action to be taken in detail, or a PlanDefinition that describes a series of actions to be taken.
+         * A reference to an ActivityDefinition that describes the action to be
+         * taken in detail, or a PlanDefinition that describes a series of
+         * actions to be taken.
          */
         public String definitionUri() {
             return getString(PROPERTY_DEFINITIONURI);
         }
 
         /**
-         * A reference to a StructureMap resource that defines a transform that can be executed to produce the intent resource using the ActivityDefinition instance as the input.
+         * A reference to a StructureMap resource that defines a transform that
+         * can be executed to produce the intent resource using the
+         * ActivityDefinition instance as the input.
          */
         public String transform() {
             return getString(PROPERTY_TRANSFORM);
         }
 
         /**
-         * Customizations that should be applied to the statically defined resource. For example, if the dosage of a medication must be computed based on the patient's weight, a customization would be used to specify an expression that calculated the weight, and the path on the resource that would contain the result.
+         * Customizations that should be applied to the statically defined
+         * resource. For example, if the dosage of a medication must be computed
+         * based on the patient's weight, a customization would be used to
+         * specify an expression that calculated the weight, and the path on the
+         * resource that would contain the result.
          */
         public java.util.List<PlanDefinitionDynamicValue> dynamicValue() {
             return getList(PlanDefinitionDynamicValue.class, PROPERTY_DYNAMICVALUE);
         }
 
         /**
-         * Sub actions that are contained within the action. The behavior of this action determines the functionality of the sub-actions. For example, a selection behavior of at-most-one indicates that of the sub-actions, at most one may be chosen as part of realizing the action definition.
+         * Sub actions that are contained within the action. The behavior of this
+         * action determines the functionality of the sub-actions. For example, a
+         * selection behavior of at-most-one indicates that of the sub-actions,
+         * at most one may be chosen as part of realizing the action definition.
          */
         public java.util.List<PlanDefinitionAction> action() {
             return getList(PlanDefinitionAction.class, PROPERTY_ACTION);
@@ -1064,16 +1181,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -1087,7 +1217,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * An expression that returns true or false, indicating whether the condition is satisfied.
+         * An expression that returns true or false, indicating whether the
+         * condition is satisfied.
          */
         public Expression expression() {
             return getObject(Expression.class, PROPERTY_EXPRESSION);
@@ -1150,23 +1281,44 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The path to the element to be customized. This is the path on the resource that will hold the result of the calculation defined by the expression. The specified path SHALL be a FHIRPath resolveable on the specified target type of the ActivityDefinition, and SHALL consist only of identifiers, constant indexers, and a restricted subset of functions. The path is allowed to contain qualifiers (.) to traverse sub-elements, as well as indexers ([x]) to traverse multiple-cardinality sub-elements (see the [Simple FHIRPath Profile](fhirpath.html#simple) for full details).
+         * The path to the element to be customized. This is the path on the
+         * resource that will hold the result of the calculation defined by the
+         * expression. The specified path SHALL be a FHIRPath resolveable on the
+         * specified target type of the ActivityDefinition, and SHALL consist
+         * only of identifiers, constant indexers, and a restricted subset of
+         * functions. The path is allowed to contain qualifiers (.) to traverse
+         * sub-elements, as well as indexers ([x]) to traverse
+         * multiple-cardinality sub-elements (see the [Simple FHIRPath
+         * Profile](fhirpath.html#simple) for full details).
          */
         public String path() {
             return getString(PROPERTY_PATH);
@@ -1241,16 +1393,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -1264,14 +1429,17 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Human-readable and/or coded description of a specific desired objective of care, such as "control blood pressure" or "negotiate an obstacle course" or "dance with child at wedding".
+         * Human-readable and/or coded description of a specific desired
+         * objective of care, such as "control blood pressure" or "negotiate an
+         * obstacle course" or "dance with child at wedding".
          */
         public CodeableConcept description() {
             return getObject(CodeableConcept.class, PROPERTY_DESCRIPTION);
         }
 
         /**
-         * Identifies the expected level of importance associated with reaching/sustaining the defined goal.
+         * Identifies the expected level of importance associated with
+         * reaching/sustaining the defined goal.
          */
         public CodeableConcept priority() {
             return getObject(CodeableConcept.class, PROPERTY_PRIORITY);
@@ -1285,14 +1453,18 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Identifies problems, conditions, issues, or concerns the goal is intended to address.
+         * Identifies problems, conditions, issues, or concerns the goal is
+         * intended to address.
          */
         public java.util.List<CodeableConcept> addresses() {
             return getList(CodeableConcept.class, PROPERTY_ADDRESSES);
         }
 
         /**
-         * Didactic or other informational resources associated with the goal that provide further supporting information about the goal. Information resources can include inline text commentary and links to web resources.
+         * Didactic or other informational resources associated with the goal
+         * that provide further supporting information about the goal.
+         * Information resources can include inline text commentary and links to
+         * web resources.
          */
         public java.util.List<RelatedArtifact> documentation() {
             return getList(RelatedArtifact.class, PROPERTY_DOCUMENTATION);
@@ -1387,16 +1559,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -1410,7 +1595,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The role the participant should play in performing the described action.
+         * The role the participant should play in performing the described
+         * action.
          */
         public CodeableConcept role() {
             return getObject(CodeableConcept.class, PROPERTY_ROLE);
@@ -1475,16 +1661,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -1505,14 +1704,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * A duration or range of durations to apply to the relationship. For example, 30-60 minutes before.
+         * A duration or range of durations to apply to the relationship. For
+         * example, 30-60 minutes before.
          */
         public Duration offsetDuration() {
             return getObject(Duration.class, PROPERTY_OFFSETDURATION);
         }
 
         /**
-         * A duration or range of durations to apply to the relationship. For example, 30-60 minutes before.
+         * A duration or range of durations to apply to the relationship. For
+         * example, 30-60 minutes before.
          */
         public Range offsetRange() {
             return getObject(Range.class, PROPERTY_OFFSETRANGE);
@@ -1588,51 +1789,81 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The parameter whose value is to be tracked, e.g. body weight, blood pressure, or hemoglobin A1c level.
+         * The parameter whose value is to be tracked, e.g. body weight, blood
+         * pressure, or hemoglobin A1c level.
          */
         public CodeableConcept measure() {
             return getObject(CodeableConcept.class, PROPERTY_MEASURE);
         }
 
         /**
-         * The target value of the measure to be achieved to signify fulfillment of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any value at or above the low value.
+         * The target value of the measure to be achieved to signify fulfillment
+         * of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both
+         * values of the range can be specified. When a low value is missing, it
+         * indicates that the goal is achieved at any value at or below the high
+         * value. Similarly, if the high value is missing, it indicates that the
+         * goal is achieved at any value at or above the low value.
          */
         public Quantity detailQuantity() {
             return getObject(Quantity.class, PROPERTY_DETAILQUANTITY);
         }
 
         /**
-         * The target value of the measure to be achieved to signify fulfillment of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any value at or above the low value.
+         * The target value of the measure to be achieved to signify fulfillment
+         * of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both
+         * values of the range can be specified. When a low value is missing, it
+         * indicates that the goal is achieved at any value at or below the high
+         * value. Similarly, if the high value is missing, it indicates that the
+         * goal is achieved at any value at or above the low value.
          */
         public Range detailRange() {
             return getObject(Range.class, PROPERTY_DETAILRANGE);
         }
 
         /**
-         * The target value of the measure to be achieved to signify fulfillment of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any value at or above the low value.
+         * The target value of the measure to be achieved to signify fulfillment
+         * of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both
+         * values of the range can be specified. When a low value is missing, it
+         * indicates that the goal is achieved at any value at or below the high
+         * value. Similarly, if the high value is missing, it indicates that the
+         * goal is achieved at any value at or above the low value.
          */
         public CodeableConcept detailCodeableConcept() {
             return getObject(CodeableConcept.class, PROPERTY_DETAILCODEABLECONCEPT);
         }
 
         /**
-         * Indicates the timeframe after the start of the goal in which the goal should be met.
+         * Indicates the timeframe after the start of the goal in which the goal
+         * should be met.
          */
         public Duration due() {
             return getObject(Duration.class, PROPERTY_DUE);

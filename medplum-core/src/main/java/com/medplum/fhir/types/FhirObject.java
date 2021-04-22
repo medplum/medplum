@@ -265,7 +265,10 @@ public abstract class FhirObject extends AbstractMap<String, JsonValue> implemen
     }
 
     @Override
-    public JsonValue merge(final String key, final JsonValue value, final BiFunction<? super JsonValue, ? super JsonValue, ? extends JsonValue> remappingFunction) {
+    public JsonValue merge(
+            final String key,
+            final JsonValue value,
+            final BiFunction<? super JsonValue, ? super JsonValue, ? extends JsonValue> remappingFunction) {
         return data.merge(key, value, remappingFunction);
     }
 }

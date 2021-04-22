@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -36,28 +34,33 @@ public class Attachment extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * Identifies the type of the data in the attachment and allows a method to be chosen to interpret or render the data. Includes mime type parameters such as charset where appropriate.
+     * Identifies the type of the data in the attachment and allows a method
+     * to be chosen to interpret or render the data. Includes mime type
+     * parameters such as charset where appropriate.
      */
     public String contentType() {
         return getString(PROPERTY_CONTENTTYPE);
     }
 
     /**
-     * The human language of the content. The value can be any valid value according to BCP 47.
+     * The human language of the content. The value can be any valid value
+     * according to BCP 47.
      */
     public String language() {
         return getString(PROPERTY_LANGUAGE);
     }
 
     /**
-     * The actual data of the attachment - a sequence of bytes, base64 encoded.
+     * The actual data of the attachment - a sequence of bytes, base64
+     * encoded.
      */
     public String data() {
         return getString(PROPERTY_DATA);
@@ -71,9 +74,10 @@ public class Attachment extends FhirResource {
     }
 
     /**
-     * The number of bytes of data that make up this attachment (before base64 encoding, if that is done).
+     * The number of bytes of data that make up this attachment (before
+     * base64 encoding, if that is done).
      */
-    public Integer size_() {
+    public Integer sizeValue() {
         return data.getInt(PROPERTY_SIZE);
     }
 
@@ -134,8 +138,8 @@ public class Attachment extends FhirResource {
             return this;
         }
 
-        public Builder size_(final Integer size_) {
-            b.add(PROPERTY_SIZE, size_);
+        public Builder sizeValue(final Integer sizeValue) {
+            b.add(PROPERTY_SIZE, sizeValue);
             return this;
         }
 

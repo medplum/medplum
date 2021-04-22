@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -49,7 +47,10 @@ public class Consent extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -63,23 +64,41 @@ public class Consent extends FhirResource {
     }
 
     /**
-     * A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it "clinically safe" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.
+     * A human-readable narrative that contains a summary of the resource and
+     * can be used to represent the content of the resource to a human. The
+     * narrative need not encode all the structured data, but is required to
+     * contain sufficient detail to make it "clinically safe" for a human to
+     * just read the narrative. Resource definitions may define what content
+     * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
         return getObject(Narrative.class, PROPERTY_TEXT);
     }
 
     /**
-     * These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.
+     * These resources do not have an independent existence apart from the
+     * resource that contains them - they cannot be identified independently,
+     * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource and that modifies the
+     * understanding of the element that contains it and/or the understanding
+     * of the containing element's descendants. Usually modifier elements
+     * provide negation or qualification. To make the use of extensions safe
+     * and manageable, there is a strict set of governance applied to the
+     * definition and use of extensions. Though any implementer is allowed to
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension. Applications processing a
+     * resource are required to check for modifier extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -100,14 +119,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * A selector of the type of consent being presented: ADR, Privacy, Treatment, Research.  This list is now extensible.
+     * A selector of the type of consent being presented: ADR, Privacy,
+     * Treatment, Research.  This list is now extensible.
      */
     public CodeableConcept scope() {
         return getObject(CodeableConcept.class, PROPERTY_SCOPE);
     }
 
     /**
-     * A classification of the type of consents found in the statement. This element supports indexing and retrieval of consent statements.
+     * A classification of the type of consents found in the statement. This
+     * element supports indexing and retrieval of consent statements.
      */
     public java.util.List<CodeableConcept> category() {
         return getList(CodeableConcept.class, PROPERTY_CATEGORY);
@@ -128,35 +149,48 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Either the Grantor, which is the entity responsible for granting the rights listed in a Consent Directive or the Grantee, which is the entity responsible for complying with the Consent Directive, including any obligations or limitations on authorizations and enforcement of prohibitions.
+     * Either the Grantor, which is the entity responsible for granting the
+     * rights listed in a Consent Directive or the Grantee, which is the
+     * entity responsible for complying with the Consent Directive, including
+     * any obligations or limitations on authorizations and enforcement of
+     * prohibitions.
      */
     public java.util.List<Reference> performer() {
         return getList(Reference.class, PROPERTY_PERFORMER);
     }
 
     /**
-     * The organization that manages the consent, and the framework within which it is executed.
+     * The organization that manages the consent, and the framework within
+     * which it is executed.
      */
     public java.util.List<Reference> organization() {
         return getList(Reference.class, PROPERTY_ORGANIZATION);
     }
 
     /**
-     * The source on which this consent statement is based. The source might be a scanned original paper form, or a reference to a consent that links back to such a source, a reference to a document repository (e.g. XDS) that stores the original consent document.
+     * The source on which this consent statement is based. The source might
+     * be a scanned original paper form, or a reference to a consent that
+     * links back to such a source, a reference to a document repository
+     * (e.g. XDS) that stores the original consent document.
      */
     public Attachment sourceAttachment() {
         return getObject(Attachment.class, PROPERTY_SOURCEATTACHMENT);
     }
 
     /**
-     * The source on which this consent statement is based. The source might be a scanned original paper form, or a reference to a consent that links back to such a source, a reference to a document repository (e.g. XDS) that stores the original consent document.
+     * The source on which this consent statement is based. The source might
+     * be a scanned original paper form, or a reference to a consent that
+     * links back to such a source, a reference to a document repository
+     * (e.g. XDS) that stores the original consent document.
      */
     public Reference sourceReference() {
         return getObject(Reference.class, PROPERTY_SOURCEREFERENCE);
     }
 
     /**
-     * The references to the policies that are included in this consent scope. Policies may be organizational, but are often defined jurisdictionally, or in law.
+     * The references to the policies that are included in this consent
+     * scope. Policies may be organizational, but are often defined
+     * jurisdictionally, or in law.
      */
     public java.util.List<ConsentPolicy> policy() {
         return getList(ConsentPolicy.class, PROPERTY_POLICY);
@@ -170,14 +204,17 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Whether a treatment instruction (e.g. artificial respiration yes or no) was verified with the patient, his/her family or another authorized person.
+     * Whether a treatment instruction (e.g. artificial respiration yes or
+     * no) was verified with the patient, his/her family or another
+     * authorized person.
      */
     public java.util.List<ConsentVerification> verification() {
         return getList(ConsentVerification.class, PROPERTY_VERIFICATION);
     }
 
     /**
-     * An exception to the base policy of this consent. An exception can be an addition or removal of access permissions.
+     * An exception to the base policy of this consent. An exception can be
+     * an addition or removal of access permissions.
      */
     public ConsentProvision provision() {
         return getObject(ConsentProvision.class, PROPERTY_PROVISION);
@@ -328,30 +365,46 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * How the individual is involved in the resources content that is described in the exception.
+         * How the individual is involved in the resources content that is
+         * described in the exception.
          */
         public CodeableConcept role() {
             return getObject(CodeableConcept.class, PROPERTY_ROLE);
         }
 
         /**
-         * The resource that identifies the actor. To identify actors by type, use group to identify a set of actors by some property they share (e.g. 'admitting officers').
+         * The resource that identifies the actor. To identify actors by type,
+         * use group to identify a set of actors by some property they share
+         * (e.g. 'admitting officers').
          */
         public Reference reference() {
             return getObject(Reference.class, PROPERTY_REFERENCE);
@@ -414,30 +467,45 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * How the resource reference is interpreted when testing consent restrictions.
+         * How the resource reference is interpreted when testing consent
+         * restrictions.
          */
         public String meaning() {
             return getString(PROPERTY_MEANING);
         }
 
         /**
-         * A reference to a specific resource that defines which resources are covered by this consent.
+         * A reference to a specific resource that defines which resources are
+         * covered by this consent.
          */
         public Reference reference() {
             return getObject(Reference.class, PROPERTY_REFERENCE);
@@ -500,30 +568,47 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Entity or Organization having regulatory jurisdiction or accountability for  enforcing policies pertaining to Consent Directives.
+         * Entity or Organization having regulatory jurisdiction or
+         * accountability for  enforcing policies pertaining to Consent
+         * Directives.
          */
         public String authority() {
             return getString(PROPERTY_AUTHORITY);
         }
 
         /**
-         * The references to the policies that are included in this consent scope. Policies may be organizational, but are often defined jurisdictionally, or in law.
+         * The references to the policies that are included in this consent
+         * scope. Policies may be organizational, but are often defined
+         * jurisdictionally, or in law.
          */
         public String uri() {
             return getString(PROPERTY_URI);
@@ -595,23 +680,37 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Action  to take - permit or deny - when the rule conditions are met.  Not permitted in root rule, required in all nested rules.
+         * Action  to take - permit or deny - when the rule conditions are met. 
+         * Not permitted in root rule, required in all nested rules.
          */
         public String type() {
             return getString(PROPERTY_TYPE);
@@ -625,7 +724,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Who or what is controlled by this rule. Use group to identify a set of actors by some property they share (e.g. 'admitting officers').
+         * Who or what is controlled by this rule. Use group to identify a set of
+         * actors by some property they share (e.g. 'admitting officers').
          */
         public java.util.List<ConsentActor> actor() {
             return getList(ConsentActor.class, PROPERTY_ACTOR);
@@ -639,23 +739,27 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * A security label, comprised of 0..* security label fields (Privacy tags), which define which resources are controlled by this exception.
+         * A security label, comprised of 0..* security label fields (Privacy
+         * tags), which define which resources are controlled by this exception.
          */
         public java.util.List<Coding> securityLabel() {
             return getList(Coding.class, PROPERTY_SECURITYLABEL);
         }
 
         /**
-         * The context of the activities a user is taking - why the user is accessing the data - that are controlled by this rule.
+         * The context of the activities a user is taking - why the user is
+         * accessing the data - that are controlled by this rule.
          */
         public java.util.List<Coding> purpose() {
             return getList(Coding.class, PROPERTY_PURPOSE);
         }
 
         /**
-         * The class of information covered by this rule. The type can be a FHIR resource type, a profile on a type, or a CDA document, or some other type that indicates what sort of information the consent relates to.
+         * The class of information covered by this rule. The type can be a FHIR
+         * resource type, a profile on a type, or a CDA document, or some other
+         * type that indicates what sort of information the consent relates to.
          */
-        public java.util.List<Coding> class_() {
+        public java.util.List<Coding> classValue() {
             return getList(Coding.class, PROPERTY_CLASS);
         }
 
@@ -667,14 +771,16 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Clinical or Operational Relevant period of time that bounds the data controlled by this rule.
+         * Clinical or Operational Relevant period of time that bounds the data
+         * controlled by this rule.
          */
         public Period dataPeriod() {
             return getObject(Period.class, PROPERTY_DATAPERIOD);
         }
 
         /**
-         * The resources controlled by this rule if specific resources are referenced.
+         * The resources controlled by this rule if specific resources are
+         * referenced.
          */
         public java.util.List<ConsentData> data() {
             return getList(ConsentData.class, PROPERTY_DATA);
@@ -738,8 +844,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
                 return this;
             }
 
-            public Builder class_(final java.util.List<Coding> class_) {
-                b.add(PROPERTY_CLASS, FhirObject.toArray(class_));
+            public Builder classValue(final java.util.List<Coding> classValue) {
+                b.add(PROPERTY_CLASS, FhirObject.toArray(classValue));
                 return this;
             }
 
@@ -790,16 +896,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -813,7 +932,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Who verified the instruction (Patient, Relative or other Authorized Person).
+         * Who verified the instruction (Patient, Relative or other Authorized
+         * Person).
          */
         public Reference verifiedWith() {
             return getObject(Reference.class, PROPERTY_VERIFIEDWITH);

@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -226,93 +224,138 @@ public class ElementDefinition extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the element and that modifies the
+     * understanding of the element in which it is contained and/or the
+     * understanding of the containing element's descendants. Usually
+     * modifier elements provide negation or qualification. To make the use
+     * of extensions safe and manageable, there is a strict set of governance
+     * applied to the definition and use of extensions. Though any
+     * implementer can define an extension, there is a set of requirements
+     * that SHALL be met as part of the definition of the extension.
+     * Applications processing a resource are required to check for modifier
+     * extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension.
+     * The path identifies the element and is expressed as a "."-separated
+     * list of ancestor elements, beginning with the name of the resource or
+     * extension.
      */
     public String path() {
         return getString(PROPERTY_PATH);
     }
 
     /**
-     * Codes that define how this element is represented in instances, when the deviation varies from the normal case.
+     * Codes that define how this element is represented in instances, when
+     * the deviation varies from the normal case.
      */
     public java.util.List<String> representation() {
         return getList(String.class, PROPERTY_REPRESENTATION);
     }
 
     /**
-     * The name of this element definition slice, when slicing is working. The name must be a token with no dots or spaces. This is a unique name referring to a specific set of constraints applied to this element, used to provide a name to different slices of the same element.
+     * The name of this element definition slice, when slicing is working.
+     * The name must be a token with no dots or spaces. This is a unique name
+     * referring to a specific set of constraints applied to this element,
+     * used to provide a name to different slices of the same element.
      */
     public String sliceName() {
         return getString(PROPERTY_SLICENAME);
     }
 
     /**
-     * If true, indicates that this slice definition is constraining a slice definition with the same name in an inherited profile. If false, the slice is not overriding any slice in an inherited profile. If missing, the slice might or might not be overriding a slice in an inherited profile, depending on the sliceName.
+     * If true, indicates that this slice definition is constraining a slice
+     * definition with the same name in an inherited profile. If false, the
+     * slice is not overriding any slice in an inherited profile. If missing,
+     * the slice might or might not be overriding a slice in an inherited
+     * profile, depending on the sliceName.
      */
     public Boolean sliceIsConstraining() {
         return data.getBoolean(PROPERTY_SLICEISCONSTRAINING);
     }
 
     /**
-     * A single preferred label which is the text to display beside the element indicating its meaning or to use to prompt for the element in a user display or form.
+     * A single preferred label which is the text to display beside the
+     * element indicating its meaning or to use to prompt for the element in
+     * a user display or form.
      */
     public String label() {
         return getString(PROPERTY_LABEL);
     }
 
     /**
-     * A code that has the same meaning as the element in a particular terminology.
+     * A code that has the same meaning as the element in a particular
+     * terminology.
      */
     public java.util.List<Coding> code() {
         return getList(Coding.class, PROPERTY_CODE);
     }
 
     /**
-     * Indicates that the element is sliced into a set of alternative definitions (i.e. in a structure definition, there are multiple different constraints on a single element in the base resource). Slicing can be used in any resource that has cardinality ..* on the base resource, or any resource with a choice of types. The set of slices is any elements that come after this in the element sequence that have the same path, until a shorter path occurs (the shorter path terminates the set).
+     * Indicates that the element is sliced into a set of alternative
+     * definitions (i.e. in a structure definition, there are multiple
+     * different constraints on a single element in the base resource).
+     * Slicing can be used in any resource that has cardinality ..* on the
+     * base resource, or any resource with a choice of types. The set of
+     * slices is any elements that come after this in the element sequence
+     * that have the same path, until a shorter path occurs (the shorter path
+     * terminates the set).
      */
     public ElementDefinitionSlicing slicing() {
         return getObject(ElementDefinitionSlicing.class, PROPERTY_SLICING);
     }
 
     /**
-     * A concise description of what this element means (e.g. for use in autogenerated summaries).
+     * A concise description of what this element means (e.g. for use in
+     * autogenerated summaries).
      */
-    public String short_() {
+    public String shortValue() {
         return getString(PROPERTY_SHORT);
     }
 
     /**
-     * Provides a complete explanation of the meaning of the data element for human readability.  For the case of elements derived from existing elements (e.g. constraints), the definition SHALL be consistent with the base definition, but convey the meaning of the element in the particular context of use of the resource. (Note: The text you are reading is specified in ElementDefinition.definition).
+     * Provides a complete explanation of the meaning of the data element for
+     * human readability.  For the case of elements derived from existing
+     * elements (e.g. constraints), the definition SHALL be consistent with
+     * the base definition, but convey the meaning of the element in the
+     * particular context of use of the resource. (Note: The text you are
+     * reading is specified in ElementDefinition.definition).
      */
     public String definition() {
         return getString(PROPERTY_DEFINITION);
     }
 
     /**
-     * Explanatory notes and implementation guidance about the data element, including notes about how to use the data properly, exceptions to proper use, etc. (Note: The text you are reading is specified in ElementDefinition.comment).
+     * Explanatory notes and implementation guidance about the data element,
+     * including notes about how to use the data properly, exceptions to
+     * proper use, etc. (Note: The text you are reading is specified in
+     * ElementDefinition.comment).
      */
     public String comment() {
         return getString(PROPERTY_COMMENT);
     }
 
     /**
-     * This element is for traceability of why the element was created and why the constraints exist as they do. This may be used to point to source materials or specifications that drove the structure of this element.
+     * This element is for traceability of why the element was created and
+     * why the constraints exist as they do. This may be used to point to
+     * source materials or specifications that drove the structure of this
+     * element.
      */
     public String requirements() {
         return getString(PROPERTY_REQUIREMENTS);
@@ -333,1788 +376,2509 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * The maximum number of times this element is permitted to appear in the instance.
+     * The maximum number of times this element is permitted to appear in the
+     * instance.
      */
     public String max() {
         return getString(PROPERTY_MAX);
     }
 
     /**
-     * Information about the base definition of the element, provided to make it unnecessary for tools to trace the deviation of the element through the derived and related profiles. When the element definition is not the original definition of an element - i.g. either in a constraint on another type, or for elements from a super type in a snap shot - then the information in provided in the element definition may be different to the base definition. On the original definition of the element, it will be same.
+     * Information about the base definition of the element, provided to make
+     * it unnecessary for tools to trace the deviation of the element through
+     * the derived and related profiles. When the element definition is not
+     * the original definition of an element - i.g. either in a constraint on
+     * another type, or for elements from a super type in a snap shot - then
+     * the information in provided in the element definition may be different
+     * to the base definition. On the original definition of the element, it
+     * will be same.
      */
     public ElementDefinitionBase base() {
         return getObject(ElementDefinitionBase.class, PROPERTY_BASE);
     }
 
     /**
-     * Identifies an element defined elsewhere in the definition whose content rules should be applied to the current element. ContentReferences bring across all the rules that are in the ElementDefinition for the element, including definitions, cardinality constraints, bindings, invariants etc.
+     * Identifies an element defined elsewhere in the definition whose
+     * content rules should be applied to the current element.
+     * ContentReferences bring across all the rules that are in the
+     * ElementDefinition for the element, including definitions, cardinality
+     * constraints, bindings, invariants etc.
      */
     public String contentReference() {
         return getString(PROPERTY_CONTENTREFERENCE);
     }
 
     /**
-     * The data type or resource that the value of this element is permitted to be.
+     * The data type or resource that the value of this element is permitted
+     * to be.
      */
     public java.util.List<ElementDefinitionType> type() {
         return getList(ElementDefinitionType.class, PROPERTY_TYPE);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueBase64Binary() {
         return getString(PROPERTY_DEFAULTVALUEBASE64BINARY);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Boolean defaultValueBoolean() {
         return data.getBoolean(PROPERTY_DEFAULTVALUEBOOLEAN);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueCanonical() {
         return getString(PROPERTY_DEFAULTVALUECANONICAL);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueCode() {
         return getString(PROPERTY_DEFAULTVALUECODE);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueDate() {
         return getString(PROPERTY_DEFAULTVALUEDATE);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueDateTime() {
         return getString(PROPERTY_DEFAULTVALUEDATETIME);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Integer defaultValueDecimal() {
         return data.getInt(PROPERTY_DEFAULTVALUEDECIMAL);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueId() {
         return getString(PROPERTY_DEFAULTVALUEID);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueInstant() {
         return getString(PROPERTY_DEFAULTVALUEINSTANT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Integer defaultValueInteger() {
         return data.getInt(PROPERTY_DEFAULTVALUEINTEGER);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueMarkdown() {
         return getString(PROPERTY_DEFAULTVALUEMARKDOWN);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueOid() {
         return getString(PROPERTY_DEFAULTVALUEOID);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Integer defaultValuePositiveInt() {
         return data.getInt(PROPERTY_DEFAULTVALUEPOSITIVEINT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueString() {
         return getString(PROPERTY_DEFAULTVALUESTRING);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueTime() {
         return getString(PROPERTY_DEFAULTVALUETIME);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Integer defaultValueUnsignedInt() {
         return data.getInt(PROPERTY_DEFAULTVALUEUNSIGNEDINT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueUri() {
         return getString(PROPERTY_DEFAULTVALUEURI);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueUrl() {
         return getString(PROPERTY_DEFAULTVALUEURL);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueUuid() {
         return getString(PROPERTY_DEFAULTVALUEUUID);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Address defaultValueAddress() {
         return getObject(Address.class, PROPERTY_DEFAULTVALUEADDRESS);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Age defaultValueAge() {
         return getObject(Age.class, PROPERTY_DEFAULTVALUEAGE);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Annotation defaultValueAnnotation() {
         return getObject(Annotation.class, PROPERTY_DEFAULTVALUEANNOTATION);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Attachment defaultValueAttachment() {
         return getObject(Attachment.class, PROPERTY_DEFAULTVALUEATTACHMENT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public CodeableConcept defaultValueCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_DEFAULTVALUECODEABLECONCEPT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Coding defaultValueCoding() {
         return getObject(Coding.class, PROPERTY_DEFAULTVALUECODING);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public ContactPoint defaultValueContactPoint() {
         return getObject(ContactPoint.class, PROPERTY_DEFAULTVALUECONTACTPOINT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Count defaultValueCount() {
         return getObject(Count.class, PROPERTY_DEFAULTVALUECOUNT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Distance defaultValueDistance() {
         return getObject(Distance.class, PROPERTY_DEFAULTVALUEDISTANCE);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Duration defaultValueDuration() {
         return getObject(Duration.class, PROPERTY_DEFAULTVALUEDURATION);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public HumanName defaultValueHumanName() {
         return getObject(HumanName.class, PROPERTY_DEFAULTVALUEHUMANNAME);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Identifier defaultValueIdentifier() {
         return getObject(Identifier.class, PROPERTY_DEFAULTVALUEIDENTIFIER);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Money defaultValueMoney() {
         return getObject(Money.class, PROPERTY_DEFAULTVALUEMONEY);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Period defaultValuePeriod() {
         return getObject(Period.class, PROPERTY_DEFAULTVALUEPERIOD);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Quantity defaultValueQuantity() {
         return getObject(Quantity.class, PROPERTY_DEFAULTVALUEQUANTITY);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Range defaultValueRange() {
         return getObject(Range.class, PROPERTY_DEFAULTVALUERANGE);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Ratio defaultValueRatio() {
         return getObject(Ratio.class, PROPERTY_DEFAULTVALUERATIO);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Reference defaultValueReference() {
         return getObject(Reference.class, PROPERTY_DEFAULTVALUEREFERENCE);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public SampledData defaultValueSampledData() {
         return getObject(SampledData.class, PROPERTY_DEFAULTVALUESAMPLEDDATA);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Signature defaultValueSignature() {
         return getObject(Signature.class, PROPERTY_DEFAULTVALUESIGNATURE);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Timing defaultValueTiming() {
         return getObject(Timing.class, PROPERTY_DEFAULTVALUETIMING);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public ContactDetail defaultValueContactDetail() {
         return getObject(ContactDetail.class, PROPERTY_DEFAULTVALUECONTACTDETAIL);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Contributor defaultValueContributor() {
         return getObject(Contributor.class, PROPERTY_DEFAULTVALUECONTRIBUTOR);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public DataRequirement defaultValueDataRequirement() {
         return getObject(DataRequirement.class, PROPERTY_DEFAULTVALUEDATAREQUIREMENT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Expression defaultValueExpression() {
         return getObject(Expression.class, PROPERTY_DEFAULTVALUEEXPRESSION);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public ParameterDefinition defaultValueParameterDefinition() {
         return getObject(ParameterDefinition.class, PROPERTY_DEFAULTVALUEPARAMETERDEFINITION);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public RelatedArtifact defaultValueRelatedArtifact() {
         return getObject(RelatedArtifact.class, PROPERTY_DEFAULTVALUERELATEDARTIFACT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public TriggerDefinition defaultValueTriggerDefinition() {
         return getObject(TriggerDefinition.class, PROPERTY_DEFAULTVALUETRIGGERDEFINITION);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public UsageContext defaultValueUsageContext() {
         return getObject(UsageContext.class, PROPERTY_DEFAULTVALUEUSAGECONTEXT);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Dosage defaultValueDosage() {
         return getObject(Dosage.class, PROPERTY_DEFAULTVALUEDOSAGE);
     }
 
     /**
-     * The value that should be used if there is no value stated in the instance (e.g. 'if not otherwise specified, the abstract is false').
+     * The value that should be used if there is no value stated in the
+     * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Meta defaultValueMeta() {
         return getObject(Meta.class, PROPERTY_DEFAULTVALUEMETA);
     }
 
     /**
-     * The Implicit meaning that is to be understood when this element is missing (e.g. 'when this element is missing, the period is ongoing').
+     * The Implicit meaning that is to be understood when this element is
+     * missing (e.g. 'when this element is missing, the period is ongoing').
      */
     public String meaningWhenMissing() {
         return getString(PROPERTY_MEANINGWHENMISSING);
     }
 
     /**
-     * If present, indicates that the order of the repeating element has meaning and describes what that meaning is.  If absent, it means that the order of the element has no meaning.
+     * If present, indicates that the order of the repeating element has
+     * meaning and describes what that meaning is.  If absent, it means that
+     * the order of the element has no meaning.
      */
     public String orderMeaning() {
         return getString(PROPERTY_ORDERMEANING);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedBase64Binary() {
         return getString(PROPERTY_FIXEDBASE64BINARY);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Boolean fixedBoolean() {
         return data.getBoolean(PROPERTY_FIXEDBOOLEAN);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedCanonical() {
         return getString(PROPERTY_FIXEDCANONICAL);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedCode() {
         return getString(PROPERTY_FIXEDCODE);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedDate() {
         return getString(PROPERTY_FIXEDDATE);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedDateTime() {
         return getString(PROPERTY_FIXEDDATETIME);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Integer fixedDecimal() {
         return data.getInt(PROPERTY_FIXEDDECIMAL);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedId() {
         return getString(PROPERTY_FIXEDID);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedInstant() {
         return getString(PROPERTY_FIXEDINSTANT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Integer fixedInteger() {
         return data.getInt(PROPERTY_FIXEDINTEGER);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedMarkdown() {
         return getString(PROPERTY_FIXEDMARKDOWN);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedOid() {
         return getString(PROPERTY_FIXEDOID);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Integer fixedPositiveInt() {
         return data.getInt(PROPERTY_FIXEDPOSITIVEINT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedString() {
         return getString(PROPERTY_FIXEDSTRING);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedTime() {
         return getString(PROPERTY_FIXEDTIME);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Integer fixedUnsignedInt() {
         return data.getInt(PROPERTY_FIXEDUNSIGNEDINT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedUri() {
         return getString(PROPERTY_FIXEDURI);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedUrl() {
         return getString(PROPERTY_FIXEDURL);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedUuid() {
         return getString(PROPERTY_FIXEDUUID);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Address fixedAddress() {
         return getObject(Address.class, PROPERTY_FIXEDADDRESS);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Age fixedAge() {
         return getObject(Age.class, PROPERTY_FIXEDAGE);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Annotation fixedAnnotation() {
         return getObject(Annotation.class, PROPERTY_FIXEDANNOTATION);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Attachment fixedAttachment() {
         return getObject(Attachment.class, PROPERTY_FIXEDATTACHMENT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public CodeableConcept fixedCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_FIXEDCODEABLECONCEPT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Coding fixedCoding() {
         return getObject(Coding.class, PROPERTY_FIXEDCODING);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public ContactPoint fixedContactPoint() {
         return getObject(ContactPoint.class, PROPERTY_FIXEDCONTACTPOINT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Count fixedCount() {
         return getObject(Count.class, PROPERTY_FIXEDCOUNT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Distance fixedDistance() {
         return getObject(Distance.class, PROPERTY_FIXEDDISTANCE);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Duration fixedDuration() {
         return getObject(Duration.class, PROPERTY_FIXEDDURATION);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public HumanName fixedHumanName() {
         return getObject(HumanName.class, PROPERTY_FIXEDHUMANNAME);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Identifier fixedIdentifier() {
         return getObject(Identifier.class, PROPERTY_FIXEDIDENTIFIER);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Money fixedMoney() {
         return getObject(Money.class, PROPERTY_FIXEDMONEY);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Period fixedPeriod() {
         return getObject(Period.class, PROPERTY_FIXEDPERIOD);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Quantity fixedQuantity() {
         return getObject(Quantity.class, PROPERTY_FIXEDQUANTITY);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Range fixedRange() {
         return getObject(Range.class, PROPERTY_FIXEDRANGE);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Ratio fixedRatio() {
         return getObject(Ratio.class, PROPERTY_FIXEDRATIO);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Reference fixedReference() {
         return getObject(Reference.class, PROPERTY_FIXEDREFERENCE);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public SampledData fixedSampledData() {
         return getObject(SampledData.class, PROPERTY_FIXEDSAMPLEDDATA);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Signature fixedSignature() {
         return getObject(Signature.class, PROPERTY_FIXEDSIGNATURE);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Timing fixedTiming() {
         return getObject(Timing.class, PROPERTY_FIXEDTIMING);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public ContactDetail fixedContactDetail() {
         return getObject(ContactDetail.class, PROPERTY_FIXEDCONTACTDETAIL);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Contributor fixedContributor() {
         return getObject(Contributor.class, PROPERTY_FIXEDCONTRIBUTOR);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public DataRequirement fixedDataRequirement() {
         return getObject(DataRequirement.class, PROPERTY_FIXEDDATAREQUIREMENT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Expression fixedExpression() {
         return getObject(Expression.class, PROPERTY_FIXEDEXPRESSION);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public ParameterDefinition fixedParameterDefinition() {
         return getObject(ParameterDefinition.class, PROPERTY_FIXEDPARAMETERDEFINITION);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public RelatedArtifact fixedRelatedArtifact() {
         return getObject(RelatedArtifact.class, PROPERTY_FIXEDRELATEDARTIFACT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public TriggerDefinition fixedTriggerDefinition() {
         return getObject(TriggerDefinition.class, PROPERTY_FIXEDTRIGGERDEFINITION);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public UsageContext fixedUsageContext() {
         return getObject(UsageContext.class, PROPERTY_FIXEDUSAGECONTEXT);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Dosage fixedDosage() {
         return getObject(Dosage.class, PROPERTY_FIXEDDOSAGE);
     }
 
     /**
-     * Specifies a value that SHALL be exactly the value  for this element in the instance. For purposes of comparison, non-significant whitespace is ignored, and all values must be an exact match (case and accent sensitive). Missing elements/attributes must also be missing.
+     * Specifies a value that SHALL be exactly the value  for this element in
+     * the instance. For purposes of comparison, non-significant whitespace
+     * is ignored, and all values must be an exact match (case and accent
+     * sensitive). Missing elements/attributes must also be missing.
      */
     public Meta fixedMeta() {
         return getObject(Meta.class, PROPERTY_FIXEDMETA);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternBase64Binary() {
         return getString(PROPERTY_PATTERNBASE64BINARY);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Boolean patternBoolean() {
         return data.getBoolean(PROPERTY_PATTERNBOOLEAN);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternCanonical() {
         return getString(PROPERTY_PATTERNCANONICAL);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternCode() {
         return getString(PROPERTY_PATTERNCODE);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternDate() {
         return getString(PROPERTY_PATTERNDATE);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternDateTime() {
         return getString(PROPERTY_PATTERNDATETIME);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Integer patternDecimal() {
         return data.getInt(PROPERTY_PATTERNDECIMAL);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternId() {
         return getString(PROPERTY_PATTERNID);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternInstant() {
         return getString(PROPERTY_PATTERNINSTANT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Integer patternInteger() {
         return data.getInt(PROPERTY_PATTERNINTEGER);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternMarkdown() {
         return getString(PROPERTY_PATTERNMARKDOWN);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternOid() {
         return getString(PROPERTY_PATTERNOID);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Integer patternPositiveInt() {
         return data.getInt(PROPERTY_PATTERNPOSITIVEINT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternString() {
         return getString(PROPERTY_PATTERNSTRING);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternTime() {
         return getString(PROPERTY_PATTERNTIME);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Integer patternUnsignedInt() {
         return data.getInt(PROPERTY_PATTERNUNSIGNEDINT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternUri() {
         return getString(PROPERTY_PATTERNURI);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternUrl() {
         return getString(PROPERTY_PATTERNURL);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternUuid() {
         return getString(PROPERTY_PATTERNUUID);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Address patternAddress() {
         return getObject(Address.class, PROPERTY_PATTERNADDRESS);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Age patternAge() {
         return getObject(Age.class, PROPERTY_PATTERNAGE);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Annotation patternAnnotation() {
         return getObject(Annotation.class, PROPERTY_PATTERNANNOTATION);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Attachment patternAttachment() {
         return getObject(Attachment.class, PROPERTY_PATTERNATTACHMENT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public CodeableConcept patternCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_PATTERNCODEABLECONCEPT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Coding patternCoding() {
         return getObject(Coding.class, PROPERTY_PATTERNCODING);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public ContactPoint patternContactPoint() {
         return getObject(ContactPoint.class, PROPERTY_PATTERNCONTACTPOINT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Count patternCount() {
         return getObject(Count.class, PROPERTY_PATTERNCOUNT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Distance patternDistance() {
         return getObject(Distance.class, PROPERTY_PATTERNDISTANCE);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Duration patternDuration() {
         return getObject(Duration.class, PROPERTY_PATTERNDURATION);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public HumanName patternHumanName() {
         return getObject(HumanName.class, PROPERTY_PATTERNHUMANNAME);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Identifier patternIdentifier() {
         return getObject(Identifier.class, PROPERTY_PATTERNIDENTIFIER);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Money patternMoney() {
         return getObject(Money.class, PROPERTY_PATTERNMONEY);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Period patternPeriod() {
         return getObject(Period.class, PROPERTY_PATTERNPERIOD);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Quantity patternQuantity() {
         return getObject(Quantity.class, PROPERTY_PATTERNQUANTITY);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Range patternRange() {
         return getObject(Range.class, PROPERTY_PATTERNRANGE);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Ratio patternRatio() {
         return getObject(Ratio.class, PROPERTY_PATTERNRATIO);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Reference patternReference() {
         return getObject(Reference.class, PROPERTY_PATTERNREFERENCE);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public SampledData patternSampledData() {
         return getObject(SampledData.class, PROPERTY_PATTERNSAMPLEDDATA);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Signature patternSignature() {
         return getObject(Signature.class, PROPERTY_PATTERNSIGNATURE);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Timing patternTiming() {
         return getObject(Timing.class, PROPERTY_PATTERNTIMING);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public ContactDetail patternContactDetail() {
         return getObject(ContactDetail.class, PROPERTY_PATTERNCONTACTDETAIL);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Contributor patternContributor() {
         return getObject(Contributor.class, PROPERTY_PATTERNCONTRIBUTOR);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public DataRequirement patternDataRequirement() {
         return getObject(DataRequirement.class, PROPERTY_PATTERNDATAREQUIREMENT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Expression patternExpression() {
         return getObject(Expression.class, PROPERTY_PATTERNEXPRESSION);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public ParameterDefinition patternParameterDefinition() {
         return getObject(ParameterDefinition.class, PROPERTY_PATTERNPARAMETERDEFINITION);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public RelatedArtifact patternRelatedArtifact() {
         return getObject(RelatedArtifact.class, PROPERTY_PATTERNRELATEDARTIFACT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public TriggerDefinition patternTriggerDefinition() {
         return getObject(TriggerDefinition.class, PROPERTY_PATTERNTRIGGERDEFINITION);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public UsageContext patternUsageContext() {
         return getObject(UsageContext.class, PROPERTY_PATTERNUSAGECONTEXT);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Dosage patternDosage() {
         return getObject(Dosage.class, PROPERTY_PATTERNDOSAGE);
     }
 
     /**
-     * Specifies a value that the value in the instance SHALL follow - that is, any value in the pattern must be found in the instance. Other additional values may be found too. This is effectively constraint by example.  
-
-When pattern[x] is used to constrain a primitive, it means that the value provided in the pattern[x] must match the instance value exactly.
-
-When pattern[x] is used to constrain an array, it means that each element provided in the pattern[x] array must (recursively) match at least one element from the instance array.
-
-When pattern[x] is used to constrain a complex object, it means that each property in the pattern must be present in the complex object, and its value must recursively match -- i.e.,
-
-1. If primitive: it must match exactly the pattern value
-2. If a complex object: it must match (recursively) the pattern value
-3. If an array: it must match (recursively) the pattern value.
+     * Specifies a value that the value in the instance SHALL follow - that
+     * is, any value in the pattern must be found in the instance. Other
+     * additional values may be found too. This is effectively constraint by
+     * example.  
+     *
+     * When pattern[x] is used to constrain a primitive, it means that the
+     * value provided in the pattern[x] must match the instance value
+     * exactly.
+     *
+     * When pattern[x] is used to constrain an array, it means that each
+     * element provided in the pattern[x] array must (recursively) match at
+     * least one element from the instance array.
+     *
+     * When pattern[x] is used to constrain a complex object, it means that
+     * each property in the pattern must be present in the complex object,
+     * and its value must recursively match -- i.e.,
+     *
+     * 1. If primitive: it must match exactly the pattern value
+     * 2. If a complex object: it must match (recursively) the pattern value
+     * 3. If an array: it must match (recursively) the pattern value.
      */
     public Meta patternMeta() {
         return getObject(Meta.class, PROPERTY_PATTERNMETA);
     }
 
     /**
-     * A sample value for this element demonstrating the type of information that would typically be found in the element.
+     * A sample value for this element demonstrating the type of information
+     * that would typically be found in the element.
      */
     public java.util.List<ElementDefinitionExample> example() {
         return getList(ElementDefinitionExample.class, PROPERTY_EXAMPLE);
     }
 
     /**
-     * The minimum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The minimum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public String minValueDate() {
         return getString(PROPERTY_MINVALUEDATE);
     }
 
     /**
-     * The minimum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The minimum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public String minValueDateTime() {
         return getString(PROPERTY_MINVALUEDATETIME);
     }
 
     /**
-     * The minimum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The minimum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public String minValueInstant() {
         return getString(PROPERTY_MINVALUEINSTANT);
     }
 
     /**
-     * The minimum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The minimum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public String minValueTime() {
         return getString(PROPERTY_MINVALUETIME);
     }
 
     /**
-     * The minimum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The minimum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Integer minValueDecimal() {
         return data.getInt(PROPERTY_MINVALUEDECIMAL);
     }
 
     /**
-     * The minimum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The minimum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Integer minValueInteger() {
         return data.getInt(PROPERTY_MINVALUEINTEGER);
     }
 
     /**
-     * The minimum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The minimum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Integer minValuePositiveInt() {
         return data.getInt(PROPERTY_MINVALUEPOSITIVEINT);
     }
 
     /**
-     * The minimum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The minimum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Integer minValueUnsignedInt() {
         return data.getInt(PROPERTY_MINVALUEUNSIGNEDINT);
     }
 
     /**
-     * The minimum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The minimum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Quantity minValueQuantity() {
         return getObject(Quantity.class, PROPERTY_MINVALUEQUANTITY);
     }
 
     /**
-     * The maximum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The maximum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public String maxValueDate() {
         return getString(PROPERTY_MAXVALUEDATE);
     }
 
     /**
-     * The maximum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The maximum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public String maxValueDateTime() {
         return getString(PROPERTY_MAXVALUEDATETIME);
     }
 
     /**
-     * The maximum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The maximum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public String maxValueInstant() {
         return getString(PROPERTY_MAXVALUEINSTANT);
     }
 
     /**
-     * The maximum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The maximum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public String maxValueTime() {
         return getString(PROPERTY_MAXVALUETIME);
     }
 
     /**
-     * The maximum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The maximum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Integer maxValueDecimal() {
         return data.getInt(PROPERTY_MAXVALUEDECIMAL);
     }
 
     /**
-     * The maximum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The maximum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Integer maxValueInteger() {
         return data.getInt(PROPERTY_MAXVALUEINTEGER);
     }
 
     /**
-     * The maximum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The maximum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Integer maxValuePositiveInt() {
         return data.getInt(PROPERTY_MAXVALUEPOSITIVEINT);
     }
 
     /**
-     * The maximum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The maximum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Integer maxValueUnsignedInt() {
         return data.getInt(PROPERTY_MAXVALUEUNSIGNEDINT);
     }
 
     /**
-     * The maximum allowed value for the element. The value is inclusive. This is allowed for the types date, dateTime, instant, time, decimal, integer, and Quantity.
+     * The maximum allowed value for the element. The value is inclusive.
+     * This is allowed for the types date, dateTime, instant, time, decimal,
+     * integer, and Quantity.
      */
     public Quantity maxValueQuantity() {
         return getObject(Quantity.class, PROPERTY_MAXVALUEQUANTITY);
     }
 
     /**
-     * Indicates the maximum length in characters that is permitted to be present in conformant instances and which is expected to be supported by conformant consumers that support the element.
+     * Indicates the maximum length in characters that is permitted to be
+     * present in conformant instances and which is expected to be supported
+     * by conformant consumers that support the element.
      */
     public Integer maxLength() {
         return data.getInt(PROPERTY_MAXLENGTH);
     }
 
     /**
-     * A reference to an invariant that may make additional statements about the cardinality or value in the instance.
+     * A reference to an invariant that may make additional statements about
+     * the cardinality or value in the instance.
      */
     public java.util.List<String> condition() {
         return getList(String.class, PROPERTY_CONDITION);
     }
 
     /**
-     * Formal constraints such as co-occurrence and other constraints that can be computationally evaluated within the context of the instance.
+     * Formal constraints such as co-occurrence and other constraints that
+     * can be computationally evaluated within the context of the instance.
      */
     public java.util.List<ElementDefinitionConstraint> constraint() {
         return getList(ElementDefinitionConstraint.class, PROPERTY_CONSTRAINT);
     }
 
     /**
-     * If true, implementations that produce or consume resources SHALL provide "support" for the element in some meaningful way.  If false, the element may be ignored and not supported. If false, whether to populate or use the data element in any way is at the discretion of the implementation.
+     * If true, implementations that produce or consume resources SHALL
+     * provide "support" for the element in some meaningful way.  If false,
+     * the element may be ignored and not supported. If false, whether to
+     * populate or use the data element in any way is at the discretion of
+     * the implementation.
      */
     public Boolean mustSupport() {
         return data.getBoolean(PROPERTY_MUSTSUPPORT);
     }
 
     /**
-     * If true, the value of this element affects the interpretation of the element or resource that contains it, and the value of the element cannot be ignored. Typically, this is used for status, negation and qualification codes. The effect of this is that the element cannot be ignored by systems: they SHALL either recognize the element and process it, and/or a pre-determination has been made that it is not relevant to their particular system.
+     * If true, the value of this element affects the interpretation of the
+     * element or resource that contains it, and the value of the element
+     * cannot be ignored. Typically, this is used for status, negation and
+     * qualification codes. The effect of this is that the element cannot be
+     * ignored by systems: they SHALL either recognize the element and
+     * process it, and/or a pre-determination has been made that it is not
+     * relevant to their particular system.
      */
     public Boolean isModifier() {
         return data.getBoolean(PROPERTY_ISMODIFIER);
     }
 
     /**
-     * Explains how that element affects the interpretation of the resource or element that contains it.
+     * Explains how that element affects the interpretation of the resource
+     * or element that contains it.
      */
     public String isModifierReason() {
         return getString(PROPERTY_ISMODIFIERREASON);
     }
 
     /**
-     * Whether the element should be included if a client requests a search with the parameter _summary=true.
+     * Whether the element should be included if a client requests a search
+     * with the parameter _summary=true.
      */
     public Boolean isSummary() {
         return data.getBoolean(PROPERTY_ISSUMMARY);
     }
 
     /**
-     * Binds to a value set if this element is coded (code, Coding, CodeableConcept, Quantity), or the data types (string, uri).
+     * Binds to a value set if this element is coded (code, Coding,
+     * CodeableConcept, Quantity), or the data types (string, uri).
      */
     public ElementDefinitionBinding binding() {
         return getObject(ElementDefinitionBinding.class, PROPERTY_BINDING);
     }
 
     /**
-     * Identifies a concept from an external specification that roughly corresponds to this element.
+     * Identifies a concept from an external specification that roughly
+     * corresponds to this element.
      */
     public java.util.List<ElementDefinitionMapping> mapping() {
         return getList(ElementDefinitionMapping.class, PROPERTY_MAPPING);
@@ -2176,8 +2940,8 @@ When pattern[x] is used to constrain a complex object, it means that each proper
             return this;
         }
 
-        public Builder short_(final String short_) {
-            b.add(PROPERTY_SHORT, short_);
+        public Builder shortValue(final String shortValue) {
+            b.add(PROPERTY_SHORT, shortValue);
             return this;
         }
 
@@ -3152,23 +3916,39 @@ When pattern[x] is used to constrain a complex object, it means that each proper
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The Path that identifies the base element - this matches the ElementDefinition.path for that element. Across FHIR, there is only one base definition of any element - that is, an element definition on a [[[StructureDefinition]]] without a StructureDefinition.base.
+         * The Path that identifies the base element - this matches the
+         * ElementDefinition.path for that element. Across FHIR, there is only
+         * one base definition of any element - that is, an element definition on
+         * a [[[StructureDefinition]]] without a StructureDefinition.base.
          */
         public String path() {
             return getString(PROPERTY_PATH);
@@ -3251,23 +4031,38 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Indicates the degree of conformance expectations associated with this binding - that is, the degree to which the provided value set must be adhered to in the instances.
+         * Indicates the degree of conformance expectations associated with this
+         * binding - that is, the degree to which the provided value set must be
+         * adhered to in the instances.
          */
         public String strength() {
             return getString(PROPERTY_STRENGTH);
@@ -3281,7 +4076,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Refers to the value set that identifies the set of codes the binding refers to.
+         * Refers to the value set that identifies the set of codes the binding
+         * refers to.
          */
         public String valueSet() {
             return getString(PROPERTY_VALUESET);
@@ -3354,23 +4150,38 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Allows identification of which elements have their cardinalities impacted by the constraint.  Will not be referenced for constraints that do not affect cardinality.
+         * Allows identification of which elements have their cardinalities
+         * impacted by the constraint.  Will not be referenced for constraints
+         * that do not affect cardinality.
          */
         public String key() {
             return getString(PROPERTY_KEY);
@@ -3384,35 +4195,40 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Identifies the impact constraint violation has on the conformance of the instance.
+         * Identifies the impact constraint violation has on the conformance of
+         * the instance.
          */
         public String severity() {
             return getString(PROPERTY_SEVERITY);
         }
 
         /**
-         * Text that can be used to describe the constraint in messages identifying that the constraint has been violated.
+         * Text that can be used to describe the constraint in messages
+         * identifying that the constraint has been violated.
          */
         public String human() {
             return getString(PROPERTY_HUMAN);
         }
 
         /**
-         * A [FHIRPath](fhirpath.html) expression of constraint that can be executed to see if this constraint is met.
+         * A [FHIRPath](fhirpath.html) expression of constraint that can be
+         * executed to see if this constraint is met.
          */
         public String expression() {
             return getString(PROPERTY_EXPRESSION);
         }
 
         /**
-         * An XPath expression of constraint that can be executed to see if this constraint is met.
+         * An XPath expression of constraint that can be executed to see if this
+         * constraint is met.
          */
         public String xpath() {
             return getString(PROPERTY_XPATH);
         }
 
         /**
-         * A reference to the original source of the constraint, for traceability purposes.
+         * A reference to the original source of the constraint, for traceability
+         * purposes.
          */
         public String source() {
             return getString(PROPERTY_SOURCE);
@@ -3500,16 +4316,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -3523,7 +4352,9 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * A FHIRPath expression, using [the simple subset of FHIRPath](fhirpath.html#simple), that is used to identify the element on which discrimination is based.
+         * A FHIRPath expression, using [the simple subset of
+         * FHIRPath](fhirpath.html#simple), that is used to identify the element
+         * on which discrimination is based.
          */
         public String path() {
             return getString(PROPERTY_PATH);
@@ -3635,16 +4466,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -3658,350 +4502,400 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueBase64Binary() {
             return getString(PROPERTY_VALUEBASE64BINARY);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Boolean valueBoolean() {
             return data.getBoolean(PROPERTY_VALUEBOOLEAN);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueCanonical() {
             return getString(PROPERTY_VALUECANONICAL);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueCode() {
             return getString(PROPERTY_VALUECODE);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueDate() {
             return getString(PROPERTY_VALUEDATE);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueDateTime() {
             return getString(PROPERTY_VALUEDATETIME);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Integer valueDecimal() {
             return data.getInt(PROPERTY_VALUEDECIMAL);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueId() {
             return getString(PROPERTY_VALUEID);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueInstant() {
             return getString(PROPERTY_VALUEINSTANT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Integer valueInteger() {
             return data.getInt(PROPERTY_VALUEINTEGER);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueMarkdown() {
             return getString(PROPERTY_VALUEMARKDOWN);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueOid() {
             return getString(PROPERTY_VALUEOID);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Integer valuePositiveInt() {
             return data.getInt(PROPERTY_VALUEPOSITIVEINT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueString() {
             return getString(PROPERTY_VALUESTRING);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueTime() {
             return getString(PROPERTY_VALUETIME);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Integer valueUnsignedInt() {
             return data.getInt(PROPERTY_VALUEUNSIGNEDINT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueUri() {
             return getString(PROPERTY_VALUEURI);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueUrl() {
             return getString(PROPERTY_VALUEURL);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public String valueUuid() {
             return getString(PROPERTY_VALUEUUID);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Address valueAddress() {
             return getObject(Address.class, PROPERTY_VALUEADDRESS);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Age valueAge() {
             return getObject(Age.class, PROPERTY_VALUEAGE);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Annotation valueAnnotation() {
             return getObject(Annotation.class, PROPERTY_VALUEANNOTATION);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Attachment valueAttachment() {
             return getObject(Attachment.class, PROPERTY_VALUEATTACHMENT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public CodeableConcept valueCodeableConcept() {
             return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Coding valueCoding() {
             return getObject(Coding.class, PROPERTY_VALUECODING);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public ContactPoint valueContactPoint() {
             return getObject(ContactPoint.class, PROPERTY_VALUECONTACTPOINT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Count valueCount() {
             return getObject(Count.class, PROPERTY_VALUECOUNT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Distance valueDistance() {
             return getObject(Distance.class, PROPERTY_VALUEDISTANCE);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Duration valueDuration() {
             return getObject(Duration.class, PROPERTY_VALUEDURATION);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public HumanName valueHumanName() {
             return getObject(HumanName.class, PROPERTY_VALUEHUMANNAME);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Identifier valueIdentifier() {
             return getObject(Identifier.class, PROPERTY_VALUEIDENTIFIER);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Money valueMoney() {
             return getObject(Money.class, PROPERTY_VALUEMONEY);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Period valuePeriod() {
             return getObject(Period.class, PROPERTY_VALUEPERIOD);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Quantity valueQuantity() {
             return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Range valueRange() {
             return getObject(Range.class, PROPERTY_VALUERANGE);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Ratio valueRatio() {
             return getObject(Ratio.class, PROPERTY_VALUERATIO);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Reference valueReference() {
             return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public SampledData valueSampledData() {
             return getObject(SampledData.class, PROPERTY_VALUESAMPLEDDATA);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Signature valueSignature() {
             return getObject(Signature.class, PROPERTY_VALUESIGNATURE);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Timing valueTiming() {
             return getObject(Timing.class, PROPERTY_VALUETIMING);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public ContactDetail valueContactDetail() {
             return getObject(ContactDetail.class, PROPERTY_VALUECONTACTDETAIL);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Contributor valueContributor() {
             return getObject(Contributor.class, PROPERTY_VALUECONTRIBUTOR);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public DataRequirement valueDataRequirement() {
             return getObject(DataRequirement.class, PROPERTY_VALUEDATAREQUIREMENT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Expression valueExpression() {
             return getObject(Expression.class, PROPERTY_VALUEEXPRESSION);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public ParameterDefinition valueParameterDefinition() {
             return getObject(ParameterDefinition.class, PROPERTY_VALUEPARAMETERDEFINITION);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public RelatedArtifact valueRelatedArtifact() {
             return getObject(RelatedArtifact.class, PROPERTY_VALUERELATEDARTIFACT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public TriggerDefinition valueTriggerDefinition() {
             return getObject(TriggerDefinition.class, PROPERTY_VALUETRIGGERDEFINITION);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public UsageContext valueUsageContext() {
             return getObject(UsageContext.class, PROPERTY_VALUEUSAGECONTEXT);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Dosage valueDosage() {
             return getObject(Dosage.class, PROPERTY_VALUEDOSAGE);
         }
 
         /**
-         * The actual value for the element, which must be one of the types allowed for this element.
+         * The actual value for the element, which must be one of the types
+         * allowed for this element.
          */
         public Meta valueMeta() {
             return getObject(Meta.class, PROPERTY_VALUEMETA);
@@ -4311,16 +5205,29 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -4341,7 +5248,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Expresses what part of the target specification corresponds to this element.
+         * Expresses what part of the target specification corresponds to this
+         * element.
          */
         public String map() {
             return getString(PROPERTY_MAP);
@@ -4423,44 +5331,67 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Designates which child elements are used to discriminate between the slices when processing an instance. If one or more discriminators are provided, the value of the child elements in the instance data SHALL completely distinguish which slice the element in the resource matches based on the allowed values for those elements in each of the slices.
+         * Designates which child elements are used to discriminate between the
+         * slices when processing an instance. If one or more discriminators are
+         * provided, the value of the child elements in the instance data SHALL
+         * completely distinguish which slice the element in the resource matches
+         * based on the allowed values for those elements in each of the slices.
          */
         public java.util.List<ElementDefinitionDiscriminator> discriminator() {
             return getList(ElementDefinitionDiscriminator.class, PROPERTY_DISCRIMINATOR);
         }
 
         /**
-         * A human-readable text description of how the slicing works. If there is no discriminator, this is required to be present to provide whatever information is possible about how the slices can be differentiated.
+         * A human-readable text description of how the slicing works. If there
+         * is no discriminator, this is required to be present to provide
+         * whatever information is possible about how the slices can be
+         * differentiated.
          */
         public String description() {
             return getString(PROPERTY_DESCRIPTION);
         }
 
         /**
-         * If the matching elements have to occur in the same order as defined in the profile.
+         * If the matching elements have to occur in the same order as defined in
+         * the profile.
          */
         public Boolean ordered() {
             return data.getBoolean(PROPERTY_ORDERED);
         }
 
         /**
-         * Whether additional slices are allowed or not. When the slices are ordered, profile authors can also say that additional slices are only allowed at the end.
+         * Whether additional slices are allowed or not. When the slices are
+         * ordered, profile authors can also say that additional slices are only
+         * allowed at the end.
          */
         public String rules() {
             return getString(PROPERTY_RULES);
@@ -4536,51 +5467,85 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * URL of Data type or Resource that is a(or the) type used for this element. References are URLs that are relative to http://hl7.org/fhir/StructureDefinition e.g. "string" is a reference to http://hl7.org/fhir/StructureDefinition/string. Absolute URLs are only allowed in logical models.
+         * URL of Data type or Resource that is a(or the) type used for this
+         * element. References are URLs that are relative to
+         * http://hl7.org/fhir/StructureDefinition e.g. "string" is a reference
+         * to http://hl7.org/fhir/StructureDefinition/string. Absolute URLs are
+         * only allowed in logical models.
          */
         public String code() {
             return getString(PROPERTY_CODE);
         }
 
         /**
-         * Identifies a profile structure or implementation Guide that applies to the datatype this element refers to. If any profiles are specified, then the content must conform to at least one of them. The URL can be a local reference - to a contained StructureDefinition, or a reference to another StructureDefinition or Implementation Guide by a canonical URL. When an implementation guide is specified, the type SHALL conform to at least one profile defined in the implementation guide.
+         * Identifies a profile structure or implementation Guide that applies to
+         * the datatype this element refers to. If any profiles are specified,
+         * then the content must conform to at least one of them. The URL can be
+         * a local reference - to a contained StructureDefinition, or a reference
+         * to another StructureDefinition or Implementation Guide by a canonical
+         * URL. When an implementation guide is specified, the type SHALL conform
+         * to at least one profile defined in the implementation guide.
          */
         public java.util.List<String> profile() {
             return getList(String.class, PROPERTY_PROFILE);
         }
 
         /**
-         * Used when the type is "Reference" or "canonical", and identifies a profile structure or implementation Guide that applies to the target of the reference this element refers to. If any profiles are specified, then the content must conform to at least one of them. The URL can be a local reference - to a contained StructureDefinition, or a reference to another StructureDefinition or Implementation Guide by a canonical URL. When an implementation guide is specified, the target resource SHALL conform to at least one profile defined in the implementation guide.
+         * Used when the type is "Reference" or "canonical", and identifies a
+         * profile structure or implementation Guide that applies to the target
+         * of the reference this element refers to. If any profiles are
+         * specified, then the content must conform to at least one of them. The
+         * URL can be a local reference - to a contained StructureDefinition, or
+         * a reference to another StructureDefinition or Implementation Guide by
+         * a canonical URL. When an implementation guide is specified, the target
+         * resource SHALL conform to at least one profile defined in the
+         * implementation guide.
          */
         public java.util.List<String> targetProfile() {
             return getList(String.class, PROPERTY_TARGETPROFILE);
         }
 
         /**
-         * If the type is a reference to another resource, how the resource is or can be aggregated - is it a contained resource, or a reference, and if the context is a bundle, is it included in the bundle.
+         * If the type is a reference to another resource, how the resource is or
+         * can be aggregated - is it a contained resource, or a reference, and if
+         * the context is a bundle, is it included in the bundle.
          */
         public java.util.List<String> aggregation() {
             return getList(String.class, PROPERTY_AGGREGATION);
         }
 
         /**
-         * Whether this reference needs to be version specific or version independent, or whether either can be used.
+         * Whether this reference needs to be version specific or version
+         * independent, or whether either can be used.
          */
         public String versioning() {
             return getString(PROPERTY_VERSIONING);

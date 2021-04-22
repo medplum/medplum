@@ -5,11 +5,7 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 public class Binary extends FhirResource {
     public static final String RESOURCE_TYPE = "Binary";
@@ -35,7 +31,10 @@ public class Binary extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -49,14 +48,25 @@ public class Binary extends FhirResource {
     }
 
     /**
-     * MimeType of the binary content represented as a standard MimeType (BCP 13).
+     * MimeType of the binary content represented as a standard MimeType (BCP
+     * 13).
      */
     public String contentType() {
         return getString(PROPERTY_CONTENTTYPE);
     }
 
     /**
-     * This element identifies another resource that can be used as a proxy of the security sensitivity to use when deciding and enforcing access control rules for the Binary resource. Given that the Binary resource contains very few elements that can be used to determine the sensitivity of the data and relationships to individuals, the referenced resource stands in as a proxy equivalent for this purpose. This referenced resource may be related to the Binary (e.g. Media, DocumentReference), or may be some non-related Resource purely as a security proxy. E.g. to identify that the binary resource relates to a patient, and access should only be granted to applications that have access to the patient.
+     * This element identifies another resource that can be used as a proxy
+     * of the security sensitivity to use when deciding and enforcing access
+     * control rules for the Binary resource. Given that the Binary resource
+     * contains very few elements that can be used to determine the
+     * sensitivity of the data and relationships to individuals, the
+     * referenced resource stands in as a proxy equivalent for this purpose.
+     * This referenced resource may be related to the Binary (e.g. Media,
+     * DocumentReference), or may be some non-related Resource purely as a
+     * security proxy. E.g. to identify that the binary resource relates to a
+     * patient, and access should only be granted to applications that have
+     * access to the patient.
      */
     public Reference securityContext() {
         return getObject(Reference.class, PROPERTY_SECURITYCONTEXT);

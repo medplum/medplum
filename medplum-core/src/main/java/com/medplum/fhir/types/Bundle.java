@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -39,7 +37,10 @@ public class Bundle extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.
+     * A reference to a set of rules that were followed when the resource was
+     * constructed, and which must be understood when processing the content.
+     * Often, this is a reference to an implementation guide that defines the
+     * special rules along with other profiles etc.
      */
     public String implicitRules() {
         return getString(PROPERTY_IMPLICITRULES);
@@ -53,7 +54,8 @@ public class Bundle extends FhirResource {
     }
 
     /**
-     * A persistent identifier for the bundle that won't change as a bundle is copied from server to server.
+     * A persistent identifier for the bundle that won't change as a bundle
+     * is copied from server to server.
      */
     public Identifier identifier() {
         return getObject(Identifier.class, PROPERTY_IDENTIFIER);
@@ -67,14 +69,18 @@ public class Bundle extends FhirResource {
     }
 
     /**
-     * The date/time that the bundle was assembled - i.e. when the resources were placed in the bundle.
+     * The date/time that the bundle was assembled - i.e. when the resources
+     * were placed in the bundle.
      */
     public java.time.Instant timestamp() {
         return java.time.Instant.parse(data.getString(PROPERTY_TIMESTAMP));
     }
 
     /**
-     * If a set of search matches, this is the total number of entries of type 'match' across all pages in the search.  It does not include search.mode = 'include' or 'outcome' entries and it does not provide a count of the number of entries in the Bundle.
+     * If a set of search matches, this is the total number of entries of
+     * type 'match' across all pages in the search.  It does not include
+     * search.mode = 'include' or 'outcome' entries and it does not provide a
+     * count of the number of entries in the Bundle.
      */
     public Integer total() {
         return data.getInt(PROPERTY_TOTAL);
@@ -88,7 +94,8 @@ public class Bundle extends FhirResource {
     }
 
     /**
-     * An entry in a bundle resource - will either contain a resource or information about a resource (transactions and history only).
+     * An entry in a bundle resource - will either contain a resource or
+     * information about a resource (transactions and history only).
      */
     public java.util.List<BundleEntry> entry() {
         return getList(BundleEntry.class, PROPERTY_ENTRY);
@@ -200,16 +207,29 @@ public class Bundle extends FhirResource {
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
@@ -223,16 +243,23 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * The Absolute URL for the resource.  The fullUrl SHALL NOT disagree with the id in the resource - i.e. if the fullUrl is not a urn:uuid, the URL shall be version-independent URL consistent with the Resource.id. The fullUrl is a version independent reference to the resource. The fullUrl element SHALL have a value except that: 
-* fullUrl can be empty on a POST (although it does not need to when specifying a temporary id for reference in the bundle)
-* Results from operations might involve resources that are not identified.
+         * The Absolute URL for the resource.  The fullUrl SHALL NOT disagree
+         * with the id in the resource - i.e. if the fullUrl is not a urn:uuid,
+         * the URL shall be version-independent URL consistent with the
+         * Resource.id. The fullUrl is a version independent reference to the
+         * resource. The fullUrl element SHALL have a value except that: 
+         * * fullUrl can be empty on a POST (although it does not need to when
+         * specifying a temporary id for reference in the bundle)
+         * * Results from operations might involve resources that are not
+         * identified.
          */
         public String fullUrl() {
             return getString(PROPERTY_FULLURL);
         }
 
         /**
-         * The Resource for the entry. The purpose/meaning of the resource is determined by the Bundle.type.
+         * The Resource for the entry. The purpose/meaning of the resource is
+         * determined by the Bundle.type.
          */
         public FhirResource resource() {
             return getObject(FhirResource.class, PROPERTY_RESOURCE);
@@ -243,21 +270,26 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Information about the search process that lead to the creation of this entry.
+         * Information about the search process that lead to the creation of this
+         * entry.
          */
         public BundleSearch search() {
             return getObject(BundleSearch.class, PROPERTY_SEARCH);
         }
 
         /**
-         * Additional information about how this entry should be processed as part of a transaction or batch.  For history, it shows how the entry was processed to create the version contained in the entry.
+         * Additional information about how this entry should be processed as
+         * part of a transaction or batch.  For history, it shows how the entry
+         * was processed to create the version contained in the entry.
          */
         public BundleRequest request() {
             return getObject(BundleRequest.class, PROPERTY_REQUEST);
         }
 
         /**
-         * Indicates the results of processing the corresponding 'request' entry in the batch or transaction being responded to or what the results of an operation where when returning history.
+         * Indicates the results of processing the corresponding 'request' entry
+         * in the batch or transaction being responded to or what the results of
+         * an operation where when returning history.
          */
         public BundleResponse response() {
             return getObject(BundleResponse.class, PROPERTY_RESPONSE);
@@ -340,23 +372,37 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * A name which details the functional use for this link - see [http://www.iana.org/assignments/link-relations/link-relations.xhtml#link-relations-1](http://www.iana.org/assignments/link-relations/link-relations.xhtml#link-relations-1).
+         * A name which details the functional use for this link - see
+         * [http://www.iana.org/assignments/link-relations/link-relations.xhtml#link-relations-1](http://www.iana.org/assignments/link-relations/link-relations.xhtml#link-relations-1).
          */
         public String relation() {
             return getString(PROPERTY_RELATION);
@@ -430,58 +476,81 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * In a transaction or batch, this is the HTTP action to be executed for this entry. In a history bundle, this indicates the HTTP action that occurred.
+         * In a transaction or batch, this is the HTTP action to be executed for
+         * this entry. In a history bundle, this indicates the HTTP action that
+         * occurred.
          */
         public String method() {
             return getString(PROPERTY_METHOD);
         }
 
         /**
-         * The URL for this entry, relative to the root (the address to which the request is posted).
+         * The URL for this entry, relative to the root (the address to which the
+         * request is posted).
          */
         public String url() {
             return getString(PROPERTY_URL);
         }
 
         /**
-         * If the ETag values match, return a 304 Not Modified status. See the API documentation for ["Conditional Read"](http.html#cread).
+         * If the ETag values match, return a 304 Not Modified status. See the
+         * API documentation for ["Conditional Read"](http.html#cread).
          */
         public String ifNoneMatch() {
             return getString(PROPERTY_IFNONEMATCH);
         }
 
         /**
-         * Only perform the operation if the last updated date matches. See the API documentation for ["Conditional Read"](http.html#cread).
+         * Only perform the operation if the last updated date matches. See the
+         * API documentation for ["Conditional Read"](http.html#cread).
          */
         public java.time.Instant ifModifiedSince() {
             return java.time.Instant.parse(data.getString(PROPERTY_IFMODIFIEDSINCE));
         }
 
         /**
-         * Only perform the operation if the Etag value matches. For more information, see the API section ["Managing Resource Contention"](http.html#concurrency).
+         * Only perform the operation if the Etag value matches. For more
+         * information, see the API section ["Managing Resource
+         * Contention"](http.html#concurrency).
          */
         public String ifMatch() {
             return getString(PROPERTY_IFMATCH);
         }
 
         /**
-         * Instruct the server not to perform the create if a specified resource already exists. For further information, see the API documentation for ["Conditional Create"](http.html#ccreate). This is just the query portion of the URL - what follows the "?" (not including the "?").
+         * Instruct the server not to perform the create if a specified resource
+         * already exists. For further information, see the API documentation for
+         * ["Conditional Create"](http.html#ccreate). This is just the query
+         * portion of the URL - what follows the "?" (not including the "?").
          */
         public String ifNoneExist() {
             return getString(PROPERTY_IFNONEEXIST);
@@ -567,37 +636,56 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * The status code returned by processing this entry. The status SHALL start with a 3 digit HTTP code (e.g. 404) and may contain the standard HTTP description associated with the status code.
+         * The status code returned by processing this entry. The status SHALL
+         * start with a 3 digit HTTP code (e.g. 404) and may contain the standard
+         * HTTP description associated with the status code.
          */
         public String status() {
             return getString(PROPERTY_STATUS);
         }
 
         /**
-         * The location header created by processing this operation, populated if the operation returns a location.
+         * The location header created by processing this operation, populated if
+         * the operation returns a location.
          */
         public String location() {
             return getString(PROPERTY_LOCATION);
         }
 
         /**
-         * The Etag for the resource, if the operation for the entry produced a versioned resource (see [Resource Metadata and Versioning](http.html#versioning) and [Managing Resource Contention](http.html#concurrency)).
+         * The Etag for the resource, if the operation for the entry produced a
+         * versioned resource (see [Resource Metadata and
+         * Versioning](http.html#versioning) and [Managing Resource
+         * Contention](http.html#concurrency)).
          */
         public String etag() {
             return getString(PROPERTY_ETAG);
@@ -611,7 +699,8 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * An OperationOutcome containing hints and warnings produced as part of processing this entry in a batch or transaction.
+         * An OperationOutcome containing hints and warnings produced as part of
+         * processing this entry in a batch or transaction.
          */
         public FhirResource outcome() {
             return getObject(FhirResource.class, PROPERTY_OUTCOME);
@@ -693,23 +782,38 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
         }
 
         /**
-         * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+         * Unique id for the element within a resource (for internal references).
+         * This may be any string value that does not contain spaces.
          */
         public String id() {
             return getString(PROPERTY_ID);
         }
 
         /**
-         * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element and that modifies the
+         * understanding of the element in which it is contained and/or the
+         * understanding of the containing element's descendants. Usually
+         * modifier elements provide negation or qualification. To make the use
+         * of extensions safe and manageable, there is a strict set of governance
+         * applied to the definition and use of extensions. Though any
+         * implementer can define an extension, there is a set of requirements
+         * that SHALL be met as part of the definition of the extension.
+         * Applications processing a resource are required to check for modifier
+         * extensions.
+         *
+         * Modifier extensions SHALL NOT change the meaning of any elements on
+         * Resource or DomainResource (including cannot change the meaning of
+         * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
             return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
         }
 
         /**
-         * Why this entry is in the result set - whether it's included as a match or because of an _include requirement, or to convey information or warning information about the search process.
+         * Why this entry is in the result set - whether it's included as a match
+         * or because of an _include requirement, or to convey information or
+         * warning information about the search process.
          */
         public String mode() {
             return getString(PROPERTY_MODE);

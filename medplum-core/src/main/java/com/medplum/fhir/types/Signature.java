@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -35,14 +33,18 @@ public class Signature extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * An indication of the reason that the entity signed this document. This may be explicitly included as part of the signature information and can be used when determining accountability for various actions concerning the document.
+     * An indication of the reason that the entity signed this document. This
+     * may be explicitly included as part of the signature information and
+     * can be used when determining accountability for various actions
+     * concerning the document.
      */
     public java.util.List<Coding> type() {
         return getList(Coding.class, PROPERTY_TYPE);
@@ -56,35 +58,42 @@ public class Signature extends FhirResource {
     }
 
     /**
-     * A reference to an application-usable description of the identity that signed  (e.g. the signature used their private key).
+     * A reference to an application-usable description of the identity that
+     * signed  (e.g. the signature used their private key).
      */
     public Reference who() {
         return getObject(Reference.class, PROPERTY_WHO);
     }
 
     /**
-     * A reference to an application-usable description of the identity that is represented by the signature.
+     * A reference to an application-usable description of the identity that
+     * is represented by the signature.
      */
     public Reference onBehalfOf() {
         return getObject(Reference.class, PROPERTY_ONBEHALFOF);
     }
 
     /**
-     * A mime type that indicates the technical format of the target resources signed by the signature.
+     * A mime type that indicates the technical format of the target
+     * resources signed by the signature.
      */
     public String targetFormat() {
         return getString(PROPERTY_TARGETFORMAT);
     }
 
     /**
-     * A mime type that indicates the technical format of the signature. Important mime types are application/signature+xml for X ML DigSig, application/jose for JWS, and image/* for a graphical image of a signature, etc.
+     * A mime type that indicates the technical format of the signature.
+     * Important mime types are application/signature+xml for X ML DigSig,
+     * application/jose for JWS, and image/* for a graphical image of a
+     * signature, etc.
      */
     public String sigFormat() {
         return getString(PROPERTY_SIGFORMAT);
     }
 
     /**
-     * The base64 encoding of the Signature content. When signature is not recorded electronically this element would be empty.
+     * The base64 encoding of the Signature content. When signature is not
+     * recorded electronically this element would be empty.
      */
     public String data() {
         return getString(PROPERTY_DATA);

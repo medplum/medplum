@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -35,14 +33,16 @@ public class ParameterDefinition extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * The name of the parameter used to allow access to the value of the parameter in evaluation contexts.
+     * The name of the parameter used to allow access to the value of the
+     * parameter in evaluation contexts.
      */
     public String name() {
         return getString(PROPERTY_NAME);
@@ -56,21 +56,24 @@ public class ParameterDefinition extends FhirResource {
     }
 
     /**
-     * The minimum number of times this parameter SHALL appear in the request or response.
+     * The minimum number of times this parameter SHALL appear in the request
+     * or response.
      */
     public Integer min() {
         return data.getInt(PROPERTY_MIN);
     }
 
     /**
-     * The maximum number of times this element is permitted to appear in the request or response.
+     * The maximum number of times this element is permitted to appear in the
+     * request or response.
      */
     public String max() {
         return getString(PROPERTY_MAX);
     }
 
     /**
-     * A brief discussion of what the parameter is for and how it is used by the module.
+     * A brief discussion of what the parameter is for and how it is used by
+     * the module.
      */
     public String documentation() {
         return getString(PROPERTY_DOCUMENTATION);
@@ -84,7 +87,8 @@ public class ParameterDefinition extends FhirResource {
     }
 
     /**
-     * If specified, this indicates a profile that the input data must conform to, or that the output data will conform to.
+     * If specified, this indicates a profile that the input data must
+     * conform to, or that the output data will conform to.
      */
     public String profile() {
         return getString(PROPERTY_PROFILE);

@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -31,7 +29,8 @@ public class Contributor extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
@@ -45,14 +44,16 @@ public class Contributor extends FhirResource {
     }
 
     /**
-     * The name of the individual or organization responsible for the contribution.
+     * The name of the individual or organization responsible for the
+     * contribution.
      */
     public String name() {
         return getString(PROPERTY_NAME);
     }
 
     /**
-     * Contact details to assist a user in finding and communicating with the contributor.
+     * Contact details to assist a user in finding and communicating with the
+     * contributor.
      */
     public java.util.List<ContactDetail> contact() {
         return getList(ContactDetail.class, PROPERTY_CONTACT);

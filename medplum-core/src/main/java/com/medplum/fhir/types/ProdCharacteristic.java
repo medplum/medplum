@@ -5,8 +5,6 @@
 
 package com.medplum.fhir.types;
 
-import java.time.Instant;
-
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -40,72 +38,107 @@ public class ProdCharacteristic extends FhirResource {
     }
 
     /**
-     * Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.
+     * Unique id for the element within a resource (for internal references).
+     * This may be any string value that does not contain spaces.
      */
     public String id() {
         return getString(PROPERTY_ID);
     }
 
     /**
-     * May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.
-
-Modifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).
+     * May be used to represent additional information that is not part of
+     * the basic definition of the element and that modifies the
+     * understanding of the element in which it is contained and/or the
+     * understanding of the containing element's descendants. Usually
+     * modifier elements provide negation or qualification. To make the use
+     * of extensions safe and manageable, there is a strict set of governance
+     * applied to the definition and use of extensions. Though any
+     * implementer can define an extension, there is a set of requirements
+     * that SHALL be met as part of the definition of the extension.
+     * Applications processing a resource are required to check for modifier
+     * extensions.
+     *
+     * Modifier extensions SHALL NOT change the meaning of any elements on
+     * Resource or DomainResource (including cannot change the meaning of
+     * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
         return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
     }
 
     /**
-     * Where applicable, the height can be specified using a numerical value and its unit of measurement The unit of measurement shall be specified in accordance with ISO 11240 and the resulting terminology The symbol and the symbol identifier shall be used.
+     * Where applicable, the height can be specified using a numerical value
+     * and its unit of measurement The unit of measurement shall be specified
+     * in accordance with ISO 11240 and the resulting terminology The symbol
+     * and the symbol identifier shall be used.
      */
     public Quantity height() {
         return getObject(Quantity.class, PROPERTY_HEIGHT);
     }
 
     /**
-     * Where applicable, the width can be specified using a numerical value and its unit of measurement The unit of measurement shall be specified in accordance with ISO 11240 and the resulting terminology The symbol and the symbol identifier shall be used.
+     * Where applicable, the width can be specified using a numerical value
+     * and its unit of measurement The unit of measurement shall be specified
+     * in accordance with ISO 11240 and the resulting terminology The symbol
+     * and the symbol identifier shall be used.
      */
     public Quantity width() {
         return getObject(Quantity.class, PROPERTY_WIDTH);
     }
 
     /**
-     * Where applicable, the depth can be specified using a numerical value and its unit of measurement The unit of measurement shall be specified in accordance with ISO 11240 and the resulting terminology The symbol and the symbol identifier shall be used.
+     * Where applicable, the depth can be specified using a numerical value
+     * and its unit of measurement The unit of measurement shall be specified
+     * in accordance with ISO 11240 and the resulting terminology The symbol
+     * and the symbol identifier shall be used.
      */
     public Quantity depth() {
         return getObject(Quantity.class, PROPERTY_DEPTH);
     }
 
     /**
-     * Where applicable, the weight can be specified using a numerical value and its unit of measurement The unit of measurement shall be specified in accordance with ISO 11240 and the resulting terminology The symbol and the symbol identifier shall be used.
+     * Where applicable, the weight can be specified using a numerical value
+     * and its unit of measurement The unit of measurement shall be specified
+     * in accordance with ISO 11240 and the resulting terminology The symbol
+     * and the symbol identifier shall be used.
      */
     public Quantity weight() {
         return getObject(Quantity.class, PROPERTY_WEIGHT);
     }
 
     /**
-     * Where applicable, the nominal volume can be specified using a numerical value and its unit of measurement The unit of measurement shall be specified in accordance with ISO 11240 and the resulting terminology The symbol and the symbol identifier shall be used.
+     * Where applicable, the nominal volume can be specified using a
+     * numerical value and its unit of measurement The unit of measurement
+     * shall be specified in accordance with ISO 11240 and the resulting
+     * terminology The symbol and the symbol identifier shall be used.
      */
     public Quantity nominalVolume() {
         return getObject(Quantity.class, PROPERTY_NOMINALVOLUME);
     }
 
     /**
-     * Where applicable, the external diameter can be specified using a numerical value and its unit of measurement The unit of measurement shall be specified in accordance with ISO 11240 and the resulting terminology The symbol and the symbol identifier shall be used.
+     * Where applicable, the external diameter can be specified using a
+     * numerical value and its unit of measurement The unit of measurement
+     * shall be specified in accordance with ISO 11240 and the resulting
+     * terminology The symbol and the symbol identifier shall be used.
      */
     public Quantity externalDiameter() {
         return getObject(Quantity.class, PROPERTY_EXTERNALDIAMETER);
     }
 
     /**
-     * Where applicable, the shape can be specified An appropriate controlled vocabulary shall be used The term and the term identifier shall be used.
+     * Where applicable, the shape can be specified An appropriate controlled
+     * vocabulary shall be used The term and the term identifier shall be
+     * used.
      */
     public String shape() {
         return getString(PROPERTY_SHAPE);
     }
 
     /**
-     * Where applicable, the color can be specified An appropriate controlled vocabulary shall be used The term and the term identifier shall be used.
+     * Where applicable, the color can be specified An appropriate controlled
+     * vocabulary shall be used The term and the term identifier shall be
+     * used.
      */
     public java.util.List<String> color() {
         return getList(String.class, PROPERTY_COLOR);
@@ -119,14 +152,17 @@ Modifier extensions SHALL NOT change the meaning of any elements on Resource or 
     }
 
     /**
-     * Where applicable, the image can be provided The format of the image attachment shall be specified by regional implementations.
+     * Where applicable, the image can be provided The format of the image
+     * attachment shall be specified by regional implementations.
      */
     public java.util.List<Attachment> image() {
         return getList(Attachment.class, PROPERTY_IMAGE);
     }
 
     /**
-     * Where applicable, the scoring can be specified An appropriate controlled vocabulary shall be used The term and the term identifier shall be used.
+     * Where applicable, the scoring can be specified An appropriate
+     * controlled vocabulary shall be used The term and the term identifier
+     * shall be used.
      */
     public CodeableConcept scoring() {
         return getObject(CodeableConcept.class, PROPERTY_SCORING);

@@ -18,9 +18,11 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import jakarta.json.stream.JsonParser;
 
+import org.apache.commons.text.WordUtils;
+
 public class Generator {
     private static final String OUTPUT_PACKAGE = "com.medplum.fhir.types";
-    private static final String OUTPUT_PATH = "../medplum-java-sdk/src/main/java/com/medplum/fhir/types/";
+    private static final String OUTPUT_PATH = "../medplum-core/src/main/java/com/medplum/fhir/types/";
 
     public static void main(final String[] args) throws IOException {
         final JsonObject schema = readJson("src/main/resources/fhir/fhir.schema.json");
@@ -123,11 +125,13 @@ public class Generator {
         b.append("package " + OUTPUT_PACKAGE + ";");
         b.newLine();
 
-        b.append("import java.time.Instant;");
-        b.newLine();
-        b.append("import jakarta.json.Json;");
-        b.append("import jakarta.json.JsonObject;");
-        b.append("import jakarta.json.JsonObjectBuilder;");
+        if (fhirType.isResource() && fhirType.getSubTypes().isEmpty()) {
+            b.append("import jakarta.json.JsonObject;");
+        } else {
+            b.append("import jakarta.json.Json;");
+            b.append("import jakarta.json.JsonObject;");
+            b.append("import jakarta.json.JsonObjectBuilder;");
+        }
 
         if (fhirType.getOutputName().equals("OperationOutcome")) {
             b.newLine();
@@ -191,7 +195,17 @@ public class Generator {
 
             b.newLine();
             b.append("/**");
-            b.append(" * " + property.getDescription() + "");
+
+            for (final String descriptionLine : property.getDescription().split("\n")) {
+                for (final String javadocLine : WordUtils.wrap(descriptionLine, 70).split("\n")) {
+                    if (javadocLine.isBlank()) {
+                        b.append(" *");
+                    } else {
+                        b.append(" * " + javadocLine);
+                    }
+                }
+            }
+
             b.append(" */");
 
             if (javaType.equals("FhirResource")) {
