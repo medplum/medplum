@@ -50,7 +50,11 @@ public class SearchParameters {
             }
 
             final String code = searchParam.code();
-            final String[] expressions = searchParam.expression().split("\\s*\\|\\s*");
+            final String[] expressions = searchParam.expression().split("\\|");
+
+            for (int i = 0; i < expressions.length; i++) {
+                expressions[i] = expressions[i].trim();
+            }
 
             for (final String resourceType : searchParam.base()) {
                 final String expression = getExpressionForResourceType(resourceType, expressions);

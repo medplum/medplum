@@ -65,9 +65,6 @@ public class SearchRequestParser {
 
         default:
             final SearchParameter param = SearchParameters.getParameter(resourceType, key);
-            System.out.println("resourceType=" + resourceType);
-            System.out.println("key=" + key);
-            System.out.println("param=" + param);
             if (param != null) {
                 parseParameter(param, value);
             }
