@@ -14,11 +14,11 @@ public class DataRequirement extends FhirResource {
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_PROFILE = "profile";
-    public static final String PROPERTY_SUBJECTCODEABLECONCEPT = "subjectCodeableConcept";
-    public static final String PROPERTY_SUBJECTREFERENCE = "subjectReference";
-    public static final String PROPERTY_MUSTSUPPORT = "mustSupport";
-    public static final String PROPERTY_CODEFILTER = "codeFilter";
-    public static final String PROPERTY_DATEFILTER = "dateFilter";
+    public static final String PROPERTY_SUBJECT_CODEABLE_CONCEPT = "subjectCodeableConcept";
+    public static final String PROPERTY_SUBJECT_REFERENCE = "subjectReference";
+    public static final String PROPERTY_MUST_SUPPORT = "mustSupport";
+    public static final String PROPERTY_CODE_FILTER = "codeFilter";
+    public static final String PROPERTY_DATE_FILTER = "dateFilter";
     public static final String PROPERTY_LIMIT = "limit";
     public static final String PROPERTY_SORT = "sort";
 
@@ -64,7 +64,7 @@ public class DataRequirement extends FhirResource {
      * provided, a Patient subject is assumed.
      */
     public CodeableConcept subjectCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_SUBJECTCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_SUBJECT_CODEABLE_CONCEPT);
     }
 
     /**
@@ -72,7 +72,7 @@ public class DataRequirement extends FhirResource {
      * provided, a Patient subject is assumed.
      */
     public Reference subjectReference() {
-        return getObject(Reference.class, PROPERTY_SUBJECTREFERENCE);
+        return getObject(Reference.class, PROPERTY_SUBJECT_REFERENCE);
     }
 
     /**
@@ -89,7 +89,7 @@ public class DataRequirement extends FhirResource {
      * Profile](fhirpath.html#simple) for full details).
      */
     public java.util.List<String> mustSupport() {
-        return getList(String.class, PROPERTY_MUSTSUPPORT);
+        return getList(String.class, PROPERTY_MUST_SUPPORT);
     }
 
     /**
@@ -99,7 +99,7 @@ public class DataRequirement extends FhirResource {
      * filters are AND'ed, not OR'ed.
      */
     public java.util.List<DataRequirementCodeFilter> codeFilter() {
-        return getList(DataRequirementCodeFilter.class, PROPERTY_CODEFILTER);
+        return getList(DataRequirementCodeFilter.class, PROPERTY_CODE_FILTER);
     }
 
     /**
@@ -109,7 +109,7 @@ public class DataRequirement extends FhirResource {
      * AND'ed, not OR'ed.
      */
     public java.util.List<DataRequirementDateFilter> dateFilter() {
-        return getList(DataRequirementDateFilter.class, PROPERTY_DATEFILTER);
+        return getList(DataRequirementDateFilter.class, PROPERTY_DATE_FILTER);
     }
 
     /**
@@ -154,27 +154,27 @@ public class DataRequirement extends FhirResource {
         }
 
         public Builder subjectCodeableConcept(final CodeableConcept subjectCodeableConcept) {
-            b.add(PROPERTY_SUBJECTCODEABLECONCEPT, subjectCodeableConcept);
+            b.add(PROPERTY_SUBJECT_CODEABLE_CONCEPT, subjectCodeableConcept);
             return this;
         }
 
         public Builder subjectReference(final Reference subjectReference) {
-            b.add(PROPERTY_SUBJECTREFERENCE, subjectReference);
+            b.add(PROPERTY_SUBJECT_REFERENCE, subjectReference);
             return this;
         }
 
         public Builder mustSupport(final java.util.List<String> mustSupport) {
-            b.add(PROPERTY_MUSTSUPPORT, FhirObject.toStringArray(mustSupport));
+            b.add(PROPERTY_MUST_SUPPORT, FhirObject.toStringArray(mustSupport));
             return this;
         }
 
         public Builder codeFilter(final java.util.List<DataRequirementCodeFilter> codeFilter) {
-            b.add(PROPERTY_CODEFILTER, FhirObject.toArray(codeFilter));
+            b.add(PROPERTY_CODE_FILTER, FhirObject.toArray(codeFilter));
             return this;
         }
 
         public Builder dateFilter(final java.util.List<DataRequirementDateFilter> dateFilter) {
-            b.add(PROPERTY_DATEFILTER, FhirObject.toArray(dateFilter));
+            b.add(PROPERTY_DATE_FILTER, FhirObject.toArray(dateFilter));
             return this;
         }
 
@@ -196,10 +196,10 @@ public class DataRequirement extends FhirResource {
     public static class DataRequirementCodeFilter extends FhirObject {
         public static final String RESOURCE_TYPE = "DataRequirementCodeFilter";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PATH = "path";
-        public static final String PROPERTY_SEARCHPARAM = "searchParam";
-        public static final String PROPERTY_VALUESET = "valueSet";
+        public static final String PROPERTY_SEARCH_PARAM = "searchParam";
+        public static final String PROPERTY_VALUE_SET = "valueSet";
         public static final String PROPERTY_CODE = "code";
 
         public static Builder create() {
@@ -240,7 +240,7 @@ public class DataRequirement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -264,7 +264,7 @@ public class DataRequirement extends FhirResource {
          * of type code, Coding, or CodeableConcept.
          */
         public String searchParam() {
-            return getString(PROPERTY_SEARCHPARAM);
+            return getString(PROPERTY_SEARCH_PARAM);
         }
 
         /**
@@ -274,7 +274,7 @@ public class DataRequirement extends FhirResource {
          * the path is a member of the specified valueset.
          */
         public String valueSet() {
-            return getString(PROPERTY_VALUESET);
+            return getString(PROPERTY_VALUE_SET);
         }
 
         /**
@@ -305,7 +305,7 @@ public class DataRequirement extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -315,12 +315,12 @@ public class DataRequirement extends FhirResource {
             }
 
             public Builder searchParam(final String searchParam) {
-                b.add(PROPERTY_SEARCHPARAM, searchParam);
+                b.add(PROPERTY_SEARCH_PARAM, searchParam);
                 return this;
             }
 
             public Builder valueSet(final String valueSet) {
-                b.add(PROPERTY_VALUESET, valueSet);
+                b.add(PROPERTY_VALUE_SET, valueSet);
                 return this;
             }
 
@@ -338,12 +338,12 @@ public class DataRequirement extends FhirResource {
     public static class DataRequirementDateFilter extends FhirObject {
         public static final String RESOURCE_TYPE = "DataRequirementDateFilter";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PATH = "path";
-        public static final String PROPERTY_SEARCHPARAM = "searchParam";
-        public static final String PROPERTY_VALUEDATETIME = "valueDateTime";
-        public static final String PROPERTY_VALUEPERIOD = "valuePeriod";
-        public static final String PROPERTY_VALUEDURATION = "valueDuration";
+        public static final String PROPERTY_SEARCH_PARAM = "searchParam";
+        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
+        public static final String PROPERTY_VALUE_PERIOD = "valuePeriod";
+        public static final String PROPERTY_VALUE_DURATION = "valueDuration";
 
         public static Builder create() {
             return new Builder();
@@ -383,7 +383,7 @@ public class DataRequirement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -407,7 +407,7 @@ public class DataRequirement extends FhirResource {
          * of type date, dateTime, Period, Schedule, or Timing.
          */
         public String searchParam() {
-            return getString(PROPERTY_SEARCHPARAM);
+            return getString(PROPERTY_SEARCH_PARAM);
         }
 
         /**
@@ -419,7 +419,7 @@ public class DataRequirement extends FhirResource {
          * return only those data items that fall within Duration before now.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUEDATETIME);
+            return getString(PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
@@ -431,7 +431,7 @@ public class DataRequirement extends FhirResource {
          * return only those data items that fall within Duration before now.
          */
         public Period valuePeriod() {
-            return getObject(Period.class, PROPERTY_VALUEPERIOD);
+            return getObject(Period.class, PROPERTY_VALUE_PERIOD);
         }
 
         /**
@@ -443,7 +443,7 @@ public class DataRequirement extends FhirResource {
          * return only those data items that fall within Duration before now.
          */
         public Duration valueDuration() {
-            return getObject(Duration.class, PROPERTY_VALUEDURATION);
+            return getObject(Duration.class, PROPERTY_VALUE_DURATION);
         }
 
         public static class Builder {
@@ -463,7 +463,7 @@ public class DataRequirement extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -473,22 +473,22 @@ public class DataRequirement extends FhirResource {
             }
 
             public Builder searchParam(final String searchParam) {
-                b.add(PROPERTY_SEARCHPARAM, searchParam);
+                b.add(PROPERTY_SEARCH_PARAM, searchParam);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUEDATETIME, valueDateTime);
+                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valuePeriod(final Period valuePeriod) {
-                b.add(PROPERTY_VALUEPERIOD, valuePeriod);
+                b.add(PROPERTY_VALUE_PERIOD, valuePeriod);
                 return this;
             }
 
             public Builder valueDuration(final Duration valueDuration) {
-                b.add(PROPERTY_VALUEDURATION, valueDuration);
+                b.add(PROPERTY_VALUE_DURATION, valueDuration);
                 return this;
             }
 
@@ -501,7 +501,7 @@ public class DataRequirement extends FhirResource {
     public static class DataRequirementSort extends FhirObject {
         public static final String RESOURCE_TYPE = "DataRequirementSort";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PATH = "path";
         public static final String PROPERTY_DIRECTION = "direction";
 
@@ -543,7 +543,7 @@ public class DataRequirement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -581,7 +581,7 @@ public class DataRequirement extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

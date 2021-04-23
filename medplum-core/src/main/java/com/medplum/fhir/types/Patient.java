@@ -11,31 +11,31 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Patient extends FhirResource {
     public static final String RESOURCE_TYPE = "Patient";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_ACTIVE = "active";
     public static final String PROPERTY_NAME = "name";
     public static final String PROPERTY_TELECOM = "telecom";
     public static final String PROPERTY_GENDER = "gender";
-    public static final String PROPERTY_BIRTHDATE = "birthDate";
-    public static final String PROPERTY_DECEASEDBOOLEAN = "deceasedBoolean";
-    public static final String PROPERTY_DECEASEDDATETIME = "deceasedDateTime";
+    public static final String PROPERTY_BIRTH_DATE = "birthDate";
+    public static final String PROPERTY_DECEASED_BOOLEAN = "deceasedBoolean";
+    public static final String PROPERTY_DECEASED_DATE_TIME = "deceasedDateTime";
     public static final String PROPERTY_ADDRESS = "address";
-    public static final String PROPERTY_MARITALSTATUS = "maritalStatus";
-    public static final String PROPERTY_MULTIPLEBIRTHBOOLEAN = "multipleBirthBoolean";
-    public static final String PROPERTY_MULTIPLEBIRTHINTEGER = "multipleBirthInteger";
+    public static final String PROPERTY_MARITAL_STATUS = "maritalStatus";
+    public static final String PROPERTY_MULTIPLE_BIRTH_BOOLEAN = "multipleBirthBoolean";
+    public static final String PROPERTY_MULTIPLE_BIRTH_INTEGER = "multipleBirthInteger";
     public static final String PROPERTY_PHOTO = "photo";
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_COMMUNICATION = "communication";
-    public static final String PROPERTY_GENERALPRACTITIONER = "generalPractitioner";
-    public static final String PROPERTY_MANAGINGORGANIZATION = "managingOrganization";
+    public static final String PROPERTY_GENERAL_PRACTITIONER = "generalPractitioner";
+    public static final String PROPERTY_MANAGING_ORGANIZATION = "managingOrganization";
     public static final String PROPERTY_LINK = "link";
 
     public static Builder create() {
@@ -57,7 +57,7 @@ public class Patient extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -105,7 +105,7 @@ public class Patient extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -157,21 +157,21 @@ public class Patient extends FhirResource {
      * The date of birth for the individual.
      */
     public java.time.Instant birthDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_BIRTHDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_BIRTH_DATE));
     }
 
     /**
      * Indicates if the individual is deceased or not.
      */
     public Boolean deceasedBoolean() {
-        return data.getBoolean(PROPERTY_DECEASEDBOOLEAN);
+        return data.getBoolean(PROPERTY_DECEASED_BOOLEAN);
     }
 
     /**
      * Indicates if the individual is deceased or not.
      */
     public String deceasedDateTime() {
-        return getString(PROPERTY_DECEASEDDATETIME);
+        return getString(PROPERTY_DECEASED_DATE_TIME);
     }
 
     /**
@@ -185,7 +185,7 @@ public class Patient extends FhirResource {
      * This field contains a patient's most recent marital (civil) status.
      */
     public CodeableConcept maritalStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_MARITALSTATUS);
+        return getObject(CodeableConcept.class, PROPERTY_MARITAL_STATUS);
     }
 
     /**
@@ -193,7 +193,7 @@ public class Patient extends FhirResource {
      * indicates the actual birth order (integer).
      */
     public Boolean multipleBirthBoolean() {
-        return data.getBoolean(PROPERTY_MULTIPLEBIRTHBOOLEAN);
+        return data.getBoolean(PROPERTY_MULTIPLE_BIRTH_BOOLEAN);
     }
 
     /**
@@ -201,7 +201,7 @@ public class Patient extends FhirResource {
      * indicates the actual birth order (integer).
      */
     public Integer multipleBirthInteger() {
-        return data.getInt(PROPERTY_MULTIPLEBIRTHINTEGER);
+        return data.getInt(PROPERTY_MULTIPLE_BIRTH_INTEGER);
     }
 
     /**
@@ -230,14 +230,14 @@ public class Patient extends FhirResource {
      * Patient's nominated care provider.
      */
     public java.util.List<Reference> generalPractitioner() {
-        return getList(Reference.class, PROPERTY_GENERALPRACTITIONER);
+        return getList(Reference.class, PROPERTY_GENERAL_PRACTITIONER);
     }
 
     /**
      * Organization that is the custodian of the patient record.
      */
     public Reference managingOrganization() {
-        return getObject(Reference.class, PROPERTY_MANAGINGORGANIZATION);
+        return getObject(Reference.class, PROPERTY_MANAGING_ORGANIZATION);
     }
 
     /**
@@ -259,7 +259,7 @@ public class Patient extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -274,7 +274,7 @@ public class Patient extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -294,7 +294,7 @@ public class Patient extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -324,17 +324,17 @@ public class Patient extends FhirResource {
         }
 
         public Builder birthDate(final java.time.Instant birthDate) {
-            b.add(PROPERTY_BIRTHDATE, birthDate.toString());
+            b.add(PROPERTY_BIRTH_DATE, birthDate.toString());
             return this;
         }
 
         public Builder deceasedBoolean(final Boolean deceasedBoolean) {
-            b.add(PROPERTY_DECEASEDBOOLEAN, deceasedBoolean);
+            b.add(PROPERTY_DECEASED_BOOLEAN, deceasedBoolean);
             return this;
         }
 
         public Builder deceasedDateTime(final String deceasedDateTime) {
-            b.add(PROPERTY_DECEASEDDATETIME, deceasedDateTime);
+            b.add(PROPERTY_DECEASED_DATE_TIME, deceasedDateTime);
             return this;
         }
 
@@ -344,17 +344,17 @@ public class Patient extends FhirResource {
         }
 
         public Builder maritalStatus(final CodeableConcept maritalStatus) {
-            b.add(PROPERTY_MARITALSTATUS, maritalStatus);
+            b.add(PROPERTY_MARITAL_STATUS, maritalStatus);
             return this;
         }
 
         public Builder multipleBirthBoolean(final Boolean multipleBirthBoolean) {
-            b.add(PROPERTY_MULTIPLEBIRTHBOOLEAN, multipleBirthBoolean);
+            b.add(PROPERTY_MULTIPLE_BIRTH_BOOLEAN, multipleBirthBoolean);
             return this;
         }
 
         public Builder multipleBirthInteger(final Integer multipleBirthInteger) {
-            b.add(PROPERTY_MULTIPLEBIRTHINTEGER, multipleBirthInteger);
+            b.add(PROPERTY_MULTIPLE_BIRTH_INTEGER, multipleBirthInteger);
             return this;
         }
 
@@ -374,12 +374,12 @@ public class Patient extends FhirResource {
         }
 
         public Builder generalPractitioner(final java.util.List<Reference> generalPractitioner) {
-            b.add(PROPERTY_GENERALPRACTITIONER, FhirObject.toArray(generalPractitioner));
+            b.add(PROPERTY_GENERAL_PRACTITIONER, FhirObject.toArray(generalPractitioner));
             return this;
         }
 
         public Builder managingOrganization(final Reference managingOrganization) {
-            b.add(PROPERTY_MANAGINGORGANIZATION, managingOrganization);
+            b.add(PROPERTY_MANAGING_ORGANIZATION, managingOrganization);
             return this;
         }
 
@@ -396,7 +396,7 @@ public class Patient extends FhirResource {
     public static class PatientCommunication extends FhirObject {
         public static final String RESOURCE_TYPE = "PatientCommunication";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_LANGUAGE = "language";
         public static final String PROPERTY_PREFERRED = "preferred";
 
@@ -438,7 +438,7 @@ public class Patient extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -476,7 +476,7 @@ public class Patient extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -499,7 +499,7 @@ public class Patient extends FhirResource {
     public static class PatientContact extends FhirObject {
         public static final String RESOURCE_TYPE = "PatientContact";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_RELATIONSHIP = "relationship";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_TELECOM = "telecom";
@@ -546,7 +546,7 @@ public class Patient extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -620,7 +620,7 @@ public class Patient extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -668,7 +668,7 @@ public class Patient extends FhirResource {
     public static class PatientLink extends FhirObject {
         public static final String RESOURCE_TYPE = "PatientLink";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_OTHER = "other";
         public static final String PROPERTY_TYPE = "type";
 
@@ -710,7 +710,7 @@ public class Patient extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -745,7 +745,7 @@ public class Patient extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

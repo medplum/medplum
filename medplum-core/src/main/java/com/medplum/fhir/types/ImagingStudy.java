@@ -11,31 +11,31 @@ import jakarta.json.JsonObjectBuilder;
 
 public class ImagingStudy extends FhirResource {
     public static final String RESOURCE_TYPE = "ImagingStudy";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_MODALITY = "modality";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
     public static final String PROPERTY_STARTED = "started";
-    public static final String PROPERTY_BASEDON = "basedOn";
+    public static final String PROPERTY_BASED_ON = "basedOn";
     public static final String PROPERTY_REFERRER = "referrer";
     public static final String PROPERTY_INTERPRETER = "interpreter";
     public static final String PROPERTY_ENDPOINT = "endpoint";
-    public static final String PROPERTY_NUMBEROFSERIES = "numberOfSeries";
-    public static final String PROPERTY_NUMBEROFINSTANCES = "numberOfInstances";
-    public static final String PROPERTY_PROCEDUREREFERENCE = "procedureReference";
-    public static final String PROPERTY_PROCEDURECODE = "procedureCode";
+    public static final String PROPERTY_NUMBER_OF_SERIES = "numberOfSeries";
+    public static final String PROPERTY_NUMBER_OF_INSTANCES = "numberOfInstances";
+    public static final String PROPERTY_PROCEDURE_REFERENCE = "procedureReference";
+    public static final String PROPERTY_PROCEDURE_CODE = "procedureCode";
     public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_NOTE = "note";
     public static final String PROPERTY_DESCRIPTION = "description";
     public static final String PROPERTY_SERIES = "series";
@@ -59,7 +59,7 @@ public class ImagingStudy extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -107,7 +107,7 @@ public class ImagingStudy extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -161,7 +161,7 @@ public class ImagingStudy extends FhirResource {
      * being performed.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -196,7 +196,7 @@ public class ImagingStudy extends FhirResource {
      * present if any series elements are present.
      */
     public Integer numberOfSeries() {
-        return data.getInt(PROPERTY_NUMBEROFSERIES);
+        return data.getInt(PROPERTY_NUMBER_OF_SERIES);
     }
 
     /**
@@ -206,21 +206,21 @@ public class ImagingStudy extends FhirResource {
      * present if any instance elements are present.
      */
     public Integer numberOfInstances() {
-        return data.getInt(PROPERTY_NUMBEROFINSTANCES);
+        return data.getInt(PROPERTY_NUMBER_OF_INSTANCES);
     }
 
     /**
      * The procedure which this ImagingStudy was part of.
      */
     public Reference procedureReference() {
-        return getObject(Reference.class, PROPERTY_PROCEDUREREFERENCE);
+        return getObject(Reference.class, PROPERTY_PROCEDURE_REFERENCE);
     }
 
     /**
      * The code for the performed procedure type.
      */
     public java.util.List<CodeableConcept> procedureCode() {
-        return getList(CodeableConcept.class, PROPERTY_PROCEDURECODE);
+        return getList(CodeableConcept.class, PROPERTY_PROCEDURE_CODE);
     }
 
     /**
@@ -235,14 +235,14 @@ public class ImagingStudy extends FhirResource {
      * requested.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
      * Indicates another resource whose existence justifies this Study.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -281,7 +281,7 @@ public class ImagingStudy extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -296,7 +296,7 @@ public class ImagingStudy extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -316,7 +316,7 @@ public class ImagingStudy extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -351,7 +351,7 @@ public class ImagingStudy extends FhirResource {
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
@@ -371,22 +371,22 @@ public class ImagingStudy extends FhirResource {
         }
 
         public Builder numberOfSeries(final Integer numberOfSeries) {
-            b.add(PROPERTY_NUMBEROFSERIES, numberOfSeries);
+            b.add(PROPERTY_NUMBER_OF_SERIES, numberOfSeries);
             return this;
         }
 
         public Builder numberOfInstances(final Integer numberOfInstances) {
-            b.add(PROPERTY_NUMBEROFINSTANCES, numberOfInstances);
+            b.add(PROPERTY_NUMBER_OF_INSTANCES, numberOfInstances);
             return this;
         }
 
         public Builder procedureReference(final Reference procedureReference) {
-            b.add(PROPERTY_PROCEDUREREFERENCE, procedureReference);
+            b.add(PROPERTY_PROCEDURE_REFERENCE, procedureReference);
             return this;
         }
 
         public Builder procedureCode(final java.util.List<CodeableConcept> procedureCode) {
-            b.add(PROPERTY_PROCEDURECODE, FhirObject.toArray(procedureCode));
+            b.add(PROPERTY_PROCEDURE_CODE, FhirObject.toArray(procedureCode));
             return this;
         }
 
@@ -396,12 +396,12 @@ public class ImagingStudy extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
@@ -428,9 +428,9 @@ public class ImagingStudy extends FhirResource {
     public static class ImagingStudyInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "ImagingStudyInstance";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_UID = "uid";
-        public static final String PROPERTY_SOPCLASS = "sopClass";
+        public static final String PROPERTY_SOP_CLASS = "sopClass";
         public static final String PROPERTY_NUMBER = "number";
         public static final String PROPERTY_TITLE = "title";
 
@@ -472,7 +472,7 @@ public class ImagingStudy extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -486,7 +486,7 @@ public class ImagingStudy extends FhirResource {
          * DICOM instance  type.
          */
         public Coding sopClass() {
-            return getObject(Coding.class, PROPERTY_SOPCLASS);
+            return getObject(Coding.class, PROPERTY_SOP_CLASS);
         }
 
         /**
@@ -520,7 +520,7 @@ public class ImagingStudy extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -530,7 +530,7 @@ public class ImagingStudy extends FhirResource {
             }
 
             public Builder sopClass(final Coding sopClass) {
-                b.add(PROPERTY_SOPCLASS, sopClass);
+                b.add(PROPERTY_SOP_CLASS, sopClass);
                 return this;
             }
 
@@ -553,7 +553,7 @@ public class ImagingStudy extends FhirResource {
     public static class ImagingStudyPerformer extends FhirObject {
         public static final String RESOURCE_TYPE = "ImagingStudyPerformer";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_FUNCTION = "function";
         public static final String PROPERTY_ACTOR = "actor";
 
@@ -595,7 +595,7 @@ public class ImagingStudy extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -629,7 +629,7 @@ public class ImagingStudy extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -652,14 +652,14 @@ public class ImagingStudy extends FhirResource {
     public static class ImagingStudySeries extends FhirObject {
         public static final String RESOURCE_TYPE = "ImagingStudySeries";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_UID = "uid";
         public static final String PROPERTY_NUMBER = "number";
         public static final String PROPERTY_MODALITY = "modality";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_NUMBEROFINSTANCES = "numberOfInstances";
+        public static final String PROPERTY_NUMBER_OF_INSTANCES = "numberOfInstances";
         public static final String PROPERTY_ENDPOINT = "endpoint";
-        public static final String PROPERTY_BODYSITE = "bodySite";
+        public static final String PROPERTY_BODY_SITE = "bodySite";
         public static final String PROPERTY_LATERALITY = "laterality";
         public static final String PROPERTY_SPECIMEN = "specimen";
         public static final String PROPERTY_STARTED = "started";
@@ -704,7 +704,7 @@ public class ImagingStudy extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -742,7 +742,7 @@ public class ImagingStudy extends FhirResource {
          * be present if any instance elements are present.
          */
         public Integer numberOfInstances() {
-            return data.getInt(PROPERTY_NUMBEROFINSTANCES);
+            return data.getInt(PROPERTY_NUMBER_OF_INSTANCES);
         }
 
         /**
@@ -763,7 +763,7 @@ public class ImagingStudy extends FhirResource {
          * content of ImagingStudy.series.laterality.
          */
         public Coding bodySite() {
-            return getObject(Coding.class, PROPERTY_BODYSITE);
+            return getObject(Coding.class, PROPERTY_BODY_SITE);
         }
 
         /**
@@ -822,7 +822,7 @@ public class ImagingStudy extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -847,7 +847,7 @@ public class ImagingStudy extends FhirResource {
             }
 
             public Builder numberOfInstances(final Integer numberOfInstances) {
-                b.add(PROPERTY_NUMBEROFINSTANCES, numberOfInstances);
+                b.add(PROPERTY_NUMBER_OF_INSTANCES, numberOfInstances);
                 return this;
             }
 
@@ -857,7 +857,7 @@ public class ImagingStudy extends FhirResource {
             }
 
             public Builder bodySite(final Coding bodySite) {
-                b.add(PROPERTY_BODYSITE, bodySite);
+                b.add(PROPERTY_BODY_SITE, bodySite);
                 return this;
             }
 

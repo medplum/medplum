@@ -11,17 +11,17 @@ import jakarta.json.JsonObjectBuilder;
 
 public class SubstanceReferenceInformation extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceReferenceInformation";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_COMMENT = "comment";
     public static final String PROPERTY_GENE = "gene";
-    public static final String PROPERTY_GENEELEMENT = "geneElement";
+    public static final String PROPERTY_GENE_ELEMENT = "geneElement";
     public static final String PROPERTY_CLASSIFICATION = "classification";
     public static final String PROPERTY_TARGET = "target";
 
@@ -44,7 +44,7 @@ public class SubstanceReferenceInformation extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -92,7 +92,7 @@ public class SubstanceReferenceInformation extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -113,7 +113,7 @@ public class SubstanceReferenceInformation extends FhirResource {
      * Todo.
      */
     public java.util.List<SubstanceReferenceInformationGeneElement> geneElement() {
-        return getList(SubstanceReferenceInformationGeneElement.class, PROPERTY_GENEELEMENT);
+        return getList(SubstanceReferenceInformationGeneElement.class, PROPERTY_GENE_ELEMENT);
     }
 
     /**
@@ -141,7 +141,7 @@ public class SubstanceReferenceInformation extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -156,7 +156,7 @@ public class SubstanceReferenceInformation extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -176,7 +176,7 @@ public class SubstanceReferenceInformation extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -191,7 +191,7 @@ public class SubstanceReferenceInformation extends FhirResource {
         }
 
         public Builder geneElement(final java.util.List<SubstanceReferenceInformationGeneElement> geneElement) {
-            b.add(PROPERTY_GENEELEMENT, FhirObject.toArray(geneElement));
+            b.add(PROPERTY_GENE_ELEMENT, FhirObject.toArray(geneElement));
             return this;
         }
 
@@ -213,7 +213,7 @@ public class SubstanceReferenceInformation extends FhirResource {
     public static class SubstanceReferenceInformationClassification extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationClassification";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DOMAIN = "domain";
         public static final String PROPERTY_CLASSIFICATION = "classification";
         public static final String PROPERTY_SUBTYPE = "subtype";
@@ -257,7 +257,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -305,7 +305,7 @@ public class SubstanceReferenceInformation extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -338,8 +338,8 @@ public class SubstanceReferenceInformation extends FhirResource {
     public static class SubstanceReferenceInformationGene extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationGene";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_GENESEQUENCEORIGIN = "geneSequenceOrigin";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_GENE_SEQUENCE_ORIGIN = "geneSequenceOrigin";
         public static final String PROPERTY_GENE = "gene";
         public static final String PROPERTY_SOURCE = "source";
 
@@ -381,14 +381,14 @@ public class SubstanceReferenceInformation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept geneSequenceOrigin() {
-            return getObject(CodeableConcept.class, PROPERTY_GENESEQUENCEORIGIN);
+            return getObject(CodeableConcept.class, PROPERTY_GENE_SEQUENCE_ORIGIN);
         }
 
         /**
@@ -422,12 +422,12 @@ public class SubstanceReferenceInformation extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder geneSequenceOrigin(final CodeableConcept geneSequenceOrigin) {
-                b.add(PROPERTY_GENESEQUENCEORIGIN, geneSequenceOrigin);
+                b.add(PROPERTY_GENE_SEQUENCE_ORIGIN, geneSequenceOrigin);
                 return this;
             }
 
@@ -450,7 +450,7 @@ public class SubstanceReferenceInformation extends FhirResource {
     public static class SubstanceReferenceInformationGeneElement extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationGeneElement";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_ELEMENT = "element";
         public static final String PROPERTY_SOURCE = "source";
@@ -493,7 +493,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -534,7 +534,7 @@ public class SubstanceReferenceInformation extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -562,16 +562,16 @@ public class SubstanceReferenceInformation extends FhirResource {
     public static class SubstanceReferenceInformationTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationTarget";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TARGET = "target";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_INTERACTION = "interaction";
         public static final String PROPERTY_ORGANISM = "organism";
-        public static final String PROPERTY_ORGANISMTYPE = "organismType";
-        public static final String PROPERTY_AMOUNTQUANTITY = "amountQuantity";
-        public static final String PROPERTY_AMOUNTRANGE = "amountRange";
-        public static final String PROPERTY_AMOUNTSTRING = "amountString";
-        public static final String PROPERTY_AMOUNTTYPE = "amountType";
+        public static final String PROPERTY_ORGANISM_TYPE = "organismType";
+        public static final String PROPERTY_AMOUNT_QUANTITY = "amountQuantity";
+        public static final String PROPERTY_AMOUNT_RANGE = "amountRange";
+        public static final String PROPERTY_AMOUNT_STRING = "amountString";
+        public static final String PROPERTY_AMOUNT_TYPE = "amountType";
         public static final String PROPERTY_SOURCE = "source";
 
         public static Builder create() {
@@ -612,7 +612,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -647,35 +647,35 @@ public class SubstanceReferenceInformation extends FhirResource {
          * Todo.
          */
         public CodeableConcept organismType() {
-            return getObject(CodeableConcept.class, PROPERTY_ORGANISMTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_ORGANISM_TYPE);
         }
 
         /**
          * Todo.
          */
         public Quantity amountQuantity() {
-            return getObject(Quantity.class, PROPERTY_AMOUNTQUANTITY);
+            return getObject(Quantity.class, PROPERTY_AMOUNT_QUANTITY);
         }
 
         /**
          * Todo.
          */
         public Range amountRange() {
-            return getObject(Range.class, PROPERTY_AMOUNTRANGE);
+            return getObject(Range.class, PROPERTY_AMOUNT_RANGE);
         }
 
         /**
          * Todo.
          */
         public String amountString() {
-            return getString(PROPERTY_AMOUNTSTRING);
+            return getString(PROPERTY_AMOUNT_STRING);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept amountType() {
-            return getObject(CodeableConcept.class, PROPERTY_AMOUNTTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_AMOUNT_TYPE);
         }
 
         /**
@@ -702,7 +702,7 @@ public class SubstanceReferenceInformation extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -727,27 +727,27 @@ public class SubstanceReferenceInformation extends FhirResource {
             }
 
             public Builder organismType(final CodeableConcept organismType) {
-                b.add(PROPERTY_ORGANISMTYPE, organismType);
+                b.add(PROPERTY_ORGANISM_TYPE, organismType);
                 return this;
             }
 
             public Builder amountQuantity(final Quantity amountQuantity) {
-                b.add(PROPERTY_AMOUNTQUANTITY, amountQuantity);
+                b.add(PROPERTY_AMOUNT_QUANTITY, amountQuantity);
                 return this;
             }
 
             public Builder amountRange(final Range amountRange) {
-                b.add(PROPERTY_AMOUNTRANGE, amountRange);
+                b.add(PROPERTY_AMOUNT_RANGE, amountRange);
                 return this;
             }
 
             public Builder amountString(final String amountString) {
-                b.add(PROPERTY_AMOUNTSTRING, amountString);
+                b.add(PROPERTY_AMOUNT_STRING, amountString);
                 return this;
             }
 
             public Builder amountType(final CodeableConcept amountType) {
-                b.add(PROPERTY_AMOUNTTYPE, amountType);
+                b.add(PROPERTY_AMOUNT_TYPE, amountType);
                 return this;
             }
 

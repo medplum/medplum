@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class OperationDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "OperationDefinition";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_VERSION = "version";
     public static final String PROPERTY_NAME = "name";
@@ -30,10 +30,10 @@ public class OperationDefinition extends FhirResource {
     public static final String PROPERTY_PUBLISHER = "publisher";
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_PURPOSE = "purpose";
-    public static final String PROPERTY_AFFECTSSTATE = "affectsState";
+    public static final String PROPERTY_AFFECTS_STATE = "affectsState";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_COMMENT = "comment";
     public static final String PROPERTY_BASE = "base";
@@ -41,8 +41,8 @@ public class OperationDefinition extends FhirResource {
     public static final String PROPERTY_SYSTEM = "system";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_INSTANCE = "instance";
-    public static final String PROPERTY_INPUTPROFILE = "inputProfile";
-    public static final String PROPERTY_OUTPUTPROFILE = "outputProfile";
+    public static final String PROPERTY_INPUT_PROFILE = "inputProfile";
+    public static final String PROPERTY_OUTPUT_PROFILE = "outputProfile";
     public static final String PROPERTY_PARAMETER = "parameter";
     public static final String PROPERTY_OVERLOAD = "overload";
 
@@ -65,7 +65,7 @@ public class OperationDefinition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -113,7 +113,7 @@ public class OperationDefinition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -227,7 +227,7 @@ public class OperationDefinition extends FhirResource {
      * indexing and searching for appropriate operation definition instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -251,7 +251,7 @@ public class OperationDefinition extends FhirResource {
      * audit trail entries do not count as 'affecting  state'.
      */
     public Boolean affectsState() {
-        return data.getBoolean(PROPERTY_AFFECTSSTATE);
+        return data.getBoolean(PROPERTY_AFFECTS_STATE);
     }
 
     /**
@@ -315,7 +315,7 @@ public class OperationDefinition extends FhirResource {
      * the parameters resource as a whole.
      */
     public String inputProfile() {
-        return getString(PROPERTY_INPUTPROFILE);
+        return getString(PROPERTY_INPUT_PROFILE);
     }
 
     /**
@@ -324,7 +324,7 @@ public class OperationDefinition extends FhirResource {
      * the parameters resource.
      */
     public String outputProfile() {
-        return getString(PROPERTY_OUTPUTPROFILE);
+        return getString(PROPERTY_OUTPUT_PROFILE);
     }
 
     /**
@@ -354,7 +354,7 @@ public class OperationDefinition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -369,7 +369,7 @@ public class OperationDefinition extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -389,7 +389,7 @@ public class OperationDefinition extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -449,7 +449,7 @@ public class OperationDefinition extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -464,7 +464,7 @@ public class OperationDefinition extends FhirResource {
         }
 
         public Builder affectsState(final Boolean affectsState) {
-            b.add(PROPERTY_AFFECTSSTATE, affectsState);
+            b.add(PROPERTY_AFFECTS_STATE, affectsState);
             return this;
         }
 
@@ -504,12 +504,12 @@ public class OperationDefinition extends FhirResource {
         }
 
         public Builder inputProfile(final String inputProfile) {
-            b.add(PROPERTY_INPUTPROFILE, inputProfile);
+            b.add(PROPERTY_INPUT_PROFILE, inputProfile);
             return this;
         }
 
         public Builder outputProfile(final String outputProfile) {
-            b.add(PROPERTY_OUTPUTPROFILE, outputProfile);
+            b.add(PROPERTY_OUTPUT_PROFILE, outputProfile);
             return this;
         }
 
@@ -531,9 +531,9 @@ public class OperationDefinition extends FhirResource {
     public static class OperationDefinitionBinding extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationDefinitionBinding";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_STRENGTH = "strength";
-        public static final String PROPERTY_VALUESET = "valueSet";
+        public static final String PROPERTY_VALUE_SET = "valueSet";
 
         public static Builder create() {
             return new Builder();
@@ -573,7 +573,7 @@ public class OperationDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -590,7 +590,7 @@ public class OperationDefinition extends FhirResource {
          * set) that identifies the set of codes to be used.
          */
         public String valueSet() {
-            return getString(PROPERTY_VALUESET);
+            return getString(PROPERTY_VALUE_SET);
         }
 
         public static class Builder {
@@ -610,7 +610,7 @@ public class OperationDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -620,7 +620,7 @@ public class OperationDefinition extends FhirResource {
             }
 
             public Builder valueSet(final String valueSet) {
-                b.add(PROPERTY_VALUESET, valueSet);
+                b.add(PROPERTY_VALUE_SET, valueSet);
                 return this;
             }
 
@@ -633,8 +633,8 @@ public class OperationDefinition extends FhirResource {
     public static class OperationDefinitionOverload extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationDefinitionOverload";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_PARAMETERNAME = "parameterName";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_PARAMETER_NAME = "parameterName";
         public static final String PROPERTY_COMMENT = "comment";
 
         public static Builder create() {
@@ -675,14 +675,14 @@ public class OperationDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Name of parameter to include in overload.
          */
         public java.util.List<String> parameterName() {
-            return getList(String.class, PROPERTY_PARAMETERNAME);
+            return getList(String.class, PROPERTY_PARAMETER_NAME);
         }
 
         /**
@@ -709,12 +709,12 @@ public class OperationDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder parameterName(final java.util.List<String> parameterName) {
-                b.add(PROPERTY_PARAMETERNAME, FhirObject.toStringArray(parameterName));
+                b.add(PROPERTY_PARAMETER_NAME, FhirObject.toStringArray(parameterName));
                 return this;
             }
 
@@ -732,17 +732,17 @@ public class OperationDefinition extends FhirResource {
     public static class OperationDefinitionParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationDefinitionParameter";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_USE = "use";
         public static final String PROPERTY_MIN = "min";
         public static final String PROPERTY_MAX = "max";
         public static final String PROPERTY_DOCUMENTATION = "documentation";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_TARGETPROFILE = "targetProfile";
-        public static final String PROPERTY_SEARCHTYPE = "searchType";
+        public static final String PROPERTY_TARGET_PROFILE = "targetProfile";
+        public static final String PROPERTY_SEARCH_TYPE = "searchType";
         public static final String PROPERTY_BINDING = "binding";
-        public static final String PROPERTY_REFERENCEDFROM = "referencedFrom";
+        public static final String PROPERTY_REFERENCED_FROM = "referencedFrom";
         public static final String PROPERTY_PART = "part";
 
         public static Builder create() {
@@ -783,7 +783,7 @@ public class OperationDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -842,7 +842,7 @@ public class OperationDefinition extends FhirResource {
          * implementation guide.
          */
         public java.util.List<String> targetProfile() {
-            return getList(String.class, PROPERTY_TARGETPROFILE);
+            return getList(String.class, PROPERTY_TARGET_PROFILE);
         }
 
         /**
@@ -850,7 +850,7 @@ public class OperationDefinition extends FhirResource {
          * used if the parameter type is 'string'.
          */
         public String searchType() {
-            return getString(PROPERTY_SEARCHTYPE);
+            return getString(PROPERTY_SEARCH_TYPE);
         }
 
         /**
@@ -866,7 +866,7 @@ public class OperationDefinition extends FhirResource {
          * that are expected to resolve to this resource.
          */
         public java.util.List<OperationDefinitionReferencedFrom> referencedFrom() {
-            return getList(OperationDefinitionReferencedFrom.class, PROPERTY_REFERENCEDFROM);
+            return getList(OperationDefinitionReferencedFrom.class, PROPERTY_REFERENCED_FROM);
         }
 
         /**
@@ -893,7 +893,7 @@ public class OperationDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -928,12 +928,12 @@ public class OperationDefinition extends FhirResource {
             }
 
             public Builder targetProfile(final java.util.List<String> targetProfile) {
-                b.add(PROPERTY_TARGETPROFILE, FhirObject.toStringArray(targetProfile));
+                b.add(PROPERTY_TARGET_PROFILE, FhirObject.toStringArray(targetProfile));
                 return this;
             }
 
             public Builder searchType(final String searchType) {
-                b.add(PROPERTY_SEARCHTYPE, searchType);
+                b.add(PROPERTY_SEARCH_TYPE, searchType);
                 return this;
             }
 
@@ -943,7 +943,7 @@ public class OperationDefinition extends FhirResource {
             }
 
             public Builder referencedFrom(final java.util.List<OperationDefinitionReferencedFrom> referencedFrom) {
-                b.add(PROPERTY_REFERENCEDFROM, FhirObject.toArray(referencedFrom));
+                b.add(PROPERTY_REFERENCED_FROM, FhirObject.toArray(referencedFrom));
                 return this;
             }
 
@@ -961,9 +961,9 @@ public class OperationDefinition extends FhirResource {
     public static class OperationDefinitionReferencedFrom extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationDefinitionReferencedFrom";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SOURCE = "source";
-        public static final String PROPERTY_SOURCEID = "sourceId";
+        public static final String PROPERTY_SOURCE_ID = "sourceId";
 
         public static Builder create() {
             return new Builder();
@@ -1003,7 +1003,7 @@ public class OperationDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1020,7 +1020,7 @@ public class OperationDefinition extends FhirResource {
          * resolve to this resource.
          */
         public String sourceId() {
-            return getString(PROPERTY_SOURCEID);
+            return getString(PROPERTY_SOURCE_ID);
         }
 
         public static class Builder {
@@ -1040,7 +1040,7 @@ public class OperationDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1050,7 +1050,7 @@ public class OperationDefinition extends FhirResource {
             }
 
             public Builder sourceId(final String sourceId) {
-                b.add(PROPERTY_SOURCEID, sourceId);
+                b.add(PROPERTY_SOURCE_ID, sourceId);
                 return this;
             }
 

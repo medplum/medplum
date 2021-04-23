@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class TerminologyCapabilities extends FhirResource {
     public static final String RESOURCE_TYPE = "TerminologyCapabilities";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_VERSION = "version";
     public static final String PROPERTY_NAME = "name";
@@ -29,18 +29,18 @@ public class TerminologyCapabilities extends FhirResource {
     public static final String PROPERTY_PUBLISHER = "publisher";
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_PURPOSE = "purpose";
     public static final String PROPERTY_COPYRIGHT = "copyright";
     public static final String PROPERTY_KIND = "kind";
     public static final String PROPERTY_SOFTWARE = "software";
     public static final String PROPERTY_IMPLEMENTATION = "implementation";
-    public static final String PROPERTY_LOCKEDDATE = "lockedDate";
-    public static final String PROPERTY_CODESYSTEM = "codeSystem";
+    public static final String PROPERTY_LOCKED_DATE = "lockedDate";
+    public static final String PROPERTY_CODE_SYSTEM = "codeSystem";
     public static final String PROPERTY_EXPANSION = "expansion";
-    public static final String PROPERTY_CODESEARCH = "codeSearch";
-    public static final String PROPERTY_VALIDATECODE = "validateCode";
+    public static final String PROPERTY_CODE_SEARCH = "codeSearch";
+    public static final String PROPERTY_VALIDATE_CODE = "validateCode";
     public static final String PROPERTY_TRANSLATION = "translation";
     public static final String PROPERTY_CLOSURE = "closure";
 
@@ -63,7 +63,7 @@ public class TerminologyCapabilities extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -111,7 +111,7 @@ public class TerminologyCapabilities extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -222,7 +222,7 @@ public class TerminologyCapabilities extends FhirResource {
      * instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -282,7 +282,7 @@ public class TerminologyCapabilities extends FhirResource {
      * Whether the server supports lockedDate.
      */
     public Boolean lockedDate() {
-        return data.getBoolean(PROPERTY_LOCKEDDATE);
+        return data.getBoolean(PROPERTY_LOCKED_DATE);
     }
 
     /**
@@ -291,7 +291,7 @@ public class TerminologyCapabilities extends FhirResource {
      * client can make about support for any CodeSystem resource.
      */
     public java.util.List<TerminologyCapabilitiesCodeSystem> codeSystem() {
-        return getList(TerminologyCapabilitiesCodeSystem.class, PROPERTY_CODESYSTEM);
+        return getList(TerminologyCapabilitiesCodeSystem.class, PROPERTY_CODE_SYSTEM);
     }
 
     /**
@@ -307,7 +307,7 @@ public class TerminologyCapabilities extends FhirResource {
      * ValueSet, if it is supported.
      */
     public String codeSearch() {
-        return getString(PROPERTY_CODESEARCH);
+        return getString(PROPERTY_CODE_SEARCH);
     }
 
     /**
@@ -316,7 +316,7 @@ public class TerminologyCapabilities extends FhirResource {
      * operation.
      */
     public TerminologyCapabilitiesValidateCode validateCode() {
-        return getObject(TerminologyCapabilitiesValidateCode.class, PROPERTY_VALIDATECODE);
+        return getObject(TerminologyCapabilitiesValidateCode.class, PROPERTY_VALIDATE_CODE);
     }
 
     /**
@@ -346,7 +346,7 @@ public class TerminologyCapabilities extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -361,7 +361,7 @@ public class TerminologyCapabilities extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -381,7 +381,7 @@ public class TerminologyCapabilities extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -436,7 +436,7 @@ public class TerminologyCapabilities extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -471,12 +471,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
 
         public Builder lockedDate(final Boolean lockedDate) {
-            b.add(PROPERTY_LOCKEDDATE, lockedDate);
+            b.add(PROPERTY_LOCKED_DATE, lockedDate);
             return this;
         }
 
         public Builder codeSystem(final java.util.List<TerminologyCapabilitiesCodeSystem> codeSystem) {
-            b.add(PROPERTY_CODESYSTEM, FhirObject.toArray(codeSystem));
+            b.add(PROPERTY_CODE_SYSTEM, FhirObject.toArray(codeSystem));
             return this;
         }
 
@@ -486,12 +486,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
 
         public Builder codeSearch(final String codeSearch) {
-            b.add(PROPERTY_CODESEARCH, codeSearch);
+            b.add(PROPERTY_CODE_SEARCH, codeSearch);
             return this;
         }
 
         public Builder validateCode(final TerminologyCapabilitiesValidateCode validateCode) {
-            b.add(PROPERTY_VALIDATECODE, validateCode);
+            b.add(PROPERTY_VALIDATE_CODE, validateCode);
             return this;
         }
 
@@ -513,7 +513,7 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesClosure extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesClosure";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TRANSLATION = "translation";
 
         public static Builder create() {
@@ -554,7 +554,7 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -581,7 +581,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -599,7 +599,7 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesCodeSystem extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesCodeSystem";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_URI = "uri";
         public static final String PROPERTY_VERSION = "version";
         public static final String PROPERTY_SUBSUMPTION = "subsumption";
@@ -642,7 +642,7 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -684,7 +684,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -712,12 +712,12 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesExpansion extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesExpansion";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_HIERARCHICAL = "hierarchical";
         public static final String PROPERTY_PAGING = "paging";
         public static final String PROPERTY_INCOMPLETE = "incomplete";
         public static final String PROPERTY_PARAMETER = "parameter";
-        public static final String PROPERTY_TEXTFILTER = "textFilter";
+        public static final String PROPERTY_TEXT_FILTER = "textFilter";
 
         public static Builder create() {
             return new Builder();
@@ -757,7 +757,7 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -792,7 +792,7 @@ public class TerminologyCapabilities extends FhirResource {
          * Documentation about text searching works.
          */
         public String textFilter() {
-            return getString(PROPERTY_TEXTFILTER);
+            return getString(PROPERTY_TEXT_FILTER);
         }
 
         public static class Builder {
@@ -812,7 +812,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -837,7 +837,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder textFilter(final String textFilter) {
-                b.add(PROPERTY_TEXTFILTER, textFilter);
+                b.add(PROPERTY_TEXT_FILTER, textFilter);
                 return this;
             }
 
@@ -850,7 +850,7 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesFilter extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesFilter";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_OP = "op";
 
@@ -892,7 +892,7 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -926,7 +926,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -949,7 +949,7 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesImplementation extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesImplementation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_URL = "url";
 
@@ -991,7 +991,7 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1026,7 +1026,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1049,7 +1049,7 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesParameter";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_DOCUMENTATION = "documentation";
 
@@ -1091,7 +1091,7 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1125,7 +1125,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1148,7 +1148,7 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesSoftware extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesSoftware";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_VERSION = "version";
 
@@ -1190,7 +1190,7 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1224,7 +1224,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1247,8 +1247,8 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesTranslation extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesTranslation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_NEEDSMAP = "needsMap";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_NEEDS_MAP = "needsMap";
 
         public static Builder create() {
             return new Builder();
@@ -1288,14 +1288,14 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Whether the client must identify the map.
          */
         public Boolean needsMap() {
-            return data.getBoolean(PROPERTY_NEEDSMAP);
+            return data.getBoolean(PROPERTY_NEEDS_MAP);
         }
 
         public static class Builder {
@@ -1315,12 +1315,12 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder needsMap(final Boolean needsMap) {
-                b.add(PROPERTY_NEEDSMAP, needsMap);
+                b.add(PROPERTY_NEEDS_MAP, needsMap);
                 return this;
             }
 
@@ -1333,7 +1333,7 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesValidateCode extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesValidateCode";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TRANSLATIONS = "translations";
 
         public static Builder create() {
@@ -1374,7 +1374,7 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1401,7 +1401,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1419,9 +1419,9 @@ public class TerminologyCapabilities extends FhirResource {
     public static class TerminologyCapabilitiesVersion extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesVersion";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_ISDEFAULT = "isDefault";
+        public static final String PROPERTY_IS_DEFAULT = "isDefault";
         public static final String PROPERTY_COMPOSITIONAL = "compositional";
         public static final String PROPERTY_LANGUAGE = "language";
         public static final String PROPERTY_FILTER = "filter";
@@ -1465,7 +1465,7 @@ public class TerminologyCapabilities extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1480,7 +1480,7 @@ public class TerminologyCapabilities extends FhirResource {
          * If this is the default version for this code system.
          */
         public Boolean isDefault() {
-            return data.getBoolean(PROPERTY_ISDEFAULT);
+            return data.getBoolean(PROPERTY_IS_DEFAULT);
         }
 
         /**
@@ -1528,7 +1528,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1538,7 +1538,7 @@ public class TerminologyCapabilities extends FhirResource {
             }
 
             public Builder isDefault(final Boolean isDefault) {
-                b.add(PROPERTY_ISDEFAULT, isDefault);
+                b.add(PROPERTY_IS_DEFAULT, isDefault);
                 return this;
             }
 

@@ -14,10 +14,10 @@ public class TriggerDefinition extends FhirResource {
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TIMINGTIMING = "timingTiming";
-    public static final String PROPERTY_TIMINGREFERENCE = "timingReference";
-    public static final String PROPERTY_TIMINGDATE = "timingDate";
-    public static final String PROPERTY_TIMINGDATETIME = "timingDateTime";
+    public static final String PROPERTY_TIMING_TIMING = "timingTiming";
+    public static final String PROPERTY_TIMING_REFERENCE = "timingReference";
+    public static final String PROPERTY_TIMING_DATE = "timingDate";
+    public static final String PROPERTY_TIMING_DATE_TIME = "timingDateTime";
     public static final String PROPERTY_DATA = "data";
     public static final String PROPERTY_CONDITION = "condition";
 
@@ -61,28 +61,28 @@ public class TriggerDefinition extends FhirResource {
      * The timing of the event (if this is a periodic trigger).
      */
     public Timing timingTiming() {
-        return getObject(Timing.class, PROPERTY_TIMINGTIMING);
+        return getObject(Timing.class, PROPERTY_TIMING_TIMING);
     }
 
     /**
      * The timing of the event (if this is a periodic trigger).
      */
     public Reference timingReference() {
-        return getObject(Reference.class, PROPERTY_TIMINGREFERENCE);
+        return getObject(Reference.class, PROPERTY_TIMING_REFERENCE);
     }
 
     /**
      * The timing of the event (if this is a periodic trigger).
      */
     public String timingDate() {
-        return getString(PROPERTY_TIMINGDATE);
+        return getString(PROPERTY_TIMING_DATE);
     }
 
     /**
      * The timing of the event (if this is a periodic trigger).
      */
     public String timingDateTime() {
-        return getString(PROPERTY_TIMINGDATETIME);
+        return getString(PROPERTY_TIMING_DATE_TIME);
     }
 
     /**
@@ -130,22 +130,22 @@ public class TriggerDefinition extends FhirResource {
         }
 
         public Builder timingTiming(final Timing timingTiming) {
-            b.add(PROPERTY_TIMINGTIMING, timingTiming);
+            b.add(PROPERTY_TIMING_TIMING, timingTiming);
             return this;
         }
 
         public Builder timingReference(final Reference timingReference) {
-            b.add(PROPERTY_TIMINGREFERENCE, timingReference);
+            b.add(PROPERTY_TIMING_REFERENCE, timingReference);
             return this;
         }
 
         public Builder timingDate(final String timingDate) {
-            b.add(PROPERTY_TIMINGDATE, timingDate);
+            b.add(PROPERTY_TIMING_DATE, timingDate);
             return this;
         }
 
         public Builder timingDateTime(final String timingDateTime) {
-            b.add(PROPERTY_TIMINGDATETIME, timingDateTime);
+            b.add(PROPERTY_TIMING_DATE_TIME, timingDateTime);
             return this;
         }
 

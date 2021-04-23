@@ -11,21 +11,21 @@ import jakarta.json.JsonObjectBuilder;
 
 public class DetectedIssue extends FhirResource {
     public static final String RESOURCE_TYPE = "DetectedIssue";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_SEVERITY = "severity";
     public static final String PROPERTY_PATIENT = "patient";
-    public static final String PROPERTY_IDENTIFIEDDATETIME = "identifiedDateTime";
-    public static final String PROPERTY_IDENTIFIEDPERIOD = "identifiedPeriod";
+    public static final String PROPERTY_IDENTIFIED_DATE_TIME = "identifiedDateTime";
+    public static final String PROPERTY_IDENTIFIED_PERIOD = "identifiedPeriod";
     public static final String PROPERTY_AUTHOR = "author";
     public static final String PROPERTY_IMPLICATED = "implicated";
     public static final String PROPERTY_EVIDENCE = "evidence";
@@ -52,7 +52,7 @@ public class DetectedIssue extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -100,7 +100,7 @@ public class DetectedIssue extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -144,14 +144,14 @@ public class DetectedIssue extends FhirResource {
      * The date or period when the detected issue was initially identified.
      */
     public String identifiedDateTime() {
-        return getString(PROPERTY_IDENTIFIEDDATETIME);
+        return getString(PROPERTY_IDENTIFIED_DATE_TIME);
     }
 
     /**
      * The date or period when the detected issue was initially identified.
      */
     public Period identifiedPeriod() {
-        return getObject(Period.class, PROPERTY_IDENTIFIEDPERIOD);
+        return getObject(Period.class, PROPERTY_IDENTIFIED_PERIOD);
     }
 
     /**
@@ -216,7 +216,7 @@ public class DetectedIssue extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -231,7 +231,7 @@ public class DetectedIssue extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -251,7 +251,7 @@ public class DetectedIssue extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -281,12 +281,12 @@ public class DetectedIssue extends FhirResource {
         }
 
         public Builder identifiedDateTime(final String identifiedDateTime) {
-            b.add(PROPERTY_IDENTIFIEDDATETIME, identifiedDateTime);
+            b.add(PROPERTY_IDENTIFIED_DATE_TIME, identifiedDateTime);
             return this;
         }
 
         public Builder identifiedPeriod(final Period identifiedPeriod) {
-            b.add(PROPERTY_IDENTIFIEDPERIOD, identifiedPeriod);
+            b.add(PROPERTY_IDENTIFIED_PERIOD, identifiedPeriod);
             return this;
         }
 
@@ -328,7 +328,7 @@ public class DetectedIssue extends FhirResource {
     public static class DetectedIssueEvidence extends FhirObject {
         public static final String RESOURCE_TYPE = "DetectedIssueEvidence";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DETAIL = "detail";
 
@@ -370,7 +370,7 @@ public class DetectedIssue extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -405,7 +405,7 @@ public class DetectedIssue extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -428,7 +428,7 @@ public class DetectedIssue extends FhirResource {
     public static class DetectedIssueMitigation extends FhirObject {
         public static final String RESOURCE_TYPE = "DetectedIssueMitigation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ACTION = "action";
         public static final String PROPERTY_DATE = "date";
         public static final String PROPERTY_AUTHOR = "author";
@@ -471,7 +471,7 @@ public class DetectedIssue extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -514,7 +514,7 @@ public class DetectedIssue extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

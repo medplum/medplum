@@ -9,31 +9,31 @@ import jakarta.json.JsonObject;
 
 public class MedicationStatement extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicationStatement";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASEDON = "basedOn";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_BASED_ON = "basedOn";
+    public static final String PROPERTY_PART_OF = "partOf";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSREASON = "statusReason";
+    public static final String PROPERTY_STATUS_REASON = "statusReason";
     public static final String PROPERTY_CATEGORY = "category";
-    public static final String PROPERTY_MEDICATIONCODEABLECONCEPT = "medicationCodeableConcept";
-    public static final String PROPERTY_MEDICATIONREFERENCE = "medicationReference";
+    public static final String PROPERTY_MEDICATION_CODEABLE_CONCEPT = "medicationCodeableConcept";
+    public static final String PROPERTY_MEDICATION_REFERENCE = "medicationReference";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_CONTEXT = "context";
-    public static final String PROPERTY_EFFECTIVEDATETIME = "effectiveDateTime";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
-    public static final String PROPERTY_DATEASSERTED = "dateAsserted";
-    public static final String PROPERTY_INFORMATIONSOURCE = "informationSource";
-    public static final String PROPERTY_DERIVEDFROM = "derivedFrom";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_EFFECTIVE_DATE_TIME = "effectiveDateTime";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
+    public static final String PROPERTY_DATE_ASSERTED = "dateAsserted";
+    public static final String PROPERTY_INFORMATION_SOURCE = "informationSource";
+    public static final String PROPERTY_DERIVED_FROM = "derivedFrom";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_NOTE = "note";
     public static final String PROPERTY_DOSAGE = "dosage";
 
@@ -56,7 +56,7 @@ public class MedicationStatement extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -104,7 +104,7 @@ public class MedicationStatement extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -124,14 +124,14 @@ public class MedicationStatement extends FhirResource {
      * this event.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
      * A larger event of which this particular event is a component or step.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PARTOF);
+        return getList(Reference.class, PROPERTY_PART_OF);
     }
 
     /**
@@ -147,7 +147,7 @@ public class MedicationStatement extends FhirResource {
      * Captures the reason for the current state of the MedicationStatement.
      */
     public java.util.List<CodeableConcept> statusReason() {
-        return getList(CodeableConcept.class, PROPERTY_STATUSREASON);
+        return getList(CodeableConcept.class, PROPERTY_STATUS_REASON);
     }
 
     /**
@@ -165,7 +165,7 @@ public class MedicationStatement extends FhirResource {
      * list of medications.
      */
     public CodeableConcept medicationCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_MEDICATIONCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_MEDICATION_CODEABLE_CONCEPT);
     }
 
     /**
@@ -175,7 +175,7 @@ public class MedicationStatement extends FhirResource {
      * list of medications.
      */
     public Reference medicationReference() {
-        return getObject(Reference.class, PROPERTY_MEDICATIONREFERENCE);
+        return getObject(Reference.class, PROPERTY_MEDICATION_REFERENCE);
     }
 
     /**
@@ -199,7 +199,7 @@ public class MedicationStatement extends FhirResource {
      * the MedicationStatement.taken element is No).
      */
     public String effectiveDateTime() {
-        return getString(PROPERTY_EFFECTIVEDATETIME);
+        return getString(PROPERTY_EFFECTIVE_DATE_TIME);
     }
 
     /**
@@ -208,7 +208,7 @@ public class MedicationStatement extends FhirResource {
      * the MedicationStatement.taken element is No).
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -216,7 +216,7 @@ public class MedicationStatement extends FhirResource {
      * source.
      */
     public java.time.Instant dateAsserted() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATEASSERTED));
+        return java.time.Instant.parse(data.getString(PROPERTY_DATE_ASSERTED));
     }
 
     /**
@@ -226,7 +226,7 @@ public class MedicationStatement extends FhirResource {
      * MedicationRequest.
      */
     public Reference informationSource() {
-        return getObject(Reference.class, PROPERTY_INFORMATIONSOURCE);
+        return getObject(Reference.class, PROPERTY_INFORMATION_SOURCE);
     }
 
     /**
@@ -235,14 +235,14 @@ public class MedicationStatement extends FhirResource {
      * derive the MedicationStatement.
      */
     public java.util.List<Reference> derivedFrom() {
-        return getList(Reference.class, PROPERTY_DERIVEDFROM);
+        return getList(Reference.class, PROPERTY_DERIVED_FROM);
     }
 
     /**
      * A reason for why the medication is being/was taken.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
@@ -250,7 +250,7 @@ public class MedicationStatement extends FhirResource {
      * taken.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -279,7 +279,7 @@ public class MedicationStatement extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -294,7 +294,7 @@ public class MedicationStatement extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -314,7 +314,7 @@ public class MedicationStatement extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -324,12 +324,12 @@ public class MedicationStatement extends FhirResource {
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
@@ -339,7 +339,7 @@ public class MedicationStatement extends FhirResource {
         }
 
         public Builder statusReason(final java.util.List<CodeableConcept> statusReason) {
-            b.add(PROPERTY_STATUSREASON, FhirObject.toArray(statusReason));
+            b.add(PROPERTY_STATUS_REASON, FhirObject.toArray(statusReason));
             return this;
         }
 
@@ -349,12 +349,12 @@ public class MedicationStatement extends FhirResource {
         }
 
         public Builder medicationCodeableConcept(final CodeableConcept medicationCodeableConcept) {
-            b.add(PROPERTY_MEDICATIONCODEABLECONCEPT, medicationCodeableConcept);
+            b.add(PROPERTY_MEDICATION_CODEABLE_CONCEPT, medicationCodeableConcept);
             return this;
         }
 
         public Builder medicationReference(final Reference medicationReference) {
-            b.add(PROPERTY_MEDICATIONREFERENCE, medicationReference);
+            b.add(PROPERTY_MEDICATION_REFERENCE, medicationReference);
             return this;
         }
 
@@ -369,37 +369,37 @@ public class MedicationStatement extends FhirResource {
         }
 
         public Builder effectiveDateTime(final String effectiveDateTime) {
-            b.add(PROPERTY_EFFECTIVEDATETIME, effectiveDateTime);
+            b.add(PROPERTY_EFFECTIVE_DATE_TIME, effectiveDateTime);
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
         public Builder dateAsserted(final java.time.Instant dateAsserted) {
-            b.add(PROPERTY_DATEASSERTED, dateAsserted.toString());
+            b.add(PROPERTY_DATE_ASSERTED, dateAsserted.toString());
             return this;
         }
 
         public Builder informationSource(final Reference informationSource) {
-            b.add(PROPERTY_INFORMATIONSOURCE, informationSource);
+            b.add(PROPERTY_INFORMATION_SOURCE, informationSource);
             return this;
         }
 
         public Builder derivedFrom(final java.util.List<Reference> derivedFrom) {
-            b.add(PROPERTY_DERIVEDFROM, FhirObject.toArray(derivedFrom));
+            b.add(PROPERTY_DERIVED_FROM, FhirObject.toArray(derivedFrom));
             return this;
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 

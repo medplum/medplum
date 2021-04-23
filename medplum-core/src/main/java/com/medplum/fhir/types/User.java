@@ -9,10 +9,10 @@ import jakarta.json.JsonObject;
 
 public class User extends FhirResource {
     public static final String RESOURCE_TYPE = "User";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_EMAIL = "email";
-    public static final String PROPERTY_PASSWORDHASH = "passwordHash";
+    public static final String PROPERTY_PASSWORD_HASH = "passwordHash";
     public static final String PROPERTY_PATIENT = "patient";
     public static final String PROPERTY_PRACTITIONER = "practitioner";
 
@@ -39,7 +39,7 @@ public class User extends FhirResource {
      * Encrypted hash of the user's password.
      */
     public String passwordHash() {
-        return getString(PROPERTY_PASSWORDHASH);
+        return getString(PROPERTY_PASSWORD_HASH);
     }
 
     /**
@@ -67,7 +67,7 @@ public class User extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -82,7 +82,7 @@ public class User extends FhirResource {
         }
 
         public Builder passwordHash(final String passwordHash) {
-            b.add(PROPERTY_PASSWORDHASH, passwordHash);
+            b.add(PROPERTY_PASSWORD_HASH, passwordHash);
             return this;
         }
 

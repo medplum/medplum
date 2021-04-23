@@ -11,25 +11,25 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Contract extends FhirResource {
     public static final String RESOURCE_TYPE = "Contract";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_VERSION = "version";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_LEGALSTATE = "legalState";
-    public static final String PROPERTY_INSTANTIATESCANONICAL = "instantiatesCanonical";
-    public static final String PROPERTY_INSTANTIATESURI = "instantiatesUri";
-    public static final String PROPERTY_CONTENTDERIVATIVE = "contentDerivative";
+    public static final String PROPERTY_LEGAL_STATE = "legalState";
+    public static final String PROPERTY_INSTANTIATES_CANONICAL = "instantiatesCanonical";
+    public static final String PROPERTY_INSTANTIATES_URI = "instantiatesUri";
+    public static final String PROPERTY_CONTENT_DERIVATIVE = "contentDerivative";
     public static final String PROPERTY_ISSUED = "issued";
     public static final String PROPERTY_APPLIES = "applies";
-    public static final String PROPERTY_EXPIRATIONTYPE = "expirationType";
+    public static final String PROPERTY_EXPIRATION_TYPE = "expirationType";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_AUTHORITY = "authority";
     public static final String PROPERTY_DOMAIN = "domain";
@@ -40,20 +40,20 @@ public class Contract extends FhirResource {
     public static final String PROPERTY_ALIAS = "alias";
     public static final String PROPERTY_AUTHOR = "author";
     public static final String PROPERTY_SCOPE = "scope";
-    public static final String PROPERTY_TOPICCODEABLECONCEPT = "topicCodeableConcept";
-    public static final String PROPERTY_TOPICREFERENCE = "topicReference";
+    public static final String PROPERTY_TOPIC_CODEABLE_CONCEPT = "topicCodeableConcept";
+    public static final String PROPERTY_TOPIC_REFERENCE = "topicReference";
     public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_SUBTYPE = "subType";
-    public static final String PROPERTY_CONTENTDEFINITION = "contentDefinition";
+    public static final String PROPERTY_SUB_TYPE = "subType";
+    public static final String PROPERTY_CONTENT_DEFINITION = "contentDefinition";
     public static final String PROPERTY_TERM = "term";
-    public static final String PROPERTY_SUPPORTINGINFO = "supportingInfo";
-    public static final String PROPERTY_RELEVANTHISTORY = "relevantHistory";
+    public static final String PROPERTY_SUPPORTING_INFO = "supportingInfo";
+    public static final String PROPERTY_RELEVANT_HISTORY = "relevantHistory";
     public static final String PROPERTY_SIGNER = "signer";
     public static final String PROPERTY_FRIENDLY = "friendly";
     public static final String PROPERTY_LEGAL = "legal";
     public static final String PROPERTY_RULE = "rule";
-    public static final String PROPERTY_LEGALLYBINDINGATTACHMENT = "legallyBindingAttachment";
-    public static final String PROPERTY_LEGALLYBINDINGREFERENCE = "legallyBindingReference";
+    public static final String PROPERTY_LEGALLY_BINDING_ATTACHMENT = "legallyBindingAttachment";
+    public static final String PROPERTY_LEGALLY_BINDING_REFERENCE = "legallyBindingReference";
 
     public static Builder create() {
         return new Builder();
@@ -74,7 +74,7 @@ public class Contract extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -122,7 +122,7 @@ public class Contract extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -164,7 +164,7 @@ public class Contract extends FhirResource {
      * evidences that act, process, or agreement.
      */
     public CodeableConcept legalState() {
-        return getObject(CodeableConcept.class, PROPERTY_LEGALSTATE);
+        return getObject(CodeableConcept.class, PROPERTY_LEGAL_STATE);
     }
 
     /**
@@ -172,7 +172,7 @@ public class Contract extends FhirResource {
      * to in whole or part by this Contract.
      */
     public Reference instantiatesCanonical() {
-        return getObject(Reference.class, PROPERTY_INSTANTIATESCANONICAL);
+        return getObject(Reference.class, PROPERTY_INSTANTIATES_CANONICAL);
     }
 
     /**
@@ -180,7 +180,7 @@ public class Contract extends FhirResource {
      * adhered to in whole or in part by this Contract.
      */
     public String instantiatesUri() {
-        return getString(PROPERTY_INSTANTIATESURI);
+        return getString(PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -188,7 +188,7 @@ public class Contract extends FhirResource {
      * specific stage in its lifecycle.
      */
     public CodeableConcept contentDerivative() {
-        return getObject(CodeableConcept.class, PROPERTY_CONTENTDERIVATIVE);
+        return getObject(CodeableConcept.class, PROPERTY_CONTENT_DERIVATIVE);
     }
 
     /**
@@ -210,7 +210,7 @@ public class Contract extends FhirResource {
      * instance by one or more parties to the contract.
      */
     public CodeableConcept expirationType() {
-        return getObject(CodeableConcept.class, PROPERTY_EXPIRATIONTYPE);
+        return getObject(CodeableConcept.class, PROPERTY_EXPIRATION_TYPE);
     }
 
     /**
@@ -307,7 +307,7 @@ public class Contract extends FhirResource {
      * specific contractual objectives.
      */
     public CodeableConcept topicCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_TOPICCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_TOPIC_CODEABLE_CONCEPT);
     }
 
     /**
@@ -315,7 +315,7 @@ public class Contract extends FhirResource {
      * specific contractual objectives.
      */
     public Reference topicReference() {
-        return getObject(Reference.class, PROPERTY_TOPICREFERENCE);
+        return getObject(Reference.class, PROPERTY_TOPIC_REFERENCE);
     }
 
     /**
@@ -335,7 +335,7 @@ public class Contract extends FhirResource {
      * Contract's scope.
      */
     public java.util.List<CodeableConcept> subType() {
-        return getList(CodeableConcept.class, PROPERTY_SUBTYPE);
+        return getList(CodeableConcept.class, PROPERTY_SUB_TYPE);
     }
 
     /**
@@ -344,7 +344,7 @@ public class Contract extends FhirResource {
      * transformable into a Contract.
      */
     public ContractContentDefinition contentDefinition() {
-        return getObject(ContractContentDefinition.class, PROPERTY_CONTENTDEFINITION);
+        return getObject(ContractContentDefinition.class, PROPERTY_CONTENT_DEFINITION);
     }
 
     /**
@@ -360,7 +360,7 @@ public class Contract extends FhirResource {
      * execution of this term action.
      */
     public java.util.List<Reference> supportingInfo() {
-        return getList(Reference.class, PROPERTY_SUPPORTINGINFO);
+        return getList(Reference.class, PROPERTY_SUPPORTING_INFO);
     }
 
     /**
@@ -372,7 +372,7 @@ public class Contract extends FhirResource {
      * http://build.fhir.org/provenance-definitions.html#Provenance.entity.
      */
     public java.util.List<Reference> relevantHistory() {
-        return getList(Reference.class, PROPERTY_RELEVANTHISTORY);
+        return getList(Reference.class, PROPERTY_RELEVANT_HISTORY);
     }
 
     /**
@@ -420,7 +420,7 @@ public class Contract extends FhirResource {
      * enforcement of this Contract.
      */
     public Attachment legallyBindingAttachment() {
-        return getObject(Attachment.class, PROPERTY_LEGALLYBINDINGATTACHMENT);
+        return getObject(Attachment.class, PROPERTY_LEGALLY_BINDING_ATTACHMENT);
     }
 
     /**
@@ -430,7 +430,7 @@ public class Contract extends FhirResource {
      * enforcement of this Contract.
      */
     public Reference legallyBindingReference() {
-        return getObject(Reference.class, PROPERTY_LEGALLYBINDINGREFERENCE);
+        return getObject(Reference.class, PROPERTY_LEGALLY_BINDING_REFERENCE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -444,7 +444,7 @@ public class Contract extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -459,7 +459,7 @@ public class Contract extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -479,7 +479,7 @@ public class Contract extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -504,22 +504,22 @@ public class Contract extends FhirResource {
         }
 
         public Builder legalState(final CodeableConcept legalState) {
-            b.add(PROPERTY_LEGALSTATE, legalState);
+            b.add(PROPERTY_LEGAL_STATE, legalState);
             return this;
         }
 
         public Builder instantiatesCanonical(final Reference instantiatesCanonical) {
-            b.add(PROPERTY_INSTANTIATESCANONICAL, instantiatesCanonical);
+            b.add(PROPERTY_INSTANTIATES_CANONICAL, instantiatesCanonical);
             return this;
         }
 
         public Builder instantiatesUri(final String instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATESURI, instantiatesUri);
+            b.add(PROPERTY_INSTANTIATES_URI, instantiatesUri);
             return this;
         }
 
         public Builder contentDerivative(final CodeableConcept contentDerivative) {
-            b.add(PROPERTY_CONTENTDERIVATIVE, contentDerivative);
+            b.add(PROPERTY_CONTENT_DERIVATIVE, contentDerivative);
             return this;
         }
 
@@ -534,7 +534,7 @@ public class Contract extends FhirResource {
         }
 
         public Builder expirationType(final CodeableConcept expirationType) {
-            b.add(PROPERTY_EXPIRATIONTYPE, expirationType);
+            b.add(PROPERTY_EXPIRATION_TYPE, expirationType);
             return this;
         }
 
@@ -589,12 +589,12 @@ public class Contract extends FhirResource {
         }
 
         public Builder topicCodeableConcept(final CodeableConcept topicCodeableConcept) {
-            b.add(PROPERTY_TOPICCODEABLECONCEPT, topicCodeableConcept);
+            b.add(PROPERTY_TOPIC_CODEABLE_CONCEPT, topicCodeableConcept);
             return this;
         }
 
         public Builder topicReference(final Reference topicReference) {
-            b.add(PROPERTY_TOPICREFERENCE, topicReference);
+            b.add(PROPERTY_TOPIC_REFERENCE, topicReference);
             return this;
         }
 
@@ -604,12 +604,12 @@ public class Contract extends FhirResource {
         }
 
         public Builder subType(final java.util.List<CodeableConcept> subType) {
-            b.add(PROPERTY_SUBTYPE, FhirObject.toArray(subType));
+            b.add(PROPERTY_SUB_TYPE, FhirObject.toArray(subType));
             return this;
         }
 
         public Builder contentDefinition(final ContractContentDefinition contentDefinition) {
-            b.add(PROPERTY_CONTENTDEFINITION, contentDefinition);
+            b.add(PROPERTY_CONTENT_DEFINITION, contentDefinition);
             return this;
         }
 
@@ -619,12 +619,12 @@ public class Contract extends FhirResource {
         }
 
         public Builder supportingInfo(final java.util.List<Reference> supportingInfo) {
-            b.add(PROPERTY_SUPPORTINGINFO, FhirObject.toArray(supportingInfo));
+            b.add(PROPERTY_SUPPORTING_INFO, FhirObject.toArray(supportingInfo));
             return this;
         }
 
         public Builder relevantHistory(final java.util.List<Reference> relevantHistory) {
-            b.add(PROPERTY_RELEVANTHISTORY, FhirObject.toArray(relevantHistory));
+            b.add(PROPERTY_RELEVANT_HISTORY, FhirObject.toArray(relevantHistory));
             return this;
         }
 
@@ -649,12 +649,12 @@ public class Contract extends FhirResource {
         }
 
         public Builder legallyBindingAttachment(final Attachment legallyBindingAttachment) {
-            b.add(PROPERTY_LEGALLYBINDINGATTACHMENT, legallyBindingAttachment);
+            b.add(PROPERTY_LEGALLY_BINDING_ATTACHMENT, legallyBindingAttachment);
             return this;
         }
 
         public Builder legallyBindingReference(final Reference legallyBindingReference) {
-            b.add(PROPERTY_LEGALLYBINDINGREFERENCE, legallyBindingReference);
+            b.add(PROPERTY_LEGALLY_BINDING_REFERENCE, legallyBindingReference);
             return this;
         }
 
@@ -666,30 +666,30 @@ public class Contract extends FhirResource {
     public static class ContractAction extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractAction";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_DONOTPERFORM = "doNotPerform";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_DO_NOT_PERFORM = "doNotPerform";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_SUBJECT = "subject";
         public static final String PROPERTY_INTENT = "intent";
-        public static final String PROPERTY_LINKID = "linkId";
+        public static final String PROPERTY_LINK_ID = "linkId";
         public static final String PROPERTY_STATUS = "status";
         public static final String PROPERTY_CONTEXT = "context";
-        public static final String PROPERTY_CONTEXTLINKID = "contextLinkId";
-        public static final String PROPERTY_OCCURRENCEDATETIME = "occurrenceDateTime";
-        public static final String PROPERTY_OCCURRENCEPERIOD = "occurrencePeriod";
-        public static final String PROPERTY_OCCURRENCETIMING = "occurrenceTiming";
+        public static final String PROPERTY_CONTEXT_LINK_ID = "contextLinkId";
+        public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
+        public static final String PROPERTY_OCCURRENCE_PERIOD = "occurrencePeriod";
+        public static final String PROPERTY_OCCURRENCE_TIMING = "occurrenceTiming";
         public static final String PROPERTY_REQUESTER = "requester";
-        public static final String PROPERTY_REQUESTERLINKID = "requesterLinkId";
-        public static final String PROPERTY_PERFORMERTYPE = "performerType";
-        public static final String PROPERTY_PERFORMERROLE = "performerRole";
+        public static final String PROPERTY_REQUESTER_LINK_ID = "requesterLinkId";
+        public static final String PROPERTY_PERFORMER_TYPE = "performerType";
+        public static final String PROPERTY_PERFORMER_ROLE = "performerRole";
         public static final String PROPERTY_PERFORMER = "performer";
-        public static final String PROPERTY_PERFORMERLINKID = "performerLinkId";
-        public static final String PROPERTY_REASONCODE = "reasonCode";
-        public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+        public static final String PROPERTY_PERFORMER_LINK_ID = "performerLinkId";
+        public static final String PROPERTY_REASON_CODE = "reasonCode";
+        public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
         public static final String PROPERTY_REASON = "reason";
-        public static final String PROPERTY_REASONLINKID = "reasonLinkId";
+        public static final String PROPERTY_REASON_LINK_ID = "reasonLinkId";
         public static final String PROPERTY_NOTE = "note";
-        public static final String PROPERTY_SECURITYLABELNUMBER = "securityLabelNumber";
+        public static final String PROPERTY_SECURITY_LABEL_NUMBER = "securityLabelNumber";
 
         public static Builder create() {
             return new Builder();
@@ -729,14 +729,14 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * True if the term prohibits the  action.
          */
         public Boolean doNotPerform() {
-            return data.getBoolean(PROPERTY_DONOTPERFORM);
+            return data.getBoolean(PROPERTY_DO_NOT_PERFORM);
         }
 
         /**
@@ -767,7 +767,7 @@ public class Contract extends FhirResource {
          * action in the referenced form or QuestionnaireResponse.
          */
         public java.util.List<String> linkId() {
-            return getList(String.class, PROPERTY_LINKID);
+            return getList(String.class, PROPERTY_LINK_ID);
         }
 
         /**
@@ -791,28 +791,28 @@ public class Contract extends FhirResource {
          * QuestionnaireResponse.
          */
         public java.util.List<String> contextLinkId() {
-            return getList(String.class, PROPERTY_CONTEXTLINKID);
+            return getList(String.class, PROPERTY_CONTEXT_LINK_ID);
         }
 
         /**
          * When action happens.
          */
         public String occurrenceDateTime() {
-            return getString(PROPERTY_OCCURRENCEDATETIME);
+            return getString(PROPERTY_OCCURRENCE_DATE_TIME);
         }
 
         /**
          * When action happens.
          */
         public Period occurrencePeriod() {
-            return getObject(Period.class, PROPERTY_OCCURRENCEPERIOD);
+            return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
         }
 
         /**
          * When action happens.
          */
         public Timing occurrenceTiming() {
-            return getObject(Timing.class, PROPERTY_OCCURRENCETIMING);
+            return getObject(Timing.class, PROPERTY_OCCURRENCE_TIMING);
         }
 
         /**
@@ -829,7 +829,7 @@ public class Contract extends FhirResource {
          * QuestionnaireResponse.
          */
         public java.util.List<String> requesterLinkId() {
-            return getList(String.class, PROPERTY_REQUESTERLINKID);
+            return getList(String.class, PROPERTY_REQUESTER_LINK_ID);
         }
 
         /**
@@ -837,7 +837,7 @@ public class Contract extends FhirResource {
          * perform the action.
          */
         public java.util.List<CodeableConcept> performerType() {
-            return getList(CodeableConcept.class, PROPERTY_PERFORMERTYPE);
+            return getList(CodeableConcept.class, PROPERTY_PERFORMER_TYPE);
         }
 
         /**
@@ -845,7 +845,7 @@ public class Contract extends FhirResource {
          * perform or not perform the action.
          */
         public CodeableConcept performerRole() {
-            return getObject(CodeableConcept.class, PROPERTY_PERFORMERROLE);
+            return getObject(CodeableConcept.class, PROPERTY_PERFORMER_ROLE);
         }
 
         /**
@@ -862,7 +862,7 @@ public class Contract extends FhirResource {
          * QuestionnaireResponse.
          */
         public java.util.List<String> performerLinkId() {
-            return getList(String.class, PROPERTY_PERFORMERLINKID);
+            return getList(String.class, PROPERTY_PERFORMER_LINK_ID);
         }
 
         /**
@@ -870,7 +870,7 @@ public class Contract extends FhirResource {
          * why the action is permitted or prohibited.
          */
         public java.util.List<CodeableConcept> reasonCode() {
-            return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+            return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
         }
 
         /**
@@ -878,7 +878,7 @@ public class Contract extends FhirResource {
          * permitting this action.
          */
         public java.util.List<Reference> reasonReference() {
-            return getList(Reference.class, PROPERTY_REASONREFERENCE);
+            return getList(Reference.class, PROPERTY_REASON_REFERENCE);
         }
 
         /**
@@ -895,7 +895,7 @@ public class Contract extends FhirResource {
          * QuestionnaireResponse.
          */
         public java.util.List<String> reasonLinkId() {
-            return getList(String.class, PROPERTY_REASONLINKID);
+            return getList(String.class, PROPERTY_REASON_LINK_ID);
         }
 
         /**
@@ -910,7 +910,7 @@ public class Contract extends FhirResource {
          * Security labels that protects the action.
          */
         public java.util.List<Integer> securityLabelNumber() {
-            return getList(Integer.class, PROPERTY_SECURITYLABELNUMBER);
+            return getList(Integer.class, PROPERTY_SECURITY_LABEL_NUMBER);
         }
 
         public static class Builder {
@@ -930,12 +930,12 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder doNotPerform(final Boolean doNotPerform) {
-                b.add(PROPERTY_DONOTPERFORM, doNotPerform);
+                b.add(PROPERTY_DO_NOT_PERFORM, doNotPerform);
                 return this;
             }
 
@@ -955,7 +955,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder linkId(final java.util.List<String> linkId) {
-                b.add(PROPERTY_LINKID, FhirObject.toStringArray(linkId));
+                b.add(PROPERTY_LINK_ID, FhirObject.toStringArray(linkId));
                 return this;
             }
 
@@ -970,22 +970,22 @@ public class Contract extends FhirResource {
             }
 
             public Builder contextLinkId(final java.util.List<String> contextLinkId) {
-                b.add(PROPERTY_CONTEXTLINKID, FhirObject.toStringArray(contextLinkId));
+                b.add(PROPERTY_CONTEXT_LINK_ID, FhirObject.toStringArray(contextLinkId));
                 return this;
             }
 
             public Builder occurrenceDateTime(final String occurrenceDateTime) {
-                b.add(PROPERTY_OCCURRENCEDATETIME, occurrenceDateTime);
+                b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
                 return this;
             }
 
             public Builder occurrencePeriod(final Period occurrencePeriod) {
-                b.add(PROPERTY_OCCURRENCEPERIOD, occurrencePeriod);
+                b.add(PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
                 return this;
             }
 
             public Builder occurrenceTiming(final Timing occurrenceTiming) {
-                b.add(PROPERTY_OCCURRENCETIMING, occurrenceTiming);
+                b.add(PROPERTY_OCCURRENCE_TIMING, occurrenceTiming);
                 return this;
             }
 
@@ -995,17 +995,17 @@ public class Contract extends FhirResource {
             }
 
             public Builder requesterLinkId(final java.util.List<String> requesterLinkId) {
-                b.add(PROPERTY_REQUESTERLINKID, FhirObject.toStringArray(requesterLinkId));
+                b.add(PROPERTY_REQUESTER_LINK_ID, FhirObject.toStringArray(requesterLinkId));
                 return this;
             }
 
             public Builder performerType(final java.util.List<CodeableConcept> performerType) {
-                b.add(PROPERTY_PERFORMERTYPE, FhirObject.toArray(performerType));
+                b.add(PROPERTY_PERFORMER_TYPE, FhirObject.toArray(performerType));
                 return this;
             }
 
             public Builder performerRole(final CodeableConcept performerRole) {
-                b.add(PROPERTY_PERFORMERROLE, performerRole);
+                b.add(PROPERTY_PERFORMER_ROLE, performerRole);
                 return this;
             }
 
@@ -1015,17 +1015,17 @@ public class Contract extends FhirResource {
             }
 
             public Builder performerLinkId(final java.util.List<String> performerLinkId) {
-                b.add(PROPERTY_PERFORMERLINKID, FhirObject.toStringArray(performerLinkId));
+                b.add(PROPERTY_PERFORMER_LINK_ID, FhirObject.toStringArray(performerLinkId));
                 return this;
             }
 
             public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-                b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+                b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
                 return this;
             }
 
             public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-                b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+                b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
                 return this;
             }
 
@@ -1035,7 +1035,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder reasonLinkId(final java.util.List<String> reasonLinkId) {
-                b.add(PROPERTY_REASONLINKID, FhirObject.toStringArray(reasonLinkId));
+                b.add(PROPERTY_REASON_LINK_ID, FhirObject.toStringArray(reasonLinkId));
                 return this;
             }
 
@@ -1045,7 +1045,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder securityLabelNumber(final java.util.List<Integer> securityLabelNumber) {
-                b.add(PROPERTY_SECURITYLABELNUMBER, FhirObject.toIntegerArray(securityLabelNumber));
+                b.add(PROPERTY_SECURITY_LABEL_NUMBER, FhirObject.toIntegerArray(securityLabelNumber));
                 return this;
             }
 
@@ -1058,19 +1058,19 @@ public class Contract extends FhirResource {
     public static class ContractAnswer extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractAnswer";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUEDECIMAL = "valueDecimal";
-        public static final String PROPERTY_VALUEINTEGER = "valueInteger";
-        public static final String PROPERTY_VALUEDATE = "valueDate";
-        public static final String PROPERTY_VALUEDATETIME = "valueDateTime";
-        public static final String PROPERTY_VALUETIME = "valueTime";
-        public static final String PROPERTY_VALUESTRING = "valueString";
-        public static final String PROPERTY_VALUEURI = "valueUri";
-        public static final String PROPERTY_VALUEATTACHMENT = "valueAttachment";
-        public static final String PROPERTY_VALUECODING = "valueCoding";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUEREFERENCE = "valueReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
+        public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
+        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
+        public static final String PROPERTY_VALUE_DATE = "valueDate";
+        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
+        public static final String PROPERTY_VALUE_TIME = "valueTime";
+        public static final String PROPERTY_VALUE_STRING = "valueString";
+        public static final String PROPERTY_VALUE_URI = "valueUri";
+        public static final String PROPERTY_VALUE_ATTACHMENT = "valueAttachment";
+        public static final String PROPERTY_VALUE_CODING = "valueCoding";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
 
         public static Builder create() {
             return new Builder();
@@ -1110,7 +1110,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1120,7 +1120,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
@@ -1130,7 +1130,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public Integer valueDecimal() {
-            return data.getInt(PROPERTY_VALUEDECIMAL);
+            return data.getInt(PROPERTY_VALUE_DECIMAL);
         }
 
         /**
@@ -1140,7 +1140,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUEINTEGER);
+            return data.getInt(PROPERTY_VALUE_INTEGER);
         }
 
         /**
@@ -1150,7 +1150,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public String valueDate() {
-            return getString(PROPERTY_VALUEDATE);
+            return getString(PROPERTY_VALUE_DATE);
         }
 
         /**
@@ -1160,7 +1160,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUEDATETIME);
+            return getString(PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
@@ -1170,7 +1170,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public String valueTime() {
-            return getString(PROPERTY_VALUETIME);
+            return getString(PROPERTY_VALUE_TIME);
         }
 
         /**
@@ -1180,7 +1180,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUESTRING);
+            return getString(PROPERTY_VALUE_STRING);
         }
 
         /**
@@ -1190,7 +1190,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public String valueUri() {
-            return getString(PROPERTY_VALUEURI);
+            return getString(PROPERTY_VALUE_URI);
         }
 
         /**
@@ -1200,7 +1200,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public Attachment valueAttachment() {
-            return getObject(Attachment.class, PROPERTY_VALUEATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_VALUE_ATTACHMENT);
         }
 
         /**
@@ -1210,7 +1210,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public Coding valueCoding() {
-            return getObject(Coding.class, PROPERTY_VALUECODING);
+            return getObject(Coding.class, PROPERTY_VALUE_CODING);
         }
 
         /**
@@ -1220,7 +1220,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
@@ -1230,7 +1230,7 @@ public class Contract extends FhirResource {
          * may be used for further research.
          */
         public Reference valueReference() {
-            return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
+            return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
         }
 
         public static class Builder {
@@ -1250,67 +1250,67 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueDecimal(final Integer valueDecimal) {
-                b.add(PROPERTY_VALUEDECIMAL, valueDecimal);
+                b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUEINTEGER, valueInteger);
+                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueDate(final String valueDate) {
-                b.add(PROPERTY_VALUEDATE, valueDate);
+                b.add(PROPERTY_VALUE_DATE, valueDate);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUEDATETIME, valueDateTime);
+                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valueTime(final String valueTime) {
-                b.add(PROPERTY_VALUETIME, valueTime);
+                b.add(PROPERTY_VALUE_TIME, valueTime);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUESTRING, valueString);
+                b.add(PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueUri(final String valueUri) {
-                b.add(PROPERTY_VALUEURI, valueUri);
+                b.add(PROPERTY_VALUE_URI, valueUri);
                 return this;
             }
 
             public Builder valueAttachment(final Attachment valueAttachment) {
-                b.add(PROPERTY_VALUEATTACHMENT, valueAttachment);
+                b.add(PROPERTY_VALUE_ATTACHMENT, valueAttachment);
                 return this;
             }
 
             public Builder valueCoding(final Coding valueCoding) {
-                b.add(PROPERTY_VALUECODING, valueCoding);
+                b.add(PROPERTY_VALUE_CODING, valueCoding);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueReference(final Reference valueReference) {
-                b.add(PROPERTY_VALUEREFERENCE, valueReference);
+                b.add(PROPERTY_VALUE_REFERENCE, valueReference);
                 return this;
             }
 
@@ -1323,22 +1323,22 @@ public class Contract extends FhirResource {
     public static class ContractAsset extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractAsset";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SCOPE = "scope";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_TYPEREFERENCE = "typeReference";
+        public static final String PROPERTY_TYPE_REFERENCE = "typeReference";
         public static final String PROPERTY_SUBTYPE = "subtype";
         public static final String PROPERTY_RELATIONSHIP = "relationship";
         public static final String PROPERTY_CONTEXT = "context";
         public static final String PROPERTY_CONDITION = "condition";
-        public static final String PROPERTY_PERIODTYPE = "periodType";
+        public static final String PROPERTY_PERIOD_TYPE = "periodType";
         public static final String PROPERTY_PERIOD = "period";
-        public static final String PROPERTY_USEPERIOD = "usePeriod";
+        public static final String PROPERTY_USE_PERIOD = "usePeriod";
         public static final String PROPERTY_TEXT = "text";
-        public static final String PROPERTY_LINKID = "linkId";
+        public static final String PROPERTY_LINK_ID = "linkId";
         public static final String PROPERTY_ANSWER = "answer";
-        public static final String PROPERTY_SECURITYLABELNUMBER = "securityLabelNumber";
-        public static final String PROPERTY_VALUEDITEM = "valuedItem";
+        public static final String PROPERTY_SECURITY_LABEL_NUMBER = "securityLabelNumber";
+        public static final String PROPERTY_VALUED_ITEM = "valuedItem";
 
         public static Builder create() {
             return new Builder();
@@ -1378,7 +1378,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1399,7 +1399,7 @@ public class Contract extends FhirResource {
          * Associated entities.
          */
         public java.util.List<Reference> typeReference() {
-            return getList(Reference.class, PROPERTY_TYPEREFERENCE);
+            return getList(Reference.class, PROPERTY_TYPE_REFERENCE);
         }
 
         /**
@@ -1437,7 +1437,7 @@ public class Contract extends FhirResource {
          * Type of Asset availability for use or ownership.
          */
         public java.util.List<CodeableConcept> periodType() {
-            return getList(CodeableConcept.class, PROPERTY_PERIODTYPE);
+            return getList(CodeableConcept.class, PROPERTY_PERIOD_TYPE);
         }
 
         /**
@@ -1451,7 +1451,7 @@ public class Contract extends FhirResource {
          * Time period of asset use.
          */
         public java.util.List<Period> usePeriod() {
-            return getList(Period.class, PROPERTY_USEPERIOD);
+            return getList(Period.class, PROPERTY_USE_PERIOD);
         }
 
         /**
@@ -1468,7 +1468,7 @@ public class Contract extends FhirResource {
          * the referenced form or QuestionnaireResponse.
          */
         public java.util.List<String> linkId() {
-            return getList(String.class, PROPERTY_LINKID);
+            return getList(String.class, PROPERTY_LINK_ID);
         }
 
         /**
@@ -1482,14 +1482,14 @@ public class Contract extends FhirResource {
          * Security labels that protects the asset.
          */
         public java.util.List<Integer> securityLabelNumber() {
-            return getList(Integer.class, PROPERTY_SECURITYLABELNUMBER);
+            return getList(Integer.class, PROPERTY_SECURITY_LABEL_NUMBER);
         }
 
         /**
          * Contract Valued Item List.
          */
         public java.util.List<ContractValuedItem> valuedItem() {
-            return getList(ContractValuedItem.class, PROPERTY_VALUEDITEM);
+            return getList(ContractValuedItem.class, PROPERTY_VALUED_ITEM);
         }
 
         public static class Builder {
@@ -1509,7 +1509,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1524,7 +1524,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder typeReference(final java.util.List<Reference> typeReference) {
-                b.add(PROPERTY_TYPEREFERENCE, FhirObject.toArray(typeReference));
+                b.add(PROPERTY_TYPE_REFERENCE, FhirObject.toArray(typeReference));
                 return this;
             }
 
@@ -1549,7 +1549,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder periodType(final java.util.List<CodeableConcept> periodType) {
-                b.add(PROPERTY_PERIODTYPE, FhirObject.toArray(periodType));
+                b.add(PROPERTY_PERIOD_TYPE, FhirObject.toArray(periodType));
                 return this;
             }
 
@@ -1559,7 +1559,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder usePeriod(final java.util.List<Period> usePeriod) {
-                b.add(PROPERTY_USEPERIOD, FhirObject.toArray(usePeriod));
+                b.add(PROPERTY_USE_PERIOD, FhirObject.toArray(usePeriod));
                 return this;
             }
 
@@ -1569,7 +1569,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder linkId(final java.util.List<String> linkId) {
-                b.add(PROPERTY_LINKID, FhirObject.toStringArray(linkId));
+                b.add(PROPERTY_LINK_ID, FhirObject.toStringArray(linkId));
                 return this;
             }
 
@@ -1579,12 +1579,12 @@ public class Contract extends FhirResource {
             }
 
             public Builder securityLabelNumber(final java.util.List<Integer> securityLabelNumber) {
-                b.add(PROPERTY_SECURITYLABELNUMBER, FhirObject.toIntegerArray(securityLabelNumber));
+                b.add(PROPERTY_SECURITY_LABEL_NUMBER, FhirObject.toIntegerArray(securityLabelNumber));
                 return this;
             }
 
             public Builder valuedItem(final java.util.List<ContractValuedItem> valuedItem) {
-                b.add(PROPERTY_VALUEDITEM, FhirObject.toArray(valuedItem));
+                b.add(PROPERTY_VALUED_ITEM, FhirObject.toArray(valuedItem));
                 return this;
             }
 
@@ -1597,12 +1597,12 @@ public class Contract extends FhirResource {
     public static class ContractContentDefinition extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractContentDefinition";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_SUBTYPE = "subType";
+        public static final String PROPERTY_SUB_TYPE = "subType";
         public static final String PROPERTY_PUBLISHER = "publisher";
-        public static final String PROPERTY_PUBLICATIONDATE = "publicationDate";
-        public static final String PROPERTY_PUBLICATIONSTATUS = "publicationStatus";
+        public static final String PROPERTY_PUBLICATION_DATE = "publicationDate";
+        public static final String PROPERTY_PUBLICATION_STATUS = "publicationStatus";
         public static final String PROPERTY_COPYRIGHT = "copyright";
 
         public static Builder create() {
@@ -1643,7 +1643,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1659,7 +1659,7 @@ public class Contract extends FhirResource {
          * Detailed Precusory content type.
          */
         public CodeableConcept subType() {
-            return getObject(CodeableConcept.class, PROPERTY_SUBTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_SUB_TYPE);
         }
 
         /**
@@ -1677,7 +1677,7 @@ public class Contract extends FhirResource {
          * substantive content of the contract changes.
          */
         public java.time.Instant publicationDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_PUBLICATIONDATE));
+            return java.time.Instant.parse(data.getString(PROPERTY_PUBLICATION_DATE));
         }
 
         /**
@@ -1686,7 +1686,7 @@ public class Contract extends FhirResource {
          * renewed | revoked | resolved | terminated.
          */
         public String publicationStatus() {
-            return getString(PROPERTY_PUBLICATIONSTATUS);
+            return getString(PROPERTY_PUBLICATION_STATUS);
         }
 
         /**
@@ -1715,7 +1715,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1725,7 +1725,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder subType(final CodeableConcept subType) {
-                b.add(PROPERTY_SUBTYPE, subType);
+                b.add(PROPERTY_SUB_TYPE, subType);
                 return this;
             }
 
@@ -1735,12 +1735,12 @@ public class Contract extends FhirResource {
             }
 
             public Builder publicationDate(final java.time.Instant publicationDate) {
-                b.add(PROPERTY_PUBLICATIONDATE, publicationDate.toString());
+                b.add(PROPERTY_PUBLICATION_DATE, publicationDate.toString());
                 return this;
             }
 
             public Builder publicationStatus(final String publicationStatus) {
-                b.add(PROPERTY_PUBLICATIONSTATUS, publicationStatus);
+                b.add(PROPERTY_PUBLICATION_STATUS, publicationStatus);
                 return this;
             }
 
@@ -1758,7 +1758,7 @@ public class Contract extends FhirResource {
     public static class ContractContext extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractContext";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_REFERENCE = "reference";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_TEXT = "text";
@@ -1801,7 +1801,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1845,7 +1845,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1873,9 +1873,9 @@ public class Contract extends FhirResource {
     public static class ContractFriendly extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractFriendly";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_CONTENTATTACHMENT = "contentAttachment";
-        public static final String PROPERTY_CONTENTREFERENCE = "contentReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_CONTENT_ATTACHMENT = "contentAttachment";
+        public static final String PROPERTY_CONTENT_REFERENCE = "contentReference";
 
         public static Builder create() {
             return new Builder();
@@ -1915,7 +1915,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1924,7 +1924,7 @@ public class Contract extends FhirResource {
          * understandability.
          */
         public Attachment contentAttachment() {
-            return getObject(Attachment.class, PROPERTY_CONTENTATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_CONTENT_ATTACHMENT);
         }
 
         /**
@@ -1933,7 +1933,7 @@ public class Contract extends FhirResource {
          * understandability.
          */
         public Reference contentReference() {
-            return getObject(Reference.class, PROPERTY_CONTENTREFERENCE);
+            return getObject(Reference.class, PROPERTY_CONTENT_REFERENCE);
         }
 
         public static class Builder {
@@ -1953,17 +1953,17 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder contentAttachment(final Attachment contentAttachment) {
-                b.add(PROPERTY_CONTENTATTACHMENT, contentAttachment);
+                b.add(PROPERTY_CONTENT_ATTACHMENT, contentAttachment);
                 return this;
             }
 
             public Builder contentReference(final Reference contentReference) {
-                b.add(PROPERTY_CONTENTREFERENCE, contentReference);
+                b.add(PROPERTY_CONTENT_REFERENCE, contentReference);
                 return this;
             }
 
@@ -1976,9 +1976,9 @@ public class Contract extends FhirResource {
     public static class ContractLegal extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractLegal";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_CONTENTATTACHMENT = "contentAttachment";
-        public static final String PROPERTY_CONTENTREFERENCE = "contentReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_CONTENT_ATTACHMENT = "contentAttachment";
+        public static final String PROPERTY_CONTENT_REFERENCE = "contentReference";
 
         public static Builder create() {
             return new Builder();
@@ -2018,21 +2018,21 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Contract legal text in human renderable form.
          */
         public Attachment contentAttachment() {
-            return getObject(Attachment.class, PROPERTY_CONTENTATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_CONTENT_ATTACHMENT);
         }
 
         /**
          * Contract legal text in human renderable form.
          */
         public Reference contentReference() {
-            return getObject(Reference.class, PROPERTY_CONTENTREFERENCE);
+            return getObject(Reference.class, PROPERTY_CONTENT_REFERENCE);
         }
 
         public static class Builder {
@@ -2052,17 +2052,17 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder contentAttachment(final Attachment contentAttachment) {
-                b.add(PROPERTY_CONTENTATTACHMENT, contentAttachment);
+                b.add(PROPERTY_CONTENT_ATTACHMENT, contentAttachment);
                 return this;
             }
 
             public Builder contentReference(final Reference contentReference) {
-                b.add(PROPERTY_CONTENTREFERENCE, contentReference);
+                b.add(PROPERTY_CONTENT_REFERENCE, contentReference);
                 return this;
             }
 
@@ -2075,17 +2075,17 @@ public class Contract extends FhirResource {
     public static class ContractOffer extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractOffer";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTIFIER = "identifier";
         public static final String PROPERTY_PARTY = "party";
         public static final String PROPERTY_TOPIC = "topic";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_DECISION = "decision";
-        public static final String PROPERTY_DECISIONMODE = "decisionMode";
+        public static final String PROPERTY_DECISION_MODE = "decisionMode";
         public static final String PROPERTY_ANSWER = "answer";
         public static final String PROPERTY_TEXT = "text";
-        public static final String PROPERTY_LINKID = "linkId";
-        public static final String PROPERTY_SECURITYLABELNUMBER = "securityLabelNumber";
+        public static final String PROPERTY_LINK_ID = "linkId";
+        public static final String PROPERTY_SECURITY_LABEL_NUMBER = "securityLabelNumber";
 
         public static Builder create() {
             return new Builder();
@@ -2125,7 +2125,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2172,7 +2172,7 @@ public class Contract extends FhirResource {
          * How the decision about a Contract was conveyed.
          */
         public java.util.List<CodeableConcept> decisionMode() {
-            return getList(CodeableConcept.class, PROPERTY_DECISIONMODE);
+            return getList(CodeableConcept.class, PROPERTY_DECISION_MODE);
         }
 
         /**
@@ -2194,14 +2194,14 @@ public class Contract extends FhirResource {
          * questionnaire/response.
          */
         public java.util.List<String> linkId() {
-            return getList(String.class, PROPERTY_LINKID);
+            return getList(String.class, PROPERTY_LINK_ID);
         }
 
         /**
          * Security labels that protects the offer.
          */
         public java.util.List<Integer> securityLabelNumber() {
-            return getList(Integer.class, PROPERTY_SECURITYLABELNUMBER);
+            return getList(Integer.class, PROPERTY_SECURITY_LABEL_NUMBER);
         }
 
         public static class Builder {
@@ -2221,7 +2221,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2251,7 +2251,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder decisionMode(final java.util.List<CodeableConcept> decisionMode) {
-                b.add(PROPERTY_DECISIONMODE, FhirObject.toArray(decisionMode));
+                b.add(PROPERTY_DECISION_MODE, FhirObject.toArray(decisionMode));
                 return this;
             }
 
@@ -2266,12 +2266,12 @@ public class Contract extends FhirResource {
             }
 
             public Builder linkId(final java.util.List<String> linkId) {
-                b.add(PROPERTY_LINKID, FhirObject.toStringArray(linkId));
+                b.add(PROPERTY_LINK_ID, FhirObject.toStringArray(linkId));
                 return this;
             }
 
             public Builder securityLabelNumber(final java.util.List<Integer> securityLabelNumber) {
-                b.add(PROPERTY_SECURITYLABELNUMBER, FhirObject.toIntegerArray(securityLabelNumber));
+                b.add(PROPERTY_SECURITY_LABEL_NUMBER, FhirObject.toIntegerArray(securityLabelNumber));
                 return this;
             }
 
@@ -2284,7 +2284,7 @@ public class Contract extends FhirResource {
     public static class ContractParty extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractParty";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_REFERENCE = "reference";
         public static final String PROPERTY_ROLE = "role";
 
@@ -2326,7 +2326,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2360,7 +2360,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2383,9 +2383,9 @@ public class Contract extends FhirResource {
     public static class ContractRule extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractRule";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_CONTENTATTACHMENT = "contentAttachment";
-        public static final String PROPERTY_CONTENTREFERENCE = "contentReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_CONTENT_ATTACHMENT = "contentAttachment";
+        public static final String PROPERTY_CONTENT_REFERENCE = "contentReference";
 
         public static Builder create() {
             return new Builder();
@@ -2425,7 +2425,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2433,7 +2433,7 @@ public class Contract extends FhirResource {
          * DKAL, SecPal).
          */
         public Attachment contentAttachment() {
-            return getObject(Attachment.class, PROPERTY_CONTENTATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_CONTENT_ATTACHMENT);
         }
 
         /**
@@ -2441,7 +2441,7 @@ public class Contract extends FhirResource {
          * DKAL, SecPal).
          */
         public Reference contentReference() {
-            return getObject(Reference.class, PROPERTY_CONTENTREFERENCE);
+            return getObject(Reference.class, PROPERTY_CONTENT_REFERENCE);
         }
 
         public static class Builder {
@@ -2461,17 +2461,17 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder contentAttachment(final Attachment contentAttachment) {
-                b.add(PROPERTY_CONTENTATTACHMENT, contentAttachment);
+                b.add(PROPERTY_CONTENT_ATTACHMENT, contentAttachment);
                 return this;
             }
 
             public Builder contentReference(final Reference contentReference) {
-                b.add(PROPERTY_CONTENTREFERENCE, contentReference);
+                b.add(PROPERTY_CONTENT_REFERENCE, contentReference);
                 return this;
             }
 
@@ -2484,7 +2484,7 @@ public class Contract extends FhirResource {
     public static class ContractSecurityLabel extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractSecurityLabel";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NUMBER = "number";
         public static final String PROPERTY_CLASSIFICATION = "classification";
         public static final String PROPERTY_CATEGORY = "category";
@@ -2528,7 +2528,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2580,7 +2580,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2613,7 +2613,7 @@ public class Contract extends FhirResource {
     public static class ContractSigner extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractSigner";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_PARTY = "party";
         public static final String PROPERTY_SIGNATURE = "signature";
@@ -2656,7 +2656,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2697,7 +2697,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2725,7 +2725,7 @@ public class Contract extends FhirResource {
     public static class ContractSubject extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractSubject";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_REFERENCE = "reference";
         public static final String PROPERTY_ROLE = "role";
 
@@ -2767,7 +2767,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2801,7 +2801,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2824,16 +2824,16 @@ public class Contract extends FhirResource {
     public static class ContractTerm extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractTerm";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTIFIER = "identifier";
         public static final String PROPERTY_ISSUED = "issued";
         public static final String PROPERTY_APPLIES = "applies";
-        public static final String PROPERTY_TOPICCODEABLECONCEPT = "topicCodeableConcept";
-        public static final String PROPERTY_TOPICREFERENCE = "topicReference";
+        public static final String PROPERTY_TOPIC_CODEABLE_CONCEPT = "topicCodeableConcept";
+        public static final String PROPERTY_TOPIC_REFERENCE = "topicReference";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_SUBTYPE = "subType";
+        public static final String PROPERTY_SUB_TYPE = "subType";
         public static final String PROPERTY_TEXT = "text";
-        public static final String PROPERTY_SECURITYLABEL = "securityLabel";
+        public static final String PROPERTY_SECURITY_LABEL = "securityLabel";
         public static final String PROPERTY_OFFER = "offer";
         public static final String PROPERTY_ASSET = "asset";
         public static final String PROPERTY_ACTION = "action";
@@ -2877,7 +2877,7 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2906,14 +2906,14 @@ public class Contract extends FhirResource {
          * The entity that the term applies to.
          */
         public CodeableConcept topicCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_TOPICCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_TOPIC_CODEABLE_CONCEPT);
         }
 
         /**
          * The entity that the term applies to.
          */
         public Reference topicReference() {
-            return getObject(Reference.class, PROPERTY_TOPICREFERENCE);
+            return getObject(Reference.class, PROPERTY_TOPIC_REFERENCE);
         }
 
         /**
@@ -2931,7 +2931,7 @@ public class Contract extends FhirResource {
          * type.
          */
         public CodeableConcept subType() {
-            return getObject(CodeableConcept.class, PROPERTY_SUBTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_SUB_TYPE);
         }
 
         /**
@@ -2946,7 +2946,7 @@ public class Contract extends FhirResource {
          * term and its elements, which may be specifically identified..
          */
         public java.util.List<ContractSecurityLabel> securityLabel() {
-            return getList(ContractSecurityLabel.class, PROPERTY_SECURITYLABEL);
+            return getList(ContractSecurityLabel.class, PROPERTY_SECURITY_LABEL);
         }
 
         /**
@@ -2996,7 +2996,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -3016,12 +3016,12 @@ public class Contract extends FhirResource {
             }
 
             public Builder topicCodeableConcept(final CodeableConcept topicCodeableConcept) {
-                b.add(PROPERTY_TOPICCODEABLECONCEPT, topicCodeableConcept);
+                b.add(PROPERTY_TOPIC_CODEABLE_CONCEPT, topicCodeableConcept);
                 return this;
             }
 
             public Builder topicReference(final Reference topicReference) {
-                b.add(PROPERTY_TOPICREFERENCE, topicReference);
+                b.add(PROPERTY_TOPIC_REFERENCE, topicReference);
                 return this;
             }
 
@@ -3031,7 +3031,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder subType(final CodeableConcept subType) {
-                b.add(PROPERTY_SUBTYPE, subType);
+                b.add(PROPERTY_SUB_TYPE, subType);
                 return this;
             }
 
@@ -3041,7 +3041,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder securityLabel(final java.util.List<ContractSecurityLabel> securityLabel) {
-                b.add(PROPERTY_SECURITYLABEL, FhirObject.toArray(securityLabel));
+                b.add(PROPERTY_SECURITY_LABEL, FhirObject.toArray(securityLabel));
                 return this;
             }
 
@@ -3074,22 +3074,22 @@ public class Contract extends FhirResource {
     public static class ContractValuedItem extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractValuedItem";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_ENTITYCODEABLECONCEPT = "entityCodeableConcept";
-        public static final String PROPERTY_ENTITYREFERENCE = "entityReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_ENTITY_CODEABLE_CONCEPT = "entityCodeableConcept";
+        public static final String PROPERTY_ENTITY_REFERENCE = "entityReference";
         public static final String PROPERTY_IDENTIFIER = "identifier";
-        public static final String PROPERTY_EFFECTIVETIME = "effectiveTime";
+        public static final String PROPERTY_EFFECTIVE_TIME = "effectiveTime";
         public static final String PROPERTY_QUANTITY = "quantity";
-        public static final String PROPERTY_UNITPRICE = "unitPrice";
+        public static final String PROPERTY_UNIT_PRICE = "unitPrice";
         public static final String PROPERTY_FACTOR = "factor";
         public static final String PROPERTY_POINTS = "points";
         public static final String PROPERTY_NET = "net";
         public static final String PROPERTY_PAYMENT = "payment";
-        public static final String PROPERTY_PAYMENTDATE = "paymentDate";
+        public static final String PROPERTY_PAYMENT_DATE = "paymentDate";
         public static final String PROPERTY_RESPONSIBLE = "responsible";
         public static final String PROPERTY_RECIPIENT = "recipient";
-        public static final String PROPERTY_LINKID = "linkId";
-        public static final String PROPERTY_SECURITYLABELNUMBER = "securityLabelNumber";
+        public static final String PROPERTY_LINK_ID = "linkId";
+        public static final String PROPERTY_SECURITY_LABEL_NUMBER = "securityLabelNumber";
 
         public static Builder create() {
             return new Builder();
@@ -3129,21 +3129,21 @@ public class Contract extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Specific type of Contract Valued Item that may be priced.
          */
         public CodeableConcept entityCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_ENTITYCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_ENTITY_CODEABLE_CONCEPT);
         }
 
         /**
          * Specific type of Contract Valued Item that may be priced.
          */
         public Reference entityReference() {
-            return getObject(Reference.class, PROPERTY_ENTITYREFERENCE);
+            return getObject(Reference.class, PROPERTY_ENTITY_REFERENCE);
         }
 
         /**
@@ -3158,7 +3158,7 @@ public class Contract extends FhirResource {
          * is effective.
          */
         public java.time.Instant effectiveTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_EFFECTIVETIME));
+            return java.time.Instant.parse(data.getString(PROPERTY_EFFECTIVE_TIME));
         }
 
         /**
@@ -3174,7 +3174,7 @@ public class Contract extends FhirResource {
          * A Contract Valued Item unit valuation measure.
          */
         public Money unitPrice() {
-            return getObject(Money.class, PROPERTY_UNITPRICE);
+            return getObject(Money.class, PROPERTY_UNIT_PRICE);
         }
 
         /**
@@ -3219,7 +3219,7 @@ public class Contract extends FhirResource {
          * When payment is due.
          */
         public java.time.Instant paymentDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_PAYMENTDATE));
+            return java.time.Instant.parse(data.getString(PROPERTY_PAYMENT_DATE));
         }
 
         /**
@@ -3241,7 +3241,7 @@ public class Contract extends FhirResource {
          * valuedItem in the referenced form or QuestionnaireResponse.
          */
         public java.util.List<String> linkId() {
-            return getList(String.class, PROPERTY_LINKID);
+            return getList(String.class, PROPERTY_LINK_ID);
         }
 
         /**
@@ -3249,7 +3249,7 @@ public class Contract extends FhirResource {
          * this condition.
          */
         public java.util.List<Integer> securityLabelNumber() {
-            return getList(Integer.class, PROPERTY_SECURITYLABELNUMBER);
+            return getList(Integer.class, PROPERTY_SECURITY_LABEL_NUMBER);
         }
 
         public static class Builder {
@@ -3269,17 +3269,17 @@ public class Contract extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder entityCodeableConcept(final CodeableConcept entityCodeableConcept) {
-                b.add(PROPERTY_ENTITYCODEABLECONCEPT, entityCodeableConcept);
+                b.add(PROPERTY_ENTITY_CODEABLE_CONCEPT, entityCodeableConcept);
                 return this;
             }
 
             public Builder entityReference(final Reference entityReference) {
-                b.add(PROPERTY_ENTITYREFERENCE, entityReference);
+                b.add(PROPERTY_ENTITY_REFERENCE, entityReference);
                 return this;
             }
 
@@ -3289,7 +3289,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder effectiveTime(final java.time.Instant effectiveTime) {
-                b.add(PROPERTY_EFFECTIVETIME, effectiveTime.toString());
+                b.add(PROPERTY_EFFECTIVE_TIME, effectiveTime.toString());
                 return this;
             }
 
@@ -3299,7 +3299,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder unitPrice(final Money unitPrice) {
-                b.add(PROPERTY_UNITPRICE, unitPrice);
+                b.add(PROPERTY_UNIT_PRICE, unitPrice);
                 return this;
             }
 
@@ -3324,7 +3324,7 @@ public class Contract extends FhirResource {
             }
 
             public Builder paymentDate(final java.time.Instant paymentDate) {
-                b.add(PROPERTY_PAYMENTDATE, paymentDate.toString());
+                b.add(PROPERTY_PAYMENT_DATE, paymentDate.toString());
                 return this;
             }
 
@@ -3339,12 +3339,12 @@ public class Contract extends FhirResource {
             }
 
             public Builder linkId(final java.util.List<String> linkId) {
-                b.add(PROPERTY_LINKID, FhirObject.toStringArray(linkId));
+                b.add(PROPERTY_LINK_ID, FhirObject.toStringArray(linkId));
                 return this;
             }
 
             public Builder securityLabelNumber(final java.util.List<Integer> securityLabelNumber) {
-                b.add(PROPERTY_SECURITYLABELNUMBER, FhirObject.toIntegerArray(securityLabelNumber));
+                b.add(PROPERTY_SECURITY_LABEL_NUMBER, FhirObject.toIntegerArray(securityLabelNumber));
                 return this;
             }
 

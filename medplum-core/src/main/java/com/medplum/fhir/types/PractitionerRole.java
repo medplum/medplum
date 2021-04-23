@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class PractitionerRole extends FhirResource {
     public static final String RESOURCE_TYPE = "PractitionerRole";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_ACTIVE = "active";
     public static final String PROPERTY_PERIOD = "period";
@@ -27,11 +27,11 @@ public class PractitionerRole extends FhirResource {
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_SPECIALTY = "specialty";
     public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_HEALTHCARESERVICE = "healthcareService";
+    public static final String PROPERTY_HEALTHCARE_SERVICE = "healthcareService";
     public static final String PROPERTY_TELECOM = "telecom";
-    public static final String PROPERTY_AVAILABLETIME = "availableTime";
-    public static final String PROPERTY_NOTAVAILABLE = "notAvailable";
-    public static final String PROPERTY_AVAILABILITYEXCEPTIONS = "availabilityExceptions";
+    public static final String PROPERTY_AVAILABLE_TIME = "availableTime";
+    public static final String PROPERTY_NOT_AVAILABLE = "notAvailable";
+    public static final String PROPERTY_AVAILABILITY_EXCEPTIONS = "availabilityExceptions";
     public static final String PROPERTY_ENDPOINT = "endpoint";
 
     public static Builder create() {
@@ -53,7 +53,7 @@ public class PractitionerRole extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -101,7 +101,7 @@ public class PractitionerRole extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -168,7 +168,7 @@ public class PractitionerRole extends FhirResource {
      * role's Organization/Location(s).
      */
     public java.util.List<Reference> healthcareService() {
-        return getList(Reference.class, PROPERTY_HEALTHCARESERVICE);
+        return getList(Reference.class, PROPERTY_HEALTHCARE_SERVICE);
     }
 
     /**
@@ -183,7 +183,7 @@ public class PractitionerRole extends FhirResource {
      * role at the location and/or healthcareservice.
      */
     public java.util.List<PractitionerRoleAvailableTime> availableTime() {
-        return getList(PractitionerRoleAvailableTime.class, PROPERTY_AVAILABLETIME);
+        return getList(PractitionerRoleAvailableTime.class, PROPERTY_AVAILABLE_TIME);
     }
 
     /**
@@ -191,7 +191,7 @@ public class PractitionerRole extends FhirResource {
      * period of time due to the provided reason.
      */
     public java.util.List<PractitionerRoleNotAvailable> notAvailable() {
-        return getList(PractitionerRoleNotAvailable.class, PROPERTY_NOTAVAILABLE);
+        return getList(PractitionerRoleNotAvailable.class, PROPERTY_NOT_AVAILABLE);
     }
 
     /**
@@ -201,7 +201,7 @@ public class PractitionerRole extends FhirResource {
      * Times.
      */
     public String availabilityExceptions() {
-        return getString(PROPERTY_AVAILABILITYEXCEPTIONS);
+        return getString(PROPERTY_AVAILABILITY_EXCEPTIONS);
     }
 
     /**
@@ -223,7 +223,7 @@ public class PractitionerRole extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -238,7 +238,7 @@ public class PractitionerRole extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -258,7 +258,7 @@ public class PractitionerRole extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -303,7 +303,7 @@ public class PractitionerRole extends FhirResource {
         }
 
         public Builder healthcareService(final java.util.List<Reference> healthcareService) {
-            b.add(PROPERTY_HEALTHCARESERVICE, FhirObject.toArray(healthcareService));
+            b.add(PROPERTY_HEALTHCARE_SERVICE, FhirObject.toArray(healthcareService));
             return this;
         }
 
@@ -313,17 +313,17 @@ public class PractitionerRole extends FhirResource {
         }
 
         public Builder availableTime(final java.util.List<PractitionerRoleAvailableTime> availableTime) {
-            b.add(PROPERTY_AVAILABLETIME, FhirObject.toArray(availableTime));
+            b.add(PROPERTY_AVAILABLE_TIME, FhirObject.toArray(availableTime));
             return this;
         }
 
         public Builder notAvailable(final java.util.List<PractitionerRoleNotAvailable> notAvailable) {
-            b.add(PROPERTY_NOTAVAILABLE, FhirObject.toArray(notAvailable));
+            b.add(PROPERTY_NOT_AVAILABLE, FhirObject.toArray(notAvailable));
             return this;
         }
 
         public Builder availabilityExceptions(final String availabilityExceptions) {
-            b.add(PROPERTY_AVAILABILITYEXCEPTIONS, availabilityExceptions);
+            b.add(PROPERTY_AVAILABILITY_EXCEPTIONS, availabilityExceptions);
             return this;
         }
 
@@ -340,11 +340,11 @@ public class PractitionerRole extends FhirResource {
     public static class PractitionerRoleAvailableTime extends FhirObject {
         public static final String RESOURCE_TYPE = "PractitionerRoleAvailableTime";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_DAYSOFWEEK = "daysOfWeek";
-        public static final String PROPERTY_ALLDAY = "allDay";
-        public static final String PROPERTY_AVAILABLESTARTTIME = "availableStartTime";
-        public static final String PROPERTY_AVAILABLEENDTIME = "availableEndTime";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_DAYS_OF_WEEK = "daysOfWeek";
+        public static final String PROPERTY_ALL_DAY = "allDay";
+        public static final String PROPERTY_AVAILABLE_START_TIME = "availableStartTime";
+        public static final String PROPERTY_AVAILABLE_END_TIME = "availableEndTime";
 
         public static Builder create() {
             return new Builder();
@@ -384,7 +384,7 @@ public class PractitionerRole extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -392,7 +392,7 @@ public class PractitionerRole extends FhirResource {
          * end Times.
          */
         public java.util.List<String> daysOfWeek() {
-            return getList(String.class, PROPERTY_DAYSOFWEEK);
+            return getList(String.class, PROPERTY_DAYS_OF_WEEK);
         }
 
         /**
@@ -400,7 +400,7 @@ public class PractitionerRole extends FhirResource {
          * service.
          */
         public Boolean allDay() {
-            return data.getBoolean(PROPERTY_ALLDAY);
+            return data.getBoolean(PROPERTY_ALL_DAY);
         }
 
         /**
@@ -408,7 +408,7 @@ public class PractitionerRole extends FhirResource {
          * time is ignored.
          */
         public java.time.Instant availableStartTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLESTARTTIME));
+            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLE_START_TIME));
         }
 
         /**
@@ -416,7 +416,7 @@ public class PractitionerRole extends FhirResource {
          * time is ignored.
          */
         public java.time.Instant availableEndTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLEENDTIME));
+            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLE_END_TIME));
         }
 
         public static class Builder {
@@ -436,27 +436,27 @@ public class PractitionerRole extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder daysOfWeek(final java.util.List<String> daysOfWeek) {
-                b.add(PROPERTY_DAYSOFWEEK, FhirObject.toStringArray(daysOfWeek));
+                b.add(PROPERTY_DAYS_OF_WEEK, FhirObject.toStringArray(daysOfWeek));
                 return this;
             }
 
             public Builder allDay(final Boolean allDay) {
-                b.add(PROPERTY_ALLDAY, allDay);
+                b.add(PROPERTY_ALL_DAY, allDay);
                 return this;
             }
 
             public Builder availableStartTime(final java.time.Instant availableStartTime) {
-                b.add(PROPERTY_AVAILABLESTARTTIME, availableStartTime.toString());
+                b.add(PROPERTY_AVAILABLE_START_TIME, availableStartTime.toString());
                 return this;
             }
 
             public Builder availableEndTime(final java.time.Instant availableEndTime) {
-                b.add(PROPERTY_AVAILABLEENDTIME, availableEndTime.toString());
+                b.add(PROPERTY_AVAILABLE_END_TIME, availableEndTime.toString());
                 return this;
             }
 
@@ -469,7 +469,7 @@ public class PractitionerRole extends FhirResource {
     public static class PractitionerRoleNotAvailable extends FhirObject {
         public static final String RESOURCE_TYPE = "PractitionerRoleNotAvailable";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_DURING = "during";
 
@@ -511,7 +511,7 @@ public class PractitionerRole extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -547,7 +547,7 @@ public class PractitionerRole extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

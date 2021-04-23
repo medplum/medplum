@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class ImmunizationRecommendation extends FhirResource {
     public static final String RESOURCE_TYPE = "ImmunizationRecommendation";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_PATIENT = "patient";
     public static final String PROPERTY_DATE = "date";
@@ -44,7 +44,7 @@ public class ImmunizationRecommendation extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -92,7 +92,7 @@ public class ImmunizationRecommendation extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -141,7 +141,7 @@ public class ImmunizationRecommendation extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -156,7 +156,7 @@ public class ImmunizationRecommendation extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -176,7 +176,7 @@ public class ImmunizationRecommendation extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -213,7 +213,7 @@ public class ImmunizationRecommendation extends FhirResource {
     public static class ImmunizationRecommendationDateCriterion extends FhirObject {
         public static final String RESOURCE_TYPE = "ImmunizationRecommendationDateCriterion";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_VALUE = "value";
 
@@ -255,7 +255,7 @@ public class ImmunizationRecommendation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -290,7 +290,7 @@ public class ImmunizationRecommendation extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -313,21 +313,21 @@ public class ImmunizationRecommendation extends FhirResource {
     public static class ImmunizationRecommendationRecommendation extends FhirObject {
         public static final String RESOURCE_TYPE = "ImmunizationRecommendationRecommendation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_VACCINECODE = "vaccineCode";
-        public static final String PROPERTY_TARGETDISEASE = "targetDisease";
-        public static final String PROPERTY_CONTRAINDICATEDVACCINECODE = "contraindicatedVaccineCode";
-        public static final String PROPERTY_FORECASTSTATUS = "forecastStatus";
-        public static final String PROPERTY_FORECASTREASON = "forecastReason";
-        public static final String PROPERTY_DATECRITERION = "dateCriterion";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_VACCINE_CODE = "vaccineCode";
+        public static final String PROPERTY_TARGET_DISEASE = "targetDisease";
+        public static final String PROPERTY_CONTRAINDICATED_VACCINE_CODE = "contraindicatedVaccineCode";
+        public static final String PROPERTY_FORECAST_STATUS = "forecastStatus";
+        public static final String PROPERTY_FORECAST_REASON = "forecastReason";
+        public static final String PROPERTY_DATE_CRITERION = "dateCriterion";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_SERIES = "series";
-        public static final String PROPERTY_DOSENUMBERPOSITIVEINT = "doseNumberPositiveInt";
-        public static final String PROPERTY_DOSENUMBERSTRING = "doseNumberString";
-        public static final String PROPERTY_SERIESDOSESPOSITIVEINT = "seriesDosesPositiveInt";
-        public static final String PROPERTY_SERIESDOSESSTRING = "seriesDosesString";
-        public static final String PROPERTY_SUPPORTINGIMMUNIZATION = "supportingImmunization";
-        public static final String PROPERTY_SUPPORTINGPATIENTINFORMATION = "supportingPatientInformation";
+        public static final String PROPERTY_DOSE_NUMBER_POSITIVE_INT = "doseNumberPositiveInt";
+        public static final String PROPERTY_DOSE_NUMBER_STRING = "doseNumberString";
+        public static final String PROPERTY_SERIES_DOSES_POSITIVE_INT = "seriesDosesPositiveInt";
+        public static final String PROPERTY_SERIES_DOSES_STRING = "seriesDosesString";
+        public static final String PROPERTY_SUPPORTING_IMMUNIZATION = "supportingImmunization";
+        public static final String PROPERTY_SUPPORTING_PATIENT_INFORMATION = "supportingPatientInformation";
 
         public static Builder create() {
             return new Builder();
@@ -367,28 +367,28 @@ public class ImmunizationRecommendation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Vaccine(s) or vaccine group that pertain to the recommendation.
          */
         public java.util.List<CodeableConcept> vaccineCode() {
-            return getList(CodeableConcept.class, PROPERTY_VACCINECODE);
+            return getList(CodeableConcept.class, PROPERTY_VACCINE_CODE);
         }
 
         /**
          * The targeted disease for the recommendation.
          */
         public CodeableConcept targetDisease() {
-            return getObject(CodeableConcept.class, PROPERTY_TARGETDISEASE);
+            return getObject(CodeableConcept.class, PROPERTY_TARGET_DISEASE);
         }
 
         /**
          * Vaccine(s) which should not be used to fulfill the recommendation.
          */
         public java.util.List<CodeableConcept> contraindicatedVaccineCode() {
-            return getList(CodeableConcept.class, PROPERTY_CONTRAINDICATEDVACCINECODE);
+            return getList(CodeableConcept.class, PROPERTY_CONTRAINDICATED_VACCINE_CODE);
         }
 
         /**
@@ -396,14 +396,14 @@ public class ImmunizationRecommendation extends FhirResource {
          * the target disease.
          */
         public CodeableConcept forecastStatus() {
-            return getObject(CodeableConcept.class, PROPERTY_FORECASTSTATUS);
+            return getObject(CodeableConcept.class, PROPERTY_FORECAST_STATUS);
         }
 
         /**
          * The reason for the assigned forecast status.
          */
         public java.util.List<CodeableConcept> forecastReason() {
-            return getList(CodeableConcept.class, PROPERTY_FORECASTREASON);
+            return getList(CodeableConcept.class, PROPERTY_FORECAST_REASON);
         }
 
         /**
@@ -411,7 +411,7 @@ public class ImmunizationRecommendation extends FhirResource {
          * administer, latest date to administer, etc.
          */
         public java.util.List<ImmunizationRecommendationDateCriterion> dateCriterion() {
-            return getList(ImmunizationRecommendationDateCriterion.class, PROPERTY_DATECRITERION);
+            return getList(ImmunizationRecommendationDateCriterion.class, PROPERTY_DATE_CRITERION);
         }
 
         /**
@@ -435,7 +435,7 @@ public class ImmunizationRecommendation extends FhirResource {
          * the next recommended dose).
          */
         public Integer doseNumberPositiveInt() {
-            return data.getInt(PROPERTY_DOSENUMBERPOSITIVEINT);
+            return data.getInt(PROPERTY_DOSE_NUMBER_POSITIVE_INT);
         }
 
         /**
@@ -443,21 +443,21 @@ public class ImmunizationRecommendation extends FhirResource {
          * the next recommended dose).
          */
         public String doseNumberString() {
-            return getString(PROPERTY_DOSENUMBERSTRING);
+            return getString(PROPERTY_DOSE_NUMBER_STRING);
         }
 
         /**
          * The recommended number of doses to achieve immunity.
          */
         public Integer seriesDosesPositiveInt() {
-            return data.getInt(PROPERTY_SERIESDOSESPOSITIVEINT);
+            return data.getInt(PROPERTY_SERIES_DOSES_POSITIVE_INT);
         }
 
         /**
          * The recommended number of doses to achieve immunity.
          */
         public String seriesDosesString() {
-            return getString(PROPERTY_SERIESDOSESSTRING);
+            return getString(PROPERTY_SERIES_DOSES_STRING);
         }
 
         /**
@@ -465,7 +465,7 @@ public class ImmunizationRecommendation extends FhirResource {
          * and recommendation.
          */
         public java.util.List<Reference> supportingImmunization() {
-            return getList(Reference.class, PROPERTY_SUPPORTINGIMMUNIZATION);
+            return getList(Reference.class, PROPERTY_SUPPORTING_IMMUNIZATION);
         }
 
         /**
@@ -474,7 +474,7 @@ public class ImmunizationRecommendation extends FhirResource {
          * allergy/intolerance information.
          */
         public java.util.List<Reference> supportingPatientInformation() {
-            return getList(Reference.class, PROPERTY_SUPPORTINGPATIENTINFORMATION);
+            return getList(Reference.class, PROPERTY_SUPPORTING_PATIENT_INFORMATION);
         }
 
         public static class Builder {
@@ -494,37 +494,37 @@ public class ImmunizationRecommendation extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder vaccineCode(final java.util.List<CodeableConcept> vaccineCode) {
-                b.add(PROPERTY_VACCINECODE, FhirObject.toArray(vaccineCode));
+                b.add(PROPERTY_VACCINE_CODE, FhirObject.toArray(vaccineCode));
                 return this;
             }
 
             public Builder targetDisease(final CodeableConcept targetDisease) {
-                b.add(PROPERTY_TARGETDISEASE, targetDisease);
+                b.add(PROPERTY_TARGET_DISEASE, targetDisease);
                 return this;
             }
 
             public Builder contraindicatedVaccineCode(final java.util.List<CodeableConcept> contraindicatedVaccineCode) {
-                b.add(PROPERTY_CONTRAINDICATEDVACCINECODE, FhirObject.toArray(contraindicatedVaccineCode));
+                b.add(PROPERTY_CONTRAINDICATED_VACCINE_CODE, FhirObject.toArray(contraindicatedVaccineCode));
                 return this;
             }
 
             public Builder forecastStatus(final CodeableConcept forecastStatus) {
-                b.add(PROPERTY_FORECASTSTATUS, forecastStatus);
+                b.add(PROPERTY_FORECAST_STATUS, forecastStatus);
                 return this;
             }
 
             public Builder forecastReason(final java.util.List<CodeableConcept> forecastReason) {
-                b.add(PROPERTY_FORECASTREASON, FhirObject.toArray(forecastReason));
+                b.add(PROPERTY_FORECAST_REASON, FhirObject.toArray(forecastReason));
                 return this;
             }
 
             public Builder dateCriterion(final java.util.List<ImmunizationRecommendationDateCriterion> dateCriterion) {
-                b.add(PROPERTY_DATECRITERION, FhirObject.toArray(dateCriterion));
+                b.add(PROPERTY_DATE_CRITERION, FhirObject.toArray(dateCriterion));
                 return this;
             }
 
@@ -539,32 +539,32 @@ public class ImmunizationRecommendation extends FhirResource {
             }
 
             public Builder doseNumberPositiveInt(final Integer doseNumberPositiveInt) {
-                b.add(PROPERTY_DOSENUMBERPOSITIVEINT, doseNumberPositiveInt);
+                b.add(PROPERTY_DOSE_NUMBER_POSITIVE_INT, doseNumberPositiveInt);
                 return this;
             }
 
             public Builder doseNumberString(final String doseNumberString) {
-                b.add(PROPERTY_DOSENUMBERSTRING, doseNumberString);
+                b.add(PROPERTY_DOSE_NUMBER_STRING, doseNumberString);
                 return this;
             }
 
             public Builder seriesDosesPositiveInt(final Integer seriesDosesPositiveInt) {
-                b.add(PROPERTY_SERIESDOSESPOSITIVEINT, seriesDosesPositiveInt);
+                b.add(PROPERTY_SERIES_DOSES_POSITIVE_INT, seriesDosesPositiveInt);
                 return this;
             }
 
             public Builder seriesDosesString(final String seriesDosesString) {
-                b.add(PROPERTY_SERIESDOSESSTRING, seriesDosesString);
+                b.add(PROPERTY_SERIES_DOSES_STRING, seriesDosesString);
                 return this;
             }
 
             public Builder supportingImmunization(final java.util.List<Reference> supportingImmunization) {
-                b.add(PROPERTY_SUPPORTINGIMMUNIZATION, FhirObject.toArray(supportingImmunization));
+                b.add(PROPERTY_SUPPORTING_IMMUNIZATION, FhirObject.toArray(supportingImmunization));
                 return this;
             }
 
             public Builder supportingPatientInformation(final java.util.List<Reference> supportingPatientInformation) {
-                b.add(PROPERTY_SUPPORTINGPATIENTINFORMATION, FhirObject.toArray(supportingPatientInformation));
+                b.add(PROPERTY_SUPPORTING_PATIENT_INFORMATION, FhirObject.toArray(supportingPatientInformation));
                 return this;
             }
 

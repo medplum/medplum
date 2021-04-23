@@ -11,30 +11,30 @@ import jakarta.json.JsonObjectBuilder;
 
 public class NutritionOrder extends FhirResource {
     public static final String RESOURCE_TYPE = "NutritionOrder";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_INSTANTIATESCANONICAL = "instantiatesCanonical";
-    public static final String PROPERTY_INSTANTIATESURI = "instantiatesUri";
+    public static final String PROPERTY_INSTANTIATES_CANONICAL = "instantiatesCanonical";
+    public static final String PROPERTY_INSTANTIATES_URI = "instantiatesUri";
     public static final String PROPERTY_INSTANTIATES = "instantiates";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_INTENT = "intent";
     public static final String PROPERTY_PATIENT = "patient";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_DATETIME = "dateTime";
+    public static final String PROPERTY_DATE_TIME = "dateTime";
     public static final String PROPERTY_ORDERER = "orderer";
-    public static final String PROPERTY_ALLERGYINTOLERANCE = "allergyIntolerance";
-    public static final String PROPERTY_FOODPREFERENCEMODIFIER = "foodPreferenceModifier";
-    public static final String PROPERTY_EXCLUDEFOODMODIFIER = "excludeFoodModifier";
-    public static final String PROPERTY_ORALDIET = "oralDiet";
+    public static final String PROPERTY_ALLERGY_INTOLERANCE = "allergyIntolerance";
+    public static final String PROPERTY_FOOD_PREFERENCE_MODIFIER = "foodPreferenceModifier";
+    public static final String PROPERTY_EXCLUDE_FOOD_MODIFIER = "excludeFoodModifier";
+    public static final String PROPERTY_ORAL_DIET = "oralDiet";
     public static final String PROPERTY_SUPPLEMENT = "supplement";
-    public static final String PROPERTY_ENTERALFORMULA = "enteralFormula";
+    public static final String PROPERTY_ENTERAL_FORMULA = "enteralFormula";
     public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
@@ -56,7 +56,7 @@ public class NutritionOrder extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -104,7 +104,7 @@ public class NutritionOrder extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -121,7 +121,7 @@ public class NutritionOrder extends FhirResource {
      * NutritionOrder.
      */
     public java.util.List<String> instantiatesCanonical() {
-        return getList(String.class, PROPERTY_INSTANTIATESCANONICAL);
+        return getList(String.class, PROPERTY_INSTANTIATES_CANONICAL);
     }
 
     /**
@@ -130,7 +130,7 @@ public class NutritionOrder extends FhirResource {
      * this NutritionOrder.
      */
     public java.util.List<String> instantiatesUri() {
-        return getList(String.class, PROPERTY_INSTANTIATESURI);
+        return getList(String.class, PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -177,7 +177,7 @@ public class NutritionOrder extends FhirResource {
      * The date and time that this nutrition order was requested.
      */
     public java.time.Instant dateTime() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATETIME));
+        return java.time.Instant.parse(data.getString(PROPERTY_DATE_TIME));
     }
 
     /**
@@ -193,7 +193,7 @@ public class NutritionOrder extends FhirResource {
      * included in the nutrition order.
      */
     public java.util.List<Reference> allergyIntolerance() {
-        return getList(Reference.class, PROPERTY_ALLERGYINTOLERANCE);
+        return getList(Reference.class, PROPERTY_ALLERGY_INTOLERANCE);
     }
 
     /**
@@ -205,7 +205,7 @@ public class NutritionOrder extends FhirResource {
      * feedings.
      */
     public java.util.List<CodeableConcept> foodPreferenceModifier() {
-        return getList(CodeableConcept.class, PROPERTY_FOODPREFERENCEMODIFIER);
+        return getList(CodeableConcept.class, PROPERTY_FOOD_PREFERENCE_MODIFIER);
     }
 
     /**
@@ -222,14 +222,14 @@ public class NutritionOrder extends FhirResource {
      * feedings.
      */
     public java.util.List<CodeableConcept> excludeFoodModifier() {
-        return getList(CodeableConcept.class, PROPERTY_EXCLUDEFOODMODIFIER);
+        return getList(CodeableConcept.class, PROPERTY_EXCLUDE_FOOD_MODIFIER);
     }
 
     /**
      * Diet given orally in contrast to enteral (tube) feeding.
      */
     public NutritionOrderOralDiet oralDiet() {
-        return getObject(NutritionOrderOralDiet.class, PROPERTY_ORALDIET);
+        return getObject(NutritionOrderOralDiet.class, PROPERTY_ORAL_DIET);
     }
 
     /**
@@ -245,7 +245,7 @@ public class NutritionOrder extends FhirResource {
      * catheter, or stoma that delivers nutrition distal to the oral cavity.
      */
     public NutritionOrderEnteralFormula enteralFormula() {
-        return getObject(NutritionOrderEnteralFormula.class, PROPERTY_ENTERALFORMULA);
+        return getObject(NutritionOrderEnteralFormula.class, PROPERTY_ENTERAL_FORMULA);
     }
 
     /**
@@ -267,7 +267,7 @@ public class NutritionOrder extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -282,7 +282,7 @@ public class NutritionOrder extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -302,7 +302,7 @@ public class NutritionOrder extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -312,12 +312,12 @@ public class NutritionOrder extends FhirResource {
         }
 
         public Builder instantiatesCanonical(final java.util.List<String> instantiatesCanonical) {
-            b.add(PROPERTY_INSTANTIATESCANONICAL, FhirObject.toStringArray(instantiatesCanonical));
+            b.add(PROPERTY_INSTANTIATES_CANONICAL, FhirObject.toStringArray(instantiatesCanonical));
             return this;
         }
 
         public Builder instantiatesUri(final java.util.List<String> instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATESURI, FhirObject.toStringArray(instantiatesUri));
+            b.add(PROPERTY_INSTANTIATES_URI, FhirObject.toStringArray(instantiatesUri));
             return this;
         }
 
@@ -347,7 +347,7 @@ public class NutritionOrder extends FhirResource {
         }
 
         public Builder dateTime(final java.time.Instant dateTime) {
-            b.add(PROPERTY_DATETIME, dateTime.toString());
+            b.add(PROPERTY_DATE_TIME, dateTime.toString());
             return this;
         }
 
@@ -357,22 +357,22 @@ public class NutritionOrder extends FhirResource {
         }
 
         public Builder allergyIntolerance(final java.util.List<Reference> allergyIntolerance) {
-            b.add(PROPERTY_ALLERGYINTOLERANCE, FhirObject.toArray(allergyIntolerance));
+            b.add(PROPERTY_ALLERGY_INTOLERANCE, FhirObject.toArray(allergyIntolerance));
             return this;
         }
 
         public Builder foodPreferenceModifier(final java.util.List<CodeableConcept> foodPreferenceModifier) {
-            b.add(PROPERTY_FOODPREFERENCEMODIFIER, FhirObject.toArray(foodPreferenceModifier));
+            b.add(PROPERTY_FOOD_PREFERENCE_MODIFIER, FhirObject.toArray(foodPreferenceModifier));
             return this;
         }
 
         public Builder excludeFoodModifier(final java.util.List<CodeableConcept> excludeFoodModifier) {
-            b.add(PROPERTY_EXCLUDEFOODMODIFIER, FhirObject.toArray(excludeFoodModifier));
+            b.add(PROPERTY_EXCLUDE_FOOD_MODIFIER, FhirObject.toArray(excludeFoodModifier));
             return this;
         }
 
         public Builder oralDiet(final NutritionOrderOralDiet oralDiet) {
-            b.add(PROPERTY_ORALDIET, oralDiet);
+            b.add(PROPERTY_ORAL_DIET, oralDiet);
             return this;
         }
 
@@ -382,7 +382,7 @@ public class NutritionOrder extends FhirResource {
         }
 
         public Builder enteralFormula(final NutritionOrderEnteralFormula enteralFormula) {
-            b.add(PROPERTY_ENTERALFORMULA, enteralFormula);
+            b.add(PROPERTY_ENTERAL_FORMULA, enteralFormula);
             return this;
         }
 
@@ -399,11 +399,11 @@ public class NutritionOrder extends FhirResource {
     public static class NutritionOrderAdministration extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderAdministration";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SCHEDULE = "schedule";
         public static final String PROPERTY_QUANTITY = "quantity";
-        public static final String PROPERTY_RATEQUANTITY = "rateQuantity";
-        public static final String PROPERTY_RATERATIO = "rateRatio";
+        public static final String PROPERTY_RATE_QUANTITY = "rateQuantity";
+        public static final String PROPERTY_RATE_RATIO = "rateRatio";
 
         public static Builder create() {
             return new Builder();
@@ -443,7 +443,7 @@ public class NutritionOrder extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -467,7 +467,7 @@ public class NutritionOrder extends FhirResource {
          * per hour, according to the specified schedule.
          */
         public Quantity rateQuantity() {
-            return getObject(Quantity.class, PROPERTY_RATEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_RATE_QUANTITY);
         }
 
         /**
@@ -475,7 +475,7 @@ public class NutritionOrder extends FhirResource {
          * per hour, according to the specified schedule.
          */
         public Ratio rateRatio() {
-            return getObject(Ratio.class, PROPERTY_RATERATIO);
+            return getObject(Ratio.class, PROPERTY_RATE_RATIO);
         }
 
         public static class Builder {
@@ -495,7 +495,7 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -510,12 +510,12 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder rateQuantity(final Quantity rateQuantity) {
-                b.add(PROPERTY_RATEQUANTITY, rateQuantity);
+                b.add(PROPERTY_RATE_QUANTITY, rateQuantity);
                 return this;
             }
 
             public Builder rateRatio(final Ratio rateRatio) {
-                b.add(PROPERTY_RATERATIO, rateRatio);
+                b.add(PROPERTY_RATE_RATIO, rateRatio);
                 return this;
             }
 
@@ -528,16 +528,16 @@ public class NutritionOrder extends FhirResource {
     public static class NutritionOrderEnteralFormula extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderEnteralFormula";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_BASEFORMULATYPE = "baseFormulaType";
-        public static final String PROPERTY_BASEFORMULAPRODUCTNAME = "baseFormulaProductName";
-        public static final String PROPERTY_ADDITIVETYPE = "additiveType";
-        public static final String PROPERTY_ADDITIVEPRODUCTNAME = "additiveProductName";
-        public static final String PROPERTY_CALORICDENSITY = "caloricDensity";
-        public static final String PROPERTY_ROUTEOFADMINISTRATION = "routeofAdministration";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_BASE_FORMULA_TYPE = "baseFormulaType";
+        public static final String PROPERTY_BASE_FORMULA_PRODUCT_NAME = "baseFormulaProductName";
+        public static final String PROPERTY_ADDITIVE_TYPE = "additiveType";
+        public static final String PROPERTY_ADDITIVE_PRODUCT_NAME = "additiveProductName";
+        public static final String PROPERTY_CALORIC_DENSITY = "caloricDensity";
+        public static final String PROPERTY_ROUTEOF_ADMINISTRATION = "routeofAdministration";
         public static final String PROPERTY_ADMINISTRATION = "administration";
-        public static final String PROPERTY_MAXVOLUMETODELIVER = "maxVolumeToDeliver";
-        public static final String PROPERTY_ADMINISTRATIONINSTRUCTION = "administrationInstruction";
+        public static final String PROPERTY_MAX_VOLUME_TO_DELIVER = "maxVolumeToDeliver";
+        public static final String PROPERTY_ADMINISTRATION_INSTRUCTION = "administrationInstruction";
 
         public static Builder create() {
             return new Builder();
@@ -577,7 +577,7 @@ public class NutritionOrder extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -585,7 +585,7 @@ public class NutritionOrder extends FhirResource {
          * formula with fiber or a soy-based infant formula.
          */
         public CodeableConcept baseFormulaType() {
-            return getObject(CodeableConcept.class, PROPERTY_BASEFORMULATYPE);
+            return getObject(CodeableConcept.class, PROPERTY_BASE_FORMULA_TYPE);
         }
 
         /**
@@ -593,7 +593,7 @@ public class NutritionOrder extends FhirResource {
          * such as "ACME Adult Standard Formula".
          */
         public String baseFormulaProductName() {
-            return getString(PROPERTY_BASEFORMULAPRODUCTNAME);
+            return getString(PROPERTY_BASE_FORMULA_PRODUCT_NAME);
         }
 
         /**
@@ -602,7 +602,7 @@ public class NutritionOrder extends FhirResource {
          * formula.
          */
         public CodeableConcept additiveType() {
-            return getObject(CodeableConcept.class, PROPERTY_ADDITIVETYPE);
+            return getObject(CodeableConcept.class, PROPERTY_ADDITIVE_TYPE);
         }
 
         /**
@@ -610,7 +610,7 @@ public class NutritionOrder extends FhirResource {
          * to the formula.
          */
         public String additiveProductName() {
-            return getString(PROPERTY_ADDITIVEPRODUCTNAME);
+            return getString(PROPERTY_ADDITIVE_PRODUCT_NAME);
         }
 
         /**
@@ -621,7 +621,7 @@ public class NutritionOrder extends FhirResource {
          * calorie/mL.
          */
         public Quantity caloricDensity() {
-            return getObject(Quantity.class, PROPERTY_CALORICDENSITY);
+            return getObject(Quantity.class, PROPERTY_CALORIC_DENSITY);
         }
 
         /**
@@ -630,7 +630,7 @@ public class NutritionOrder extends FhirResource {
          * e.g. nasogastric tube.
          */
         public CodeableConcept routeofAdministration() {
-            return getObject(CodeableConcept.class, PROPERTY_ROUTEOFADMINISTRATION);
+            return getObject(CodeableConcept.class, PROPERTY_ROUTEOF_ADMINISTRATION);
         }
 
         /**
@@ -649,7 +649,7 @@ public class NutritionOrder extends FhirResource {
          * subject over the period of time, e.g. 1440 mL over 24 hours.
          */
         public Quantity maxVolumeToDeliver() {
-            return getObject(Quantity.class, PROPERTY_MAXVOLUMETODELIVER);
+            return getObject(Quantity.class, PROPERTY_MAX_VOLUME_TO_DELIVER);
         }
 
         /**
@@ -657,7 +657,7 @@ public class NutritionOrder extends FhirResource {
          * instructions or information.
          */
         public String administrationInstruction() {
-            return getString(PROPERTY_ADMINISTRATIONINSTRUCTION);
+            return getString(PROPERTY_ADMINISTRATION_INSTRUCTION);
         }
 
         public static class Builder {
@@ -677,37 +677,37 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder baseFormulaType(final CodeableConcept baseFormulaType) {
-                b.add(PROPERTY_BASEFORMULATYPE, baseFormulaType);
+                b.add(PROPERTY_BASE_FORMULA_TYPE, baseFormulaType);
                 return this;
             }
 
             public Builder baseFormulaProductName(final String baseFormulaProductName) {
-                b.add(PROPERTY_BASEFORMULAPRODUCTNAME, baseFormulaProductName);
+                b.add(PROPERTY_BASE_FORMULA_PRODUCT_NAME, baseFormulaProductName);
                 return this;
             }
 
             public Builder additiveType(final CodeableConcept additiveType) {
-                b.add(PROPERTY_ADDITIVETYPE, additiveType);
+                b.add(PROPERTY_ADDITIVE_TYPE, additiveType);
                 return this;
             }
 
             public Builder additiveProductName(final String additiveProductName) {
-                b.add(PROPERTY_ADDITIVEPRODUCTNAME, additiveProductName);
+                b.add(PROPERTY_ADDITIVE_PRODUCT_NAME, additiveProductName);
                 return this;
             }
 
             public Builder caloricDensity(final Quantity caloricDensity) {
-                b.add(PROPERTY_CALORICDENSITY, caloricDensity);
+                b.add(PROPERTY_CALORIC_DENSITY, caloricDensity);
                 return this;
             }
 
             public Builder routeofAdministration(final CodeableConcept routeofAdministration) {
-                b.add(PROPERTY_ROUTEOFADMINISTRATION, routeofAdministration);
+                b.add(PROPERTY_ROUTEOF_ADMINISTRATION, routeofAdministration);
                 return this;
             }
 
@@ -717,12 +717,12 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder maxVolumeToDeliver(final Quantity maxVolumeToDeliver) {
-                b.add(PROPERTY_MAXVOLUMETODELIVER, maxVolumeToDeliver);
+                b.add(PROPERTY_MAX_VOLUME_TO_DELIVER, maxVolumeToDeliver);
                 return this;
             }
 
             public Builder administrationInstruction(final String administrationInstruction) {
-                b.add(PROPERTY_ADMINISTRATIONINSTRUCTION, administrationInstruction);
+                b.add(PROPERTY_ADMINISTRATION_INSTRUCTION, administrationInstruction);
                 return this;
             }
 
@@ -735,7 +735,7 @@ public class NutritionOrder extends FhirResource {
     public static class NutritionOrderNutrient extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderNutrient";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_MODIFIER = "modifier";
         public static final String PROPERTY_AMOUNT = "amount";
 
@@ -777,7 +777,7 @@ public class NutritionOrder extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -811,7 +811,7 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -834,12 +834,12 @@ public class NutritionOrder extends FhirResource {
     public static class NutritionOrderOralDiet extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderOralDiet";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_SCHEDULE = "schedule";
         public static final String PROPERTY_NUTRIENT = "nutrient";
         public static final String PROPERTY_TEXTURE = "texture";
-        public static final String PROPERTY_FLUIDCONSISTENCYTYPE = "fluidConsistencyType";
+        public static final String PROPERTY_FLUID_CONSISTENCY_TYPE = "fluidConsistencyType";
         public static final String PROPERTY_INSTRUCTION = "instruction";
 
         public static Builder create() {
@@ -880,7 +880,7 @@ public class NutritionOrder extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -922,7 +922,7 @@ public class NutritionOrder extends FhirResource {
          * thickened.) of liquids or fluids served to the patient.
          */
         public java.util.List<CodeableConcept> fluidConsistencyType() {
-            return getList(CodeableConcept.class, PROPERTY_FLUIDCONSISTENCYTYPE);
+            return getList(CodeableConcept.class, PROPERTY_FLUID_CONSISTENCY_TYPE);
         }
 
         /**
@@ -950,7 +950,7 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -975,7 +975,7 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder fluidConsistencyType(final java.util.List<CodeableConcept> fluidConsistencyType) {
-                b.add(PROPERTY_FLUIDCONSISTENCYTYPE, FhirObject.toArray(fluidConsistencyType));
+                b.add(PROPERTY_FLUID_CONSISTENCY_TYPE, FhirObject.toArray(fluidConsistencyType));
                 return this;
             }
 
@@ -993,9 +993,9 @@ public class NutritionOrder extends FhirResource {
     public static class NutritionOrderSupplement extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderSupplement";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_PRODUCTNAME = "productName";
+        public static final String PROPERTY_PRODUCT_NAME = "productName";
         public static final String PROPERTY_SCHEDULE = "schedule";
         public static final String PROPERTY_QUANTITY = "quantity";
         public static final String PROPERTY_INSTRUCTION = "instruction";
@@ -1038,7 +1038,7 @@ public class NutritionOrder extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1054,7 +1054,7 @@ public class NutritionOrder extends FhirResource {
          * Protein Shake".
          */
         public String productName() {
-            return getString(PROPERTY_PRODUCTNAME);
+            return getString(PROPERTY_PRODUCT_NAME);
         }
 
         /**
@@ -1098,7 +1098,7 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1108,7 +1108,7 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder productName(final String productName) {
-                b.add(PROPERTY_PRODUCTNAME, productName);
+                b.add(PROPERTY_PRODUCT_NAME, productName);
                 return this;
             }
 
@@ -1136,9 +1136,9 @@ public class NutritionOrder extends FhirResource {
     public static class NutritionOrderTexture extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderTexture";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_MODIFIER = "modifier";
-        public static final String PROPERTY_FOODTYPE = "foodType";
+        public static final String PROPERTY_FOOD_TYPE = "foodType";
 
         public static Builder create() {
             return new Builder();
@@ -1178,7 +1178,7 @@ public class NutritionOrder extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1194,7 +1194,7 @@ public class NutritionOrder extends FhirResource {
          * modification applies to.  This could be all foods types.
          */
         public CodeableConcept foodType() {
-            return getObject(CodeableConcept.class, PROPERTY_FOODTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_FOOD_TYPE);
         }
 
         public static class Builder {
@@ -1214,7 +1214,7 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1224,7 +1224,7 @@ public class NutritionOrder extends FhirResource {
             }
 
             public Builder foodType(final CodeableConcept foodType) {
-                b.add(PROPERTY_FOODTYPE, foodType);
+                b.add(PROPERTY_FOOD_TYPE, foodType);
                 return this;
             }
 

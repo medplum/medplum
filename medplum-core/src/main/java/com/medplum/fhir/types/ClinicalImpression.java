@@ -11,23 +11,23 @@ import jakarta.json.JsonObjectBuilder;
 
 public class ClinicalImpression extends FhirResource {
     public static final String RESOURCE_TYPE = "ClinicalImpression";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSREASON = "statusReason";
+    public static final String PROPERTY_STATUS_REASON = "statusReason";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_DESCRIPTION = "description";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_EFFECTIVEDATETIME = "effectiveDateTime";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
+    public static final String PROPERTY_EFFECTIVE_DATE_TIME = "effectiveDateTime";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
     public static final String PROPERTY_DATE = "date";
     public static final String PROPERTY_ASSESSOR = "assessor";
     public static final String PROPERTY_PREVIOUS = "previous";
@@ -36,9 +36,9 @@ public class ClinicalImpression extends FhirResource {
     public static final String PROPERTY_PROTOCOL = "protocol";
     public static final String PROPERTY_SUMMARY = "summary";
     public static final String PROPERTY_FINDING = "finding";
-    public static final String PROPERTY_PROGNOSISCODEABLECONCEPT = "prognosisCodeableConcept";
-    public static final String PROPERTY_PROGNOSISREFERENCE = "prognosisReference";
-    public static final String PROPERTY_SUPPORTINGINFO = "supportingInfo";
+    public static final String PROPERTY_PROGNOSIS_CODEABLE_CONCEPT = "prognosisCodeableConcept";
+    public static final String PROPERTY_PROGNOSIS_REFERENCE = "prognosisReference";
+    public static final String PROPERTY_SUPPORTING_INFO = "supportingInfo";
     public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
@@ -60,7 +60,7 @@ public class ClinicalImpression extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -108,7 +108,7 @@ public class ClinicalImpression extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -131,7 +131,7 @@ public class ClinicalImpression extends FhirResource {
      * Captures the reason for the current state of the ClinicalImpression.
      */
     public CodeableConcept statusReason() {
-        return getObject(CodeableConcept.class, PROPERTY_STATUSREASON);
+        return getObject(CodeableConcept.class, PROPERTY_STATUS_REASON);
     }
 
     /**
@@ -168,14 +168,14 @@ public class ClinicalImpression extends FhirResource {
      * The point in time or period over which the subject was assessed.
      */
     public String effectiveDateTime() {
-        return getString(PROPERTY_EFFECTIVEDATETIME);
+        return getString(PROPERTY_EFFECTIVE_DATE_TIME);
     }
 
     /**
      * The point in time or period over which the subject was assessed.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -248,21 +248,21 @@ public class ClinicalImpression extends FhirResource {
      * Estimate of likely outcome.
      */
     public java.util.List<CodeableConcept> prognosisCodeableConcept() {
-        return getList(CodeableConcept.class, PROPERTY_PROGNOSISCODEABLECONCEPT);
+        return getList(CodeableConcept.class, PROPERTY_PROGNOSIS_CODEABLE_CONCEPT);
     }
 
     /**
      * RiskAssessment expressing likely outcome.
      */
     public java.util.List<Reference> prognosisReference() {
-        return getList(Reference.class, PROPERTY_PROGNOSISREFERENCE);
+        return getList(Reference.class, PROPERTY_PROGNOSIS_REFERENCE);
     }
 
     /**
      * Information supporting the clinical impression.
      */
     public java.util.List<Reference> supportingInfo() {
-        return getList(Reference.class, PROPERTY_SUPPORTINGINFO);
+        return getList(Reference.class, PROPERTY_SUPPORTING_INFO);
     }
 
     /**
@@ -285,7 +285,7 @@ public class ClinicalImpression extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -300,7 +300,7 @@ public class ClinicalImpression extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -320,7 +320,7 @@ public class ClinicalImpression extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -335,7 +335,7 @@ public class ClinicalImpression extends FhirResource {
         }
 
         public Builder statusReason(final CodeableConcept statusReason) {
-            b.add(PROPERTY_STATUSREASON, statusReason);
+            b.add(PROPERTY_STATUS_REASON, statusReason);
             return this;
         }
 
@@ -360,12 +360,12 @@ public class ClinicalImpression extends FhirResource {
         }
 
         public Builder effectiveDateTime(final String effectiveDateTime) {
-            b.add(PROPERTY_EFFECTIVEDATETIME, effectiveDateTime);
+            b.add(PROPERTY_EFFECTIVE_DATE_TIME, effectiveDateTime);
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
@@ -410,17 +410,17 @@ public class ClinicalImpression extends FhirResource {
         }
 
         public Builder prognosisCodeableConcept(final java.util.List<CodeableConcept> prognosisCodeableConcept) {
-            b.add(PROPERTY_PROGNOSISCODEABLECONCEPT, FhirObject.toArray(prognosisCodeableConcept));
+            b.add(PROPERTY_PROGNOSIS_CODEABLE_CONCEPT, FhirObject.toArray(prognosisCodeableConcept));
             return this;
         }
 
         public Builder prognosisReference(final java.util.List<Reference> prognosisReference) {
-            b.add(PROPERTY_PROGNOSISREFERENCE, FhirObject.toArray(prognosisReference));
+            b.add(PROPERTY_PROGNOSIS_REFERENCE, FhirObject.toArray(prognosisReference));
             return this;
         }
 
         public Builder supportingInfo(final java.util.List<Reference> supportingInfo) {
-            b.add(PROPERTY_SUPPORTINGINFO, FhirObject.toArray(supportingInfo));
+            b.add(PROPERTY_SUPPORTING_INFO, FhirObject.toArray(supportingInfo));
             return this;
         }
 
@@ -437,9 +437,9 @@ public class ClinicalImpression extends FhirResource {
     public static class ClinicalImpressionFinding extends FhirObject {
         public static final String RESOURCE_TYPE = "ClinicalImpressionFinding";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_ITEMCODEABLECONCEPT = "itemCodeableConcept";
-        public static final String PROPERTY_ITEMREFERENCE = "itemReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_ITEM_CODEABLE_CONCEPT = "itemCodeableConcept";
+        public static final String PROPERTY_ITEM_REFERENCE = "itemReference";
         public static final String PROPERTY_BASIS = "basis";
 
         public static Builder create() {
@@ -480,7 +480,7 @@ public class ClinicalImpression extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -488,7 +488,7 @@ public class ClinicalImpression extends FhirResource {
          * ruled-out or resolved conditions.
          */
         public CodeableConcept itemCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_ITEMCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_ITEM_CODEABLE_CONCEPT);
         }
 
         /**
@@ -496,7 +496,7 @@ public class ClinicalImpression extends FhirResource {
          * ruled-out or resolved conditions.
          */
         public Reference itemReference() {
-            return getObject(Reference.class, PROPERTY_ITEMREFERENCE);
+            return getObject(Reference.class, PROPERTY_ITEM_REFERENCE);
         }
 
         /**
@@ -523,17 +523,17 @@ public class ClinicalImpression extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder itemCodeableConcept(final CodeableConcept itemCodeableConcept) {
-                b.add(PROPERTY_ITEMCODEABLECONCEPT, itemCodeableConcept);
+                b.add(PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
                 return this;
             }
 
             public Builder itemReference(final Reference itemReference) {
-                b.add(PROPERTY_ITEMREFERENCE, itemReference);
+                b.add(PROPERTY_ITEM_REFERENCE, itemReference);
                 return this;
             }
 
@@ -551,7 +551,7 @@ public class ClinicalImpression extends FhirResource {
     public static class ClinicalImpressionInvestigation extends FhirObject {
         public static final String RESOURCE_TYPE = "ClinicalImpressionInvestigation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_ITEM = "item";
 
@@ -593,7 +593,7 @@ public class ClinicalImpression extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -630,7 +630,7 @@ public class ClinicalImpression extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

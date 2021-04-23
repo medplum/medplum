@@ -11,30 +11,30 @@ import jakarta.json.JsonObjectBuilder;
 
 public class MolecularSequence extends FhirResource {
     public static final String RESOURCE_TYPE = "MolecularSequence";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_COORDINATESYSTEM = "coordinateSystem";
+    public static final String PROPERTY_COORDINATE_SYSTEM = "coordinateSystem";
     public static final String PROPERTY_PATIENT = "patient";
     public static final String PROPERTY_SPECIMEN = "specimen";
     public static final String PROPERTY_DEVICE = "device";
     public static final String PROPERTY_PERFORMER = "performer";
     public static final String PROPERTY_QUANTITY = "quantity";
-    public static final String PROPERTY_REFERENCESEQ = "referenceSeq";
+    public static final String PROPERTY_REFERENCE_SEQ = "referenceSeq";
     public static final String PROPERTY_VARIANT = "variant";
-    public static final String PROPERTY_OBSERVEDSEQ = "observedSeq";
+    public static final String PROPERTY_OBSERVED_SEQ = "observedSeq";
     public static final String PROPERTY_QUALITY = "quality";
-    public static final String PROPERTY_READCOVERAGE = "readCoverage";
+    public static final String PROPERTY_READ_COVERAGE = "readCoverage";
     public static final String PROPERTY_REPOSITORY = "repository";
     public static final String PROPERTY_POINTER = "pointer";
-    public static final String PROPERTY_STRUCTUREVARIANT = "structureVariant";
+    public static final String PROPERTY_STRUCTURE_VARIANT = "structureVariant";
 
     public static Builder create() {
         return new Builder();
@@ -55,7 +55,7 @@ public class MolecularSequence extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -103,7 +103,7 @@ public class MolecularSequence extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -127,7 +127,7 @@ public class MolecularSequence extends FhirResource {
      * numbering, inclusive start and inclusive end).
      */
     public Integer coordinateSystem() {
-        return data.getInt(PROPERTY_COORDINATESYSTEM);
+        return data.getInt(PROPERTY_COORDINATE_SYSTEM);
     }
 
     /**
@@ -170,7 +170,7 @@ public class MolecularSequence extends FhirResource {
      * present in a sequence analyzed.
      */
     public MolecularSequenceReferenceSeq referenceSeq() {
-        return getObject(MolecularSequenceReferenceSeq.class, PROPERTY_REFERENCESEQ);
+        return getObject(MolecularSequenceReferenceSeq.class, PROPERTY_REFERENCE_SEQ);
     }
 
     /**
@@ -190,7 +190,7 @@ public class MolecularSequence extends FhirResource {
      * referenceSeq.windowStart and end by referenceSeq.windowEnd.
      */
     public String observedSeq() {
-        return getString(PROPERTY_OBSERVEDSEQ);
+        return getString(PROPERTY_OBSERVED_SEQ);
     }
 
     /**
@@ -207,7 +207,7 @@ public class MolecularSequence extends FhirResource {
      * representing a given nucleotide in the reconstructed sequence.
      */
     public Integer readCoverage() {
-        return data.getInt(PROPERTY_READCOVERAGE);
+        return data.getInt(PROPERTY_READ_COVERAGE);
     }
 
     /**
@@ -229,7 +229,7 @@ public class MolecularSequence extends FhirResource {
      * Information about chromosome structure variation.
      */
     public java.util.List<MolecularSequenceStructureVariant> structureVariant() {
-        return getList(MolecularSequenceStructureVariant.class, PROPERTY_STRUCTUREVARIANT);
+        return getList(MolecularSequenceStructureVariant.class, PROPERTY_STRUCTURE_VARIANT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -243,7 +243,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -258,7 +258,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -278,7 +278,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -293,7 +293,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         public Builder coordinateSystem(final Integer coordinateSystem) {
-            b.add(PROPERTY_COORDINATESYSTEM, coordinateSystem);
+            b.add(PROPERTY_COORDINATE_SYSTEM, coordinateSystem);
             return this;
         }
 
@@ -323,7 +323,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         public Builder referenceSeq(final MolecularSequenceReferenceSeq referenceSeq) {
-            b.add(PROPERTY_REFERENCESEQ, referenceSeq);
+            b.add(PROPERTY_REFERENCE_SEQ, referenceSeq);
             return this;
         }
 
@@ -333,7 +333,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         public Builder observedSeq(final String observedSeq) {
-            b.add(PROPERTY_OBSERVEDSEQ, observedSeq);
+            b.add(PROPERTY_OBSERVED_SEQ, observedSeq);
             return this;
         }
 
@@ -343,7 +343,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         public Builder readCoverage(final Integer readCoverage) {
-            b.add(PROPERTY_READCOVERAGE, readCoverage);
+            b.add(PROPERTY_READ_COVERAGE, readCoverage);
             return this;
         }
 
@@ -358,7 +358,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         public Builder structureVariant(final java.util.List<MolecularSequenceStructureVariant> structureVariant) {
-            b.add(PROPERTY_STRUCTUREVARIANT, FhirObject.toArray(structureVariant));
+            b.add(PROPERTY_STRUCTURE_VARIANT, FhirObject.toArray(structureVariant));
             return this;
         }
 
@@ -370,7 +370,7 @@ public class MolecularSequence extends FhirResource {
     public static class MolecularSequenceInner extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceInner";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_START = "start";
         public static final String PROPERTY_END = "end";
 
@@ -412,7 +412,7 @@ public class MolecularSequence extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -450,7 +450,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -473,7 +473,7 @@ public class MolecularSequence extends FhirResource {
     public static class MolecularSequenceOuter extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceOuter";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_START = "start";
         public static final String PROPERTY_END = "end";
 
@@ -515,7 +515,7 @@ public class MolecularSequence extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -553,7 +553,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -576,21 +576,21 @@ public class MolecularSequence extends FhirResource {
     public static class MolecularSequenceQuality extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceQuality";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_STANDARDSEQUENCE = "standardSequence";
+        public static final String PROPERTY_STANDARD_SEQUENCE = "standardSequence";
         public static final String PROPERTY_START = "start";
         public static final String PROPERTY_END = "end";
         public static final String PROPERTY_SCORE = "score";
         public static final String PROPERTY_METHOD = "method";
-        public static final String PROPERTY_TRUTHTP = "truthTP";
-        public static final String PROPERTY_QUERYTP = "queryTP";
-        public static final String PROPERTY_TRUTHFN = "truthFN";
-        public static final String PROPERTY_QUERYFP = "queryFP";
-        public static final String PROPERTY_GTFP = "gtFP";
+        public static final String PROPERTY_TRUTH_T_P = "truthTP";
+        public static final String PROPERTY_QUERY_T_P = "queryTP";
+        public static final String PROPERTY_TRUTH_F_N = "truthFN";
+        public static final String PROPERTY_QUERY_F_P = "queryFP";
+        public static final String PROPERTY_GT_F_P = "gtFP";
         public static final String PROPERTY_PRECISION = "precision";
         public static final String PROPERTY_RECALL = "recall";
-        public static final String PROPERTY_FSCORE = "fScore";
+        public static final String PROPERTY_F_SCORE = "fScore";
         public static final String PROPERTY_ROC = "roc";
 
         public static Builder create() {
@@ -631,7 +631,7 @@ public class MolecularSequence extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -645,7 +645,7 @@ public class MolecularSequence extends FhirResource {
          * Gold standard sequence used for comparing against.
          */
         public CodeableConcept standardSequence() {
-            return getObject(CodeableConcept.class, PROPERTY_STANDARDSEQUENCE);
+            return getObject(CodeableConcept.class, PROPERTY_STANDARD_SEQUENCE);
         }
 
         /**
@@ -689,7 +689,7 @@ public class MolecularSequence extends FhirResource {
          * event.
          */
         public Double truthTP() {
-            return data.getJsonNumber(PROPERTY_TRUTHTP).doubleValue();
+            return data.getJsonNumber(PROPERTY_TRUTH_T_P).doubleValue();
         }
 
         /**
@@ -700,7 +700,7 @@ public class MolecularSequence extends FhirResource {
          * event.
          */
         public Double queryTP() {
-            return data.getJsonNumber(PROPERTY_QUERYTP).doubleValue();
+            return data.getJsonNumber(PROPERTY_QUERY_T_P).doubleValue();
         }
 
         /**
@@ -711,7 +711,7 @@ public class MolecularSequence extends FhirResource {
          * incorrect genotype are counted here.
          */
         public Double truthFN() {
-            return data.getJsonNumber(PROPERTY_TRUTHFN).doubleValue();
+            return data.getJsonNumber(PROPERTY_TRUTH_F_N).doubleValue();
         }
 
         /**
@@ -721,7 +721,7 @@ public class MolecularSequence extends FhirResource {
          * counted here.
          */
         public Double queryFP() {
-            return data.getJsonNumber(PROPERTY_QUERYFP).doubleValue();
+            return data.getJsonNumber(PROPERTY_QUERY_F_P).doubleValue();
         }
 
         /**
@@ -730,7 +730,7 @@ public class MolecularSequence extends FhirResource {
          * query is 0/1 or similar).
          */
         public Double gtFP() {
-            return data.getJsonNumber(PROPERTY_GTFP).doubleValue();
+            return data.getJsonNumber(PROPERTY_GT_F_P).doubleValue();
         }
 
         /**
@@ -752,7 +752,7 @@ public class MolecularSequence extends FhirResource {
          * recall / (precision + recall).
          */
         public Double fScore() {
-            return data.getJsonNumber(PROPERTY_FSCORE).doubleValue();
+            return data.getJsonNumber(PROPERTY_F_SCORE).doubleValue();
         }
 
         /**
@@ -780,7 +780,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -790,7 +790,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder standardSequence(final CodeableConcept standardSequence) {
-                b.add(PROPERTY_STANDARDSEQUENCE, standardSequence);
+                b.add(PROPERTY_STANDARD_SEQUENCE, standardSequence);
                 return this;
             }
 
@@ -815,27 +815,27 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder truthTP(final Double truthTP) {
-                b.add(PROPERTY_TRUTHTP, truthTP);
+                b.add(PROPERTY_TRUTH_T_P, truthTP);
                 return this;
             }
 
             public Builder queryTP(final Double queryTP) {
-                b.add(PROPERTY_QUERYTP, queryTP);
+                b.add(PROPERTY_QUERY_T_P, queryTP);
                 return this;
             }
 
             public Builder truthFN(final Double truthFN) {
-                b.add(PROPERTY_TRUTHFN, truthFN);
+                b.add(PROPERTY_TRUTH_F_N, truthFN);
                 return this;
             }
 
             public Builder queryFP(final Double queryFP) {
-                b.add(PROPERTY_QUERYFP, queryFP);
+                b.add(PROPERTY_QUERY_F_P, queryFP);
                 return this;
             }
 
             public Builder gtFP(final Double gtFP) {
-                b.add(PROPERTY_GTFP, gtFP);
+                b.add(PROPERTY_GT_F_P, gtFP);
                 return this;
             }
 
@@ -850,7 +850,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder fScore(final Double fScore) {
-                b.add(PROPERTY_FSCORE, fScore);
+                b.add(PROPERTY_F_SCORE, fScore);
                 return this;
             }
 
@@ -868,16 +868,16 @@ public class MolecularSequence extends FhirResource {
     public static class MolecularSequenceReferenceSeq extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceReferenceSeq";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CHROMOSOME = "chromosome";
-        public static final String PROPERTY_GENOMEBUILD = "genomeBuild";
+        public static final String PROPERTY_GENOME_BUILD = "genomeBuild";
         public static final String PROPERTY_ORIENTATION = "orientation";
-        public static final String PROPERTY_REFERENCESEQID = "referenceSeqId";
-        public static final String PROPERTY_REFERENCESEQPOINTER = "referenceSeqPointer";
-        public static final String PROPERTY_REFERENCESEQSTRING = "referenceSeqString";
+        public static final String PROPERTY_REFERENCE_SEQ_ID = "referenceSeqId";
+        public static final String PROPERTY_REFERENCE_SEQ_POINTER = "referenceSeqPointer";
+        public static final String PROPERTY_REFERENCE_SEQ_STRING = "referenceSeqString";
         public static final String PROPERTY_STRAND = "strand";
-        public static final String PROPERTY_WINDOWSTART = "windowStart";
-        public static final String PROPERTY_WINDOWEND = "windowEnd";
+        public static final String PROPERTY_WINDOW_START = "windowStart";
+        public static final String PROPERTY_WINDOW_END = "windowEnd";
 
         public static Builder create() {
             return new Builder();
@@ -917,7 +917,7 @@ public class MolecularSequence extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -936,7 +936,7 @@ public class MolecularSequence extends FhirResource {
          * release of a primary build was used.
          */
         public String genomeBuild() {
-            return getString(PROPERTY_GENOMEBUILD);
+            return getString(PROPERTY_GENOME_BUILD);
         }
 
         /**
@@ -956,21 +956,21 @@ public class MolecularSequence extends FhirResource {
          * messenger RNA transcripts, and “NP_” for amino acid sequences.
          */
         public CodeableConcept referenceSeqId() {
-            return getObject(CodeableConcept.class, PROPERTY_REFERENCESEQID);
+            return getObject(CodeableConcept.class, PROPERTY_REFERENCE_SEQ_ID);
         }
 
         /**
          * A pointer to another MolecularSequence entity as reference sequence.
          */
         public Reference referenceSeqPointer() {
-            return getObject(Reference.class, PROPERTY_REFERENCESEQPOINTER);
+            return getObject(Reference.class, PROPERTY_REFERENCE_SEQ_POINTER);
         }
 
         /**
          * A string like "ACGT".
          */
         public String referenceSeqString() {
-            return getString(PROPERTY_REFERENCESEQSTRING);
+            return getString(PROPERTY_REFERENCE_SEQ_STRING);
         }
 
         /**
@@ -988,7 +988,7 @@ public class MolecularSequence extends FhirResource {
          * inclusive.
          */
         public Integer windowStart() {
-            return data.getInt(PROPERTY_WINDOWSTART);
+            return data.getInt(PROPERTY_WINDOW_START);
         }
 
         /**
@@ -998,7 +998,7 @@ public class MolecularSequence extends FhirResource {
          * end is inclusive and includes the last position.
          */
         public Integer windowEnd() {
-            return data.getInt(PROPERTY_WINDOWEND);
+            return data.getInt(PROPERTY_WINDOW_END);
         }
 
         public static class Builder {
@@ -1018,7 +1018,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1028,7 +1028,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder genomeBuild(final String genomeBuild) {
-                b.add(PROPERTY_GENOMEBUILD, genomeBuild);
+                b.add(PROPERTY_GENOME_BUILD, genomeBuild);
                 return this;
             }
 
@@ -1038,17 +1038,17 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder referenceSeqId(final CodeableConcept referenceSeqId) {
-                b.add(PROPERTY_REFERENCESEQID, referenceSeqId);
+                b.add(PROPERTY_REFERENCE_SEQ_ID, referenceSeqId);
                 return this;
             }
 
             public Builder referenceSeqPointer(final Reference referenceSeqPointer) {
-                b.add(PROPERTY_REFERENCESEQPOINTER, referenceSeqPointer);
+                b.add(PROPERTY_REFERENCE_SEQ_POINTER, referenceSeqPointer);
                 return this;
             }
 
             public Builder referenceSeqString(final String referenceSeqString) {
-                b.add(PROPERTY_REFERENCESEQSTRING, referenceSeqString);
+                b.add(PROPERTY_REFERENCE_SEQ_STRING, referenceSeqString);
                 return this;
             }
 
@@ -1058,12 +1058,12 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder windowStart(final Integer windowStart) {
-                b.add(PROPERTY_WINDOWSTART, windowStart);
+                b.add(PROPERTY_WINDOW_START, windowStart);
                 return this;
             }
 
             public Builder windowEnd(final Integer windowEnd) {
-                b.add(PROPERTY_WINDOWEND, windowEnd);
+                b.add(PROPERTY_WINDOW_END, windowEnd);
                 return this;
             }
 
@@ -1076,13 +1076,13 @@ public class MolecularSequence extends FhirResource {
     public static class MolecularSequenceRepository extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceRepository";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_URL = "url";
         public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DATASETID = "datasetId";
-        public static final String PROPERTY_VARIANTSETID = "variantsetId";
-        public static final String PROPERTY_READSETID = "readsetId";
+        public static final String PROPERTY_DATASET_ID = "datasetId";
+        public static final String PROPERTY_VARIANTSET_ID = "variantsetId";
+        public static final String PROPERTY_READSET_ID = "readsetId";
 
         public static Builder create() {
             return new Builder();
@@ -1122,7 +1122,7 @@ public class MolecularSequence extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1155,7 +1155,7 @@ public class MolecularSequence extends FhirResource {
          * external repository.
          */
         public String datasetId() {
-            return getString(PROPERTY_DATASETID);
+            return getString(PROPERTY_DATASET_ID);
         }
 
         /**
@@ -1164,14 +1164,14 @@ public class MolecularSequence extends FhirResource {
          * in external repository.
          */
         public String variantsetId() {
-            return getString(PROPERTY_VARIANTSETID);
+            return getString(PROPERTY_VARIANTSET_ID);
         }
 
         /**
          * Id of the read in this external repository.
          */
         public String readsetId() {
-            return getString(PROPERTY_READSETID);
+            return getString(PROPERTY_READSET_ID);
         }
 
         public static class Builder {
@@ -1191,7 +1191,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1211,17 +1211,17 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder datasetId(final String datasetId) {
-                b.add(PROPERTY_DATASETID, datasetId);
+                b.add(PROPERTY_DATASET_ID, datasetId);
                 return this;
             }
 
             public Builder variantsetId(final String variantsetId) {
-                b.add(PROPERTY_VARIANTSETID, variantsetId);
+                b.add(PROPERTY_VARIANTSET_ID, variantsetId);
                 return this;
             }
 
             public Builder readsetId(final String readsetId) {
-                b.add(PROPERTY_READSETID, readsetId);
+                b.add(PROPERTY_READSET_ID, readsetId);
                 return this;
             }
 
@@ -1234,14 +1234,14 @@ public class MolecularSequence extends FhirResource {
     public static class MolecularSequenceRoc extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceRoc";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SCORE = "score";
-        public static final String PROPERTY_NUMTP = "numTP";
-        public static final String PROPERTY_NUMFP = "numFP";
-        public static final String PROPERTY_NUMFN = "numFN";
+        public static final String PROPERTY_NUM_T_P = "numTP";
+        public static final String PROPERTY_NUM_F_P = "numFP";
+        public static final String PROPERTY_NUM_F_N = "numFN";
         public static final String PROPERTY_PRECISION = "precision";
         public static final String PROPERTY_SENSITIVITY = "sensitivity";
-        public static final String PROPERTY_FMEASURE = "fMeasure";
+        public static final String PROPERTY_F_MEASURE = "fMeasure";
 
         public static Builder create() {
             return new Builder();
@@ -1281,7 +1281,7 @@ public class MolecularSequence extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1297,7 +1297,7 @@ public class MolecularSequence extends FhirResource {
          * "score" field value.
          */
         public java.util.List<Integer> numTP() {
-            return getList(Integer.class, PROPERTY_NUMTP);
+            return getList(Integer.class, PROPERTY_NUM_T_P);
         }
 
         /**
@@ -1305,7 +1305,7 @@ public class MolecularSequence extends FhirResource {
          * "score" field value.
          */
         public java.util.List<Integer> numFP() {
-            return getList(Integer.class, PROPERTY_NUMFP);
+            return getList(Integer.class, PROPERTY_NUM_F_P);
         }
 
         /**
@@ -1313,7 +1313,7 @@ public class MolecularSequence extends FhirResource {
          * "score" field value.
          */
         public java.util.List<Integer> numFN() {
-            return getList(Integer.class, PROPERTY_NUMFN);
+            return getList(Integer.class, PROPERTY_NUM_F_N);
         }
 
         /**
@@ -1337,7 +1337,7 @@ public class MolecularSequence extends FhirResource {
          * value.
          */
         public java.util.List<Double> fMeasure() {
-            return getList(Double.class, PROPERTY_FMEASURE);
+            return getList(Double.class, PROPERTY_F_MEASURE);
         }
 
         public static class Builder {
@@ -1357,7 +1357,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1367,17 +1367,17 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder numTP(final java.util.List<Integer> numTP) {
-                b.add(PROPERTY_NUMTP, FhirObject.toIntegerArray(numTP));
+                b.add(PROPERTY_NUM_T_P, FhirObject.toIntegerArray(numTP));
                 return this;
             }
 
             public Builder numFP(final java.util.List<Integer> numFP) {
-                b.add(PROPERTY_NUMFP, FhirObject.toIntegerArray(numFP));
+                b.add(PROPERTY_NUM_F_P, FhirObject.toIntegerArray(numFP));
                 return this;
             }
 
             public Builder numFN(final java.util.List<Integer> numFN) {
-                b.add(PROPERTY_NUMFN, FhirObject.toIntegerArray(numFN));
+                b.add(PROPERTY_NUM_F_N, FhirObject.toIntegerArray(numFN));
                 return this;
             }
 
@@ -1392,7 +1392,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder fMeasure(final java.util.List<Double> fMeasure) {
-                b.add(PROPERTY_FMEASURE, FhirObject.toDoubleArray(fMeasure));
+                b.add(PROPERTY_F_MEASURE, FhirObject.toDoubleArray(fMeasure));
                 return this;
             }
 
@@ -1405,8 +1405,8 @@ public class MolecularSequence extends FhirResource {
     public static class MolecularSequenceStructureVariant extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceStructureVariant";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_VARIANTTYPE = "variantType";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_VARIANT_TYPE = "variantType";
         public static final String PROPERTY_EXACT = "exact";
         public static final String PROPERTY_LENGTH = "length";
         public static final String PROPERTY_OUTER = "outer";
@@ -1450,14 +1450,14 @@ public class MolecularSequence extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Information about chromosome structure variation DNA change type.
          */
         public CodeableConcept variantType() {
-            return getObject(CodeableConcept.class, PROPERTY_VARIANTTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_VARIANT_TYPE);
         }
 
         /**
@@ -1506,12 +1506,12 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder variantType(final CodeableConcept variantType) {
-                b.add(PROPERTY_VARIANTTYPE, variantType);
+                b.add(PROPERTY_VARIANT_TYPE, variantType);
                 return this;
             }
 
@@ -1544,13 +1544,13 @@ public class MolecularSequence extends FhirResource {
     public static class MolecularSequenceVariant extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceVariant";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_START = "start";
         public static final String PROPERTY_END = "end";
-        public static final String PROPERTY_OBSERVEDALLELE = "observedAllele";
-        public static final String PROPERTY_REFERENCEALLELE = "referenceAllele";
+        public static final String PROPERTY_OBSERVED_ALLELE = "observedAllele";
+        public static final String PROPERTY_REFERENCE_ALLELE = "referenceAllele";
         public static final String PROPERTY_CIGAR = "cigar";
-        public static final String PROPERTY_VARIANTPOINTER = "variantPointer";
+        public static final String PROPERTY_VARIANT_POINTER = "variantPointer";
 
         public static Builder create() {
             return new Builder();
@@ -1590,7 +1590,7 @@ public class MolecularSequence extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1622,7 +1622,7 @@ public class MolecularSequence extends FhirResource {
          * variant.start and variant.end.
          */
         public String observedAllele() {
-            return getString(PROPERTY_OBSERVEDALLELE);
+            return getString(PROPERTY_OBSERVED_ALLELE);
         }
 
         /**
@@ -1635,7 +1635,7 @@ public class MolecularSequence extends FhirResource {
          * variant.start and variant.end.
          */
         public String referenceAllele() {
-            return getString(PROPERTY_REFERENCEALLELE);
+            return getString(PROPERTY_REFERENCE_ALLELE);
         }
 
         /**
@@ -1651,7 +1651,7 @@ public class MolecularSequence extends FhirResource {
          * A pointer to an Observation containing variant information.
          */
         public Reference variantPointer() {
-            return getObject(Reference.class, PROPERTY_VARIANTPOINTER);
+            return getObject(Reference.class, PROPERTY_VARIANT_POINTER);
         }
 
         public static class Builder {
@@ -1671,7 +1671,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1686,12 +1686,12 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder observedAllele(final String observedAllele) {
-                b.add(PROPERTY_OBSERVEDALLELE, observedAllele);
+                b.add(PROPERTY_OBSERVED_ALLELE, observedAllele);
                 return this;
             }
 
             public Builder referenceAllele(final String referenceAllele) {
-                b.add(PROPERTY_REFERENCEALLELE, referenceAllele);
+                b.add(PROPERTY_REFERENCE_ALLELE, referenceAllele);
                 return this;
             }
 
@@ -1701,7 +1701,7 @@ public class MolecularSequence extends FhirResource {
             }
 
             public Builder variantPointer(final Reference variantPointer) {
-                b.add(PROPERTY_VARIANTPOINTER, variantPointer);
+                b.add(PROPERTY_VARIANT_POINTER, variantPointer);
                 return this;
             }
 

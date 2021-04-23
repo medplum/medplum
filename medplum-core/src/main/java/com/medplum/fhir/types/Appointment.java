@@ -11,36 +11,36 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Appointment extends FhirResource {
     public static final String RESOURCE_TYPE = "Appointment";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_CANCELATIONREASON = "cancelationReason";
-    public static final String PROPERTY_SERVICECATEGORY = "serviceCategory";
-    public static final String PROPERTY_SERVICETYPE = "serviceType";
+    public static final String PROPERTY_CANCELATION_REASON = "cancelationReason";
+    public static final String PROPERTY_SERVICE_CATEGORY = "serviceCategory";
+    public static final String PROPERTY_SERVICE_TYPE = "serviceType";
     public static final String PROPERTY_SPECIALTY = "specialty";
-    public static final String PROPERTY_APPOINTMENTTYPE = "appointmentType";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_APPOINTMENT_TYPE = "appointmentType";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_PRIORITY = "priority";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_SUPPORTINGINFORMATION = "supportingInformation";
+    public static final String PROPERTY_SUPPORTING_INFORMATION = "supportingInformation";
     public static final String PROPERTY_START = "start";
     public static final String PROPERTY_END = "end";
-    public static final String PROPERTY_MINUTESDURATION = "minutesDuration";
+    public static final String PROPERTY_MINUTES_DURATION = "minutesDuration";
     public static final String PROPERTY_SLOT = "slot";
     public static final String PROPERTY_CREATED = "created";
     public static final String PROPERTY_COMMENT = "comment";
-    public static final String PROPERTY_PATIENTINSTRUCTION = "patientInstruction";
-    public static final String PROPERTY_BASEDON = "basedOn";
+    public static final String PROPERTY_PATIENT_INSTRUCTION = "patientInstruction";
+    public static final String PROPERTY_BASED_ON = "basedOn";
     public static final String PROPERTY_PARTICIPANT = "participant";
-    public static final String PROPERTY_REQUESTEDPERIOD = "requestedPeriod";
+    public static final String PROPERTY_REQUESTED_PERIOD = "requestedPeriod";
 
     public static Builder create() {
         return new Builder();
@@ -61,7 +61,7 @@ public class Appointment extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -109,7 +109,7 @@ public class Appointment extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -137,7 +137,7 @@ public class Appointment extends FhirResource {
      * actions are required, or specific fees apply.
      */
     public CodeableConcept cancelationReason() {
-        return getObject(CodeableConcept.class, PROPERTY_CANCELATIONREASON);
+        return getObject(CodeableConcept.class, PROPERTY_CANCELATION_REASON);
     }
 
     /**
@@ -145,14 +145,14 @@ public class Appointment extends FhirResource {
      * this appointment.
      */
     public java.util.List<CodeableConcept> serviceCategory() {
-        return getList(CodeableConcept.class, PROPERTY_SERVICECATEGORY);
+        return getList(CodeableConcept.class, PROPERTY_SERVICE_CATEGORY);
     }
 
     /**
      * The specific service that is to be performed during this appointment.
      */
     public java.util.List<CodeableConcept> serviceType() {
-        return getList(CodeableConcept.class, PROPERTY_SERVICETYPE);
+        return getList(CodeableConcept.class, PROPERTY_SERVICE_TYPE);
     }
 
     /**
@@ -168,7 +168,7 @@ public class Appointment extends FhirResource {
      * (not service type).
      */
     public CodeableConcept appointmentType() {
-        return getObject(CodeableConcept.class, PROPERTY_APPOINTMENTTYPE);
+        return getObject(CodeableConcept.class, PROPERTY_APPOINTMENT_TYPE);
     }
 
     /**
@@ -176,7 +176,7 @@ public class Appointment extends FhirResource {
      * more clinical than administrative.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
@@ -187,7 +187,7 @@ public class Appointment extends FhirResource {
      * referenced in the evidence.detail), or a Procedure.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -213,7 +213,7 @@ public class Appointment extends FhirResource {
      * the appointment.
      */
     public java.util.List<Reference> supportingInformation() {
-        return getList(Reference.class, PROPERTY_SUPPORTINGINFORMATION);
+        return getList(Reference.class, PROPERTY_SUPPORTING_INFORMATION);
     }
 
     /**
@@ -240,7 +240,7 @@ public class Appointment extends FhirResource {
      * difference between the start and end.
      */
     public Integer minutesDuration() {
-        return data.getInt(PROPERTY_MINUTESDURATION);
+        return data.getInt(PROPERTY_MINUTES_DURATION);
     }
 
     /**
@@ -275,7 +275,7 @@ public class Appointment extends FhirResource {
      * fast from 8pm night before).
      */
     public String patientInstruction() {
-        return getString(PROPERTY_PATIENTINSTRUCTION);
+        return getString(PROPERTY_PATIENT_INSTRUCTION);
     }
 
     /**
@@ -283,7 +283,7 @@ public class Appointment extends FhirResource {
      * incoming referral or procedure request).
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -303,7 +303,7 @@ public class Appointment extends FhirResource {
      * duration may be calculated by the scheduling system.
      */
     public java.util.List<Period> requestedPeriod() {
-        return getList(Period.class, PROPERTY_REQUESTEDPERIOD);
+        return getList(Period.class, PROPERTY_REQUESTED_PERIOD);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -317,7 +317,7 @@ public class Appointment extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -332,7 +332,7 @@ public class Appointment extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -352,7 +352,7 @@ public class Appointment extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -367,17 +367,17 @@ public class Appointment extends FhirResource {
         }
 
         public Builder cancelationReason(final CodeableConcept cancelationReason) {
-            b.add(PROPERTY_CANCELATIONREASON, cancelationReason);
+            b.add(PROPERTY_CANCELATION_REASON, cancelationReason);
             return this;
         }
 
         public Builder serviceCategory(final java.util.List<CodeableConcept> serviceCategory) {
-            b.add(PROPERTY_SERVICECATEGORY, FhirObject.toArray(serviceCategory));
+            b.add(PROPERTY_SERVICE_CATEGORY, FhirObject.toArray(serviceCategory));
             return this;
         }
 
         public Builder serviceType(final java.util.List<CodeableConcept> serviceType) {
-            b.add(PROPERTY_SERVICETYPE, FhirObject.toArray(serviceType));
+            b.add(PROPERTY_SERVICE_TYPE, FhirObject.toArray(serviceType));
             return this;
         }
 
@@ -387,17 +387,17 @@ public class Appointment extends FhirResource {
         }
 
         public Builder appointmentType(final CodeableConcept appointmentType) {
-            b.add(PROPERTY_APPOINTMENTTYPE, appointmentType);
+            b.add(PROPERTY_APPOINTMENT_TYPE, appointmentType);
             return this;
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
@@ -412,7 +412,7 @@ public class Appointment extends FhirResource {
         }
 
         public Builder supportingInformation(final java.util.List<Reference> supportingInformation) {
-            b.add(PROPERTY_SUPPORTINGINFORMATION, FhirObject.toArray(supportingInformation));
+            b.add(PROPERTY_SUPPORTING_INFORMATION, FhirObject.toArray(supportingInformation));
             return this;
         }
 
@@ -427,7 +427,7 @@ public class Appointment extends FhirResource {
         }
 
         public Builder minutesDuration(final Integer minutesDuration) {
-            b.add(PROPERTY_MINUTESDURATION, minutesDuration);
+            b.add(PROPERTY_MINUTES_DURATION, minutesDuration);
             return this;
         }
 
@@ -447,12 +447,12 @@ public class Appointment extends FhirResource {
         }
 
         public Builder patientInstruction(final String patientInstruction) {
-            b.add(PROPERTY_PATIENTINSTRUCTION, patientInstruction);
+            b.add(PROPERTY_PATIENT_INSTRUCTION, patientInstruction);
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
@@ -462,7 +462,7 @@ public class Appointment extends FhirResource {
         }
 
         public Builder requestedPeriod(final java.util.List<Period> requestedPeriod) {
-            b.add(PROPERTY_REQUESTEDPERIOD, FhirObject.toArray(requestedPeriod));
+            b.add(PROPERTY_REQUESTED_PERIOD, FhirObject.toArray(requestedPeriod));
             return this;
         }
 
@@ -474,7 +474,7 @@ public class Appointment extends FhirResource {
     public static class AppointmentParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "AppointmentParticipant";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_ACTOR = "actor";
         public static final String PROPERTY_REQUIRED = "required";
@@ -519,7 +519,7 @@ public class Appointment extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -578,7 +578,7 @@ public class Appointment extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

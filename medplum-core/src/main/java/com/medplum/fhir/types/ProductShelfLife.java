@@ -12,11 +12,11 @@ import jakarta.json.JsonObjectBuilder;
 public class ProductShelfLife extends FhirResource {
     public static final String RESOURCE_TYPE = "ProductShelfLife";
     public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_SPECIALPRECAUTIONSFORSTORAGE = "specialPrecautionsForStorage";
+    public static final String PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE = "specialPrecautionsForStorage";
 
     public static Builder create() {
         return new Builder();
@@ -56,7 +56,7 @@ public class ProductShelfLife extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -95,7 +95,7 @@ public class ProductShelfLife extends FhirResource {
      * controlled term identifier shall be specified.
      */
     public java.util.List<CodeableConcept> specialPrecautionsForStorage() {
-        return getList(CodeableConcept.class, PROPERTY_SPECIALPRECAUTIONSFORSTORAGE);
+        return getList(CodeableConcept.class, PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE);
     }
 
     public static class Builder {
@@ -115,7 +115,7 @@ public class ProductShelfLife extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -135,7 +135,7 @@ public class ProductShelfLife extends FhirResource {
         }
 
         public Builder specialPrecautionsForStorage(final java.util.List<CodeableConcept> specialPrecautionsForStorage) {
-            b.add(PROPERTY_SPECIALPRECAUTIONSFORSTORAGE, FhirObject.toArray(specialPrecautionsForStorage));
+            b.add(PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE, FhirObject.toArray(specialPrecautionsForStorage));
             return this;
         }
 

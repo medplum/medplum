@@ -16,7 +16,7 @@ public class Coding extends FhirResource {
     public static final String PROPERTY_VERSION = "version";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_DISPLAY = "display";
-    public static final String PROPERTY_USERSELECTED = "userSelected";
+    public static final String PROPERTY_USER_SELECTED = "userSelected";
 
     public static Builder create() {
         return new Builder();
@@ -79,7 +79,7 @@ public class Coding extends FhirResource {
      * pick list of available items (codes or displays).
      */
     public Boolean userSelected() {
-        return data.getBoolean(PROPERTY_USERSELECTED);
+        return data.getBoolean(PROPERTY_USER_SELECTED);
     }
 
     public static class Builder {
@@ -119,7 +119,7 @@ public class Coding extends FhirResource {
         }
 
         public Builder userSelected(final Boolean userSelected) {
-            b.add(PROPERTY_USERSELECTED, userSelected);
+            b.add(PROPERTY_USER_SELECTED, userSelected);
             return this;
         }
 

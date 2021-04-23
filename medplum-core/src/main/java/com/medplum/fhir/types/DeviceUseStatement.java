@@ -9,28 +9,28 @@ import jakarta.json.JsonObject;
 
 public class DeviceUseStatement extends FhirResource {
     public static final String RESOURCE_TYPE = "DeviceUseStatement";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASEDON = "basedOn";
+    public static final String PROPERTY_BASED_ON = "basedOn";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_DERIVEDFROM = "derivedFrom";
-    public static final String PROPERTY_TIMINGTIMING = "timingTiming";
-    public static final String PROPERTY_TIMINGPERIOD = "timingPeriod";
-    public static final String PROPERTY_TIMINGDATETIME = "timingDateTime";
-    public static final String PROPERTY_RECORDEDON = "recordedOn";
+    public static final String PROPERTY_DERIVED_FROM = "derivedFrom";
+    public static final String PROPERTY_TIMING_TIMING = "timingTiming";
+    public static final String PROPERTY_TIMING_PERIOD = "timingPeriod";
+    public static final String PROPERTY_TIMING_DATE_TIME = "timingDateTime";
+    public static final String PROPERTY_RECORDED_ON = "recordedOn";
     public static final String PROPERTY_SOURCE = "source";
     public static final String PROPERTY_DEVICE = "device";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
-    public static final String PROPERTY_BODYSITE = "bodySite";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
+    public static final String PROPERTY_BODY_SITE = "bodySite";
     public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
@@ -52,7 +52,7 @@ public class DeviceUseStatement extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -100,7 +100,7 @@ public class DeviceUseStatement extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -115,7 +115,7 @@ public class DeviceUseStatement extends FhirResource {
      * this DeviceUseStatement.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -140,35 +140,35 @@ public class DeviceUseStatement extends FhirResource {
      * DeviceUseStatement.
      */
     public java.util.List<Reference> derivedFrom() {
-        return getList(Reference.class, PROPERTY_DERIVEDFROM);
+        return getList(Reference.class, PROPERTY_DERIVED_FROM);
     }
 
     /**
      * How often the device was used.
      */
     public Timing timingTiming() {
-        return getObject(Timing.class, PROPERTY_TIMINGTIMING);
+        return getObject(Timing.class, PROPERTY_TIMING_TIMING);
     }
 
     /**
      * How often the device was used.
      */
     public Period timingPeriod() {
-        return getObject(Period.class, PROPERTY_TIMINGPERIOD);
+        return getObject(Period.class, PROPERTY_TIMING_PERIOD);
     }
 
     /**
      * How often the device was used.
      */
     public String timingDateTime() {
-        return getString(PROPERTY_TIMINGDATETIME);
+        return getString(PROPERTY_TIMING_DATE_TIME);
     }
 
     /**
      * The time at which the statement was made/recorded.
      */
     public java.time.Instant recordedOn() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RECORDEDON));
+        return java.time.Instant.parse(data.getString(PROPERTY_RECORDED_ON));
     }
 
     /**
@@ -189,7 +189,7 @@ public class DeviceUseStatement extends FhirResource {
      * Reason or justification for the use of the device.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
@@ -197,7 +197,7 @@ public class DeviceUseStatement extends FhirResource {
      * DeviceUseStatement.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -205,7 +205,7 @@ public class DeviceUseStatement extends FhirResource {
      * was used ( i.e. the target).
      */
     public CodeableConcept bodySite() {
-        return getObject(CodeableConcept.class, PROPERTY_BODYSITE);
+        return getObject(CodeableConcept.class, PROPERTY_BODY_SITE);
     }
 
     /**
@@ -229,7 +229,7 @@ public class DeviceUseStatement extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -244,7 +244,7 @@ public class DeviceUseStatement extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -264,7 +264,7 @@ public class DeviceUseStatement extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -274,7 +274,7 @@ public class DeviceUseStatement extends FhirResource {
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
@@ -289,27 +289,27 @@ public class DeviceUseStatement extends FhirResource {
         }
 
         public Builder derivedFrom(final java.util.List<Reference> derivedFrom) {
-            b.add(PROPERTY_DERIVEDFROM, FhirObject.toArray(derivedFrom));
+            b.add(PROPERTY_DERIVED_FROM, FhirObject.toArray(derivedFrom));
             return this;
         }
 
         public Builder timingTiming(final Timing timingTiming) {
-            b.add(PROPERTY_TIMINGTIMING, timingTiming);
+            b.add(PROPERTY_TIMING_TIMING, timingTiming);
             return this;
         }
 
         public Builder timingPeriod(final Period timingPeriod) {
-            b.add(PROPERTY_TIMINGPERIOD, timingPeriod);
+            b.add(PROPERTY_TIMING_PERIOD, timingPeriod);
             return this;
         }
 
         public Builder timingDateTime(final String timingDateTime) {
-            b.add(PROPERTY_TIMINGDATETIME, timingDateTime);
+            b.add(PROPERTY_TIMING_DATE_TIME, timingDateTime);
             return this;
         }
 
         public Builder recordedOn(final java.time.Instant recordedOn) {
-            b.add(PROPERTY_RECORDEDON, recordedOn.toString());
+            b.add(PROPERTY_RECORDED_ON, recordedOn.toString());
             return this;
         }
 
@@ -324,17 +324,17 @@ public class DeviceUseStatement extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
         public Builder bodySite(final CodeableConcept bodySite) {
-            b.add(PROPERTY_BODYSITE, bodySite);
+            b.add(PROPERTY_BODY_SITE, bodySite);
             return this;
         }
 

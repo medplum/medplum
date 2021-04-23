@@ -11,33 +11,33 @@ import jakarta.json.JsonObjectBuilder;
 
 public class DiagnosticReport extends FhirResource {
     public static final String RESOURCE_TYPE = "DiagnosticReport";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASEDON = "basedOn";
+    public static final String PROPERTY_BASED_ON = "basedOn";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_EFFECTIVEDATETIME = "effectiveDateTime";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
+    public static final String PROPERTY_EFFECTIVE_DATE_TIME = "effectiveDateTime";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
     public static final String PROPERTY_ISSUED = "issued";
     public static final String PROPERTY_PERFORMER = "performer";
-    public static final String PROPERTY_RESULTSINTERPRETER = "resultsInterpreter";
+    public static final String PROPERTY_RESULTS_INTERPRETER = "resultsInterpreter";
     public static final String PROPERTY_SPECIMEN = "specimen";
     public static final String PROPERTY_RESULT = "result";
-    public static final String PROPERTY_IMAGINGSTUDY = "imagingStudy";
+    public static final String PROPERTY_IMAGING_STUDY = "imagingStudy";
     public static final String PROPERTY_MEDIA = "media";
     public static final String PROPERTY_CONCLUSION = "conclusion";
-    public static final String PROPERTY_CONCLUSIONCODE = "conclusionCode";
-    public static final String PROPERTY_PRESENTEDFORM = "presentedForm";
+    public static final String PROPERTY_CONCLUSION_CODE = "conclusionCode";
+    public static final String PROPERTY_PRESENTED_FORM = "presentedForm";
 
     public static Builder create() {
         return new Builder();
@@ -58,7 +58,7 @@ public class DiagnosticReport extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -106,7 +106,7 @@ public class DiagnosticReport extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -120,7 +120,7 @@ public class DiagnosticReport extends FhirResource {
      * Details concerning a service requested.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -171,7 +171,7 @@ public class DiagnosticReport extends FhirResource {
      * of the date/time is not known, only the date/time itself.
      */
     public String effectiveDateTime() {
-        return getString(PROPERTY_EFFECTIVEDATETIME);
+        return getString(PROPERTY_EFFECTIVE_DATE_TIME);
     }
 
     /**
@@ -181,7 +181,7 @@ public class DiagnosticReport extends FhirResource {
      * of the date/time is not known, only the date/time itself.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -204,7 +204,7 @@ public class DiagnosticReport extends FhirResource {
      * conclusions and interpretations.
      */
     public java.util.List<Reference> resultsInterpreter() {
-        return getList(Reference.class, PROPERTY_RESULTSINTERPRETER);
+        return getList(Reference.class, PROPERTY_RESULTS_INTERPRETER);
     }
 
     /**
@@ -230,7 +230,7 @@ public class DiagnosticReport extends FhirResource {
      * images.
      */
     public java.util.List<Reference> imagingStudy() {
-        return getList(Reference.class, PROPERTY_IMAGINGSTUDY);
+        return getList(Reference.class, PROPERTY_IMAGING_STUDY);
     }
 
     /**
@@ -255,7 +255,7 @@ public class DiagnosticReport extends FhirResource {
      * (interpretation/impression) of the diagnostic report.
      */
     public java.util.List<CodeableConcept> conclusionCode() {
-        return getList(CodeableConcept.class, PROPERTY_CONCLUSIONCODE);
+        return getList(CodeableConcept.class, PROPERTY_CONCLUSION_CODE);
     }
 
     /**
@@ -264,7 +264,7 @@ public class DiagnosticReport extends FhirResource {
      * semantically equivalent.
      */
     public java.util.List<Attachment> presentedForm() {
-        return getList(Attachment.class, PROPERTY_PRESENTEDFORM);
+        return getList(Attachment.class, PROPERTY_PRESENTED_FORM);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -278,7 +278,7 @@ public class DiagnosticReport extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -293,7 +293,7 @@ public class DiagnosticReport extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -313,7 +313,7 @@ public class DiagnosticReport extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -323,7 +323,7 @@ public class DiagnosticReport extends FhirResource {
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
@@ -353,12 +353,12 @@ public class DiagnosticReport extends FhirResource {
         }
 
         public Builder effectiveDateTime(final String effectiveDateTime) {
-            b.add(PROPERTY_EFFECTIVEDATETIME, effectiveDateTime);
+            b.add(PROPERTY_EFFECTIVE_DATE_TIME, effectiveDateTime);
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
@@ -373,7 +373,7 @@ public class DiagnosticReport extends FhirResource {
         }
 
         public Builder resultsInterpreter(final java.util.List<Reference> resultsInterpreter) {
-            b.add(PROPERTY_RESULTSINTERPRETER, FhirObject.toArray(resultsInterpreter));
+            b.add(PROPERTY_RESULTS_INTERPRETER, FhirObject.toArray(resultsInterpreter));
             return this;
         }
 
@@ -388,7 +388,7 @@ public class DiagnosticReport extends FhirResource {
         }
 
         public Builder imagingStudy(final java.util.List<Reference> imagingStudy) {
-            b.add(PROPERTY_IMAGINGSTUDY, FhirObject.toArray(imagingStudy));
+            b.add(PROPERTY_IMAGING_STUDY, FhirObject.toArray(imagingStudy));
             return this;
         }
 
@@ -403,12 +403,12 @@ public class DiagnosticReport extends FhirResource {
         }
 
         public Builder conclusionCode(final java.util.List<CodeableConcept> conclusionCode) {
-            b.add(PROPERTY_CONCLUSIONCODE, FhirObject.toArray(conclusionCode));
+            b.add(PROPERTY_CONCLUSION_CODE, FhirObject.toArray(conclusionCode));
             return this;
         }
 
         public Builder presentedForm(final java.util.List<Attachment> presentedForm) {
-            b.add(PROPERTY_PRESENTEDFORM, FhirObject.toArray(presentedForm));
+            b.add(PROPERTY_PRESENTED_FORM, FhirObject.toArray(presentedForm));
             return this;
         }
 
@@ -420,7 +420,7 @@ public class DiagnosticReport extends FhirResource {
     public static class DiagnosticReportMedia extends FhirObject {
         public static final String RESOURCE_TYPE = "DiagnosticReportMedia";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_COMMENT = "comment";
         public static final String PROPERTY_LINK = "link";
 
@@ -462,7 +462,7 @@ public class DiagnosticReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -498,7 +498,7 @@ public class DiagnosticReport extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

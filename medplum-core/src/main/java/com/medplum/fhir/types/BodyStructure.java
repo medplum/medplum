@@ -9,19 +9,19 @@ import jakarta.json.JsonObject;
 
 public class BodyStructure extends FhirResource {
     public static final String RESOURCE_TYPE = "BodyStructure";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_ACTIVE = "active";
     public static final String PROPERTY_MORPHOLOGY = "morphology";
     public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_LOCATIONQUALIFIER = "locationQualifier";
+    public static final String PROPERTY_LOCATION_QUALIFIER = "locationQualifier";
     public static final String PROPERTY_DESCRIPTION = "description";
     public static final String PROPERTY_IMAGE = "image";
     public static final String PROPERTY_PATIENT = "patient";
@@ -45,7 +45,7 @@ public class BodyStructure extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -93,7 +93,7 @@ public class BodyStructure extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -132,7 +132,7 @@ public class BodyStructure extends FhirResource {
      * for laterality, relative location, directionality, number, and plane.
      */
     public java.util.List<CodeableConcept> locationQualifier() {
-        return getList(CodeableConcept.class, PROPERTY_LOCATIONQUALIFIER);
+        return getList(CodeableConcept.class, PROPERTY_LOCATION_QUALIFIER);
     }
 
     /**
@@ -167,7 +167,7 @@ public class BodyStructure extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -182,7 +182,7 @@ public class BodyStructure extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -202,7 +202,7 @@ public class BodyStructure extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -227,7 +227,7 @@ public class BodyStructure extends FhirResource {
         }
 
         public Builder locationQualifier(final java.util.List<CodeableConcept> locationQualifier) {
-            b.add(PROPERTY_LOCATIONQUALIFIER, FhirObject.toArray(locationQualifier));
+            b.add(PROPERTY_LOCATION_QUALIFIER, FhirObject.toArray(locationQualifier));
             return this;
         }
 

@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class List extends FhirResource {
     public static final String RESOURCE_TYPE = "List";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_MODE = "mode";
@@ -28,10 +28,10 @@ public class List extends FhirResource {
     public static final String PROPERTY_ENCOUNTER = "encounter";
     public static final String PROPERTY_DATE = "date";
     public static final String PROPERTY_SOURCE = "source";
-    public static final String PROPERTY_ORDEREDBY = "orderedBy";
+    public static final String PROPERTY_ORDERED_BY = "orderedBy";
     public static final String PROPERTY_NOTE = "note";
     public static final String PROPERTY_ENTRY = "entry";
-    public static final String PROPERTY_EMPTYREASON = "emptyReason";
+    public static final String PROPERTY_EMPTY_REASON = "emptyReason";
 
     public static Builder create() {
         return new Builder();
@@ -52,7 +52,7 @@ public class List extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -100,7 +100,7 @@ public class List extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -177,7 +177,7 @@ public class List extends FhirResource {
      * What order applies to the items in the list.
      */
     public CodeableConcept orderedBy() {
-        return getObject(CodeableConcept.class, PROPERTY_ORDEREDBY);
+        return getObject(CodeableConcept.class, PROPERTY_ORDERED_BY);
     }
 
     /**
@@ -198,7 +198,7 @@ public class List extends FhirResource {
      * If the list is empty, why the list is empty.
      */
     public CodeableConcept emptyReason() {
-        return getObject(CodeableConcept.class, PROPERTY_EMPTYREASON);
+        return getObject(CodeableConcept.class, PROPERTY_EMPTY_REASON);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -212,7 +212,7 @@ public class List extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -227,7 +227,7 @@ public class List extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -247,7 +247,7 @@ public class List extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -297,7 +297,7 @@ public class List extends FhirResource {
         }
 
         public Builder orderedBy(final CodeableConcept orderedBy) {
-            b.add(PROPERTY_ORDEREDBY, orderedBy);
+            b.add(PROPERTY_ORDERED_BY, orderedBy);
             return this;
         }
 
@@ -312,7 +312,7 @@ public class List extends FhirResource {
         }
 
         public Builder emptyReason(final CodeableConcept emptyReason) {
-            b.add(PROPERTY_EMPTYREASON, emptyReason);
+            b.add(PROPERTY_EMPTY_REASON, emptyReason);
             return this;
         }
 
@@ -324,7 +324,7 @@ public class List extends FhirResource {
     public static class ListEntry extends FhirObject {
         public static final String RESOURCE_TYPE = "ListEntry";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_FLAG = "flag";
         public static final String PROPERTY_DELETED = "deleted";
         public static final String PROPERTY_DATE = "date";
@@ -368,7 +368,7 @@ public class List extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -417,7 +417,7 @@ public class List extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

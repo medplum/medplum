@@ -9,18 +9,18 @@ import jakarta.json.JsonObject;
 
 public class MedicinalProductUndesirableEffect extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductUndesirableEffect";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_SYMPTOMCONDITIONEFFECT = "symptomConditionEffect";
+    public static final String PROPERTY_SYMPTOM_CONDITION_EFFECT = "symptomConditionEffect";
     public static final String PROPERTY_CLASSIFICATION = "classification";
-    public static final String PROPERTY_FREQUENCYOFOCCURRENCE = "frequencyOfOccurrence";
+    public static final String PROPERTY_FREQUENCY_OF_OCCURRENCE = "frequencyOfOccurrence";
     public static final String PROPERTY_POPULATION = "population";
 
     public static Builder create() {
@@ -42,7 +42,7 @@ public class MedicinalProductUndesirableEffect extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -90,7 +90,7 @@ public class MedicinalProductUndesirableEffect extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -104,7 +104,7 @@ public class MedicinalProductUndesirableEffect extends FhirResource {
      * The symptom, condition or undesirable effect.
      */
     public CodeableConcept symptomConditionEffect() {
-        return getObject(CodeableConcept.class, PROPERTY_SYMPTOMCONDITIONEFFECT);
+        return getObject(CodeableConcept.class, PROPERTY_SYMPTOM_CONDITION_EFFECT);
     }
 
     /**
@@ -118,7 +118,7 @@ public class MedicinalProductUndesirableEffect extends FhirResource {
      * The frequency of occurrence of the effect.
      */
     public CodeableConcept frequencyOfOccurrence() {
-        return getObject(CodeableConcept.class, PROPERTY_FREQUENCYOFOCCURRENCE);
+        return getObject(CodeableConcept.class, PROPERTY_FREQUENCY_OF_OCCURRENCE);
     }
 
     /**
@@ -139,7 +139,7 @@ public class MedicinalProductUndesirableEffect extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -154,7 +154,7 @@ public class MedicinalProductUndesirableEffect extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -174,7 +174,7 @@ public class MedicinalProductUndesirableEffect extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -184,7 +184,7 @@ public class MedicinalProductUndesirableEffect extends FhirResource {
         }
 
         public Builder symptomConditionEffect(final CodeableConcept symptomConditionEffect) {
-            b.add(PROPERTY_SYMPTOMCONDITIONEFFECT, symptomConditionEffect);
+            b.add(PROPERTY_SYMPTOM_CONDITION_EFFECT, symptomConditionEffect);
             return this;
         }
 
@@ -194,7 +194,7 @@ public class MedicinalProductUndesirableEffect extends FhirResource {
         }
 
         public Builder frequencyOfOccurrence(final CodeableConcept frequencyOfOccurrence) {
-            b.add(PROPERTY_FREQUENCYOFOCCURRENCE, frequencyOfOccurrence);
+            b.add(PROPERTY_FREQUENCY_OF_OCCURRENCE, frequencyOfOccurrence);
             return this;
         }
 

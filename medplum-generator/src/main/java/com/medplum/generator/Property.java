@@ -64,6 +64,19 @@ public class Property {
     }
 
     public String getConstantName() {
-        return "PROPERTY_" + inputName.toUpperCase();
+        final StringBuilder b = new StringBuilder();
+        b.append("PROPERTY_");
+
+        for (int i = 0; i < inputName.length(); i++) {
+            final char c = inputName.charAt(i);
+            if (Character.isUpperCase(c)) {
+                b.append('_');
+                b.append(c);
+            } else {
+                b.append(Character.toUpperCase(c));
+            }
+        }
+
+        return b.toString();
     }
 }

@@ -12,13 +12,13 @@ import jakarta.json.JsonObjectBuilder;
 public class ProdCharacteristic extends FhirResource {
     public static final String RESOURCE_TYPE = "ProdCharacteristic";
     public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_HEIGHT = "height";
     public static final String PROPERTY_WIDTH = "width";
     public static final String PROPERTY_DEPTH = "depth";
     public static final String PROPERTY_WEIGHT = "weight";
-    public static final String PROPERTY_NOMINALVOLUME = "nominalVolume";
-    public static final String PROPERTY_EXTERNALDIAMETER = "externalDiameter";
+    public static final String PROPERTY_NOMINAL_VOLUME = "nominalVolume";
+    public static final String PROPERTY_EXTERNAL_DIAMETER = "externalDiameter";
     public static final String PROPERTY_SHAPE = "shape";
     public static final String PROPERTY_COLOR = "color";
     public static final String PROPERTY_IMPRINT = "imprint";
@@ -63,7 +63,7 @@ public class ProdCharacteristic extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -113,7 +113,7 @@ public class ProdCharacteristic extends FhirResource {
      * terminology The symbol and the symbol identifier shall be used.
      */
     public Quantity nominalVolume() {
-        return getObject(Quantity.class, PROPERTY_NOMINALVOLUME);
+        return getObject(Quantity.class, PROPERTY_NOMINAL_VOLUME);
     }
 
     /**
@@ -123,7 +123,7 @@ public class ProdCharacteristic extends FhirResource {
      * terminology The symbol and the symbol identifier shall be used.
      */
     public Quantity externalDiameter() {
-        return getObject(Quantity.class, PROPERTY_EXTERNALDIAMETER);
+        return getObject(Quantity.class, PROPERTY_EXTERNAL_DIAMETER);
     }
 
     /**
@@ -185,7 +185,7 @@ public class ProdCharacteristic extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -210,12 +210,12 @@ public class ProdCharacteristic extends FhirResource {
         }
 
         public Builder nominalVolume(final Quantity nominalVolume) {
-            b.add(PROPERTY_NOMINALVOLUME, nominalVolume);
+            b.add(PROPERTY_NOMINAL_VOLUME, nominalVolume);
             return this;
         }
 
         public Builder externalDiameter(final Quantity externalDiameter) {
-            b.add(PROPERTY_EXTERNALDIAMETER, externalDiameter);
+            b.add(PROPERTY_EXTERNAL_DIAMETER, externalDiameter);
             return this;
         }
 

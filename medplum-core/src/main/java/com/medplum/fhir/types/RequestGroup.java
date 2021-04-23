@@ -11,30 +11,30 @@ import jakarta.json.JsonObjectBuilder;
 
 public class RequestGroup extends FhirResource {
     public static final String RESOURCE_TYPE = "RequestGroup";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_INSTANTIATESCANONICAL = "instantiatesCanonical";
-    public static final String PROPERTY_INSTANTIATESURI = "instantiatesUri";
-    public static final String PROPERTY_BASEDON = "basedOn";
+    public static final String PROPERTY_INSTANTIATES_CANONICAL = "instantiatesCanonical";
+    public static final String PROPERTY_INSTANTIATES_URI = "instantiatesUri";
+    public static final String PROPERTY_BASED_ON = "basedOn";
     public static final String PROPERTY_REPLACES = "replaces";
-    public static final String PROPERTY_GROUPIDENTIFIER = "groupIdentifier";
+    public static final String PROPERTY_GROUP_IDENTIFIER = "groupIdentifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_INTENT = "intent";
     public static final String PROPERTY_PRIORITY = "priority";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_AUTHOREDON = "authoredOn";
+    public static final String PROPERTY_AUTHORED_ON = "authoredOn";
     public static final String PROPERTY_AUTHOR = "author";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_NOTE = "note";
     public static final String PROPERTY_ACTION = "action";
 
@@ -57,7 +57,7 @@ public class RequestGroup extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -105,7 +105,7 @@ public class RequestGroup extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -122,7 +122,7 @@ public class RequestGroup extends FhirResource {
      * this request.
      */
     public java.util.List<String> instantiatesCanonical() {
-        return getList(String.class, PROPERTY_INSTANTIATESCANONICAL);
+        return getList(String.class, PROPERTY_INSTANTIATES_CANONICAL);
     }
 
     /**
@@ -131,7 +131,7 @@ public class RequestGroup extends FhirResource {
      * request.
      */
     public java.util.List<String> instantiatesUri() {
-        return getList(String.class, PROPERTY_INSTANTIATESURI);
+        return getList(String.class, PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -139,7 +139,7 @@ public class RequestGroup extends FhirResource {
      * this request.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -156,7 +156,7 @@ public class RequestGroup extends FhirResource {
      * of the requisition, prescription or similar form.
      */
     public Identifier groupIdentifier() {
-        return getObject(Identifier.class, PROPERTY_GROUPIDENTIFIER);
+        return getObject(Identifier.class, PROPERTY_GROUP_IDENTIFIER);
     }
 
     /**
@@ -208,7 +208,7 @@ public class RequestGroup extends FhirResource {
      * Indicates when the request group was created.
      */
     public java.time.Instant authoredOn() {
-        return java.time.Instant.parse(data.getString(PROPERTY_AUTHOREDON));
+        return java.time.Instant.parse(data.getString(PROPERTY_AUTHORED_ON));
     }
 
     /**
@@ -222,7 +222,7 @@ public class RequestGroup extends FhirResource {
      * Describes the reason for the request group in coded or textual form.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
@@ -230,7 +230,7 @@ public class RequestGroup extends FhirResource {
      * group.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -259,7 +259,7 @@ public class RequestGroup extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -274,7 +274,7 @@ public class RequestGroup extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -294,7 +294,7 @@ public class RequestGroup extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -304,17 +304,17 @@ public class RequestGroup extends FhirResource {
         }
 
         public Builder instantiatesCanonical(final java.util.List<String> instantiatesCanonical) {
-            b.add(PROPERTY_INSTANTIATESCANONICAL, FhirObject.toStringArray(instantiatesCanonical));
+            b.add(PROPERTY_INSTANTIATES_CANONICAL, FhirObject.toStringArray(instantiatesCanonical));
             return this;
         }
 
         public Builder instantiatesUri(final java.util.List<String> instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATESURI, FhirObject.toStringArray(instantiatesUri));
+            b.add(PROPERTY_INSTANTIATES_URI, FhirObject.toStringArray(instantiatesUri));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
@@ -324,7 +324,7 @@ public class RequestGroup extends FhirResource {
         }
 
         public Builder groupIdentifier(final Identifier groupIdentifier) {
-            b.add(PROPERTY_GROUPIDENTIFIER, groupIdentifier);
+            b.add(PROPERTY_GROUP_IDENTIFIER, groupIdentifier);
             return this;
         }
 
@@ -359,7 +359,7 @@ public class RequestGroup extends FhirResource {
         }
 
         public Builder authoredOn(final java.time.Instant authoredOn) {
-            b.add(PROPERTY_AUTHOREDON, authoredOn.toString());
+            b.add(PROPERTY_AUTHORED_ON, authoredOn.toString());
             return this;
         }
 
@@ -369,12 +369,12 @@ public class RequestGroup extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
@@ -396,29 +396,29 @@ public class RequestGroup extends FhirResource {
     public static class RequestGroupAction extends FhirObject {
         public static final String RESOURCE_TYPE = "RequestGroupAction";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PREFIX = "prefix";
         public static final String PROPERTY_TITLE = "title";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_TEXTEQUIVALENT = "textEquivalent";
+        public static final String PROPERTY_TEXT_EQUIVALENT = "textEquivalent";
         public static final String PROPERTY_PRIORITY = "priority";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DOCUMENTATION = "documentation";
         public static final String PROPERTY_CONDITION = "condition";
-        public static final String PROPERTY_RELATEDACTION = "relatedAction";
-        public static final String PROPERTY_TIMINGDATETIME = "timingDateTime";
-        public static final String PROPERTY_TIMINGAGE = "timingAge";
-        public static final String PROPERTY_TIMINGPERIOD = "timingPeriod";
-        public static final String PROPERTY_TIMINGDURATION = "timingDuration";
-        public static final String PROPERTY_TIMINGRANGE = "timingRange";
-        public static final String PROPERTY_TIMINGTIMING = "timingTiming";
+        public static final String PROPERTY_RELATED_ACTION = "relatedAction";
+        public static final String PROPERTY_TIMING_DATE_TIME = "timingDateTime";
+        public static final String PROPERTY_TIMING_AGE = "timingAge";
+        public static final String PROPERTY_TIMING_PERIOD = "timingPeriod";
+        public static final String PROPERTY_TIMING_DURATION = "timingDuration";
+        public static final String PROPERTY_TIMING_RANGE = "timingRange";
+        public static final String PROPERTY_TIMING_TIMING = "timingTiming";
         public static final String PROPERTY_PARTICIPANT = "participant";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_GROUPINGBEHAVIOR = "groupingBehavior";
-        public static final String PROPERTY_SELECTIONBEHAVIOR = "selectionBehavior";
-        public static final String PROPERTY_REQUIREDBEHAVIOR = "requiredBehavior";
-        public static final String PROPERTY_PRECHECKBEHAVIOR = "precheckBehavior";
-        public static final String PROPERTY_CARDINALITYBEHAVIOR = "cardinalityBehavior";
+        public static final String PROPERTY_GROUPING_BEHAVIOR = "groupingBehavior";
+        public static final String PROPERTY_SELECTION_BEHAVIOR = "selectionBehavior";
+        public static final String PROPERTY_REQUIRED_BEHAVIOR = "requiredBehavior";
+        public static final String PROPERTY_PRECHECK_BEHAVIOR = "precheckBehavior";
+        public static final String PROPERTY_CARDINALITY_BEHAVIOR = "cardinalityBehavior";
         public static final String PROPERTY_RESOURCE = "resource";
         public static final String PROPERTY_ACTION = "action";
 
@@ -460,7 +460,7 @@ public class RequestGroup extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -492,7 +492,7 @@ public class RequestGroup extends FhirResource {
          * dynamically.
          */
         public String textEquivalent() {
-            return getString(PROPERTY_TEXTEQUIVALENT);
+            return getString(PROPERTY_TEXT_EQUIVALENT);
         }
 
         /**
@@ -534,49 +534,49 @@ public class RequestGroup extends FhirResource {
          * after start of".
          */
         public java.util.List<RequestGroupRelatedAction> relatedAction() {
-            return getList(RequestGroupRelatedAction.class, PROPERTY_RELATEDACTION);
+            return getList(RequestGroupRelatedAction.class, PROPERTY_RELATED_ACTION);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public String timingDateTime() {
-            return getString(PROPERTY_TIMINGDATETIME);
+            return getString(PROPERTY_TIMING_DATE_TIME);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Age timingAge() {
-            return getObject(Age.class, PROPERTY_TIMINGAGE);
+            return getObject(Age.class, PROPERTY_TIMING_AGE);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Period timingPeriod() {
-            return getObject(Period.class, PROPERTY_TIMINGPERIOD);
+            return getObject(Period.class, PROPERTY_TIMING_PERIOD);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Duration timingDuration() {
-            return getObject(Duration.class, PROPERTY_TIMINGDURATION);
+            return getObject(Duration.class, PROPERTY_TIMING_DURATION);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Range timingRange() {
-            return getObject(Range.class, PROPERTY_TIMINGRANGE);
+            return getObject(Range.class, PROPERTY_TIMING_RANGE);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Timing timingTiming() {
-            return getObject(Timing.class, PROPERTY_TIMINGTIMING);
+            return getObject(Timing.class, PROPERTY_TIMING_TIMING);
         }
 
         /**
@@ -597,35 +597,35 @@ public class RequestGroup extends FhirResource {
          * Defines the grouping behavior for the action and its children.
          */
         public String groupingBehavior() {
-            return getString(PROPERTY_GROUPINGBEHAVIOR);
+            return getString(PROPERTY_GROUPING_BEHAVIOR);
         }
 
         /**
          * Defines the selection behavior for the action and its children.
          */
         public String selectionBehavior() {
-            return getString(PROPERTY_SELECTIONBEHAVIOR);
+            return getString(PROPERTY_SELECTION_BEHAVIOR);
         }
 
         /**
          * Defines expectations around whether an action is required.
          */
         public String requiredBehavior() {
-            return getString(PROPERTY_REQUIREDBEHAVIOR);
+            return getString(PROPERTY_REQUIRED_BEHAVIOR);
         }
 
         /**
          * Defines whether the action should usually be preselected.
          */
         public String precheckBehavior() {
-            return getString(PROPERTY_PRECHECKBEHAVIOR);
+            return getString(PROPERTY_PRECHECK_BEHAVIOR);
         }
 
         /**
          * Defines whether the action can be selected multiple times.
          */
         public String cardinalityBehavior() {
-            return getString(PROPERTY_CARDINALITYBEHAVIOR);
+            return getString(PROPERTY_CARDINALITY_BEHAVIOR);
         }
 
         /**
@@ -660,7 +660,7 @@ public class RequestGroup extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -680,7 +680,7 @@ public class RequestGroup extends FhirResource {
             }
 
             public Builder textEquivalent(final String textEquivalent) {
-                b.add(PROPERTY_TEXTEQUIVALENT, textEquivalent);
+                b.add(PROPERTY_TEXT_EQUIVALENT, textEquivalent);
                 return this;
             }
 
@@ -705,37 +705,37 @@ public class RequestGroup extends FhirResource {
             }
 
             public Builder relatedAction(final java.util.List<RequestGroupRelatedAction> relatedAction) {
-                b.add(PROPERTY_RELATEDACTION, FhirObject.toArray(relatedAction));
+                b.add(PROPERTY_RELATED_ACTION, FhirObject.toArray(relatedAction));
                 return this;
             }
 
             public Builder timingDateTime(final String timingDateTime) {
-                b.add(PROPERTY_TIMINGDATETIME, timingDateTime);
+                b.add(PROPERTY_TIMING_DATE_TIME, timingDateTime);
                 return this;
             }
 
             public Builder timingAge(final Age timingAge) {
-                b.add(PROPERTY_TIMINGAGE, timingAge);
+                b.add(PROPERTY_TIMING_AGE, timingAge);
                 return this;
             }
 
             public Builder timingPeriod(final Period timingPeriod) {
-                b.add(PROPERTY_TIMINGPERIOD, timingPeriod);
+                b.add(PROPERTY_TIMING_PERIOD, timingPeriod);
                 return this;
             }
 
             public Builder timingDuration(final Duration timingDuration) {
-                b.add(PROPERTY_TIMINGDURATION, timingDuration);
+                b.add(PROPERTY_TIMING_DURATION, timingDuration);
                 return this;
             }
 
             public Builder timingRange(final Range timingRange) {
-                b.add(PROPERTY_TIMINGRANGE, timingRange);
+                b.add(PROPERTY_TIMING_RANGE, timingRange);
                 return this;
             }
 
             public Builder timingTiming(final Timing timingTiming) {
-                b.add(PROPERTY_TIMINGTIMING, timingTiming);
+                b.add(PROPERTY_TIMING_TIMING, timingTiming);
                 return this;
             }
 
@@ -750,27 +750,27 @@ public class RequestGroup extends FhirResource {
             }
 
             public Builder groupingBehavior(final String groupingBehavior) {
-                b.add(PROPERTY_GROUPINGBEHAVIOR, groupingBehavior);
+                b.add(PROPERTY_GROUPING_BEHAVIOR, groupingBehavior);
                 return this;
             }
 
             public Builder selectionBehavior(final String selectionBehavior) {
-                b.add(PROPERTY_SELECTIONBEHAVIOR, selectionBehavior);
+                b.add(PROPERTY_SELECTION_BEHAVIOR, selectionBehavior);
                 return this;
             }
 
             public Builder requiredBehavior(final String requiredBehavior) {
-                b.add(PROPERTY_REQUIREDBEHAVIOR, requiredBehavior);
+                b.add(PROPERTY_REQUIRED_BEHAVIOR, requiredBehavior);
                 return this;
             }
 
             public Builder precheckBehavior(final String precheckBehavior) {
-                b.add(PROPERTY_PRECHECKBEHAVIOR, precheckBehavior);
+                b.add(PROPERTY_PRECHECK_BEHAVIOR, precheckBehavior);
                 return this;
             }
 
             public Builder cardinalityBehavior(final String cardinalityBehavior) {
-                b.add(PROPERTY_CARDINALITYBEHAVIOR, cardinalityBehavior);
+                b.add(PROPERTY_CARDINALITY_BEHAVIOR, cardinalityBehavior);
                 return this;
             }
 
@@ -793,7 +793,7 @@ public class RequestGroup extends FhirResource {
     public static class RequestGroupCondition extends FhirObject {
         public static final String RESOURCE_TYPE = "RequestGroupCondition";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_KIND = "kind";
         public static final String PROPERTY_EXPRESSION = "expression";
 
@@ -835,7 +835,7 @@ public class RequestGroup extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -870,7 +870,7 @@ public class RequestGroup extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -893,11 +893,11 @@ public class RequestGroup extends FhirResource {
     public static class RequestGroupRelatedAction extends FhirObject {
         public static final String RESOURCE_TYPE = "RequestGroupRelatedAction";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_ACTIONID = "actionId";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_ACTION_ID = "actionId";
         public static final String PROPERTY_RELATIONSHIP = "relationship";
-        public static final String PROPERTY_OFFSETDURATION = "offsetDuration";
-        public static final String PROPERTY_OFFSETRANGE = "offsetRange";
+        public static final String PROPERTY_OFFSET_DURATION = "offsetDuration";
+        public static final String PROPERTY_OFFSET_RANGE = "offsetRange";
 
         public static Builder create() {
             return new Builder();
@@ -937,14 +937,14 @@ public class RequestGroup extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The element id of the action this is related to.
          */
         public String actionId() {
-            return getString(PROPERTY_ACTIONID);
+            return getString(PROPERTY_ACTION_ID);
         }
 
         /**
@@ -959,7 +959,7 @@ public class RequestGroup extends FhirResource {
          * example, 30-60 minutes before.
          */
         public Duration offsetDuration() {
-            return getObject(Duration.class, PROPERTY_OFFSETDURATION);
+            return getObject(Duration.class, PROPERTY_OFFSET_DURATION);
         }
 
         /**
@@ -967,7 +967,7 @@ public class RequestGroup extends FhirResource {
          * example, 30-60 minutes before.
          */
         public Range offsetRange() {
-            return getObject(Range.class, PROPERTY_OFFSETRANGE);
+            return getObject(Range.class, PROPERTY_OFFSET_RANGE);
         }
 
         public static class Builder {
@@ -987,12 +987,12 @@ public class RequestGroup extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder actionId(final String actionId) {
-                b.add(PROPERTY_ACTIONID, actionId);
+                b.add(PROPERTY_ACTION_ID, actionId);
                 return this;
             }
 
@@ -1002,12 +1002,12 @@ public class RequestGroup extends FhirResource {
             }
 
             public Builder offsetDuration(final Duration offsetDuration) {
-                b.add(PROPERTY_OFFSETDURATION, offsetDuration);
+                b.add(PROPERTY_OFFSET_DURATION, offsetDuration);
                 return this;
             }
 
             public Builder offsetRange(final Range offsetRange) {
-                b.add(PROPERTY_OFFSETRANGE, offsetRange);
+                b.add(PROPERTY_OFFSET_RANGE, offsetRange);
                 return this;
             }
 

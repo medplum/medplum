@@ -11,50 +11,50 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Observation extends FhirResource {
     public static final String RESOURCE_TYPE = "Observation";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASEDON = "basedOn";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_BASED_ON = "basedOn";
+    public static final String PROPERTY_PART_OF = "partOf";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_FOCUS = "focus";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_EFFECTIVEDATETIME = "effectiveDateTime";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
-    public static final String PROPERTY_EFFECTIVETIMING = "effectiveTiming";
-    public static final String PROPERTY_EFFECTIVEINSTANT = "effectiveInstant";
+    public static final String PROPERTY_EFFECTIVE_DATE_TIME = "effectiveDateTime";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
+    public static final String PROPERTY_EFFECTIVE_TIMING = "effectiveTiming";
+    public static final String PROPERTY_EFFECTIVE_INSTANT = "effectiveInstant";
     public static final String PROPERTY_ISSUED = "issued";
     public static final String PROPERTY_PERFORMER = "performer";
-    public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-    public static final String PROPERTY_VALUECODEABLECONCEPT = "valueCodeableConcept";
-    public static final String PROPERTY_VALUESTRING = "valueString";
-    public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
-    public static final String PROPERTY_VALUEINTEGER = "valueInteger";
-    public static final String PROPERTY_VALUERANGE = "valueRange";
-    public static final String PROPERTY_VALUERATIO = "valueRatio";
-    public static final String PROPERTY_VALUESAMPLEDDATA = "valueSampledData";
-    public static final String PROPERTY_VALUETIME = "valueTime";
-    public static final String PROPERTY_VALUEDATETIME = "valueDateTime";
-    public static final String PROPERTY_VALUEPERIOD = "valuePeriod";
-    public static final String PROPERTY_DATAABSENTREASON = "dataAbsentReason";
+    public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+    public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
+    public static final String PROPERTY_VALUE_STRING = "valueString";
+    public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
+    public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
+    public static final String PROPERTY_VALUE_RANGE = "valueRange";
+    public static final String PROPERTY_VALUE_RATIO = "valueRatio";
+    public static final String PROPERTY_VALUE_SAMPLED_DATA = "valueSampledData";
+    public static final String PROPERTY_VALUE_TIME = "valueTime";
+    public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
+    public static final String PROPERTY_VALUE_PERIOD = "valuePeriod";
+    public static final String PROPERTY_DATA_ABSENT_REASON = "dataAbsentReason";
     public static final String PROPERTY_INTERPRETATION = "interpretation";
     public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_BODYSITE = "bodySite";
+    public static final String PROPERTY_BODY_SITE = "bodySite";
     public static final String PROPERTY_METHOD = "method";
     public static final String PROPERTY_SPECIMEN = "specimen";
     public static final String PROPERTY_DEVICE = "device";
-    public static final String PROPERTY_REFERENCERANGE = "referenceRange";
-    public static final String PROPERTY_HASMEMBER = "hasMember";
-    public static final String PROPERTY_DERIVEDFROM = "derivedFrom";
+    public static final String PROPERTY_REFERENCE_RANGE = "referenceRange";
+    public static final String PROPERTY_HAS_MEMBER = "hasMember";
+    public static final String PROPERTY_DERIVED_FROM = "derivedFrom";
     public static final String PROPERTY_COMPONENT = "component";
 
     public static Builder create() {
@@ -76,7 +76,7 @@ public class Observation extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -124,7 +124,7 @@ public class Observation extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -140,7 +140,7 @@ public class Observation extends FhirResource {
      * have laboratory test performed before  it is dispensed.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -148,7 +148,7 @@ public class Observation extends FhirResource {
      * step.  For example,  an observation as part of a procedure.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PARTOF);
+        return getList(Reference.class, PROPERTY_PART_OF);
     }
 
     /**
@@ -216,7 +216,7 @@ public class Observation extends FhirResource {
      * of the date/time is not known, only the date/time itself.
      */
     public String effectiveDateTime() {
-        return getString(PROPERTY_EFFECTIVEDATETIME);
+        return getString(PROPERTY_EFFECTIVE_DATE_TIME);
     }
 
     /**
@@ -227,7 +227,7 @@ public class Observation extends FhirResource {
      * of the date/time is not known, only the date/time itself.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -238,7 +238,7 @@ public class Observation extends FhirResource {
      * of the date/time is not known, only the date/time itself.
      */
     public Timing effectiveTiming() {
-        return getObject(Timing.class, PROPERTY_EFFECTIVETIMING);
+        return getObject(Timing.class, PROPERTY_EFFECTIVE_TIMING);
     }
 
     /**
@@ -249,7 +249,7 @@ public class Observation extends FhirResource {
      * of the date/time is not known, only the date/time itself.
      */
     public String effectiveInstant() {
-        return getString(PROPERTY_EFFECTIVEINSTANT);
+        return getString(PROPERTY_EFFECTIVE_INSTANT);
     }
 
     /**
@@ -273,7 +273,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public Quantity valueQuantity() {
-        return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+        return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
     }
 
     /**
@@ -281,7 +281,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public CodeableConcept valueCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
     }
 
     /**
@@ -289,7 +289,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public String valueString() {
-        return getString(PROPERTY_VALUESTRING);
+        return getString(PROPERTY_VALUE_STRING);
     }
 
     /**
@@ -297,7 +297,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public Boolean valueBoolean() {
-        return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+        return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
     }
 
     /**
@@ -305,7 +305,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public Integer valueInteger() {
-        return data.getInt(PROPERTY_VALUEINTEGER);
+        return data.getInt(PROPERTY_VALUE_INTEGER);
     }
 
     /**
@@ -313,7 +313,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public Range valueRange() {
-        return getObject(Range.class, PROPERTY_VALUERANGE);
+        return getObject(Range.class, PROPERTY_VALUE_RANGE);
     }
 
     /**
@@ -321,7 +321,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public Ratio valueRatio() {
-        return getObject(Ratio.class, PROPERTY_VALUERATIO);
+        return getObject(Ratio.class, PROPERTY_VALUE_RATIO);
     }
 
     /**
@@ -329,7 +329,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public SampledData valueSampledData() {
-        return getObject(SampledData.class, PROPERTY_VALUESAMPLEDDATA);
+        return getObject(SampledData.class, PROPERTY_VALUE_SAMPLED_DATA);
     }
 
     /**
@@ -337,7 +337,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public String valueTime() {
-        return getString(PROPERTY_VALUETIME);
+        return getString(PROPERTY_VALUE_TIME);
     }
 
     /**
@@ -345,7 +345,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public String valueDateTime() {
-        return getString(PROPERTY_VALUEDATETIME);
+        return getString(PROPERTY_VALUE_DATE_TIME);
     }
 
     /**
@@ -353,7 +353,7 @@ public class Observation extends FhirResource {
      * the information has a simple value.
      */
     public Period valuePeriod() {
-        return getObject(Period.class, PROPERTY_VALUEPERIOD);
+        return getObject(Period.class, PROPERTY_VALUE_PERIOD);
     }
 
     /**
@@ -361,7 +361,7 @@ public class Observation extends FhirResource {
      * Observation.value[x] is missing.
      */
     public CodeableConcept dataAbsentReason() {
-        return getObject(CodeableConcept.class, PROPERTY_DATAABSENTREASON);
+        return getObject(CodeableConcept.class, PROPERTY_DATA_ABSENT_REASON);
     }
 
     /**
@@ -384,7 +384,7 @@ public class Observation extends FhirResource {
      * made (i.e. the target site).
      */
     public CodeableConcept bodySite() {
-        return getObject(CodeableConcept.class, PROPERTY_BODYSITE);
+        return getObject(CodeableConcept.class, PROPERTY_BODY_SITE);
     }
 
     /**
@@ -415,7 +415,7 @@ public class Observation extends FhirResource {
      * two `referenceRange` elements would be used.
      */
     public java.util.List<ObservationReferenceRange> referenceRange() {
-        return getList(ObservationReferenceRange.class, PROPERTY_REFERENCERANGE);
+        return getList(ObservationReferenceRange.class, PROPERTY_REFERENCE_RANGE);
     }
 
     /**
@@ -424,7 +424,7 @@ public class Observation extends FhirResource {
      * member of the group.
      */
     public java.util.List<Reference> hasMember() {
-        return getList(Reference.class, PROPERTY_HASMEMBER);
+        return getList(Reference.class, PROPERTY_HAS_MEMBER);
     }
 
     /**
@@ -433,7 +433,7 @@ public class Observation extends FhirResource {
      * fetal measurement based on an ultrasound image.
      */
     public java.util.List<Reference> derivedFrom() {
-        return getList(Reference.class, PROPERTY_DERIVEDFROM);
+        return getList(Reference.class, PROPERTY_DERIVED_FROM);
     }
 
     /**
@@ -458,7 +458,7 @@ public class Observation extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -473,7 +473,7 @@ public class Observation extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -493,7 +493,7 @@ public class Observation extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -503,12 +503,12 @@ public class Observation extends FhirResource {
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
@@ -543,22 +543,22 @@ public class Observation extends FhirResource {
         }
 
         public Builder effectiveDateTime(final String effectiveDateTime) {
-            b.add(PROPERTY_EFFECTIVEDATETIME, effectiveDateTime);
+            b.add(PROPERTY_EFFECTIVE_DATE_TIME, effectiveDateTime);
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
         public Builder effectiveTiming(final Timing effectiveTiming) {
-            b.add(PROPERTY_EFFECTIVETIMING, effectiveTiming);
+            b.add(PROPERTY_EFFECTIVE_TIMING, effectiveTiming);
             return this;
         }
 
         public Builder effectiveInstant(final String effectiveInstant) {
-            b.add(PROPERTY_EFFECTIVEINSTANT, effectiveInstant);
+            b.add(PROPERTY_EFFECTIVE_INSTANT, effectiveInstant);
             return this;
         }
 
@@ -573,62 +573,62 @@ public class Observation extends FhirResource {
         }
 
         public Builder valueQuantity(final Quantity valueQuantity) {
-            b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+            b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
             return this;
         }
 
         public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-            b.add(PROPERTY_VALUECODEABLECONCEPT, valueCodeableConcept);
+            b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
             return this;
         }
 
         public Builder valueString(final String valueString) {
-            b.add(PROPERTY_VALUESTRING, valueString);
+            b.add(PROPERTY_VALUE_STRING, valueString);
             return this;
         }
 
         public Builder valueBoolean(final Boolean valueBoolean) {
-            b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+            b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
             return this;
         }
 
         public Builder valueInteger(final Integer valueInteger) {
-            b.add(PROPERTY_VALUEINTEGER, valueInteger);
+            b.add(PROPERTY_VALUE_INTEGER, valueInteger);
             return this;
         }
 
         public Builder valueRange(final Range valueRange) {
-            b.add(PROPERTY_VALUERANGE, valueRange);
+            b.add(PROPERTY_VALUE_RANGE, valueRange);
             return this;
         }
 
         public Builder valueRatio(final Ratio valueRatio) {
-            b.add(PROPERTY_VALUERATIO, valueRatio);
+            b.add(PROPERTY_VALUE_RATIO, valueRatio);
             return this;
         }
 
         public Builder valueSampledData(final SampledData valueSampledData) {
-            b.add(PROPERTY_VALUESAMPLEDDATA, valueSampledData);
+            b.add(PROPERTY_VALUE_SAMPLED_DATA, valueSampledData);
             return this;
         }
 
         public Builder valueTime(final String valueTime) {
-            b.add(PROPERTY_VALUETIME, valueTime);
+            b.add(PROPERTY_VALUE_TIME, valueTime);
             return this;
         }
 
         public Builder valueDateTime(final String valueDateTime) {
-            b.add(PROPERTY_VALUEDATETIME, valueDateTime);
+            b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
             return this;
         }
 
         public Builder valuePeriod(final Period valuePeriod) {
-            b.add(PROPERTY_VALUEPERIOD, valuePeriod);
+            b.add(PROPERTY_VALUE_PERIOD, valuePeriod);
             return this;
         }
 
         public Builder dataAbsentReason(final CodeableConcept dataAbsentReason) {
-            b.add(PROPERTY_DATAABSENTREASON, dataAbsentReason);
+            b.add(PROPERTY_DATA_ABSENT_REASON, dataAbsentReason);
             return this;
         }
 
@@ -643,7 +643,7 @@ public class Observation extends FhirResource {
         }
 
         public Builder bodySite(final CodeableConcept bodySite) {
-            b.add(PROPERTY_BODYSITE, bodySite);
+            b.add(PROPERTY_BODY_SITE, bodySite);
             return this;
         }
 
@@ -663,17 +663,17 @@ public class Observation extends FhirResource {
         }
 
         public Builder referenceRange(final java.util.List<ObservationReferenceRange> referenceRange) {
-            b.add(PROPERTY_REFERENCERANGE, FhirObject.toArray(referenceRange));
+            b.add(PROPERTY_REFERENCE_RANGE, FhirObject.toArray(referenceRange));
             return this;
         }
 
         public Builder hasMember(final java.util.List<Reference> hasMember) {
-            b.add(PROPERTY_HASMEMBER, FhirObject.toArray(hasMember));
+            b.add(PROPERTY_HAS_MEMBER, FhirObject.toArray(hasMember));
             return this;
         }
 
         public Builder derivedFrom(final java.util.List<Reference> derivedFrom) {
-            b.add(PROPERTY_DERIVEDFROM, FhirObject.toArray(derivedFrom));
+            b.add(PROPERTY_DERIVED_FROM, FhirObject.toArray(derivedFrom));
             return this;
         }
 
@@ -690,22 +690,22 @@ public class Observation extends FhirResource {
     public static class ObservationComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "ObservationComponent";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUECODEABLECONCEPT = "valueCodeableConcept";
-        public static final String PROPERTY_VALUESTRING = "valueString";
-        public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUEINTEGER = "valueInteger";
-        public static final String PROPERTY_VALUERANGE = "valueRange";
-        public static final String PROPERTY_VALUERATIO = "valueRatio";
-        public static final String PROPERTY_VALUESAMPLEDDATA = "valueSampledData";
-        public static final String PROPERTY_VALUETIME = "valueTime";
-        public static final String PROPERTY_VALUEDATETIME = "valueDateTime";
-        public static final String PROPERTY_VALUEPERIOD = "valuePeriod";
-        public static final String PROPERTY_DATAABSENTREASON = "dataAbsentReason";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
+        public static final String PROPERTY_VALUE_STRING = "valueString";
+        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
+        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
+        public static final String PROPERTY_VALUE_RANGE = "valueRange";
+        public static final String PROPERTY_VALUE_RATIO = "valueRatio";
+        public static final String PROPERTY_VALUE_SAMPLED_DATA = "valueSampledData";
+        public static final String PROPERTY_VALUE_TIME = "valueTime";
+        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
+        public static final String PROPERTY_VALUE_PERIOD = "valuePeriod";
+        public static final String PROPERTY_DATA_ABSENT_REASON = "dataAbsentReason";
         public static final String PROPERTY_INTERPRETATION = "interpretation";
-        public static final String PROPERTY_REFERENCERANGE = "referenceRange";
+        public static final String PROPERTY_REFERENCE_RANGE = "referenceRange";
 
         public static Builder create() {
             return new Builder();
@@ -745,7 +745,7 @@ public class Observation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -761,7 +761,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
@@ -769,7 +769,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public CodeableConcept valueCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
         }
 
         /**
@@ -777,7 +777,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUESTRING);
+            return getString(PROPERTY_VALUE_STRING);
         }
 
         /**
@@ -785,7 +785,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
@@ -793,7 +793,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUEINTEGER);
+            return data.getInt(PROPERTY_VALUE_INTEGER);
         }
 
         /**
@@ -801,7 +801,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public Range valueRange() {
-            return getObject(Range.class, PROPERTY_VALUERANGE);
+            return getObject(Range.class, PROPERTY_VALUE_RANGE);
         }
 
         /**
@@ -809,7 +809,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public Ratio valueRatio() {
-            return getObject(Ratio.class, PROPERTY_VALUERATIO);
+            return getObject(Ratio.class, PROPERTY_VALUE_RATIO);
         }
 
         /**
@@ -817,7 +817,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public SampledData valueSampledData() {
-            return getObject(SampledData.class, PROPERTY_VALUESAMPLEDDATA);
+            return getObject(SampledData.class, PROPERTY_VALUE_SAMPLED_DATA);
         }
 
         /**
@@ -825,7 +825,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public String valueTime() {
-            return getString(PROPERTY_VALUETIME);
+            return getString(PROPERTY_VALUE_TIME);
         }
 
         /**
@@ -833,7 +833,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUEDATETIME);
+            return getString(PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
@@ -841,7 +841,7 @@ public class Observation extends FhirResource {
          * the information has a simple value.
          */
         public Period valuePeriod() {
-            return getObject(Period.class, PROPERTY_VALUEPERIOD);
+            return getObject(Period.class, PROPERTY_VALUE_PERIOD);
         }
 
         /**
@@ -849,7 +849,7 @@ public class Observation extends FhirResource {
          * Observation.component.value[x] is missing.
          */
         public CodeableConcept dataAbsentReason() {
-            return getObject(CodeableConcept.class, PROPERTY_DATAABSENTREASON);
+            return getObject(CodeableConcept.class, PROPERTY_DATA_ABSENT_REASON);
         }
 
         /**
@@ -865,7 +865,7 @@ public class Observation extends FhirResource {
          * recommended range.
          */
         public java.util.List<ObservationReferenceRange> referenceRange() {
-            return getList(ObservationReferenceRange.class, PROPERTY_REFERENCERANGE);
+            return getList(ObservationReferenceRange.class, PROPERTY_REFERENCE_RANGE);
         }
 
         public static class Builder {
@@ -885,7 +885,7 @@ public class Observation extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -895,62 +895,62 @@ public class Observation extends FhirResource {
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-                b.add(PROPERTY_VALUECODEABLECONCEPT, valueCodeableConcept);
+                b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUESTRING, valueString);
+                b.add(PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUEINTEGER, valueInteger);
+                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueRange(final Range valueRange) {
-                b.add(PROPERTY_VALUERANGE, valueRange);
+                b.add(PROPERTY_VALUE_RANGE, valueRange);
                 return this;
             }
 
             public Builder valueRatio(final Ratio valueRatio) {
-                b.add(PROPERTY_VALUERATIO, valueRatio);
+                b.add(PROPERTY_VALUE_RATIO, valueRatio);
                 return this;
             }
 
             public Builder valueSampledData(final SampledData valueSampledData) {
-                b.add(PROPERTY_VALUESAMPLEDDATA, valueSampledData);
+                b.add(PROPERTY_VALUE_SAMPLED_DATA, valueSampledData);
                 return this;
             }
 
             public Builder valueTime(final String valueTime) {
-                b.add(PROPERTY_VALUETIME, valueTime);
+                b.add(PROPERTY_VALUE_TIME, valueTime);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUEDATETIME, valueDateTime);
+                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valuePeriod(final Period valuePeriod) {
-                b.add(PROPERTY_VALUEPERIOD, valuePeriod);
+                b.add(PROPERTY_VALUE_PERIOD, valuePeriod);
                 return this;
             }
 
             public Builder dataAbsentReason(final CodeableConcept dataAbsentReason) {
-                b.add(PROPERTY_DATAABSENTREASON, dataAbsentReason);
+                b.add(PROPERTY_DATA_ABSENT_REASON, dataAbsentReason);
                 return this;
             }
 
@@ -960,7 +960,7 @@ public class Observation extends FhirResource {
             }
 
             public Builder referenceRange(final java.util.List<ObservationReferenceRange> referenceRange) {
-                b.add(PROPERTY_REFERENCERANGE, FhirObject.toArray(referenceRange));
+                b.add(PROPERTY_REFERENCE_RANGE, FhirObject.toArray(referenceRange));
                 return this;
             }
 
@@ -973,11 +973,11 @@ public class Observation extends FhirResource {
     public static class ObservationReferenceRange extends FhirObject {
         public static final String RESOURCE_TYPE = "ObservationReferenceRange";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_LOW = "low";
         public static final String PROPERTY_HIGH = "high";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_APPLIESTO = "appliesTo";
+        public static final String PROPERTY_APPLIES_TO = "appliesTo";
         public static final String PROPERTY_AGE = "age";
         public static final String PROPERTY_TEXT = "text";
 
@@ -1019,7 +1019,7 @@ public class Observation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1059,7 +1059,7 @@ public class Observation extends FhirResource {
          * of female and a code for African American would be used.
          */
         public java.util.List<CodeableConcept> appliesTo() {
-            return getList(CodeableConcept.class, PROPERTY_APPLIESTO);
+            return getList(CodeableConcept.class, PROPERTY_APPLIES_TO);
         }
 
         /**
@@ -1097,7 +1097,7 @@ public class Observation extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1117,7 +1117,7 @@ public class Observation extends FhirResource {
             }
 
             public Builder appliesTo(final java.util.List<CodeableConcept> appliesTo) {
-                b.add(PROPERTY_APPLIESTO, FhirObject.toArray(appliesTo));
+                b.add(PROPERTY_APPLIES_TO, FhirObject.toArray(appliesTo));
                 return this;
             }
 

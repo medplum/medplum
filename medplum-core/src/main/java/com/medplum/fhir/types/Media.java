@@ -9,30 +9,30 @@ import jakarta.json.JsonObject;
 
 public class Media extends FhirResource {
     public static final String RESOURCE_TYPE = "Media";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASEDON = "basedOn";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_BASED_ON = "basedOn";
+    public static final String PROPERTY_PART_OF = "partOf";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_MODALITY = "modality";
     public static final String PROPERTY_VIEW = "view";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_CREATEDDATETIME = "createdDateTime";
-    public static final String PROPERTY_CREATEDPERIOD = "createdPeriod";
+    public static final String PROPERTY_CREATED_DATE_TIME = "createdDateTime";
+    public static final String PROPERTY_CREATED_PERIOD = "createdPeriod";
     public static final String PROPERTY_ISSUED = "issued";
     public static final String PROPERTY_OPERATOR = "operator";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_BODYSITE = "bodySite";
-    public static final String PROPERTY_DEVICENAME = "deviceName";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_BODY_SITE = "bodySite";
+    public static final String PROPERTY_DEVICE_NAME = "deviceName";
     public static final String PROPERTY_DEVICE = "device";
     public static final String PROPERTY_HEIGHT = "height";
     public static final String PROPERTY_WIDTH = "width";
@@ -60,7 +60,7 @@ public class Media extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -108,7 +108,7 @@ public class Media extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -126,14 +126,14 @@ public class Media extends FhirResource {
      * this media.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
      * A larger event of which this particular event is a component or step.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PARTOF);
+        return getList(Reference.class, PROPERTY_PART_OF);
     }
 
     /**
@@ -185,14 +185,14 @@ public class Media extends FhirResource {
      * The date and time(s) at which the media was collected.
      */
     public String createdDateTime() {
-        return getString(PROPERTY_CREATEDDATETIME);
+        return getString(PROPERTY_CREATED_DATE_TIME);
     }
 
     /**
      * The date and time(s) at which the media was collected.
      */
     public Period createdPeriod() {
-        return getObject(Period.class, PROPERTY_CREATEDPERIOD);
+        return getObject(Period.class, PROPERTY_CREATED_PERIOD);
     }
 
     /**
@@ -214,7 +214,7 @@ public class Media extends FhirResource {
      * Describes why the event occurred in coded or textual form.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
@@ -222,7 +222,7 @@ public class Media extends FhirResource {
      * made (i.e. the target site).
      */
     public CodeableConcept bodySite() {
-        return getObject(CodeableConcept.class, PROPERTY_BODYSITE);
+        return getObject(CodeableConcept.class, PROPERTY_BODY_SITE);
     }
 
     /**
@@ -230,7 +230,7 @@ public class Media extends FhirResource {
      * make the recording.
      */
     public String deviceName() {
-        return getString(PROPERTY_DEVICENAME);
+        return getString(PROPERTY_DEVICE_NAME);
     }
 
     /**
@@ -299,7 +299,7 @@ public class Media extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -314,7 +314,7 @@ public class Media extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -334,7 +334,7 @@ public class Media extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -344,12 +344,12 @@ public class Media extends FhirResource {
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
@@ -384,12 +384,12 @@ public class Media extends FhirResource {
         }
 
         public Builder createdDateTime(final String createdDateTime) {
-            b.add(PROPERTY_CREATEDDATETIME, createdDateTime);
+            b.add(PROPERTY_CREATED_DATE_TIME, createdDateTime);
             return this;
         }
 
         public Builder createdPeriod(final Period createdPeriod) {
-            b.add(PROPERTY_CREATEDPERIOD, createdPeriod);
+            b.add(PROPERTY_CREATED_PERIOD, createdPeriod);
             return this;
         }
 
@@ -404,17 +404,17 @@ public class Media extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder bodySite(final CodeableConcept bodySite) {
-            b.add(PROPERTY_BODYSITE, bodySite);
+            b.add(PROPERTY_BODY_SITE, bodySite);
             return this;
         }
 
         public Builder deviceName(final String deviceName) {
-            b.add(PROPERTY_DEVICENAME, deviceName);
+            b.add(PROPERTY_DEVICE_NAME, deviceName);
             return this;
         }
 

@@ -11,18 +11,18 @@ import jakarta.json.JsonObjectBuilder;
 
 public class SubstanceNucleicAcid extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceNucleicAcid";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-    public static final String PROPERTY_SEQUENCETYPE = "sequenceType";
-    public static final String PROPERTY_NUMBEROFSUBUNITS = "numberOfSubunits";
-    public static final String PROPERTY_AREAOFHYBRIDISATION = "areaOfHybridisation";
-    public static final String PROPERTY_OLIGONUCLEOTIDETYPE = "oligoNucleotideType";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+    public static final String PROPERTY_SEQUENCE_TYPE = "sequenceType";
+    public static final String PROPERTY_NUMBER_OF_SUBUNITS = "numberOfSubunits";
+    public static final String PROPERTY_AREA_OF_HYBRIDISATION = "areaOfHybridisation";
+    public static final String PROPERTY_OLIGO_NUCLEOTIDE_TYPE = "oligoNucleotideType";
     public static final String PROPERTY_SUBUNIT = "subunit";
 
     public static Builder create() {
@@ -44,7 +44,7 @@ public class SubstanceNucleicAcid extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -92,7 +92,7 @@ public class SubstanceNucleicAcid extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -100,7 +100,7 @@ public class SubstanceNucleicAcid extends FhirResource {
      * vocabulary.
      */
     public CodeableConcept sequenceType() {
-        return getObject(CodeableConcept.class, PROPERTY_SEQUENCETYPE);
+        return getObject(CodeableConcept.class, PROPERTY_SEQUENCE_TYPE);
     }
 
     /**
@@ -111,7 +111,7 @@ public class SubstanceNucleicAcid extends FhirResource {
      * source, the assumption is that there is 1 subunit.
      */
     public Integer numberOfSubunits() {
-        return data.getInt(PROPERTY_NUMBEROFSUBUNITS);
+        return data.getInt(PROPERTY_NUMBER_OF_SUBUNITS);
     }
 
     /**
@@ -122,14 +122,14 @@ public class SubstanceNucleicAcid extends FhirResource {
      * follows: “Subunitnumber Residue”.
      */
     public String areaOfHybridisation() {
-        return getString(PROPERTY_AREAOFHYBRIDISATION);
+        return getString(PROPERTY_AREA_OF_HYBRIDISATION);
     }
 
     /**
      * (TBC).
      */
     public CodeableConcept oligoNucleotideType() {
-        return getObject(CodeableConcept.class, PROPERTY_OLIGONUCLEOTIDETYPE);
+        return getObject(CodeableConcept.class, PROPERTY_OLIGO_NUCLEOTIDE_TYPE);
     }
 
     /**
@@ -152,7 +152,7 @@ public class SubstanceNucleicAcid extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -167,7 +167,7 @@ public class SubstanceNucleicAcid extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -187,27 +187,27 @@ public class SubstanceNucleicAcid extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder sequenceType(final CodeableConcept sequenceType) {
-            b.add(PROPERTY_SEQUENCETYPE, sequenceType);
+            b.add(PROPERTY_SEQUENCE_TYPE, sequenceType);
             return this;
         }
 
         public Builder numberOfSubunits(final Integer numberOfSubunits) {
-            b.add(PROPERTY_NUMBEROFSUBUNITS, numberOfSubunits);
+            b.add(PROPERTY_NUMBER_OF_SUBUNITS, numberOfSubunits);
             return this;
         }
 
         public Builder areaOfHybridisation(final String areaOfHybridisation) {
-            b.add(PROPERTY_AREAOFHYBRIDISATION, areaOfHybridisation);
+            b.add(PROPERTY_AREA_OF_HYBRIDISATION, areaOfHybridisation);
             return this;
         }
 
         public Builder oligoNucleotideType(final CodeableConcept oligoNucleotideType) {
-            b.add(PROPERTY_OLIGONUCLEOTIDETYPE, oligoNucleotideType);
+            b.add(PROPERTY_OLIGO_NUCLEOTIDE_TYPE, oligoNucleotideType);
             return this;
         }
 
@@ -224,11 +224,11 @@ public class SubstanceNucleicAcid extends FhirResource {
     public static class SubstanceNucleicAcidLinkage extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceNucleicAcidLinkage";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CONNECTIVITY = "connectivity";
         public static final String PROPERTY_IDENTIFIER = "identifier";
         public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_RESIDUESITE = "residueSite";
+        public static final String PROPERTY_RESIDUE_SITE = "residueSite";
 
         public static Builder create() {
             return new Builder();
@@ -268,7 +268,7 @@ public class SubstanceNucleicAcid extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -302,7 +302,7 @@ public class SubstanceNucleicAcid extends FhirResource {
          * Residues shall be captured as described in 5.3.6.8.3.
          */
         public String residueSite() {
-            return getString(PROPERTY_RESIDUESITE);
+            return getString(PROPERTY_RESIDUE_SITE);
         }
 
         public static class Builder {
@@ -322,7 +322,7 @@ public class SubstanceNucleicAcid extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -342,7 +342,7 @@ public class SubstanceNucleicAcid extends FhirResource {
             }
 
             public Builder residueSite(final String residueSite) {
-                b.add(PROPERTY_RESIDUESITE, residueSite);
+                b.add(PROPERTY_RESIDUE_SITE, residueSite);
                 return this;
             }
 
@@ -355,13 +355,13 @@ public class SubstanceNucleicAcid extends FhirResource {
     public static class SubstanceNucleicAcidSubunit extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceNucleicAcidSubunit";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SUBUNIT = "subunit";
         public static final String PROPERTY_SEQUENCE = "sequence";
         public static final String PROPERTY_LENGTH = "length";
-        public static final String PROPERTY_SEQUENCEATTACHMENT = "sequenceAttachment";
-        public static final String PROPERTY_FIVEPRIME = "fivePrime";
-        public static final String PROPERTY_THREEPRIME = "threePrime";
+        public static final String PROPERTY_SEQUENCE_ATTACHMENT = "sequenceAttachment";
+        public static final String PROPERTY_FIVE_PRIME = "fivePrime";
+        public static final String PROPERTY_THREE_PRIME = "threePrime";
         public static final String PROPERTY_LINKAGE = "linkage";
         public static final String PROPERTY_SUGAR = "sugar";
 
@@ -403,7 +403,7 @@ public class SubstanceNucleicAcid extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -436,7 +436,7 @@ public class SubstanceNucleicAcid extends FhirResource {
          * (TBC).
          */
         public Attachment sequenceAttachment() {
-            return getObject(Attachment.class, PROPERTY_SEQUENCEATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_SEQUENCE_ATTACHMENT);
         }
 
         /**
@@ -447,7 +447,7 @@ public class SubstanceNucleicAcid extends FhirResource {
          * redundant.
          */
         public CodeableConcept fivePrime() {
-            return getObject(CodeableConcept.class, PROPERTY_FIVEPRIME);
+            return getObject(CodeableConcept.class, PROPERTY_FIVE_PRIME);
         }
 
         /**
@@ -458,7 +458,7 @@ public class SubstanceNucleicAcid extends FhirResource {
          * redundant.
          */
         public CodeableConcept threePrime() {
-            return getObject(CodeableConcept.class, PROPERTY_THREEPRIME);
+            return getObject(CodeableConcept.class, PROPERTY_THREE_PRIME);
         }
 
         /**
@@ -492,7 +492,7 @@ public class SubstanceNucleicAcid extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -512,17 +512,17 @@ public class SubstanceNucleicAcid extends FhirResource {
             }
 
             public Builder sequenceAttachment(final Attachment sequenceAttachment) {
-                b.add(PROPERTY_SEQUENCEATTACHMENT, sequenceAttachment);
+                b.add(PROPERTY_SEQUENCE_ATTACHMENT, sequenceAttachment);
                 return this;
             }
 
             public Builder fivePrime(final CodeableConcept fivePrime) {
-                b.add(PROPERTY_FIVEPRIME, fivePrime);
+                b.add(PROPERTY_FIVE_PRIME, fivePrime);
                 return this;
             }
 
             public Builder threePrime(final CodeableConcept threePrime) {
-                b.add(PROPERTY_THREEPRIME, threePrime);
+                b.add(PROPERTY_THREE_PRIME, threePrime);
                 return this;
             }
 
@@ -545,10 +545,10 @@ public class SubstanceNucleicAcid extends FhirResource {
     public static class SubstanceNucleicAcidSugar extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceNucleicAcidSugar";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTIFIER = "identifier";
         public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_RESIDUESITE = "residueSite";
+        public static final String PROPERTY_RESIDUE_SITE = "residueSite";
 
         public static Builder create() {
             return new Builder();
@@ -588,7 +588,7 @@ public class SubstanceNucleicAcid extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -613,7 +613,7 @@ public class SubstanceNucleicAcid extends FhirResource {
          * the base sequences listed above.
          */
         public String residueSite() {
-            return getString(PROPERTY_RESIDUESITE);
+            return getString(PROPERTY_RESIDUE_SITE);
         }
 
         public static class Builder {
@@ -633,7 +633,7 @@ public class SubstanceNucleicAcid extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -648,7 +648,7 @@ public class SubstanceNucleicAcid extends FhirResource {
             }
 
             public Builder residueSite(final String residueSite) {
-                b.add(PROPERTY_RESIDUESITE, residueSite);
+                b.add(PROPERTY_RESIDUE_SITE, residueSite);
                 return this;
             }
 

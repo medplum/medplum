@@ -11,20 +11,20 @@ import jakarta.json.JsonObjectBuilder;
 
 public class SpecimenDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "SpecimenDefinition";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_TYPECOLLECTED = "typeCollected";
-    public static final String PROPERTY_PATIENTPREPARATION = "patientPreparation";
-    public static final String PROPERTY_TIMEASPECT = "timeAspect";
+    public static final String PROPERTY_TYPE_COLLECTED = "typeCollected";
+    public static final String PROPERTY_PATIENT_PREPARATION = "patientPreparation";
+    public static final String PROPERTY_TIME_ASPECT = "timeAspect";
     public static final String PROPERTY_COLLECTION = "collection";
-    public static final String PROPERTY_TYPETESTED = "typeTested";
+    public static final String PROPERTY_TYPE_TESTED = "typeTested";
 
     public static Builder create() {
         return new Builder();
@@ -45,7 +45,7 @@ public class SpecimenDefinition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -93,7 +93,7 @@ public class SpecimenDefinition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -107,21 +107,21 @@ public class SpecimenDefinition extends FhirResource {
      * The kind of material to be collected.
      */
     public CodeableConcept typeCollected() {
-        return getObject(CodeableConcept.class, PROPERTY_TYPECOLLECTED);
+        return getObject(CodeableConcept.class, PROPERTY_TYPE_COLLECTED);
     }
 
     /**
      * Preparation of the patient for specimen collection.
      */
     public java.util.List<CodeableConcept> patientPreparation() {
-        return getList(CodeableConcept.class, PROPERTY_PATIENTPREPARATION);
+        return getList(CodeableConcept.class, PROPERTY_PATIENT_PREPARATION);
     }
 
     /**
      * Time aspect of specimen collection (duration or offset).
      */
     public String timeAspect() {
-        return getString(PROPERTY_TIMEASPECT);
+        return getString(PROPERTY_TIME_ASPECT);
     }
 
     /**
@@ -136,7 +136,7 @@ public class SpecimenDefinition extends FhirResource {
      * laboratory.
      */
     public java.util.List<SpecimenDefinitionTypeTested> typeTested() {
-        return getList(SpecimenDefinitionTypeTested.class, PROPERTY_TYPETESTED);
+        return getList(SpecimenDefinitionTypeTested.class, PROPERTY_TYPE_TESTED);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -150,7 +150,7 @@ public class SpecimenDefinition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -165,7 +165,7 @@ public class SpecimenDefinition extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -185,7 +185,7 @@ public class SpecimenDefinition extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -195,17 +195,17 @@ public class SpecimenDefinition extends FhirResource {
         }
 
         public Builder typeCollected(final CodeableConcept typeCollected) {
-            b.add(PROPERTY_TYPECOLLECTED, typeCollected);
+            b.add(PROPERTY_TYPE_COLLECTED, typeCollected);
             return this;
         }
 
         public Builder patientPreparation(final java.util.List<CodeableConcept> patientPreparation) {
-            b.add(PROPERTY_PATIENTPREPARATION, FhirObject.toArray(patientPreparation));
+            b.add(PROPERTY_PATIENT_PREPARATION, FhirObject.toArray(patientPreparation));
             return this;
         }
 
         public Builder timeAspect(final String timeAspect) {
-            b.add(PROPERTY_TIMEASPECT, timeAspect);
+            b.add(PROPERTY_TIME_ASPECT, timeAspect);
             return this;
         }
 
@@ -215,7 +215,7 @@ public class SpecimenDefinition extends FhirResource {
         }
 
         public Builder typeTested(final java.util.List<SpecimenDefinitionTypeTested> typeTested) {
-            b.add(PROPERTY_TYPETESTED, FhirObject.toArray(typeTested));
+            b.add(PROPERTY_TYPE_TESTED, FhirObject.toArray(typeTested));
             return this;
         }
 
@@ -227,9 +227,9 @@ public class SpecimenDefinition extends FhirResource {
     public static class SpecimenDefinitionAdditive extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenDefinitionAdditive";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_ADDITIVECODEABLECONCEPT = "additiveCodeableConcept";
-        public static final String PROPERTY_ADDITIVEREFERENCE = "additiveReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_ADDITIVE_CODEABLE_CONCEPT = "additiveCodeableConcept";
+        public static final String PROPERTY_ADDITIVE_REFERENCE = "additiveReference";
 
         public static Builder create() {
             return new Builder();
@@ -269,7 +269,7 @@ public class SpecimenDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -277,7 +277,7 @@ public class SpecimenDefinition extends FhirResource {
          * enhance the specimen. Examples: Formalin, Citrate, EDTA.
          */
         public CodeableConcept additiveCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_ADDITIVECODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_ADDITIVE_CODEABLE_CONCEPT);
         }
 
         /**
@@ -285,7 +285,7 @@ public class SpecimenDefinition extends FhirResource {
          * enhance the specimen. Examples: Formalin, Citrate, EDTA.
          */
         public Reference additiveReference() {
-            return getObject(Reference.class, PROPERTY_ADDITIVEREFERENCE);
+            return getObject(Reference.class, PROPERTY_ADDITIVE_REFERENCE);
         }
 
         public static class Builder {
@@ -305,17 +305,17 @@ public class SpecimenDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder additiveCodeableConcept(final CodeableConcept additiveCodeableConcept) {
-                b.add(PROPERTY_ADDITIVECODEABLECONCEPT, additiveCodeableConcept);
+                b.add(PROPERTY_ADDITIVE_CODEABLE_CONCEPT, additiveCodeableConcept);
                 return this;
             }
 
             public Builder additiveReference(final Reference additiveReference) {
-                b.add(PROPERTY_ADDITIVEREFERENCE, additiveReference);
+                b.add(PROPERTY_ADDITIVE_REFERENCE, additiveReference);
                 return this;
             }
 
@@ -328,14 +328,14 @@ public class SpecimenDefinition extends FhirResource {
     public static class SpecimenDefinitionContainer extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenDefinitionContainer";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_MATERIAL = "material";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_CAP = "cap";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_CAPACITY = "capacity";
-        public static final String PROPERTY_MINIMUMVOLUMEQUANTITY = "minimumVolumeQuantity";
-        public static final String PROPERTY_MINIMUMVOLUMESTRING = "minimumVolumeString";
+        public static final String PROPERTY_MINIMUM_VOLUME_QUANTITY = "minimumVolumeQuantity";
+        public static final String PROPERTY_MINIMUM_VOLUME_STRING = "minimumVolumeString";
         public static final String PROPERTY_ADDITIVE = "additive";
         public static final String PROPERTY_PREPARATION = "preparation";
 
@@ -377,7 +377,7 @@ public class SpecimenDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -419,14 +419,14 @@ public class SpecimenDefinition extends FhirResource {
          * The minimum volume to be conditioned in the container.
          */
         public Quantity minimumVolumeQuantity() {
-            return getObject(Quantity.class, PROPERTY_MINIMUMVOLUMEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_MINIMUM_VOLUME_QUANTITY);
         }
 
         /**
          * The minimum volume to be conditioned in the container.
          */
         public String minimumVolumeString() {
-            return getString(PROPERTY_MINIMUMVOLUMESTRING);
+            return getString(PROPERTY_MINIMUM_VOLUME_STRING);
         }
 
         /**
@@ -462,7 +462,7 @@ public class SpecimenDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -492,12 +492,12 @@ public class SpecimenDefinition extends FhirResource {
             }
 
             public Builder minimumVolumeQuantity(final Quantity minimumVolumeQuantity) {
-                b.add(PROPERTY_MINIMUMVOLUMEQUANTITY, minimumVolumeQuantity);
+                b.add(PROPERTY_MINIMUM_VOLUME_QUANTITY, minimumVolumeQuantity);
                 return this;
             }
 
             public Builder minimumVolumeString(final String minimumVolumeString) {
-                b.add(PROPERTY_MINIMUMVOLUMESTRING, minimumVolumeString);
+                b.add(PROPERTY_MINIMUM_VOLUME_STRING, minimumVolumeString);
                 return this;
             }
 
@@ -520,10 +520,10 @@ public class SpecimenDefinition extends FhirResource {
     public static class SpecimenDefinitionHandling extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenDefinitionHandling";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_TEMPERATUREQUALIFIER = "temperatureQualifier";
-        public static final String PROPERTY_TEMPERATURERANGE = "temperatureRange";
-        public static final String PROPERTY_MAXDURATION = "maxDuration";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_TEMPERATURE_QUALIFIER = "temperatureQualifier";
+        public static final String PROPERTY_TEMPERATURE_RANGE = "temperatureRange";
+        public static final String PROPERTY_MAX_DURATION = "maxDuration";
         public static final String PROPERTY_INSTRUCTION = "instruction";
 
         public static Builder create() {
@@ -564,7 +564,7 @@ public class SpecimenDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -573,14 +573,14 @@ public class SpecimenDefinition extends FhirResource {
          * may be handled in the instruction element.
          */
         public CodeableConcept temperatureQualifier() {
-            return getObject(CodeableConcept.class, PROPERTY_TEMPERATUREQUALIFIER);
+            return getObject(CodeableConcept.class, PROPERTY_TEMPERATURE_QUALIFIER);
         }
 
         /**
          * The temperature interval for this set of handling instructions.
          */
         public Range temperatureRange() {
-            return getObject(Range.class, PROPERTY_TEMPERATURERANGE);
+            return getObject(Range.class, PROPERTY_TEMPERATURE_RANGE);
         }
 
         /**
@@ -588,7 +588,7 @@ public class SpecimenDefinition extends FhirResource {
          * conditions.
          */
         public Duration maxDuration() {
-            return getObject(Duration.class, PROPERTY_MAXDURATION);
+            return getObject(Duration.class, PROPERTY_MAX_DURATION);
         }
 
         /**
@@ -616,22 +616,22 @@ public class SpecimenDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder temperatureQualifier(final CodeableConcept temperatureQualifier) {
-                b.add(PROPERTY_TEMPERATUREQUALIFIER, temperatureQualifier);
+                b.add(PROPERTY_TEMPERATURE_QUALIFIER, temperatureQualifier);
                 return this;
             }
 
             public Builder temperatureRange(final Range temperatureRange) {
-                b.add(PROPERTY_TEMPERATURERANGE, temperatureRange);
+                b.add(PROPERTY_TEMPERATURE_RANGE, temperatureRange);
                 return this;
             }
 
             public Builder maxDuration(final Duration maxDuration) {
-                b.add(PROPERTY_MAXDURATION, maxDuration);
+                b.add(PROPERTY_MAX_DURATION, maxDuration);
                 return this;
             }
 
@@ -649,14 +649,14 @@ public class SpecimenDefinition extends FhirResource {
     public static class SpecimenDefinitionTypeTested extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenDefinitionTypeTested";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_ISDERIVED = "isDerived";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_IS_DERIVED = "isDerived";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_PREFERENCE = "preference";
         public static final String PROPERTY_CONTAINER = "container";
         public static final String PROPERTY_REQUIREMENT = "requirement";
-        public static final String PROPERTY_RETENTIONTIME = "retentionTime";
-        public static final String PROPERTY_REJECTIONCRITERION = "rejectionCriterion";
+        public static final String PROPERTY_RETENTION_TIME = "retentionTime";
+        public static final String PROPERTY_REJECTION_CRITERION = "rejectionCriterion";
         public static final String PROPERTY_HANDLING = "handling";
 
         public static Builder create() {
@@ -697,14 +697,14 @@ public class SpecimenDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Primary of secondary specimen.
          */
         public Boolean isDerived() {
-            return data.getBoolean(PROPERTY_ISDERIVED);
+            return data.getBoolean(PROPERTY_IS_DERIVED);
         }
 
         /**
@@ -741,7 +741,7 @@ public class SpecimenDefinition extends FhirResource {
          * ordered tests are completed, for the purpose of additional testing.
          */
         public Duration retentionTime() {
-            return getObject(Duration.class, PROPERTY_RETENTIONTIME);
+            return getObject(Duration.class, PROPERTY_RETENTION_TIME);
         }
 
         /**
@@ -749,7 +749,7 @@ public class SpecimenDefinition extends FhirResource {
          * laboratory.
          */
         public java.util.List<CodeableConcept> rejectionCriterion() {
-            return getList(CodeableConcept.class, PROPERTY_REJECTIONCRITERION);
+            return getList(CodeableConcept.class, PROPERTY_REJECTION_CRITERION);
         }
 
         /**
@@ -777,12 +777,12 @@ public class SpecimenDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder isDerived(final Boolean isDerived) {
-                b.add(PROPERTY_ISDERIVED, isDerived);
+                b.add(PROPERTY_IS_DERIVED, isDerived);
                 return this;
             }
 
@@ -807,12 +807,12 @@ public class SpecimenDefinition extends FhirResource {
             }
 
             public Builder retentionTime(final Duration retentionTime) {
-                b.add(PROPERTY_RETENTIONTIME, retentionTime);
+                b.add(PROPERTY_RETENTION_TIME, retentionTime);
                 return this;
             }
 
             public Builder rejectionCriterion(final java.util.List<CodeableConcept> rejectionCriterion) {
-                b.add(PROPERTY_REJECTIONCRITERION, FhirObject.toArray(rejectionCriterion));
+                b.add(PROPERTY_REJECTION_CRITERION, FhirObject.toArray(rejectionCriterion));
                 return this;
             }
 

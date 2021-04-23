@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class ExampleScenario extends FhirResource {
     public static final String RESOURCE_TYPE = "ExampleScenario";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_VERSION = "version";
@@ -28,7 +28,7 @@ public class ExampleScenario extends FhirResource {
     public static final String PROPERTY_DATE = "date";
     public static final String PROPERTY_PUBLISHER = "publisher";
     public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_COPYRIGHT = "copyright";
     public static final String PROPERTY_PURPOSE = "purpose";
@@ -56,7 +56,7 @@ public class ExampleScenario extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -104,7 +104,7 @@ public class ExampleScenario extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -203,7 +203,7 @@ public class ExampleScenario extends FhirResource {
      * indexing and searching for appropriate example scenario instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -271,7 +271,7 @@ public class ExampleScenario extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -286,7 +286,7 @@ public class ExampleScenario extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -306,7 +306,7 @@ public class ExampleScenario extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -356,7 +356,7 @@ public class ExampleScenario extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -403,8 +403,8 @@ public class ExampleScenario extends FhirResource {
     public static class ExampleScenarioActor extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioActor";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_ACTORID = "actorId";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_ACTOR_ID = "actorId";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_DESCRIPTION = "description";
@@ -447,14 +447,14 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * ID or acronym of actor.
          */
         public String actorId() {
-            return getString(PROPERTY_ACTORID);
+            return getString(PROPERTY_ACTOR_ID);
         }
 
         /**
@@ -495,12 +495,12 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder actorId(final String actorId) {
-                b.add(PROPERTY_ACTORID, actorId);
+                b.add(PROPERTY_ACTOR_ID, actorId);
                 return this;
             }
 
@@ -528,7 +528,7 @@ public class ExampleScenario extends FhirResource {
     public static class ExampleScenarioAlternative extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioAlternative";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TITLE = "title";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_STEP = "step";
@@ -571,7 +571,7 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -614,7 +614,7 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -642,9 +642,9 @@ public class ExampleScenario extends FhirResource {
     public static class ExampleScenarioContainedInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioContainedInstance";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_RESOURCEID = "resourceId";
-        public static final String PROPERTY_VERSIONID = "versionId";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_RESOURCE_ID = "resourceId";
+        public static final String PROPERTY_VERSION_ID = "versionId";
 
         public static Builder create() {
             return new Builder();
@@ -684,21 +684,21 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Each resource contained in the instance.
          */
         public String resourceId() {
-            return getString(PROPERTY_RESOURCEID);
+            return getString(PROPERTY_RESOURCE_ID);
         }
 
         /**
          * A specific version of a resource contained in the instance.
          */
         public String versionId() {
-            return getString(PROPERTY_VERSIONID);
+            return getString(PROPERTY_VERSION_ID);
         }
 
         public static class Builder {
@@ -718,17 +718,17 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder resourceId(final String resourceId) {
-                b.add(PROPERTY_RESOURCEID, resourceId);
+                b.add(PROPERTY_RESOURCE_ID, resourceId);
                 return this;
             }
 
             public Builder versionId(final String versionId) {
-                b.add(PROPERTY_VERSIONID, versionId);
+                b.add(PROPERTY_VERSION_ID, versionId);
                 return this;
             }
 
@@ -741,13 +741,13 @@ public class ExampleScenario extends FhirResource {
     public static class ExampleScenarioInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioInstance";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_RESOURCEID = "resourceId";
-        public static final String PROPERTY_RESOURCETYPE = "resourceType";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_RESOURCE_ID = "resourceId";
+        public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_VERSION = "version";
-        public static final String PROPERTY_CONTAINEDINSTANCE = "containedInstance";
+        public static final String PROPERTY_CONTAINED_INSTANCE = "containedInstance";
 
         public static Builder create() {
             return new Builder();
@@ -787,21 +787,21 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The id of the resource for referencing.
          */
         public String resourceId() {
-            return getString(PROPERTY_RESOURCEID);
+            return getString(PROPERTY_RESOURCE_ID);
         }
 
         /**
          * The type of the resource.
          */
         public String resourceType() {
-            return getString(PROPERTY_RESOURCETYPE);
+            return getString(PROPERTY_RESOURCE_TYPE);
         }
 
         /**
@@ -830,7 +830,7 @@ public class ExampleScenario extends FhirResource {
          * in a bundle).
          */
         public java.util.List<ExampleScenarioContainedInstance> containedInstance() {
-            return getList(ExampleScenarioContainedInstance.class, PROPERTY_CONTAINEDINSTANCE);
+            return getList(ExampleScenarioContainedInstance.class, PROPERTY_CONTAINED_INSTANCE);
         }
 
         public static class Builder extends FhirResource.Builder {
@@ -849,17 +849,17 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder resourceId(final String resourceId) {
-                b.add(PROPERTY_RESOURCEID, resourceId);
+                b.add(PROPERTY_RESOURCE_ID, resourceId);
                 return this;
             }
 
             public Builder resourceType(final String resourceType) {
-                b.add(PROPERTY_RESOURCETYPE, resourceType);
+                b.add(PROPERTY_RESOURCE_TYPE, resourceType);
                 return this;
             }
 
@@ -879,7 +879,7 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder containedInstance(final java.util.List<ExampleScenarioContainedInstance> containedInstance) {
-                b.add(PROPERTY_CONTAINEDINSTANCE, FhirObject.toArray(containedInstance));
+                b.add(PROPERTY_CONTAINED_INSTANCE, FhirObject.toArray(containedInstance));
                 return this;
             }
 
@@ -892,15 +892,15 @@ public class ExampleScenario extends FhirResource {
     public static class ExampleScenarioOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioOperation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NUMBER = "number";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_INITIATOR = "initiator";
         public static final String PROPERTY_RECEIVER = "receiver";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_INITIATORACTIVE = "initiatorActive";
-        public static final String PROPERTY_RECEIVERACTIVE = "receiverActive";
+        public static final String PROPERTY_INITIATOR_ACTIVE = "initiatorActive";
+        public static final String PROPERTY_RECEIVER_ACTIVE = "receiverActive";
         public static final String PROPERTY_REQUEST = "request";
         public static final String PROPERTY_RESPONSE = "response";
 
@@ -942,7 +942,7 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -991,14 +991,14 @@ public class ExampleScenario extends FhirResource {
          * Whether the initiator is deactivated right after the transaction.
          */
         public Boolean initiatorActive() {
-            return data.getBoolean(PROPERTY_INITIATORACTIVE);
+            return data.getBoolean(PROPERTY_INITIATOR_ACTIVE);
         }
 
         /**
          * Whether the receiver is deactivated right after the transaction.
          */
         public Boolean receiverActive() {
-            return data.getBoolean(PROPERTY_RECEIVERACTIVE);
+            return data.getBoolean(PROPERTY_RECEIVER_ACTIVE);
         }
 
         /**
@@ -1032,7 +1032,7 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1067,12 +1067,12 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder initiatorActive(final Boolean initiatorActive) {
-                b.add(PROPERTY_INITIATORACTIVE, initiatorActive);
+                b.add(PROPERTY_INITIATOR_ACTIVE, initiatorActive);
                 return this;
             }
 
             public Builder receiverActive(final Boolean receiverActive) {
-                b.add(PROPERTY_RECEIVERACTIVE, receiverActive);
+                b.add(PROPERTY_RECEIVER_ACTIVE, receiverActive);
                 return this;
             }
 
@@ -1095,11 +1095,11 @@ public class ExampleScenario extends FhirResource {
     public static class ExampleScenarioProcess extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioProcess";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TITLE = "title";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_PRECONDITIONS = "preConditions";
-        public static final String PROPERTY_POSTCONDITIONS = "postConditions";
+        public static final String PROPERTY_PRE_CONDITIONS = "preConditions";
+        public static final String PROPERTY_POST_CONDITIONS = "postConditions";
         public static final String PROPERTY_STEP = "step";
 
         public static Builder create() {
@@ -1140,7 +1140,7 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1161,14 +1161,14 @@ public class ExampleScenario extends FhirResource {
          * Description of initial status before the process starts.
          */
         public String preConditions() {
-            return getString(PROPERTY_PRECONDITIONS);
+            return getString(PROPERTY_PRE_CONDITIONS);
         }
 
         /**
          * Description of final status after the process ends.
          */
         public String postConditions() {
-            return getString(PROPERTY_POSTCONDITIONS);
+            return getString(PROPERTY_POST_CONDITIONS);
         }
 
         /**
@@ -1195,7 +1195,7 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1210,12 +1210,12 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder preConditions(final String preConditions) {
-                b.add(PROPERTY_PRECONDITIONS, preConditions);
+                b.add(PROPERTY_PRE_CONDITIONS, preConditions);
                 return this;
             }
 
             public Builder postConditions(final String postConditions) {
-                b.add(PROPERTY_POSTCONDITIONS, postConditions);
+                b.add(PROPERTY_POST_CONDITIONS, postConditions);
                 return this;
             }
 
@@ -1233,7 +1233,7 @@ public class ExampleScenario extends FhirResource {
     public static class ExampleScenarioStep extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioStep";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PROCESS = "process";
         public static final String PROPERTY_PAUSE = "pause";
         public static final String PROPERTY_OPERATION = "operation";
@@ -1277,7 +1277,7 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1326,7 +1326,7 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1359,8 +1359,8 @@ public class ExampleScenario extends FhirResource {
     public static class ExampleScenarioVersion extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioVersion";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_VERSIONID = "versionId";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_VERSION_ID = "versionId";
         public static final String PROPERTY_DESCRIPTION = "description";
 
         public static Builder create() {
@@ -1401,14 +1401,14 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The identifier of a specific version of a resource.
          */
         public String versionId() {
-            return getString(PROPERTY_VERSIONID);
+            return getString(PROPERTY_VERSION_ID);
         }
 
         /**
@@ -1435,12 +1435,12 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder versionId(final String versionId) {
-                b.add(PROPERTY_VERSIONID, versionId);
+                b.add(PROPERTY_VERSION_ID, versionId);
                 return this;
             }
 

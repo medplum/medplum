@@ -19,7 +19,7 @@ public class Address extends FhirResource {
     public static final String PROPERTY_CITY = "city";
     public static final String PROPERTY_DISTRICT = "district";
     public static final String PROPERTY_STATE = "state";
-    public static final String PROPERTY_POSTALCODE = "postalCode";
+    public static final String PROPERTY_POSTAL_CODE = "postalCode";
     public static final String PROPERTY_COUNTRY = "country";
     public static final String PROPERTY_PERIOD = "period";
 
@@ -105,7 +105,7 @@ public class Address extends FhirResource {
      * A postal code designating a region defined by the postal service.
      */
     public String postalCode() {
-        return getString(PROPERTY_POSTALCODE);
+        return getString(PROPERTY_POSTAL_CODE);
     }
 
     /**
@@ -174,7 +174,7 @@ public class Address extends FhirResource {
         }
 
         public Builder postalCode(final String postalCode) {
-            b.add(PROPERTY_POSTALCODE, postalCode);
+            b.add(PROPERTY_POSTAL_CODE, postalCode);
             return this;
         }
 

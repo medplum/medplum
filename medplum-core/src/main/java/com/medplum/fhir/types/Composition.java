@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Composition extends FhirResource {
     public static final String RESOURCE_TYPE = "Composition";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_TYPE = "type";
@@ -31,7 +31,7 @@ public class Composition extends FhirResource {
     public static final String PROPERTY_CONFIDENTIALITY = "confidentiality";
     public static final String PROPERTY_ATTESTER = "attester";
     public static final String PROPERTY_CUSTODIAN = "custodian";
-    public static final String PROPERTY_RELATESTO = "relatesTo";
+    public static final String PROPERTY_RELATES_TO = "relatesTo";
     public static final String PROPERTY_EVENT = "event";
     public static final String PROPERTY_SECTION = "section";
 
@@ -54,7 +54,7 @@ public class Composition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -102,7 +102,7 @@ public class Composition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -208,7 +208,7 @@ public class Composition extends FhirResource {
      * documents that already exist.
      */
     public java.util.List<CompositionRelatesTo> relatesTo() {
-        return getList(CompositionRelatesTo.class, PROPERTY_RELATESTO);
+        return getList(CompositionRelatesTo.class, PROPERTY_RELATES_TO);
     }
 
     /**
@@ -237,7 +237,7 @@ public class Composition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -252,7 +252,7 @@ public class Composition extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -272,7 +272,7 @@ public class Composition extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -337,7 +337,7 @@ public class Composition extends FhirResource {
         }
 
         public Builder relatesTo(final java.util.List<CompositionRelatesTo> relatesTo) {
-            b.add(PROPERTY_RELATESTO, FhirObject.toArray(relatesTo));
+            b.add(PROPERTY_RELATES_TO, FhirObject.toArray(relatesTo));
             return this;
         }
 
@@ -359,7 +359,7 @@ public class Composition extends FhirResource {
     public static class CompositionAttester extends FhirObject {
         public static final String RESOURCE_TYPE = "CompositionAttester";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_MODE = "mode";
         public static final String PROPERTY_TIME = "time";
         public static final String PROPERTY_PARTY = "party";
@@ -402,7 +402,7 @@ public class Composition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -443,7 +443,7 @@ public class Composition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -471,7 +471,7 @@ public class Composition extends FhirResource {
     public static class CompositionEvent extends FhirObject {
         public static final String RESOURCE_TYPE = "CompositionEvent";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_PERIOD = "period";
         public static final String PROPERTY_DETAIL = "detail";
@@ -514,7 +514,7 @@ public class Composition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -563,7 +563,7 @@ public class Composition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -591,10 +591,10 @@ public class Composition extends FhirResource {
     public static class CompositionRelatesTo extends FhirObject {
         public static final String RESOURCE_TYPE = "CompositionRelatesTo";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_TARGETIDENTIFIER = "targetIdentifier";
-        public static final String PROPERTY_TARGETREFERENCE = "targetReference";
+        public static final String PROPERTY_TARGET_IDENTIFIER = "targetIdentifier";
+        public static final String PROPERTY_TARGET_REFERENCE = "targetReference";
 
         public static Builder create() {
             return new Builder();
@@ -634,7 +634,7 @@ public class Composition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -649,14 +649,14 @@ public class Composition extends FhirResource {
          * The target composition/document of this relationship.
          */
         public Identifier targetIdentifier() {
-            return getObject(Identifier.class, PROPERTY_TARGETIDENTIFIER);
+            return getObject(Identifier.class, PROPERTY_TARGET_IDENTIFIER);
         }
 
         /**
          * The target composition/document of this relationship.
          */
         public Reference targetReference() {
-            return getObject(Reference.class, PROPERTY_TARGETREFERENCE);
+            return getObject(Reference.class, PROPERTY_TARGET_REFERENCE);
         }
 
         public static class Builder {
@@ -676,7 +676,7 @@ public class Composition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -686,12 +686,12 @@ public class Composition extends FhirResource {
             }
 
             public Builder targetIdentifier(final Identifier targetIdentifier) {
-                b.add(PROPERTY_TARGETIDENTIFIER, targetIdentifier);
+                b.add(PROPERTY_TARGET_IDENTIFIER, targetIdentifier);
                 return this;
             }
 
             public Builder targetReference(final Reference targetReference) {
-                b.add(PROPERTY_TARGETREFERENCE, targetReference);
+                b.add(PROPERTY_TARGET_REFERENCE, targetReference);
                 return this;
             }
 
@@ -704,16 +704,16 @@ public class Composition extends FhirResource {
     public static class CompositionSection extends FhirObject {
         public static final String RESOURCE_TYPE = "CompositionSection";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TITLE = "title";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_AUTHOR = "author";
         public static final String PROPERTY_FOCUS = "focus";
         public static final String PROPERTY_TEXT = "text";
         public static final String PROPERTY_MODE = "mode";
-        public static final String PROPERTY_ORDEREDBY = "orderedBy";
+        public static final String PROPERTY_ORDERED_BY = "orderedBy";
         public static final String PROPERTY_ENTRY = "entry";
-        public static final String PROPERTY_EMPTYREASON = "emptyReason";
+        public static final String PROPERTY_EMPTY_REASON = "emptyReason";
         public static final String PROPERTY_SECTION = "section";
 
         public static Builder create() {
@@ -754,7 +754,7 @@ public class Composition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -822,7 +822,7 @@ public class Composition extends FhirResource {
          * Specifies the order applied to the items in the section entries.
          */
         public CodeableConcept orderedBy() {
-            return getObject(CodeableConcept.class, PROPERTY_ORDEREDBY);
+            return getObject(CodeableConcept.class, PROPERTY_ORDERED_BY);
         }
 
         /**
@@ -838,7 +838,7 @@ public class Composition extends FhirResource {
          * typically has some text explaining the empty reason.
          */
         public CodeableConcept emptyReason() {
-            return getObject(CodeableConcept.class, PROPERTY_EMPTYREASON);
+            return getObject(CodeableConcept.class, PROPERTY_EMPTY_REASON);
         }
 
         /**
@@ -865,7 +865,7 @@ public class Composition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -900,7 +900,7 @@ public class Composition extends FhirResource {
             }
 
             public Builder orderedBy(final CodeableConcept orderedBy) {
-                b.add(PROPERTY_ORDEREDBY, orderedBy);
+                b.add(PROPERTY_ORDERED_BY, orderedBy);
                 return this;
             }
 
@@ -910,7 +910,7 @@ public class Composition extends FhirResource {
             }
 
             public Builder emptyReason(final CodeableConcept emptyReason) {
-                b.add(PROPERTY_EMPTYREASON, emptyReason);
+                b.add(PROPERTY_EMPTY_REASON, emptyReason);
                 return this;
             }
 

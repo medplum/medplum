@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class PlanDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "PlanDefinition";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_VERSION = "version";
@@ -28,26 +28,26 @@ public class PlanDefinition extends FhirResource {
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_SUBJECTCODEABLECONCEPT = "subjectCodeableConcept";
-    public static final String PROPERTY_SUBJECTREFERENCE = "subjectReference";
+    public static final String PROPERTY_SUBJECT_CODEABLE_CONCEPT = "subjectCodeableConcept";
+    public static final String PROPERTY_SUBJECT_REFERENCE = "subjectReference";
     public static final String PROPERTY_DATE = "date";
     public static final String PROPERTY_PUBLISHER = "publisher";
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_PURPOSE = "purpose";
     public static final String PROPERTY_USAGE = "usage";
     public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_APPROVALDATE = "approvalDate";
-    public static final String PROPERTY_LASTREVIEWDATE = "lastReviewDate";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
+    public static final String PROPERTY_APPROVAL_DATE = "approvalDate";
+    public static final String PROPERTY_LAST_REVIEW_DATE = "lastReviewDate";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
     public static final String PROPERTY_TOPIC = "topic";
     public static final String PROPERTY_AUTHOR = "author";
     public static final String PROPERTY_EDITOR = "editor";
     public static final String PROPERTY_REVIEWER = "reviewer";
     public static final String PROPERTY_ENDORSER = "endorser";
-    public static final String PROPERTY_RELATEDARTIFACT = "relatedArtifact";
+    public static final String PROPERTY_RELATED_ARTIFACT = "relatedArtifact";
     public static final String PROPERTY_LIBRARY = "library";
     public static final String PROPERTY_GOAL = "goal";
     public static final String PROPERTY_ACTION = "action";
@@ -71,7 +71,7 @@ public class PlanDefinition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -119,7 +119,7 @@ public class PlanDefinition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -215,7 +215,7 @@ public class PlanDefinition extends FhirResource {
      * plan definition.
      */
     public CodeableConcept subjectCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_SUBJECTCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_SUBJECT_CODEABLE_CONCEPT);
     }
 
     /**
@@ -223,7 +223,7 @@ public class PlanDefinition extends FhirResource {
      * plan definition.
      */
     public Reference subjectReference() {
-        return getObject(Reference.class, PROPERTY_SUBJECTREFERENCE);
+        return getObject(Reference.class, PROPERTY_SUBJECT_REFERENCE);
     }
 
     /**
@@ -268,7 +268,7 @@ public class PlanDefinition extends FhirResource {
      * indexing and searching for appropriate plan definition instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -310,7 +310,7 @@ public class PlanDefinition extends FhirResource {
      * usage.
      */
     public java.time.Instant approvalDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_APPROVALDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_APPROVAL_DATE));
     }
 
     /**
@@ -319,7 +319,7 @@ public class PlanDefinition extends FhirResource {
      * approval date.
      */
     public java.time.Instant lastReviewDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTREVIEWDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_REVIEW_DATE));
     }
 
     /**
@@ -327,7 +327,7 @@ public class PlanDefinition extends FhirResource {
      * to be in active use.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -376,7 +376,7 @@ public class PlanDefinition extends FhirResource {
      * bibliographic references.
      */
     public java.util.List<RelatedArtifact> relatedArtifact() {
-        return getList(RelatedArtifact.class, PROPERTY_RELATEDARTIFACT);
+        return getList(RelatedArtifact.class, PROPERTY_RELATED_ARTIFACT);
     }
 
     /**
@@ -415,7 +415,7 @@ public class PlanDefinition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -430,7 +430,7 @@ public class PlanDefinition extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -450,7 +450,7 @@ public class PlanDefinition extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -500,12 +500,12 @@ public class PlanDefinition extends FhirResource {
         }
 
         public Builder subjectCodeableConcept(final CodeableConcept subjectCodeableConcept) {
-            b.add(PROPERTY_SUBJECTCODEABLECONCEPT, subjectCodeableConcept);
+            b.add(PROPERTY_SUBJECT_CODEABLE_CONCEPT, subjectCodeableConcept);
             return this;
         }
 
         public Builder subjectReference(final Reference subjectReference) {
-            b.add(PROPERTY_SUBJECTREFERENCE, subjectReference);
+            b.add(PROPERTY_SUBJECT_REFERENCE, subjectReference);
             return this;
         }
 
@@ -530,7 +530,7 @@ public class PlanDefinition extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -555,17 +555,17 @@ public class PlanDefinition extends FhirResource {
         }
 
         public Builder approvalDate(final java.time.Instant approvalDate) {
-            b.add(PROPERTY_APPROVALDATE, approvalDate.toString());
+            b.add(PROPERTY_APPROVAL_DATE, approvalDate.toString());
             return this;
         }
 
         public Builder lastReviewDate(final java.time.Instant lastReviewDate) {
-            b.add(PROPERTY_LASTREVIEWDATE, lastReviewDate.toString());
+            b.add(PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
@@ -595,7 +595,7 @@ public class PlanDefinition extends FhirResource {
         }
 
         public Builder relatedArtifact(final java.util.List<RelatedArtifact> relatedArtifact) {
-            b.add(PROPERTY_RELATEDARTIFACT, FhirObject.toArray(relatedArtifact));
+            b.add(PROPERTY_RELATED_ARTIFACT, FhirObject.toArray(relatedArtifact));
             return this;
         }
 
@@ -622,40 +622,40 @@ public class PlanDefinition extends FhirResource {
     public static class PlanDefinitionAction extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionAction";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PREFIX = "prefix";
         public static final String PROPERTY_TITLE = "title";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_TEXTEQUIVALENT = "textEquivalent";
+        public static final String PROPERTY_TEXT_EQUIVALENT = "textEquivalent";
         public static final String PROPERTY_PRIORITY = "priority";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_REASON = "reason";
         public static final String PROPERTY_DOCUMENTATION = "documentation";
-        public static final String PROPERTY_GOALID = "goalId";
-        public static final String PROPERTY_SUBJECTCODEABLECONCEPT = "subjectCodeableConcept";
-        public static final String PROPERTY_SUBJECTREFERENCE = "subjectReference";
+        public static final String PROPERTY_GOAL_ID = "goalId";
+        public static final String PROPERTY_SUBJECT_CODEABLE_CONCEPT = "subjectCodeableConcept";
+        public static final String PROPERTY_SUBJECT_REFERENCE = "subjectReference";
         public static final String PROPERTY_TRIGGER = "trigger";
         public static final String PROPERTY_CONDITION = "condition";
         public static final String PROPERTY_INPUT = "input";
         public static final String PROPERTY_OUTPUT = "output";
-        public static final String PROPERTY_RELATEDACTION = "relatedAction";
-        public static final String PROPERTY_TIMINGDATETIME = "timingDateTime";
-        public static final String PROPERTY_TIMINGAGE = "timingAge";
-        public static final String PROPERTY_TIMINGPERIOD = "timingPeriod";
-        public static final String PROPERTY_TIMINGDURATION = "timingDuration";
-        public static final String PROPERTY_TIMINGRANGE = "timingRange";
-        public static final String PROPERTY_TIMINGTIMING = "timingTiming";
+        public static final String PROPERTY_RELATED_ACTION = "relatedAction";
+        public static final String PROPERTY_TIMING_DATE_TIME = "timingDateTime";
+        public static final String PROPERTY_TIMING_AGE = "timingAge";
+        public static final String PROPERTY_TIMING_PERIOD = "timingPeriod";
+        public static final String PROPERTY_TIMING_DURATION = "timingDuration";
+        public static final String PROPERTY_TIMING_RANGE = "timingRange";
+        public static final String PROPERTY_TIMING_TIMING = "timingTiming";
         public static final String PROPERTY_PARTICIPANT = "participant";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_GROUPINGBEHAVIOR = "groupingBehavior";
-        public static final String PROPERTY_SELECTIONBEHAVIOR = "selectionBehavior";
-        public static final String PROPERTY_REQUIREDBEHAVIOR = "requiredBehavior";
-        public static final String PROPERTY_PRECHECKBEHAVIOR = "precheckBehavior";
-        public static final String PROPERTY_CARDINALITYBEHAVIOR = "cardinalityBehavior";
-        public static final String PROPERTY_DEFINITIONCANONICAL = "definitionCanonical";
-        public static final String PROPERTY_DEFINITIONURI = "definitionUri";
+        public static final String PROPERTY_GROUPING_BEHAVIOR = "groupingBehavior";
+        public static final String PROPERTY_SELECTION_BEHAVIOR = "selectionBehavior";
+        public static final String PROPERTY_REQUIRED_BEHAVIOR = "requiredBehavior";
+        public static final String PROPERTY_PRECHECK_BEHAVIOR = "precheckBehavior";
+        public static final String PROPERTY_CARDINALITY_BEHAVIOR = "cardinalityBehavior";
+        public static final String PROPERTY_DEFINITION_CANONICAL = "definitionCanonical";
+        public static final String PROPERTY_DEFINITION_URI = "definitionUri";
         public static final String PROPERTY_TRANSFORM = "transform";
-        public static final String PROPERTY_DYNAMICVALUE = "dynamicValue";
+        public static final String PROPERTY_DYNAMIC_VALUE = "dynamicValue";
         public static final String PROPERTY_ACTION = "action";
 
         public static Builder create() {
@@ -696,7 +696,7 @@ public class PlanDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -728,7 +728,7 @@ public class PlanDefinition extends FhirResource {
          * dynamically.
          */
         public String textEquivalent() {
-            return getString(PROPERTY_TEXTEQUIVALENT);
+            return getString(PROPERTY_TEXT_EQUIVALENT);
         }
 
         /**
@@ -769,7 +769,7 @@ public class PlanDefinition extends FhirResource {
          * goal element defined within this plan definition.
          */
         public java.util.List<String> goalId() {
-            return getList(String.class, PROPERTY_GOALID);
+            return getList(String.class, PROPERTY_GOAL_ID);
         }
 
         /**
@@ -777,7 +777,7 @@ public class PlanDefinition extends FhirResource {
          * action and its children, if any.
          */
         public CodeableConcept subjectCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_SUBJECTCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_SUBJECT_CODEABLE_CONCEPT);
         }
 
         /**
@@ -785,7 +785,7 @@ public class PlanDefinition extends FhirResource {
          * action and its children, if any.
          */
         public Reference subjectReference() {
-            return getObject(Reference.class, PROPERTY_SUBJECTREFERENCE);
+            return getObject(Reference.class, PROPERTY_SUBJECT_REFERENCE);
         }
 
         /**
@@ -822,49 +822,49 @@ public class PlanDefinition extends FhirResource {
          * after start of".
          */
         public java.util.List<PlanDefinitionRelatedAction> relatedAction() {
-            return getList(PlanDefinitionRelatedAction.class, PROPERTY_RELATEDACTION);
+            return getList(PlanDefinitionRelatedAction.class, PROPERTY_RELATED_ACTION);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public String timingDateTime() {
-            return getString(PROPERTY_TIMINGDATETIME);
+            return getString(PROPERTY_TIMING_DATE_TIME);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Age timingAge() {
-            return getObject(Age.class, PROPERTY_TIMINGAGE);
+            return getObject(Age.class, PROPERTY_TIMING_AGE);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Period timingPeriod() {
-            return getObject(Period.class, PROPERTY_TIMINGPERIOD);
+            return getObject(Period.class, PROPERTY_TIMING_PERIOD);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Duration timingDuration() {
-            return getObject(Duration.class, PROPERTY_TIMINGDURATION);
+            return getObject(Duration.class, PROPERTY_TIMING_DURATION);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Range timingRange() {
-            return getObject(Range.class, PROPERTY_TIMINGRANGE);
+            return getObject(Range.class, PROPERTY_TIMING_RANGE);
         }
 
         /**
          * An optional value describing when the action should be performed.
          */
         public Timing timingTiming() {
-            return getObject(Timing.class, PROPERTY_TIMINGTIMING);
+            return getObject(Timing.class, PROPERTY_TIMING_TIMING);
         }
 
         /**
@@ -885,35 +885,35 @@ public class PlanDefinition extends FhirResource {
          * Defines the grouping behavior for the action and its children.
          */
         public String groupingBehavior() {
-            return getString(PROPERTY_GROUPINGBEHAVIOR);
+            return getString(PROPERTY_GROUPING_BEHAVIOR);
         }
 
         /**
          * Defines the selection behavior for the action and its children.
          */
         public String selectionBehavior() {
-            return getString(PROPERTY_SELECTIONBEHAVIOR);
+            return getString(PROPERTY_SELECTION_BEHAVIOR);
         }
 
         /**
          * Defines the required behavior for the action.
          */
         public String requiredBehavior() {
-            return getString(PROPERTY_REQUIREDBEHAVIOR);
+            return getString(PROPERTY_REQUIRED_BEHAVIOR);
         }
 
         /**
          * Defines whether the action should usually be preselected.
          */
         public String precheckBehavior() {
-            return getString(PROPERTY_PRECHECKBEHAVIOR);
+            return getString(PROPERTY_PRECHECK_BEHAVIOR);
         }
 
         /**
          * Defines whether the action can be selected multiple times.
          */
         public String cardinalityBehavior() {
-            return getString(PROPERTY_CARDINALITYBEHAVIOR);
+            return getString(PROPERTY_CARDINALITY_BEHAVIOR);
         }
 
         /**
@@ -922,7 +922,7 @@ public class PlanDefinition extends FhirResource {
          * actions to be taken.
          */
         public String definitionCanonical() {
-            return getString(PROPERTY_DEFINITIONCANONICAL);
+            return getString(PROPERTY_DEFINITION_CANONICAL);
         }
 
         /**
@@ -931,7 +931,7 @@ public class PlanDefinition extends FhirResource {
          * actions to be taken.
          */
         public String definitionUri() {
-            return getString(PROPERTY_DEFINITIONURI);
+            return getString(PROPERTY_DEFINITION_URI);
         }
 
         /**
@@ -951,7 +951,7 @@ public class PlanDefinition extends FhirResource {
          * resource that would contain the result.
          */
         public java.util.List<PlanDefinitionDynamicValue> dynamicValue() {
-            return getList(PlanDefinitionDynamicValue.class, PROPERTY_DYNAMICVALUE);
+            return getList(PlanDefinitionDynamicValue.class, PROPERTY_DYNAMIC_VALUE);
         }
 
         /**
@@ -981,7 +981,7 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1001,7 +1001,7 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder textEquivalent(final String textEquivalent) {
-                b.add(PROPERTY_TEXTEQUIVALENT, textEquivalent);
+                b.add(PROPERTY_TEXT_EQUIVALENT, textEquivalent);
                 return this;
             }
 
@@ -1026,17 +1026,17 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder goalId(final java.util.List<String> goalId) {
-                b.add(PROPERTY_GOALID, FhirObject.toStringArray(goalId));
+                b.add(PROPERTY_GOAL_ID, FhirObject.toStringArray(goalId));
                 return this;
             }
 
             public Builder subjectCodeableConcept(final CodeableConcept subjectCodeableConcept) {
-                b.add(PROPERTY_SUBJECTCODEABLECONCEPT, subjectCodeableConcept);
+                b.add(PROPERTY_SUBJECT_CODEABLE_CONCEPT, subjectCodeableConcept);
                 return this;
             }
 
             public Builder subjectReference(final Reference subjectReference) {
-                b.add(PROPERTY_SUBJECTREFERENCE, subjectReference);
+                b.add(PROPERTY_SUBJECT_REFERENCE, subjectReference);
                 return this;
             }
 
@@ -1061,37 +1061,37 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder relatedAction(final java.util.List<PlanDefinitionRelatedAction> relatedAction) {
-                b.add(PROPERTY_RELATEDACTION, FhirObject.toArray(relatedAction));
+                b.add(PROPERTY_RELATED_ACTION, FhirObject.toArray(relatedAction));
                 return this;
             }
 
             public Builder timingDateTime(final String timingDateTime) {
-                b.add(PROPERTY_TIMINGDATETIME, timingDateTime);
+                b.add(PROPERTY_TIMING_DATE_TIME, timingDateTime);
                 return this;
             }
 
             public Builder timingAge(final Age timingAge) {
-                b.add(PROPERTY_TIMINGAGE, timingAge);
+                b.add(PROPERTY_TIMING_AGE, timingAge);
                 return this;
             }
 
             public Builder timingPeriod(final Period timingPeriod) {
-                b.add(PROPERTY_TIMINGPERIOD, timingPeriod);
+                b.add(PROPERTY_TIMING_PERIOD, timingPeriod);
                 return this;
             }
 
             public Builder timingDuration(final Duration timingDuration) {
-                b.add(PROPERTY_TIMINGDURATION, timingDuration);
+                b.add(PROPERTY_TIMING_DURATION, timingDuration);
                 return this;
             }
 
             public Builder timingRange(final Range timingRange) {
-                b.add(PROPERTY_TIMINGRANGE, timingRange);
+                b.add(PROPERTY_TIMING_RANGE, timingRange);
                 return this;
             }
 
             public Builder timingTiming(final Timing timingTiming) {
-                b.add(PROPERTY_TIMINGTIMING, timingTiming);
+                b.add(PROPERTY_TIMING_TIMING, timingTiming);
                 return this;
             }
 
@@ -1106,37 +1106,37 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder groupingBehavior(final String groupingBehavior) {
-                b.add(PROPERTY_GROUPINGBEHAVIOR, groupingBehavior);
+                b.add(PROPERTY_GROUPING_BEHAVIOR, groupingBehavior);
                 return this;
             }
 
             public Builder selectionBehavior(final String selectionBehavior) {
-                b.add(PROPERTY_SELECTIONBEHAVIOR, selectionBehavior);
+                b.add(PROPERTY_SELECTION_BEHAVIOR, selectionBehavior);
                 return this;
             }
 
             public Builder requiredBehavior(final String requiredBehavior) {
-                b.add(PROPERTY_REQUIREDBEHAVIOR, requiredBehavior);
+                b.add(PROPERTY_REQUIRED_BEHAVIOR, requiredBehavior);
                 return this;
             }
 
             public Builder precheckBehavior(final String precheckBehavior) {
-                b.add(PROPERTY_PRECHECKBEHAVIOR, precheckBehavior);
+                b.add(PROPERTY_PRECHECK_BEHAVIOR, precheckBehavior);
                 return this;
             }
 
             public Builder cardinalityBehavior(final String cardinalityBehavior) {
-                b.add(PROPERTY_CARDINALITYBEHAVIOR, cardinalityBehavior);
+                b.add(PROPERTY_CARDINALITY_BEHAVIOR, cardinalityBehavior);
                 return this;
             }
 
             public Builder definitionCanonical(final String definitionCanonical) {
-                b.add(PROPERTY_DEFINITIONCANONICAL, definitionCanonical);
+                b.add(PROPERTY_DEFINITION_CANONICAL, definitionCanonical);
                 return this;
             }
 
             public Builder definitionUri(final String definitionUri) {
-                b.add(PROPERTY_DEFINITIONURI, definitionUri);
+                b.add(PROPERTY_DEFINITION_URI, definitionUri);
                 return this;
             }
 
@@ -1146,7 +1146,7 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder dynamicValue(final java.util.List<PlanDefinitionDynamicValue> dynamicValue) {
-                b.add(PROPERTY_DYNAMICVALUE, FhirObject.toArray(dynamicValue));
+                b.add(PROPERTY_DYNAMIC_VALUE, FhirObject.toArray(dynamicValue));
                 return this;
             }
 
@@ -1164,7 +1164,7 @@ public class PlanDefinition extends FhirResource {
     public static class PlanDefinitionCondition extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionCondition";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_KIND = "kind";
         public static final String PROPERTY_EXPRESSION = "expression";
 
@@ -1206,7 +1206,7 @@ public class PlanDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1241,7 +1241,7 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1264,7 +1264,7 @@ public class PlanDefinition extends FhirResource {
     public static class PlanDefinitionDynamicValue extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionDynamicValue";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PATH = "path";
         public static final String PROPERTY_EXPRESSION = "expression";
 
@@ -1306,7 +1306,7 @@ public class PlanDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1348,7 +1348,7 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1371,7 +1371,7 @@ public class PlanDefinition extends FhirResource {
     public static class PlanDefinitionGoal extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionGoal";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CATEGORY = "category";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_PRIORITY = "priority";
@@ -1418,7 +1418,7 @@ public class PlanDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1494,7 +1494,7 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1542,7 +1542,7 @@ public class PlanDefinition extends FhirResource {
     public static class PlanDefinitionParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionParticipant";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_ROLE = "role";
 
@@ -1584,7 +1584,7 @@ public class PlanDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1619,7 +1619,7 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1642,11 +1642,11 @@ public class PlanDefinition extends FhirResource {
     public static class PlanDefinitionRelatedAction extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionRelatedAction";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_ACTIONID = "actionId";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_ACTION_ID = "actionId";
         public static final String PROPERTY_RELATIONSHIP = "relationship";
-        public static final String PROPERTY_OFFSETDURATION = "offsetDuration";
-        public static final String PROPERTY_OFFSETRANGE = "offsetRange";
+        public static final String PROPERTY_OFFSET_DURATION = "offsetDuration";
+        public static final String PROPERTY_OFFSET_RANGE = "offsetRange";
 
         public static Builder create() {
             return new Builder();
@@ -1686,14 +1686,14 @@ public class PlanDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The element id of the related action.
          */
         public String actionId() {
-            return getString(PROPERTY_ACTIONID);
+            return getString(PROPERTY_ACTION_ID);
         }
 
         /**
@@ -1708,7 +1708,7 @@ public class PlanDefinition extends FhirResource {
          * example, 30-60 minutes before.
          */
         public Duration offsetDuration() {
-            return getObject(Duration.class, PROPERTY_OFFSETDURATION);
+            return getObject(Duration.class, PROPERTY_OFFSET_DURATION);
         }
 
         /**
@@ -1716,7 +1716,7 @@ public class PlanDefinition extends FhirResource {
          * example, 30-60 minutes before.
          */
         public Range offsetRange() {
-            return getObject(Range.class, PROPERTY_OFFSETRANGE);
+            return getObject(Range.class, PROPERTY_OFFSET_RANGE);
         }
 
         public static class Builder {
@@ -1736,12 +1736,12 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder actionId(final String actionId) {
-                b.add(PROPERTY_ACTIONID, actionId);
+                b.add(PROPERTY_ACTION_ID, actionId);
                 return this;
             }
 
@@ -1751,12 +1751,12 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder offsetDuration(final Duration offsetDuration) {
-                b.add(PROPERTY_OFFSETDURATION, offsetDuration);
+                b.add(PROPERTY_OFFSET_DURATION, offsetDuration);
                 return this;
             }
 
             public Builder offsetRange(final Range offsetRange) {
-                b.add(PROPERTY_OFFSETRANGE, offsetRange);
+                b.add(PROPERTY_OFFSET_RANGE, offsetRange);
                 return this;
             }
 
@@ -1769,11 +1769,11 @@ public class PlanDefinition extends FhirResource {
     public static class PlanDefinitionTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionTarget";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_MEASURE = "measure";
-        public static final String PROPERTY_DETAILQUANTITY = "detailQuantity";
-        public static final String PROPERTY_DETAILRANGE = "detailRange";
-        public static final String PROPERTY_DETAILCODEABLECONCEPT = "detailCodeableConcept";
+        public static final String PROPERTY_DETAIL_QUANTITY = "detailQuantity";
+        public static final String PROPERTY_DETAIL_RANGE = "detailRange";
+        public static final String PROPERTY_DETAIL_CODEABLE_CONCEPT = "detailCodeableConcept";
         public static final String PROPERTY_DUE = "due";
 
         public static Builder create() {
@@ -1814,7 +1814,7 @@ public class PlanDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1834,7 +1834,7 @@ public class PlanDefinition extends FhirResource {
          * goal is achieved at any value at or above the low value.
          */
         public Quantity detailQuantity() {
-            return getObject(Quantity.class, PROPERTY_DETAILQUANTITY);
+            return getObject(Quantity.class, PROPERTY_DETAIL_QUANTITY);
         }
 
         /**
@@ -1846,7 +1846,7 @@ public class PlanDefinition extends FhirResource {
          * goal is achieved at any value at or above the low value.
          */
         public Range detailRange() {
-            return getObject(Range.class, PROPERTY_DETAILRANGE);
+            return getObject(Range.class, PROPERTY_DETAIL_RANGE);
         }
 
         /**
@@ -1858,7 +1858,7 @@ public class PlanDefinition extends FhirResource {
          * goal is achieved at any value at or above the low value.
          */
         public CodeableConcept detailCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_DETAILCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_DETAIL_CODEABLE_CONCEPT);
         }
 
         /**
@@ -1886,7 +1886,7 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1896,17 +1896,17 @@ public class PlanDefinition extends FhirResource {
             }
 
             public Builder detailQuantity(final Quantity detailQuantity) {
-                b.add(PROPERTY_DETAILQUANTITY, detailQuantity);
+                b.add(PROPERTY_DETAIL_QUANTITY, detailQuantity);
                 return this;
             }
 
             public Builder detailRange(final Range detailRange) {
-                b.add(PROPERTY_DETAILRANGE, detailRange);
+                b.add(PROPERTY_DETAIL_RANGE, detailRange);
                 return this;
             }
 
             public Builder detailCodeableConcept(final CodeableConcept detailCodeableConcept) {
-                b.add(PROPERTY_DETAILCODEABLECONCEPT, detailCodeableConcept);
+                b.add(PROPERTY_DETAIL_CODEABLE_CONCEPT, detailCodeableConcept);
                 return this;
             }
 

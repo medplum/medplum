@@ -11,27 +11,27 @@ import jakarta.json.JsonObjectBuilder;
 
 public class MedicinalProductAuthorization extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductAuthorization";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_COUNTRY = "country";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSDATE = "statusDate";
-    public static final String PROPERTY_RESTOREDATE = "restoreDate";
-    public static final String PROPERTY_VALIDITYPERIOD = "validityPeriod";
-    public static final String PROPERTY_DATAEXCLUSIVITYPERIOD = "dataExclusivityPeriod";
-    public static final String PROPERTY_DATEOFFIRSTAUTHORIZATION = "dateOfFirstAuthorization";
-    public static final String PROPERTY_INTERNATIONALBIRTHDATE = "internationalBirthDate";
-    public static final String PROPERTY_LEGALBASIS = "legalBasis";
-    public static final String PROPERTY_JURISDICTIONALAUTHORIZATION = "jurisdictionalAuthorization";
+    public static final String PROPERTY_STATUS_DATE = "statusDate";
+    public static final String PROPERTY_RESTORE_DATE = "restoreDate";
+    public static final String PROPERTY_VALIDITY_PERIOD = "validityPeriod";
+    public static final String PROPERTY_DATA_EXCLUSIVITY_PERIOD = "dataExclusivityPeriod";
+    public static final String PROPERTY_DATE_OF_FIRST_AUTHORIZATION = "dateOfFirstAuthorization";
+    public static final String PROPERTY_INTERNATIONAL_BIRTH_DATE = "internationalBirthDate";
+    public static final String PROPERTY_LEGAL_BASIS = "legalBasis";
+    public static final String PROPERTY_JURISDICTIONAL_AUTHORIZATION = "jurisdictionalAuthorization";
     public static final String PROPERTY_HOLDER = "holder";
     public static final String PROPERTY_REGULATOR = "regulator";
     public static final String PROPERTY_PROCEDURE = "procedure";
@@ -55,7 +55,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -103,7 +103,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -146,7 +146,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * The date at which the given status has become applicable.
      */
     public java.time.Instant statusDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_STATUSDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_STATUS_DATE));
     }
 
     /**
@@ -154,7 +154,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * of the product is anticipated to be restored.
      */
     public java.time.Instant restoreDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RESTOREDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_RESTORE_DATE));
     }
 
     /**
@@ -164,7 +164,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * 8601 date format.
      */
     public Period validityPeriod() {
-        return getObject(Period.class, PROPERTY_VALIDITYPERIOD);
+        return getObject(Period.class, PROPERTY_VALIDITY_PERIOD);
     }
 
     /**
@@ -172,7 +172,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * applicatiosn can be submitted.
      */
     public Period dataExclusivityPeriod() {
-        return getObject(Period.class, PROPERTY_DATAEXCLUSIVITYPERIOD);
+        return getObject(Period.class, PROPERTY_DATA_EXCLUSIVITY_PERIOD);
     }
 
     /**
@@ -180,7 +180,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * Regulatory Agency.
      */
     public java.time.Instant dateOfFirstAuthorization() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATEOFFIRSTAUTHORIZATION));
+        return java.time.Instant.parse(data.getString(PROPERTY_DATE_OF_FIRST_AUTHORIZATION));
     }
 
     /**
@@ -188,21 +188,21 @@ public class MedicinalProductAuthorization extends FhirResource {
      * product in any country in the World.
      */
     public java.time.Instant internationalBirthDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_INTERNATIONALBIRTHDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_INTERNATIONAL_BIRTH_DATE));
     }
 
     /**
      * The legal framework against which this authorization is granted.
      */
     public CodeableConcept legalBasis() {
-        return getObject(CodeableConcept.class, PROPERTY_LEGALBASIS);
+        return getObject(CodeableConcept.class, PROPERTY_LEGAL_BASIS);
     }
 
     /**
      * Authorization in areas within a country.
      */
     public java.util.List<MedicinalProductAuthorizationJurisdictionalAuthorization> jurisdictionalAuthorization() {
-        return getList(MedicinalProductAuthorizationJurisdictionalAuthorization.class, PROPERTY_JURISDICTIONALAUTHORIZATION);
+        return getList(MedicinalProductAuthorizationJurisdictionalAuthorization.class, PROPERTY_JURISDICTIONAL_AUTHORIZATION);
     }
 
     /**
@@ -238,7 +238,7 @@ public class MedicinalProductAuthorization extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -253,7 +253,7 @@ public class MedicinalProductAuthorization extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -273,7 +273,7 @@ public class MedicinalProductAuthorization extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -303,42 +303,42 @@ public class MedicinalProductAuthorization extends FhirResource {
         }
 
         public Builder statusDate(final java.time.Instant statusDate) {
-            b.add(PROPERTY_STATUSDATE, statusDate.toString());
+            b.add(PROPERTY_STATUS_DATE, statusDate.toString());
             return this;
         }
 
         public Builder restoreDate(final java.time.Instant restoreDate) {
-            b.add(PROPERTY_RESTOREDATE, restoreDate.toString());
+            b.add(PROPERTY_RESTORE_DATE, restoreDate.toString());
             return this;
         }
 
         public Builder validityPeriod(final Period validityPeriod) {
-            b.add(PROPERTY_VALIDITYPERIOD, validityPeriod);
+            b.add(PROPERTY_VALIDITY_PERIOD, validityPeriod);
             return this;
         }
 
         public Builder dataExclusivityPeriod(final Period dataExclusivityPeriod) {
-            b.add(PROPERTY_DATAEXCLUSIVITYPERIOD, dataExclusivityPeriod);
+            b.add(PROPERTY_DATA_EXCLUSIVITY_PERIOD, dataExclusivityPeriod);
             return this;
         }
 
         public Builder dateOfFirstAuthorization(final java.time.Instant dateOfFirstAuthorization) {
-            b.add(PROPERTY_DATEOFFIRSTAUTHORIZATION, dateOfFirstAuthorization.toString());
+            b.add(PROPERTY_DATE_OF_FIRST_AUTHORIZATION, dateOfFirstAuthorization.toString());
             return this;
         }
 
         public Builder internationalBirthDate(final java.time.Instant internationalBirthDate) {
-            b.add(PROPERTY_INTERNATIONALBIRTHDATE, internationalBirthDate.toString());
+            b.add(PROPERTY_INTERNATIONAL_BIRTH_DATE, internationalBirthDate.toString());
             return this;
         }
 
         public Builder legalBasis(final CodeableConcept legalBasis) {
-            b.add(PROPERTY_LEGALBASIS, legalBasis);
+            b.add(PROPERTY_LEGAL_BASIS, legalBasis);
             return this;
         }
 
         public Builder jurisdictionalAuthorization(final java.util.List<MedicinalProductAuthorizationJurisdictionalAuthorization> jurisdictionalAuthorization) {
-            b.add(PROPERTY_JURISDICTIONALAUTHORIZATION, FhirObject.toArray(jurisdictionalAuthorization));
+            b.add(PROPERTY_JURISDICTIONAL_AUTHORIZATION, FhirObject.toArray(jurisdictionalAuthorization));
             return this;
         }
 
@@ -365,12 +365,12 @@ public class MedicinalProductAuthorization extends FhirResource {
     public static class MedicinalProductAuthorizationJurisdictionalAuthorization extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductAuthorizationJurisdictionalAuthorization";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTIFIER = "identifier";
         public static final String PROPERTY_COUNTRY = "country";
         public static final String PROPERTY_JURISDICTION = "jurisdiction";
-        public static final String PROPERTY_LEGALSTATUSOFSUPPLY = "legalStatusOfSupply";
-        public static final String PROPERTY_VALIDITYPERIOD = "validityPeriod";
+        public static final String PROPERTY_LEGAL_STATUS_OF_SUPPLY = "legalStatusOfSupply";
+        public static final String PROPERTY_VALIDITY_PERIOD = "validityPeriod";
 
         public static Builder create() {
             return new Builder();
@@ -410,7 +410,7 @@ public class MedicinalProductAuthorization extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -438,14 +438,14 @@ public class MedicinalProductAuthorization extends FhirResource {
          * The legal status of supply in a jurisdiction or region.
          */
         public CodeableConcept legalStatusOfSupply() {
-            return getObject(CodeableConcept.class, PROPERTY_LEGALSTATUSOFSUPPLY);
+            return getObject(CodeableConcept.class, PROPERTY_LEGAL_STATUS_OF_SUPPLY);
         }
 
         /**
          * The start and expected end date of the authorization.
          */
         public Period validityPeriod() {
-            return getObject(Period.class, PROPERTY_VALIDITYPERIOD);
+            return getObject(Period.class, PROPERTY_VALIDITY_PERIOD);
         }
 
         public static class Builder {
@@ -465,7 +465,7 @@ public class MedicinalProductAuthorization extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -485,12 +485,12 @@ public class MedicinalProductAuthorization extends FhirResource {
             }
 
             public Builder legalStatusOfSupply(final CodeableConcept legalStatusOfSupply) {
-                b.add(PROPERTY_LEGALSTATUSOFSUPPLY, legalStatusOfSupply);
+                b.add(PROPERTY_LEGAL_STATUS_OF_SUPPLY, legalStatusOfSupply);
                 return this;
             }
 
             public Builder validityPeriod(final Period validityPeriod) {
-                b.add(PROPERTY_VALIDITYPERIOD, validityPeriod);
+                b.add(PROPERTY_VALIDITY_PERIOD, validityPeriod);
                 return this;
             }
 
@@ -503,11 +503,11 @@ public class MedicinalProductAuthorization extends FhirResource {
     public static class MedicinalProductAuthorizationProcedure extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductAuthorizationProcedure";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTIFIER = "identifier";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_DATEPERIOD = "datePeriod";
-        public static final String PROPERTY_DATEDATETIME = "dateDateTime";
+        public static final String PROPERTY_DATE_PERIOD = "datePeriod";
+        public static final String PROPERTY_DATE_DATE_TIME = "dateDateTime";
         public static final String PROPERTY_APPLICATION = "application";
 
         public static Builder create() {
@@ -548,7 +548,7 @@ public class MedicinalProductAuthorization extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -569,14 +569,14 @@ public class MedicinalProductAuthorization extends FhirResource {
          * Date of procedure.
          */
         public Period datePeriod() {
-            return getObject(Period.class, PROPERTY_DATEPERIOD);
+            return getObject(Period.class, PROPERTY_DATE_PERIOD);
         }
 
         /**
          * Date of procedure.
          */
         public String dateDateTime() {
-            return getString(PROPERTY_DATEDATETIME);
+            return getString(PROPERTY_DATE_DATE_TIME);
         }
 
         /**
@@ -603,7 +603,7 @@ public class MedicinalProductAuthorization extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -618,12 +618,12 @@ public class MedicinalProductAuthorization extends FhirResource {
             }
 
             public Builder datePeriod(final Period datePeriod) {
-                b.add(PROPERTY_DATEPERIOD, datePeriod);
+                b.add(PROPERTY_DATE_PERIOD, datePeriod);
                 return this;
             }
 
             public Builder dateDateTime(final String dateDateTime) {
-                b.add(PROPERTY_DATEDATETIME, dateDateTime);
+                b.add(PROPERTY_DATE_DATE_TIME, dateDateTime);
                 return this;
             }
 

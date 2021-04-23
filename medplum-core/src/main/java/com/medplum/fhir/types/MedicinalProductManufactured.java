@@ -9,21 +9,21 @@ import jakarta.json.JsonObject;
 
 public class MedicinalProductManufactured extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductManufactured";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-    public static final String PROPERTY_MANUFACTUREDDOSEFORM = "manufacturedDoseForm";
-    public static final String PROPERTY_UNITOFPRESENTATION = "unitOfPresentation";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+    public static final String PROPERTY_MANUFACTURED_DOSE_FORM = "manufacturedDoseForm";
+    public static final String PROPERTY_UNIT_OF_PRESENTATION = "unitOfPresentation";
     public static final String PROPERTY_QUANTITY = "quantity";
     public static final String PROPERTY_MANUFACTURER = "manufacturer";
     public static final String PROPERTY_INGREDIENT = "ingredient";
-    public static final String PROPERTY_PHYSICALCHARACTERISTICS = "physicalCharacteristics";
-    public static final String PROPERTY_OTHERCHARACTERISTICS = "otherCharacteristics";
+    public static final String PROPERTY_PHYSICAL_CHARACTERISTICS = "physicalCharacteristics";
+    public static final String PROPERTY_OTHER_CHARACTERISTICS = "otherCharacteristics";
 
     public static Builder create() {
         return new Builder();
@@ -44,7 +44,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -92,7 +92,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -100,7 +100,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * pharmaceutical product.
      */
     public CodeableConcept manufacturedDoseForm() {
-        return getObject(CodeableConcept.class, PROPERTY_MANUFACTUREDDOSEFORM);
+        return getObject(CodeableConcept.class, PROPERTY_MANUFACTURED_DOSE_FORM);
     }
 
     /**
@@ -108,7 +108,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * is described.
      */
     public CodeableConcept unitOfPresentation() {
-        return getObject(CodeableConcept.class, PROPERTY_UNITOFPRESENTATION);
+        return getObject(CodeableConcept.class, PROPERTY_UNIT_OF_PRESENTATION);
     }
 
     /**
@@ -137,14 +137,14 @@ public class MedicinalProductManufactured extends FhirResource {
      * Dimensions, color etc.
      */
     public ProdCharacteristic physicalCharacteristics() {
-        return getObject(ProdCharacteristic.class, PROPERTY_PHYSICALCHARACTERISTICS);
+        return getObject(ProdCharacteristic.class, PROPERTY_PHYSICAL_CHARACTERISTICS);
     }
 
     /**
      * Other codeable characteristics.
      */
     public java.util.List<CodeableConcept> otherCharacteristics() {
-        return getList(CodeableConcept.class, PROPERTY_OTHERCHARACTERISTICS);
+        return getList(CodeableConcept.class, PROPERTY_OTHER_CHARACTERISTICS);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -158,7 +158,7 @@ public class MedicinalProductManufactured extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -173,7 +173,7 @@ public class MedicinalProductManufactured extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -193,17 +193,17 @@ public class MedicinalProductManufactured extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder manufacturedDoseForm(final CodeableConcept manufacturedDoseForm) {
-            b.add(PROPERTY_MANUFACTUREDDOSEFORM, manufacturedDoseForm);
+            b.add(PROPERTY_MANUFACTURED_DOSE_FORM, manufacturedDoseForm);
             return this;
         }
 
         public Builder unitOfPresentation(final CodeableConcept unitOfPresentation) {
-            b.add(PROPERTY_UNITOFPRESENTATION, unitOfPresentation);
+            b.add(PROPERTY_UNIT_OF_PRESENTATION, unitOfPresentation);
             return this;
         }
 
@@ -223,12 +223,12 @@ public class MedicinalProductManufactured extends FhirResource {
         }
 
         public Builder physicalCharacteristics(final ProdCharacteristic physicalCharacteristics) {
-            b.add(PROPERTY_PHYSICALCHARACTERISTICS, physicalCharacteristics);
+            b.add(PROPERTY_PHYSICAL_CHARACTERISTICS, physicalCharacteristics);
             return this;
         }
 
         public Builder otherCharacteristics(final java.util.List<CodeableConcept> otherCharacteristics) {
-            b.add(PROPERTY_OTHERCHARACTERISTICS, FhirObject.toArray(otherCharacteristics));
+            b.add(PROPERTY_OTHER_CHARACTERISTICS, FhirObject.toArray(otherCharacteristics));
             return this;
         }
 

@@ -11,37 +11,37 @@ import jakarta.json.JsonObjectBuilder;
 
 public class HealthcareService extends FhirResource {
     public static final String RESOURCE_TYPE = "HealthcareService";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_ACTIVE = "active";
-    public static final String PROPERTY_PROVIDEDBY = "providedBy";
+    public static final String PROPERTY_PROVIDED_BY = "providedBy";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_SPECIALTY = "specialty";
     public static final String PROPERTY_LOCATION = "location";
     public static final String PROPERTY_NAME = "name";
     public static final String PROPERTY_COMMENT = "comment";
-    public static final String PROPERTY_EXTRADETAILS = "extraDetails";
+    public static final String PROPERTY_EXTRA_DETAILS = "extraDetails";
     public static final String PROPERTY_PHOTO = "photo";
     public static final String PROPERTY_TELECOM = "telecom";
-    public static final String PROPERTY_COVERAGEAREA = "coverageArea";
-    public static final String PROPERTY_SERVICEPROVISIONCODE = "serviceProvisionCode";
+    public static final String PROPERTY_COVERAGE_AREA = "coverageArea";
+    public static final String PROPERTY_SERVICE_PROVISION_CODE = "serviceProvisionCode";
     public static final String PROPERTY_ELIGIBILITY = "eligibility";
     public static final String PROPERTY_PROGRAM = "program";
     public static final String PROPERTY_CHARACTERISTIC = "characteristic";
     public static final String PROPERTY_COMMUNICATION = "communication";
-    public static final String PROPERTY_REFERRALMETHOD = "referralMethod";
-    public static final String PROPERTY_APPOINTMENTREQUIRED = "appointmentRequired";
-    public static final String PROPERTY_AVAILABLETIME = "availableTime";
-    public static final String PROPERTY_NOTAVAILABLE = "notAvailable";
-    public static final String PROPERTY_AVAILABILITYEXCEPTIONS = "availabilityExceptions";
+    public static final String PROPERTY_REFERRAL_METHOD = "referralMethod";
+    public static final String PROPERTY_APPOINTMENT_REQUIRED = "appointmentRequired";
+    public static final String PROPERTY_AVAILABLE_TIME = "availableTime";
+    public static final String PROPERTY_NOT_AVAILABLE = "notAvailable";
+    public static final String PROPERTY_AVAILABILITY_EXCEPTIONS = "availabilityExceptions";
     public static final String PROPERTY_ENDPOINT = "endpoint";
 
     public static Builder create() {
@@ -63,7 +63,7 @@ public class HealthcareService extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -111,7 +111,7 @@ public class HealthcareService extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -134,7 +134,7 @@ public class HealthcareService extends FhirResource {
      * The organization that provides this healthcare service.
      */
     public Reference providedBy() {
-        return getObject(Reference.class, PROPERTY_PROVIDEDBY);
+        return getObject(Reference.class, PROPERTY_PROVIDED_BY);
     }
 
     /**
@@ -188,7 +188,7 @@ public class HealthcareService extends FhirResource {
      * fields.
      */
     public String extraDetails() {
-        return getString(PROPERTY_EXTRADETAILS);
+        return getString(PROPERTY_EXTRA_DETAILS);
     }
 
     /**
@@ -212,7 +212,7 @@ public class HealthcareService extends FhirResource {
      * service is provided).
      */
     public java.util.List<Reference> coverageArea() {
-        return getList(Reference.class, PROPERTY_COVERAGEAREA);
+        return getList(Reference.class, PROPERTY_COVERAGE_AREA);
     }
 
     /**
@@ -220,7 +220,7 @@ public class HealthcareService extends FhirResource {
      * service is available/offered.
      */
     public java.util.List<CodeableConcept> serviceProvisionCode() {
-        return getList(CodeableConcept.class, PROPERTY_SERVICEPROVISIONCODE);
+        return getList(CodeableConcept.class, PROPERTY_SERVICE_PROVISION_CODE);
     }
 
     /**
@@ -260,7 +260,7 @@ public class HealthcareService extends FhirResource {
      * it is implied that no referral is required.
      */
     public java.util.List<CodeableConcept> referralMethod() {
-        return getList(CodeableConcept.class, PROPERTY_REFERRALMETHOD);
+        return getList(CodeableConcept.class, PROPERTY_REFERRAL_METHOD);
     }
 
     /**
@@ -270,14 +270,14 @@ public class HealthcareService extends FhirResource {
      * this service.
      */
     public Boolean appointmentRequired() {
-        return data.getBoolean(PROPERTY_APPOINTMENTREQUIRED);
+        return data.getBoolean(PROPERTY_APPOINTMENT_REQUIRED);
     }
 
     /**
      * A collection of times that the Service Site is available.
      */
     public java.util.List<HealthcareServiceAvailableTime> availableTime() {
-        return getList(HealthcareServiceAvailableTime.class, PROPERTY_AVAILABLETIME);
+        return getList(HealthcareServiceAvailableTime.class, PROPERTY_AVAILABLE_TIME);
     }
 
     /**
@@ -285,7 +285,7 @@ public class HealthcareService extends FhirResource {
      * to the provided reason.
      */
     public java.util.List<HealthcareServiceNotAvailable> notAvailable() {
-        return getList(HealthcareServiceNotAvailable.class, PROPERTY_NOTAVAILABLE);
+        return getList(HealthcareServiceNotAvailable.class, PROPERTY_NOT_AVAILABLE);
     }
 
     /**
@@ -295,7 +295,7 @@ public class HealthcareService extends FhirResource {
      * Times.
      */
     public String availabilityExceptions() {
-        return getString(PROPERTY_AVAILABILITYEXCEPTIONS);
+        return getString(PROPERTY_AVAILABILITY_EXCEPTIONS);
     }
 
     /**
@@ -317,7 +317,7 @@ public class HealthcareService extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -332,7 +332,7 @@ public class HealthcareService extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -352,7 +352,7 @@ public class HealthcareService extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -367,7 +367,7 @@ public class HealthcareService extends FhirResource {
         }
 
         public Builder providedBy(final Reference providedBy) {
-            b.add(PROPERTY_PROVIDEDBY, providedBy);
+            b.add(PROPERTY_PROVIDED_BY, providedBy);
             return this;
         }
 
@@ -402,7 +402,7 @@ public class HealthcareService extends FhirResource {
         }
 
         public Builder extraDetails(final String extraDetails) {
-            b.add(PROPERTY_EXTRADETAILS, extraDetails);
+            b.add(PROPERTY_EXTRA_DETAILS, extraDetails);
             return this;
         }
 
@@ -417,12 +417,12 @@ public class HealthcareService extends FhirResource {
         }
 
         public Builder coverageArea(final java.util.List<Reference> coverageArea) {
-            b.add(PROPERTY_COVERAGEAREA, FhirObject.toArray(coverageArea));
+            b.add(PROPERTY_COVERAGE_AREA, FhirObject.toArray(coverageArea));
             return this;
         }
 
         public Builder serviceProvisionCode(final java.util.List<CodeableConcept> serviceProvisionCode) {
-            b.add(PROPERTY_SERVICEPROVISIONCODE, FhirObject.toArray(serviceProvisionCode));
+            b.add(PROPERTY_SERVICE_PROVISION_CODE, FhirObject.toArray(serviceProvisionCode));
             return this;
         }
 
@@ -447,27 +447,27 @@ public class HealthcareService extends FhirResource {
         }
 
         public Builder referralMethod(final java.util.List<CodeableConcept> referralMethod) {
-            b.add(PROPERTY_REFERRALMETHOD, FhirObject.toArray(referralMethod));
+            b.add(PROPERTY_REFERRAL_METHOD, FhirObject.toArray(referralMethod));
             return this;
         }
 
         public Builder appointmentRequired(final Boolean appointmentRequired) {
-            b.add(PROPERTY_APPOINTMENTREQUIRED, appointmentRequired);
+            b.add(PROPERTY_APPOINTMENT_REQUIRED, appointmentRequired);
             return this;
         }
 
         public Builder availableTime(final java.util.List<HealthcareServiceAvailableTime> availableTime) {
-            b.add(PROPERTY_AVAILABLETIME, FhirObject.toArray(availableTime));
+            b.add(PROPERTY_AVAILABLE_TIME, FhirObject.toArray(availableTime));
             return this;
         }
 
         public Builder notAvailable(final java.util.List<HealthcareServiceNotAvailable> notAvailable) {
-            b.add(PROPERTY_NOTAVAILABLE, FhirObject.toArray(notAvailable));
+            b.add(PROPERTY_NOT_AVAILABLE, FhirObject.toArray(notAvailable));
             return this;
         }
 
         public Builder availabilityExceptions(final String availabilityExceptions) {
-            b.add(PROPERTY_AVAILABILITYEXCEPTIONS, availabilityExceptions);
+            b.add(PROPERTY_AVAILABILITY_EXCEPTIONS, availabilityExceptions);
             return this;
         }
 
@@ -484,11 +484,11 @@ public class HealthcareService extends FhirResource {
     public static class HealthcareServiceAvailableTime extends FhirObject {
         public static final String RESOURCE_TYPE = "HealthcareServiceAvailableTime";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_DAYSOFWEEK = "daysOfWeek";
-        public static final String PROPERTY_ALLDAY = "allDay";
-        public static final String PROPERTY_AVAILABLESTARTTIME = "availableStartTime";
-        public static final String PROPERTY_AVAILABLEENDTIME = "availableEndTime";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_DAYS_OF_WEEK = "daysOfWeek";
+        public static final String PROPERTY_ALL_DAY = "allDay";
+        public static final String PROPERTY_AVAILABLE_START_TIME = "availableStartTime";
+        public static final String PROPERTY_AVAILABLE_END_TIME = "availableEndTime";
 
         public static Builder create() {
             return new Builder();
@@ -528,7 +528,7 @@ public class HealthcareService extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -536,7 +536,7 @@ public class HealthcareService extends FhirResource {
          * end Times.
          */
         public java.util.List<String> daysOfWeek() {
-            return getList(String.class, PROPERTY_DAYSOFWEEK);
+            return getList(String.class, PROPERTY_DAYS_OF_WEEK);
         }
 
         /**
@@ -544,7 +544,7 @@ public class HealthcareService extends FhirResource {
          * service.
          */
         public Boolean allDay() {
-            return data.getBoolean(PROPERTY_ALLDAY);
+            return data.getBoolean(PROPERTY_ALL_DAY);
         }
 
         /**
@@ -552,7 +552,7 @@ public class HealthcareService extends FhirResource {
          * time is ignored.
          */
         public java.time.Instant availableStartTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLESTARTTIME));
+            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLE_START_TIME));
         }
 
         /**
@@ -560,7 +560,7 @@ public class HealthcareService extends FhirResource {
          * time is ignored.
          */
         public java.time.Instant availableEndTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLEENDTIME));
+            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLE_END_TIME));
         }
 
         public static class Builder {
@@ -580,27 +580,27 @@ public class HealthcareService extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder daysOfWeek(final java.util.List<String> daysOfWeek) {
-                b.add(PROPERTY_DAYSOFWEEK, FhirObject.toStringArray(daysOfWeek));
+                b.add(PROPERTY_DAYS_OF_WEEK, FhirObject.toStringArray(daysOfWeek));
                 return this;
             }
 
             public Builder allDay(final Boolean allDay) {
-                b.add(PROPERTY_ALLDAY, allDay);
+                b.add(PROPERTY_ALL_DAY, allDay);
                 return this;
             }
 
             public Builder availableStartTime(final java.time.Instant availableStartTime) {
-                b.add(PROPERTY_AVAILABLESTARTTIME, availableStartTime.toString());
+                b.add(PROPERTY_AVAILABLE_START_TIME, availableStartTime.toString());
                 return this;
             }
 
             public Builder availableEndTime(final java.time.Instant availableEndTime) {
-                b.add(PROPERTY_AVAILABLEENDTIME, availableEndTime.toString());
+                b.add(PROPERTY_AVAILABLE_END_TIME, availableEndTime.toString());
                 return this;
             }
 
@@ -613,7 +613,7 @@ public class HealthcareService extends FhirResource {
     public static class HealthcareServiceEligibility extends FhirObject {
         public static final String RESOURCE_TYPE = "HealthcareServiceEligibility";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_COMMENT = "comment";
 
@@ -655,7 +655,7 @@ public class HealthcareService extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -689,7 +689,7 @@ public class HealthcareService extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -712,7 +712,7 @@ public class HealthcareService extends FhirResource {
     public static class HealthcareServiceNotAvailable extends FhirObject {
         public static final String RESOURCE_TYPE = "HealthcareServiceNotAvailable";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_DURING = "during";
 
@@ -754,7 +754,7 @@ public class HealthcareService extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -790,7 +790,7 @@ public class HealthcareService extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

@@ -11,22 +11,22 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Communication extends FhirResource {
     public static final String RESOURCE_TYPE = "Communication";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_INSTANTIATESCANONICAL = "instantiatesCanonical";
-    public static final String PROPERTY_INSTANTIATESURI = "instantiatesUri";
-    public static final String PROPERTY_BASEDON = "basedOn";
-    public static final String PROPERTY_PARTOF = "partOf";
-    public static final String PROPERTY_INRESPONSETO = "inResponseTo";
+    public static final String PROPERTY_INSTANTIATES_CANONICAL = "instantiatesCanonical";
+    public static final String PROPERTY_INSTANTIATES_URI = "instantiatesUri";
+    public static final String PROPERTY_BASED_ON = "basedOn";
+    public static final String PROPERTY_PART_OF = "partOf";
+    public static final String PROPERTY_IN_RESPONSE_TO = "inResponseTo";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSREASON = "statusReason";
+    public static final String PROPERTY_STATUS_REASON = "statusReason";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_PRIORITY = "priority";
     public static final String PROPERTY_MEDIUM = "medium";
@@ -38,8 +38,8 @@ public class Communication extends FhirResource {
     public static final String PROPERTY_RECEIVED = "received";
     public static final String PROPERTY_RECIPIENT = "recipient";
     public static final String PROPERTY_SENDER = "sender";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_PAYLOAD = "payload";
     public static final String PROPERTY_NOTE = "note";
 
@@ -62,7 +62,7 @@ public class Communication extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -110,7 +110,7 @@ public class Communication extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -128,7 +128,7 @@ public class Communication extends FhirResource {
      * Communication.
      */
     public java.util.List<String> instantiatesCanonical() {
-        return getList(String.class, PROPERTY_INSTANTIATESCANONICAL);
+        return getList(String.class, PROPERTY_INSTANTIATES_CANONICAL);
     }
 
     /**
@@ -137,7 +137,7 @@ public class Communication extends FhirResource {
      * this Communication.
      */
     public java.util.List<String> instantiatesUri() {
-        return getList(String.class, PROPERTY_INSTANTIATESURI);
+        return getList(String.class, PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -145,21 +145,21 @@ public class Communication extends FhirResource {
      * Communication.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
      * Part of this action.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PARTOF);
+        return getList(Reference.class, PROPERTY_PART_OF);
     }
 
     /**
      * Prior communication that this communication is in response to.
      */
     public java.util.List<Reference> inResponseTo() {
-        return getList(Reference.class, PROPERTY_INRESPONSETO);
+        return getList(Reference.class, PROPERTY_IN_RESPONSE_TO);
     }
 
     /**
@@ -173,7 +173,7 @@ public class Communication extends FhirResource {
      * Captures the reason for the current state of the Communication.
      */
     public CodeableConcept statusReason() {
-        return getObject(CodeableConcept.class, PROPERTY_STATUSREASON);
+        return getObject(CodeableConcept.class, PROPERTY_STATUS_REASON);
     }
 
     /**
@@ -269,7 +269,7 @@ public class Communication extends FhirResource {
      * The reason or justification for the communication.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
@@ -277,7 +277,7 @@ public class Communication extends FhirResource {
      * communication.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -307,7 +307,7 @@ public class Communication extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -322,7 +322,7 @@ public class Communication extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -342,7 +342,7 @@ public class Communication extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -352,27 +352,27 @@ public class Communication extends FhirResource {
         }
 
         public Builder instantiatesCanonical(final java.util.List<String> instantiatesCanonical) {
-            b.add(PROPERTY_INSTANTIATESCANONICAL, FhirObject.toStringArray(instantiatesCanonical));
+            b.add(PROPERTY_INSTANTIATES_CANONICAL, FhirObject.toStringArray(instantiatesCanonical));
             return this;
         }
 
         public Builder instantiatesUri(final java.util.List<String> instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATESURI, FhirObject.toStringArray(instantiatesUri));
+            b.add(PROPERTY_INSTANTIATES_URI, FhirObject.toStringArray(instantiatesUri));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
         public Builder inResponseTo(final java.util.List<Reference> inResponseTo) {
-            b.add(PROPERTY_INRESPONSETO, FhirObject.toArray(inResponseTo));
+            b.add(PROPERTY_IN_RESPONSE_TO, FhirObject.toArray(inResponseTo));
             return this;
         }
 
@@ -382,7 +382,7 @@ public class Communication extends FhirResource {
         }
 
         public Builder statusReason(final CodeableConcept statusReason) {
-            b.add(PROPERTY_STATUSREASON, statusReason);
+            b.add(PROPERTY_STATUS_REASON, statusReason);
             return this;
         }
 
@@ -442,12 +442,12 @@ public class Communication extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
@@ -469,10 +469,10 @@ public class Communication extends FhirResource {
     public static class CommunicationPayload extends FhirObject {
         public static final String RESOURCE_TYPE = "CommunicationPayload";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_CONTENTSTRING = "contentString";
-        public static final String PROPERTY_CONTENTATTACHMENT = "contentAttachment";
-        public static final String PROPERTY_CONTENTREFERENCE = "contentReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_CONTENT_STRING = "contentString";
+        public static final String PROPERTY_CONTENT_ATTACHMENT = "contentAttachment";
+        public static final String PROPERTY_CONTENT_REFERENCE = "contentReference";
 
         public static Builder create() {
             return new Builder();
@@ -512,7 +512,7 @@ public class Communication extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -520,7 +520,7 @@ public class Communication extends FhirResource {
          * of the communication).
          */
         public String contentString() {
-            return getString(PROPERTY_CONTENTSTRING);
+            return getString(PROPERTY_CONTENT_STRING);
         }
 
         /**
@@ -528,7 +528,7 @@ public class Communication extends FhirResource {
          * of the communication).
          */
         public Attachment contentAttachment() {
-            return getObject(Attachment.class, PROPERTY_CONTENTATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_CONTENT_ATTACHMENT);
         }
 
         /**
@@ -536,7 +536,7 @@ public class Communication extends FhirResource {
          * of the communication).
          */
         public Reference contentReference() {
-            return getObject(Reference.class, PROPERTY_CONTENTREFERENCE);
+            return getObject(Reference.class, PROPERTY_CONTENT_REFERENCE);
         }
 
         public static class Builder {
@@ -556,22 +556,22 @@ public class Communication extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder contentString(final String contentString) {
-                b.add(PROPERTY_CONTENTSTRING, contentString);
+                b.add(PROPERTY_CONTENT_STRING, contentString);
                 return this;
             }
 
             public Builder contentAttachment(final Attachment contentAttachment) {
-                b.add(PROPERTY_CONTENTATTACHMENT, contentAttachment);
+                b.add(PROPERTY_CONTENT_ATTACHMENT, contentAttachment);
                 return this;
             }
 
             public Builder contentReference(final Reference contentReference) {
-                b.add(PROPERTY_CONTENTREFERENCE, contentReference);
+                b.add(PROPERTY_CONTENT_REFERENCE, contentReference);
                 return this;
             }
 

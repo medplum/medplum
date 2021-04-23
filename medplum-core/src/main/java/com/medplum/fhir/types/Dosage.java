@@ -12,21 +12,21 @@ import jakarta.json.JsonObjectBuilder;
 public class Dosage extends FhirResource {
     public static final String RESOURCE_TYPE = "Dosage";
     public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_SEQUENCE = "sequence";
     public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_ADDITIONALINSTRUCTION = "additionalInstruction";
-    public static final String PROPERTY_PATIENTINSTRUCTION = "patientInstruction";
+    public static final String PROPERTY_ADDITIONAL_INSTRUCTION = "additionalInstruction";
+    public static final String PROPERTY_PATIENT_INSTRUCTION = "patientInstruction";
     public static final String PROPERTY_TIMING = "timing";
-    public static final String PROPERTY_ASNEEDEDBOOLEAN = "asNeededBoolean";
-    public static final String PROPERTY_ASNEEDEDCODEABLECONCEPT = "asNeededCodeableConcept";
+    public static final String PROPERTY_AS_NEEDED_BOOLEAN = "asNeededBoolean";
+    public static final String PROPERTY_AS_NEEDED_CODEABLE_CONCEPT = "asNeededCodeableConcept";
     public static final String PROPERTY_SITE = "site";
     public static final String PROPERTY_ROUTE = "route";
     public static final String PROPERTY_METHOD = "method";
-    public static final String PROPERTY_DOSEANDRATE = "doseAndRate";
-    public static final String PROPERTY_MAXDOSEPERPERIOD = "maxDosePerPeriod";
-    public static final String PROPERTY_MAXDOSEPERADMINISTRATION = "maxDosePerAdministration";
-    public static final String PROPERTY_MAXDOSEPERLIFETIME = "maxDosePerLifetime";
+    public static final String PROPERTY_DOSE_AND_RATE = "doseAndRate";
+    public static final String PROPERTY_MAX_DOSE_PER_PERIOD = "maxDosePerPeriod";
+    public static final String PROPERTY_MAX_DOSE_PER_ADMINISTRATION = "maxDosePerAdministration";
+    public static final String PROPERTY_MAX_DOSE_PER_LIFETIME = "maxDosePerLifetime";
 
     public static Builder create() {
         return new Builder();
@@ -66,7 +66,7 @@ public class Dosage extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -91,14 +91,14 @@ public class Dosage extends FhirResource {
      * "avoid exposure of skin to direct sunlight or sunlamps").
      */
     public java.util.List<CodeableConcept> additionalInstruction() {
-        return getList(CodeableConcept.class, PROPERTY_ADDITIONALINSTRUCTION);
+        return getList(CodeableConcept.class, PROPERTY_ADDITIONAL_INSTRUCTION);
     }
 
     /**
      * Instructions in terms that are understood by the patient or consumer.
      */
     public String patientInstruction() {
-        return getString(PROPERTY_PATIENTINSTRUCTION);
+        return getString(PROPERTY_PATIENT_INSTRUCTION);
     }
 
     /**
@@ -114,7 +114,7 @@ public class Dosage extends FhirResource {
      * precondition for taking the Medication (CodeableConcept).
      */
     public Boolean asNeededBoolean() {
-        return data.getBoolean(PROPERTY_ASNEEDEDBOOLEAN);
+        return data.getBoolean(PROPERTY_AS_NEEDED_BOOLEAN);
     }
 
     /**
@@ -123,7 +123,7 @@ public class Dosage extends FhirResource {
      * precondition for taking the Medication (CodeableConcept).
      */
     public CodeableConcept asNeededCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_ASNEEDEDCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_AS_NEEDED_CODEABLE_CONCEPT);
     }
 
     /**
@@ -151,28 +151,28 @@ public class Dosage extends FhirResource {
      * The amount of medication administered.
      */
     public java.util.List<DosageDoseAndRate> doseAndRate() {
-        return getList(DosageDoseAndRate.class, PROPERTY_DOSEANDRATE);
+        return getList(DosageDoseAndRate.class, PROPERTY_DOSE_AND_RATE);
     }
 
     /**
      * Upper limit on medication per unit of time.
      */
     public Ratio maxDosePerPeriod() {
-        return getObject(Ratio.class, PROPERTY_MAXDOSEPERPERIOD);
+        return getObject(Ratio.class, PROPERTY_MAX_DOSE_PER_PERIOD);
     }
 
     /**
      * Upper limit on medication per administration.
      */
     public Quantity maxDosePerAdministration() {
-        return getObject(Quantity.class, PROPERTY_MAXDOSEPERADMINISTRATION);
+        return getObject(Quantity.class, PROPERTY_MAX_DOSE_PER_ADMINISTRATION);
     }
 
     /**
      * Upper limit on medication per lifetime of the patient.
      */
     public Quantity maxDosePerLifetime() {
-        return getObject(Quantity.class, PROPERTY_MAXDOSEPERLIFETIME);
+        return getObject(Quantity.class, PROPERTY_MAX_DOSE_PER_LIFETIME);
     }
 
     public static class Builder {
@@ -192,7 +192,7 @@ public class Dosage extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -207,12 +207,12 @@ public class Dosage extends FhirResource {
         }
 
         public Builder additionalInstruction(final java.util.List<CodeableConcept> additionalInstruction) {
-            b.add(PROPERTY_ADDITIONALINSTRUCTION, FhirObject.toArray(additionalInstruction));
+            b.add(PROPERTY_ADDITIONAL_INSTRUCTION, FhirObject.toArray(additionalInstruction));
             return this;
         }
 
         public Builder patientInstruction(final String patientInstruction) {
-            b.add(PROPERTY_PATIENTINSTRUCTION, patientInstruction);
+            b.add(PROPERTY_PATIENT_INSTRUCTION, patientInstruction);
             return this;
         }
 
@@ -222,12 +222,12 @@ public class Dosage extends FhirResource {
         }
 
         public Builder asNeededBoolean(final Boolean asNeededBoolean) {
-            b.add(PROPERTY_ASNEEDEDBOOLEAN, asNeededBoolean);
+            b.add(PROPERTY_AS_NEEDED_BOOLEAN, asNeededBoolean);
             return this;
         }
 
         public Builder asNeededCodeableConcept(final CodeableConcept asNeededCodeableConcept) {
-            b.add(PROPERTY_ASNEEDEDCODEABLECONCEPT, asNeededCodeableConcept);
+            b.add(PROPERTY_AS_NEEDED_CODEABLE_CONCEPT, asNeededCodeableConcept);
             return this;
         }
 
@@ -247,22 +247,22 @@ public class Dosage extends FhirResource {
         }
 
         public Builder doseAndRate(final java.util.List<DosageDoseAndRate> doseAndRate) {
-            b.add(PROPERTY_DOSEANDRATE, FhirObject.toArray(doseAndRate));
+            b.add(PROPERTY_DOSE_AND_RATE, FhirObject.toArray(doseAndRate));
             return this;
         }
 
         public Builder maxDosePerPeriod(final Ratio maxDosePerPeriod) {
-            b.add(PROPERTY_MAXDOSEPERPERIOD, maxDosePerPeriod);
+            b.add(PROPERTY_MAX_DOSE_PER_PERIOD, maxDosePerPeriod);
             return this;
         }
 
         public Builder maxDosePerAdministration(final Quantity maxDosePerAdministration) {
-            b.add(PROPERTY_MAXDOSEPERADMINISTRATION, maxDosePerAdministration);
+            b.add(PROPERTY_MAX_DOSE_PER_ADMINISTRATION, maxDosePerAdministration);
             return this;
         }
 
         public Builder maxDosePerLifetime(final Quantity maxDosePerLifetime) {
-            b.add(PROPERTY_MAXDOSEPERLIFETIME, maxDosePerLifetime);
+            b.add(PROPERTY_MAX_DOSE_PER_LIFETIME, maxDosePerLifetime);
             return this;
         }
 
@@ -274,13 +274,13 @@ public class Dosage extends FhirResource {
     public static class DosageDoseAndRate extends FhirObject {
         public static final String RESOURCE_TYPE = "DosageDoseAndRate";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_DOSERANGE = "doseRange";
-        public static final String PROPERTY_DOSEQUANTITY = "doseQuantity";
-        public static final String PROPERTY_RATERATIO = "rateRatio";
-        public static final String PROPERTY_RATERANGE = "rateRange";
-        public static final String PROPERTY_RATEQUANTITY = "rateQuantity";
+        public static final String PROPERTY_DOSE_RANGE = "doseRange";
+        public static final String PROPERTY_DOSE_QUANTITY = "doseQuantity";
+        public static final String PROPERTY_RATE_RATIO = "rateRatio";
+        public static final String PROPERTY_RATE_RANGE = "rateRange";
+        public static final String PROPERTY_RATE_QUANTITY = "rateQuantity";
 
         public static Builder create() {
             return new Builder();
@@ -320,7 +320,7 @@ public class Dosage extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -335,35 +335,35 @@ public class Dosage extends FhirResource {
          * Amount of medication per dose.
          */
         public Range doseRange() {
-            return getObject(Range.class, PROPERTY_DOSERANGE);
+            return getObject(Range.class, PROPERTY_DOSE_RANGE);
         }
 
         /**
          * Amount of medication per dose.
          */
         public Quantity doseQuantity() {
-            return getObject(Quantity.class, PROPERTY_DOSEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_DOSE_QUANTITY);
         }
 
         /**
          * Amount of medication per unit of time.
          */
         public Ratio rateRatio() {
-            return getObject(Ratio.class, PROPERTY_RATERATIO);
+            return getObject(Ratio.class, PROPERTY_RATE_RATIO);
         }
 
         /**
          * Amount of medication per unit of time.
          */
         public Range rateRange() {
-            return getObject(Range.class, PROPERTY_RATERANGE);
+            return getObject(Range.class, PROPERTY_RATE_RANGE);
         }
 
         /**
          * Amount of medication per unit of time.
          */
         public Quantity rateQuantity() {
-            return getObject(Quantity.class, PROPERTY_RATEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_RATE_QUANTITY);
         }
 
         public static class Builder {
@@ -383,7 +383,7 @@ public class Dosage extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -393,27 +393,27 @@ public class Dosage extends FhirResource {
             }
 
             public Builder doseRange(final Range doseRange) {
-                b.add(PROPERTY_DOSERANGE, doseRange);
+                b.add(PROPERTY_DOSE_RANGE, doseRange);
                 return this;
             }
 
             public Builder doseQuantity(final Quantity doseQuantity) {
-                b.add(PROPERTY_DOSEQUANTITY, doseQuantity);
+                b.add(PROPERTY_DOSE_QUANTITY, doseQuantity);
                 return this;
             }
 
             public Builder rateRatio(final Ratio rateRatio) {
-                b.add(PROPERTY_RATERATIO, rateRatio);
+                b.add(PROPERTY_RATE_RATIO, rateRatio);
                 return this;
             }
 
             public Builder rateRange(final Range rateRange) {
-                b.add(PROPERTY_RATERANGE, rateRange);
+                b.add(PROPERTY_RATE_RANGE, rateRange);
                 return this;
             }
 
             public Builder rateQuantity(final Quantity rateQuantity) {
-                b.add(PROPERTY_RATEQUANTITY, rateQuantity);
+                b.add(PROPERTY_RATE_QUANTITY, rateQuantity);
                 return this;
             }
 

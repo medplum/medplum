@@ -12,8 +12,8 @@ import jakarta.json.JsonObjectBuilder;
 public class Meta extends FhirResource {
     public static final String RESOURCE_TYPE = "Meta";
     public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_VERSIONID = "versionId";
-    public static final String PROPERTY_LASTUPDATED = "lastUpdated";
+    public static final String PROPERTY_VERSION_ID = "versionId";
+    public static final String PROPERTY_LAST_UPDATED = "lastUpdated";
     public static final String PROPERTY_SOURCE = "source";
     public static final String PROPERTY_PROFILE = "profile";
     public static final String PROPERTY_SECURITY = "security";
@@ -45,14 +45,14 @@ public class Meta extends FhirResource {
      * or deleted.
      */
     public String versionId() {
-        return getString(PROPERTY_VERSIONID);
+        return getString(PROPERTY_VERSION_ID);
     }
 
     /**
      * When the resource last changed - e.g. when the version changed.
      */
     public java.time.Instant lastUpdated() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTUPDATED));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_UPDATED));
     }
 
     /**
@@ -110,12 +110,12 @@ public class Meta extends FhirResource {
         }
 
         public Builder versionId(final String versionId) {
-            b.add(PROPERTY_VERSIONID, versionId);
+            b.add(PROPERTY_VERSION_ID, versionId);
             return this;
         }
 
         public Builder lastUpdated(final java.time.Instant lastUpdated) {
-            b.add(PROPERTY_LASTUPDATED, lastUpdated.toString());
+            b.add(PROPERTY_LAST_UPDATED, lastUpdated.toString());
             return this;
         }
 

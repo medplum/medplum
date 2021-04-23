@@ -11,22 +11,22 @@ import jakarta.json.JsonObjectBuilder;
 
 public class MedicinalProductIndication extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductIndication";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_DISEASESYMPTOMPROCEDURE = "diseaseSymptomProcedure";
-    public static final String PROPERTY_DISEASESTATUS = "diseaseStatus";
+    public static final String PROPERTY_DISEASE_SYMPTOM_PROCEDURE = "diseaseSymptomProcedure";
+    public static final String PROPERTY_DISEASE_STATUS = "diseaseStatus";
     public static final String PROPERTY_COMORBIDITY = "comorbidity";
-    public static final String PROPERTY_INTENDEDEFFECT = "intendedEffect";
+    public static final String PROPERTY_INTENDED_EFFECT = "intendedEffect";
     public static final String PROPERTY_DURATION = "duration";
-    public static final String PROPERTY_OTHERTHERAPY = "otherTherapy";
-    public static final String PROPERTY_UNDESIRABLEEFFECT = "undesirableEffect";
+    public static final String PROPERTY_OTHER_THERAPY = "otherTherapy";
+    public static final String PROPERTY_UNDESIRABLE_EFFECT = "undesirableEffect";
     public static final String PROPERTY_POPULATION = "population";
 
     public static Builder create() {
@@ -48,7 +48,7 @@ public class MedicinalProductIndication extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -96,7 +96,7 @@ public class MedicinalProductIndication extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -111,14 +111,14 @@ public class MedicinalProductIndication extends FhirResource {
      * treatment.
      */
     public CodeableConcept diseaseSymptomProcedure() {
-        return getObject(CodeableConcept.class, PROPERTY_DISEASESYMPTOMPROCEDURE);
+        return getObject(CodeableConcept.class, PROPERTY_DISEASE_SYMPTOM_PROCEDURE);
     }
 
     /**
      * The status of the disease or symptom for which the indication applies.
      */
     public CodeableConcept diseaseStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_DISEASESTATUS);
+        return getObject(CodeableConcept.class, PROPERTY_DISEASE_STATUS);
     }
 
     /**
@@ -133,7 +133,7 @@ public class MedicinalProductIndication extends FhirResource {
      * The intended effect, aim or strategy to be achieved by the indication.
      */
     public CodeableConcept intendedEffect() {
-        return getObject(CodeableConcept.class, PROPERTY_INTENDEDEFFECT);
+        return getObject(CodeableConcept.class, PROPERTY_INTENDED_EFFECT);
     }
 
     /**
@@ -148,14 +148,14 @@ public class MedicinalProductIndication extends FhirResource {
      * other therapies described as part of the indication.
      */
     public java.util.List<MedicinalProductIndicationOtherTherapy> otherTherapy() {
-        return getList(MedicinalProductIndicationOtherTherapy.class, PROPERTY_OTHERTHERAPY);
+        return getList(MedicinalProductIndicationOtherTherapy.class, PROPERTY_OTHER_THERAPY);
     }
 
     /**
      * Describe the undesirable effects of the medicinal product.
      */
     public java.util.List<Reference> undesirableEffect() {
-        return getList(Reference.class, PROPERTY_UNDESIRABLEEFFECT);
+        return getList(Reference.class, PROPERTY_UNDESIRABLE_EFFECT);
     }
 
     /**
@@ -176,7 +176,7 @@ public class MedicinalProductIndication extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -191,7 +191,7 @@ public class MedicinalProductIndication extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -211,7 +211,7 @@ public class MedicinalProductIndication extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -221,12 +221,12 @@ public class MedicinalProductIndication extends FhirResource {
         }
 
         public Builder diseaseSymptomProcedure(final CodeableConcept diseaseSymptomProcedure) {
-            b.add(PROPERTY_DISEASESYMPTOMPROCEDURE, diseaseSymptomProcedure);
+            b.add(PROPERTY_DISEASE_SYMPTOM_PROCEDURE, diseaseSymptomProcedure);
             return this;
         }
 
         public Builder diseaseStatus(final CodeableConcept diseaseStatus) {
-            b.add(PROPERTY_DISEASESTATUS, diseaseStatus);
+            b.add(PROPERTY_DISEASE_STATUS, diseaseStatus);
             return this;
         }
 
@@ -236,7 +236,7 @@ public class MedicinalProductIndication extends FhirResource {
         }
 
         public Builder intendedEffect(final CodeableConcept intendedEffect) {
-            b.add(PROPERTY_INTENDEDEFFECT, intendedEffect);
+            b.add(PROPERTY_INTENDED_EFFECT, intendedEffect);
             return this;
         }
 
@@ -246,12 +246,12 @@ public class MedicinalProductIndication extends FhirResource {
         }
 
         public Builder otherTherapy(final java.util.List<MedicinalProductIndicationOtherTherapy> otherTherapy) {
-            b.add(PROPERTY_OTHERTHERAPY, FhirObject.toArray(otherTherapy));
+            b.add(PROPERTY_OTHER_THERAPY, FhirObject.toArray(otherTherapy));
             return this;
         }
 
         public Builder undesirableEffect(final java.util.List<Reference> undesirableEffect) {
-            b.add(PROPERTY_UNDESIRABLEEFFECT, FhirObject.toArray(undesirableEffect));
+            b.add(PROPERTY_UNDESIRABLE_EFFECT, FhirObject.toArray(undesirableEffect));
             return this;
         }
 
@@ -268,10 +268,10 @@ public class MedicinalProductIndication extends FhirResource {
     public static class MedicinalProductIndicationOtherTherapy extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIndicationOtherTherapy";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_THERAPYRELATIONSHIPTYPE = "therapyRelationshipType";
-        public static final String PROPERTY_MEDICATIONCODEABLECONCEPT = "medicationCodeableConcept";
-        public static final String PROPERTY_MEDICATIONREFERENCE = "medicationReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_THERAPY_RELATIONSHIP_TYPE = "therapyRelationshipType";
+        public static final String PROPERTY_MEDICATION_CODEABLE_CONCEPT = "medicationCodeableConcept";
+        public static final String PROPERTY_MEDICATION_REFERENCE = "medicationReference";
 
         public static Builder create() {
             return new Builder();
@@ -311,7 +311,7 @@ public class MedicinalProductIndication extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -319,7 +319,7 @@ public class MedicinalProductIndication extends FhirResource {
          * contraindication and another therapy.
          */
         public CodeableConcept therapyRelationshipType() {
-            return getObject(CodeableConcept.class, PROPERTY_THERAPYRELATIONSHIPTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_THERAPY_RELATIONSHIP_TYPE);
         }
 
         /**
@@ -328,7 +328,7 @@ public class MedicinalProductIndication extends FhirResource {
          * contraindication.
          */
         public CodeableConcept medicationCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_MEDICATIONCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_MEDICATION_CODEABLE_CONCEPT);
         }
 
         /**
@@ -337,7 +337,7 @@ public class MedicinalProductIndication extends FhirResource {
          * contraindication.
          */
         public Reference medicationReference() {
-            return getObject(Reference.class, PROPERTY_MEDICATIONREFERENCE);
+            return getObject(Reference.class, PROPERTY_MEDICATION_REFERENCE);
         }
 
         public static class Builder {
@@ -357,22 +357,22 @@ public class MedicinalProductIndication extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder therapyRelationshipType(final CodeableConcept therapyRelationshipType) {
-                b.add(PROPERTY_THERAPYRELATIONSHIPTYPE, therapyRelationshipType);
+                b.add(PROPERTY_THERAPY_RELATIONSHIP_TYPE, therapyRelationshipType);
                 return this;
             }
 
             public Builder medicationCodeableConcept(final CodeableConcept medicationCodeableConcept) {
-                b.add(PROPERTY_MEDICATIONCODEABLECONCEPT, medicationCodeableConcept);
+                b.add(PROPERTY_MEDICATION_CODEABLE_CONCEPT, medicationCodeableConcept);
                 return this;
             }
 
             public Builder medicationReference(final Reference medicationReference) {
-                b.add(PROPERTY_MEDICATIONREFERENCE, medicationReference);
+                b.add(PROPERTY_MEDICATION_REFERENCE, medicationReference);
                 return this;
             }
 

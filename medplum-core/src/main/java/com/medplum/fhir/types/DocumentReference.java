@@ -11,18 +11,18 @@ import jakarta.json.JsonObjectBuilder;
 
 public class DocumentReference extends FhirResource {
     public static final String RESOURCE_TYPE = "DocumentReference";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-    public static final String PROPERTY_MASTERIDENTIFIER = "masterIdentifier";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+    public static final String PROPERTY_MASTER_IDENTIFIER = "masterIdentifier";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_DOCSTATUS = "docStatus";
+    public static final String PROPERTY_DOC_STATUS = "docStatus";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_SUBJECT = "subject";
@@ -30,9 +30,9 @@ public class DocumentReference extends FhirResource {
     public static final String PROPERTY_AUTHOR = "author";
     public static final String PROPERTY_AUTHENTICATOR = "authenticator";
     public static final String PROPERTY_CUSTODIAN = "custodian";
-    public static final String PROPERTY_RELATESTO = "relatesTo";
+    public static final String PROPERTY_RELATES_TO = "relatesTo";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_SECURITYLABEL = "securityLabel";
+    public static final String PROPERTY_SECURITY_LABEL = "securityLabel";
     public static final String PROPERTY_CONTENT = "content";
     public static final String PROPERTY_CONTEXT = "context";
 
@@ -55,7 +55,7 @@ public class DocumentReference extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -103,7 +103,7 @@ public class DocumentReference extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -113,7 +113,7 @@ public class DocumentReference extends FhirResource {
      * document.
      */
     public Identifier masterIdentifier() {
-        return getObject(Identifier.class, PROPERTY_MASTERIDENTIFIER);
+        return getObject(Identifier.class, PROPERTY_MASTER_IDENTIFIER);
     }
 
     /**
@@ -135,7 +135,7 @@ public class DocumentReference extends FhirResource {
      * The status of the underlying document.
      */
     public String docStatus() {
-        return getString(PROPERTY_DOCSTATUS);
+        return getString(PROPERTY_DOC_STATUS);
     }
 
     /**
@@ -202,7 +202,7 @@ public class DocumentReference extends FhirResource {
      * that already exist.
      */
     public java.util.List<DocumentReferenceRelatesTo> relatesTo() {
-        return getList(DocumentReferenceRelatesTo.class, PROPERTY_RELATESTO);
+        return getList(DocumentReferenceRelatesTo.class, PROPERTY_RELATES_TO);
     }
 
     /**
@@ -220,7 +220,7 @@ public class DocumentReference extends FhirResource {
      * labels on the document the reference refers to.
      */
     public java.util.List<CodeableConcept> securityLabel() {
-        return getList(CodeableConcept.class, PROPERTY_SECURITYLABEL);
+        return getList(CodeableConcept.class, PROPERTY_SECURITY_LABEL);
     }
 
     /**
@@ -249,7 +249,7 @@ public class DocumentReference extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -264,7 +264,7 @@ public class DocumentReference extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -284,12 +284,12 @@ public class DocumentReference extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder masterIdentifier(final Identifier masterIdentifier) {
-            b.add(PROPERTY_MASTERIDENTIFIER, masterIdentifier);
+            b.add(PROPERTY_MASTER_IDENTIFIER, masterIdentifier);
             return this;
         }
 
@@ -304,7 +304,7 @@ public class DocumentReference extends FhirResource {
         }
 
         public Builder docStatus(final String docStatus) {
-            b.add(PROPERTY_DOCSTATUS, docStatus);
+            b.add(PROPERTY_DOC_STATUS, docStatus);
             return this;
         }
 
@@ -344,7 +344,7 @@ public class DocumentReference extends FhirResource {
         }
 
         public Builder relatesTo(final java.util.List<DocumentReferenceRelatesTo> relatesTo) {
-            b.add(PROPERTY_RELATESTO, FhirObject.toArray(relatesTo));
+            b.add(PROPERTY_RELATES_TO, FhirObject.toArray(relatesTo));
             return this;
         }
 
@@ -354,7 +354,7 @@ public class DocumentReference extends FhirResource {
         }
 
         public Builder securityLabel(final java.util.List<CodeableConcept> securityLabel) {
-            b.add(PROPERTY_SECURITYLABEL, FhirObject.toArray(securityLabel));
+            b.add(PROPERTY_SECURITY_LABEL, FhirObject.toArray(securityLabel));
             return this;
         }
 
@@ -376,7 +376,7 @@ public class DocumentReference extends FhirResource {
     public static class DocumentReferenceContent extends FhirObject {
         public static final String RESOURCE_TYPE = "DocumentReferenceContent";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ATTACHMENT = "attachment";
         public static final String PROPERTY_FORMAT = "format";
 
@@ -418,7 +418,7 @@ public class DocumentReference extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -455,7 +455,7 @@ public class DocumentReference extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -478,13 +478,13 @@ public class DocumentReference extends FhirResource {
     public static class DocumentReferenceContext extends FhirObject {
         public static final String RESOURCE_TYPE = "DocumentReferenceContext";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ENCOUNTER = "encounter";
         public static final String PROPERTY_EVENT = "event";
         public static final String PROPERTY_PERIOD = "period";
-        public static final String PROPERTY_FACILITYTYPE = "facilityType";
-        public static final String PROPERTY_PRACTICESETTING = "practiceSetting";
-        public static final String PROPERTY_SOURCEPATIENTINFO = "sourcePatientInfo";
+        public static final String PROPERTY_FACILITY_TYPE = "facilityType";
+        public static final String PROPERTY_PRACTICE_SETTING = "practiceSetting";
+        public static final String PROPERTY_SOURCE_PATIENT_INFO = "sourcePatientInfo";
         public static final String PROPERTY_RELATED = "related";
 
         public static Builder create() {
@@ -525,7 +525,7 @@ public class DocumentReference extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -559,7 +559,7 @@ public class DocumentReference extends FhirResource {
          * The kind of facility where the patient was seen.
          */
         public CodeableConcept facilityType() {
-            return getObject(CodeableConcept.class, PROPERTY_FACILITYTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_FACILITY_TYPE);
         }
 
         /**
@@ -567,7 +567,7 @@ public class DocumentReference extends FhirResource {
          * the content was created, often reflecting the clinical specialty.
          */
         public CodeableConcept practiceSetting() {
-            return getObject(CodeableConcept.class, PROPERTY_PRACTICESETTING);
+            return getObject(CodeableConcept.class, PROPERTY_PRACTICE_SETTING);
         }
 
         /**
@@ -575,7 +575,7 @@ public class DocumentReference extends FhirResource {
          * be a reference to a version specific, or contained.
          */
         public Reference sourcePatientInfo() {
-            return getObject(Reference.class, PROPERTY_SOURCEPATIENTINFO);
+            return getObject(Reference.class, PROPERTY_SOURCE_PATIENT_INFO);
         }
 
         /**
@@ -603,7 +603,7 @@ public class DocumentReference extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -623,17 +623,17 @@ public class DocumentReference extends FhirResource {
             }
 
             public Builder facilityType(final CodeableConcept facilityType) {
-                b.add(PROPERTY_FACILITYTYPE, facilityType);
+                b.add(PROPERTY_FACILITY_TYPE, facilityType);
                 return this;
             }
 
             public Builder practiceSetting(final CodeableConcept practiceSetting) {
-                b.add(PROPERTY_PRACTICESETTING, practiceSetting);
+                b.add(PROPERTY_PRACTICE_SETTING, practiceSetting);
                 return this;
             }
 
             public Builder sourcePatientInfo(final Reference sourcePatientInfo) {
-                b.add(PROPERTY_SOURCEPATIENTINFO, sourcePatientInfo);
+                b.add(PROPERTY_SOURCE_PATIENT_INFO, sourcePatientInfo);
                 return this;
             }
 
@@ -651,7 +651,7 @@ public class DocumentReference extends FhirResource {
     public static class DocumentReferenceRelatesTo extends FhirObject {
         public static final String RESOURCE_TYPE = "DocumentReferenceRelatesTo";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_TARGET = "target";
 
@@ -693,7 +693,7 @@ public class DocumentReference extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -727,7 +727,7 @@ public class DocumentReference extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

@@ -9,21 +9,21 @@ import jakarta.json.JsonObject;
 
 public class Schedule extends FhirResource {
     public static final String RESOURCE_TYPE = "Schedule";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_ACTIVE = "active";
-    public static final String PROPERTY_SERVICECATEGORY = "serviceCategory";
-    public static final String PROPERTY_SERVICETYPE = "serviceType";
+    public static final String PROPERTY_SERVICE_CATEGORY = "serviceCategory";
+    public static final String PROPERTY_SERVICE_TYPE = "serviceType";
     public static final String PROPERTY_SPECIALTY = "specialty";
     public static final String PROPERTY_ACTOR = "actor";
-    public static final String PROPERTY_PLANNINGHORIZON = "planningHorizon";
+    public static final String PROPERTY_PLANNING_HORIZON = "planningHorizon";
     public static final String PROPERTY_COMMENT = "comment";
 
     public static Builder create() {
@@ -45,7 +45,7 @@ public class Schedule extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -93,7 +93,7 @@ public class Schedule extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -116,14 +116,14 @@ public class Schedule extends FhirResource {
      * this appointment.
      */
     public java.util.List<CodeableConcept> serviceCategory() {
-        return getList(CodeableConcept.class, PROPERTY_SERVICECATEGORY);
+        return getList(CodeableConcept.class, PROPERTY_SERVICE_CATEGORY);
     }
 
     /**
      * The specific service that is to be performed during this appointment.
      */
     public java.util.List<CodeableConcept> serviceType() {
-        return getList(CodeableConcept.class, PROPERTY_SERVICETYPE);
+        return getList(CodeableConcept.class, PROPERTY_SERVICE_TYPE);
     }
 
     /**
@@ -150,7 +150,7 @@ public class Schedule extends FhirResource {
      * "template" for planning outside these dates.
      */
     public Period planningHorizon() {
-        return getObject(Period.class, PROPERTY_PLANNINGHORIZON);
+        return getObject(Period.class, PROPERTY_PLANNING_HORIZON);
     }
 
     /**
@@ -172,7 +172,7 @@ public class Schedule extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -187,7 +187,7 @@ public class Schedule extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -207,7 +207,7 @@ public class Schedule extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -222,12 +222,12 @@ public class Schedule extends FhirResource {
         }
 
         public Builder serviceCategory(final java.util.List<CodeableConcept> serviceCategory) {
-            b.add(PROPERTY_SERVICECATEGORY, FhirObject.toArray(serviceCategory));
+            b.add(PROPERTY_SERVICE_CATEGORY, FhirObject.toArray(serviceCategory));
             return this;
         }
 
         public Builder serviceType(final java.util.List<CodeableConcept> serviceType) {
-            b.add(PROPERTY_SERVICETYPE, FhirObject.toArray(serviceType));
+            b.add(PROPERTY_SERVICE_TYPE, FhirObject.toArray(serviceType));
             return this;
         }
 
@@ -242,7 +242,7 @@ public class Schedule extends FhirResource {
         }
 
         public Builder planningHorizon(final Period planningHorizon) {
-            b.add(PROPERTY_PLANNINGHORIZON, planningHorizon);
+            b.add(PROPERTY_PLANNING_HORIZON, planningHorizon);
             return this;
         }
 

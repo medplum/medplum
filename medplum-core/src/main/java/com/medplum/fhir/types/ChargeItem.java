@@ -11,43 +11,43 @@ import jakarta.json.JsonObjectBuilder;
 
 public class ChargeItem extends FhirResource {
     public static final String RESOURCE_TYPE = "ChargeItem";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_DEFINITIONURI = "definitionUri";
-    public static final String PROPERTY_DEFINITIONCANONICAL = "definitionCanonical";
+    public static final String PROPERTY_DEFINITION_URI = "definitionUri";
+    public static final String PROPERTY_DEFINITION_CANONICAL = "definitionCanonical";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_PART_OF = "partOf";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_CONTEXT = "context";
-    public static final String PROPERTY_OCCURRENCEDATETIME = "occurrenceDateTime";
-    public static final String PROPERTY_OCCURRENCEPERIOD = "occurrencePeriod";
-    public static final String PROPERTY_OCCURRENCETIMING = "occurrenceTiming";
+    public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
+    public static final String PROPERTY_OCCURRENCE_PERIOD = "occurrencePeriod";
+    public static final String PROPERTY_OCCURRENCE_TIMING = "occurrenceTiming";
     public static final String PROPERTY_PERFORMER = "performer";
-    public static final String PROPERTY_PERFORMINGORGANIZATION = "performingOrganization";
-    public static final String PROPERTY_REQUESTINGORGANIZATION = "requestingOrganization";
-    public static final String PROPERTY_COSTCENTER = "costCenter";
+    public static final String PROPERTY_PERFORMING_ORGANIZATION = "performingOrganization";
+    public static final String PROPERTY_REQUESTING_ORGANIZATION = "requestingOrganization";
+    public static final String PROPERTY_COST_CENTER = "costCenter";
     public static final String PROPERTY_QUANTITY = "quantity";
     public static final String PROPERTY_BODYSITE = "bodysite";
-    public static final String PROPERTY_FACTOROVERRIDE = "factorOverride";
-    public static final String PROPERTY_PRICEOVERRIDE = "priceOverride";
-    public static final String PROPERTY_OVERRIDEREASON = "overrideReason";
+    public static final String PROPERTY_FACTOR_OVERRIDE = "factorOverride";
+    public static final String PROPERTY_PRICE_OVERRIDE = "priceOverride";
+    public static final String PROPERTY_OVERRIDE_REASON = "overrideReason";
     public static final String PROPERTY_ENTERER = "enterer";
-    public static final String PROPERTY_ENTEREDDATE = "enteredDate";
+    public static final String PROPERTY_ENTERED_DATE = "enteredDate";
     public static final String PROPERTY_REASON = "reason";
     public static final String PROPERTY_SERVICE = "service";
-    public static final String PROPERTY_PRODUCTREFERENCE = "productReference";
-    public static final String PROPERTY_PRODUCTCODEABLECONCEPT = "productCodeableConcept";
+    public static final String PROPERTY_PRODUCT_REFERENCE = "productReference";
+    public static final String PROPERTY_PRODUCT_CODEABLE_CONCEPT = "productCodeableConcept";
     public static final String PROPERTY_ACCOUNT = "account";
     public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_SUPPORTINGINFORMATION = "supportingInformation";
+    public static final String PROPERTY_SUPPORTING_INFORMATION = "supportingInformation";
 
     public static Builder create() {
         return new Builder();
@@ -68,7 +68,7 @@ public class ChargeItem extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -116,7 +116,7 @@ public class ChargeItem extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -131,7 +131,7 @@ public class ChargeItem extends FhirResource {
      * application for the code this ChargeItem uses.
      */
     public java.util.List<String> definitionUri() {
-        return getList(String.class, PROPERTY_DEFINITIONURI);
+        return getList(String.class, PROPERTY_DEFINITION_URI);
     }
 
     /**
@@ -139,7 +139,7 @@ public class ChargeItem extends FhirResource {
      * the code this ChargeItem uses.
      */
     public java.util.List<String> definitionCanonical() {
-        return getList(String.class, PROPERTY_DEFINITIONCANONICAL);
+        return getList(String.class, PROPERTY_DEFINITION_CANONICAL);
     }
 
     /**
@@ -154,7 +154,7 @@ public class ChargeItem extends FhirResource {
      * set.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PARTOF);
+        return getList(Reference.class, PROPERTY_PART_OF);
     }
 
     /**
@@ -184,21 +184,21 @@ public class ChargeItem extends FhirResource {
      * Date/time(s) or duration when the charged service was applied.
      */
     public String occurrenceDateTime() {
-        return getString(PROPERTY_OCCURRENCEDATETIME);
+        return getString(PROPERTY_OCCURRENCE_DATE_TIME);
     }
 
     /**
      * Date/time(s) or duration when the charged service was applied.
      */
     public Period occurrencePeriod() {
-        return getObject(Period.class, PROPERTY_OCCURRENCEPERIOD);
+        return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
     }
 
     /**
      * Date/time(s) or duration when the charged service was applied.
      */
     public Timing occurrenceTiming() {
-        return getObject(Timing.class, PROPERTY_OCCURRENCETIMING);
+        return getObject(Timing.class, PROPERTY_OCCURRENCE_TIMING);
     }
 
     /**
@@ -213,21 +213,21 @@ public class ChargeItem extends FhirResource {
      * The organization requesting the service.
      */
     public Reference performingOrganization() {
-        return getObject(Reference.class, PROPERTY_PERFORMINGORGANIZATION);
+        return getObject(Reference.class, PROPERTY_PERFORMING_ORGANIZATION);
     }
 
     /**
      * The organization performing the service.
      */
     public Reference requestingOrganization() {
-        return getObject(Reference.class, PROPERTY_REQUESTINGORGANIZATION);
+        return getObject(Reference.class, PROPERTY_REQUESTING_ORGANIZATION);
     }
 
     /**
      * The financial cost center permits the tracking of charge attribution.
      */
     public Reference costCenter() {
-        return getObject(Reference.class, PROPERTY_COSTCENTER);
+        return getObject(Reference.class, PROPERTY_COST_CENTER);
     }
 
     /**
@@ -249,7 +249,7 @@ public class ChargeItem extends FhirResource {
      * the code.
      */
     public Double factorOverride() {
-        return data.getJsonNumber(PROPERTY_FACTOROVERRIDE).doubleValue();
+        return data.getJsonNumber(PROPERTY_FACTOR_OVERRIDE).doubleValue();
     }
 
     /**
@@ -257,7 +257,7 @@ public class ChargeItem extends FhirResource {
      * the code.
      */
     public Money priceOverride() {
-        return getObject(Money.class, PROPERTY_PRICEOVERRIDE);
+        return getObject(Money.class, PROPERTY_PRICE_OVERRIDE);
     }
 
     /**
@@ -266,7 +266,7 @@ public class ChargeItem extends FhirResource {
      * for this action.
      */
     public String overrideReason() {
-        return getString(PROPERTY_OVERRIDEREASON);
+        return getString(PROPERTY_OVERRIDE_REASON);
     }
 
     /**
@@ -280,7 +280,7 @@ public class ChargeItem extends FhirResource {
      * Date the charge item was entered.
      */
     public java.time.Instant enteredDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_ENTEREDDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_ENTERED_DATE));
     }
 
     /**
@@ -302,7 +302,7 @@ public class ChargeItem extends FhirResource {
      * either by type code or reference to an instance.
      */
     public Reference productReference() {
-        return getObject(Reference.class, PROPERTY_PRODUCTREFERENCE);
+        return getObject(Reference.class, PROPERTY_PRODUCT_REFERENCE);
     }
 
     /**
@@ -310,7 +310,7 @@ public class ChargeItem extends FhirResource {
      * either by type code or reference to an instance.
      */
     public CodeableConcept productCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_PRODUCTCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_PRODUCT_CODEABLE_CONCEPT);
     }
 
     /**
@@ -332,7 +332,7 @@ public class ChargeItem extends FhirResource {
      * Further information supporting this charge.
      */
     public java.util.List<Reference> supportingInformation() {
-        return getList(Reference.class, PROPERTY_SUPPORTINGINFORMATION);
+        return getList(Reference.class, PROPERTY_SUPPORTING_INFORMATION);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -346,7 +346,7 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -361,7 +361,7 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -381,7 +381,7 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -391,12 +391,12 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder definitionUri(final java.util.List<String> definitionUri) {
-            b.add(PROPERTY_DEFINITIONURI, FhirObject.toStringArray(definitionUri));
+            b.add(PROPERTY_DEFINITION_URI, FhirObject.toStringArray(definitionUri));
             return this;
         }
 
         public Builder definitionCanonical(final java.util.List<String> definitionCanonical) {
-            b.add(PROPERTY_DEFINITIONCANONICAL, FhirObject.toStringArray(definitionCanonical));
+            b.add(PROPERTY_DEFINITION_CANONICAL, FhirObject.toStringArray(definitionCanonical));
             return this;
         }
 
@@ -406,7 +406,7 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
@@ -426,17 +426,17 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder occurrenceDateTime(final String occurrenceDateTime) {
-            b.add(PROPERTY_OCCURRENCEDATETIME, occurrenceDateTime);
+            b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
             return this;
         }
 
         public Builder occurrencePeriod(final Period occurrencePeriod) {
-            b.add(PROPERTY_OCCURRENCEPERIOD, occurrencePeriod);
+            b.add(PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
             return this;
         }
 
         public Builder occurrenceTiming(final Timing occurrenceTiming) {
-            b.add(PROPERTY_OCCURRENCETIMING, occurrenceTiming);
+            b.add(PROPERTY_OCCURRENCE_TIMING, occurrenceTiming);
             return this;
         }
 
@@ -446,17 +446,17 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder performingOrganization(final Reference performingOrganization) {
-            b.add(PROPERTY_PERFORMINGORGANIZATION, performingOrganization);
+            b.add(PROPERTY_PERFORMING_ORGANIZATION, performingOrganization);
             return this;
         }
 
         public Builder requestingOrganization(final Reference requestingOrganization) {
-            b.add(PROPERTY_REQUESTINGORGANIZATION, requestingOrganization);
+            b.add(PROPERTY_REQUESTING_ORGANIZATION, requestingOrganization);
             return this;
         }
 
         public Builder costCenter(final Reference costCenter) {
-            b.add(PROPERTY_COSTCENTER, costCenter);
+            b.add(PROPERTY_COST_CENTER, costCenter);
             return this;
         }
 
@@ -471,17 +471,17 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder factorOverride(final Double factorOverride) {
-            b.add(PROPERTY_FACTOROVERRIDE, factorOverride);
+            b.add(PROPERTY_FACTOR_OVERRIDE, factorOverride);
             return this;
         }
 
         public Builder priceOverride(final Money priceOverride) {
-            b.add(PROPERTY_PRICEOVERRIDE, priceOverride);
+            b.add(PROPERTY_PRICE_OVERRIDE, priceOverride);
             return this;
         }
 
         public Builder overrideReason(final String overrideReason) {
-            b.add(PROPERTY_OVERRIDEREASON, overrideReason);
+            b.add(PROPERTY_OVERRIDE_REASON, overrideReason);
             return this;
         }
 
@@ -491,7 +491,7 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder enteredDate(final java.time.Instant enteredDate) {
-            b.add(PROPERTY_ENTEREDDATE, enteredDate.toString());
+            b.add(PROPERTY_ENTERED_DATE, enteredDate.toString());
             return this;
         }
 
@@ -506,12 +506,12 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder productReference(final Reference productReference) {
-            b.add(PROPERTY_PRODUCTREFERENCE, productReference);
+            b.add(PROPERTY_PRODUCT_REFERENCE, productReference);
             return this;
         }
 
         public Builder productCodeableConcept(final CodeableConcept productCodeableConcept) {
-            b.add(PROPERTY_PRODUCTCODEABLECONCEPT, productCodeableConcept);
+            b.add(PROPERTY_PRODUCT_CODEABLE_CONCEPT, productCodeableConcept);
             return this;
         }
 
@@ -526,7 +526,7 @@ public class ChargeItem extends FhirResource {
         }
 
         public Builder supportingInformation(final java.util.List<Reference> supportingInformation) {
-            b.add(PROPERTY_SUPPORTINGINFORMATION, FhirObject.toArray(supportingInformation));
+            b.add(PROPERTY_SUPPORTING_INFORMATION, FhirObject.toArray(supportingInformation));
             return this;
         }
 
@@ -538,7 +538,7 @@ public class ChargeItem extends FhirResource {
     public static class ChargeItemPerformer extends FhirObject {
         public static final String RESOURCE_TYPE = "ChargeItemPerformer";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_FUNCTION = "function";
         public static final String PROPERTY_ACTOR = "actor";
 
@@ -580,7 +580,7 @@ public class ChargeItem extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -616,7 +616,7 @@ public class ChargeItem extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

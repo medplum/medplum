@@ -11,28 +11,28 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Device extends FhirResource {
     public static final String RESOURCE_TYPE = "Device";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_DEFINITION = "definition";
-    public static final String PROPERTY_UDICARRIER = "udiCarrier";
+    public static final String PROPERTY_UDI_CARRIER = "udiCarrier";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSREASON = "statusReason";
-    public static final String PROPERTY_DISTINCTIDENTIFIER = "distinctIdentifier";
+    public static final String PROPERTY_STATUS_REASON = "statusReason";
+    public static final String PROPERTY_DISTINCT_IDENTIFIER = "distinctIdentifier";
     public static final String PROPERTY_MANUFACTURER = "manufacturer";
-    public static final String PROPERTY_MANUFACTUREDATE = "manufactureDate";
-    public static final String PROPERTY_EXPIRATIONDATE = "expirationDate";
-    public static final String PROPERTY_LOTNUMBER = "lotNumber";
-    public static final String PROPERTY_SERIALNUMBER = "serialNumber";
-    public static final String PROPERTY_DEVICENAME = "deviceName";
-    public static final String PROPERTY_MODELNUMBER = "modelNumber";
-    public static final String PROPERTY_PARTNUMBER = "partNumber";
+    public static final String PROPERTY_MANUFACTURE_DATE = "manufactureDate";
+    public static final String PROPERTY_EXPIRATION_DATE = "expirationDate";
+    public static final String PROPERTY_LOT_NUMBER = "lotNumber";
+    public static final String PROPERTY_SERIAL_NUMBER = "serialNumber";
+    public static final String PROPERTY_DEVICE_NAME = "deviceName";
+    public static final String PROPERTY_MODEL_NUMBER = "modelNumber";
+    public static final String PROPERTY_PART_NUMBER = "partNumber";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_SPECIALIZATION = "specialization";
     public static final String PROPERTY_VERSION = "version";
@@ -65,7 +65,7 @@ public class Device extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -113,7 +113,7 @@ public class Device extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -138,7 +138,7 @@ public class Device extends FhirResource {
      * multiple jurisdictions it could have been sold.
      */
     public java.util.List<DeviceUdiCarrier> udiCarrier() {
-        return getList(DeviceUdiCarrier.class, PROPERTY_UDICARRIER);
+        return getList(DeviceUdiCarrier.class, PROPERTY_UDI_CARRIER);
     }
 
     /**
@@ -152,7 +152,7 @@ public class Device extends FhirResource {
      * Reason for the dtatus of the Device availability.
      */
     public java.util.List<CodeableConcept> statusReason() {
-        return getList(CodeableConcept.class, PROPERTY_STATUSREASON);
+        return getList(CodeableConcept.class, PROPERTY_STATUS_REASON);
     }
 
     /**
@@ -160,7 +160,7 @@ public class Device extends FhirResource {
      * human cell, tissue, or cellular and tissue-based product.
      */
     public String distinctIdentifier() {
-        return getString(PROPERTY_DISTINCTIDENTIFIER);
+        return getString(PROPERTY_DISTINCT_IDENTIFIER);
     }
 
     /**
@@ -174,7 +174,7 @@ public class Device extends FhirResource {
      * The date and time when the device was manufactured.
      */
     public java.time.Instant manufactureDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_MANUFACTUREDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_MANUFACTURE_DATE));
     }
 
     /**
@@ -182,14 +182,14 @@ public class Device extends FhirResource {
      * should not be used (if applicable).
      */
     public java.time.Instant expirationDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_EXPIRATIONDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_EXPIRATION_DATE));
     }
 
     /**
      * Lot number assigned by the manufacturer.
      */
     public String lotNumber() {
-        return getString(PROPERTY_LOTNUMBER);
+        return getString(PROPERTY_LOT_NUMBER);
     }
 
     /**
@@ -197,7 +197,7 @@ public class Device extends FhirResource {
      * manufactured.
      */
     public String serialNumber() {
-        return getString(PROPERTY_SERIALNUMBER);
+        return getString(PROPERTY_SERIAL_NUMBER);
     }
 
     /**
@@ -208,21 +208,21 @@ public class Device extends FhirResource {
      * DeviceDefinition.
      */
     public java.util.List<DeviceDeviceName> deviceName() {
-        return getList(DeviceDeviceName.class, PROPERTY_DEVICENAME);
+        return getList(DeviceDeviceName.class, PROPERTY_DEVICE_NAME);
     }
 
     /**
      * The model number for the device.
      */
     public String modelNumber() {
-        return getString(PROPERTY_MODELNUMBER);
+        return getString(PROPERTY_MODEL_NUMBER);
     }
 
     /**
      * The part number of the device.
      */
     public String partNumber() {
-        return getString(PROPERTY_PARTNUMBER);
+        return getString(PROPERTY_PART_NUMBER);
     }
 
     /**
@@ -328,7 +328,7 @@ public class Device extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -343,7 +343,7 @@ public class Device extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -363,7 +363,7 @@ public class Device extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -378,7 +378,7 @@ public class Device extends FhirResource {
         }
 
         public Builder udiCarrier(final java.util.List<DeviceUdiCarrier> udiCarrier) {
-            b.add(PROPERTY_UDICARRIER, FhirObject.toArray(udiCarrier));
+            b.add(PROPERTY_UDI_CARRIER, FhirObject.toArray(udiCarrier));
             return this;
         }
 
@@ -388,12 +388,12 @@ public class Device extends FhirResource {
         }
 
         public Builder statusReason(final java.util.List<CodeableConcept> statusReason) {
-            b.add(PROPERTY_STATUSREASON, FhirObject.toArray(statusReason));
+            b.add(PROPERTY_STATUS_REASON, FhirObject.toArray(statusReason));
             return this;
         }
 
         public Builder distinctIdentifier(final String distinctIdentifier) {
-            b.add(PROPERTY_DISTINCTIDENTIFIER, distinctIdentifier);
+            b.add(PROPERTY_DISTINCT_IDENTIFIER, distinctIdentifier);
             return this;
         }
 
@@ -403,37 +403,37 @@ public class Device extends FhirResource {
         }
 
         public Builder manufactureDate(final java.time.Instant manufactureDate) {
-            b.add(PROPERTY_MANUFACTUREDATE, manufactureDate.toString());
+            b.add(PROPERTY_MANUFACTURE_DATE, manufactureDate.toString());
             return this;
         }
 
         public Builder expirationDate(final java.time.Instant expirationDate) {
-            b.add(PROPERTY_EXPIRATIONDATE, expirationDate.toString());
+            b.add(PROPERTY_EXPIRATION_DATE, expirationDate.toString());
             return this;
         }
 
         public Builder lotNumber(final String lotNumber) {
-            b.add(PROPERTY_LOTNUMBER, lotNumber);
+            b.add(PROPERTY_LOT_NUMBER, lotNumber);
             return this;
         }
 
         public Builder serialNumber(final String serialNumber) {
-            b.add(PROPERTY_SERIALNUMBER, serialNumber);
+            b.add(PROPERTY_SERIAL_NUMBER, serialNumber);
             return this;
         }
 
         public Builder deviceName(final java.util.List<DeviceDeviceName> deviceName) {
-            b.add(PROPERTY_DEVICENAME, FhirObject.toArray(deviceName));
+            b.add(PROPERTY_DEVICE_NAME, FhirObject.toArray(deviceName));
             return this;
         }
 
         public Builder modelNumber(final String modelNumber) {
-            b.add(PROPERTY_MODELNUMBER, modelNumber);
+            b.add(PROPERTY_MODEL_NUMBER, modelNumber);
             return this;
         }
 
         public Builder partNumber(final String partNumber) {
-            b.add(PROPERTY_PARTNUMBER, partNumber);
+            b.add(PROPERTY_PART_NUMBER, partNumber);
             return this;
         }
 
@@ -505,7 +505,7 @@ public class Device extends FhirResource {
     public static class DeviceDeviceName extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceDeviceName";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_TYPE = "type";
 
@@ -547,7 +547,7 @@ public class Device extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -583,7 +583,7 @@ public class Device extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -606,10 +606,10 @@ public class Device extends FhirResource {
     public static class DeviceProperty extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceProperty";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUECODE = "valueCode";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_CODE = "valueCode";
 
         public static Builder create() {
             return new Builder();
@@ -649,7 +649,7 @@ public class Device extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -664,14 +664,14 @@ public class Device extends FhirResource {
          * Property value as a quantity.
          */
         public java.util.List<Quantity> valueQuantity() {
-            return getList(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getList(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
          * Property value as a code, e.g., NTP4 (synced to NTP).
          */
         public java.util.List<CodeableConcept> valueCode() {
-            return getList(CodeableConcept.class, PROPERTY_VALUECODE);
+            return getList(CodeableConcept.class, PROPERTY_VALUE_CODE);
         }
 
         public static class Builder {
@@ -691,7 +691,7 @@ public class Device extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -701,12 +701,12 @@ public class Device extends FhirResource {
             }
 
             public Builder valueQuantity(final java.util.List<Quantity> valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, FhirObject.toArray(valueQuantity));
+                b.add(PROPERTY_VALUE_QUANTITY, FhirObject.toArray(valueQuantity));
                 return this;
             }
 
             public Builder valueCode(final java.util.List<CodeableConcept> valueCode) {
-                b.add(PROPERTY_VALUECODE, FhirObject.toArray(valueCode));
+                b.add(PROPERTY_VALUE_CODE, FhirObject.toArray(valueCode));
                 return this;
             }
 
@@ -719,8 +719,8 @@ public class Device extends FhirResource {
     public static class DeviceSpecialization extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceSpecialization";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_SYSTEMTYPE = "systemType";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_SYSTEM_TYPE = "systemType";
         public static final String PROPERTY_VERSION = "version";
 
         public static Builder create() {
@@ -761,14 +761,14 @@ public class Device extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The standard that is used to operate and communicate.
          */
         public CodeableConcept systemType() {
-            return getObject(CodeableConcept.class, PROPERTY_SYSTEMTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_SYSTEM_TYPE);
         }
 
         /**
@@ -795,12 +795,12 @@ public class Device extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder systemType(final CodeableConcept systemType) {
-                b.add(PROPERTY_SYSTEMTYPE, systemType);
+                b.add(PROPERTY_SYSTEM_TYPE, systemType);
                 return this;
             }
 
@@ -818,13 +818,13 @@ public class Device extends FhirResource {
     public static class DeviceUdiCarrier extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceUdiCarrier";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_DEVICEIDENTIFIER = "deviceIdentifier";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_DEVICE_IDENTIFIER = "deviceIdentifier";
         public static final String PROPERTY_ISSUER = "issuer";
         public static final String PROPERTY_JURISDICTION = "jurisdiction";
-        public static final String PROPERTY_CARRIERAIDC = "carrierAIDC";
-        public static final String PROPERTY_CARRIERHRF = "carrierHRF";
-        public static final String PROPERTY_ENTRYTYPE = "entryType";
+        public static final String PROPERTY_CARRIER_A_I_D_C = "carrierAIDC";
+        public static final String PROPERTY_CARRIER_H_R_F = "carrierHRF";
+        public static final String PROPERTY_ENTRY_TYPE = "entryType";
 
         public static Builder create() {
             return new Builder();
@@ -864,7 +864,7 @@ public class Device extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -872,7 +872,7 @@ public class Device extends FhirResource {
          * identifies the labeler and the specific version or model of a device.
          */
         public String deviceIdentifier() {
-            return getString(PROPERTY_DEVICEIDENTIFIER);
+            return getString(PROPERTY_DEVICE_IDENTIFIER);
         }
 
         /**
@@ -910,7 +910,7 @@ public class Device extends FhirResource {
          * data through XML, AIDC Formats *SHALL* be base64 encoded.
          */
         public String carrierAIDC() {
-            return getString(PROPERTY_CARRIERAIDC);
+            return getString(PROPERTY_CARRIER_A_I_D_C);
         }
 
         /**
@@ -918,14 +918,14 @@ public class Device extends FhirResource {
          * of the barcode string as printed on the packaging of the device.
          */
         public String carrierHRF() {
-            return getString(PROPERTY_CARRIERHRF);
+            return getString(PROPERTY_CARRIER_H_R_F);
         }
 
         /**
          * A coded entry to indicate how the data was entered.
          */
         public String entryType() {
-            return getString(PROPERTY_ENTRYTYPE);
+            return getString(PROPERTY_ENTRY_TYPE);
         }
 
         public static class Builder {
@@ -945,12 +945,12 @@ public class Device extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder deviceIdentifier(final String deviceIdentifier) {
-                b.add(PROPERTY_DEVICEIDENTIFIER, deviceIdentifier);
+                b.add(PROPERTY_DEVICE_IDENTIFIER, deviceIdentifier);
                 return this;
             }
 
@@ -965,17 +965,17 @@ public class Device extends FhirResource {
             }
 
             public Builder carrierAIDC(final String carrierAIDC) {
-                b.add(PROPERTY_CARRIERAIDC, carrierAIDC);
+                b.add(PROPERTY_CARRIER_A_I_D_C, carrierAIDC);
                 return this;
             }
 
             public Builder carrierHRF(final String carrierHRF) {
-                b.add(PROPERTY_CARRIERHRF, carrierHRF);
+                b.add(PROPERTY_CARRIER_H_R_F, carrierHRF);
                 return this;
             }
 
             public Builder entryType(final String entryType) {
-                b.add(PROPERTY_ENTRYTYPE, entryType);
+                b.add(PROPERTY_ENTRY_TYPE, entryType);
                 return this;
             }
 
@@ -988,7 +988,7 @@ public class Device extends FhirResource {
     public static class DeviceVersion extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceVersion";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_COMPONENT = "component";
         public static final String PROPERTY_VALUE = "value";
@@ -1031,7 +1031,7 @@ public class Device extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1072,7 +1072,7 @@ public class Device extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

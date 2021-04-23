@@ -11,20 +11,20 @@ import jakarta.json.JsonObjectBuilder;
 
 public class EvidenceVariable extends FhirResource {
     public static final String RESOURCE_TYPE = "EvidenceVariable";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_VERSION = "version";
     public static final String PROPERTY_NAME = "name";
     public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_SHORTTITLE = "shortTitle";
+    public static final String PROPERTY_SHORT_TITLE = "shortTitle";
     public static final String PROPERTY_SUBTITLE = "subtitle";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_DATE = "date";
@@ -32,18 +32,18 @@ public class EvidenceVariable extends FhirResource {
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
     public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_APPROVALDATE = "approvalDate";
-    public static final String PROPERTY_LASTREVIEWDATE = "lastReviewDate";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
+    public static final String PROPERTY_APPROVAL_DATE = "approvalDate";
+    public static final String PROPERTY_LAST_REVIEW_DATE = "lastReviewDate";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
     public static final String PROPERTY_TOPIC = "topic";
     public static final String PROPERTY_AUTHOR = "author";
     public static final String PROPERTY_EDITOR = "editor";
     public static final String PROPERTY_REVIEWER = "reviewer";
     public static final String PROPERTY_ENDORSER = "endorser";
-    public static final String PROPERTY_RELATEDARTIFACT = "relatedArtifact";
+    public static final String PROPERTY_RELATED_ARTIFACT = "relatedArtifact";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_CHARACTERISTIC = "characteristic";
 
@@ -66,7 +66,7 @@ public class EvidenceVariable extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -114,7 +114,7 @@ public class EvidenceVariable extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -177,7 +177,7 @@ public class EvidenceVariable extends FhirResource {
      * descriptive contexts where the full, formal title is not necessary.
      */
     public String shortTitle() {
-        return getString(PROPERTY_SHORTTITLE);
+        return getString(PROPERTY_SHORT_TITLE);
     }
 
     /**
@@ -246,7 +246,7 @@ public class EvidenceVariable extends FhirResource {
      * indexing and searching for appropriate evidence variable instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -272,7 +272,7 @@ public class EvidenceVariable extends FhirResource {
      * usage.
      */
     public java.time.Instant approvalDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_APPROVALDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_APPROVAL_DATE));
     }
 
     /**
@@ -281,7 +281,7 @@ public class EvidenceVariable extends FhirResource {
      * approval date.
      */
     public java.time.Instant lastReviewDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTREVIEWDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_REVIEW_DATE));
     }
 
     /**
@@ -289,7 +289,7 @@ public class EvidenceVariable extends FhirResource {
      * planned to be in active use.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -338,7 +338,7 @@ public class EvidenceVariable extends FhirResource {
      * bibliographic references.
      */
     public java.util.List<RelatedArtifact> relatedArtifact() {
-        return getList(RelatedArtifact.class, PROPERTY_RELATEDARTIFACT);
+        return getList(RelatedArtifact.class, PROPERTY_RELATED_ARTIFACT);
     }
 
     /**
@@ -368,7 +368,7 @@ public class EvidenceVariable extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -383,7 +383,7 @@ public class EvidenceVariable extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -403,7 +403,7 @@ public class EvidenceVariable extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -433,7 +433,7 @@ public class EvidenceVariable extends FhirResource {
         }
 
         public Builder shortTitle(final String shortTitle) {
-            b.add(PROPERTY_SHORTTITLE, shortTitle);
+            b.add(PROPERTY_SHORT_TITLE, shortTitle);
             return this;
         }
 
@@ -473,7 +473,7 @@ public class EvidenceVariable extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -488,17 +488,17 @@ public class EvidenceVariable extends FhirResource {
         }
 
         public Builder approvalDate(final java.time.Instant approvalDate) {
-            b.add(PROPERTY_APPROVALDATE, approvalDate.toString());
+            b.add(PROPERTY_APPROVAL_DATE, approvalDate.toString());
             return this;
         }
 
         public Builder lastReviewDate(final java.time.Instant lastReviewDate) {
-            b.add(PROPERTY_LASTREVIEWDATE, lastReviewDate.toString());
+            b.add(PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
@@ -528,7 +528,7 @@ public class EvidenceVariable extends FhirResource {
         }
 
         public Builder relatedArtifact(final java.util.List<RelatedArtifact> relatedArtifact) {
-            b.add(PROPERTY_RELATEDARTIFACT, FhirObject.toArray(relatedArtifact));
+            b.add(PROPERTY_RELATED_ARTIFACT, FhirObject.toArray(relatedArtifact));
             return this;
         }
 
@@ -550,22 +550,22 @@ public class EvidenceVariable extends FhirResource {
     public static class EvidenceVariableCharacteristic extends FhirObject {
         public static final String RESOURCE_TYPE = "EvidenceVariableCharacteristic";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_DEFINITIONREFERENCE = "definitionReference";
-        public static final String PROPERTY_DEFINITIONCANONICAL = "definitionCanonical";
-        public static final String PROPERTY_DEFINITIONCODEABLECONCEPT = "definitionCodeableConcept";
-        public static final String PROPERTY_DEFINITIONEXPRESSION = "definitionExpression";
-        public static final String PROPERTY_DEFINITIONDATAREQUIREMENT = "definitionDataRequirement";
-        public static final String PROPERTY_DEFINITIONTRIGGERDEFINITION = "definitionTriggerDefinition";
-        public static final String PROPERTY_USAGECONTEXT = "usageContext";
+        public static final String PROPERTY_DEFINITION_REFERENCE = "definitionReference";
+        public static final String PROPERTY_DEFINITION_CANONICAL = "definitionCanonical";
+        public static final String PROPERTY_DEFINITION_CODEABLE_CONCEPT = "definitionCodeableConcept";
+        public static final String PROPERTY_DEFINITION_EXPRESSION = "definitionExpression";
+        public static final String PROPERTY_DEFINITION_DATA_REQUIREMENT = "definitionDataRequirement";
+        public static final String PROPERTY_DEFINITION_TRIGGER_DEFINITION = "definitionTriggerDefinition";
+        public static final String PROPERTY_USAGE_CONTEXT = "usageContext";
         public static final String PROPERTY_EXCLUDE = "exclude";
-        public static final String PROPERTY_PARTICIPANTEFFECTIVEDATETIME = "participantEffectiveDateTime";
-        public static final String PROPERTY_PARTICIPANTEFFECTIVEPERIOD = "participantEffectivePeriod";
-        public static final String PROPERTY_PARTICIPANTEFFECTIVEDURATION = "participantEffectiveDuration";
-        public static final String PROPERTY_PARTICIPANTEFFECTIVETIMING = "participantEffectiveTiming";
-        public static final String PROPERTY_TIMEFROMSTART = "timeFromStart";
-        public static final String PROPERTY_GROUPMEASURE = "groupMeasure";
+        public static final String PROPERTY_PARTICIPANT_EFFECTIVE_DATE_TIME = "participantEffectiveDateTime";
+        public static final String PROPERTY_PARTICIPANT_EFFECTIVE_PERIOD = "participantEffectivePeriod";
+        public static final String PROPERTY_PARTICIPANT_EFFECTIVE_DURATION = "participantEffectiveDuration";
+        public static final String PROPERTY_PARTICIPANT_EFFECTIVE_TIMING = "participantEffectiveTiming";
+        public static final String PROPERTY_TIME_FROM_START = "timeFromStart";
+        public static final String PROPERTY_GROUP_MEASURE = "groupMeasure";
 
         public static Builder create() {
             return new Builder();
@@ -605,7 +605,7 @@ public class EvidenceVariable extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -623,7 +623,7 @@ public class EvidenceVariable extends FhirResource {
          * Diabetes diagnosis onset in the last year).
          */
         public Reference definitionReference() {
-            return getObject(Reference.class, PROPERTY_DEFINITIONREFERENCE);
+            return getObject(Reference.class, PROPERTY_DEFINITION_REFERENCE);
         }
 
         /**
@@ -633,7 +633,7 @@ public class EvidenceVariable extends FhirResource {
          * Diabetes diagnosis onset in the last year).
          */
         public String definitionCanonical() {
-            return getString(PROPERTY_DEFINITIONCANONICAL);
+            return getString(PROPERTY_DEFINITION_CANONICAL);
         }
 
         /**
@@ -643,7 +643,7 @@ public class EvidenceVariable extends FhirResource {
          * Diabetes diagnosis onset in the last year).
          */
         public CodeableConcept definitionCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_DEFINITIONCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_DEFINITION_CODEABLE_CONCEPT);
         }
 
         /**
@@ -653,7 +653,7 @@ public class EvidenceVariable extends FhirResource {
          * Diabetes diagnosis onset in the last year).
          */
         public Expression definitionExpression() {
-            return getObject(Expression.class, PROPERTY_DEFINITIONEXPRESSION);
+            return getObject(Expression.class, PROPERTY_DEFINITION_EXPRESSION);
         }
 
         /**
@@ -663,7 +663,7 @@ public class EvidenceVariable extends FhirResource {
          * Diabetes diagnosis onset in the last year).
          */
         public DataRequirement definitionDataRequirement() {
-            return getObject(DataRequirement.class, PROPERTY_DEFINITIONDATAREQUIREMENT);
+            return getObject(DataRequirement.class, PROPERTY_DEFINITION_DATA_REQUIREMENT);
         }
 
         /**
@@ -673,7 +673,7 @@ public class EvidenceVariable extends FhirResource {
          * Diabetes diagnosis onset in the last year).
          */
         public TriggerDefinition definitionTriggerDefinition() {
-            return getObject(TriggerDefinition.class, PROPERTY_DEFINITIONTRIGGERDEFINITION);
+            return getObject(TriggerDefinition.class, PROPERTY_DEFINITION_TRIGGER_DEFINITION);
         }
 
         /**
@@ -681,7 +681,7 @@ public class EvidenceVariable extends FhirResource {
          * Ranges, Genders, Settings.
          */
         public java.util.List<UsageContext> usageContext() {
-            return getList(UsageContext.class, PROPERTY_USAGECONTEXT);
+            return getList(UsageContext.class, PROPERTY_USAGE_CONTEXT);
         }
 
         /**
@@ -696,35 +696,35 @@ public class EvidenceVariable extends FhirResource {
          * Indicates what effective period the study covers.
          */
         public String participantEffectiveDateTime() {
-            return getString(PROPERTY_PARTICIPANTEFFECTIVEDATETIME);
+            return getString(PROPERTY_PARTICIPANT_EFFECTIVE_DATE_TIME);
         }
 
         /**
          * Indicates what effective period the study covers.
          */
         public Period participantEffectivePeriod() {
-            return getObject(Period.class, PROPERTY_PARTICIPANTEFFECTIVEPERIOD);
+            return getObject(Period.class, PROPERTY_PARTICIPANT_EFFECTIVE_PERIOD);
         }
 
         /**
          * Indicates what effective period the study covers.
          */
         public Duration participantEffectiveDuration() {
-            return getObject(Duration.class, PROPERTY_PARTICIPANTEFFECTIVEDURATION);
+            return getObject(Duration.class, PROPERTY_PARTICIPANT_EFFECTIVE_DURATION);
         }
 
         /**
          * Indicates what effective period the study covers.
          */
         public Timing participantEffectiveTiming() {
-            return getObject(Timing.class, PROPERTY_PARTICIPANTEFFECTIVETIMING);
+            return getObject(Timing.class, PROPERTY_PARTICIPANT_EFFECTIVE_TIMING);
         }
 
         /**
          * Indicates duration from the participant's study entry.
          */
         public Duration timeFromStart() {
-            return getObject(Duration.class, PROPERTY_TIMEFROMSTART);
+            return getObject(Duration.class, PROPERTY_TIME_FROM_START);
         }
 
         /**
@@ -732,7 +732,7 @@ public class EvidenceVariable extends FhirResource {
          * period.
          */
         public String groupMeasure() {
-            return getString(PROPERTY_GROUPMEASURE);
+            return getString(PROPERTY_GROUP_MEASURE);
         }
 
         public static class Builder {
@@ -752,7 +752,7 @@ public class EvidenceVariable extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -762,37 +762,37 @@ public class EvidenceVariable extends FhirResource {
             }
 
             public Builder definitionReference(final Reference definitionReference) {
-                b.add(PROPERTY_DEFINITIONREFERENCE, definitionReference);
+                b.add(PROPERTY_DEFINITION_REFERENCE, definitionReference);
                 return this;
             }
 
             public Builder definitionCanonical(final String definitionCanonical) {
-                b.add(PROPERTY_DEFINITIONCANONICAL, definitionCanonical);
+                b.add(PROPERTY_DEFINITION_CANONICAL, definitionCanonical);
                 return this;
             }
 
             public Builder definitionCodeableConcept(final CodeableConcept definitionCodeableConcept) {
-                b.add(PROPERTY_DEFINITIONCODEABLECONCEPT, definitionCodeableConcept);
+                b.add(PROPERTY_DEFINITION_CODEABLE_CONCEPT, definitionCodeableConcept);
                 return this;
             }
 
             public Builder definitionExpression(final Expression definitionExpression) {
-                b.add(PROPERTY_DEFINITIONEXPRESSION, definitionExpression);
+                b.add(PROPERTY_DEFINITION_EXPRESSION, definitionExpression);
                 return this;
             }
 
             public Builder definitionDataRequirement(final DataRequirement definitionDataRequirement) {
-                b.add(PROPERTY_DEFINITIONDATAREQUIREMENT, definitionDataRequirement);
+                b.add(PROPERTY_DEFINITION_DATA_REQUIREMENT, definitionDataRequirement);
                 return this;
             }
 
             public Builder definitionTriggerDefinition(final TriggerDefinition definitionTriggerDefinition) {
-                b.add(PROPERTY_DEFINITIONTRIGGERDEFINITION, definitionTriggerDefinition);
+                b.add(PROPERTY_DEFINITION_TRIGGER_DEFINITION, definitionTriggerDefinition);
                 return this;
             }
 
             public Builder usageContext(final java.util.List<UsageContext> usageContext) {
-                b.add(PROPERTY_USAGECONTEXT, FhirObject.toArray(usageContext));
+                b.add(PROPERTY_USAGE_CONTEXT, FhirObject.toArray(usageContext));
                 return this;
             }
 
@@ -802,32 +802,32 @@ public class EvidenceVariable extends FhirResource {
             }
 
             public Builder participantEffectiveDateTime(final String participantEffectiveDateTime) {
-                b.add(PROPERTY_PARTICIPANTEFFECTIVEDATETIME, participantEffectiveDateTime);
+                b.add(PROPERTY_PARTICIPANT_EFFECTIVE_DATE_TIME, participantEffectiveDateTime);
                 return this;
             }
 
             public Builder participantEffectivePeriod(final Period participantEffectivePeriod) {
-                b.add(PROPERTY_PARTICIPANTEFFECTIVEPERIOD, participantEffectivePeriod);
+                b.add(PROPERTY_PARTICIPANT_EFFECTIVE_PERIOD, participantEffectivePeriod);
                 return this;
             }
 
             public Builder participantEffectiveDuration(final Duration participantEffectiveDuration) {
-                b.add(PROPERTY_PARTICIPANTEFFECTIVEDURATION, participantEffectiveDuration);
+                b.add(PROPERTY_PARTICIPANT_EFFECTIVE_DURATION, participantEffectiveDuration);
                 return this;
             }
 
             public Builder participantEffectiveTiming(final Timing participantEffectiveTiming) {
-                b.add(PROPERTY_PARTICIPANTEFFECTIVETIMING, participantEffectiveTiming);
+                b.add(PROPERTY_PARTICIPANT_EFFECTIVE_TIMING, participantEffectiveTiming);
                 return this;
             }
 
             public Builder timeFromStart(final Duration timeFromStart) {
-                b.add(PROPERTY_TIMEFROMSTART, timeFromStart);
+                b.add(PROPERTY_TIME_FROM_START, timeFromStart);
                 return this;
             }
 
             public Builder groupMeasure(final String groupMeasure) {
-                b.add(PROPERTY_GROUPMEASURE, groupMeasure);
+                b.add(PROPERTY_GROUP_MEASURE, groupMeasure);
                 return this;
             }
 

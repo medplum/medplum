@@ -11,23 +11,23 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Task extends FhirResource {
     public static final String RESOURCE_TYPE = "Task";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_INSTANTIATESCANONICAL = "instantiatesCanonical";
-    public static final String PROPERTY_INSTANTIATESURI = "instantiatesUri";
-    public static final String PROPERTY_BASEDON = "basedOn";
-    public static final String PROPERTY_GROUPIDENTIFIER = "groupIdentifier";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_INSTANTIATES_CANONICAL = "instantiatesCanonical";
+    public static final String PROPERTY_INSTANTIATES_URI = "instantiatesUri";
+    public static final String PROPERTY_BASED_ON = "basedOn";
+    public static final String PROPERTY_GROUP_IDENTIFIER = "groupIdentifier";
+    public static final String PROPERTY_PART_OF = "partOf";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSREASON = "statusReason";
-    public static final String PROPERTY_BUSINESSSTATUS = "businessStatus";
+    public static final String PROPERTY_STATUS_REASON = "statusReason";
+    public static final String PROPERTY_BUSINESS_STATUS = "businessStatus";
     public static final String PROPERTY_INTENT = "intent";
     public static final String PROPERTY_PRIORITY = "priority";
     public static final String PROPERTY_CODE = "code";
@@ -35,18 +35,18 @@ public class Task extends FhirResource {
     public static final String PROPERTY_FOCUS = "focus";
     public static final String PROPERTY_FOR = "for";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_EXECUTIONPERIOD = "executionPeriod";
-    public static final String PROPERTY_AUTHOREDON = "authoredOn";
-    public static final String PROPERTY_LASTMODIFIED = "lastModified";
+    public static final String PROPERTY_EXECUTION_PERIOD = "executionPeriod";
+    public static final String PROPERTY_AUTHORED_ON = "authoredOn";
+    public static final String PROPERTY_LAST_MODIFIED = "lastModified";
     public static final String PROPERTY_REQUESTER = "requester";
-    public static final String PROPERTY_PERFORMERTYPE = "performerType";
+    public static final String PROPERTY_PERFORMER_TYPE = "performerType";
     public static final String PROPERTY_OWNER = "owner";
     public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_INSURANCE = "insurance";
     public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_RELEVANTHISTORY = "relevantHistory";
+    public static final String PROPERTY_RELEVANT_HISTORY = "relevantHistory";
     public static final String PROPERTY_RESTRICTION = "restriction";
     public static final String PROPERTY_INPUT = "input";
     public static final String PROPERTY_OUTPUT = "output";
@@ -70,7 +70,7 @@ public class Task extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -118,7 +118,7 @@ public class Task extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -133,7 +133,7 @@ public class Task extends FhirResource {
      * other definition that is adhered to in whole or in part by this Task.
      */
     public String instantiatesCanonical() {
-        return getString(PROPERTY_INSTANTIATESCANONICAL);
+        return getString(PROPERTY_INSTANTIATES_CANONICAL);
     }
 
     /**
@@ -142,7 +142,7 @@ public class Task extends FhirResource {
      * this Task.
      */
     public String instantiatesUri() {
-        return getString(PROPERTY_INSTANTIATESURI);
+        return getString(PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -155,7 +155,7 @@ public class Task extends FhirResource {
      * procedureRequest ( = FocusOn ) to collect a specimen from a patient.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -163,14 +163,14 @@ public class Task extends FhirResource {
      * that were created in the same context.
      */
     public Identifier groupIdentifier() {
-        return getObject(Identifier.class, PROPERTY_GROUPIDENTIFIER);
+        return getObject(Identifier.class, PROPERTY_GROUP_IDENTIFIER);
     }
 
     /**
      * Task that this particular task is part of.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PARTOF);
+        return getList(Reference.class, PROPERTY_PART_OF);
     }
 
     /**
@@ -184,14 +184,14 @@ public class Task extends FhirResource {
      * An explanation as to why this task is held, failed, was refused, etc.
      */
     public CodeableConcept statusReason() {
-        return getObject(CodeableConcept.class, PROPERTY_STATUSREASON);
+        return getObject(CodeableConcept.class, PROPERTY_STATUS_REASON);
     }
 
     /**
      * Contains business-specific nuances of the business state.
      */
     public CodeableConcept businessStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_BUSINESSSTATUS);
+        return getObject(CodeableConcept.class, PROPERTY_BUSINESS_STATUS);
     }
 
     /**
@@ -255,21 +255,21 @@ public class Task extends FhirResource {
      * marking it as completed (end).
      */
     public Period executionPeriod() {
-        return getObject(Period.class, PROPERTY_EXECUTIONPERIOD);
+        return getObject(Period.class, PROPERTY_EXECUTION_PERIOD);
     }
 
     /**
      * The date and time this task was created.
      */
     public java.time.Instant authoredOn() {
-        return java.time.Instant.parse(data.getString(PROPERTY_AUTHOREDON));
+        return java.time.Instant.parse(data.getString(PROPERTY_AUTHORED_ON));
     }
 
     /**
      * The date and time of last modification to this task.
      */
     public java.time.Instant lastModified() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTMODIFIED));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_MODIFIED));
     }
 
     /**
@@ -283,7 +283,7 @@ public class Task extends FhirResource {
      * The kind of participant that should perform the task.
      */
     public java.util.List<CodeableConcept> performerType() {
-        return getList(CodeableConcept.class, PROPERTY_PERFORMERTYPE);
+        return getList(CodeableConcept.class, PROPERTY_PERFORMER_TYPE);
     }
 
     /**
@@ -305,14 +305,14 @@ public class Task extends FhirResource {
      * A description or code indicating why this task needs to be performed.
      */
     public CodeableConcept reasonCode() {
-        return getObject(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getObject(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
      * A resource reference indicating why this task needs to be performed.
      */
     public Reference reasonReference() {
-        return getObject(Reference.class, PROPERTY_REASONREFERENCE);
+        return getObject(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -336,7 +336,7 @@ public class Task extends FhirResource {
      * relevant to a user looking at the current version of the task.
      */
     public java.util.List<Reference> relevantHistory() {
-        return getList(Reference.class, PROPERTY_RELEVANTHISTORY);
+        return getList(Reference.class, PROPERTY_RELEVANT_HISTORY);
     }
 
     /**
@@ -375,7 +375,7 @@ public class Task extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -390,7 +390,7 @@ public class Task extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -410,7 +410,7 @@ public class Task extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -420,27 +420,27 @@ public class Task extends FhirResource {
         }
 
         public Builder instantiatesCanonical(final String instantiatesCanonical) {
-            b.add(PROPERTY_INSTANTIATESCANONICAL, instantiatesCanonical);
+            b.add(PROPERTY_INSTANTIATES_CANONICAL, instantiatesCanonical);
             return this;
         }
 
         public Builder instantiatesUri(final String instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATESURI, instantiatesUri);
+            b.add(PROPERTY_INSTANTIATES_URI, instantiatesUri);
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder groupIdentifier(final Identifier groupIdentifier) {
-            b.add(PROPERTY_GROUPIDENTIFIER, groupIdentifier);
+            b.add(PROPERTY_GROUP_IDENTIFIER, groupIdentifier);
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
@@ -450,12 +450,12 @@ public class Task extends FhirResource {
         }
 
         public Builder statusReason(final CodeableConcept statusReason) {
-            b.add(PROPERTY_STATUSREASON, statusReason);
+            b.add(PROPERTY_STATUS_REASON, statusReason);
             return this;
         }
 
         public Builder businessStatus(final CodeableConcept businessStatus) {
-            b.add(PROPERTY_BUSINESSSTATUS, businessStatus);
+            b.add(PROPERTY_BUSINESS_STATUS, businessStatus);
             return this;
         }
 
@@ -495,17 +495,17 @@ public class Task extends FhirResource {
         }
 
         public Builder executionPeriod(final Period executionPeriod) {
-            b.add(PROPERTY_EXECUTIONPERIOD, executionPeriod);
+            b.add(PROPERTY_EXECUTION_PERIOD, executionPeriod);
             return this;
         }
 
         public Builder authoredOn(final java.time.Instant authoredOn) {
-            b.add(PROPERTY_AUTHOREDON, authoredOn.toString());
+            b.add(PROPERTY_AUTHORED_ON, authoredOn.toString());
             return this;
         }
 
         public Builder lastModified(final java.time.Instant lastModified) {
-            b.add(PROPERTY_LASTMODIFIED, lastModified.toString());
+            b.add(PROPERTY_LAST_MODIFIED, lastModified.toString());
             return this;
         }
 
@@ -515,7 +515,7 @@ public class Task extends FhirResource {
         }
 
         public Builder performerType(final java.util.List<CodeableConcept> performerType) {
-            b.add(PROPERTY_PERFORMERTYPE, FhirObject.toArray(performerType));
+            b.add(PROPERTY_PERFORMER_TYPE, FhirObject.toArray(performerType));
             return this;
         }
 
@@ -530,12 +530,12 @@ public class Task extends FhirResource {
         }
 
         public Builder reasonCode(final CodeableConcept reasonCode) {
-            b.add(PROPERTY_REASONCODE, reasonCode);
+            b.add(PROPERTY_REASON_CODE, reasonCode);
             return this;
         }
 
         public Builder reasonReference(final Reference reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, reasonReference);
+            b.add(PROPERTY_REASON_REFERENCE, reasonReference);
             return this;
         }
 
@@ -550,7 +550,7 @@ public class Task extends FhirResource {
         }
 
         public Builder relevantHistory(final java.util.List<Reference> relevantHistory) {
-            b.add(PROPERTY_RELEVANTHISTORY, FhirObject.toArray(relevantHistory));
+            b.add(PROPERTY_RELEVANT_HISTORY, FhirObject.toArray(relevantHistory));
             return this;
         }
 
@@ -577,58 +577,58 @@ public class Task extends FhirResource {
     public static class TaskInput extends FhirObject {
         public static final String RESOURCE_TYPE = "TaskInput";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_VALUEBASE64BINARY = "valueBase64Binary";
-        public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUECANONICAL = "valueCanonical";
-        public static final String PROPERTY_VALUECODE = "valueCode";
-        public static final String PROPERTY_VALUEDATE = "valueDate";
-        public static final String PROPERTY_VALUEDATETIME = "valueDateTime";
-        public static final String PROPERTY_VALUEDECIMAL = "valueDecimal";
-        public static final String PROPERTY_VALUEID = "valueId";
-        public static final String PROPERTY_VALUEINSTANT = "valueInstant";
-        public static final String PROPERTY_VALUEINTEGER = "valueInteger";
-        public static final String PROPERTY_VALUEMARKDOWN = "valueMarkdown";
-        public static final String PROPERTY_VALUEOID = "valueOid";
-        public static final String PROPERTY_VALUEPOSITIVEINT = "valuePositiveInt";
-        public static final String PROPERTY_VALUESTRING = "valueString";
-        public static final String PROPERTY_VALUETIME = "valueTime";
-        public static final String PROPERTY_VALUEUNSIGNEDINT = "valueUnsignedInt";
-        public static final String PROPERTY_VALUEURI = "valueUri";
-        public static final String PROPERTY_VALUEURL = "valueUrl";
-        public static final String PROPERTY_VALUEUUID = "valueUuid";
-        public static final String PROPERTY_VALUEADDRESS = "valueAddress";
-        public static final String PROPERTY_VALUEAGE = "valueAge";
-        public static final String PROPERTY_VALUEANNOTATION = "valueAnnotation";
-        public static final String PROPERTY_VALUEATTACHMENT = "valueAttachment";
-        public static final String PROPERTY_VALUECODEABLECONCEPT = "valueCodeableConcept";
-        public static final String PROPERTY_VALUECODING = "valueCoding";
-        public static final String PROPERTY_VALUECONTACTPOINT = "valueContactPoint";
-        public static final String PROPERTY_VALUECOUNT = "valueCount";
-        public static final String PROPERTY_VALUEDISTANCE = "valueDistance";
-        public static final String PROPERTY_VALUEDURATION = "valueDuration";
-        public static final String PROPERTY_VALUEHUMANNAME = "valueHumanName";
-        public static final String PROPERTY_VALUEIDENTIFIER = "valueIdentifier";
-        public static final String PROPERTY_VALUEMONEY = "valueMoney";
-        public static final String PROPERTY_VALUEPERIOD = "valuePeriod";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUERANGE = "valueRange";
-        public static final String PROPERTY_VALUERATIO = "valueRatio";
-        public static final String PROPERTY_VALUEREFERENCE = "valueReference";
-        public static final String PROPERTY_VALUESAMPLEDDATA = "valueSampledData";
-        public static final String PROPERTY_VALUESIGNATURE = "valueSignature";
-        public static final String PROPERTY_VALUETIMING = "valueTiming";
-        public static final String PROPERTY_VALUECONTACTDETAIL = "valueContactDetail";
-        public static final String PROPERTY_VALUECONTRIBUTOR = "valueContributor";
-        public static final String PROPERTY_VALUEDATAREQUIREMENT = "valueDataRequirement";
-        public static final String PROPERTY_VALUEEXPRESSION = "valueExpression";
-        public static final String PROPERTY_VALUEPARAMETERDEFINITION = "valueParameterDefinition";
-        public static final String PROPERTY_VALUERELATEDARTIFACT = "valueRelatedArtifact";
-        public static final String PROPERTY_VALUETRIGGERDEFINITION = "valueTriggerDefinition";
-        public static final String PROPERTY_VALUEUSAGECONTEXT = "valueUsageContext";
-        public static final String PROPERTY_VALUEDOSAGE = "valueDosage";
-        public static final String PROPERTY_VALUEMETA = "valueMeta";
+        public static final String PROPERTY_VALUE_BASE64_BINARY = "valueBase64Binary";
+        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
+        public static final String PROPERTY_VALUE_CANONICAL = "valueCanonical";
+        public static final String PROPERTY_VALUE_CODE = "valueCode";
+        public static final String PROPERTY_VALUE_DATE = "valueDate";
+        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
+        public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
+        public static final String PROPERTY_VALUE_ID = "valueId";
+        public static final String PROPERTY_VALUE_INSTANT = "valueInstant";
+        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
+        public static final String PROPERTY_VALUE_MARKDOWN = "valueMarkdown";
+        public static final String PROPERTY_VALUE_OID = "valueOid";
+        public static final String PROPERTY_VALUE_POSITIVE_INT = "valuePositiveInt";
+        public static final String PROPERTY_VALUE_STRING = "valueString";
+        public static final String PROPERTY_VALUE_TIME = "valueTime";
+        public static final String PROPERTY_VALUE_UNSIGNED_INT = "valueUnsignedInt";
+        public static final String PROPERTY_VALUE_URI = "valueUri";
+        public static final String PROPERTY_VALUE_URL = "valueUrl";
+        public static final String PROPERTY_VALUE_UUID = "valueUuid";
+        public static final String PROPERTY_VALUE_ADDRESS = "valueAddress";
+        public static final String PROPERTY_VALUE_AGE = "valueAge";
+        public static final String PROPERTY_VALUE_ANNOTATION = "valueAnnotation";
+        public static final String PROPERTY_VALUE_ATTACHMENT = "valueAttachment";
+        public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
+        public static final String PROPERTY_VALUE_CODING = "valueCoding";
+        public static final String PROPERTY_VALUE_CONTACT_POINT = "valueContactPoint";
+        public static final String PROPERTY_VALUE_COUNT = "valueCount";
+        public static final String PROPERTY_VALUE_DISTANCE = "valueDistance";
+        public static final String PROPERTY_VALUE_DURATION = "valueDuration";
+        public static final String PROPERTY_VALUE_HUMAN_NAME = "valueHumanName";
+        public static final String PROPERTY_VALUE_IDENTIFIER = "valueIdentifier";
+        public static final String PROPERTY_VALUE_MONEY = "valueMoney";
+        public static final String PROPERTY_VALUE_PERIOD = "valuePeriod";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_RANGE = "valueRange";
+        public static final String PROPERTY_VALUE_RATIO = "valueRatio";
+        public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
+        public static final String PROPERTY_VALUE_SAMPLED_DATA = "valueSampledData";
+        public static final String PROPERTY_VALUE_SIGNATURE = "valueSignature";
+        public static final String PROPERTY_VALUE_TIMING = "valueTiming";
+        public static final String PROPERTY_VALUE_CONTACT_DETAIL = "valueContactDetail";
+        public static final String PROPERTY_VALUE_CONTRIBUTOR = "valueContributor";
+        public static final String PROPERTY_VALUE_DATA_REQUIREMENT = "valueDataRequirement";
+        public static final String PROPERTY_VALUE_EXPRESSION = "valueExpression";
+        public static final String PROPERTY_VALUE_PARAMETER_DEFINITION = "valueParameterDefinition";
+        public static final String PROPERTY_VALUE_RELATED_ARTIFACT = "valueRelatedArtifact";
+        public static final String PROPERTY_VALUE_TRIGGER_DEFINITION = "valueTriggerDefinition";
+        public static final String PROPERTY_VALUE_USAGE_CONTEXT = "valueUsageContext";
+        public static final String PROPERTY_VALUE_DOSAGE = "valueDosage";
+        public static final String PROPERTY_VALUE_META = "valueMeta";
 
         public static Builder create() {
             return new Builder();
@@ -668,7 +668,7 @@ public class Task extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -683,350 +683,350 @@ public class Task extends FhirResource {
          * The value of the input parameter as a basic type.
          */
         public String valueBase64Binary() {
-            return getString(PROPERTY_VALUEBASE64BINARY);
+            return getString(PROPERTY_VALUE_BASE64_BINARY);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueCanonical() {
-            return getString(PROPERTY_VALUECANONICAL);
+            return getString(PROPERTY_VALUE_CANONICAL);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueCode() {
-            return getString(PROPERTY_VALUECODE);
+            return getString(PROPERTY_VALUE_CODE);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueDate() {
-            return getString(PROPERTY_VALUEDATE);
+            return getString(PROPERTY_VALUE_DATE);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUEDATETIME);
+            return getString(PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Integer valueDecimal() {
-            return data.getInt(PROPERTY_VALUEDECIMAL);
+            return data.getInt(PROPERTY_VALUE_DECIMAL);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueId() {
-            return getString(PROPERTY_VALUEID);
+            return getString(PROPERTY_VALUE_ID);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueInstant() {
-            return getString(PROPERTY_VALUEINSTANT);
+            return getString(PROPERTY_VALUE_INSTANT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUEINTEGER);
+            return data.getInt(PROPERTY_VALUE_INTEGER);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueMarkdown() {
-            return getString(PROPERTY_VALUEMARKDOWN);
+            return getString(PROPERTY_VALUE_MARKDOWN);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueOid() {
-            return getString(PROPERTY_VALUEOID);
+            return getString(PROPERTY_VALUE_OID);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Integer valuePositiveInt() {
-            return data.getInt(PROPERTY_VALUEPOSITIVEINT);
+            return data.getInt(PROPERTY_VALUE_POSITIVE_INT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUESTRING);
+            return getString(PROPERTY_VALUE_STRING);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueTime() {
-            return getString(PROPERTY_VALUETIME);
+            return getString(PROPERTY_VALUE_TIME);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Integer valueUnsignedInt() {
-            return data.getInt(PROPERTY_VALUEUNSIGNEDINT);
+            return data.getInt(PROPERTY_VALUE_UNSIGNED_INT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueUri() {
-            return getString(PROPERTY_VALUEURI);
+            return getString(PROPERTY_VALUE_URI);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueUrl() {
-            return getString(PROPERTY_VALUEURL);
+            return getString(PROPERTY_VALUE_URL);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public String valueUuid() {
-            return getString(PROPERTY_VALUEUUID);
+            return getString(PROPERTY_VALUE_UUID);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Address valueAddress() {
-            return getObject(Address.class, PROPERTY_VALUEADDRESS);
+            return getObject(Address.class, PROPERTY_VALUE_ADDRESS);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Age valueAge() {
-            return getObject(Age.class, PROPERTY_VALUEAGE);
+            return getObject(Age.class, PROPERTY_VALUE_AGE);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Annotation valueAnnotation() {
-            return getObject(Annotation.class, PROPERTY_VALUEANNOTATION);
+            return getObject(Annotation.class, PROPERTY_VALUE_ANNOTATION);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Attachment valueAttachment() {
-            return getObject(Attachment.class, PROPERTY_VALUEATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_VALUE_ATTACHMENT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public CodeableConcept valueCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Coding valueCoding() {
-            return getObject(Coding.class, PROPERTY_VALUECODING);
+            return getObject(Coding.class, PROPERTY_VALUE_CODING);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public ContactPoint valueContactPoint() {
-            return getObject(ContactPoint.class, PROPERTY_VALUECONTACTPOINT);
+            return getObject(ContactPoint.class, PROPERTY_VALUE_CONTACT_POINT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Count valueCount() {
-            return getObject(Count.class, PROPERTY_VALUECOUNT);
+            return getObject(Count.class, PROPERTY_VALUE_COUNT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Distance valueDistance() {
-            return getObject(Distance.class, PROPERTY_VALUEDISTANCE);
+            return getObject(Distance.class, PROPERTY_VALUE_DISTANCE);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Duration valueDuration() {
-            return getObject(Duration.class, PROPERTY_VALUEDURATION);
+            return getObject(Duration.class, PROPERTY_VALUE_DURATION);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public HumanName valueHumanName() {
-            return getObject(HumanName.class, PROPERTY_VALUEHUMANNAME);
+            return getObject(HumanName.class, PROPERTY_VALUE_HUMAN_NAME);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Identifier valueIdentifier() {
-            return getObject(Identifier.class, PROPERTY_VALUEIDENTIFIER);
+            return getObject(Identifier.class, PROPERTY_VALUE_IDENTIFIER);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Money valueMoney() {
-            return getObject(Money.class, PROPERTY_VALUEMONEY);
+            return getObject(Money.class, PROPERTY_VALUE_MONEY);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Period valuePeriod() {
-            return getObject(Period.class, PROPERTY_VALUEPERIOD);
+            return getObject(Period.class, PROPERTY_VALUE_PERIOD);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Range valueRange() {
-            return getObject(Range.class, PROPERTY_VALUERANGE);
+            return getObject(Range.class, PROPERTY_VALUE_RANGE);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Ratio valueRatio() {
-            return getObject(Ratio.class, PROPERTY_VALUERATIO);
+            return getObject(Ratio.class, PROPERTY_VALUE_RATIO);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Reference valueReference() {
-            return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
+            return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public SampledData valueSampledData() {
-            return getObject(SampledData.class, PROPERTY_VALUESAMPLEDDATA);
+            return getObject(SampledData.class, PROPERTY_VALUE_SAMPLED_DATA);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Signature valueSignature() {
-            return getObject(Signature.class, PROPERTY_VALUESIGNATURE);
+            return getObject(Signature.class, PROPERTY_VALUE_SIGNATURE);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Timing valueTiming() {
-            return getObject(Timing.class, PROPERTY_VALUETIMING);
+            return getObject(Timing.class, PROPERTY_VALUE_TIMING);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public ContactDetail valueContactDetail() {
-            return getObject(ContactDetail.class, PROPERTY_VALUECONTACTDETAIL);
+            return getObject(ContactDetail.class, PROPERTY_VALUE_CONTACT_DETAIL);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Contributor valueContributor() {
-            return getObject(Contributor.class, PROPERTY_VALUECONTRIBUTOR);
+            return getObject(Contributor.class, PROPERTY_VALUE_CONTRIBUTOR);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public DataRequirement valueDataRequirement() {
-            return getObject(DataRequirement.class, PROPERTY_VALUEDATAREQUIREMENT);
+            return getObject(DataRequirement.class, PROPERTY_VALUE_DATA_REQUIREMENT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Expression valueExpression() {
-            return getObject(Expression.class, PROPERTY_VALUEEXPRESSION);
+            return getObject(Expression.class, PROPERTY_VALUE_EXPRESSION);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public ParameterDefinition valueParameterDefinition() {
-            return getObject(ParameterDefinition.class, PROPERTY_VALUEPARAMETERDEFINITION);
+            return getObject(ParameterDefinition.class, PROPERTY_VALUE_PARAMETER_DEFINITION);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public RelatedArtifact valueRelatedArtifact() {
-            return getObject(RelatedArtifact.class, PROPERTY_VALUERELATEDARTIFACT);
+            return getObject(RelatedArtifact.class, PROPERTY_VALUE_RELATED_ARTIFACT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public TriggerDefinition valueTriggerDefinition() {
-            return getObject(TriggerDefinition.class, PROPERTY_VALUETRIGGERDEFINITION);
+            return getObject(TriggerDefinition.class, PROPERTY_VALUE_TRIGGER_DEFINITION);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public UsageContext valueUsageContext() {
-            return getObject(UsageContext.class, PROPERTY_VALUEUSAGECONTEXT);
+            return getObject(UsageContext.class, PROPERTY_VALUE_USAGE_CONTEXT);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Dosage valueDosage() {
-            return getObject(Dosage.class, PROPERTY_VALUEDOSAGE);
+            return getObject(Dosage.class, PROPERTY_VALUE_DOSAGE);
         }
 
         /**
          * The value of the input parameter as a basic type.
          */
         public Meta valueMeta() {
-            return getObject(Meta.class, PROPERTY_VALUEMETA);
+            return getObject(Meta.class, PROPERTY_VALUE_META);
         }
 
         public static class Builder {
@@ -1046,7 +1046,7 @@ public class Task extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1056,252 +1056,252 @@ public class Task extends FhirResource {
             }
 
             public Builder valueBase64Binary(final String valueBase64Binary) {
-                b.add(PROPERTY_VALUEBASE64BINARY, valueBase64Binary);
+                b.add(PROPERTY_VALUE_BASE64_BINARY, valueBase64Binary);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueCanonical(final String valueCanonical) {
-                b.add(PROPERTY_VALUECANONICAL, valueCanonical);
+                b.add(PROPERTY_VALUE_CANONICAL, valueCanonical);
                 return this;
             }
 
             public Builder valueCode(final String valueCode) {
-                b.add(PROPERTY_VALUECODE, valueCode);
+                b.add(PROPERTY_VALUE_CODE, valueCode);
                 return this;
             }
 
             public Builder valueDate(final String valueDate) {
-                b.add(PROPERTY_VALUEDATE, valueDate);
+                b.add(PROPERTY_VALUE_DATE, valueDate);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUEDATETIME, valueDateTime);
+                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valueDecimal(final Integer valueDecimal) {
-                b.add(PROPERTY_VALUEDECIMAL, valueDecimal);
+                b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
                 return this;
             }
 
             public Builder valueId(final String valueId) {
-                b.add(PROPERTY_VALUEID, valueId);
+                b.add(PROPERTY_VALUE_ID, valueId);
                 return this;
             }
 
             public Builder valueInstant(final String valueInstant) {
-                b.add(PROPERTY_VALUEINSTANT, valueInstant);
+                b.add(PROPERTY_VALUE_INSTANT, valueInstant);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUEINTEGER, valueInteger);
+                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueMarkdown(final String valueMarkdown) {
-                b.add(PROPERTY_VALUEMARKDOWN, valueMarkdown);
+                b.add(PROPERTY_VALUE_MARKDOWN, valueMarkdown);
                 return this;
             }
 
             public Builder valueOid(final String valueOid) {
-                b.add(PROPERTY_VALUEOID, valueOid);
+                b.add(PROPERTY_VALUE_OID, valueOid);
                 return this;
             }
 
             public Builder valuePositiveInt(final Integer valuePositiveInt) {
-                b.add(PROPERTY_VALUEPOSITIVEINT, valuePositiveInt);
+                b.add(PROPERTY_VALUE_POSITIVE_INT, valuePositiveInt);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUESTRING, valueString);
+                b.add(PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueTime(final String valueTime) {
-                b.add(PROPERTY_VALUETIME, valueTime);
+                b.add(PROPERTY_VALUE_TIME, valueTime);
                 return this;
             }
 
             public Builder valueUnsignedInt(final Integer valueUnsignedInt) {
-                b.add(PROPERTY_VALUEUNSIGNEDINT, valueUnsignedInt);
+                b.add(PROPERTY_VALUE_UNSIGNED_INT, valueUnsignedInt);
                 return this;
             }
 
             public Builder valueUri(final String valueUri) {
-                b.add(PROPERTY_VALUEURI, valueUri);
+                b.add(PROPERTY_VALUE_URI, valueUri);
                 return this;
             }
 
             public Builder valueUrl(final String valueUrl) {
-                b.add(PROPERTY_VALUEURL, valueUrl);
+                b.add(PROPERTY_VALUE_URL, valueUrl);
                 return this;
             }
 
             public Builder valueUuid(final String valueUuid) {
-                b.add(PROPERTY_VALUEUUID, valueUuid);
+                b.add(PROPERTY_VALUE_UUID, valueUuid);
                 return this;
             }
 
             public Builder valueAddress(final Address valueAddress) {
-                b.add(PROPERTY_VALUEADDRESS, valueAddress);
+                b.add(PROPERTY_VALUE_ADDRESS, valueAddress);
                 return this;
             }
 
             public Builder valueAge(final Age valueAge) {
-                b.add(PROPERTY_VALUEAGE, valueAge);
+                b.add(PROPERTY_VALUE_AGE, valueAge);
                 return this;
             }
 
             public Builder valueAnnotation(final Annotation valueAnnotation) {
-                b.add(PROPERTY_VALUEANNOTATION, valueAnnotation);
+                b.add(PROPERTY_VALUE_ANNOTATION, valueAnnotation);
                 return this;
             }
 
             public Builder valueAttachment(final Attachment valueAttachment) {
-                b.add(PROPERTY_VALUEATTACHMENT, valueAttachment);
+                b.add(PROPERTY_VALUE_ATTACHMENT, valueAttachment);
                 return this;
             }
 
             public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-                b.add(PROPERTY_VALUECODEABLECONCEPT, valueCodeableConcept);
+                b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
                 return this;
             }
 
             public Builder valueCoding(final Coding valueCoding) {
-                b.add(PROPERTY_VALUECODING, valueCoding);
+                b.add(PROPERTY_VALUE_CODING, valueCoding);
                 return this;
             }
 
             public Builder valueContactPoint(final ContactPoint valueContactPoint) {
-                b.add(PROPERTY_VALUECONTACTPOINT, valueContactPoint);
+                b.add(PROPERTY_VALUE_CONTACT_POINT, valueContactPoint);
                 return this;
             }
 
             public Builder valueCount(final Count valueCount) {
-                b.add(PROPERTY_VALUECOUNT, valueCount);
+                b.add(PROPERTY_VALUE_COUNT, valueCount);
                 return this;
             }
 
             public Builder valueDistance(final Distance valueDistance) {
-                b.add(PROPERTY_VALUEDISTANCE, valueDistance);
+                b.add(PROPERTY_VALUE_DISTANCE, valueDistance);
                 return this;
             }
 
             public Builder valueDuration(final Duration valueDuration) {
-                b.add(PROPERTY_VALUEDURATION, valueDuration);
+                b.add(PROPERTY_VALUE_DURATION, valueDuration);
                 return this;
             }
 
             public Builder valueHumanName(final HumanName valueHumanName) {
-                b.add(PROPERTY_VALUEHUMANNAME, valueHumanName);
+                b.add(PROPERTY_VALUE_HUMAN_NAME, valueHumanName);
                 return this;
             }
 
             public Builder valueIdentifier(final Identifier valueIdentifier) {
-                b.add(PROPERTY_VALUEIDENTIFIER, valueIdentifier);
+                b.add(PROPERTY_VALUE_IDENTIFIER, valueIdentifier);
                 return this;
             }
 
             public Builder valueMoney(final Money valueMoney) {
-                b.add(PROPERTY_VALUEMONEY, valueMoney);
+                b.add(PROPERTY_VALUE_MONEY, valueMoney);
                 return this;
             }
 
             public Builder valuePeriod(final Period valuePeriod) {
-                b.add(PROPERTY_VALUEPERIOD, valuePeriod);
+                b.add(PROPERTY_VALUE_PERIOD, valuePeriod);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueRange(final Range valueRange) {
-                b.add(PROPERTY_VALUERANGE, valueRange);
+                b.add(PROPERTY_VALUE_RANGE, valueRange);
                 return this;
             }
 
             public Builder valueRatio(final Ratio valueRatio) {
-                b.add(PROPERTY_VALUERATIO, valueRatio);
+                b.add(PROPERTY_VALUE_RATIO, valueRatio);
                 return this;
             }
 
             public Builder valueReference(final Reference valueReference) {
-                b.add(PROPERTY_VALUEREFERENCE, valueReference);
+                b.add(PROPERTY_VALUE_REFERENCE, valueReference);
                 return this;
             }
 
             public Builder valueSampledData(final SampledData valueSampledData) {
-                b.add(PROPERTY_VALUESAMPLEDDATA, valueSampledData);
+                b.add(PROPERTY_VALUE_SAMPLED_DATA, valueSampledData);
                 return this;
             }
 
             public Builder valueSignature(final Signature valueSignature) {
-                b.add(PROPERTY_VALUESIGNATURE, valueSignature);
+                b.add(PROPERTY_VALUE_SIGNATURE, valueSignature);
                 return this;
             }
 
             public Builder valueTiming(final Timing valueTiming) {
-                b.add(PROPERTY_VALUETIMING, valueTiming);
+                b.add(PROPERTY_VALUE_TIMING, valueTiming);
                 return this;
             }
 
             public Builder valueContactDetail(final ContactDetail valueContactDetail) {
-                b.add(PROPERTY_VALUECONTACTDETAIL, valueContactDetail);
+                b.add(PROPERTY_VALUE_CONTACT_DETAIL, valueContactDetail);
                 return this;
             }
 
             public Builder valueContributor(final Contributor valueContributor) {
-                b.add(PROPERTY_VALUECONTRIBUTOR, valueContributor);
+                b.add(PROPERTY_VALUE_CONTRIBUTOR, valueContributor);
                 return this;
             }
 
             public Builder valueDataRequirement(final DataRequirement valueDataRequirement) {
-                b.add(PROPERTY_VALUEDATAREQUIREMENT, valueDataRequirement);
+                b.add(PROPERTY_VALUE_DATA_REQUIREMENT, valueDataRequirement);
                 return this;
             }
 
             public Builder valueExpression(final Expression valueExpression) {
-                b.add(PROPERTY_VALUEEXPRESSION, valueExpression);
+                b.add(PROPERTY_VALUE_EXPRESSION, valueExpression);
                 return this;
             }
 
             public Builder valueParameterDefinition(final ParameterDefinition valueParameterDefinition) {
-                b.add(PROPERTY_VALUEPARAMETERDEFINITION, valueParameterDefinition);
+                b.add(PROPERTY_VALUE_PARAMETER_DEFINITION, valueParameterDefinition);
                 return this;
             }
 
             public Builder valueRelatedArtifact(final RelatedArtifact valueRelatedArtifact) {
-                b.add(PROPERTY_VALUERELATEDARTIFACT, valueRelatedArtifact);
+                b.add(PROPERTY_VALUE_RELATED_ARTIFACT, valueRelatedArtifact);
                 return this;
             }
 
             public Builder valueTriggerDefinition(final TriggerDefinition valueTriggerDefinition) {
-                b.add(PROPERTY_VALUETRIGGERDEFINITION, valueTriggerDefinition);
+                b.add(PROPERTY_VALUE_TRIGGER_DEFINITION, valueTriggerDefinition);
                 return this;
             }
 
             public Builder valueUsageContext(final UsageContext valueUsageContext) {
-                b.add(PROPERTY_VALUEUSAGECONTEXT, valueUsageContext);
+                b.add(PROPERTY_VALUE_USAGE_CONTEXT, valueUsageContext);
                 return this;
             }
 
             public Builder valueDosage(final Dosage valueDosage) {
-                b.add(PROPERTY_VALUEDOSAGE, valueDosage);
+                b.add(PROPERTY_VALUE_DOSAGE, valueDosage);
                 return this;
             }
 
             public Builder valueMeta(final Meta valueMeta) {
-                b.add(PROPERTY_VALUEMETA, valueMeta);
+                b.add(PROPERTY_VALUE_META, valueMeta);
                 return this;
             }
 
@@ -1314,58 +1314,58 @@ public class Task extends FhirResource {
     public static class TaskOutput extends FhirObject {
         public static final String RESOURCE_TYPE = "TaskOutput";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_VALUEBASE64BINARY = "valueBase64Binary";
-        public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUECANONICAL = "valueCanonical";
-        public static final String PROPERTY_VALUECODE = "valueCode";
-        public static final String PROPERTY_VALUEDATE = "valueDate";
-        public static final String PROPERTY_VALUEDATETIME = "valueDateTime";
-        public static final String PROPERTY_VALUEDECIMAL = "valueDecimal";
-        public static final String PROPERTY_VALUEID = "valueId";
-        public static final String PROPERTY_VALUEINSTANT = "valueInstant";
-        public static final String PROPERTY_VALUEINTEGER = "valueInteger";
-        public static final String PROPERTY_VALUEMARKDOWN = "valueMarkdown";
-        public static final String PROPERTY_VALUEOID = "valueOid";
-        public static final String PROPERTY_VALUEPOSITIVEINT = "valuePositiveInt";
-        public static final String PROPERTY_VALUESTRING = "valueString";
-        public static final String PROPERTY_VALUETIME = "valueTime";
-        public static final String PROPERTY_VALUEUNSIGNEDINT = "valueUnsignedInt";
-        public static final String PROPERTY_VALUEURI = "valueUri";
-        public static final String PROPERTY_VALUEURL = "valueUrl";
-        public static final String PROPERTY_VALUEUUID = "valueUuid";
-        public static final String PROPERTY_VALUEADDRESS = "valueAddress";
-        public static final String PROPERTY_VALUEAGE = "valueAge";
-        public static final String PROPERTY_VALUEANNOTATION = "valueAnnotation";
-        public static final String PROPERTY_VALUEATTACHMENT = "valueAttachment";
-        public static final String PROPERTY_VALUECODEABLECONCEPT = "valueCodeableConcept";
-        public static final String PROPERTY_VALUECODING = "valueCoding";
-        public static final String PROPERTY_VALUECONTACTPOINT = "valueContactPoint";
-        public static final String PROPERTY_VALUECOUNT = "valueCount";
-        public static final String PROPERTY_VALUEDISTANCE = "valueDistance";
-        public static final String PROPERTY_VALUEDURATION = "valueDuration";
-        public static final String PROPERTY_VALUEHUMANNAME = "valueHumanName";
-        public static final String PROPERTY_VALUEIDENTIFIER = "valueIdentifier";
-        public static final String PROPERTY_VALUEMONEY = "valueMoney";
-        public static final String PROPERTY_VALUEPERIOD = "valuePeriod";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUERANGE = "valueRange";
-        public static final String PROPERTY_VALUERATIO = "valueRatio";
-        public static final String PROPERTY_VALUEREFERENCE = "valueReference";
-        public static final String PROPERTY_VALUESAMPLEDDATA = "valueSampledData";
-        public static final String PROPERTY_VALUESIGNATURE = "valueSignature";
-        public static final String PROPERTY_VALUETIMING = "valueTiming";
-        public static final String PROPERTY_VALUECONTACTDETAIL = "valueContactDetail";
-        public static final String PROPERTY_VALUECONTRIBUTOR = "valueContributor";
-        public static final String PROPERTY_VALUEDATAREQUIREMENT = "valueDataRequirement";
-        public static final String PROPERTY_VALUEEXPRESSION = "valueExpression";
-        public static final String PROPERTY_VALUEPARAMETERDEFINITION = "valueParameterDefinition";
-        public static final String PROPERTY_VALUERELATEDARTIFACT = "valueRelatedArtifact";
-        public static final String PROPERTY_VALUETRIGGERDEFINITION = "valueTriggerDefinition";
-        public static final String PROPERTY_VALUEUSAGECONTEXT = "valueUsageContext";
-        public static final String PROPERTY_VALUEDOSAGE = "valueDosage";
-        public static final String PROPERTY_VALUEMETA = "valueMeta";
+        public static final String PROPERTY_VALUE_BASE64_BINARY = "valueBase64Binary";
+        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
+        public static final String PROPERTY_VALUE_CANONICAL = "valueCanonical";
+        public static final String PROPERTY_VALUE_CODE = "valueCode";
+        public static final String PROPERTY_VALUE_DATE = "valueDate";
+        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
+        public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
+        public static final String PROPERTY_VALUE_ID = "valueId";
+        public static final String PROPERTY_VALUE_INSTANT = "valueInstant";
+        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
+        public static final String PROPERTY_VALUE_MARKDOWN = "valueMarkdown";
+        public static final String PROPERTY_VALUE_OID = "valueOid";
+        public static final String PROPERTY_VALUE_POSITIVE_INT = "valuePositiveInt";
+        public static final String PROPERTY_VALUE_STRING = "valueString";
+        public static final String PROPERTY_VALUE_TIME = "valueTime";
+        public static final String PROPERTY_VALUE_UNSIGNED_INT = "valueUnsignedInt";
+        public static final String PROPERTY_VALUE_URI = "valueUri";
+        public static final String PROPERTY_VALUE_URL = "valueUrl";
+        public static final String PROPERTY_VALUE_UUID = "valueUuid";
+        public static final String PROPERTY_VALUE_ADDRESS = "valueAddress";
+        public static final String PROPERTY_VALUE_AGE = "valueAge";
+        public static final String PROPERTY_VALUE_ANNOTATION = "valueAnnotation";
+        public static final String PROPERTY_VALUE_ATTACHMENT = "valueAttachment";
+        public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
+        public static final String PROPERTY_VALUE_CODING = "valueCoding";
+        public static final String PROPERTY_VALUE_CONTACT_POINT = "valueContactPoint";
+        public static final String PROPERTY_VALUE_COUNT = "valueCount";
+        public static final String PROPERTY_VALUE_DISTANCE = "valueDistance";
+        public static final String PROPERTY_VALUE_DURATION = "valueDuration";
+        public static final String PROPERTY_VALUE_HUMAN_NAME = "valueHumanName";
+        public static final String PROPERTY_VALUE_IDENTIFIER = "valueIdentifier";
+        public static final String PROPERTY_VALUE_MONEY = "valueMoney";
+        public static final String PROPERTY_VALUE_PERIOD = "valuePeriod";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_RANGE = "valueRange";
+        public static final String PROPERTY_VALUE_RATIO = "valueRatio";
+        public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
+        public static final String PROPERTY_VALUE_SAMPLED_DATA = "valueSampledData";
+        public static final String PROPERTY_VALUE_SIGNATURE = "valueSignature";
+        public static final String PROPERTY_VALUE_TIMING = "valueTiming";
+        public static final String PROPERTY_VALUE_CONTACT_DETAIL = "valueContactDetail";
+        public static final String PROPERTY_VALUE_CONTRIBUTOR = "valueContributor";
+        public static final String PROPERTY_VALUE_DATA_REQUIREMENT = "valueDataRequirement";
+        public static final String PROPERTY_VALUE_EXPRESSION = "valueExpression";
+        public static final String PROPERTY_VALUE_PARAMETER_DEFINITION = "valueParameterDefinition";
+        public static final String PROPERTY_VALUE_RELATED_ARTIFACT = "valueRelatedArtifact";
+        public static final String PROPERTY_VALUE_TRIGGER_DEFINITION = "valueTriggerDefinition";
+        public static final String PROPERTY_VALUE_USAGE_CONTEXT = "valueUsageContext";
+        public static final String PROPERTY_VALUE_DOSAGE = "valueDosage";
+        public static final String PROPERTY_VALUE_META = "valueMeta";
 
         public static Builder create() {
             return new Builder();
@@ -1405,7 +1405,7 @@ public class Task extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1419,350 +1419,350 @@ public class Task extends FhirResource {
          * The value of the Output parameter as a basic type.
          */
         public String valueBase64Binary() {
-            return getString(PROPERTY_VALUEBASE64BINARY);
+            return getString(PROPERTY_VALUE_BASE64_BINARY);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueCanonical() {
-            return getString(PROPERTY_VALUECANONICAL);
+            return getString(PROPERTY_VALUE_CANONICAL);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueCode() {
-            return getString(PROPERTY_VALUECODE);
+            return getString(PROPERTY_VALUE_CODE);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueDate() {
-            return getString(PROPERTY_VALUEDATE);
+            return getString(PROPERTY_VALUE_DATE);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUEDATETIME);
+            return getString(PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Integer valueDecimal() {
-            return data.getInt(PROPERTY_VALUEDECIMAL);
+            return data.getInt(PROPERTY_VALUE_DECIMAL);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueId() {
-            return getString(PROPERTY_VALUEID);
+            return getString(PROPERTY_VALUE_ID);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueInstant() {
-            return getString(PROPERTY_VALUEINSTANT);
+            return getString(PROPERTY_VALUE_INSTANT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUEINTEGER);
+            return data.getInt(PROPERTY_VALUE_INTEGER);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueMarkdown() {
-            return getString(PROPERTY_VALUEMARKDOWN);
+            return getString(PROPERTY_VALUE_MARKDOWN);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueOid() {
-            return getString(PROPERTY_VALUEOID);
+            return getString(PROPERTY_VALUE_OID);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Integer valuePositiveInt() {
-            return data.getInt(PROPERTY_VALUEPOSITIVEINT);
+            return data.getInt(PROPERTY_VALUE_POSITIVE_INT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUESTRING);
+            return getString(PROPERTY_VALUE_STRING);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueTime() {
-            return getString(PROPERTY_VALUETIME);
+            return getString(PROPERTY_VALUE_TIME);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Integer valueUnsignedInt() {
-            return data.getInt(PROPERTY_VALUEUNSIGNEDINT);
+            return data.getInt(PROPERTY_VALUE_UNSIGNED_INT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueUri() {
-            return getString(PROPERTY_VALUEURI);
+            return getString(PROPERTY_VALUE_URI);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueUrl() {
-            return getString(PROPERTY_VALUEURL);
+            return getString(PROPERTY_VALUE_URL);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public String valueUuid() {
-            return getString(PROPERTY_VALUEUUID);
+            return getString(PROPERTY_VALUE_UUID);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Address valueAddress() {
-            return getObject(Address.class, PROPERTY_VALUEADDRESS);
+            return getObject(Address.class, PROPERTY_VALUE_ADDRESS);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Age valueAge() {
-            return getObject(Age.class, PROPERTY_VALUEAGE);
+            return getObject(Age.class, PROPERTY_VALUE_AGE);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Annotation valueAnnotation() {
-            return getObject(Annotation.class, PROPERTY_VALUEANNOTATION);
+            return getObject(Annotation.class, PROPERTY_VALUE_ANNOTATION);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Attachment valueAttachment() {
-            return getObject(Attachment.class, PROPERTY_VALUEATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_VALUE_ATTACHMENT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public CodeableConcept valueCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Coding valueCoding() {
-            return getObject(Coding.class, PROPERTY_VALUECODING);
+            return getObject(Coding.class, PROPERTY_VALUE_CODING);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public ContactPoint valueContactPoint() {
-            return getObject(ContactPoint.class, PROPERTY_VALUECONTACTPOINT);
+            return getObject(ContactPoint.class, PROPERTY_VALUE_CONTACT_POINT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Count valueCount() {
-            return getObject(Count.class, PROPERTY_VALUECOUNT);
+            return getObject(Count.class, PROPERTY_VALUE_COUNT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Distance valueDistance() {
-            return getObject(Distance.class, PROPERTY_VALUEDISTANCE);
+            return getObject(Distance.class, PROPERTY_VALUE_DISTANCE);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Duration valueDuration() {
-            return getObject(Duration.class, PROPERTY_VALUEDURATION);
+            return getObject(Duration.class, PROPERTY_VALUE_DURATION);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public HumanName valueHumanName() {
-            return getObject(HumanName.class, PROPERTY_VALUEHUMANNAME);
+            return getObject(HumanName.class, PROPERTY_VALUE_HUMAN_NAME);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Identifier valueIdentifier() {
-            return getObject(Identifier.class, PROPERTY_VALUEIDENTIFIER);
+            return getObject(Identifier.class, PROPERTY_VALUE_IDENTIFIER);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Money valueMoney() {
-            return getObject(Money.class, PROPERTY_VALUEMONEY);
+            return getObject(Money.class, PROPERTY_VALUE_MONEY);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Period valuePeriod() {
-            return getObject(Period.class, PROPERTY_VALUEPERIOD);
+            return getObject(Period.class, PROPERTY_VALUE_PERIOD);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Range valueRange() {
-            return getObject(Range.class, PROPERTY_VALUERANGE);
+            return getObject(Range.class, PROPERTY_VALUE_RANGE);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Ratio valueRatio() {
-            return getObject(Ratio.class, PROPERTY_VALUERATIO);
+            return getObject(Ratio.class, PROPERTY_VALUE_RATIO);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Reference valueReference() {
-            return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
+            return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public SampledData valueSampledData() {
-            return getObject(SampledData.class, PROPERTY_VALUESAMPLEDDATA);
+            return getObject(SampledData.class, PROPERTY_VALUE_SAMPLED_DATA);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Signature valueSignature() {
-            return getObject(Signature.class, PROPERTY_VALUESIGNATURE);
+            return getObject(Signature.class, PROPERTY_VALUE_SIGNATURE);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Timing valueTiming() {
-            return getObject(Timing.class, PROPERTY_VALUETIMING);
+            return getObject(Timing.class, PROPERTY_VALUE_TIMING);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public ContactDetail valueContactDetail() {
-            return getObject(ContactDetail.class, PROPERTY_VALUECONTACTDETAIL);
+            return getObject(ContactDetail.class, PROPERTY_VALUE_CONTACT_DETAIL);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Contributor valueContributor() {
-            return getObject(Contributor.class, PROPERTY_VALUECONTRIBUTOR);
+            return getObject(Contributor.class, PROPERTY_VALUE_CONTRIBUTOR);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public DataRequirement valueDataRequirement() {
-            return getObject(DataRequirement.class, PROPERTY_VALUEDATAREQUIREMENT);
+            return getObject(DataRequirement.class, PROPERTY_VALUE_DATA_REQUIREMENT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Expression valueExpression() {
-            return getObject(Expression.class, PROPERTY_VALUEEXPRESSION);
+            return getObject(Expression.class, PROPERTY_VALUE_EXPRESSION);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public ParameterDefinition valueParameterDefinition() {
-            return getObject(ParameterDefinition.class, PROPERTY_VALUEPARAMETERDEFINITION);
+            return getObject(ParameterDefinition.class, PROPERTY_VALUE_PARAMETER_DEFINITION);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public RelatedArtifact valueRelatedArtifact() {
-            return getObject(RelatedArtifact.class, PROPERTY_VALUERELATEDARTIFACT);
+            return getObject(RelatedArtifact.class, PROPERTY_VALUE_RELATED_ARTIFACT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public TriggerDefinition valueTriggerDefinition() {
-            return getObject(TriggerDefinition.class, PROPERTY_VALUETRIGGERDEFINITION);
+            return getObject(TriggerDefinition.class, PROPERTY_VALUE_TRIGGER_DEFINITION);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public UsageContext valueUsageContext() {
-            return getObject(UsageContext.class, PROPERTY_VALUEUSAGECONTEXT);
+            return getObject(UsageContext.class, PROPERTY_VALUE_USAGE_CONTEXT);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Dosage valueDosage() {
-            return getObject(Dosage.class, PROPERTY_VALUEDOSAGE);
+            return getObject(Dosage.class, PROPERTY_VALUE_DOSAGE);
         }
 
         /**
          * The value of the Output parameter as a basic type.
          */
         public Meta valueMeta() {
-            return getObject(Meta.class, PROPERTY_VALUEMETA);
+            return getObject(Meta.class, PROPERTY_VALUE_META);
         }
 
         public static class Builder {
@@ -1782,7 +1782,7 @@ public class Task extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1792,252 +1792,252 @@ public class Task extends FhirResource {
             }
 
             public Builder valueBase64Binary(final String valueBase64Binary) {
-                b.add(PROPERTY_VALUEBASE64BINARY, valueBase64Binary);
+                b.add(PROPERTY_VALUE_BASE64_BINARY, valueBase64Binary);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueCanonical(final String valueCanonical) {
-                b.add(PROPERTY_VALUECANONICAL, valueCanonical);
+                b.add(PROPERTY_VALUE_CANONICAL, valueCanonical);
                 return this;
             }
 
             public Builder valueCode(final String valueCode) {
-                b.add(PROPERTY_VALUECODE, valueCode);
+                b.add(PROPERTY_VALUE_CODE, valueCode);
                 return this;
             }
 
             public Builder valueDate(final String valueDate) {
-                b.add(PROPERTY_VALUEDATE, valueDate);
+                b.add(PROPERTY_VALUE_DATE, valueDate);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUEDATETIME, valueDateTime);
+                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valueDecimal(final Integer valueDecimal) {
-                b.add(PROPERTY_VALUEDECIMAL, valueDecimal);
+                b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
                 return this;
             }
 
             public Builder valueId(final String valueId) {
-                b.add(PROPERTY_VALUEID, valueId);
+                b.add(PROPERTY_VALUE_ID, valueId);
                 return this;
             }
 
             public Builder valueInstant(final String valueInstant) {
-                b.add(PROPERTY_VALUEINSTANT, valueInstant);
+                b.add(PROPERTY_VALUE_INSTANT, valueInstant);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUEINTEGER, valueInteger);
+                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueMarkdown(final String valueMarkdown) {
-                b.add(PROPERTY_VALUEMARKDOWN, valueMarkdown);
+                b.add(PROPERTY_VALUE_MARKDOWN, valueMarkdown);
                 return this;
             }
 
             public Builder valueOid(final String valueOid) {
-                b.add(PROPERTY_VALUEOID, valueOid);
+                b.add(PROPERTY_VALUE_OID, valueOid);
                 return this;
             }
 
             public Builder valuePositiveInt(final Integer valuePositiveInt) {
-                b.add(PROPERTY_VALUEPOSITIVEINT, valuePositiveInt);
+                b.add(PROPERTY_VALUE_POSITIVE_INT, valuePositiveInt);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUESTRING, valueString);
+                b.add(PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueTime(final String valueTime) {
-                b.add(PROPERTY_VALUETIME, valueTime);
+                b.add(PROPERTY_VALUE_TIME, valueTime);
                 return this;
             }
 
             public Builder valueUnsignedInt(final Integer valueUnsignedInt) {
-                b.add(PROPERTY_VALUEUNSIGNEDINT, valueUnsignedInt);
+                b.add(PROPERTY_VALUE_UNSIGNED_INT, valueUnsignedInt);
                 return this;
             }
 
             public Builder valueUri(final String valueUri) {
-                b.add(PROPERTY_VALUEURI, valueUri);
+                b.add(PROPERTY_VALUE_URI, valueUri);
                 return this;
             }
 
             public Builder valueUrl(final String valueUrl) {
-                b.add(PROPERTY_VALUEURL, valueUrl);
+                b.add(PROPERTY_VALUE_URL, valueUrl);
                 return this;
             }
 
             public Builder valueUuid(final String valueUuid) {
-                b.add(PROPERTY_VALUEUUID, valueUuid);
+                b.add(PROPERTY_VALUE_UUID, valueUuid);
                 return this;
             }
 
             public Builder valueAddress(final Address valueAddress) {
-                b.add(PROPERTY_VALUEADDRESS, valueAddress);
+                b.add(PROPERTY_VALUE_ADDRESS, valueAddress);
                 return this;
             }
 
             public Builder valueAge(final Age valueAge) {
-                b.add(PROPERTY_VALUEAGE, valueAge);
+                b.add(PROPERTY_VALUE_AGE, valueAge);
                 return this;
             }
 
             public Builder valueAnnotation(final Annotation valueAnnotation) {
-                b.add(PROPERTY_VALUEANNOTATION, valueAnnotation);
+                b.add(PROPERTY_VALUE_ANNOTATION, valueAnnotation);
                 return this;
             }
 
             public Builder valueAttachment(final Attachment valueAttachment) {
-                b.add(PROPERTY_VALUEATTACHMENT, valueAttachment);
+                b.add(PROPERTY_VALUE_ATTACHMENT, valueAttachment);
                 return this;
             }
 
             public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-                b.add(PROPERTY_VALUECODEABLECONCEPT, valueCodeableConcept);
+                b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
                 return this;
             }
 
             public Builder valueCoding(final Coding valueCoding) {
-                b.add(PROPERTY_VALUECODING, valueCoding);
+                b.add(PROPERTY_VALUE_CODING, valueCoding);
                 return this;
             }
 
             public Builder valueContactPoint(final ContactPoint valueContactPoint) {
-                b.add(PROPERTY_VALUECONTACTPOINT, valueContactPoint);
+                b.add(PROPERTY_VALUE_CONTACT_POINT, valueContactPoint);
                 return this;
             }
 
             public Builder valueCount(final Count valueCount) {
-                b.add(PROPERTY_VALUECOUNT, valueCount);
+                b.add(PROPERTY_VALUE_COUNT, valueCount);
                 return this;
             }
 
             public Builder valueDistance(final Distance valueDistance) {
-                b.add(PROPERTY_VALUEDISTANCE, valueDistance);
+                b.add(PROPERTY_VALUE_DISTANCE, valueDistance);
                 return this;
             }
 
             public Builder valueDuration(final Duration valueDuration) {
-                b.add(PROPERTY_VALUEDURATION, valueDuration);
+                b.add(PROPERTY_VALUE_DURATION, valueDuration);
                 return this;
             }
 
             public Builder valueHumanName(final HumanName valueHumanName) {
-                b.add(PROPERTY_VALUEHUMANNAME, valueHumanName);
+                b.add(PROPERTY_VALUE_HUMAN_NAME, valueHumanName);
                 return this;
             }
 
             public Builder valueIdentifier(final Identifier valueIdentifier) {
-                b.add(PROPERTY_VALUEIDENTIFIER, valueIdentifier);
+                b.add(PROPERTY_VALUE_IDENTIFIER, valueIdentifier);
                 return this;
             }
 
             public Builder valueMoney(final Money valueMoney) {
-                b.add(PROPERTY_VALUEMONEY, valueMoney);
+                b.add(PROPERTY_VALUE_MONEY, valueMoney);
                 return this;
             }
 
             public Builder valuePeriod(final Period valuePeriod) {
-                b.add(PROPERTY_VALUEPERIOD, valuePeriod);
+                b.add(PROPERTY_VALUE_PERIOD, valuePeriod);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueRange(final Range valueRange) {
-                b.add(PROPERTY_VALUERANGE, valueRange);
+                b.add(PROPERTY_VALUE_RANGE, valueRange);
                 return this;
             }
 
             public Builder valueRatio(final Ratio valueRatio) {
-                b.add(PROPERTY_VALUERATIO, valueRatio);
+                b.add(PROPERTY_VALUE_RATIO, valueRatio);
                 return this;
             }
 
             public Builder valueReference(final Reference valueReference) {
-                b.add(PROPERTY_VALUEREFERENCE, valueReference);
+                b.add(PROPERTY_VALUE_REFERENCE, valueReference);
                 return this;
             }
 
             public Builder valueSampledData(final SampledData valueSampledData) {
-                b.add(PROPERTY_VALUESAMPLEDDATA, valueSampledData);
+                b.add(PROPERTY_VALUE_SAMPLED_DATA, valueSampledData);
                 return this;
             }
 
             public Builder valueSignature(final Signature valueSignature) {
-                b.add(PROPERTY_VALUESIGNATURE, valueSignature);
+                b.add(PROPERTY_VALUE_SIGNATURE, valueSignature);
                 return this;
             }
 
             public Builder valueTiming(final Timing valueTiming) {
-                b.add(PROPERTY_VALUETIMING, valueTiming);
+                b.add(PROPERTY_VALUE_TIMING, valueTiming);
                 return this;
             }
 
             public Builder valueContactDetail(final ContactDetail valueContactDetail) {
-                b.add(PROPERTY_VALUECONTACTDETAIL, valueContactDetail);
+                b.add(PROPERTY_VALUE_CONTACT_DETAIL, valueContactDetail);
                 return this;
             }
 
             public Builder valueContributor(final Contributor valueContributor) {
-                b.add(PROPERTY_VALUECONTRIBUTOR, valueContributor);
+                b.add(PROPERTY_VALUE_CONTRIBUTOR, valueContributor);
                 return this;
             }
 
             public Builder valueDataRequirement(final DataRequirement valueDataRequirement) {
-                b.add(PROPERTY_VALUEDATAREQUIREMENT, valueDataRequirement);
+                b.add(PROPERTY_VALUE_DATA_REQUIREMENT, valueDataRequirement);
                 return this;
             }
 
             public Builder valueExpression(final Expression valueExpression) {
-                b.add(PROPERTY_VALUEEXPRESSION, valueExpression);
+                b.add(PROPERTY_VALUE_EXPRESSION, valueExpression);
                 return this;
             }
 
             public Builder valueParameterDefinition(final ParameterDefinition valueParameterDefinition) {
-                b.add(PROPERTY_VALUEPARAMETERDEFINITION, valueParameterDefinition);
+                b.add(PROPERTY_VALUE_PARAMETER_DEFINITION, valueParameterDefinition);
                 return this;
             }
 
             public Builder valueRelatedArtifact(final RelatedArtifact valueRelatedArtifact) {
-                b.add(PROPERTY_VALUERELATEDARTIFACT, valueRelatedArtifact);
+                b.add(PROPERTY_VALUE_RELATED_ARTIFACT, valueRelatedArtifact);
                 return this;
             }
 
             public Builder valueTriggerDefinition(final TriggerDefinition valueTriggerDefinition) {
-                b.add(PROPERTY_VALUETRIGGERDEFINITION, valueTriggerDefinition);
+                b.add(PROPERTY_VALUE_TRIGGER_DEFINITION, valueTriggerDefinition);
                 return this;
             }
 
             public Builder valueUsageContext(final UsageContext valueUsageContext) {
-                b.add(PROPERTY_VALUEUSAGECONTEXT, valueUsageContext);
+                b.add(PROPERTY_VALUE_USAGE_CONTEXT, valueUsageContext);
                 return this;
             }
 
             public Builder valueDosage(final Dosage valueDosage) {
-                b.add(PROPERTY_VALUEDOSAGE, valueDosage);
+                b.add(PROPERTY_VALUE_DOSAGE, valueDosage);
                 return this;
             }
 
             public Builder valueMeta(final Meta valueMeta) {
-                b.add(PROPERTY_VALUEMETA, valueMeta);
+                b.add(PROPERTY_VALUE_META, valueMeta);
                 return this;
             }
 
@@ -2050,7 +2050,7 @@ public class Task extends FhirResource {
     public static class TaskRestriction extends FhirObject {
         public static final String RESOURCE_TYPE = "TaskRestriction";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_REPETITIONS = "repetitions";
         public static final String PROPERTY_PERIOD = "period";
         public static final String PROPERTY_RECIPIENT = "recipient";
@@ -2093,7 +2093,7 @@ public class Task extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2135,7 +2135,7 @@ public class Task extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

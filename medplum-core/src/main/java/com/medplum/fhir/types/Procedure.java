@@ -11,46 +11,46 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Procedure extends FhirResource {
     public static final String RESOURCE_TYPE = "Procedure";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_INSTANTIATESCANONICAL = "instantiatesCanonical";
-    public static final String PROPERTY_INSTANTIATESURI = "instantiatesUri";
-    public static final String PROPERTY_BASEDON = "basedOn";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_INSTANTIATES_CANONICAL = "instantiatesCanonical";
+    public static final String PROPERTY_INSTANTIATES_URI = "instantiatesUri";
+    public static final String PROPERTY_BASED_ON = "basedOn";
+    public static final String PROPERTY_PART_OF = "partOf";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSREASON = "statusReason";
+    public static final String PROPERTY_STATUS_REASON = "statusReason";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_PERFORMEDDATETIME = "performedDateTime";
-    public static final String PROPERTY_PERFORMEDPERIOD = "performedPeriod";
-    public static final String PROPERTY_PERFORMEDSTRING = "performedString";
-    public static final String PROPERTY_PERFORMEDAGE = "performedAge";
-    public static final String PROPERTY_PERFORMEDRANGE = "performedRange";
+    public static final String PROPERTY_PERFORMED_DATE_TIME = "performedDateTime";
+    public static final String PROPERTY_PERFORMED_PERIOD = "performedPeriod";
+    public static final String PROPERTY_PERFORMED_STRING = "performedString";
+    public static final String PROPERTY_PERFORMED_AGE = "performedAge";
+    public static final String PROPERTY_PERFORMED_RANGE = "performedRange";
     public static final String PROPERTY_RECORDER = "recorder";
     public static final String PROPERTY_ASSERTER = "asserter";
     public static final String PROPERTY_PERFORMER = "performer";
     public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
-    public static final String PROPERTY_BODYSITE = "bodySite";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
+    public static final String PROPERTY_BODY_SITE = "bodySite";
     public static final String PROPERTY_OUTCOME = "outcome";
     public static final String PROPERTY_REPORT = "report";
     public static final String PROPERTY_COMPLICATION = "complication";
-    public static final String PROPERTY_COMPLICATIONDETAIL = "complicationDetail";
-    public static final String PROPERTY_FOLLOWUP = "followUp";
+    public static final String PROPERTY_COMPLICATION_DETAIL = "complicationDetail";
+    public static final String PROPERTY_FOLLOW_UP = "followUp";
     public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_FOCALDEVICE = "focalDevice";
-    public static final String PROPERTY_USEDREFERENCE = "usedReference";
-    public static final String PROPERTY_USEDCODE = "usedCode";
+    public static final String PROPERTY_FOCAL_DEVICE = "focalDevice";
+    public static final String PROPERTY_USED_REFERENCE = "usedReference";
+    public static final String PROPERTY_USED_CODE = "usedCode";
 
     public static Builder create() {
         return new Builder();
@@ -71,7 +71,7 @@ public class Procedure extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -119,7 +119,7 @@ public class Procedure extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -137,7 +137,7 @@ public class Procedure extends FhirResource {
      * Procedure.
      */
     public java.util.List<String> instantiatesCanonical() {
-        return getList(String.class, PROPERTY_INSTANTIATESCANONICAL);
+        return getList(String.class, PROPERTY_INSTANTIATES_CANONICAL);
     }
 
     /**
@@ -146,7 +146,7 @@ public class Procedure extends FhirResource {
      * by this Procedure.
      */
     public java.util.List<String> instantiatesUri() {
-        return getList(String.class, PROPERTY_INSTANTIATESURI);
+        return getList(String.class, PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -154,7 +154,7 @@ public class Procedure extends FhirResource {
      * this procedure.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -162,7 +162,7 @@ public class Procedure extends FhirResource {
      * step.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PARTOF);
+        return getList(Reference.class, PROPERTY_PART_OF);
     }
 
     /**
@@ -177,7 +177,7 @@ public class Procedure extends FhirResource {
      * Captures the reason for the current state of the procedure.
      */
     public CodeableConcept statusReason() {
-        return getObject(CodeableConcept.class, PROPERTY_STATUSREASON);
+        return getObject(CodeableConcept.class, PROPERTY_STATUS_REASON);
     }
 
     /**
@@ -218,7 +218,7 @@ public class Procedure extends FhirResource {
      * procedure to be captured.
      */
     public String performedDateTime() {
-        return getString(PROPERTY_PERFORMEDDATETIME);
+        return getString(PROPERTY_PERFORMED_DATE_TIME);
     }
 
     /**
@@ -228,7 +228,7 @@ public class Procedure extends FhirResource {
      * procedure to be captured.
      */
     public Period performedPeriod() {
-        return getObject(Period.class, PROPERTY_PERFORMEDPERIOD);
+        return getObject(Period.class, PROPERTY_PERFORMED_PERIOD);
     }
 
     /**
@@ -238,7 +238,7 @@ public class Procedure extends FhirResource {
      * procedure to be captured.
      */
     public String performedString() {
-        return getString(PROPERTY_PERFORMEDSTRING);
+        return getString(PROPERTY_PERFORMED_STRING);
     }
 
     /**
@@ -248,7 +248,7 @@ public class Procedure extends FhirResource {
      * procedure to be captured.
      */
     public Age performedAge() {
-        return getObject(Age.class, PROPERTY_PERFORMEDAGE);
+        return getObject(Age.class, PROPERTY_PERFORMED_AGE);
     }
 
     /**
@@ -258,7 +258,7 @@ public class Procedure extends FhirResource {
      * procedure to be captured.
      */
     public Range performedRange() {
-        return getObject(Range.class, PROPERTY_PERFORMEDRANGE);
+        return getObject(Range.class, PROPERTY_PERFORMED_RANGE);
     }
 
     /**
@@ -296,14 +296,14 @@ public class Procedure extends FhirResource {
      * entity of some type, or may simply be present as text.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
      * The justification of why the procedure was performed.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -311,7 +311,7 @@ public class Procedure extends FhirResource {
      * locations are allowed - e.g. multiple punch biopsies of a lesion.
      */
     public java.util.List<CodeableConcept> bodySite() {
-        return getList(CodeableConcept.class, PROPERTY_BODYSITE);
+        return getList(CodeableConcept.class, PROPERTY_BODY_SITE);
     }
 
     /**
@@ -345,7 +345,7 @@ public class Procedure extends FhirResource {
      * immediate post-performance period.
      */
     public java.util.List<Reference> complicationDetail() {
-        return getList(Reference.class, PROPERTY_COMPLICATIONDETAIL);
+        return getList(Reference.class, PROPERTY_COMPLICATION_DETAIL);
     }
 
     /**
@@ -355,7 +355,7 @@ public class Procedure extends FhirResource {
      * be used.
      */
     public java.util.List<CodeableConcept> followUp() {
-        return getList(CodeableConcept.class, PROPERTY_FOLLOWUP);
+        return getList(CodeableConcept.class, PROPERTY_FOLLOW_UP);
     }
 
     /**
@@ -371,7 +371,7 @@ public class Procedure extends FhirResource {
      * wound-vac, etc.) as a focal portion of the Procedure.
      */
     public java.util.List<ProcedureFocalDevice> focalDevice() {
-        return getList(ProcedureFocalDevice.class, PROPERTY_FOCALDEVICE);
+        return getList(ProcedureFocalDevice.class, PROPERTY_FOCAL_DEVICE);
     }
 
     /**
@@ -379,14 +379,14 @@ public class Procedure extends FhirResource {
      * of the procedure.
      */
     public java.util.List<Reference> usedReference() {
-        return getList(Reference.class, PROPERTY_USEDREFERENCE);
+        return getList(Reference.class, PROPERTY_USED_REFERENCE);
     }
 
     /**
      * Identifies coded items that were used as part of the procedure.
      */
     public java.util.List<CodeableConcept> usedCode() {
-        return getList(CodeableConcept.class, PROPERTY_USEDCODE);
+        return getList(CodeableConcept.class, PROPERTY_USED_CODE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -400,7 +400,7 @@ public class Procedure extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -415,7 +415,7 @@ public class Procedure extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -435,7 +435,7 @@ public class Procedure extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -445,22 +445,22 @@ public class Procedure extends FhirResource {
         }
 
         public Builder instantiatesCanonical(final java.util.List<String> instantiatesCanonical) {
-            b.add(PROPERTY_INSTANTIATESCANONICAL, FhirObject.toStringArray(instantiatesCanonical));
+            b.add(PROPERTY_INSTANTIATES_CANONICAL, FhirObject.toStringArray(instantiatesCanonical));
             return this;
         }
 
         public Builder instantiatesUri(final java.util.List<String> instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATESURI, FhirObject.toStringArray(instantiatesUri));
+            b.add(PROPERTY_INSTANTIATES_URI, FhirObject.toStringArray(instantiatesUri));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
@@ -470,7 +470,7 @@ public class Procedure extends FhirResource {
         }
 
         public Builder statusReason(final CodeableConcept statusReason) {
-            b.add(PROPERTY_STATUSREASON, statusReason);
+            b.add(PROPERTY_STATUS_REASON, statusReason);
             return this;
         }
 
@@ -495,27 +495,27 @@ public class Procedure extends FhirResource {
         }
 
         public Builder performedDateTime(final String performedDateTime) {
-            b.add(PROPERTY_PERFORMEDDATETIME, performedDateTime);
+            b.add(PROPERTY_PERFORMED_DATE_TIME, performedDateTime);
             return this;
         }
 
         public Builder performedPeriod(final Period performedPeriod) {
-            b.add(PROPERTY_PERFORMEDPERIOD, performedPeriod);
+            b.add(PROPERTY_PERFORMED_PERIOD, performedPeriod);
             return this;
         }
 
         public Builder performedString(final String performedString) {
-            b.add(PROPERTY_PERFORMEDSTRING, performedString);
+            b.add(PROPERTY_PERFORMED_STRING, performedString);
             return this;
         }
 
         public Builder performedAge(final Age performedAge) {
-            b.add(PROPERTY_PERFORMEDAGE, performedAge);
+            b.add(PROPERTY_PERFORMED_AGE, performedAge);
             return this;
         }
 
         public Builder performedRange(final Range performedRange) {
-            b.add(PROPERTY_PERFORMEDRANGE, performedRange);
+            b.add(PROPERTY_PERFORMED_RANGE, performedRange);
             return this;
         }
 
@@ -540,17 +540,17 @@ public class Procedure extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
         public Builder bodySite(final java.util.List<CodeableConcept> bodySite) {
-            b.add(PROPERTY_BODYSITE, FhirObject.toArray(bodySite));
+            b.add(PROPERTY_BODY_SITE, FhirObject.toArray(bodySite));
             return this;
         }
 
@@ -570,12 +570,12 @@ public class Procedure extends FhirResource {
         }
 
         public Builder complicationDetail(final java.util.List<Reference> complicationDetail) {
-            b.add(PROPERTY_COMPLICATIONDETAIL, FhirObject.toArray(complicationDetail));
+            b.add(PROPERTY_COMPLICATION_DETAIL, FhirObject.toArray(complicationDetail));
             return this;
         }
 
         public Builder followUp(final java.util.List<CodeableConcept> followUp) {
-            b.add(PROPERTY_FOLLOWUP, FhirObject.toArray(followUp));
+            b.add(PROPERTY_FOLLOW_UP, FhirObject.toArray(followUp));
             return this;
         }
 
@@ -585,17 +585,17 @@ public class Procedure extends FhirResource {
         }
 
         public Builder focalDevice(final java.util.List<ProcedureFocalDevice> focalDevice) {
-            b.add(PROPERTY_FOCALDEVICE, FhirObject.toArray(focalDevice));
+            b.add(PROPERTY_FOCAL_DEVICE, FhirObject.toArray(focalDevice));
             return this;
         }
 
         public Builder usedReference(final java.util.List<Reference> usedReference) {
-            b.add(PROPERTY_USEDREFERENCE, FhirObject.toArray(usedReference));
+            b.add(PROPERTY_USED_REFERENCE, FhirObject.toArray(usedReference));
             return this;
         }
 
         public Builder usedCode(final java.util.List<CodeableConcept> usedCode) {
-            b.add(PROPERTY_USEDCODE, FhirObject.toArray(usedCode));
+            b.add(PROPERTY_USED_CODE, FhirObject.toArray(usedCode));
             return this;
         }
 
@@ -607,7 +607,7 @@ public class Procedure extends FhirResource {
     public static class ProcedureFocalDevice extends FhirObject {
         public static final String RESOURCE_TYPE = "ProcedureFocalDevice";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ACTION = "action";
         public static final String PROPERTY_MANIPULATED = "manipulated";
 
@@ -649,7 +649,7 @@ public class Procedure extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -683,7 +683,7 @@ public class Procedure extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -706,10 +706,10 @@ public class Procedure extends FhirResource {
     public static class ProcedurePerformer extends FhirObject {
         public static final String RESOURCE_TYPE = "ProcedurePerformer";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_FUNCTION = "function";
         public static final String PROPERTY_ACTOR = "actor";
-        public static final String PROPERTY_ONBEHALFOF = "onBehalfOf";
+        public static final String PROPERTY_ON_BEHALF_OF = "onBehalfOf";
 
         public static Builder create() {
             return new Builder();
@@ -749,7 +749,7 @@ public class Procedure extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -771,7 +771,7 @@ public class Procedure extends FhirResource {
          * The organization the device or practitioner was acting on behalf of.
          */
         public Reference onBehalfOf() {
-            return getObject(Reference.class, PROPERTY_ONBEHALFOF);
+            return getObject(Reference.class, PROPERTY_ON_BEHALF_OF);
         }
 
         public static class Builder {
@@ -791,7 +791,7 @@ public class Procedure extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -806,7 +806,7 @@ public class Procedure extends FhirResource {
             }
 
             public Builder onBehalfOf(final Reference onBehalfOf) {
-                b.add(PROPERTY_ONBEHALFOF, onBehalfOf);
+                b.add(PROPERTY_ON_BEHALF_OF, onBehalfOf);
                 return this;
             }
 

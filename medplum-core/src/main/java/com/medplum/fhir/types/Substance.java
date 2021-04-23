@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Substance extends FhirResource {
     public static final String RESOURCE_TYPE = "Substance";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_CATEGORY = "category";
@@ -46,7 +46,7 @@ public class Substance extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -94,7 +94,7 @@ public class Substance extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -160,7 +160,7 @@ public class Substance extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -175,7 +175,7 @@ public class Substance extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -195,7 +195,7 @@ public class Substance extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -242,10 +242,10 @@ public class Substance extends FhirResource {
     public static class SubstanceIngredient extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceIngredient";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_QUANTITY = "quantity";
-        public static final String PROPERTY_SUBSTANCECODEABLECONCEPT = "substanceCodeableConcept";
-        public static final String PROPERTY_SUBSTANCEREFERENCE = "substanceReference";
+        public static final String PROPERTY_SUBSTANCE_CODEABLE_CONCEPT = "substanceCodeableConcept";
+        public static final String PROPERTY_SUBSTANCE_REFERENCE = "substanceReference";
 
         public static Builder create() {
             return new Builder();
@@ -285,7 +285,7 @@ public class Substance extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -299,14 +299,14 @@ public class Substance extends FhirResource {
          * Another substance that is a component of this substance.
          */
         public CodeableConcept substanceCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_SUBSTANCECODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_SUBSTANCE_CODEABLE_CONCEPT);
         }
 
         /**
          * Another substance that is a component of this substance.
          */
         public Reference substanceReference() {
-            return getObject(Reference.class, PROPERTY_SUBSTANCEREFERENCE);
+            return getObject(Reference.class, PROPERTY_SUBSTANCE_REFERENCE);
         }
 
         public static class Builder {
@@ -326,7 +326,7 @@ public class Substance extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -336,12 +336,12 @@ public class Substance extends FhirResource {
             }
 
             public Builder substanceCodeableConcept(final CodeableConcept substanceCodeableConcept) {
-                b.add(PROPERTY_SUBSTANCECODEABLECONCEPT, substanceCodeableConcept);
+                b.add(PROPERTY_SUBSTANCE_CODEABLE_CONCEPT, substanceCodeableConcept);
                 return this;
             }
 
             public Builder substanceReference(final Reference substanceReference) {
-                b.add(PROPERTY_SUBSTANCEREFERENCE, substanceReference);
+                b.add(PROPERTY_SUBSTANCE_REFERENCE, substanceReference);
                 return this;
             }
 
@@ -354,7 +354,7 @@ public class Substance extends FhirResource {
     public static class SubstanceInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceInstance";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTIFIER = "identifier";
         public static final String PROPERTY_EXPIRY = "expiry";
         public static final String PROPERTY_QUANTITY = "quantity";
@@ -397,7 +397,7 @@ public class Substance extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -440,7 +440,7 @@ public class Substance extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

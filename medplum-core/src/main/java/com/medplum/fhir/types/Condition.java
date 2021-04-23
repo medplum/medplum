@@ -11,34 +11,34 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Condition extends FhirResource {
     public static final String RESOURCE_TYPE = "Condition";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_CLINICALSTATUS = "clinicalStatus";
-    public static final String PROPERTY_VERIFICATIONSTATUS = "verificationStatus";
+    public static final String PROPERTY_CLINICAL_STATUS = "clinicalStatus";
+    public static final String PROPERTY_VERIFICATION_STATUS = "verificationStatus";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_SEVERITY = "severity";
     public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_BODYSITE = "bodySite";
+    public static final String PROPERTY_BODY_SITE = "bodySite";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_ONSETDATETIME = "onsetDateTime";
-    public static final String PROPERTY_ONSETAGE = "onsetAge";
-    public static final String PROPERTY_ONSETPERIOD = "onsetPeriod";
-    public static final String PROPERTY_ONSETRANGE = "onsetRange";
-    public static final String PROPERTY_ONSETSTRING = "onsetString";
-    public static final String PROPERTY_ABATEMENTDATETIME = "abatementDateTime";
-    public static final String PROPERTY_ABATEMENTAGE = "abatementAge";
-    public static final String PROPERTY_ABATEMENTPERIOD = "abatementPeriod";
-    public static final String PROPERTY_ABATEMENTRANGE = "abatementRange";
-    public static final String PROPERTY_ABATEMENTSTRING = "abatementString";
-    public static final String PROPERTY_RECORDEDDATE = "recordedDate";
+    public static final String PROPERTY_ONSET_DATE_TIME = "onsetDateTime";
+    public static final String PROPERTY_ONSET_AGE = "onsetAge";
+    public static final String PROPERTY_ONSET_PERIOD = "onsetPeriod";
+    public static final String PROPERTY_ONSET_RANGE = "onsetRange";
+    public static final String PROPERTY_ONSET_STRING = "onsetString";
+    public static final String PROPERTY_ABATEMENT_DATE_TIME = "abatementDateTime";
+    public static final String PROPERTY_ABATEMENT_AGE = "abatementAge";
+    public static final String PROPERTY_ABATEMENT_PERIOD = "abatementPeriod";
+    public static final String PROPERTY_ABATEMENT_RANGE = "abatementRange";
+    public static final String PROPERTY_ABATEMENT_STRING = "abatementString";
+    public static final String PROPERTY_RECORDED_DATE = "recordedDate";
     public static final String PROPERTY_RECORDER = "recorder";
     public static final String PROPERTY_ASSERTER = "asserter";
     public static final String PROPERTY_STAGE = "stage";
@@ -64,7 +64,7 @@ public class Condition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -112,7 +112,7 @@ public class Condition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -128,7 +128,7 @@ public class Condition extends FhirResource {
      * The clinical status of the condition.
      */
     public CodeableConcept clinicalStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_CLINICALSTATUS);
+        return getObject(CodeableConcept.class, PROPERTY_CLINICAL_STATUS);
     }
 
     /**
@@ -136,7 +136,7 @@ public class Condition extends FhirResource {
      * condition.
      */
     public CodeableConcept verificationStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_VERIFICATIONSTATUS);
+        return getObject(CodeableConcept.class, PROPERTY_VERIFICATION_STATUS);
     }
 
     /**
@@ -165,7 +165,7 @@ public class Condition extends FhirResource {
      * The anatomical location where this condition manifests itself.
      */
     public java.util.List<CodeableConcept> bodySite() {
-        return getList(CodeableConcept.class, PROPERTY_BODYSITE);
+        return getList(CodeableConcept.class, PROPERTY_BODY_SITE);
     }
 
     /**
@@ -189,7 +189,7 @@ public class Condition extends FhirResource {
      * opinion of the clinician.
      */
     public String onsetDateTime() {
-        return getString(PROPERTY_ONSETDATETIME);
+        return getString(PROPERTY_ONSET_DATE_TIME);
     }
 
     /**
@@ -197,7 +197,7 @@ public class Condition extends FhirResource {
      * opinion of the clinician.
      */
     public Age onsetAge() {
-        return getObject(Age.class, PROPERTY_ONSETAGE);
+        return getObject(Age.class, PROPERTY_ONSET_AGE);
     }
 
     /**
@@ -205,7 +205,7 @@ public class Condition extends FhirResource {
      * opinion of the clinician.
      */
     public Period onsetPeriod() {
-        return getObject(Period.class, PROPERTY_ONSETPERIOD);
+        return getObject(Period.class, PROPERTY_ONSET_PERIOD);
     }
 
     /**
@@ -213,7 +213,7 @@ public class Condition extends FhirResource {
      * opinion of the clinician.
      */
     public Range onsetRange() {
-        return getObject(Range.class, PROPERTY_ONSETRANGE);
+        return getObject(Range.class, PROPERTY_ONSET_RANGE);
     }
 
     /**
@@ -221,7 +221,7 @@ public class Condition extends FhirResource {
      * opinion of the clinician.
      */
     public String onsetString() {
-        return getString(PROPERTY_ONSETSTRING);
+        return getString(PROPERTY_ONSET_STRING);
     }
 
     /**
@@ -231,7 +231,7 @@ public class Condition extends FhirResource {
      * are never really resolved, but they can abate.
      */
     public String abatementDateTime() {
-        return getString(PROPERTY_ABATEMENTDATETIME);
+        return getString(PROPERTY_ABATEMENT_DATE_TIME);
     }
 
     /**
@@ -241,7 +241,7 @@ public class Condition extends FhirResource {
      * are never really resolved, but they can abate.
      */
     public Age abatementAge() {
-        return getObject(Age.class, PROPERTY_ABATEMENTAGE);
+        return getObject(Age.class, PROPERTY_ABATEMENT_AGE);
     }
 
     /**
@@ -251,7 +251,7 @@ public class Condition extends FhirResource {
      * are never really resolved, but they can abate.
      */
     public Period abatementPeriod() {
-        return getObject(Period.class, PROPERTY_ABATEMENTPERIOD);
+        return getObject(Period.class, PROPERTY_ABATEMENT_PERIOD);
     }
 
     /**
@@ -261,7 +261,7 @@ public class Condition extends FhirResource {
      * are never really resolved, but they can abate.
      */
     public Range abatementRange() {
-        return getObject(Range.class, PROPERTY_ABATEMENTRANGE);
+        return getObject(Range.class, PROPERTY_ABATEMENT_RANGE);
     }
 
     /**
@@ -271,7 +271,7 @@ public class Condition extends FhirResource {
      * are never really resolved, but they can abate.
      */
     public String abatementString() {
-        return getString(PROPERTY_ABATEMENTSTRING);
+        return getString(PROPERTY_ABATEMENT_STRING);
     }
 
     /**
@@ -279,7 +279,7 @@ public class Condition extends FhirResource {
      * created in the system, which is often a system-generated date.
      */
     public java.time.Instant recordedDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RECORDEDDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_RECORDED_DATE));
     }
 
     /**
@@ -334,7 +334,7 @@ public class Condition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -349,7 +349,7 @@ public class Condition extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -369,7 +369,7 @@ public class Condition extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -379,12 +379,12 @@ public class Condition extends FhirResource {
         }
 
         public Builder clinicalStatus(final CodeableConcept clinicalStatus) {
-            b.add(PROPERTY_CLINICALSTATUS, clinicalStatus);
+            b.add(PROPERTY_CLINICAL_STATUS, clinicalStatus);
             return this;
         }
 
         public Builder verificationStatus(final CodeableConcept verificationStatus) {
-            b.add(PROPERTY_VERIFICATIONSTATUS, verificationStatus);
+            b.add(PROPERTY_VERIFICATION_STATUS, verificationStatus);
             return this;
         }
 
@@ -404,7 +404,7 @@ public class Condition extends FhirResource {
         }
 
         public Builder bodySite(final java.util.List<CodeableConcept> bodySite) {
-            b.add(PROPERTY_BODYSITE, FhirObject.toArray(bodySite));
+            b.add(PROPERTY_BODY_SITE, FhirObject.toArray(bodySite));
             return this;
         }
 
@@ -419,57 +419,57 @@ public class Condition extends FhirResource {
         }
 
         public Builder onsetDateTime(final String onsetDateTime) {
-            b.add(PROPERTY_ONSETDATETIME, onsetDateTime);
+            b.add(PROPERTY_ONSET_DATE_TIME, onsetDateTime);
             return this;
         }
 
         public Builder onsetAge(final Age onsetAge) {
-            b.add(PROPERTY_ONSETAGE, onsetAge);
+            b.add(PROPERTY_ONSET_AGE, onsetAge);
             return this;
         }
 
         public Builder onsetPeriod(final Period onsetPeriod) {
-            b.add(PROPERTY_ONSETPERIOD, onsetPeriod);
+            b.add(PROPERTY_ONSET_PERIOD, onsetPeriod);
             return this;
         }
 
         public Builder onsetRange(final Range onsetRange) {
-            b.add(PROPERTY_ONSETRANGE, onsetRange);
+            b.add(PROPERTY_ONSET_RANGE, onsetRange);
             return this;
         }
 
         public Builder onsetString(final String onsetString) {
-            b.add(PROPERTY_ONSETSTRING, onsetString);
+            b.add(PROPERTY_ONSET_STRING, onsetString);
             return this;
         }
 
         public Builder abatementDateTime(final String abatementDateTime) {
-            b.add(PROPERTY_ABATEMENTDATETIME, abatementDateTime);
+            b.add(PROPERTY_ABATEMENT_DATE_TIME, abatementDateTime);
             return this;
         }
 
         public Builder abatementAge(final Age abatementAge) {
-            b.add(PROPERTY_ABATEMENTAGE, abatementAge);
+            b.add(PROPERTY_ABATEMENT_AGE, abatementAge);
             return this;
         }
 
         public Builder abatementPeriod(final Period abatementPeriod) {
-            b.add(PROPERTY_ABATEMENTPERIOD, abatementPeriod);
+            b.add(PROPERTY_ABATEMENT_PERIOD, abatementPeriod);
             return this;
         }
 
         public Builder abatementRange(final Range abatementRange) {
-            b.add(PROPERTY_ABATEMENTRANGE, abatementRange);
+            b.add(PROPERTY_ABATEMENT_RANGE, abatementRange);
             return this;
         }
 
         public Builder abatementString(final String abatementString) {
-            b.add(PROPERTY_ABATEMENTSTRING, abatementString);
+            b.add(PROPERTY_ABATEMENT_STRING, abatementString);
             return this;
         }
 
         public Builder recordedDate(final java.time.Instant recordedDate) {
-            b.add(PROPERTY_RECORDEDDATE, recordedDate.toString());
+            b.add(PROPERTY_RECORDED_DATE, recordedDate.toString());
             return this;
         }
 
@@ -506,7 +506,7 @@ public class Condition extends FhirResource {
     public static class ConditionEvidence extends FhirObject {
         public static final String RESOURCE_TYPE = "ConditionEvidence";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DETAIL = "detail";
 
@@ -548,7 +548,7 @@ public class Condition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -583,7 +583,7 @@ public class Condition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -606,7 +606,7 @@ public class Condition extends FhirResource {
     public static class ConditionStage extends FhirObject {
         public static final String RESOURCE_TYPE = "ConditionStage";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SUMMARY = "summary";
         public static final String PROPERTY_ASSESSMENT = "assessment";
         public static final String PROPERTY_TYPE = "type";
@@ -649,7 +649,7 @@ public class Condition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -692,7 +692,7 @@ public class Condition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

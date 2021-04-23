@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class EffectEvidenceSynthesis extends FhirResource {
     public static final String RESOURCE_TYPE = "EffectEvidenceSynthesis";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_VERSION = "version";
@@ -30,27 +30,27 @@ public class EffectEvidenceSynthesis extends FhirResource {
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
     public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_APPROVALDATE = "approvalDate";
-    public static final String PROPERTY_LASTREVIEWDATE = "lastReviewDate";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
+    public static final String PROPERTY_APPROVAL_DATE = "approvalDate";
+    public static final String PROPERTY_LAST_REVIEW_DATE = "lastReviewDate";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
     public static final String PROPERTY_TOPIC = "topic";
     public static final String PROPERTY_AUTHOR = "author";
     public static final String PROPERTY_EDITOR = "editor";
     public static final String PROPERTY_REVIEWER = "reviewer";
     public static final String PROPERTY_ENDORSER = "endorser";
-    public static final String PROPERTY_RELATEDARTIFACT = "relatedArtifact";
-    public static final String PROPERTY_SYNTHESISTYPE = "synthesisType";
-    public static final String PROPERTY_STUDYTYPE = "studyType";
+    public static final String PROPERTY_RELATED_ARTIFACT = "relatedArtifact";
+    public static final String PROPERTY_SYNTHESIS_TYPE = "synthesisType";
+    public static final String PROPERTY_STUDY_TYPE = "studyType";
     public static final String PROPERTY_POPULATION = "population";
     public static final String PROPERTY_EXPOSURE = "exposure";
-    public static final String PROPERTY_EXPOSUREALTERNATIVE = "exposureAlternative";
+    public static final String PROPERTY_EXPOSURE_ALTERNATIVE = "exposureAlternative";
     public static final String PROPERTY_OUTCOME = "outcome";
-    public static final String PROPERTY_SAMPLESIZE = "sampleSize";
-    public static final String PROPERTY_RESULTSBYEXPOSURE = "resultsByExposure";
-    public static final String PROPERTY_EFFECTESTIMATE = "effectEstimate";
+    public static final String PROPERTY_SAMPLE_SIZE = "sampleSize";
+    public static final String PROPERTY_RESULTS_BY_EXPOSURE = "resultsByExposure";
+    public static final String PROPERTY_EFFECT_ESTIMATE = "effectEstimate";
     public static final String PROPERTY_CERTAINTY = "certainty";
 
     public static Builder create() {
@@ -72,7 +72,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -120,7 +120,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -236,7 +236,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -262,7 +262,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * usage.
      */
     public java.time.Instant approvalDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_APPROVALDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_APPROVAL_DATE));
     }
 
     /**
@@ -271,7 +271,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * approval date.
      */
     public java.time.Instant lastReviewDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTREVIEWDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_REVIEW_DATE));
     }
 
     /**
@@ -279,7 +279,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * is planned to be in active use.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -329,21 +329,21 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * bibliographic references.
      */
     public java.util.List<RelatedArtifact> relatedArtifact() {
-        return getList(RelatedArtifact.class, PROPERTY_RELATEDARTIFACT);
+        return getList(RelatedArtifact.class, PROPERTY_RELATED_ARTIFACT);
     }
 
     /**
      * Type of synthesis eg meta-analysis.
      */
     public CodeableConcept synthesisType() {
-        return getObject(CodeableConcept.class, PROPERTY_SYNTHESISTYPE);
+        return getObject(CodeableConcept.class, PROPERTY_SYNTHESIS_TYPE);
     }
 
     /**
      * Type of study eg randomized trial.
      */
     public CodeableConcept studyType() {
-        return getObject(CodeableConcept.class, PROPERTY_STUDYTYPE);
+        return getObject(CodeableConcept.class, PROPERTY_STUDY_TYPE);
     }
 
     /**
@@ -367,7 +367,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * exposure for the research.
      */
     public Reference exposureAlternative() {
-        return getObject(Reference.class, PROPERTY_EXPOSUREALTERNATIVE);
+        return getObject(Reference.class, PROPERTY_EXPOSURE_ALTERNATIVE);
     }
 
     /**
@@ -382,7 +382,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * A description of the size of the sample involved in the synthesis.
      */
     public EffectEvidenceSynthesisSampleSize sampleSize() {
-        return getObject(EffectEvidenceSynthesisSampleSize.class, PROPERTY_SAMPLESIZE);
+        return getObject(EffectEvidenceSynthesisSampleSize.class, PROPERTY_SAMPLE_SIZE);
     }
 
     /**
@@ -390,14 +390,14 @@ public class EffectEvidenceSynthesis extends FhirResource {
      * effect estimate.
      */
     public java.util.List<EffectEvidenceSynthesisResultsByExposure> resultsByExposure() {
-        return getList(EffectEvidenceSynthesisResultsByExposure.class, PROPERTY_RESULTSBYEXPOSURE);
+        return getList(EffectEvidenceSynthesisResultsByExposure.class, PROPERTY_RESULTS_BY_EXPOSURE);
     }
 
     /**
      * The estimated effect of the exposure variant.
      */
     public java.util.List<EffectEvidenceSynthesisEffectEstimate> effectEstimate() {
-        return getList(EffectEvidenceSynthesisEffectEstimate.class, PROPERTY_EFFECTESTIMATE);
+        return getList(EffectEvidenceSynthesisEffectEstimate.class, PROPERTY_EFFECT_ESTIMATE);
     }
 
     /**
@@ -418,7 +418,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -433,7 +433,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -453,7 +453,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -513,7 +513,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -528,17 +528,17 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
 
         public Builder approvalDate(final java.time.Instant approvalDate) {
-            b.add(PROPERTY_APPROVALDATE, approvalDate.toString());
+            b.add(PROPERTY_APPROVAL_DATE, approvalDate.toString());
             return this;
         }
 
         public Builder lastReviewDate(final java.time.Instant lastReviewDate) {
-            b.add(PROPERTY_LASTREVIEWDATE, lastReviewDate.toString());
+            b.add(PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
@@ -568,17 +568,17 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
 
         public Builder relatedArtifact(final java.util.List<RelatedArtifact> relatedArtifact) {
-            b.add(PROPERTY_RELATEDARTIFACT, FhirObject.toArray(relatedArtifact));
+            b.add(PROPERTY_RELATED_ARTIFACT, FhirObject.toArray(relatedArtifact));
             return this;
         }
 
         public Builder synthesisType(final CodeableConcept synthesisType) {
-            b.add(PROPERTY_SYNTHESISTYPE, synthesisType);
+            b.add(PROPERTY_SYNTHESIS_TYPE, synthesisType);
             return this;
         }
 
         public Builder studyType(final CodeableConcept studyType) {
-            b.add(PROPERTY_STUDYTYPE, studyType);
+            b.add(PROPERTY_STUDY_TYPE, studyType);
             return this;
         }
 
@@ -593,7 +593,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
 
         public Builder exposureAlternative(final Reference exposureAlternative) {
-            b.add(PROPERTY_EXPOSUREALTERNATIVE, exposureAlternative);
+            b.add(PROPERTY_EXPOSURE_ALTERNATIVE, exposureAlternative);
             return this;
         }
 
@@ -603,17 +603,17 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
 
         public Builder sampleSize(final EffectEvidenceSynthesisSampleSize sampleSize) {
-            b.add(PROPERTY_SAMPLESIZE, sampleSize);
+            b.add(PROPERTY_SAMPLE_SIZE, sampleSize);
             return this;
         }
 
         public Builder resultsByExposure(final java.util.List<EffectEvidenceSynthesisResultsByExposure> resultsByExposure) {
-            b.add(PROPERTY_RESULTSBYEXPOSURE, FhirObject.toArray(resultsByExposure));
+            b.add(PROPERTY_RESULTS_BY_EXPOSURE, FhirObject.toArray(resultsByExposure));
             return this;
         }
 
         public Builder effectEstimate(final java.util.List<EffectEvidenceSynthesisEffectEstimate> effectEstimate) {
-            b.add(PROPERTY_EFFECTESTIMATE, FhirObject.toArray(effectEstimate));
+            b.add(PROPERTY_EFFECT_ESTIMATE, FhirObject.toArray(effectEstimate));
             return this;
         }
 
@@ -630,10 +630,10 @@ public class EffectEvidenceSynthesis extends FhirResource {
     public static class EffectEvidenceSynthesisCertainty extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisCertainty";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_RATING = "rating";
         public static final String PROPERTY_NOTE = "note";
-        public static final String PROPERTY_CERTAINTYSUBCOMPONENT = "certaintySubcomponent";
+        public static final String PROPERTY_CERTAINTY_SUBCOMPONENT = "certaintySubcomponent";
 
         public static Builder create() {
             return new Builder();
@@ -673,7 +673,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -695,7 +695,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * A description of a component of the overall certainty.
          */
         public java.util.List<EffectEvidenceSynthesisCertaintySubcomponent> certaintySubcomponent() {
-            return getList(EffectEvidenceSynthesisCertaintySubcomponent.class, PROPERTY_CERTAINTYSUBCOMPONENT);
+            return getList(EffectEvidenceSynthesisCertaintySubcomponent.class, PROPERTY_CERTAINTY_SUBCOMPONENT);
         }
 
         public static class Builder {
@@ -715,7 +715,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -730,7 +730,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder certaintySubcomponent(final java.util.List<EffectEvidenceSynthesisCertaintySubcomponent> certaintySubcomponent) {
-                b.add(PROPERTY_CERTAINTYSUBCOMPONENT, FhirObject.toArray(certaintySubcomponent));
+                b.add(PROPERTY_CERTAINTY_SUBCOMPONENT, FhirObject.toArray(certaintySubcomponent));
                 return this;
             }
 
@@ -743,7 +743,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
     public static class EffectEvidenceSynthesisCertaintySubcomponent extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisCertaintySubcomponent";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_RATING = "rating";
         public static final String PROPERTY_NOTE = "note";
@@ -786,7 +786,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -828,7 +828,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -856,13 +856,13 @@ public class EffectEvidenceSynthesis extends FhirResource {
     public static class EffectEvidenceSynthesisEffectEstimate extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisEffectEstimate";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_VARIANTSTATE = "variantState";
+        public static final String PROPERTY_VARIANT_STATE = "variantState";
         public static final String PROPERTY_VALUE = "value";
-        public static final String PROPERTY_UNITOFMEASURE = "unitOfMeasure";
-        public static final String PROPERTY_PRECISIONESTIMATE = "precisionEstimate";
+        public static final String PROPERTY_UNIT_OF_MEASURE = "unitOfMeasure";
+        public static final String PROPERTY_PRECISION_ESTIMATE = "precisionEstimate";
 
         public static Builder create() {
             return new Builder();
@@ -902,7 +902,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -923,7 +923,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * Used to define variant exposure states such as low-risk state.
          */
         public CodeableConcept variantState() {
-            return getObject(CodeableConcept.class, PROPERTY_VARIANTSTATE);
+            return getObject(CodeableConcept.class, PROPERTY_VARIANT_STATE);
         }
 
         /**
@@ -937,14 +937,14 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * Specifies the UCUM unit for the outcome.
          */
         public CodeableConcept unitOfMeasure() {
-            return getObject(CodeableConcept.class, PROPERTY_UNITOFMEASURE);
+            return getObject(CodeableConcept.class, PROPERTY_UNIT_OF_MEASURE);
         }
 
         /**
          * A description of the precision of the estimate for the effect.
          */
         public java.util.List<EffectEvidenceSynthesisPrecisionEstimate> precisionEstimate() {
-            return getList(EffectEvidenceSynthesisPrecisionEstimate.class, PROPERTY_PRECISIONESTIMATE);
+            return getList(EffectEvidenceSynthesisPrecisionEstimate.class, PROPERTY_PRECISION_ESTIMATE);
         }
 
         public static class Builder {
@@ -964,7 +964,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -979,7 +979,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder variantState(final CodeableConcept variantState) {
-                b.add(PROPERTY_VARIANTSTATE, variantState);
+                b.add(PROPERTY_VARIANT_STATE, variantState);
                 return this;
             }
 
@@ -989,12 +989,12 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder unitOfMeasure(final CodeableConcept unitOfMeasure) {
-                b.add(PROPERTY_UNITOFMEASURE, unitOfMeasure);
+                b.add(PROPERTY_UNIT_OF_MEASURE, unitOfMeasure);
                 return this;
             }
 
             public Builder precisionEstimate(final java.util.List<EffectEvidenceSynthesisPrecisionEstimate> precisionEstimate) {
-                b.add(PROPERTY_PRECISIONESTIMATE, FhirObject.toArray(precisionEstimate));
+                b.add(PROPERTY_PRECISION_ESTIMATE, FhirObject.toArray(precisionEstimate));
                 return this;
             }
 
@@ -1007,7 +1007,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
     public static class EffectEvidenceSynthesisPrecisionEstimate extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisPrecisionEstimate";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_LEVEL = "level";
         public static final String PROPERTY_FROM = "from";
@@ -1051,7 +1051,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1099,7 +1099,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1132,11 +1132,11 @@ public class EffectEvidenceSynthesis extends FhirResource {
     public static class EffectEvidenceSynthesisResultsByExposure extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisResultsByExposure";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_EXPOSURESTATE = "exposureState";
-        public static final String PROPERTY_VARIANTSTATE = "variantState";
-        public static final String PROPERTY_RISKEVIDENCESYNTHESIS = "riskEvidenceSynthesis";
+        public static final String PROPERTY_EXPOSURE_STATE = "exposureState";
+        public static final String PROPERTY_VARIANT_STATE = "variantState";
+        public static final String PROPERTY_RISK_EVIDENCE_SYNTHESIS = "riskEvidenceSynthesis";
 
         public static Builder create() {
             return new Builder();
@@ -1176,7 +1176,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1191,21 +1191,21 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * exposure state.
          */
         public String exposureState() {
-            return getString(PROPERTY_EXPOSURESTATE);
+            return getString(PROPERTY_EXPOSURE_STATE);
         }
 
         /**
          * Used to define variant exposure states such as low-risk state.
          */
         public CodeableConcept variantState() {
-            return getObject(CodeableConcept.class, PROPERTY_VARIANTSTATE);
+            return getObject(CodeableConcept.class, PROPERTY_VARIANT_STATE);
         }
 
         /**
          * Reference to a RiskEvidenceSynthesis resource.
          */
         public Reference riskEvidenceSynthesis() {
-            return getObject(Reference.class, PROPERTY_RISKEVIDENCESYNTHESIS);
+            return getObject(Reference.class, PROPERTY_RISK_EVIDENCE_SYNTHESIS);
         }
 
         public static class Builder {
@@ -1225,7 +1225,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1235,17 +1235,17 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder exposureState(final String exposureState) {
-                b.add(PROPERTY_EXPOSURESTATE, exposureState);
+                b.add(PROPERTY_EXPOSURE_STATE, exposureState);
                 return this;
             }
 
             public Builder variantState(final CodeableConcept variantState) {
-                b.add(PROPERTY_VARIANTSTATE, variantState);
+                b.add(PROPERTY_VARIANT_STATE, variantState);
                 return this;
             }
 
             public Builder riskEvidenceSynthesis(final Reference riskEvidenceSynthesis) {
-                b.add(PROPERTY_RISKEVIDENCESYNTHESIS, riskEvidenceSynthesis);
+                b.add(PROPERTY_RISK_EVIDENCE_SYNTHESIS, riskEvidenceSynthesis);
                 return this;
             }
 
@@ -1258,10 +1258,10 @@ public class EffectEvidenceSynthesis extends FhirResource {
     public static class EffectEvidenceSynthesisSampleSize extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisSampleSize";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_NUMBEROFSTUDIES = "numberOfStudies";
-        public static final String PROPERTY_NUMBEROFPARTICIPANTS = "numberOfParticipants";
+        public static final String PROPERTY_NUMBER_OF_STUDIES = "numberOfStudies";
+        public static final String PROPERTY_NUMBER_OF_PARTICIPANTS = "numberOfParticipants";
 
         public static Builder create() {
             return new Builder();
@@ -1301,7 +1301,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1315,14 +1315,14 @@ public class EffectEvidenceSynthesis extends FhirResource {
          * Number of studies included in this evidence synthesis.
          */
         public Integer numberOfStudies() {
-            return data.getInt(PROPERTY_NUMBEROFSTUDIES);
+            return data.getInt(PROPERTY_NUMBER_OF_STUDIES);
         }
 
         /**
          * Number of participants included in this evidence synthesis.
          */
         public Integer numberOfParticipants() {
-            return data.getInt(PROPERTY_NUMBEROFPARTICIPANTS);
+            return data.getInt(PROPERTY_NUMBER_OF_PARTICIPANTS);
         }
 
         public static class Builder {
@@ -1342,7 +1342,7 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1352,12 +1352,12 @@ public class EffectEvidenceSynthesis extends FhirResource {
             }
 
             public Builder numberOfStudies(final Integer numberOfStudies) {
-                b.add(PROPERTY_NUMBEROFSTUDIES, numberOfStudies);
+                b.add(PROPERTY_NUMBER_OF_STUDIES, numberOfStudies);
                 return this;
             }
 
             public Builder numberOfParticipants(final Integer numberOfParticipants) {
-                b.add(PROPERTY_NUMBEROFPARTICIPANTS, numberOfParticipants);
+                b.add(PROPERTY_NUMBER_OF_PARTICIPANTS, numberOfParticipants);
                 return this;
             }
 

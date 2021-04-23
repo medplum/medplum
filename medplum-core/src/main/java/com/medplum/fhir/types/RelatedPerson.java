@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class RelatedPerson extends FhirResource {
     public static final String RESOURCE_TYPE = "RelatedPerson";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_ACTIVE = "active";
     public static final String PROPERTY_PATIENT = "patient";
@@ -26,7 +26,7 @@ public class RelatedPerson extends FhirResource {
     public static final String PROPERTY_NAME = "name";
     public static final String PROPERTY_TELECOM = "telecom";
     public static final String PROPERTY_GENDER = "gender";
-    public static final String PROPERTY_BIRTHDATE = "birthDate";
+    public static final String PROPERTY_BIRTH_DATE = "birthDate";
     public static final String PROPERTY_ADDRESS = "address";
     public static final String PROPERTY_PHOTO = "photo";
     public static final String PROPERTY_PERIOD = "period";
@@ -51,7 +51,7 @@ public class RelatedPerson extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -99,7 +99,7 @@ public class RelatedPerson extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -158,7 +158,7 @@ public class RelatedPerson extends FhirResource {
      * The date on which the related person was born.
      */
     public java.time.Instant birthDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_BIRTHDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_BIRTH_DATE));
     }
 
     /**
@@ -202,7 +202,7 @@ public class RelatedPerson extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -217,7 +217,7 @@ public class RelatedPerson extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -237,7 +237,7 @@ public class RelatedPerson extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -277,7 +277,7 @@ public class RelatedPerson extends FhirResource {
         }
 
         public Builder birthDate(final java.time.Instant birthDate) {
-            b.add(PROPERTY_BIRTHDATE, birthDate.toString());
+            b.add(PROPERTY_BIRTH_DATE, birthDate.toString());
             return this;
         }
 
@@ -309,7 +309,7 @@ public class RelatedPerson extends FhirResource {
     public static class RelatedPersonCommunication extends FhirObject {
         public static final String RESOURCE_TYPE = "RelatedPersonCommunication";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_LANGUAGE = "language";
         public static final String PROPERTY_PREFERRED = "preferred";
 
@@ -351,7 +351,7 @@ public class RelatedPerson extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -389,7 +389,7 @@ public class RelatedPerson extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class CareTeam extends FhirResource {
     public static final String RESOURCE_TYPE = "CareTeam";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_CATEGORY = "category";
@@ -27,9 +27,9 @@ public class CareTeam extends FhirResource {
     public static final String PROPERTY_ENCOUNTER = "encounter";
     public static final String PROPERTY_PERIOD = "period";
     public static final String PROPERTY_PARTICIPANT = "participant";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
-    public static final String PROPERTY_MANAGINGORGANIZATION = "managingOrganization";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
+    public static final String PROPERTY_MANAGING_ORGANIZATION = "managingOrganization";
     public static final String PROPERTY_TELECOM = "telecom";
     public static final String PROPERTY_NOTE = "note";
 
@@ -52,7 +52,7 @@ public class CareTeam extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -100,7 +100,7 @@ public class CareTeam extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -172,21 +172,21 @@ public class CareTeam extends FhirResource {
      * Describes why the care team exists.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
      * Condition(s) that this care team addresses.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
      * The organization responsible for the care team.
      */
     public java.util.List<Reference> managingOrganization() {
-        return getList(Reference.class, PROPERTY_MANAGINGORGANIZATION);
+        return getList(Reference.class, PROPERTY_MANAGING_ORGANIZATION);
     }
 
     /**
@@ -215,7 +215,7 @@ public class CareTeam extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -230,7 +230,7 @@ public class CareTeam extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -250,7 +250,7 @@ public class CareTeam extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -295,17 +295,17 @@ public class CareTeam extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
         public Builder managingOrganization(final java.util.List<Reference> managingOrganization) {
-            b.add(PROPERTY_MANAGINGORGANIZATION, FhirObject.toArray(managingOrganization));
+            b.add(PROPERTY_MANAGING_ORGANIZATION, FhirObject.toArray(managingOrganization));
             return this;
         }
 
@@ -327,10 +327,10 @@ public class CareTeam extends FhirResource {
     public static class CareTeamParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "CareTeamParticipant";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ROLE = "role";
         public static final String PROPERTY_MEMBER = "member";
-        public static final String PROPERTY_ONBEHALFOF = "onBehalfOf";
+        public static final String PROPERTY_ON_BEHALF_OF = "onBehalfOf";
         public static final String PROPERTY_PERIOD = "period";
 
         public static Builder create() {
@@ -371,7 +371,7 @@ public class CareTeam extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -395,7 +395,7 @@ public class CareTeam extends FhirResource {
          * The organization of the practitioner.
          */
         public Reference onBehalfOf() {
-            return getObject(Reference.class, PROPERTY_ONBEHALFOF);
+            return getObject(Reference.class, PROPERTY_ON_BEHALF_OF);
         }
 
         /**
@@ -423,7 +423,7 @@ public class CareTeam extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -438,7 +438,7 @@ public class CareTeam extends FhirResource {
             }
 
             public Builder onBehalfOf(final Reference onBehalfOf) {
-                b.add(PROPERTY_ONBEHALFOF, onBehalfOf);
+                b.add(PROPERTY_ON_BEHALF_OF, onBehalfOf);
                 return this;
             }
 

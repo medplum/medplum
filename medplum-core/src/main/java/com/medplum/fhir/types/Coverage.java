@@ -11,20 +11,20 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Coverage extends FhirResource {
     public static final String RESOURCE_TYPE = "Coverage";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_POLICYHOLDER = "policyHolder";
+    public static final String PROPERTY_POLICY_HOLDER = "policyHolder";
     public static final String PROPERTY_SUBSCRIBER = "subscriber";
-    public static final String PROPERTY_SUBSCRIBERID = "subscriberId";
+    public static final String PROPERTY_SUBSCRIBER_ID = "subscriberId";
     public static final String PROPERTY_BENEFICIARY = "beneficiary";
     public static final String PROPERTY_DEPENDENT = "dependent";
     public static final String PROPERTY_RELATIONSHIP = "relationship";
@@ -33,7 +33,7 @@ public class Coverage extends FhirResource {
     public static final String PROPERTY_CLASS = "class";
     public static final String PROPERTY_ORDER = "order";
     public static final String PROPERTY_NETWORK = "network";
-    public static final String PROPERTY_COSTTOBENEFICIARY = "costToBeneficiary";
+    public static final String PROPERTY_COST_TO_BENEFICIARY = "costToBeneficiary";
     public static final String PROPERTY_SUBROGATION = "subrogation";
     public static final String PROPERTY_CONTRACT = "contract";
 
@@ -56,7 +56,7 @@ public class Coverage extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -104,7 +104,7 @@ public class Coverage extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -134,7 +134,7 @@ public class Coverage extends FhirResource {
      * The party who 'owns' the insurance policy.
      */
     public Reference policyHolder() {
-        return getObject(Reference.class, PROPERTY_POLICYHOLDER);
+        return getObject(Reference.class, PROPERTY_POLICY_HOLDER);
     }
 
     /**
@@ -150,7 +150,7 @@ public class Coverage extends FhirResource {
      * The insurer assigned ID for the Subscriber.
      */
     public String subscriberId() {
-        return getString(PROPERTY_SUBSCRIBERID);
+        return getString(PROPERTY_SUBSCRIBER_ID);
     }
 
     /**
@@ -225,7 +225,7 @@ public class Coverage extends FhirResource {
      * the health card.
      */
     public java.util.List<CoverageCostToBeneficiary> costToBeneficiary() {
-        return getList(CoverageCostToBeneficiary.class, PROPERTY_COSTTOBENEFICIARY);
+        return getList(CoverageCostToBeneficiary.class, PROPERTY_COST_TO_BENEFICIARY);
     }
 
     /**
@@ -255,7 +255,7 @@ public class Coverage extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -270,7 +270,7 @@ public class Coverage extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -290,7 +290,7 @@ public class Coverage extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -310,7 +310,7 @@ public class Coverage extends FhirResource {
         }
 
         public Builder policyHolder(final Reference policyHolder) {
-            b.add(PROPERTY_POLICYHOLDER, policyHolder);
+            b.add(PROPERTY_POLICY_HOLDER, policyHolder);
             return this;
         }
 
@@ -320,7 +320,7 @@ public class Coverage extends FhirResource {
         }
 
         public Builder subscriberId(final String subscriberId) {
-            b.add(PROPERTY_SUBSCRIBERID, subscriberId);
+            b.add(PROPERTY_SUBSCRIBER_ID, subscriberId);
             return this;
         }
 
@@ -365,7 +365,7 @@ public class Coverage extends FhirResource {
         }
 
         public Builder costToBeneficiary(final java.util.List<CoverageCostToBeneficiary> costToBeneficiary) {
-            b.add(PROPERTY_COSTTOBENEFICIARY, FhirObject.toArray(costToBeneficiary));
+            b.add(PROPERTY_COST_TO_BENEFICIARY, FhirObject.toArray(costToBeneficiary));
             return this;
         }
 
@@ -387,7 +387,7 @@ public class Coverage extends FhirResource {
     public static class CoverageClass extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageClass";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_VALUE = "value";
         public static final String PROPERTY_NAME = "name";
@@ -430,7 +430,7 @@ public class Coverage extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -474,7 +474,7 @@ public class Coverage extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -502,10 +502,10 @@ public class Coverage extends FhirResource {
     public static class CoverageCostToBeneficiary extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageCostToBeneficiary";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUEMONEY = "valueMoney";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_MONEY = "valueMoney";
         public static final String PROPERTY_EXCEPTION = "exception";
 
         public static Builder create() {
@@ -546,7 +546,7 @@ public class Coverage extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -560,14 +560,14 @@ public class Coverage extends FhirResource {
          * The amount due from the patient for the cost category.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
          * The amount due from the patient for the cost category.
          */
         public Money valueMoney() {
-            return getObject(Money.class, PROPERTY_VALUEMONEY);
+            return getObject(Money.class, PROPERTY_VALUE_MONEY);
         }
 
         /**
@@ -595,7 +595,7 @@ public class Coverage extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -605,12 +605,12 @@ public class Coverage extends FhirResource {
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueMoney(final Money valueMoney) {
-                b.add(PROPERTY_VALUEMONEY, valueMoney);
+                b.add(PROPERTY_VALUE_MONEY, valueMoney);
                 return this;
             }
 
@@ -628,7 +628,7 @@ public class Coverage extends FhirResource {
     public static class CoverageException extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageException";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_PERIOD = "period";
 
@@ -670,7 +670,7 @@ public class Coverage extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -704,7 +704,7 @@ public class Coverage extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

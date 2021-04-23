@@ -12,8 +12,8 @@ import jakarta.json.JsonObjectBuilder;
 public class Annotation extends FhirResource {
     public static final String RESOURCE_TYPE = "Annotation";
     public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_AUTHORREFERENCE = "authorReference";
-    public static final String PROPERTY_AUTHORSTRING = "authorString";
+    public static final String PROPERTY_AUTHOR_REFERENCE = "authorReference";
+    public static final String PROPERTY_AUTHOR_STRING = "authorString";
     public static final String PROPERTY_TIME = "time";
     public static final String PROPERTY_TEXT = "text";
 
@@ -41,14 +41,14 @@ public class Annotation extends FhirResource {
      * The individual responsible for making the annotation.
      */
     public Reference authorReference() {
-        return getObject(Reference.class, PROPERTY_AUTHORREFERENCE);
+        return getObject(Reference.class, PROPERTY_AUTHOR_REFERENCE);
     }
 
     /**
      * The individual responsible for making the annotation.
      */
     public String authorString() {
-        return getString(PROPERTY_AUTHORSTRING);
+        return getString(PROPERTY_AUTHOR_STRING);
     }
 
     /**
@@ -82,12 +82,12 @@ public class Annotation extends FhirResource {
         }
 
         public Builder authorReference(final Reference authorReference) {
-            b.add(PROPERTY_AUTHORREFERENCE, authorReference);
+            b.add(PROPERTY_AUTHOR_REFERENCE, authorReference);
             return this;
         }
 
         public Builder authorString(final String authorString) {
-            b.add(PROPERTY_AUTHORSTRING, authorString);
+            b.add(PROPERTY_AUTHOR_STRING, authorString);
             return this;
         }
 

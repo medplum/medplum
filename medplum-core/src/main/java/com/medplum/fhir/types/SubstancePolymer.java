@@ -11,19 +11,19 @@ import jakarta.json.JsonObjectBuilder;
 
 public class SubstancePolymer extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstancePolymer";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_CLASS = "class";
     public static final String PROPERTY_GEOMETRY = "geometry";
-    public static final String PROPERTY_COPOLYMERCONNECTIVITY = "copolymerConnectivity";
+    public static final String PROPERTY_COPOLYMER_CONNECTIVITY = "copolymerConnectivity";
     public static final String PROPERTY_MODIFICATION = "modification";
-    public static final String PROPERTY_MONOMERSET = "monomerSet";
+    public static final String PROPERTY_MONOMER_SET = "monomerSet";
     public static final String PROPERTY_REPEAT = "repeat";
 
     public static Builder create() {
@@ -45,7 +45,7 @@ public class SubstancePolymer extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -93,7 +93,7 @@ public class SubstancePolymer extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -114,7 +114,7 @@ public class SubstancePolymer extends FhirResource {
      * Todo.
      */
     public java.util.List<CodeableConcept> copolymerConnectivity() {
-        return getList(CodeableConcept.class, PROPERTY_COPOLYMERCONNECTIVITY);
+        return getList(CodeableConcept.class, PROPERTY_COPOLYMER_CONNECTIVITY);
     }
 
     /**
@@ -128,7 +128,7 @@ public class SubstancePolymer extends FhirResource {
      * Todo.
      */
     public java.util.List<SubstancePolymerMonomerSet> monomerSet() {
-        return getList(SubstancePolymerMonomerSet.class, PROPERTY_MONOMERSET);
+        return getList(SubstancePolymerMonomerSet.class, PROPERTY_MONOMER_SET);
     }
 
     /**
@@ -149,7 +149,7 @@ public class SubstancePolymer extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -164,7 +164,7 @@ public class SubstancePolymer extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -184,7 +184,7 @@ public class SubstancePolymer extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -199,7 +199,7 @@ public class SubstancePolymer extends FhirResource {
         }
 
         public Builder copolymerConnectivity(final java.util.List<CodeableConcept> copolymerConnectivity) {
-            b.add(PROPERTY_COPOLYMERCONNECTIVITY, FhirObject.toArray(copolymerConnectivity));
+            b.add(PROPERTY_COPOLYMER_CONNECTIVITY, FhirObject.toArray(copolymerConnectivity));
             return this;
         }
 
@@ -209,7 +209,7 @@ public class SubstancePolymer extends FhirResource {
         }
 
         public Builder monomerSet(final java.util.List<SubstancePolymerMonomerSet> monomerSet) {
-            b.add(PROPERTY_MONOMERSET, FhirObject.toArray(monomerSet));
+            b.add(PROPERTY_MONOMER_SET, FhirObject.toArray(monomerSet));
             return this;
         }
 
@@ -226,7 +226,7 @@ public class SubstancePolymer extends FhirResource {
     public static class SubstancePolymerDegreeOfPolymerisation extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerDegreeOfPolymerisation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DEGREE = "degree";
         public static final String PROPERTY_AMOUNT = "amount";
 
@@ -268,7 +268,7 @@ public class SubstancePolymer extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -302,7 +302,7 @@ public class SubstancePolymer extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -325,9 +325,9 @@ public class SubstancePolymer extends FhirResource {
     public static class SubstancePolymerMonomerSet extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerMonomerSet";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_RATIOTYPE = "ratioType";
-        public static final String PROPERTY_STARTINGMATERIAL = "startingMaterial";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_RATIO_TYPE = "ratioType";
+        public static final String PROPERTY_STARTING_MATERIAL = "startingMaterial";
 
         public static Builder create() {
             return new Builder();
@@ -367,21 +367,21 @@ public class SubstancePolymer extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept ratioType() {
-            return getObject(CodeableConcept.class, PROPERTY_RATIOTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_RATIO_TYPE);
         }
 
         /**
          * Todo.
          */
         public java.util.List<SubstancePolymerStartingMaterial> startingMaterial() {
-            return getList(SubstancePolymerStartingMaterial.class, PROPERTY_STARTINGMATERIAL);
+            return getList(SubstancePolymerStartingMaterial.class, PROPERTY_STARTING_MATERIAL);
         }
 
         public static class Builder {
@@ -401,17 +401,17 @@ public class SubstancePolymer extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder ratioType(final CodeableConcept ratioType) {
-                b.add(PROPERTY_RATIOTYPE, ratioType);
+                b.add(PROPERTY_RATIO_TYPE, ratioType);
                 return this;
             }
 
             public Builder startingMaterial(final java.util.List<SubstancePolymerStartingMaterial> startingMaterial) {
-                b.add(PROPERTY_STARTINGMATERIAL, FhirObject.toArray(startingMaterial));
+                b.add(PROPERTY_STARTING_MATERIAL, FhirObject.toArray(startingMaterial));
                 return this;
             }
 
@@ -424,11 +424,11 @@ public class SubstancePolymer extends FhirResource {
     public static class SubstancePolymerRepeat extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerRepeat";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_NUMBEROFUNITS = "numberOfUnits";
-        public static final String PROPERTY_AVERAGEMOLECULARFORMULA = "averageMolecularFormula";
-        public static final String PROPERTY_REPEATUNITAMOUNTTYPE = "repeatUnitAmountType";
-        public static final String PROPERTY_REPEATUNIT = "repeatUnit";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_NUMBER_OF_UNITS = "numberOfUnits";
+        public static final String PROPERTY_AVERAGE_MOLECULAR_FORMULA = "averageMolecularFormula";
+        public static final String PROPERTY_REPEAT_UNIT_AMOUNT_TYPE = "repeatUnitAmountType";
+        public static final String PROPERTY_REPEAT_UNIT = "repeatUnit";
 
         public static Builder create() {
             return new Builder();
@@ -468,35 +468,35 @@ public class SubstancePolymer extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Todo.
          */
         public Integer numberOfUnits() {
-            return data.getInt(PROPERTY_NUMBEROFUNITS);
+            return data.getInt(PROPERTY_NUMBER_OF_UNITS);
         }
 
         /**
          * Todo.
          */
         public String averageMolecularFormula() {
-            return getString(PROPERTY_AVERAGEMOLECULARFORMULA);
+            return getString(PROPERTY_AVERAGE_MOLECULAR_FORMULA);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept repeatUnitAmountType() {
-            return getObject(CodeableConcept.class, PROPERTY_REPEATUNITAMOUNTTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_REPEAT_UNIT_AMOUNT_TYPE);
         }
 
         /**
          * Todo.
          */
         public java.util.List<SubstancePolymerRepeatUnit> repeatUnit() {
-            return getList(SubstancePolymerRepeatUnit.class, PROPERTY_REPEATUNIT);
+            return getList(SubstancePolymerRepeatUnit.class, PROPERTY_REPEAT_UNIT);
         }
 
         public static class Builder {
@@ -516,27 +516,27 @@ public class SubstancePolymer extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder numberOfUnits(final Integer numberOfUnits) {
-                b.add(PROPERTY_NUMBEROFUNITS, numberOfUnits);
+                b.add(PROPERTY_NUMBER_OF_UNITS, numberOfUnits);
                 return this;
             }
 
             public Builder averageMolecularFormula(final String averageMolecularFormula) {
-                b.add(PROPERTY_AVERAGEMOLECULARFORMULA, averageMolecularFormula);
+                b.add(PROPERTY_AVERAGE_MOLECULAR_FORMULA, averageMolecularFormula);
                 return this;
             }
 
             public Builder repeatUnitAmountType(final CodeableConcept repeatUnitAmountType) {
-                b.add(PROPERTY_REPEATUNITAMOUNTTYPE, repeatUnitAmountType);
+                b.add(PROPERTY_REPEAT_UNIT_AMOUNT_TYPE, repeatUnitAmountType);
                 return this;
             }
 
             public Builder repeatUnit(final java.util.List<SubstancePolymerRepeatUnit> repeatUnit) {
-                b.add(PROPERTY_REPEATUNIT, FhirObject.toArray(repeatUnit));
+                b.add(PROPERTY_REPEAT_UNIT, FhirObject.toArray(repeatUnit));
                 return this;
             }
 
@@ -549,12 +549,12 @@ public class SubstancePolymer extends FhirResource {
     public static class SubstancePolymerRepeatUnit extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerRepeatUnit";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_ORIENTATIONOFPOLYMERISATION = "orientationOfPolymerisation";
-        public static final String PROPERTY_REPEATUNIT = "repeatUnit";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_ORIENTATION_OF_POLYMERISATION = "orientationOfPolymerisation";
+        public static final String PROPERTY_REPEAT_UNIT = "repeatUnit";
         public static final String PROPERTY_AMOUNT = "amount";
-        public static final String PROPERTY_DEGREEOFPOLYMERISATION = "degreeOfPolymerisation";
-        public static final String PROPERTY_STRUCTURALREPRESENTATION = "structuralRepresentation";
+        public static final String PROPERTY_DEGREE_OF_POLYMERISATION = "degreeOfPolymerisation";
+        public static final String PROPERTY_STRUCTURAL_REPRESENTATION = "structuralRepresentation";
 
         public static Builder create() {
             return new Builder();
@@ -594,21 +594,21 @@ public class SubstancePolymer extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept orientationOfPolymerisation() {
-            return getObject(CodeableConcept.class, PROPERTY_ORIENTATIONOFPOLYMERISATION);
+            return getObject(CodeableConcept.class, PROPERTY_ORIENTATION_OF_POLYMERISATION);
         }
 
         /**
          * Todo.
          */
         public String repeatUnit() {
-            return getString(PROPERTY_REPEATUNIT);
+            return getString(PROPERTY_REPEAT_UNIT);
         }
 
         /**
@@ -622,14 +622,14 @@ public class SubstancePolymer extends FhirResource {
          * Todo.
          */
         public java.util.List<SubstancePolymerDegreeOfPolymerisation> degreeOfPolymerisation() {
-            return getList(SubstancePolymerDegreeOfPolymerisation.class, PROPERTY_DEGREEOFPOLYMERISATION);
+            return getList(SubstancePolymerDegreeOfPolymerisation.class, PROPERTY_DEGREE_OF_POLYMERISATION);
         }
 
         /**
          * Todo.
          */
         public java.util.List<SubstancePolymerStructuralRepresentation> structuralRepresentation() {
-            return getList(SubstancePolymerStructuralRepresentation.class, PROPERTY_STRUCTURALREPRESENTATION);
+            return getList(SubstancePolymerStructuralRepresentation.class, PROPERTY_STRUCTURAL_REPRESENTATION);
         }
 
         public static class Builder {
@@ -649,17 +649,17 @@ public class SubstancePolymer extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder orientationOfPolymerisation(final CodeableConcept orientationOfPolymerisation) {
-                b.add(PROPERTY_ORIENTATIONOFPOLYMERISATION, orientationOfPolymerisation);
+                b.add(PROPERTY_ORIENTATION_OF_POLYMERISATION, orientationOfPolymerisation);
                 return this;
             }
 
             public Builder repeatUnit(final String repeatUnit) {
-                b.add(PROPERTY_REPEATUNIT, repeatUnit);
+                b.add(PROPERTY_REPEAT_UNIT, repeatUnit);
                 return this;
             }
 
@@ -669,12 +669,12 @@ public class SubstancePolymer extends FhirResource {
             }
 
             public Builder degreeOfPolymerisation(final java.util.List<SubstancePolymerDegreeOfPolymerisation> degreeOfPolymerisation) {
-                b.add(PROPERTY_DEGREEOFPOLYMERISATION, FhirObject.toArray(degreeOfPolymerisation));
+                b.add(PROPERTY_DEGREE_OF_POLYMERISATION, FhirObject.toArray(degreeOfPolymerisation));
                 return this;
             }
 
             public Builder structuralRepresentation(final java.util.List<SubstancePolymerStructuralRepresentation> structuralRepresentation) {
-                b.add(PROPERTY_STRUCTURALREPRESENTATION, FhirObject.toArray(structuralRepresentation));
+                b.add(PROPERTY_STRUCTURAL_REPRESENTATION, FhirObject.toArray(structuralRepresentation));
                 return this;
             }
 
@@ -687,10 +687,10 @@ public class SubstancePolymer extends FhirResource {
     public static class SubstancePolymerStartingMaterial extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerStartingMaterial";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_MATERIAL = "material";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_ISDEFINING = "isDefining";
+        public static final String PROPERTY_IS_DEFINING = "isDefining";
         public static final String PROPERTY_AMOUNT = "amount";
 
         public static Builder create() {
@@ -731,7 +731,7 @@ public class SubstancePolymer extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -752,7 +752,7 @@ public class SubstancePolymer extends FhirResource {
          * Todo.
          */
         public Boolean isDefining() {
-            return data.getBoolean(PROPERTY_ISDEFINING);
+            return data.getBoolean(PROPERTY_IS_DEFINING);
         }
 
         /**
@@ -779,7 +779,7 @@ public class SubstancePolymer extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -794,7 +794,7 @@ public class SubstancePolymer extends FhirResource {
             }
 
             public Builder isDefining(final Boolean isDefining) {
-                b.add(PROPERTY_ISDEFINING, isDefining);
+                b.add(PROPERTY_IS_DEFINING, isDefining);
                 return this;
             }
 
@@ -812,7 +812,7 @@ public class SubstancePolymer extends FhirResource {
     public static class SubstancePolymerStructuralRepresentation extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerStructuralRepresentation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_REPRESENTATION = "representation";
         public static final String PROPERTY_ATTACHMENT = "attachment";
@@ -855,7 +855,7 @@ public class SubstancePolymer extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -896,7 +896,7 @@ public class SubstancePolymer extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

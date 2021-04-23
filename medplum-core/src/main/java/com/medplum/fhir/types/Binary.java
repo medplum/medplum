@@ -9,13 +9,13 @@ import jakarta.json.JsonObject;
 
 public class Binary extends FhirResource {
     public static final String RESOURCE_TYPE = "Binary";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_CONTENTTYPE = "contentType";
-    public static final String PROPERTY_SECURITYCONTEXT = "securityContext";
+    public static final String PROPERTY_CONTENT_TYPE = "contentType";
+    public static final String PROPERTY_SECURITY_CONTEXT = "securityContext";
     public static final String PROPERTY_DATA = "data";
 
     public static Builder create() {
@@ -37,7 +37,7 @@ public class Binary extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -52,7 +52,7 @@ public class Binary extends FhirResource {
      * 13).
      */
     public String contentType() {
-        return getString(PROPERTY_CONTENTTYPE);
+        return getString(PROPERTY_CONTENT_TYPE);
     }
 
     /**
@@ -69,7 +69,7 @@ public class Binary extends FhirResource {
      * access to the patient.
      */
     public Reference securityContext() {
-        return getObject(Reference.class, PROPERTY_SECURITYCONTEXT);
+        return getObject(Reference.class, PROPERTY_SECURITY_CONTEXT);
     }
 
     /**
@@ -90,7 +90,7 @@ public class Binary extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -105,7 +105,7 @@ public class Binary extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -115,12 +115,12 @@ public class Binary extends FhirResource {
         }
 
         public Builder contentType(final String contentType) {
-            b.add(PROPERTY_CONTENTTYPE, contentType);
+            b.add(PROPERTY_CONTENT_TYPE, contentType);
             return this;
         }
 
         public Builder securityContext(final Reference securityContext) {
-            b.add(PROPERTY_SECURITYCONTEXT, securityContext);
+            b.add(PROPERTY_SECURITY_CONTEXT, securityContext);
             return this;
         }
 

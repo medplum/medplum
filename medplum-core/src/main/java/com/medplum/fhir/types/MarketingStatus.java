@@ -12,12 +12,12 @@ import jakarta.json.JsonObjectBuilder;
 public class MarketingStatus extends FhirResource {
     public static final String RESOURCE_TYPE = "MarketingStatus";
     public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_COUNTRY = "country";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_DATERANGE = "dateRange";
-    public static final String PROPERTY_RESTOREDATE = "restoreDate";
+    public static final String PROPERTY_DATE_RANGE = "dateRange";
+    public static final String PROPERTY_RESTORE_DATE = "restoreDate";
 
     public static Builder create() {
         return new Builder();
@@ -57,7 +57,7 @@ public class MarketingStatus extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -99,7 +99,7 @@ public class MarketingStatus extends FhirResource {
      * chain.
      */
     public Period dateRange() {
-        return getObject(Period.class, PROPERTY_DATERANGE);
+        return getObject(Period.class, PROPERTY_DATE_RANGE);
     }
 
     /**
@@ -112,7 +112,7 @@ public class MarketingStatus extends FhirResource {
      * chain.
      */
     public java.time.Instant restoreDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RESTOREDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_RESTORE_DATE));
     }
 
     public static class Builder {
@@ -132,7 +132,7 @@ public class MarketingStatus extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -152,12 +152,12 @@ public class MarketingStatus extends FhirResource {
         }
 
         public Builder dateRange(final Period dateRange) {
-            b.add(PROPERTY_DATERANGE, dateRange);
+            b.add(PROPERTY_DATE_RANGE, dateRange);
             return this;
         }
 
         public Builder restoreDate(final java.time.Instant restoreDate) {
-            b.add(PROPERTY_RESTOREDATE, restoreDate.toString());
+            b.add(PROPERTY_RESTORE_DATE, restoreDate.toString());
             return this;
         }
 

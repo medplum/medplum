@@ -9,21 +9,21 @@ import jakarta.json.JsonObject;
 
 public class AppointmentResponse extends FhirResource {
     public static final String RESOURCE_TYPE = "AppointmentResponse";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_APPOINTMENT = "appointment";
     public static final String PROPERTY_START = "start";
     public static final String PROPERTY_END = "end";
-    public static final String PROPERTY_PARTICIPANTTYPE = "participantType";
+    public static final String PROPERTY_PARTICIPANT_TYPE = "participantType";
     public static final String PROPERTY_ACTOR = "actor";
-    public static final String PROPERTY_PARTICIPANTSTATUS = "participantStatus";
+    public static final String PROPERTY_PARTICIPANT_STATUS = "participantStatus";
     public static final String PROPERTY_COMMENT = "comment";
 
     public static Builder create() {
@@ -45,7 +45,7 @@ public class AppointmentResponse extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -93,7 +93,7 @@ public class AppointmentResponse extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -134,7 +134,7 @@ public class AppointmentResponse extends FhirResource {
      * Role of participant in the appointment.
      */
     public java.util.List<CodeableConcept> participantType() {
-        return getList(CodeableConcept.class, PROPERTY_PARTICIPANTTYPE);
+        return getList(CodeableConcept.class, PROPERTY_PARTICIPANT_TYPE);
     }
 
     /**
@@ -153,7 +153,7 @@ public class AppointmentResponse extends FhirResource {
      * appointment (as a confirmation of the time) or can be empty.
      */
     public String participantStatus() {
-        return getString(PROPERTY_PARTICIPANTSTATUS);
+        return getString(PROPERTY_PARTICIPANT_STATUS);
     }
 
     /**
@@ -174,7 +174,7 @@ public class AppointmentResponse extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -189,7 +189,7 @@ public class AppointmentResponse extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -209,7 +209,7 @@ public class AppointmentResponse extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -234,7 +234,7 @@ public class AppointmentResponse extends FhirResource {
         }
 
         public Builder participantType(final java.util.List<CodeableConcept> participantType) {
-            b.add(PROPERTY_PARTICIPANTTYPE, FhirObject.toArray(participantType));
+            b.add(PROPERTY_PARTICIPANT_TYPE, FhirObject.toArray(participantType));
             return this;
         }
 
@@ -244,7 +244,7 @@ public class AppointmentResponse extends FhirResource {
         }
 
         public Builder participantStatus(final String participantStatus) {
-            b.add(PROPERTY_PARTICIPANTSTATUS, participantStatus);
+            b.add(PROPERTY_PARTICIPANT_STATUS, participantStatus);
             return this;
         }
 

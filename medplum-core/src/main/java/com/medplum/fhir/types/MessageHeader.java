@@ -11,16 +11,16 @@ import jakarta.json.JsonObjectBuilder;
 
 public class MessageHeader extends FhirResource {
     public static final String RESOURCE_TYPE = "MessageHeader";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-    public static final String PROPERTY_EVENTCODING = "eventCoding";
-    public static final String PROPERTY_EVENTURI = "eventUri";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+    public static final String PROPERTY_EVENT_CODING = "eventCoding";
+    public static final String PROPERTY_EVENT_URI = "eventUri";
     public static final String PROPERTY_DESTINATION = "destination";
     public static final String PROPERTY_SENDER = "sender";
     public static final String PROPERTY_ENTERER = "enterer";
@@ -51,7 +51,7 @@ public class MessageHeader extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -99,7 +99,7 @@ public class MessageHeader extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -110,7 +110,7 @@ public class MessageHeader extends FhirResource {
      * uri to the EventDefinition.
      */
     public Coding eventCoding() {
-        return getObject(Coding.class, PROPERTY_EVENTCODING);
+        return getObject(Coding.class, PROPERTY_EVENT_CODING);
     }
 
     /**
@@ -121,7 +121,7 @@ public class MessageHeader extends FhirResource {
      * uri to the EventDefinition.
      */
     public String eventUri() {
-        return getString(PROPERTY_EVENTURI);
+        return getString(PROPERTY_EVENT_URI);
     }
 
     /**
@@ -216,7 +216,7 @@ public class MessageHeader extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -231,7 +231,7 @@ public class MessageHeader extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -251,17 +251,17 @@ public class MessageHeader extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder eventCoding(final Coding eventCoding) {
-            b.add(PROPERTY_EVENTCODING, eventCoding);
+            b.add(PROPERTY_EVENT_CODING, eventCoding);
             return this;
         }
 
         public Builder eventUri(final String eventUri) {
-            b.add(PROPERTY_EVENTURI, eventUri);
+            b.add(PROPERTY_EVENT_URI, eventUri);
             return this;
         }
 
@@ -323,7 +323,7 @@ public class MessageHeader extends FhirResource {
     public static class MessageHeaderDestination extends FhirObject {
         public static final String RESOURCE_TYPE = "MessageHeaderDestination";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_TARGET = "target";
         public static final String PROPERTY_ENDPOINT = "endpoint";
@@ -367,7 +367,7 @@ public class MessageHeader extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -418,7 +418,7 @@ public class MessageHeader extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -451,7 +451,7 @@ public class MessageHeader extends FhirResource {
     public static class MessageHeaderResponse extends FhirObject {
         public static final String RESOURCE_TYPE = "MessageHeaderResponse";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTIFIER = "identifier";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DETAILS = "details";
@@ -494,7 +494,7 @@ public class MessageHeader extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -537,7 +537,7 @@ public class MessageHeader extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -565,7 +565,7 @@ public class MessageHeader extends FhirResource {
     public static class MessageHeaderSource extends FhirObject {
         public static final String RESOURCE_TYPE = "MessageHeaderSource";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_SOFTWARE = "software";
         public static final String PROPERTY_VERSION = "version";
@@ -610,7 +610,7 @@ public class MessageHeader extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -667,7 +667,7 @@ public class MessageHeader extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

@@ -15,9 +15,9 @@ public class Signature extends FhirResource {
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_WHEN = "when";
     public static final String PROPERTY_WHO = "who";
-    public static final String PROPERTY_ONBEHALFOF = "onBehalfOf";
-    public static final String PROPERTY_TARGETFORMAT = "targetFormat";
-    public static final String PROPERTY_SIGFORMAT = "sigFormat";
+    public static final String PROPERTY_ON_BEHALF_OF = "onBehalfOf";
+    public static final String PROPERTY_TARGET_FORMAT = "targetFormat";
+    public static final String PROPERTY_SIG_FORMAT = "sigFormat";
     public static final String PROPERTY_DATA = "data";
 
     public static Builder create() {
@@ -70,7 +70,7 @@ public class Signature extends FhirResource {
      * is represented by the signature.
      */
     public Reference onBehalfOf() {
-        return getObject(Reference.class, PROPERTY_ONBEHALFOF);
+        return getObject(Reference.class, PROPERTY_ON_BEHALF_OF);
     }
 
     /**
@@ -78,7 +78,7 @@ public class Signature extends FhirResource {
      * resources signed by the signature.
      */
     public String targetFormat() {
-        return getString(PROPERTY_TARGETFORMAT);
+        return getString(PROPERTY_TARGET_FORMAT);
     }
 
     /**
@@ -88,7 +88,7 @@ public class Signature extends FhirResource {
      * signature, etc.
      */
     public String sigFormat() {
-        return getString(PROPERTY_SIGFORMAT);
+        return getString(PROPERTY_SIG_FORMAT);
     }
 
     /**
@@ -131,17 +131,17 @@ public class Signature extends FhirResource {
         }
 
         public Builder onBehalfOf(final Reference onBehalfOf) {
-            b.add(PROPERTY_ONBEHALFOF, onBehalfOf);
+            b.add(PROPERTY_ON_BEHALF_OF, onBehalfOf);
             return this;
         }
 
         public Builder targetFormat(final String targetFormat) {
-            b.add(PROPERTY_TARGETFORMAT, targetFormat);
+            b.add(PROPERTY_TARGET_FORMAT, targetFormat);
             return this;
         }
 
         public Builder sigFormat(final String sigFormat) {
-            b.add(PROPERTY_SIGFORMAT, sigFormat);
+            b.add(PROPERTY_SIG_FORMAT, sigFormat);
             return this;
         }
 

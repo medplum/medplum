@@ -9,14 +9,14 @@ import jakarta.json.JsonObject;
 
 public class PaymentNotice extends FhirResource {
     public static final String RESOURCE_TYPE = "PaymentNotice";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_REQUEST = "request";
@@ -24,11 +24,11 @@ public class PaymentNotice extends FhirResource {
     public static final String PROPERTY_CREATED = "created";
     public static final String PROPERTY_PROVIDER = "provider";
     public static final String PROPERTY_PAYMENT = "payment";
-    public static final String PROPERTY_PAYMENTDATE = "paymentDate";
+    public static final String PROPERTY_PAYMENT_DATE = "paymentDate";
     public static final String PROPERTY_PAYEE = "payee";
     public static final String PROPERTY_RECIPIENT = "recipient";
     public static final String PROPERTY_AMOUNT = "amount";
-    public static final String PROPERTY_PAYMENTSTATUS = "paymentStatus";
+    public static final String PROPERTY_PAYMENT_STATUS = "paymentStatus";
 
     public static Builder create() {
         return new Builder();
@@ -49,7 +49,7 @@ public class PaymentNotice extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -97,7 +97,7 @@ public class PaymentNotice extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -154,7 +154,7 @@ public class PaymentNotice extends FhirResource {
      * The date when the above payment action occurred.
      */
     public java.time.Instant paymentDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_PAYMENTDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_PAYMENT_DATE));
     }
 
     /**
@@ -183,7 +183,7 @@ public class PaymentNotice extends FhirResource {
      * A code indicating whether payment has been sent or cleared.
      */
     public CodeableConcept paymentStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_PAYMENTSTATUS);
+        return getObject(CodeableConcept.class, PROPERTY_PAYMENT_STATUS);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -197,7 +197,7 @@ public class PaymentNotice extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -212,7 +212,7 @@ public class PaymentNotice extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -232,7 +232,7 @@ public class PaymentNotice extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -272,7 +272,7 @@ public class PaymentNotice extends FhirResource {
         }
 
         public Builder paymentDate(final java.time.Instant paymentDate) {
-            b.add(PROPERTY_PAYMENTDATE, paymentDate.toString());
+            b.add(PROPERTY_PAYMENT_DATE, paymentDate.toString());
             return this;
         }
 
@@ -292,7 +292,7 @@ public class PaymentNotice extends FhirResource {
         }
 
         public Builder paymentStatus(final CodeableConcept paymentStatus) {
-            b.add(PROPERTY_PAYMENTSTATUS, paymentStatus);
+            b.add(PROPERTY_PAYMENT_STATUS, paymentStatus);
             return this;
         }
 

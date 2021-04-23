@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class AdverseEvent extends FhirResource {
     public static final String RESOURCE_TYPE = "AdverseEvent";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_ACTUALITY = "actuality";
     public static final String PROPERTY_CATEGORY = "category";
@@ -27,17 +27,17 @@ public class AdverseEvent extends FhirResource {
     public static final String PROPERTY_ENCOUNTER = "encounter";
     public static final String PROPERTY_DATE = "date";
     public static final String PROPERTY_DETECTED = "detected";
-    public static final String PROPERTY_RECORDEDDATE = "recordedDate";
-    public static final String PROPERTY_RESULTINGCONDITION = "resultingCondition";
+    public static final String PROPERTY_RECORDED_DATE = "recordedDate";
+    public static final String PROPERTY_RESULTING_CONDITION = "resultingCondition";
     public static final String PROPERTY_LOCATION = "location";
     public static final String PROPERTY_SERIOUSNESS = "seriousness";
     public static final String PROPERTY_SEVERITY = "severity";
     public static final String PROPERTY_OUTCOME = "outcome";
     public static final String PROPERTY_RECORDER = "recorder";
     public static final String PROPERTY_CONTRIBUTOR = "contributor";
-    public static final String PROPERTY_SUSPECTENTITY = "suspectEntity";
-    public static final String PROPERTY_SUBJECTMEDICALHISTORY = "subjectMedicalHistory";
-    public static final String PROPERTY_REFERENCEDOCUMENT = "referenceDocument";
+    public static final String PROPERTY_SUSPECT_ENTITY = "suspectEntity";
+    public static final String PROPERTY_SUBJECT_MEDICAL_HISTORY = "subjectMedicalHistory";
+    public static final String PROPERTY_REFERENCE_DOCUMENT = "referenceDocument";
     public static final String PROPERTY_STUDY = "study";
 
     public static Builder create() {
@@ -59,7 +59,7 @@ public class AdverseEvent extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -107,7 +107,7 @@ public class AdverseEvent extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -178,7 +178,7 @@ public class AdverseEvent extends FhirResource {
      * recorded.
      */
     public java.time.Instant recordedDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RECORDEDDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_RECORDED_DATE));
     }
 
     /**
@@ -186,7 +186,7 @@ public class AdverseEvent extends FhirResource {
      * exposure to a substance (for example, a drug or a chemical).
      */
     public java.util.List<Reference> resultingCondition() {
-        return getList(Reference.class, PROPERTY_RESULTINGCONDITION);
+        return getList(Reference.class, PROPERTY_RESULTING_CONDITION);
     }
 
     /**
@@ -245,21 +245,21 @@ public class AdverseEvent extends FhirResource {
      * event.
      */
     public java.util.List<AdverseEventSuspectEntity> suspectEntity() {
-        return getList(AdverseEventSuspectEntity.class, PROPERTY_SUSPECTENTITY);
+        return getList(AdverseEventSuspectEntity.class, PROPERTY_SUSPECT_ENTITY);
     }
 
     /**
      * AdverseEvent.subjectMedicalHistory.
      */
     public java.util.List<Reference> subjectMedicalHistory() {
-        return getList(Reference.class, PROPERTY_SUBJECTMEDICALHISTORY);
+        return getList(Reference.class, PROPERTY_SUBJECT_MEDICAL_HISTORY);
     }
 
     /**
      * AdverseEvent.referenceDocument.
      */
     public java.util.List<Reference> referenceDocument() {
-        return getList(Reference.class, PROPERTY_REFERENCEDOCUMENT);
+        return getList(Reference.class, PROPERTY_REFERENCE_DOCUMENT);
     }
 
     /**
@@ -280,7 +280,7 @@ public class AdverseEvent extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -295,7 +295,7 @@ public class AdverseEvent extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -315,7 +315,7 @@ public class AdverseEvent extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -360,12 +360,12 @@ public class AdverseEvent extends FhirResource {
         }
 
         public Builder recordedDate(final java.time.Instant recordedDate) {
-            b.add(PROPERTY_RECORDEDDATE, recordedDate.toString());
+            b.add(PROPERTY_RECORDED_DATE, recordedDate.toString());
             return this;
         }
 
         public Builder resultingCondition(final java.util.List<Reference> resultingCondition) {
-            b.add(PROPERTY_RESULTINGCONDITION, FhirObject.toArray(resultingCondition));
+            b.add(PROPERTY_RESULTING_CONDITION, FhirObject.toArray(resultingCondition));
             return this;
         }
 
@@ -400,17 +400,17 @@ public class AdverseEvent extends FhirResource {
         }
 
         public Builder suspectEntity(final java.util.List<AdverseEventSuspectEntity> suspectEntity) {
-            b.add(PROPERTY_SUSPECTENTITY, FhirObject.toArray(suspectEntity));
+            b.add(PROPERTY_SUSPECT_ENTITY, FhirObject.toArray(suspectEntity));
             return this;
         }
 
         public Builder subjectMedicalHistory(final java.util.List<Reference> subjectMedicalHistory) {
-            b.add(PROPERTY_SUBJECTMEDICALHISTORY, FhirObject.toArray(subjectMedicalHistory));
+            b.add(PROPERTY_SUBJECT_MEDICAL_HISTORY, FhirObject.toArray(subjectMedicalHistory));
             return this;
         }
 
         public Builder referenceDocument(final java.util.List<Reference> referenceDocument) {
-            b.add(PROPERTY_REFERENCEDOCUMENT, FhirObject.toArray(referenceDocument));
+            b.add(PROPERTY_REFERENCE_DOCUMENT, FhirObject.toArray(referenceDocument));
             return this;
         }
 
@@ -427,9 +427,9 @@ public class AdverseEvent extends FhirResource {
     public static class AdverseEventCausality extends FhirObject {
         public static final String RESOURCE_TYPE = "AdverseEventCausality";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ASSESSMENT = "assessment";
-        public static final String PROPERTY_PRODUCTRELATEDNESS = "productRelatedness";
+        public static final String PROPERTY_PRODUCT_RELATEDNESS = "productRelatedness";
         public static final String PROPERTY_AUTHOR = "author";
         public static final String PROPERTY_METHOD = "method";
 
@@ -471,7 +471,7 @@ public class AdverseEvent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -485,7 +485,7 @@ public class AdverseEvent extends FhirResource {
          * AdverseEvent.suspectEntity.causalityProductRelatedness.
          */
         public String productRelatedness() {
-            return getString(PROPERTY_PRODUCTRELATEDNESS);
+            return getString(PROPERTY_PRODUCT_RELATEDNESS);
         }
 
         /**
@@ -519,7 +519,7 @@ public class AdverseEvent extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -529,7 +529,7 @@ public class AdverseEvent extends FhirResource {
             }
 
             public Builder productRelatedness(final String productRelatedness) {
-                b.add(PROPERTY_PRODUCTRELATEDNESS, productRelatedness);
+                b.add(PROPERTY_PRODUCT_RELATEDNESS, productRelatedness);
                 return this;
             }
 
@@ -552,7 +552,7 @@ public class AdverseEvent extends FhirResource {
     public static class AdverseEventSuspectEntity extends FhirObject {
         public static final String RESOURCE_TYPE = "AdverseEventSuspectEntity";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_INSTANCE = "instance";
         public static final String PROPERTY_CAUSALITY = "causality";
 
@@ -594,7 +594,7 @@ public class AdverseEvent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -630,7 +630,7 @@ public class AdverseEvent extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

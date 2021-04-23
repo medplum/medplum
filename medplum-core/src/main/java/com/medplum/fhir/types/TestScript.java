@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class TestScript extends FhirResource {
     public static final String RESOURCE_TYPE = "TestScript";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_VERSION = "version";
@@ -30,7 +30,7 @@ public class TestScript extends FhirResource {
     public static final String PROPERTY_PUBLISHER = "publisher";
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_PURPOSE = "purpose";
     public static final String PROPERTY_COPYRIGHT = "copyright";
@@ -63,7 +63,7 @@ public class TestScript extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -111,7 +111,7 @@ public class TestScript extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -224,7 +224,7 @@ public class TestScript extends FhirResource {
      * indexing and searching for appropriate test script instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -332,7 +332,7 @@ public class TestScript extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -347,7 +347,7 @@ public class TestScript extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -367,7 +367,7 @@ public class TestScript extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -427,7 +427,7 @@ public class TestScript extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -499,7 +499,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptAction extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptAction";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_OPERATION = "operation";
         public static final String PROPERTY_ASSERT = "assert";
 
@@ -541,7 +541,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -576,7 +576,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -599,7 +599,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptAction1 extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptAction1";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_OPERATION = "operation";
         public static final String PROPERTY_ASSERT = "assert";
 
@@ -641,7 +641,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -676,7 +676,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -699,7 +699,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptAction2 extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptAction2";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_OPERATION = "operation";
 
         public static Builder create() {
@@ -740,7 +740,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -767,7 +767,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -785,29 +785,29 @@ public class TestScript extends FhirResource {
     public static class TestScriptAssert extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptAssert";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_LABEL = "label";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_DIRECTION = "direction";
-        public static final String PROPERTY_COMPARETOSOURCEID = "compareToSourceId";
-        public static final String PROPERTY_COMPARETOSOURCEEXPRESSION = "compareToSourceExpression";
-        public static final String PROPERTY_COMPARETOSOURCEPATH = "compareToSourcePath";
-        public static final String PROPERTY_CONTENTTYPE = "contentType";
+        public static final String PROPERTY_COMPARE_TO_SOURCE_ID = "compareToSourceId";
+        public static final String PROPERTY_COMPARE_TO_SOURCE_EXPRESSION = "compareToSourceExpression";
+        public static final String PROPERTY_COMPARE_TO_SOURCE_PATH = "compareToSourcePath";
+        public static final String PROPERTY_CONTENT_TYPE = "contentType";
         public static final String PROPERTY_EXPRESSION = "expression";
-        public static final String PROPERTY_HEADERFIELD = "headerField";
-        public static final String PROPERTY_MINIMUMID = "minimumId";
-        public static final String PROPERTY_NAVIGATIONLINKS = "navigationLinks";
+        public static final String PROPERTY_HEADER_FIELD = "headerField";
+        public static final String PROPERTY_MINIMUM_ID = "minimumId";
+        public static final String PROPERTY_NAVIGATION_LINKS = "navigationLinks";
         public static final String PROPERTY_OPERATOR = "operator";
         public static final String PROPERTY_PATH = "path";
-        public static final String PROPERTY_REQUESTMETHOD = "requestMethod";
-        public static final String PROPERTY_REQUESTURL = "requestURL";
+        public static final String PROPERTY_REQUEST_METHOD = "requestMethod";
+        public static final String PROPERTY_REQUEST_U_R_L = "requestURL";
         public static final String PROPERTY_RESOURCE = "resource";
         public static final String PROPERTY_RESPONSE = "response";
-        public static final String PROPERTY_RESPONSECODE = "responseCode";
-        public static final String PROPERTY_SOURCEID = "sourceId";
-        public static final String PROPERTY_VALIDATEPROFILEID = "validateProfileId";
+        public static final String PROPERTY_RESPONSE_CODE = "responseCode";
+        public static final String PROPERTY_SOURCE_ID = "sourceId";
+        public static final String PROPERTY_VALIDATE_PROFILE_ID = "validateProfileId";
         public static final String PROPERTY_VALUE = "value";
-        public static final String PROPERTY_WARNINGONLY = "warningOnly";
+        public static final String PROPERTY_WARNING_ONLY = "warningOnly";
 
         public static Builder create() {
             return new Builder();
@@ -847,7 +847,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -877,7 +877,7 @@ public class TestScript extends FhirResource {
          * either the "source/expression" or "sourceId/path" definition.
          */
         public String compareToSourceId() {
-            return getString(PROPERTY_COMPARETOSOURCEID);
+            return getString(PROPERTY_COMPARE_TO_SOURCE_ID);
         }
 
         /**
@@ -886,7 +886,7 @@ public class TestScript extends FhirResource {
          * compareToSourcePath must be defined, but not both.
          */
         public String compareToSourceExpression() {
-            return getString(PROPERTY_COMPARETOSOURCEEXPRESSION);
+            return getString(PROPERTY_COMPARE_TO_SOURCE_EXPRESSION);
         }
 
         /**
@@ -895,7 +895,7 @@ public class TestScript extends FhirResource {
          * compareToSourcePath must be defined, but not both.
          */
         public String compareToSourcePath() {
-            return getString(PROPERTY_COMPARETOSOURCEPATH);
+            return getString(PROPERTY_COMPARE_TO_SOURCE_PATH);
         }
 
         /**
@@ -903,7 +903,7 @@ public class TestScript extends FhirResource {
          * message 'Content-Type' header.
          */
         public String contentType() {
-            return getString(PROPERTY_CONTENTTYPE);
+            return getString(PROPERTY_CONTENT_TYPE);
         }
 
         /**
@@ -918,7 +918,7 @@ public class TestScript extends FhirResource {
          * The HTTP header field name e.g. 'Location'.
          */
         public String headerField() {
-            return getString(PROPERTY_HEADERFIELD);
+            return getString(PROPERTY_HEADER_FIELD);
         }
 
         /**
@@ -926,7 +926,7 @@ public class TestScript extends FhirResource {
          * the fixture specified by minimumId.
          */
         public String minimumId() {
-            return getString(PROPERTY_MINIMUMID);
+            return getString(PROPERTY_MINIMUM_ID);
         }
 
         /**
@@ -934,7 +934,7 @@ public class TestScript extends FhirResource {
          * navigation links.
          */
         public Boolean navigationLinks() {
-            return data.getBoolean(PROPERTY_NAVIGATIONLINKS);
+            return data.getBoolean(PROPERTY_NAVIGATION_LINKS);
         }
 
         /**
@@ -958,14 +958,14 @@ public class TestScript extends FhirResource {
          * by the client system under test.
          */
         public String requestMethod() {
-            return getString(PROPERTY_REQUESTMETHOD);
+            return getString(PROPERTY_REQUEST_METHOD);
         }
 
         /**
          * The value to use in a comparison against the request URL path string.
          */
         public String requestURL() {
-            return getString(PROPERTY_REQUESTURL);
+            return getString(PROPERTY_REQUEST_U_R_L);
         }
 
         /**
@@ -989,7 +989,7 @@ public class TestScript extends FhirResource {
          * The value of the HTTP response code to be tested.
          */
         public String responseCode() {
-            return getString(PROPERTY_RESPONSECODE);
+            return getString(PROPERTY_RESPONSE_CODE);
         }
 
         /**
@@ -997,14 +997,14 @@ public class TestScript extends FhirResource {
          * against.
          */
         public String sourceId() {
-            return getString(PROPERTY_SOURCEID);
+            return getString(PROPERTY_SOURCE_ID);
         }
 
         /**
          * The ID of the Profile to validate against.
          */
         public String validateProfileId() {
-            return getString(PROPERTY_VALIDATEPROFILEID);
+            return getString(PROPERTY_VALIDATE_PROFILE_ID);
         }
 
         /**
@@ -1019,7 +1019,7 @@ public class TestScript extends FhirResource {
          * for this assert.
          */
         public Boolean warningOnly() {
-            return data.getBoolean(PROPERTY_WARNINGONLY);
+            return data.getBoolean(PROPERTY_WARNING_ONLY);
         }
 
         public static class Builder {
@@ -1039,7 +1039,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1059,22 +1059,22 @@ public class TestScript extends FhirResource {
             }
 
             public Builder compareToSourceId(final String compareToSourceId) {
-                b.add(PROPERTY_COMPARETOSOURCEID, compareToSourceId);
+                b.add(PROPERTY_COMPARE_TO_SOURCE_ID, compareToSourceId);
                 return this;
             }
 
             public Builder compareToSourceExpression(final String compareToSourceExpression) {
-                b.add(PROPERTY_COMPARETOSOURCEEXPRESSION, compareToSourceExpression);
+                b.add(PROPERTY_COMPARE_TO_SOURCE_EXPRESSION, compareToSourceExpression);
                 return this;
             }
 
             public Builder compareToSourcePath(final String compareToSourcePath) {
-                b.add(PROPERTY_COMPARETOSOURCEPATH, compareToSourcePath);
+                b.add(PROPERTY_COMPARE_TO_SOURCE_PATH, compareToSourcePath);
                 return this;
             }
 
             public Builder contentType(final String contentType) {
-                b.add(PROPERTY_CONTENTTYPE, contentType);
+                b.add(PROPERTY_CONTENT_TYPE, contentType);
                 return this;
             }
 
@@ -1084,17 +1084,17 @@ public class TestScript extends FhirResource {
             }
 
             public Builder headerField(final String headerField) {
-                b.add(PROPERTY_HEADERFIELD, headerField);
+                b.add(PROPERTY_HEADER_FIELD, headerField);
                 return this;
             }
 
             public Builder minimumId(final String minimumId) {
-                b.add(PROPERTY_MINIMUMID, minimumId);
+                b.add(PROPERTY_MINIMUM_ID, minimumId);
                 return this;
             }
 
             public Builder navigationLinks(final Boolean navigationLinks) {
-                b.add(PROPERTY_NAVIGATIONLINKS, navigationLinks);
+                b.add(PROPERTY_NAVIGATION_LINKS, navigationLinks);
                 return this;
             }
 
@@ -1109,12 +1109,12 @@ public class TestScript extends FhirResource {
             }
 
             public Builder requestMethod(final String requestMethod) {
-                b.add(PROPERTY_REQUESTMETHOD, requestMethod);
+                b.add(PROPERTY_REQUEST_METHOD, requestMethod);
                 return this;
             }
 
             public Builder requestURL(final String requestURL) {
-                b.add(PROPERTY_REQUESTURL, requestURL);
+                b.add(PROPERTY_REQUEST_U_R_L, requestURL);
                 return this;
             }
 
@@ -1129,17 +1129,17 @@ public class TestScript extends FhirResource {
             }
 
             public Builder responseCode(final String responseCode) {
-                b.add(PROPERTY_RESPONSECODE, responseCode);
+                b.add(PROPERTY_RESPONSE_CODE, responseCode);
                 return this;
             }
 
             public Builder sourceId(final String sourceId) {
-                b.add(PROPERTY_SOURCEID, sourceId);
+                b.add(PROPERTY_SOURCE_ID, sourceId);
                 return this;
             }
 
             public Builder validateProfileId(final String validateProfileId) {
-                b.add(PROPERTY_VALIDATEPROFILEID, validateProfileId);
+                b.add(PROPERTY_VALIDATE_PROFILE_ID, validateProfileId);
                 return this;
             }
 
@@ -1149,7 +1149,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder warningOnly(final Boolean warningOnly) {
-                b.add(PROPERTY_WARNINGONLY, warningOnly);
+                b.add(PROPERTY_WARNING_ONLY, warningOnly);
                 return this;
             }
 
@@ -1162,7 +1162,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptCapability extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptCapability";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_REQUIRED = "required";
         public static final String PROPERTY_VALIDATED = "validated";
         public static final String PROPERTY_DESCRIPTION = "description";
@@ -1209,7 +1209,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1284,7 +1284,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1332,7 +1332,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptDestination extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptDestination";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_INDEX = "index";
         public static final String PROPERTY_PROFILE = "profile";
 
@@ -1374,7 +1374,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1409,7 +1409,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1432,7 +1432,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptFixture extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptFixture";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_AUTOCREATE = "autocreate";
         public static final String PROPERTY_AUTODELETE = "autodelete";
         public static final String PROPERTY_RESOURCE = "resource";
@@ -1475,7 +1475,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1523,7 +1523,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1551,7 +1551,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptLink extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptLink";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_URL = "url";
         public static final String PROPERTY_DESCRIPTION = "description";
 
@@ -1593,7 +1593,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1628,7 +1628,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1651,7 +1651,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptMetadata extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptMetadata";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_LINK = "link";
         public static final String PROPERTY_CAPABILITY = "capability";
 
@@ -1693,7 +1693,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1728,7 +1728,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1751,23 +1751,23 @@ public class TestScript extends FhirResource {
     public static class TestScriptOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptOperation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_RESOURCE = "resource";
         public static final String PROPERTY_LABEL = "label";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_ACCEPT = "accept";
-        public static final String PROPERTY_CONTENTTYPE = "contentType";
+        public static final String PROPERTY_CONTENT_TYPE = "contentType";
         public static final String PROPERTY_DESTINATION = "destination";
-        public static final String PROPERTY_ENCODEREQUESTURL = "encodeRequestUrl";
+        public static final String PROPERTY_ENCODE_REQUEST_URL = "encodeRequestUrl";
         public static final String PROPERTY_METHOD = "method";
         public static final String PROPERTY_ORIGIN = "origin";
         public static final String PROPERTY_PARAMS = "params";
-        public static final String PROPERTY_REQUESTHEADER = "requestHeader";
-        public static final String PROPERTY_REQUESTID = "requestId";
-        public static final String PROPERTY_RESPONSEID = "responseId";
-        public static final String PROPERTY_SOURCEID = "sourceId";
-        public static final String PROPERTY_TARGETID = "targetId";
+        public static final String PROPERTY_REQUEST_HEADER = "requestHeader";
+        public static final String PROPERTY_REQUEST_ID = "requestId";
+        public static final String PROPERTY_RESPONSE_ID = "responseId";
+        public static final String PROPERTY_SOURCE_ID = "sourceId";
+        public static final String PROPERTY_TARGET_ID = "targetId";
         public static final String PROPERTY_URL = "url";
 
         public static Builder create() {
@@ -1808,7 +1808,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1853,7 +1853,7 @@ public class TestScript extends FhirResource {
          * header.
          */
         public String contentType() {
-            return getString(PROPERTY_CONTENTTYPE);
+            return getString(PROPERTY_CONTENT_TYPE);
         }
 
         /**
@@ -1871,7 +1871,7 @@ public class TestScript extends FhirResource {
          * encoded url paths.
          */
         public Boolean encodeRequestUrl() {
-            return data.getBoolean(PROPERTY_ENCODEREQUESTURL);
+            return data.getBoolean(PROPERTY_ENCODE_REQUEST_URL);
         }
 
         /**
@@ -1902,28 +1902,28 @@ public class TestScript extends FhirResource {
          * Header elements would be used to set HTTP headers.
          */
         public java.util.List<TestScriptRequestHeader> requestHeader() {
-            return getList(TestScriptRequestHeader.class, PROPERTY_REQUESTHEADER);
+            return getList(TestScriptRequestHeader.class, PROPERTY_REQUEST_HEADER);
         }
 
         /**
          * The fixture id (maybe new) to map to the request.
          */
         public String requestId() {
-            return getString(PROPERTY_REQUESTID);
+            return getString(PROPERTY_REQUEST_ID);
         }
 
         /**
          * The fixture id (maybe new) to map to the response.
          */
         public String responseId() {
-            return getString(PROPERTY_RESPONSEID);
+            return getString(PROPERTY_RESPONSE_ID);
         }
 
         /**
          * The id of the fixture used as the body of a PUT or POST request.
          */
         public String sourceId() {
-            return getString(PROPERTY_SOURCEID);
+            return getString(PROPERTY_SOURCE_ID);
         }
 
         /**
@@ -1931,7 +1931,7 @@ public class TestScript extends FhirResource {
          * requests.
          */
         public String targetId() {
-            return getString(PROPERTY_TARGETID);
+            return getString(PROPERTY_TARGET_ID);
         }
 
         /**
@@ -1958,7 +1958,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1988,7 +1988,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder contentType(final String contentType) {
-                b.add(PROPERTY_CONTENTTYPE, contentType);
+                b.add(PROPERTY_CONTENT_TYPE, contentType);
                 return this;
             }
 
@@ -1998,7 +1998,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder encodeRequestUrl(final Boolean encodeRequestUrl) {
-                b.add(PROPERTY_ENCODEREQUESTURL, encodeRequestUrl);
+                b.add(PROPERTY_ENCODE_REQUEST_URL, encodeRequestUrl);
                 return this;
             }
 
@@ -2018,27 +2018,27 @@ public class TestScript extends FhirResource {
             }
 
             public Builder requestHeader(final java.util.List<TestScriptRequestHeader> requestHeader) {
-                b.add(PROPERTY_REQUESTHEADER, FhirObject.toArray(requestHeader));
+                b.add(PROPERTY_REQUEST_HEADER, FhirObject.toArray(requestHeader));
                 return this;
             }
 
             public Builder requestId(final String requestId) {
-                b.add(PROPERTY_REQUESTID, requestId);
+                b.add(PROPERTY_REQUEST_ID, requestId);
                 return this;
             }
 
             public Builder responseId(final String responseId) {
-                b.add(PROPERTY_RESPONSEID, responseId);
+                b.add(PROPERTY_RESPONSE_ID, responseId);
                 return this;
             }
 
             public Builder sourceId(final String sourceId) {
-                b.add(PROPERTY_SOURCEID, sourceId);
+                b.add(PROPERTY_SOURCE_ID, sourceId);
                 return this;
             }
 
             public Builder targetId(final String targetId) {
-                b.add(PROPERTY_TARGETID, targetId);
+                b.add(PROPERTY_TARGET_ID, targetId);
                 return this;
             }
 
@@ -2056,7 +2056,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptOrigin extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptOrigin";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_INDEX = "index";
         public static final String PROPERTY_PROFILE = "profile";
 
@@ -2098,7 +2098,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2133,7 +2133,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2156,7 +2156,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptRequestHeader extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptRequestHeader";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_FIELD = "field";
         public static final String PROPERTY_VALUE = "value";
 
@@ -2198,7 +2198,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2232,7 +2232,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2255,7 +2255,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptSetup extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptSetup";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ACTION = "action";
 
         public static Builder create() {
@@ -2296,7 +2296,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2323,7 +2323,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2341,7 +2341,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptTeardown extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptTeardown";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ACTION = "action";
 
         public static Builder create() {
@@ -2382,7 +2382,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2409,7 +2409,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2427,7 +2427,7 @@ public class TestScript extends FhirResource {
     public static class TestScriptTest extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptTest";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_ACTION = "action";
@@ -2470,7 +2470,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2513,7 +2513,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2541,15 +2541,15 @@ public class TestScript extends FhirResource {
     public static class TestScriptVariable extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptVariable";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DEFAULTVALUE = "defaultValue";
+        public static final String PROPERTY_DEFAULT_VALUE = "defaultValue";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_EXPRESSION = "expression";
-        public static final String PROPERTY_HEADERFIELD = "headerField";
+        public static final String PROPERTY_HEADER_FIELD = "headerField";
         public static final String PROPERTY_HINT = "hint";
         public static final String PROPERTY_PATH = "path";
-        public static final String PROPERTY_SOURCEID = "sourceId";
+        public static final String PROPERTY_SOURCE_ID = "sourceId";
 
         public static Builder create() {
             return new Builder();
@@ -2589,7 +2589,7 @@ public class TestScript extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2603,7 +2603,7 @@ public class TestScript extends FhirResource {
          * A default, hard-coded, or user-defined value for this variable.
          */
         public String defaultValue() {
-            return getString(PROPERTY_DEFAULTVALUE);
+            return getString(PROPERTY_DEFAULT_VALUE);
         }
 
         /**
@@ -2628,7 +2628,7 @@ public class TestScript extends FhirResource {
          * sourceId is pointing to.
          */
         public String headerField() {
-            return getString(PROPERTY_HEADERFIELD);
+            return getString(PROPERTY_HEADER_FIELD);
         }
 
         /**
@@ -2653,7 +2653,7 @@ public class TestScript extends FhirResource {
          * against within this variable.
          */
         public String sourceId() {
-            return getString(PROPERTY_SOURCEID);
+            return getString(PROPERTY_SOURCE_ID);
         }
 
         public static class Builder {
@@ -2673,7 +2673,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -2683,7 +2683,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder defaultValue(final String defaultValue) {
-                b.add(PROPERTY_DEFAULTVALUE, defaultValue);
+                b.add(PROPERTY_DEFAULT_VALUE, defaultValue);
                 return this;
             }
 
@@ -2698,7 +2698,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder headerField(final String headerField) {
-                b.add(PROPERTY_HEADERFIELD, headerField);
+                b.add(PROPERTY_HEADER_FIELD, headerField);
                 return this;
             }
 
@@ -2713,7 +2713,7 @@ public class TestScript extends FhirResource {
             }
 
             public Builder sourceId(final String sourceId) {
-                b.add(PROPERTY_SOURCEID, sourceId);
+                b.add(PROPERTY_SOURCE_ID, sourceId);
                 return this;
             }
 

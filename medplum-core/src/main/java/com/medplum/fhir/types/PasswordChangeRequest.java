@@ -9,10 +9,10 @@ import jakarta.json.JsonObject;
 
 public class PasswordChangeRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "PasswordChangeRequest";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_USER = "user";
-    public static final String PROPERTY_REDIRECTURI = "redirectUri";
+    public static final String PROPERTY_REDIRECT_URI = "redirectUri";
 
     public static Builder create() {
         return new Builder();
@@ -38,7 +38,7 @@ public class PasswordChangeRequest extends FhirResource {
      * application.
      */
     public String redirectUri() {
-        return getString(PROPERTY_REDIRECTURI);
+        return getString(PROPERTY_REDIRECT_URI);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -52,7 +52,7 @@ public class PasswordChangeRequest extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -67,7 +67,7 @@ public class PasswordChangeRequest extends FhirResource {
         }
 
         public Builder redirectUri(final String redirectUri) {
-            b.add(PROPERTY_REDIRECTURI, redirectUri);
+            b.add(PROPERTY_REDIRECT_URI, redirectUri);
             return this;
         }
 

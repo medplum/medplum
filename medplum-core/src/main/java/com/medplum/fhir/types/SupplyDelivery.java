@@ -11,24 +11,24 @@ import jakarta.json.JsonObjectBuilder;
 
 public class SupplyDelivery extends FhirResource {
     public static final String RESOURCE_TYPE = "SupplyDelivery";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASEDON = "basedOn";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_BASED_ON = "basedOn";
+    public static final String PROPERTY_PART_OF = "partOf";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_PATIENT = "patient";
     public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_SUPPLIEDITEM = "suppliedItem";
-    public static final String PROPERTY_OCCURRENCEDATETIME = "occurrenceDateTime";
-    public static final String PROPERTY_OCCURRENCEPERIOD = "occurrencePeriod";
-    public static final String PROPERTY_OCCURRENCETIMING = "occurrenceTiming";
+    public static final String PROPERTY_SUPPLIED_ITEM = "suppliedItem";
+    public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
+    public static final String PROPERTY_OCCURRENCE_PERIOD = "occurrencePeriod";
+    public static final String PROPERTY_OCCURRENCE_TIMING = "occurrenceTiming";
     public static final String PROPERTY_SUPPLIER = "supplier";
     public static final String PROPERTY_DESTINATION = "destination";
     public static final String PROPERTY_RECEIVER = "receiver";
@@ -52,7 +52,7 @@ public class SupplyDelivery extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -100,7 +100,7 @@ public class SupplyDelivery extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -116,14 +116,14 @@ public class SupplyDelivery extends FhirResource {
      * this event.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
      * A larger event of which this particular event is a component or step.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PARTOF);
+        return getList(Reference.class, PROPERTY_PART_OF);
     }
 
     /**
@@ -154,28 +154,28 @@ public class SupplyDelivery extends FhirResource {
      * The item that is being delivered or has been supplied.
      */
     public SupplyDeliverySuppliedItem suppliedItem() {
-        return getObject(SupplyDeliverySuppliedItem.class, PROPERTY_SUPPLIEDITEM);
+        return getObject(SupplyDeliverySuppliedItem.class, PROPERTY_SUPPLIED_ITEM);
     }
 
     /**
      * The date or time(s) the activity occurred.
      */
     public String occurrenceDateTime() {
-        return getString(PROPERTY_OCCURRENCEDATETIME);
+        return getString(PROPERTY_OCCURRENCE_DATE_TIME);
     }
 
     /**
      * The date or time(s) the activity occurred.
      */
     public Period occurrencePeriod() {
-        return getObject(Period.class, PROPERTY_OCCURRENCEPERIOD);
+        return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
     }
 
     /**
      * The date or time(s) the activity occurred.
      */
     public Timing occurrenceTiming() {
-        return getObject(Timing.class, PROPERTY_OCCURRENCETIMING);
+        return getObject(Timing.class, PROPERTY_OCCURRENCE_TIMING);
     }
 
     /**
@@ -212,7 +212,7 @@ public class SupplyDelivery extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -227,7 +227,7 @@ public class SupplyDelivery extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -247,7 +247,7 @@ public class SupplyDelivery extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -257,12 +257,12 @@ public class SupplyDelivery extends FhirResource {
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
@@ -282,22 +282,22 @@ public class SupplyDelivery extends FhirResource {
         }
 
         public Builder suppliedItem(final SupplyDeliverySuppliedItem suppliedItem) {
-            b.add(PROPERTY_SUPPLIEDITEM, suppliedItem);
+            b.add(PROPERTY_SUPPLIED_ITEM, suppliedItem);
             return this;
         }
 
         public Builder occurrenceDateTime(final String occurrenceDateTime) {
-            b.add(PROPERTY_OCCURRENCEDATETIME, occurrenceDateTime);
+            b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
             return this;
         }
 
         public Builder occurrencePeriod(final Period occurrencePeriod) {
-            b.add(PROPERTY_OCCURRENCEPERIOD, occurrencePeriod);
+            b.add(PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
             return this;
         }
 
         public Builder occurrenceTiming(final Timing occurrenceTiming) {
-            b.add(PROPERTY_OCCURRENCETIMING, occurrenceTiming);
+            b.add(PROPERTY_OCCURRENCE_TIMING, occurrenceTiming);
             return this;
         }
 
@@ -324,10 +324,10 @@ public class SupplyDelivery extends FhirResource {
     public static class SupplyDeliverySuppliedItem extends FhirObject {
         public static final String RESOURCE_TYPE = "SupplyDeliverySuppliedItem";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_QUANTITY = "quantity";
-        public static final String PROPERTY_ITEMCODEABLECONCEPT = "itemCodeableConcept";
-        public static final String PROPERTY_ITEMREFERENCE = "itemReference";
+        public static final String PROPERTY_ITEM_CODEABLE_CONCEPT = "itemCodeableConcept";
+        public static final String PROPERTY_ITEM_REFERENCE = "itemReference";
 
         public static Builder create() {
             return new Builder();
@@ -367,7 +367,7 @@ public class SupplyDelivery extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -384,7 +384,7 @@ public class SupplyDelivery extends FhirResource {
          * a code that identifies the item from a known list.
          */
         public CodeableConcept itemCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_ITEMCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_ITEM_CODEABLE_CONCEPT);
         }
 
         /**
@@ -393,7 +393,7 @@ public class SupplyDelivery extends FhirResource {
          * a code that identifies the item from a known list.
          */
         public Reference itemReference() {
-            return getObject(Reference.class, PROPERTY_ITEMREFERENCE);
+            return getObject(Reference.class, PROPERTY_ITEM_REFERENCE);
         }
 
         public static class Builder {
@@ -413,7 +413,7 @@ public class SupplyDelivery extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -423,12 +423,12 @@ public class SupplyDelivery extends FhirResource {
             }
 
             public Builder itemCodeableConcept(final CodeableConcept itemCodeableConcept) {
-                b.add(PROPERTY_ITEMCODEABLECONCEPT, itemCodeableConcept);
+                b.add(PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
                 return this;
             }
 
             public Builder itemReference(final Reference itemReference) {
-                b.add(PROPERTY_ITEMREFERENCE, itemReference);
+                b.add(PROPERTY_ITEM_REFERENCE, itemReference);
                 return this;
             }
 

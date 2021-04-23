@@ -9,14 +9,14 @@ import jakarta.json.JsonObject;
 
 public class EnrollmentResponse extends FhirResource {
     public static final String RESOURCE_TYPE = "EnrollmentResponse";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_REQUEST = "request";
@@ -24,7 +24,7 @@ public class EnrollmentResponse extends FhirResource {
     public static final String PROPERTY_DISPOSITION = "disposition";
     public static final String PROPERTY_CREATED = "created";
     public static final String PROPERTY_ORGANIZATION = "organization";
-    public static final String PROPERTY_REQUESTPROVIDER = "requestProvider";
+    public static final String PROPERTY_REQUEST_PROVIDER = "requestProvider";
 
     public static Builder create() {
         return new Builder();
@@ -45,7 +45,7 @@ public class EnrollmentResponse extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -93,7 +93,7 @@ public class EnrollmentResponse extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -151,7 +151,7 @@ public class EnrollmentResponse extends FhirResource {
      * patient.
      */
     public Reference requestProvider() {
-        return getObject(Reference.class, PROPERTY_REQUESTPROVIDER);
+        return getObject(Reference.class, PROPERTY_REQUEST_PROVIDER);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -165,7 +165,7 @@ public class EnrollmentResponse extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -180,7 +180,7 @@ public class EnrollmentResponse extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -200,7 +200,7 @@ public class EnrollmentResponse extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -240,7 +240,7 @@ public class EnrollmentResponse extends FhirResource {
         }
 
         public Builder requestProvider(final Reference requestProvider) {
-            b.add(PROPERTY_REQUESTPROVIDER, requestProvider);
+            b.add(PROPERTY_REQUEST_PROVIDER, requestProvider);
             return this;
         }
 

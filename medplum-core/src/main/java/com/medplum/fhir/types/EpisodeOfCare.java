@@ -11,24 +11,24 @@ import jakarta.json.JsonObjectBuilder;
 
 public class EpisodeOfCare extends FhirResource {
     public static final String RESOURCE_TYPE = "EpisodeOfCare";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSHISTORY = "statusHistory";
+    public static final String PROPERTY_STATUS_HISTORY = "statusHistory";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_DIAGNOSIS = "diagnosis";
     public static final String PROPERTY_PATIENT = "patient";
-    public static final String PROPERTY_MANAGINGORGANIZATION = "managingOrganization";
+    public static final String PROPERTY_MANAGING_ORGANIZATION = "managingOrganization";
     public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_REFERRALREQUEST = "referralRequest";
-    public static final String PROPERTY_CAREMANAGER = "careManager";
+    public static final String PROPERTY_REFERRAL_REQUEST = "referralRequest";
+    public static final String PROPERTY_CARE_MANAGER = "careManager";
     public static final String PROPERTY_TEAM = "team";
     public static final String PROPERTY_ACCOUNT = "account";
 
@@ -51,7 +51,7 @@ public class EpisodeOfCare extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -99,7 +99,7 @@ public class EpisodeOfCare extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -123,7 +123,7 @@ public class EpisodeOfCare extends FhirResource {
      * (without requiring processing the history of the resource).
      */
     public java.util.List<EpisodeOfCareStatusHistory> statusHistory() {
-        return getList(EpisodeOfCareStatusHistory.class, PROPERTY_STATUSHISTORY);
+        return getList(EpisodeOfCareStatusHistory.class, PROPERTY_STATUS_HISTORY);
     }
 
     /**
@@ -153,7 +153,7 @@ public class EpisodeOfCare extends FhirResource {
      * the specified duration.
      */
     public Reference managingOrganization() {
-        return getObject(Reference.class, PROPERTY_MANAGINGORGANIZATION);
+        return getObject(Reference.class, PROPERTY_MANAGING_ORGANIZATION);
     }
 
     /**
@@ -169,7 +169,7 @@ public class EpisodeOfCare extends FhirResource {
      * referrals.
      */
     public java.util.List<Reference> referralRequest() {
-        return getList(Reference.class, PROPERTY_REFERRALREQUEST);
+        return getList(Reference.class, PROPERTY_REFERRAL_REQUEST);
     }
 
     /**
@@ -177,7 +177,7 @@ public class EpisodeOfCare extends FhirResource {
      * patient.
      */
     public Reference careManager() {
-        return getObject(Reference.class, PROPERTY_CAREMANAGER);
+        return getObject(Reference.class, PROPERTY_CARE_MANAGER);
     }
 
     /**
@@ -207,7 +207,7 @@ public class EpisodeOfCare extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -222,7 +222,7 @@ public class EpisodeOfCare extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -242,7 +242,7 @@ public class EpisodeOfCare extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -257,7 +257,7 @@ public class EpisodeOfCare extends FhirResource {
         }
 
         public Builder statusHistory(final java.util.List<EpisodeOfCareStatusHistory> statusHistory) {
-            b.add(PROPERTY_STATUSHISTORY, FhirObject.toArray(statusHistory));
+            b.add(PROPERTY_STATUS_HISTORY, FhirObject.toArray(statusHistory));
             return this;
         }
 
@@ -277,7 +277,7 @@ public class EpisodeOfCare extends FhirResource {
         }
 
         public Builder managingOrganization(final Reference managingOrganization) {
-            b.add(PROPERTY_MANAGINGORGANIZATION, managingOrganization);
+            b.add(PROPERTY_MANAGING_ORGANIZATION, managingOrganization);
             return this;
         }
 
@@ -287,12 +287,12 @@ public class EpisodeOfCare extends FhirResource {
         }
 
         public Builder referralRequest(final java.util.List<Reference> referralRequest) {
-            b.add(PROPERTY_REFERRALREQUEST, FhirObject.toArray(referralRequest));
+            b.add(PROPERTY_REFERRAL_REQUEST, FhirObject.toArray(referralRequest));
             return this;
         }
 
         public Builder careManager(final Reference careManager) {
-            b.add(PROPERTY_CAREMANAGER, careManager);
+            b.add(PROPERTY_CARE_MANAGER, careManager);
             return this;
         }
 
@@ -314,7 +314,7 @@ public class EpisodeOfCare extends FhirResource {
     public static class EpisodeOfCareDiagnosis extends FhirObject {
         public static final String RESOURCE_TYPE = "EpisodeOfCareDiagnosis";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CONDITION = "condition";
         public static final String PROPERTY_ROLE = "role";
         public static final String PROPERTY_RANK = "rank";
@@ -357,7 +357,7 @@ public class EpisodeOfCare extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -400,7 +400,7 @@ public class EpisodeOfCare extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -428,7 +428,7 @@ public class EpisodeOfCare extends FhirResource {
     public static class EpisodeOfCareStatusHistory extends FhirObject {
         public static final String RESOURCE_TYPE = "EpisodeOfCareStatusHistory";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_STATUS = "status";
         public static final String PROPERTY_PERIOD = "period";
 
@@ -470,7 +470,7 @@ public class EpisodeOfCare extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -504,7 +504,7 @@ public class EpisodeOfCare extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

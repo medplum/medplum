@@ -11,27 +11,27 @@ import jakarta.json.JsonObjectBuilder;
 
 public class ObservationDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ObservationDefinition";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_PERMITTEDDATATYPE = "permittedDataType";
-    public static final String PROPERTY_MULTIPLERESULTSALLOWED = "multipleResultsAllowed";
+    public static final String PROPERTY_PERMITTED_DATA_TYPE = "permittedDataType";
+    public static final String PROPERTY_MULTIPLE_RESULTS_ALLOWED = "multipleResultsAllowed";
     public static final String PROPERTY_METHOD = "method";
-    public static final String PROPERTY_PREFERREDREPORTNAME = "preferredReportName";
-    public static final String PROPERTY_QUANTITATIVEDETAILS = "quantitativeDetails";
-    public static final String PROPERTY_QUALIFIEDINTERVAL = "qualifiedInterval";
-    public static final String PROPERTY_VALIDCODEDVALUESET = "validCodedValueSet";
-    public static final String PROPERTY_NORMALCODEDVALUESET = "normalCodedValueSet";
-    public static final String PROPERTY_ABNORMALCODEDVALUESET = "abnormalCodedValueSet";
-    public static final String PROPERTY_CRITICALCODEDVALUESET = "criticalCodedValueSet";
+    public static final String PROPERTY_PREFERRED_REPORT_NAME = "preferredReportName";
+    public static final String PROPERTY_QUANTITATIVE_DETAILS = "quantitativeDetails";
+    public static final String PROPERTY_QUALIFIED_INTERVAL = "qualifiedInterval";
+    public static final String PROPERTY_VALID_CODED_VALUE_SET = "validCodedValueSet";
+    public static final String PROPERTY_NORMAL_CODED_VALUE_SET = "normalCodedValueSet";
+    public static final String PROPERTY_ABNORMAL_CODED_VALUE_SET = "abnormalCodedValueSet";
+    public static final String PROPERTY_CRITICAL_CODED_VALUE_SET = "criticalCodedValueSet";
 
     public static Builder create() {
         return new Builder();
@@ -52,7 +52,7 @@ public class ObservationDefinition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -100,7 +100,7 @@ public class ObservationDefinition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -130,7 +130,7 @@ public class ObservationDefinition extends FhirResource {
      * observations conforming to this ObservationDefinition.
      */
     public java.util.List<String> permittedDataType() {
-        return getList(String.class, PROPERTY_PERMITTEDDATATYPE);
+        return getList(String.class, PROPERTY_PERMITTED_DATA_TYPE);
     }
 
     /**
@@ -138,7 +138,7 @@ public class ObservationDefinition extends FhirResource {
      * ObservationDefinition.
      */
     public Boolean multipleResultsAllowed() {
-        return data.getBoolean(PROPERTY_MULTIPLERESULTSALLOWED);
+        return data.getBoolean(PROPERTY_MULTIPLE_RESULTS_ALLOWED);
     }
 
     /**
@@ -153,14 +153,14 @@ public class ObservationDefinition extends FhirResource {
      * observations conforming to this ObservationDefinition.
      */
     public String preferredReportName() {
-        return getString(PROPERTY_PREFERREDREPORTNAME);
+        return getString(PROPERTY_PREFERRED_REPORT_NAME);
     }
 
     /**
      * Characteristics for quantitative results of this observation.
      */
     public ObservationDefinitionQuantitativeDetails quantitativeDetails() {
-        return getObject(ObservationDefinitionQuantitativeDetails.class, PROPERTY_QUANTITATIVEDETAILS);
+        return getObject(ObservationDefinitionQuantitativeDetails.class, PROPERTY_QUANTITATIVE_DETAILS);
     }
 
     /**
@@ -169,7 +169,7 @@ public class ObservationDefinition extends FhirResource {
      * ObservationDefinition.
      */
     public java.util.List<ObservationDefinitionQualifiedInterval> qualifiedInterval() {
-        return getList(ObservationDefinitionQualifiedInterval.class, PROPERTY_QUALIFIEDINTERVAL);
+        return getList(ObservationDefinitionQualifiedInterval.class, PROPERTY_QUALIFIED_INTERVAL);
     }
 
     /**
@@ -177,7 +177,7 @@ public class ObservationDefinition extends FhirResource {
      * this ObservationDefinition.
      */
     public Reference validCodedValueSet() {
-        return getObject(Reference.class, PROPERTY_VALIDCODEDVALUESET);
+        return getObject(Reference.class, PROPERTY_VALID_CODED_VALUE_SET);
     }
 
     /**
@@ -185,7 +185,7 @@ public class ObservationDefinition extends FhirResource {
      * this ObservationDefinition.
      */
     public Reference normalCodedValueSet() {
-        return getObject(Reference.class, PROPERTY_NORMALCODEDVALUESET);
+        return getObject(Reference.class, PROPERTY_NORMAL_CODED_VALUE_SET);
     }
 
     /**
@@ -193,7 +193,7 @@ public class ObservationDefinition extends FhirResource {
      * this ObservationDefinition.
      */
     public Reference abnormalCodedValueSet() {
-        return getObject(Reference.class, PROPERTY_ABNORMALCODEDVALUESET);
+        return getObject(Reference.class, PROPERTY_ABNORMAL_CODED_VALUE_SET);
     }
 
     /**
@@ -201,7 +201,7 @@ public class ObservationDefinition extends FhirResource {
      * this ObservationDefinition.
      */
     public Reference criticalCodedValueSet() {
-        return getObject(Reference.class, PROPERTY_CRITICALCODEDVALUESET);
+        return getObject(Reference.class, PROPERTY_CRITICAL_CODED_VALUE_SET);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -215,7 +215,7 @@ public class ObservationDefinition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -230,7 +230,7 @@ public class ObservationDefinition extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -250,7 +250,7 @@ public class ObservationDefinition extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -270,12 +270,12 @@ public class ObservationDefinition extends FhirResource {
         }
 
         public Builder permittedDataType(final java.util.List<String> permittedDataType) {
-            b.add(PROPERTY_PERMITTEDDATATYPE, FhirObject.toStringArray(permittedDataType));
+            b.add(PROPERTY_PERMITTED_DATA_TYPE, FhirObject.toStringArray(permittedDataType));
             return this;
         }
 
         public Builder multipleResultsAllowed(final Boolean multipleResultsAllowed) {
-            b.add(PROPERTY_MULTIPLERESULTSALLOWED, multipleResultsAllowed);
+            b.add(PROPERTY_MULTIPLE_RESULTS_ALLOWED, multipleResultsAllowed);
             return this;
         }
 
@@ -285,37 +285,37 @@ public class ObservationDefinition extends FhirResource {
         }
 
         public Builder preferredReportName(final String preferredReportName) {
-            b.add(PROPERTY_PREFERREDREPORTNAME, preferredReportName);
+            b.add(PROPERTY_PREFERRED_REPORT_NAME, preferredReportName);
             return this;
         }
 
         public Builder quantitativeDetails(final ObservationDefinitionQuantitativeDetails quantitativeDetails) {
-            b.add(PROPERTY_QUANTITATIVEDETAILS, quantitativeDetails);
+            b.add(PROPERTY_QUANTITATIVE_DETAILS, quantitativeDetails);
             return this;
         }
 
         public Builder qualifiedInterval(final java.util.List<ObservationDefinitionQualifiedInterval> qualifiedInterval) {
-            b.add(PROPERTY_QUALIFIEDINTERVAL, FhirObject.toArray(qualifiedInterval));
+            b.add(PROPERTY_QUALIFIED_INTERVAL, FhirObject.toArray(qualifiedInterval));
             return this;
         }
 
         public Builder validCodedValueSet(final Reference validCodedValueSet) {
-            b.add(PROPERTY_VALIDCODEDVALUESET, validCodedValueSet);
+            b.add(PROPERTY_VALID_CODED_VALUE_SET, validCodedValueSet);
             return this;
         }
 
         public Builder normalCodedValueSet(final Reference normalCodedValueSet) {
-            b.add(PROPERTY_NORMALCODEDVALUESET, normalCodedValueSet);
+            b.add(PROPERTY_NORMAL_CODED_VALUE_SET, normalCodedValueSet);
             return this;
         }
 
         public Builder abnormalCodedValueSet(final Reference abnormalCodedValueSet) {
-            b.add(PROPERTY_ABNORMALCODEDVALUESET, abnormalCodedValueSet);
+            b.add(PROPERTY_ABNORMAL_CODED_VALUE_SET, abnormalCodedValueSet);
             return this;
         }
 
         public Builder criticalCodedValueSet(final Reference criticalCodedValueSet) {
-            b.add(PROPERTY_CRITICALCODEDVALUESET, criticalCodedValueSet);
+            b.add(PROPERTY_CRITICAL_CODED_VALUE_SET, criticalCodedValueSet);
             return this;
         }
 
@@ -327,14 +327,14 @@ public class ObservationDefinition extends FhirResource {
     public static class ObservationDefinitionQualifiedInterval extends FhirObject {
         public static final String RESOURCE_TYPE = "ObservationDefinitionQualifiedInterval";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CATEGORY = "category";
         public static final String PROPERTY_RANGE = "range";
         public static final String PROPERTY_CONTEXT = "context";
-        public static final String PROPERTY_APPLIESTO = "appliesTo";
+        public static final String PROPERTY_APPLIES_TO = "appliesTo";
         public static final String PROPERTY_GENDER = "gender";
         public static final String PROPERTY_AGE = "age";
-        public static final String PROPERTY_GESTATIONALAGE = "gestationalAge";
+        public static final String PROPERTY_GESTATIONAL_AGE = "gestationalAge";
         public static final String PROPERTY_CONDITION = "condition";
 
         public static Builder create() {
@@ -375,7 +375,7 @@ public class ObservationDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -407,7 +407,7 @@ public class ObservationDefinition extends FhirResource {
          * to.
          */
         public java.util.List<CodeableConcept> appliesTo() {
-            return getList(CodeableConcept.class, PROPERTY_APPLIESTO);
+            return getList(CodeableConcept.class, PROPERTY_APPLIES_TO);
         }
 
         /**
@@ -430,7 +430,7 @@ public class ObservationDefinition extends FhirResource {
          * the context of pregnancy.
          */
         public Range gestationalAge() {
-            return getObject(Range.class, PROPERTY_GESTATIONALAGE);
+            return getObject(Range.class, PROPERTY_GESTATIONAL_AGE);
         }
 
         /**
@@ -457,7 +457,7 @@ public class ObservationDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -477,7 +477,7 @@ public class ObservationDefinition extends FhirResource {
             }
 
             public Builder appliesTo(final java.util.List<CodeableConcept> appliesTo) {
-                b.add(PROPERTY_APPLIESTO, FhirObject.toArray(appliesTo));
+                b.add(PROPERTY_APPLIES_TO, FhirObject.toArray(appliesTo));
                 return this;
             }
 
@@ -492,7 +492,7 @@ public class ObservationDefinition extends FhirResource {
             }
 
             public Builder gestationalAge(final Range gestationalAge) {
-                b.add(PROPERTY_GESTATIONALAGE, gestationalAge);
+                b.add(PROPERTY_GESTATIONAL_AGE, gestationalAge);
                 return this;
             }
 
@@ -510,11 +510,11 @@ public class ObservationDefinition extends FhirResource {
     public static class ObservationDefinitionQuantitativeDetails extends FhirObject {
         public static final String RESOURCE_TYPE = "ObservationDefinitionQuantitativeDetails";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_CUSTOMARYUNIT = "customaryUnit";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_CUSTOMARY_UNIT = "customaryUnit";
         public static final String PROPERTY_UNIT = "unit";
-        public static final String PROPERTY_CONVERSIONFACTOR = "conversionFactor";
-        public static final String PROPERTY_DECIMALPRECISION = "decimalPrecision";
+        public static final String PROPERTY_CONVERSION_FACTOR = "conversionFactor";
+        public static final String PROPERTY_DECIMAL_PRECISION = "decimalPrecision";
 
         public static Builder create() {
             return new Builder();
@@ -554,7 +554,7 @@ public class ObservationDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -562,7 +562,7 @@ public class ObservationDefinition extends FhirResource {
          * conforming to this ObservationDefinition.
          */
         public CodeableConcept customaryUnit() {
-            return getObject(CodeableConcept.class, PROPERTY_CUSTOMARYUNIT);
+            return getObject(CodeableConcept.class, PROPERTY_CUSTOMARY_UNIT);
         }
 
         /**
@@ -578,7 +578,7 @@ public class ObservationDefinition extends FhirResource {
          * with customary unit.
          */
         public Double conversionFactor() {
-            return data.getJsonNumber(PROPERTY_CONVERSIONFACTOR).doubleValue();
+            return data.getJsonNumber(PROPERTY_CONVERSION_FACTOR).doubleValue();
         }
 
         /**
@@ -586,7 +586,7 @@ public class ObservationDefinition extends FhirResource {
          * observations are of type Quantity.
          */
         public Integer decimalPrecision() {
-            return data.getInt(PROPERTY_DECIMALPRECISION);
+            return data.getInt(PROPERTY_DECIMAL_PRECISION);
         }
 
         public static class Builder {
@@ -606,12 +606,12 @@ public class ObservationDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder customaryUnit(final CodeableConcept customaryUnit) {
-                b.add(PROPERTY_CUSTOMARYUNIT, customaryUnit);
+                b.add(PROPERTY_CUSTOMARY_UNIT, customaryUnit);
                 return this;
             }
 
@@ -621,12 +621,12 @@ public class ObservationDefinition extends FhirResource {
             }
 
             public Builder conversionFactor(final Double conversionFactor) {
-                b.add(PROPERTY_CONVERSIONFACTOR, conversionFactor);
+                b.add(PROPERTY_CONVERSION_FACTOR, conversionFactor);
                 return this;
             }
 
             public Builder decimalPrecision(final Integer decimalPrecision) {
-                b.add(PROPERTY_DECIMALPRECISION, decimalPrecision);
+                b.add(PROPERTY_DECIMAL_PRECISION, decimalPrecision);
                 return this;
             }
 

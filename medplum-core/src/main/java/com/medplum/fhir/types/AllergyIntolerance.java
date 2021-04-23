@@ -11,32 +11,32 @@ import jakarta.json.JsonObjectBuilder;
 
 public class AllergyIntolerance extends FhirResource {
     public static final String RESOURCE_TYPE = "AllergyIntolerance";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_CLINICALSTATUS = "clinicalStatus";
-    public static final String PROPERTY_VERIFICATIONSTATUS = "verificationStatus";
+    public static final String PROPERTY_CLINICAL_STATUS = "clinicalStatus";
+    public static final String PROPERTY_VERIFICATION_STATUS = "verificationStatus";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_CRITICALITY = "criticality";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_PATIENT = "patient";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_ONSETDATETIME = "onsetDateTime";
-    public static final String PROPERTY_ONSETAGE = "onsetAge";
-    public static final String PROPERTY_ONSETPERIOD = "onsetPeriod";
-    public static final String PROPERTY_ONSETRANGE = "onsetRange";
-    public static final String PROPERTY_ONSETSTRING = "onsetString";
-    public static final String PROPERTY_RECORDEDDATE = "recordedDate";
+    public static final String PROPERTY_ONSET_DATE_TIME = "onsetDateTime";
+    public static final String PROPERTY_ONSET_AGE = "onsetAge";
+    public static final String PROPERTY_ONSET_PERIOD = "onsetPeriod";
+    public static final String PROPERTY_ONSET_RANGE = "onsetRange";
+    public static final String PROPERTY_ONSET_STRING = "onsetString";
+    public static final String PROPERTY_RECORDED_DATE = "recordedDate";
     public static final String PROPERTY_RECORDER = "recorder";
     public static final String PROPERTY_ASSERTER = "asserter";
-    public static final String PROPERTY_LASTOCCURRENCE = "lastOccurrence";
+    public static final String PROPERTY_LAST_OCCURRENCE = "lastOccurrence";
     public static final String PROPERTY_NOTE = "note";
     public static final String PROPERTY_REACTION = "reaction";
 
@@ -59,7 +59,7 @@ public class AllergyIntolerance extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -107,7 +107,7 @@ public class AllergyIntolerance extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -123,7 +123,7 @@ public class AllergyIntolerance extends FhirResource {
      * The clinical status of the allergy or intolerance.
      */
     public CodeableConcept clinicalStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_CLINICALSTATUS);
+        return getObject(CodeableConcept.class, PROPERTY_CLINICAL_STATUS);
     }
 
     /**
@@ -132,7 +132,7 @@ public class AllergyIntolerance extends FhirResource {
      * pharmaceutical product).
      */
     public CodeableConcept verificationStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_VERIFICATIONSTATUS);
+        return getObject(CodeableConcept.class, PROPERTY_VERIFICATION_STATUS);
     }
 
     /**
@@ -200,7 +200,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public String onsetDateTime() {
-        return getString(PROPERTY_ONSETDATETIME);
+        return getString(PROPERTY_ONSET_DATE_TIME);
     }
 
     /**
@@ -208,7 +208,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public Age onsetAge() {
-        return getObject(Age.class, PROPERTY_ONSETAGE);
+        return getObject(Age.class, PROPERTY_ONSET_AGE);
     }
 
     /**
@@ -216,7 +216,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public Period onsetPeriod() {
-        return getObject(Period.class, PROPERTY_ONSETPERIOD);
+        return getObject(Period.class, PROPERTY_ONSET_PERIOD);
     }
 
     /**
@@ -224,7 +224,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public Range onsetRange() {
-        return getObject(Range.class, PROPERTY_ONSETRANGE);
+        return getObject(Range.class, PROPERTY_ONSET_RANGE);
     }
 
     /**
@@ -232,7 +232,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public String onsetString() {
-        return getString(PROPERTY_ONSETSTRING);
+        return getString(PROPERTY_ONSET_STRING);
     }
 
     /**
@@ -241,7 +241,7 @@ public class AllergyIntolerance extends FhirResource {
      * date.
      */
     public java.time.Instant recordedDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RECORDEDDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_RECORDED_DATE));
     }
 
     /**
@@ -264,7 +264,7 @@ public class AllergyIntolerance extends FhirResource {
      * reaction event.
      */
     public java.time.Instant lastOccurrence() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTOCCURRENCE));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_OCCURRENCE));
     }
 
     /**
@@ -294,7 +294,7 @@ public class AllergyIntolerance extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -309,7 +309,7 @@ public class AllergyIntolerance extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -329,7 +329,7 @@ public class AllergyIntolerance extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -339,12 +339,12 @@ public class AllergyIntolerance extends FhirResource {
         }
 
         public Builder clinicalStatus(final CodeableConcept clinicalStatus) {
-            b.add(PROPERTY_CLINICALSTATUS, clinicalStatus);
+            b.add(PROPERTY_CLINICAL_STATUS, clinicalStatus);
             return this;
         }
 
         public Builder verificationStatus(final CodeableConcept verificationStatus) {
-            b.add(PROPERTY_VERIFICATIONSTATUS, verificationStatus);
+            b.add(PROPERTY_VERIFICATION_STATUS, verificationStatus);
             return this;
         }
 
@@ -379,32 +379,32 @@ public class AllergyIntolerance extends FhirResource {
         }
 
         public Builder onsetDateTime(final String onsetDateTime) {
-            b.add(PROPERTY_ONSETDATETIME, onsetDateTime);
+            b.add(PROPERTY_ONSET_DATE_TIME, onsetDateTime);
             return this;
         }
 
         public Builder onsetAge(final Age onsetAge) {
-            b.add(PROPERTY_ONSETAGE, onsetAge);
+            b.add(PROPERTY_ONSET_AGE, onsetAge);
             return this;
         }
 
         public Builder onsetPeriod(final Period onsetPeriod) {
-            b.add(PROPERTY_ONSETPERIOD, onsetPeriod);
+            b.add(PROPERTY_ONSET_PERIOD, onsetPeriod);
             return this;
         }
 
         public Builder onsetRange(final Range onsetRange) {
-            b.add(PROPERTY_ONSETRANGE, onsetRange);
+            b.add(PROPERTY_ONSET_RANGE, onsetRange);
             return this;
         }
 
         public Builder onsetString(final String onsetString) {
-            b.add(PROPERTY_ONSETSTRING, onsetString);
+            b.add(PROPERTY_ONSET_STRING, onsetString);
             return this;
         }
 
         public Builder recordedDate(final java.time.Instant recordedDate) {
-            b.add(PROPERTY_RECORDEDDATE, recordedDate.toString());
+            b.add(PROPERTY_RECORDED_DATE, recordedDate.toString());
             return this;
         }
 
@@ -419,7 +419,7 @@ public class AllergyIntolerance extends FhirResource {
         }
 
         public Builder lastOccurrence(final java.time.Instant lastOccurrence) {
-            b.add(PROPERTY_LASTOCCURRENCE, lastOccurrence.toString());
+            b.add(PROPERTY_LAST_OCCURRENCE, lastOccurrence.toString());
             return this;
         }
 
@@ -441,13 +441,13 @@ public class AllergyIntolerance extends FhirResource {
     public static class AllergyIntoleranceReaction extends FhirObject {
         public static final String RESOURCE_TYPE = "AllergyIntoleranceReaction";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SUBSTANCE = "substance";
         public static final String PROPERTY_MANIFESTATION = "manifestation";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_ONSET = "onset";
         public static final String PROPERTY_SEVERITY = "severity";
-        public static final String PROPERTY_EXPOSUREROUTE = "exposureRoute";
+        public static final String PROPERTY_EXPOSURE_ROUTE = "exposureRoute";
         public static final String PROPERTY_NOTE = "note";
 
         public static Builder create() {
@@ -488,7 +488,7 @@ public class AllergyIntolerance extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -544,7 +544,7 @@ public class AllergyIntolerance extends FhirResource {
          * substance.
          */
         public CodeableConcept exposureRoute() {
-            return getObject(CodeableConcept.class, PROPERTY_EXPOSUREROUTE);
+            return getObject(CodeableConcept.class, PROPERTY_EXPOSURE_ROUTE);
         }
 
         /**
@@ -572,7 +572,7 @@ public class AllergyIntolerance extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -602,7 +602,7 @@ public class AllergyIntolerance extends FhirResource {
             }
 
             public Builder exposureRoute(final CodeableConcept exposureRoute) {
-                b.add(PROPERTY_EXPOSUREROUTE, exposureRoute);
+                b.add(PROPERTY_EXPOSURE_ROUTE, exposureRoute);
                 return this;
             }
 

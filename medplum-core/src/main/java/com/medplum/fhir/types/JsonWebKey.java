@@ -9,7 +9,7 @@ import jakarta.json.JsonObject;
 
 public class JsonWebKey extends FhirResource {
     public static final String RESOURCE_TYPE = "JsonWebKey";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_ACTIVE = "active";
     public static final String PROPERTY_ALG = "alg";
@@ -165,7 +165,7 @@ public class JsonWebKey extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 

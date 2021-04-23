@@ -11,37 +11,37 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Encounter extends FhirResource {
     public static final String RESOURCE_TYPE = "Encounter";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSHISTORY = "statusHistory";
+    public static final String PROPERTY_STATUS_HISTORY = "statusHistory";
     public static final String PROPERTY_CLASS = "class";
-    public static final String PROPERTY_CLASSHISTORY = "classHistory";
+    public static final String PROPERTY_CLASS_HISTORY = "classHistory";
     public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_SERVICETYPE = "serviceType";
+    public static final String PROPERTY_SERVICE_TYPE = "serviceType";
     public static final String PROPERTY_PRIORITY = "priority";
     public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_EPISODEOFCARE = "episodeOfCare";
-    public static final String PROPERTY_BASEDON = "basedOn";
+    public static final String PROPERTY_EPISODE_OF_CARE = "episodeOfCare";
+    public static final String PROPERTY_BASED_ON = "basedOn";
     public static final String PROPERTY_PARTICIPANT = "participant";
     public static final String PROPERTY_APPOINTMENT = "appointment";
     public static final String PROPERTY_PERIOD = "period";
     public static final String PROPERTY_LENGTH = "length";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_DIAGNOSIS = "diagnosis";
     public static final String PROPERTY_ACCOUNT = "account";
     public static final String PROPERTY_HOSPITALIZATION = "hospitalization";
     public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_SERVICEPROVIDER = "serviceProvider";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_SERVICE_PROVIDER = "serviceProvider";
+    public static final String PROPERTY_PART_OF = "partOf";
 
     public static Builder create() {
         return new Builder();
@@ -62,7 +62,7 @@ public class Encounter extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -110,7 +110,7 @@ public class Encounter extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -134,7 +134,7 @@ public class Encounter extends FhirResource {
      * of the resource, or even have the server store them.
      */
     public java.util.List<EncounterStatusHistory> statusHistory() {
-        return getList(EncounterStatusHistory.class, PROPERTY_STATUSHISTORY);
+        return getList(EncounterStatusHistory.class, PROPERTY_STATUS_HISTORY);
     }
 
     /**
@@ -157,7 +157,7 @@ public class Encounter extends FhirResource {
      * inpatient.
      */
     public java.util.List<EncounterClassHistory> classHistory() {
-        return getList(EncounterClassHistory.class, PROPERTY_CLASSHISTORY);
+        return getList(EncounterClassHistory.class, PROPERTY_CLASS_HISTORY);
     }
 
     /**
@@ -173,7 +173,7 @@ public class Encounter extends FhirResource {
      * cardiology).
      */
     public CodeableConcept serviceType() {
-        return getObject(CodeableConcept.class, PROPERTY_SERVICETYPE);
+        return getObject(CodeableConcept.class, PROPERTY_SERVICE_TYPE);
     }
 
     /**
@@ -201,7 +201,7 @@ public class Encounter extends FhirResource {
      * another encounter to it (the episode of care could span years).
      */
     public java.util.List<Reference> episodeOfCare() {
-        return getList(Reference.class, PROPERTY_EPISODEOFCARE);
+        return getList(Reference.class, PROPERTY_EPISODE_OF_CARE);
     }
 
     /**
@@ -209,7 +209,7 @@ public class Encounter extends FhirResource {
      * procedure request).
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -246,7 +246,7 @@ public class Encounter extends FhirResource {
      * this can be used for a coded admission diagnosis.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
@@ -254,7 +254,7 @@ public class Encounter extends FhirResource {
      * this can be used for a coded admission diagnosis.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -294,7 +294,7 @@ public class Encounter extends FhirResource {
      * showing an abbreviated set of Encounters for a colonoscopy.
      */
     public Reference serviceProvider() {
-        return getObject(Reference.class, PROPERTY_SERVICEPROVIDER);
+        return getObject(Reference.class, PROPERTY_SERVICE_PROVIDER);
     }
 
     /**
@@ -302,7 +302,7 @@ public class Encounter extends FhirResource {
      * (administratively or in time).
      */
     public Reference partOf() {
-        return getObject(Reference.class, PROPERTY_PARTOF);
+        return getObject(Reference.class, PROPERTY_PART_OF);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -316,7 +316,7 @@ public class Encounter extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -331,7 +331,7 @@ public class Encounter extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -351,7 +351,7 @@ public class Encounter extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -366,7 +366,7 @@ public class Encounter extends FhirResource {
         }
 
         public Builder statusHistory(final java.util.List<EncounterStatusHistory> statusHistory) {
-            b.add(PROPERTY_STATUSHISTORY, FhirObject.toArray(statusHistory));
+            b.add(PROPERTY_STATUS_HISTORY, FhirObject.toArray(statusHistory));
             return this;
         }
 
@@ -376,7 +376,7 @@ public class Encounter extends FhirResource {
         }
 
         public Builder classHistory(final java.util.List<EncounterClassHistory> classHistory) {
-            b.add(PROPERTY_CLASSHISTORY, FhirObject.toArray(classHistory));
+            b.add(PROPERTY_CLASS_HISTORY, FhirObject.toArray(classHistory));
             return this;
         }
 
@@ -386,7 +386,7 @@ public class Encounter extends FhirResource {
         }
 
         public Builder serviceType(final CodeableConcept serviceType) {
-            b.add(PROPERTY_SERVICETYPE, serviceType);
+            b.add(PROPERTY_SERVICE_TYPE, serviceType);
             return this;
         }
 
@@ -401,12 +401,12 @@ public class Encounter extends FhirResource {
         }
 
         public Builder episodeOfCare(final java.util.List<Reference> episodeOfCare) {
-            b.add(PROPERTY_EPISODEOFCARE, FhirObject.toArray(episodeOfCare));
+            b.add(PROPERTY_EPISODE_OF_CARE, FhirObject.toArray(episodeOfCare));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
@@ -431,12 +431,12 @@ public class Encounter extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
@@ -461,12 +461,12 @@ public class Encounter extends FhirResource {
         }
 
         public Builder serviceProvider(final Reference serviceProvider) {
-            b.add(PROPERTY_SERVICEPROVIDER, serviceProvider);
+            b.add(PROPERTY_SERVICE_PROVIDER, serviceProvider);
             return this;
         }
 
         public Builder partOf(final Reference partOf) {
-            b.add(PROPERTY_PARTOF, partOf);
+            b.add(PROPERTY_PART_OF, partOf);
             return this;
         }
 
@@ -478,7 +478,7 @@ public class Encounter extends FhirResource {
     public static class EncounterClassHistory extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterClassHistory";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CLASS = "class";
         public static final String PROPERTY_PERIOD = "period";
 
@@ -520,7 +520,7 @@ public class Encounter extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -554,7 +554,7 @@ public class Encounter extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -577,7 +577,7 @@ public class Encounter extends FhirResource {
     public static class EncounterDiagnosis extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterDiagnosis";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CONDITION = "condition";
         public static final String PROPERTY_USE = "use";
         public static final String PROPERTY_RANK = "rank";
@@ -620,7 +620,7 @@ public class Encounter extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -665,7 +665,7 @@ public class Encounter extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -693,16 +693,16 @@ public class Encounter extends FhirResource {
     public static class EncounterHospitalization extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterHospitalization";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_PREADMISSIONIDENTIFIER = "preAdmissionIdentifier";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_PRE_ADMISSION_IDENTIFIER = "preAdmissionIdentifier";
         public static final String PROPERTY_ORIGIN = "origin";
-        public static final String PROPERTY_ADMITSOURCE = "admitSource";
-        public static final String PROPERTY_READMISSION = "reAdmission";
-        public static final String PROPERTY_DIETPREFERENCE = "dietPreference";
-        public static final String PROPERTY_SPECIALCOURTESY = "specialCourtesy";
-        public static final String PROPERTY_SPECIALARRANGEMENT = "specialArrangement";
+        public static final String PROPERTY_ADMIT_SOURCE = "admitSource";
+        public static final String PROPERTY_RE_ADMISSION = "reAdmission";
+        public static final String PROPERTY_DIET_PREFERENCE = "dietPreference";
+        public static final String PROPERTY_SPECIAL_COURTESY = "specialCourtesy";
+        public static final String PROPERTY_SPECIAL_ARRANGEMENT = "specialArrangement";
         public static final String PROPERTY_DESTINATION = "destination";
-        public static final String PROPERTY_DISCHARGEDISPOSITION = "dischargeDisposition";
+        public static final String PROPERTY_DISCHARGE_DISPOSITION = "dischargeDisposition";
 
         public static Builder create() {
             return new Builder();
@@ -742,14 +742,14 @@ public class Encounter extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Pre-admission identifier.
          */
         public Identifier preAdmissionIdentifier() {
-            return getObject(Identifier.class, PROPERTY_PREADMISSIONIDENTIFIER);
+            return getObject(Identifier.class, PROPERTY_PRE_ADMISSION_IDENTIFIER);
         }
 
         /**
@@ -764,28 +764,28 @@ public class Encounter extends FhirResource {
          * From where patient was admitted (physician referral, transfer).
          */
         public CodeableConcept admitSource() {
-            return getObject(CodeableConcept.class, PROPERTY_ADMITSOURCE);
+            return getObject(CodeableConcept.class, PROPERTY_ADMIT_SOURCE);
         }
 
         /**
          * Whether this hospitalization is a readmission and why if known.
          */
         public CodeableConcept reAdmission() {
-            return getObject(CodeableConcept.class, PROPERTY_READMISSION);
+            return getObject(CodeableConcept.class, PROPERTY_RE_ADMISSION);
         }
 
         /**
          * Diet preferences reported by the patient.
          */
         public java.util.List<CodeableConcept> dietPreference() {
-            return getList(CodeableConcept.class, PROPERTY_DIETPREFERENCE);
+            return getList(CodeableConcept.class, PROPERTY_DIET_PREFERENCE);
         }
 
         /**
          * Special courtesies (VIP, board member).
          */
         public java.util.List<CodeableConcept> specialCourtesy() {
-            return getList(CodeableConcept.class, PROPERTY_SPECIALCOURTESY);
+            return getList(CodeableConcept.class, PROPERTY_SPECIAL_COURTESY);
         }
 
         /**
@@ -794,7 +794,7 @@ public class Encounter extends FhirResource {
          * things.
          */
         public java.util.List<CodeableConcept> specialArrangement() {
-            return getList(CodeableConcept.class, PROPERTY_SPECIALARRANGEMENT);
+            return getList(CodeableConcept.class, PROPERTY_SPECIAL_ARRANGEMENT);
         }
 
         /**
@@ -808,7 +808,7 @@ public class Encounter extends FhirResource {
          * Category or kind of location after discharge.
          */
         public CodeableConcept dischargeDisposition() {
-            return getObject(CodeableConcept.class, PROPERTY_DISCHARGEDISPOSITION);
+            return getObject(CodeableConcept.class, PROPERTY_DISCHARGE_DISPOSITION);
         }
 
         public static class Builder {
@@ -828,12 +828,12 @@ public class Encounter extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder preAdmissionIdentifier(final Identifier preAdmissionIdentifier) {
-                b.add(PROPERTY_PREADMISSIONIDENTIFIER, preAdmissionIdentifier);
+                b.add(PROPERTY_PRE_ADMISSION_IDENTIFIER, preAdmissionIdentifier);
                 return this;
             }
 
@@ -843,27 +843,27 @@ public class Encounter extends FhirResource {
             }
 
             public Builder admitSource(final CodeableConcept admitSource) {
-                b.add(PROPERTY_ADMITSOURCE, admitSource);
+                b.add(PROPERTY_ADMIT_SOURCE, admitSource);
                 return this;
             }
 
             public Builder reAdmission(final CodeableConcept reAdmission) {
-                b.add(PROPERTY_READMISSION, reAdmission);
+                b.add(PROPERTY_RE_ADMISSION, reAdmission);
                 return this;
             }
 
             public Builder dietPreference(final java.util.List<CodeableConcept> dietPreference) {
-                b.add(PROPERTY_DIETPREFERENCE, FhirObject.toArray(dietPreference));
+                b.add(PROPERTY_DIET_PREFERENCE, FhirObject.toArray(dietPreference));
                 return this;
             }
 
             public Builder specialCourtesy(final java.util.List<CodeableConcept> specialCourtesy) {
-                b.add(PROPERTY_SPECIALCOURTESY, FhirObject.toArray(specialCourtesy));
+                b.add(PROPERTY_SPECIAL_COURTESY, FhirObject.toArray(specialCourtesy));
                 return this;
             }
 
             public Builder specialArrangement(final java.util.List<CodeableConcept> specialArrangement) {
-                b.add(PROPERTY_SPECIALARRANGEMENT, FhirObject.toArray(specialArrangement));
+                b.add(PROPERTY_SPECIAL_ARRANGEMENT, FhirObject.toArray(specialArrangement));
                 return this;
             }
 
@@ -873,7 +873,7 @@ public class Encounter extends FhirResource {
             }
 
             public Builder dischargeDisposition(final CodeableConcept dischargeDisposition) {
-                b.add(PROPERTY_DISCHARGEDISPOSITION, dischargeDisposition);
+                b.add(PROPERTY_DISCHARGE_DISPOSITION, dischargeDisposition);
                 return this;
             }
 
@@ -886,10 +886,10 @@ public class Encounter extends FhirResource {
     public static class EncounterLocation extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterLocation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_LOCATION = "location";
         public static final String PROPERTY_STATUS = "status";
-        public static final String PROPERTY_PHYSICALTYPE = "physicalType";
+        public static final String PROPERTY_PHYSICAL_TYPE = "physicalType";
         public static final String PROPERTY_PERIOD = "period";
 
         public static Builder create() {
@@ -930,7 +930,7 @@ public class Encounter extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -954,7 +954,7 @@ public class Encounter extends FhirResource {
          * desired to be recorded to simplify either messaging or query.
          */
         public CodeableConcept physicalType() {
-            return getObject(CodeableConcept.class, PROPERTY_PHYSICALTYPE);
+            return getObject(CodeableConcept.class, PROPERTY_PHYSICAL_TYPE);
         }
 
         /**
@@ -981,7 +981,7 @@ public class Encounter extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -996,7 +996,7 @@ public class Encounter extends FhirResource {
             }
 
             public Builder physicalType(final CodeableConcept physicalType) {
-                b.add(PROPERTY_PHYSICALTYPE, physicalType);
+                b.add(PROPERTY_PHYSICAL_TYPE, physicalType);
                 return this;
             }
 
@@ -1014,7 +1014,7 @@ public class Encounter extends FhirResource {
     public static class EncounterParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterParticipant";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_PERIOD = "period";
         public static final String PROPERTY_INDIVIDUAL = "individual";
@@ -1057,7 +1057,7 @@ public class Encounter extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1100,7 +1100,7 @@ public class Encounter extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1128,7 +1128,7 @@ public class Encounter extends FhirResource {
     public static class EncounterStatusHistory extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterStatusHistory";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_STATUS = "status";
         public static final String PROPERTY_PERIOD = "period";
 
@@ -1170,7 +1170,7 @@ public class Encounter extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1205,7 +1205,7 @@ public class Encounter extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

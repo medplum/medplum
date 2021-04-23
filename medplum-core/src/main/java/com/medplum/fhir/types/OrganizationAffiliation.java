@@ -9,24 +9,24 @@ import jakarta.json.JsonObject;
 
 public class OrganizationAffiliation extends FhirResource {
     public static final String RESOURCE_TYPE = "OrganizationAffiliation";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_ACTIVE = "active";
     public static final String PROPERTY_PERIOD = "period";
     public static final String PROPERTY_ORGANIZATION = "organization";
-    public static final String PROPERTY_PARTICIPATINGORGANIZATION = "participatingOrganization";
+    public static final String PROPERTY_PARTICIPATING_ORGANIZATION = "participatingOrganization";
     public static final String PROPERTY_NETWORK = "network";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_SPECIALTY = "specialty";
     public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_HEALTHCARESERVICE = "healthcareService";
+    public static final String PROPERTY_HEALTHCARE_SERVICE = "healthcareService";
     public static final String PROPERTY_TELECOM = "telecom";
     public static final String PROPERTY_ENDPOINT = "endpoint";
 
@@ -49,7 +49,7 @@ public class OrganizationAffiliation extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -97,7 +97,7 @@ public class OrganizationAffiliation extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -136,7 +136,7 @@ public class OrganizationAffiliation extends FhirResource {
      * a member of).
      */
     public Reference participatingOrganization() {
-        return getObject(Reference.class, PROPERTY_PARTICIPATINGORGANIZATION);
+        return getObject(Reference.class, PROPERTY_PARTICIPATING_ORGANIZATION);
     }
 
     /**
@@ -175,7 +175,7 @@ public class OrganizationAffiliation extends FhirResource {
      * Healthcare services provided through the role.
      */
     public java.util.List<Reference> healthcareService() {
-        return getList(Reference.class, PROPERTY_HEALTHCARESERVICE);
+        return getList(Reference.class, PROPERTY_HEALTHCARE_SERVICE);
     }
 
     /**
@@ -205,7 +205,7 @@ public class OrganizationAffiliation extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -220,7 +220,7 @@ public class OrganizationAffiliation extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -240,7 +240,7 @@ public class OrganizationAffiliation extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -265,7 +265,7 @@ public class OrganizationAffiliation extends FhirResource {
         }
 
         public Builder participatingOrganization(final Reference participatingOrganization) {
-            b.add(PROPERTY_PARTICIPATINGORGANIZATION, participatingOrganization);
+            b.add(PROPERTY_PARTICIPATING_ORGANIZATION, participatingOrganization);
             return this;
         }
 
@@ -290,7 +290,7 @@ public class OrganizationAffiliation extends FhirResource {
         }
 
         public Builder healthcareService(final java.util.List<Reference> healthcareService) {
-            b.add(PROPERTY_HEALTHCARESERVICE, FhirObject.toArray(healthcareService));
+            b.add(PROPERTY_HEALTHCARE_SERVICE, FhirObject.toArray(healthcareService));
             return this;
         }
 

@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Measure extends FhirResource {
     public static final String RESOURCE_TYPE = "Measure";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_VERSION = "version";
@@ -27,40 +27,40 @@ public class Measure extends FhirResource {
     public static final String PROPERTY_SUBTITLE = "subtitle";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_SUBJECTCODEABLECONCEPT = "subjectCodeableConcept";
-    public static final String PROPERTY_SUBJECTREFERENCE = "subjectReference";
+    public static final String PROPERTY_SUBJECT_CODEABLE_CONCEPT = "subjectCodeableConcept";
+    public static final String PROPERTY_SUBJECT_REFERENCE = "subjectReference";
     public static final String PROPERTY_DATE = "date";
     public static final String PROPERTY_PUBLISHER = "publisher";
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_PURPOSE = "purpose";
     public static final String PROPERTY_USAGE = "usage";
     public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_APPROVALDATE = "approvalDate";
-    public static final String PROPERTY_LASTREVIEWDATE = "lastReviewDate";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
+    public static final String PROPERTY_APPROVAL_DATE = "approvalDate";
+    public static final String PROPERTY_LAST_REVIEW_DATE = "lastReviewDate";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
     public static final String PROPERTY_TOPIC = "topic";
     public static final String PROPERTY_AUTHOR = "author";
     public static final String PROPERTY_EDITOR = "editor";
     public static final String PROPERTY_REVIEWER = "reviewer";
     public static final String PROPERTY_ENDORSER = "endorser";
-    public static final String PROPERTY_RELATEDARTIFACT = "relatedArtifact";
+    public static final String PROPERTY_RELATED_ARTIFACT = "relatedArtifact";
     public static final String PROPERTY_LIBRARY = "library";
     public static final String PROPERTY_DISCLAIMER = "disclaimer";
     public static final String PROPERTY_SCORING = "scoring";
-    public static final String PROPERTY_COMPOSITESCORING = "compositeScoring";
+    public static final String PROPERTY_COMPOSITE_SCORING = "compositeScoring";
     public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_RISKADJUSTMENT = "riskAdjustment";
-    public static final String PROPERTY_RATEAGGREGATION = "rateAggregation";
+    public static final String PROPERTY_RISK_ADJUSTMENT = "riskAdjustment";
+    public static final String PROPERTY_RATE_AGGREGATION = "rateAggregation";
     public static final String PROPERTY_RATIONALE = "rationale";
-    public static final String PROPERTY_CLINICALRECOMMENDATIONSTATEMENT = "clinicalRecommendationStatement";
-    public static final String PROPERTY_IMPROVEMENTNOTATION = "improvementNotation";
+    public static final String PROPERTY_CLINICAL_RECOMMENDATION_STATEMENT = "clinicalRecommendationStatement";
+    public static final String PROPERTY_IMPROVEMENT_NOTATION = "improvementNotation";
     public static final String PROPERTY_DEFINITION = "definition";
     public static final String PROPERTY_GUIDANCE = "guidance";
     public static final String PROPERTY_GROUP = "group";
-    public static final String PROPERTY_SUPPLEMENTALDATA = "supplementalData";
+    public static final String PROPERTY_SUPPLEMENTAL_DATA = "supplementalData";
 
     public static Builder create() {
         return new Builder();
@@ -81,7 +81,7 @@ public class Measure extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -129,7 +129,7 @@ public class Measure extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -218,7 +218,7 @@ public class Measure extends FhirResource {
      * can be anything.
      */
     public CodeableConcept subjectCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_SUBJECTCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_SUBJECT_CODEABLE_CONCEPT);
     }
 
     /**
@@ -227,7 +227,7 @@ public class Measure extends FhirResource {
      * can be anything.
      */
     public Reference subjectReference() {
-        return getObject(Reference.class, PROPERTY_SUBJECTREFERENCE);
+        return getObject(Reference.class, PROPERTY_SUBJECT_REFERENCE);
     }
 
     /**
@@ -271,7 +271,7 @@ public class Measure extends FhirResource {
      * indexing and searching for appropriate measure instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -313,7 +313,7 @@ public class Measure extends FhirResource {
      * usage.
      */
     public java.time.Instant approvalDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_APPROVALDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_APPROVAL_DATE));
     }
 
     /**
@@ -322,7 +322,7 @@ public class Measure extends FhirResource {
      * approval date.
      */
     public java.time.Instant lastReviewDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTREVIEWDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_REVIEW_DATE));
     }
 
     /**
@@ -330,7 +330,7 @@ public class Measure extends FhirResource {
      * active use.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -379,7 +379,7 @@ public class Measure extends FhirResource {
      * bibliographic references.
      */
     public java.util.List<RelatedArtifact> relatedArtifact() {
-        return getList(RelatedArtifact.class, PROPERTY_RELATEDARTIFACT);
+        return getList(RelatedArtifact.class, PROPERTY_RELATED_ARTIFACT);
     }
 
     /**
@@ -414,7 +414,7 @@ public class Measure extends FhirResource {
      * component measures to determine the composite score.
      */
     public CodeableConcept compositeScoring() {
-        return getObject(CodeableConcept.class, PROPERTY_COMPOSITESCORING);
+        return getObject(CodeableConcept.class, PROPERTY_COMPOSITE_SCORING);
     }
 
     /**
@@ -432,7 +432,7 @@ public class Measure extends FhirResource {
      * computing and reporting measure results.
      */
     public String riskAdjustment() {
-        return getString(PROPERTY_RISKADJUSTMENT);
+        return getString(PROPERTY_RISK_ADJUSTMENT);
     }
 
     /**
@@ -440,7 +440,7 @@ public class Measure extends FhirResource {
      * each of several populations, into one summarized result.
      */
     public String rateAggregation() {
-        return getString(PROPERTY_RATEAGGREGATION);
+        return getString(PROPERTY_RATE_AGGREGATION);
     }
 
     /**
@@ -457,7 +457,7 @@ public class Measure extends FhirResource {
      * recommendations supporting the measure.
      */
     public String clinicalRecommendationStatement() {
-        return getString(PROPERTY_CLINICALRECOMMENDATIONSTATEMENT);
+        return getString(PROPERTY_CLINICAL_RECOMMENDATION_STATEMENT);
     }
 
     /**
@@ -466,7 +466,7 @@ public class Measure extends FhirResource {
      * lower score indicates better quality OR quality is within a range).
      */
     public CodeableConcept improvementNotation() {
-        return getObject(CodeableConcept.class, PROPERTY_IMPROVEMENTNOTATION);
+        return getObject(CodeableConcept.class, PROPERTY_IMPROVEMENT_NOTATION);
     }
 
     /**
@@ -497,7 +497,7 @@ public class Measure extends FhirResource {
      * or a valid FHIR Resource Path.
      */
     public java.util.List<MeasureSupplementalData> supplementalData() {
-        return getList(MeasureSupplementalData.class, PROPERTY_SUPPLEMENTALDATA);
+        return getList(MeasureSupplementalData.class, PROPERTY_SUPPLEMENTAL_DATA);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -511,7 +511,7 @@ public class Measure extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -526,7 +526,7 @@ public class Measure extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -546,7 +546,7 @@ public class Measure extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -591,12 +591,12 @@ public class Measure extends FhirResource {
         }
 
         public Builder subjectCodeableConcept(final CodeableConcept subjectCodeableConcept) {
-            b.add(PROPERTY_SUBJECTCODEABLECONCEPT, subjectCodeableConcept);
+            b.add(PROPERTY_SUBJECT_CODEABLE_CONCEPT, subjectCodeableConcept);
             return this;
         }
 
         public Builder subjectReference(final Reference subjectReference) {
-            b.add(PROPERTY_SUBJECTREFERENCE, subjectReference);
+            b.add(PROPERTY_SUBJECT_REFERENCE, subjectReference);
             return this;
         }
 
@@ -621,7 +621,7 @@ public class Measure extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -646,17 +646,17 @@ public class Measure extends FhirResource {
         }
 
         public Builder approvalDate(final java.time.Instant approvalDate) {
-            b.add(PROPERTY_APPROVALDATE, approvalDate.toString());
+            b.add(PROPERTY_APPROVAL_DATE, approvalDate.toString());
             return this;
         }
 
         public Builder lastReviewDate(final java.time.Instant lastReviewDate) {
-            b.add(PROPERTY_LASTREVIEWDATE, lastReviewDate.toString());
+            b.add(PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
@@ -686,7 +686,7 @@ public class Measure extends FhirResource {
         }
 
         public Builder relatedArtifact(final java.util.List<RelatedArtifact> relatedArtifact) {
-            b.add(PROPERTY_RELATEDARTIFACT, FhirObject.toArray(relatedArtifact));
+            b.add(PROPERTY_RELATED_ARTIFACT, FhirObject.toArray(relatedArtifact));
             return this;
         }
 
@@ -706,7 +706,7 @@ public class Measure extends FhirResource {
         }
 
         public Builder compositeScoring(final CodeableConcept compositeScoring) {
-            b.add(PROPERTY_COMPOSITESCORING, compositeScoring);
+            b.add(PROPERTY_COMPOSITE_SCORING, compositeScoring);
             return this;
         }
 
@@ -716,12 +716,12 @@ public class Measure extends FhirResource {
         }
 
         public Builder riskAdjustment(final String riskAdjustment) {
-            b.add(PROPERTY_RISKADJUSTMENT, riskAdjustment);
+            b.add(PROPERTY_RISK_ADJUSTMENT, riskAdjustment);
             return this;
         }
 
         public Builder rateAggregation(final String rateAggregation) {
-            b.add(PROPERTY_RATEAGGREGATION, rateAggregation);
+            b.add(PROPERTY_RATE_AGGREGATION, rateAggregation);
             return this;
         }
 
@@ -731,12 +731,12 @@ public class Measure extends FhirResource {
         }
 
         public Builder clinicalRecommendationStatement(final String clinicalRecommendationStatement) {
-            b.add(PROPERTY_CLINICALRECOMMENDATIONSTATEMENT, clinicalRecommendationStatement);
+            b.add(PROPERTY_CLINICAL_RECOMMENDATION_STATEMENT, clinicalRecommendationStatement);
             return this;
         }
 
         public Builder improvementNotation(final CodeableConcept improvementNotation) {
-            b.add(PROPERTY_IMPROVEMENTNOTATION, improvementNotation);
+            b.add(PROPERTY_IMPROVEMENT_NOTATION, improvementNotation);
             return this;
         }
 
@@ -756,7 +756,7 @@ public class Measure extends FhirResource {
         }
 
         public Builder supplementalData(final java.util.List<MeasureSupplementalData> supplementalData) {
-            b.add(PROPERTY_SUPPLEMENTALDATA, FhirObject.toArray(supplementalData));
+            b.add(PROPERTY_SUPPLEMENTAL_DATA, FhirObject.toArray(supplementalData));
             return this;
         }
 
@@ -768,7 +768,7 @@ public class Measure extends FhirResource {
     public static class MeasureComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureComponent";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_CRITERIA = "criteria";
@@ -811,7 +811,7 @@ public class Measure extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -858,7 +858,7 @@ public class Measure extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -886,7 +886,7 @@ public class Measure extends FhirResource {
     public static class MeasureGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureGroup";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_POPULATION = "population";
@@ -930,7 +930,7 @@ public class Measure extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -983,7 +983,7 @@ public class Measure extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1016,7 +1016,7 @@ public class Measure extends FhirResource {
     public static class MeasurePopulation extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasurePopulation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_CRITERIA = "criteria";
@@ -1059,7 +1059,7 @@ public class Measure extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1101,7 +1101,7 @@ public class Measure extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1129,7 +1129,7 @@ public class Measure extends FhirResource {
     public static class MeasureStratifier extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureStratifier";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_CRITERIA = "criteria";
@@ -1173,7 +1173,7 @@ public class Measure extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1228,7 +1228,7 @@ public class Measure extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -1261,7 +1261,7 @@ public class Measure extends FhirResource {
     public static class MeasureSupplementalData extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureSupplementalData";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_USAGE = "usage";
         public static final String PROPERTY_DESCRIPTION = "description";
@@ -1305,7 +1305,7 @@ public class Measure extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1364,7 +1364,7 @@ public class Measure extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

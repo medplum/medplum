@@ -11,35 +11,35 @@ import jakarta.json.JsonObjectBuilder;
 
 public class ResearchStudy extends FhirResource {
     public static final String RESOURCE_TYPE = "ResearchStudy";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_TITLE = "title";
     public static final String PROPERTY_PROTOCOL = "protocol";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_PART_OF = "partOf";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_PRIMARYPURPOSETYPE = "primaryPurposeType";
+    public static final String PROPERTY_PRIMARY_PURPOSE_TYPE = "primaryPurposeType";
     public static final String PROPERTY_PHASE = "phase";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_FOCUS = "focus";
     public static final String PROPERTY_CONDITION = "condition";
     public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_RELATEDARTIFACT = "relatedArtifact";
+    public static final String PROPERTY_RELATED_ARTIFACT = "relatedArtifact";
     public static final String PROPERTY_KEYWORD = "keyword";
     public static final String PROPERTY_LOCATION = "location";
     public static final String PROPERTY_DESCRIPTION = "description";
     public static final String PROPERTY_ENROLLMENT = "enrollment";
     public static final String PROPERTY_PERIOD = "period";
     public static final String PROPERTY_SPONSOR = "sponsor";
-    public static final String PROPERTY_PRINCIPALINVESTIGATOR = "principalInvestigator";
+    public static final String PROPERTY_PRINCIPAL_INVESTIGATOR = "principalInvestigator";
     public static final String PROPERTY_SITE = "site";
-    public static final String PROPERTY_REASONSTOPPED = "reasonStopped";
+    public static final String PROPERTY_REASON_STOPPED = "reasonStopped";
     public static final String PROPERTY_NOTE = "note";
     public static final String PROPERTY_ARM = "arm";
     public static final String PROPERTY_OBJECTIVE = "objective";
@@ -63,7 +63,7 @@ public class ResearchStudy extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -111,7 +111,7 @@ public class ResearchStudy extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -142,7 +142,7 @@ public class ResearchStudy extends FhirResource {
      * or step.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PARTOF);
+        return getList(Reference.class, PROPERTY_PART_OF);
     }
 
     /**
@@ -157,7 +157,7 @@ public class ResearchStudy extends FhirResource {
      * classification of the intent of the study.
      */
     public CodeableConcept primaryPurposeType() {
-        return getObject(CodeableConcept.class, PROPERTY_PRIMARYPURPOSETYPE);
+        return getObject(CodeableConcept.class, PROPERTY_PRIMARY_PURPOSE_TYPE);
     }
 
     /**
@@ -208,7 +208,7 @@ public class ResearchStudy extends FhirResource {
      * Citations, references and other related documents.
      */
     public java.util.List<RelatedArtifact> relatedArtifact() {
-        return getList(RelatedArtifact.class, PROPERTY_RELATEDARTIFACT);
+        return getList(RelatedArtifact.class, PROPERTY_RELATED_ARTIFACT);
     }
 
     /**
@@ -265,7 +265,7 @@ public class ResearchStudy extends FhirResource {
      * collection, analysis, interpretation and presentation.
      */
     public Reference principalInvestigator() {
-        return getObject(Reference.class, PROPERTY_PRINCIPALINVESTIGATOR);
+        return getObject(Reference.class, PROPERTY_PRINCIPAL_INVESTIGATOR);
     }
 
     /**
@@ -280,7 +280,7 @@ public class ResearchStudy extends FhirResource {
      * study.
      */
     public CodeableConcept reasonStopped() {
-        return getObject(CodeableConcept.class, PROPERTY_REASONSTOPPED);
+        return getObject(CodeableConcept.class, PROPERTY_REASON_STOPPED);
     }
 
     /**
@@ -320,7 +320,7 @@ public class ResearchStudy extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -335,7 +335,7 @@ public class ResearchStudy extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -355,7 +355,7 @@ public class ResearchStudy extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -375,7 +375,7 @@ public class ResearchStudy extends FhirResource {
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
@@ -385,7 +385,7 @@ public class ResearchStudy extends FhirResource {
         }
 
         public Builder primaryPurposeType(final CodeableConcept primaryPurposeType) {
-            b.add(PROPERTY_PRIMARYPURPOSETYPE, primaryPurposeType);
+            b.add(PROPERTY_PRIMARY_PURPOSE_TYPE, primaryPurposeType);
             return this;
         }
 
@@ -415,7 +415,7 @@ public class ResearchStudy extends FhirResource {
         }
 
         public Builder relatedArtifact(final java.util.List<RelatedArtifact> relatedArtifact) {
-            b.add(PROPERTY_RELATEDARTIFACT, FhirObject.toArray(relatedArtifact));
+            b.add(PROPERTY_RELATED_ARTIFACT, FhirObject.toArray(relatedArtifact));
             return this;
         }
 
@@ -450,7 +450,7 @@ public class ResearchStudy extends FhirResource {
         }
 
         public Builder principalInvestigator(final Reference principalInvestigator) {
-            b.add(PROPERTY_PRINCIPALINVESTIGATOR, principalInvestigator);
+            b.add(PROPERTY_PRINCIPAL_INVESTIGATOR, principalInvestigator);
             return this;
         }
 
@@ -460,7 +460,7 @@ public class ResearchStudy extends FhirResource {
         }
 
         public Builder reasonStopped(final CodeableConcept reasonStopped) {
-            b.add(PROPERTY_REASONSTOPPED, reasonStopped);
+            b.add(PROPERTY_REASON_STOPPED, reasonStopped);
             return this;
         }
 
@@ -487,7 +487,7 @@ public class ResearchStudy extends FhirResource {
     public static class ResearchStudyArm extends FhirObject {
         public static final String RESOURCE_TYPE = "ResearchStudyArm";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_DESCRIPTION = "description";
@@ -530,7 +530,7 @@ public class ResearchStudy extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -573,7 +573,7 @@ public class ResearchStudy extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -601,7 +601,7 @@ public class ResearchStudy extends FhirResource {
     public static class ResearchStudyObjective extends FhirObject {
         public static final String RESOURCE_TYPE = "ResearchStudyObjective";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_NAME = "name";
         public static final String PROPERTY_TYPE = "type";
 
@@ -643,7 +643,7 @@ public class ResearchStudy extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -677,7 +677,7 @@ public class ResearchStudy extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

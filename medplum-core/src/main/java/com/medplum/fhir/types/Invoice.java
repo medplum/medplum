@@ -11,17 +11,17 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Invoice extends FhirResource {
     public static final String RESOURCE_TYPE = "Invoice";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_CANCELLEDREASON = "cancelledReason";
+    public static final String PROPERTY_CANCELLED_REASON = "cancelledReason";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_RECIPIENT = "recipient";
@@ -29,11 +29,11 @@ public class Invoice extends FhirResource {
     public static final String PROPERTY_PARTICIPANT = "participant";
     public static final String PROPERTY_ISSUER = "issuer";
     public static final String PROPERTY_ACCOUNT = "account";
-    public static final String PROPERTY_LINEITEM = "lineItem";
-    public static final String PROPERTY_TOTALPRICECOMPONENT = "totalPriceComponent";
-    public static final String PROPERTY_TOTALNET = "totalNet";
-    public static final String PROPERTY_TOTALGROSS = "totalGross";
-    public static final String PROPERTY_PAYMENTTERMS = "paymentTerms";
+    public static final String PROPERTY_LINE_ITEM = "lineItem";
+    public static final String PROPERTY_TOTAL_PRICE_COMPONENT = "totalPriceComponent";
+    public static final String PROPERTY_TOTAL_NET = "totalNet";
+    public static final String PROPERTY_TOTAL_GROSS = "totalGross";
+    public static final String PROPERTY_PAYMENT_TERMS = "paymentTerms";
     public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
@@ -55,7 +55,7 @@ public class Invoice extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -103,7 +103,7 @@ public class Invoice extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -126,7 +126,7 @@ public class Invoice extends FhirResource {
      * error, superseded by corrected invoice etc.).
      */
     public String cancelledReason() {
-        return getString(PROPERTY_CANCELLEDREASON);
+        return getString(PROPERTY_CANCELLED_REASON);
     }
 
     /**
@@ -188,7 +188,7 @@ public class Invoice extends FhirResource {
      * ChargeItem resource.
      */
     public java.util.List<InvoiceLineItem> lineItem() {
-        return getList(InvoiceLineItem.class, PROPERTY_LINEITEM);
+        return getList(InvoiceLineItem.class, PROPERTY_LINE_ITEM);
     }
 
     /**
@@ -199,21 +199,21 @@ public class Invoice extends FhirResource {
      * was calculated.
      */
     public java.util.List<InvoicePriceComponent> totalPriceComponent() {
-        return getList(InvoicePriceComponent.class, PROPERTY_TOTALPRICECOMPONENT);
+        return getList(InvoicePriceComponent.class, PROPERTY_TOTAL_PRICE_COMPONENT);
     }
 
     /**
      * Invoice total , taxes excluded.
      */
     public Money totalNet() {
-        return getObject(Money.class, PROPERTY_TOTALNET);
+        return getObject(Money.class, PROPERTY_TOTAL_NET);
     }
 
     /**
      * Invoice total, tax included.
      */
     public Money totalGross() {
-        return getObject(Money.class, PROPERTY_TOTALGROSS);
+        return getObject(Money.class, PROPERTY_TOTAL_GROSS);
     }
 
     /**
@@ -221,7 +221,7 @@ public class Invoice extends FhirResource {
      * deductibles, methods of payment.
      */
     public String paymentTerms() {
-        return getString(PROPERTY_PAYMENTTERMS);
+        return getString(PROPERTY_PAYMENT_TERMS);
     }
 
     /**
@@ -243,7 +243,7 @@ public class Invoice extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -258,7 +258,7 @@ public class Invoice extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -278,7 +278,7 @@ public class Invoice extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -293,7 +293,7 @@ public class Invoice extends FhirResource {
         }
 
         public Builder cancelledReason(final String cancelledReason) {
-            b.add(PROPERTY_CANCELLEDREASON, cancelledReason);
+            b.add(PROPERTY_CANCELLED_REASON, cancelledReason);
             return this;
         }
 
@@ -333,27 +333,27 @@ public class Invoice extends FhirResource {
         }
 
         public Builder lineItem(final java.util.List<InvoiceLineItem> lineItem) {
-            b.add(PROPERTY_LINEITEM, FhirObject.toArray(lineItem));
+            b.add(PROPERTY_LINE_ITEM, FhirObject.toArray(lineItem));
             return this;
         }
 
         public Builder totalPriceComponent(final java.util.List<InvoicePriceComponent> totalPriceComponent) {
-            b.add(PROPERTY_TOTALPRICECOMPONENT, FhirObject.toArray(totalPriceComponent));
+            b.add(PROPERTY_TOTAL_PRICE_COMPONENT, FhirObject.toArray(totalPriceComponent));
             return this;
         }
 
         public Builder totalNet(final Money totalNet) {
-            b.add(PROPERTY_TOTALNET, totalNet);
+            b.add(PROPERTY_TOTAL_NET, totalNet);
             return this;
         }
 
         public Builder totalGross(final Money totalGross) {
-            b.add(PROPERTY_TOTALGROSS, totalGross);
+            b.add(PROPERTY_TOTAL_GROSS, totalGross);
             return this;
         }
 
         public Builder paymentTerms(final String paymentTerms) {
-            b.add(PROPERTY_PAYMENTTERMS, paymentTerms);
+            b.add(PROPERTY_PAYMENT_TERMS, paymentTerms);
             return this;
         }
 
@@ -370,11 +370,11 @@ public class Invoice extends FhirResource {
     public static class InvoiceLineItem extends FhirObject {
         public static final String RESOURCE_TYPE = "InvoiceLineItem";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SEQUENCE = "sequence";
-        public static final String PROPERTY_CHARGEITEMREFERENCE = "chargeItemReference";
-        public static final String PROPERTY_CHARGEITEMCODEABLECONCEPT = "chargeItemCodeableConcept";
-        public static final String PROPERTY_PRICECOMPONENT = "priceComponent";
+        public static final String PROPERTY_CHARGE_ITEM_REFERENCE = "chargeItemReference";
+        public static final String PROPERTY_CHARGE_ITEM_CODEABLE_CONCEPT = "chargeItemCodeableConcept";
+        public static final String PROPERTY_PRICE_COMPONENT = "priceComponent";
 
         public static Builder create() {
             return new Builder();
@@ -414,7 +414,7 @@ public class Invoice extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -431,7 +431,7 @@ public class Invoice extends FhirResource {
          * instead of the Reference.
          */
         public Reference chargeItemReference() {
-            return getObject(Reference.class, PROPERTY_CHARGEITEMREFERENCE);
+            return getObject(Reference.class, PROPERTY_CHARGE_ITEM_REFERENCE);
         }
 
         /**
@@ -441,7 +441,7 @@ public class Invoice extends FhirResource {
          * instead of the Reference.
          */
         public CodeableConcept chargeItemCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_CHARGEITEMCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_CHARGE_ITEM_CODEABLE_CONCEPT);
         }
 
         /**
@@ -454,7 +454,7 @@ public class Invoice extends FhirResource {
          * been calculated.
          */
         public java.util.List<InvoicePriceComponent> priceComponent() {
-            return getList(InvoicePriceComponent.class, PROPERTY_PRICECOMPONENT);
+            return getList(InvoicePriceComponent.class, PROPERTY_PRICE_COMPONENT);
         }
 
         public static class Builder {
@@ -474,7 +474,7 @@ public class Invoice extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -484,17 +484,17 @@ public class Invoice extends FhirResource {
             }
 
             public Builder chargeItemReference(final Reference chargeItemReference) {
-                b.add(PROPERTY_CHARGEITEMREFERENCE, chargeItemReference);
+                b.add(PROPERTY_CHARGE_ITEM_REFERENCE, chargeItemReference);
                 return this;
             }
 
             public Builder chargeItemCodeableConcept(final CodeableConcept chargeItemCodeableConcept) {
-                b.add(PROPERTY_CHARGEITEMCODEABLECONCEPT, chargeItemCodeableConcept);
+                b.add(PROPERTY_CHARGE_ITEM_CODEABLE_CONCEPT, chargeItemCodeableConcept);
                 return this;
             }
 
             public Builder priceComponent(final java.util.List<InvoicePriceComponent> priceComponent) {
-                b.add(PROPERTY_PRICECOMPONENT, FhirObject.toArray(priceComponent));
+                b.add(PROPERTY_PRICE_COMPONENT, FhirObject.toArray(priceComponent));
                 return this;
             }
 
@@ -507,7 +507,7 @@ public class Invoice extends FhirResource {
     public static class InvoiceParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "InvoiceParticipant";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ROLE = "role";
         public static final String PROPERTY_ACTOR = "actor";
 
@@ -549,7 +549,7 @@ public class Invoice extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -586,7 +586,7 @@ public class Invoice extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -609,7 +609,7 @@ public class Invoice extends FhirResource {
     public static class InvoicePriceComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "InvoicePriceComponent";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_FACTOR = "factor";
@@ -653,7 +653,7 @@ public class Invoice extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -703,7 +703,7 @@ public class Invoice extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

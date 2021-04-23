@@ -9,31 +9,31 @@ import jakarta.json.JsonObject;
 
 public class GuidanceResponse extends FhirResource {
     public static final String RESOURCE_TYPE = "GuidanceResponse";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-    public static final String PROPERTY_REQUESTIDENTIFIER = "requestIdentifier";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+    public static final String PROPERTY_REQUEST_IDENTIFIER = "requestIdentifier";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_MODULEURI = "moduleUri";
-    public static final String PROPERTY_MODULECANONICAL = "moduleCanonical";
-    public static final String PROPERTY_MODULECODEABLECONCEPT = "moduleCodeableConcept";
+    public static final String PROPERTY_MODULE_URI = "moduleUri";
+    public static final String PROPERTY_MODULE_CANONICAL = "moduleCanonical";
+    public static final String PROPERTY_MODULE_CODEABLE_CONCEPT = "moduleCodeableConcept";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_OCCURRENCEDATETIME = "occurrenceDateTime";
+    public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
     public static final String PROPERTY_PERFORMER = "performer";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_EVALUATIONMESSAGE = "evaluationMessage";
-    public static final String PROPERTY_OUTPUTPARAMETERS = "outputParameters";
+    public static final String PROPERTY_EVALUATION_MESSAGE = "evaluationMessage";
+    public static final String PROPERTY_OUTPUT_PARAMETERS = "outputParameters";
     public static final String PROPERTY_RESULT = "result";
-    public static final String PROPERTY_DATAREQUIREMENT = "dataRequirement";
+    public static final String PROPERTY_DATA_REQUIREMENT = "dataRequirement";
 
     public static Builder create() {
         return new Builder();
@@ -54,7 +54,7 @@ public class GuidanceResponse extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -102,7 +102,7 @@ public class GuidanceResponse extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -112,7 +112,7 @@ public class GuidanceResponse extends FhirResource {
      * multi-request scenario.
      */
     public Identifier requestIdentifier() {
-        return getObject(Identifier.class, PROPERTY_REQUESTIDENTIFIER);
+        return getObject(Identifier.class, PROPERTY_REQUEST_IDENTIFIER);
     }
 
     /**
@@ -128,7 +128,7 @@ public class GuidanceResponse extends FhirResource {
      * that was requested.
      */
     public String moduleUri() {
-        return getString(PROPERTY_MODULEURI);
+        return getString(PROPERTY_MODULE_URI);
     }
 
     /**
@@ -136,7 +136,7 @@ public class GuidanceResponse extends FhirResource {
      * that was requested.
      */
     public String moduleCanonical() {
-        return getString(PROPERTY_MODULECANONICAL);
+        return getString(PROPERTY_MODULE_CANONICAL);
     }
 
     /**
@@ -144,7 +144,7 @@ public class GuidanceResponse extends FhirResource {
      * that was requested.
      */
     public CodeableConcept moduleCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_MODULECODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_MODULE_CODEABLE_CONCEPT);
     }
 
     /**
@@ -181,7 +181,7 @@ public class GuidanceResponse extends FhirResource {
      * Indicates when the guidance response was processed.
      */
     public java.time.Instant occurrenceDateTime() {
-        return java.time.Instant.parse(data.getString(PROPERTY_OCCURRENCEDATETIME));
+        return java.time.Instant.parse(data.getString(PROPERTY_OCCURRENCE_DATE_TIME));
     }
 
     /**
@@ -196,7 +196,7 @@ public class GuidanceResponse extends FhirResource {
      * form.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
@@ -206,7 +206,7 @@ public class GuidanceResponse extends FhirResource {
      * scenarios, it may provide an indication of the cause for the response.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -224,7 +224,7 @@ public class GuidanceResponse extends FhirResource {
      * this element.
      */
     public java.util.List<Reference> evaluationMessage() {
-        return getList(Reference.class, PROPERTY_EVALUATIONMESSAGE);
+        return getList(Reference.class, PROPERTY_EVALUATION_MESSAGE);
     }
 
     /**
@@ -236,7 +236,7 @@ public class GuidanceResponse extends FhirResource {
      * in this element.
      */
     public Reference outputParameters() {
-        return getObject(Reference.class, PROPERTY_OUTPUTPARAMETERS);
+        return getObject(Reference.class, PROPERTY_OUTPUT_PARAMETERS);
     }
 
     /**
@@ -254,7 +254,7 @@ public class GuidanceResponse extends FhirResource {
      * service should include this data.
      */
     public java.util.List<DataRequirement> dataRequirement() {
-        return getList(DataRequirement.class, PROPERTY_DATAREQUIREMENT);
+        return getList(DataRequirement.class, PROPERTY_DATA_REQUIREMENT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -268,7 +268,7 @@ public class GuidanceResponse extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -283,7 +283,7 @@ public class GuidanceResponse extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -303,12 +303,12 @@ public class GuidanceResponse extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder requestIdentifier(final Identifier requestIdentifier) {
-            b.add(PROPERTY_REQUESTIDENTIFIER, requestIdentifier);
+            b.add(PROPERTY_REQUEST_IDENTIFIER, requestIdentifier);
             return this;
         }
 
@@ -318,17 +318,17 @@ public class GuidanceResponse extends FhirResource {
         }
 
         public Builder moduleUri(final String moduleUri) {
-            b.add(PROPERTY_MODULEURI, moduleUri);
+            b.add(PROPERTY_MODULE_URI, moduleUri);
             return this;
         }
 
         public Builder moduleCanonical(final String moduleCanonical) {
-            b.add(PROPERTY_MODULECANONICAL, moduleCanonical);
+            b.add(PROPERTY_MODULE_CANONICAL, moduleCanonical);
             return this;
         }
 
         public Builder moduleCodeableConcept(final CodeableConcept moduleCodeableConcept) {
-            b.add(PROPERTY_MODULECODEABLECONCEPT, moduleCodeableConcept);
+            b.add(PROPERTY_MODULE_CODEABLE_CONCEPT, moduleCodeableConcept);
             return this;
         }
 
@@ -348,7 +348,7 @@ public class GuidanceResponse extends FhirResource {
         }
 
         public Builder occurrenceDateTime(final java.time.Instant occurrenceDateTime) {
-            b.add(PROPERTY_OCCURRENCEDATETIME, occurrenceDateTime.toString());
+            b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime.toString());
             return this;
         }
 
@@ -358,12 +358,12 @@ public class GuidanceResponse extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
@@ -373,12 +373,12 @@ public class GuidanceResponse extends FhirResource {
         }
 
         public Builder evaluationMessage(final java.util.List<Reference> evaluationMessage) {
-            b.add(PROPERTY_EVALUATIONMESSAGE, FhirObject.toArray(evaluationMessage));
+            b.add(PROPERTY_EVALUATION_MESSAGE, FhirObject.toArray(evaluationMessage));
             return this;
         }
 
         public Builder outputParameters(final Reference outputParameters) {
-            b.add(PROPERTY_OUTPUTPARAMETERS, outputParameters);
+            b.add(PROPERTY_OUTPUT_PARAMETERS, outputParameters);
             return this;
         }
 
@@ -388,7 +388,7 @@ public class GuidanceResponse extends FhirResource {
         }
 
         public Builder dataRequirement(final java.util.List<DataRequirement> dataRequirement) {
-            b.add(PROPERTY_DATAREQUIREMENT, FhirObject.toArray(dataRequirement));
+            b.add(PROPERTY_DATA_REQUIREMENT, FhirObject.toArray(dataRequirement));
             return this;
         }
 

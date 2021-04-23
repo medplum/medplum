@@ -13,10 +13,10 @@ public class UsageContext extends FhirResource {
     public static final String RESOURCE_TYPE = "UsageContext";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_VALUECODEABLECONCEPT = "valueCodeableConcept";
-    public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-    public static final String PROPERTY_VALUERANGE = "valueRange";
-    public static final String PROPERTY_VALUEREFERENCE = "valueReference";
+    public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
+    public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+    public static final String PROPERTY_VALUE_RANGE = "valueRange";
+    public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
 
     public static Builder create() {
         return new Builder();
@@ -51,7 +51,7 @@ public class UsageContext extends FhirResource {
      * interpretation of the value is defined by the code.
      */
     public CodeableConcept valueCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
     }
 
     /**
@@ -59,7 +59,7 @@ public class UsageContext extends FhirResource {
      * interpretation of the value is defined by the code.
      */
     public Quantity valueQuantity() {
-        return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+        return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
     }
 
     /**
@@ -67,7 +67,7 @@ public class UsageContext extends FhirResource {
      * interpretation of the value is defined by the code.
      */
     public Range valueRange() {
-        return getObject(Range.class, PROPERTY_VALUERANGE);
+        return getObject(Range.class, PROPERTY_VALUE_RANGE);
     }
 
     /**
@@ -75,7 +75,7 @@ public class UsageContext extends FhirResource {
      * interpretation of the value is defined by the code.
      */
     public Reference valueReference() {
-        return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
+        return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
     }
 
     public static class Builder {
@@ -100,22 +100,22 @@ public class UsageContext extends FhirResource {
         }
 
         public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-            b.add(PROPERTY_VALUECODEABLECONCEPT, valueCodeableConcept);
+            b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
             return this;
         }
 
         public Builder valueQuantity(final Quantity valueQuantity) {
-            b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+            b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
             return this;
         }
 
         public Builder valueRange(final Range valueRange) {
-            b.add(PROPERTY_VALUERANGE, valueRange);
+            b.add(PROPERTY_VALUE_RANGE, valueRange);
             return this;
         }
 
         public Builder valueReference(final Reference valueReference) {
-            b.add(PROPERTY_VALUEREFERENCE, valueReference);
+            b.add(PROPERTY_VALUE_REFERENCE, valueReference);
             return this;
         }
 

@@ -11,27 +11,27 @@ import jakarta.json.JsonObjectBuilder;
 
 public class CatalogEntry extends FhirResource {
     public static final String RESOURCE_TYPE = "CatalogEntry";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_ORDERABLE = "orderable";
-    public static final String PROPERTY_REFERENCEDITEM = "referencedItem";
-    public static final String PROPERTY_ADDITIONALIDENTIFIER = "additionalIdentifier";
+    public static final String PROPERTY_REFERENCED_ITEM = "referencedItem";
+    public static final String PROPERTY_ADDITIONAL_IDENTIFIER = "additionalIdentifier";
     public static final String PROPERTY_CLASSIFICATION = "classification";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_VALIDITYPERIOD = "validityPeriod";
-    public static final String PROPERTY_VALIDTO = "validTo";
-    public static final String PROPERTY_LASTUPDATED = "lastUpdated";
-    public static final String PROPERTY_ADDITIONALCHARACTERISTIC = "additionalCharacteristic";
-    public static final String PROPERTY_ADDITIONALCLASSIFICATION = "additionalClassification";
-    public static final String PROPERTY_RELATEDENTRY = "relatedEntry";
+    public static final String PROPERTY_VALIDITY_PERIOD = "validityPeriod";
+    public static final String PROPERTY_VALID_TO = "validTo";
+    public static final String PROPERTY_LAST_UPDATED = "lastUpdated";
+    public static final String PROPERTY_ADDITIONAL_CHARACTERISTIC = "additionalCharacteristic";
+    public static final String PROPERTY_ADDITIONAL_CLASSIFICATION = "additionalClassification";
+    public static final String PROPERTY_RELATED_ENTRY = "relatedEntry";
 
     public static Builder create() {
         return new Builder();
@@ -52,7 +52,7 @@ public class CatalogEntry extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -100,7 +100,7 @@ public class CatalogEntry extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -129,14 +129,14 @@ public class CatalogEntry extends FhirResource {
      * The item in a catalog or definition.
      */
     public Reference referencedItem() {
-        return getObject(Reference.class, PROPERTY_REFERENCEDITEM);
+        return getObject(Reference.class, PROPERTY_REFERENCED_ITEM);
     }
 
     /**
      * Used in supporting related concepts, e.g. NDC to RxNorm.
      */
     public java.util.List<Identifier> additionalIdentifier() {
-        return getList(Identifier.class, PROPERTY_ADDITIONALIDENTIFIER);
+        return getList(Identifier.class, PROPERTY_ADDITIONAL_IDENTIFIER);
     }
 
     /**
@@ -158,14 +158,14 @@ public class CatalogEntry extends FhirResource {
      * The time period in which this catalog entry is expected to be active.
      */
     public Period validityPeriod() {
-        return getObject(Period.class, PROPERTY_VALIDITYPERIOD);
+        return getObject(Period.class, PROPERTY_VALIDITY_PERIOD);
     }
 
     /**
      * The date until which this catalog entry is expected to be active.
      */
     public java.time.Instant validTo() {
-        return java.time.Instant.parse(data.getString(PROPERTY_VALIDTO));
+        return java.time.Instant.parse(data.getString(PROPERTY_VALID_TO));
     }
 
     /**
@@ -173,21 +173,21 @@ public class CatalogEntry extends FhirResource {
      * validity. This can be used to see when an item was last updated.
      */
     public java.time.Instant lastUpdated() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTUPDATED));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_UPDATED));
     }
 
     /**
      * Used for examplefor Out of Formulary, or any specifics.
      */
     public java.util.List<CodeableConcept> additionalCharacteristic() {
-        return getList(CodeableConcept.class, PROPERTY_ADDITIONALCHARACTERISTIC);
+        return getList(CodeableConcept.class, PROPERTY_ADDITIONAL_CHARACTERISTIC);
     }
 
     /**
      * User for example for ATC classification, or.
      */
     public java.util.List<CodeableConcept> additionalClassification() {
-        return getList(CodeableConcept.class, PROPERTY_ADDITIONALCLASSIFICATION);
+        return getList(CodeableConcept.class, PROPERTY_ADDITIONAL_CLASSIFICATION);
     }
 
     /**
@@ -195,7 +195,7 @@ public class CatalogEntry extends FhirResource {
      * administer a medication.
      */
     public java.util.List<CatalogEntryRelatedEntry> relatedEntry() {
-        return getList(CatalogEntryRelatedEntry.class, PROPERTY_RELATEDENTRY);
+        return getList(CatalogEntryRelatedEntry.class, PROPERTY_RELATED_ENTRY);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -209,7 +209,7 @@ public class CatalogEntry extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -224,7 +224,7 @@ public class CatalogEntry extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -244,7 +244,7 @@ public class CatalogEntry extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -264,12 +264,12 @@ public class CatalogEntry extends FhirResource {
         }
 
         public Builder referencedItem(final Reference referencedItem) {
-            b.add(PROPERTY_REFERENCEDITEM, referencedItem);
+            b.add(PROPERTY_REFERENCED_ITEM, referencedItem);
             return this;
         }
 
         public Builder additionalIdentifier(final java.util.List<Identifier> additionalIdentifier) {
-            b.add(PROPERTY_ADDITIONALIDENTIFIER, FhirObject.toArray(additionalIdentifier));
+            b.add(PROPERTY_ADDITIONAL_IDENTIFIER, FhirObject.toArray(additionalIdentifier));
             return this;
         }
 
@@ -284,32 +284,32 @@ public class CatalogEntry extends FhirResource {
         }
 
         public Builder validityPeriod(final Period validityPeriod) {
-            b.add(PROPERTY_VALIDITYPERIOD, validityPeriod);
+            b.add(PROPERTY_VALIDITY_PERIOD, validityPeriod);
             return this;
         }
 
         public Builder validTo(final java.time.Instant validTo) {
-            b.add(PROPERTY_VALIDTO, validTo.toString());
+            b.add(PROPERTY_VALID_TO, validTo.toString());
             return this;
         }
 
         public Builder lastUpdated(final java.time.Instant lastUpdated) {
-            b.add(PROPERTY_LASTUPDATED, lastUpdated.toString());
+            b.add(PROPERTY_LAST_UPDATED, lastUpdated.toString());
             return this;
         }
 
         public Builder additionalCharacteristic(final java.util.List<CodeableConcept> additionalCharacteristic) {
-            b.add(PROPERTY_ADDITIONALCHARACTERISTIC, FhirObject.toArray(additionalCharacteristic));
+            b.add(PROPERTY_ADDITIONAL_CHARACTERISTIC, FhirObject.toArray(additionalCharacteristic));
             return this;
         }
 
         public Builder additionalClassification(final java.util.List<CodeableConcept> additionalClassification) {
-            b.add(PROPERTY_ADDITIONALCLASSIFICATION, FhirObject.toArray(additionalClassification));
+            b.add(PROPERTY_ADDITIONAL_CLASSIFICATION, FhirObject.toArray(additionalClassification));
             return this;
         }
 
         public Builder relatedEntry(final java.util.List<CatalogEntryRelatedEntry> relatedEntry) {
-            b.add(PROPERTY_RELATEDENTRY, FhirObject.toArray(relatedEntry));
+            b.add(PROPERTY_RELATED_ENTRY, FhirObject.toArray(relatedEntry));
             return this;
         }
 
@@ -321,7 +321,7 @@ public class CatalogEntry extends FhirResource {
     public static class CatalogEntryRelatedEntry extends FhirObject {
         public static final String RESOURCE_TYPE = "CatalogEntryRelatedEntry";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_RELATIONTYPE = "relationtype";
         public static final String PROPERTY_ITEM = "item";
 
@@ -363,7 +363,7 @@ public class CatalogEntry extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -398,7 +398,7 @@ public class CatalogEntry extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

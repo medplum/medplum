@@ -11,20 +11,20 @@ import jakarta.json.JsonObjectBuilder;
 
 public class ChargeItemDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ChargeItemDefinition";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_VERSION = "version";
     public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_DERIVEDFROMURI = "derivedFromUri";
-    public static final String PROPERTY_PARTOF = "partOf";
+    public static final String PROPERTY_DERIVED_FROM_URI = "derivedFromUri";
+    public static final String PROPERTY_PART_OF = "partOf";
     public static final String PROPERTY_REPLACES = "replaces";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_EXPERIMENTAL = "experimental";
@@ -32,16 +32,16 @@ public class ChargeItemDefinition extends FhirResource {
     public static final String PROPERTY_PUBLISHER = "publisher";
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_APPROVALDATE = "approvalDate";
-    public static final String PROPERTY_LASTREVIEWDATE = "lastReviewDate";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
+    public static final String PROPERTY_APPROVAL_DATE = "approvalDate";
+    public static final String PROPERTY_LAST_REVIEW_DATE = "lastReviewDate";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_INSTANCE = "instance";
     public static final String PROPERTY_APPLICABILITY = "applicability";
-    public static final String PROPERTY_PROPERTYGROUP = "propertyGroup";
+    public static final String PROPERTY_PROPERTY_GROUP = "propertyGroup";
 
     public static Builder create() {
         return new Builder();
@@ -62,7 +62,7 @@ public class ChargeItemDefinition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -110,7 +110,7 @@ public class ChargeItemDefinition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -166,7 +166,7 @@ public class ChargeItemDefinition extends FhirResource {
      * is adhered to in whole or in part by this definition.
      */
     public java.util.List<String> derivedFromUri() {
-        return getList(String.class, PROPERTY_DERIVEDFROMURI);
+        return getList(String.class, PROPERTY_DERIVED_FROM_URI);
     }
 
     /**
@@ -174,7 +174,7 @@ public class ChargeItemDefinition extends FhirResource {
      * or step.
      */
     public java.util.List<String> partOf() {
-        return getList(String.class, PROPERTY_PARTOF);
+        return getList(String.class, PROPERTY_PART_OF);
     }
 
     /**
@@ -245,7 +245,7 @@ public class ChargeItemDefinition extends FhirResource {
      * instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -271,7 +271,7 @@ public class ChargeItemDefinition extends FhirResource {
      * usage.
      */
     public java.time.Instant approvalDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_APPROVALDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_APPROVAL_DATE));
     }
 
     /**
@@ -280,7 +280,7 @@ public class ChargeItemDefinition extends FhirResource {
      * approval date.
      */
     public java.time.Instant lastReviewDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTREVIEWDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_REVIEW_DATE));
     }
 
     /**
@@ -288,7 +288,7 @@ public class ChargeItemDefinition extends FhirResource {
      * planned to be in active use.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -320,7 +320,7 @@ public class ChargeItemDefinition extends FhirResource {
      * properties always apply.
      */
     public java.util.List<ChargeItemDefinitionPropertyGroup> propertyGroup() {
-        return getList(ChargeItemDefinitionPropertyGroup.class, PROPERTY_PROPERTYGROUP);
+        return getList(ChargeItemDefinitionPropertyGroup.class, PROPERTY_PROPERTY_GROUP);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -334,7 +334,7 @@ public class ChargeItemDefinition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -349,7 +349,7 @@ public class ChargeItemDefinition extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -369,7 +369,7 @@ public class ChargeItemDefinition extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -394,12 +394,12 @@ public class ChargeItemDefinition extends FhirResource {
         }
 
         public Builder derivedFromUri(final java.util.List<String> derivedFromUri) {
-            b.add(PROPERTY_DERIVEDFROMURI, FhirObject.toStringArray(derivedFromUri));
+            b.add(PROPERTY_DERIVED_FROM_URI, FhirObject.toStringArray(derivedFromUri));
             return this;
         }
 
         public Builder partOf(final java.util.List<String> partOf) {
-            b.add(PROPERTY_PARTOF, FhirObject.toStringArray(partOf));
+            b.add(PROPERTY_PART_OF, FhirObject.toStringArray(partOf));
             return this;
         }
 
@@ -439,7 +439,7 @@ public class ChargeItemDefinition extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -454,17 +454,17 @@ public class ChargeItemDefinition extends FhirResource {
         }
 
         public Builder approvalDate(final java.time.Instant approvalDate) {
-            b.add(PROPERTY_APPROVALDATE, approvalDate.toString());
+            b.add(PROPERTY_APPROVAL_DATE, approvalDate.toString());
             return this;
         }
 
         public Builder lastReviewDate(final java.time.Instant lastReviewDate) {
-            b.add(PROPERTY_LASTREVIEWDATE, lastReviewDate.toString());
+            b.add(PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
@@ -484,7 +484,7 @@ public class ChargeItemDefinition extends FhirResource {
         }
 
         public Builder propertyGroup(final java.util.List<ChargeItemDefinitionPropertyGroup> propertyGroup) {
-            b.add(PROPERTY_PROPERTYGROUP, FhirObject.toArray(propertyGroup));
+            b.add(PROPERTY_PROPERTY_GROUP, FhirObject.toArray(propertyGroup));
             return this;
         }
 
@@ -496,7 +496,7 @@ public class ChargeItemDefinition extends FhirResource {
     public static class ChargeItemDefinitionApplicability extends FhirObject {
         public static final String RESOURCE_TYPE = "ChargeItemDefinitionApplicability";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_LANGUAGE = "language";
         public static final String PROPERTY_EXPRESSION = "expression";
@@ -539,7 +539,7 @@ public class ChargeItemDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -586,7 +586,7 @@ public class ChargeItemDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -614,7 +614,7 @@ public class ChargeItemDefinition extends FhirResource {
     public static class ChargeItemDefinitionPriceComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "ChargeItemDefinitionPriceComponent";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_FACTOR = "factor";
@@ -658,7 +658,7 @@ public class ChargeItemDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -708,7 +708,7 @@ public class ChargeItemDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -741,9 +741,9 @@ public class ChargeItemDefinition extends FhirResource {
     public static class ChargeItemDefinitionPropertyGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "ChargeItemDefinitionPropertyGroup";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_APPLICABILITY = "applicability";
-        public static final String PROPERTY_PRICECOMPONENT = "priceComponent";
+        public static final String PROPERTY_PRICE_COMPONENT = "priceComponent";
 
         public static Builder create() {
             return new Builder();
@@ -783,7 +783,7 @@ public class ChargeItemDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -804,7 +804,7 @@ public class ChargeItemDefinition extends FhirResource {
          * been calculated.
          */
         public java.util.List<ChargeItemDefinitionPriceComponent> priceComponent() {
-            return getList(ChargeItemDefinitionPriceComponent.class, PROPERTY_PRICECOMPONENT);
+            return getList(ChargeItemDefinitionPriceComponent.class, PROPERTY_PRICE_COMPONENT);
         }
 
         public static class Builder {
@@ -824,7 +824,7 @@ public class ChargeItemDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -834,7 +834,7 @@ public class ChargeItemDefinition extends FhirResource {
             }
 
             public Builder priceComponent(final java.util.List<ChargeItemDefinitionPriceComponent> priceComponent) {
-                b.add(PROPERTY_PRICECOMPONENT, FhirObject.toArray(priceComponent));
+                b.add(PROPERTY_PRICE_COMPONENT, FhirObject.toArray(priceComponent));
                 return this;
             }
 

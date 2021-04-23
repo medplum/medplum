@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Medication extends FhirResource {
     public static final String RESOURCE_TYPE = "Medication";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_STATUS = "status";
@@ -47,7 +47,7 @@ public class Medication extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -95,7 +95,7 @@ public class Medication extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -175,7 +175,7 @@ public class Medication extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -190,7 +190,7 @@ public class Medication extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -210,7 +210,7 @@ public class Medication extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -262,9 +262,9 @@ public class Medication extends FhirResource {
     public static class MedicationBatch extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationBatch";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_LOTNUMBER = "lotNumber";
-        public static final String PROPERTY_EXPIRATIONDATE = "expirationDate";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_LOT_NUMBER = "lotNumber";
+        public static final String PROPERTY_EXPIRATION_DATE = "expirationDate";
 
         public static Builder create() {
             return new Builder();
@@ -304,21 +304,21 @@ public class Medication extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The assigned lot number of a batch of the specified product.
          */
         public String lotNumber() {
-            return getString(PROPERTY_LOTNUMBER);
+            return getString(PROPERTY_LOT_NUMBER);
         }
 
         /**
          * When this specific batch of product will expire.
          */
         public java.time.Instant expirationDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_EXPIRATIONDATE));
+            return java.time.Instant.parse(data.getString(PROPERTY_EXPIRATION_DATE));
         }
 
         public static class Builder {
@@ -338,17 +338,17 @@ public class Medication extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder lotNumber(final String lotNumber) {
-                b.add(PROPERTY_LOTNUMBER, lotNumber);
+                b.add(PROPERTY_LOT_NUMBER, lotNumber);
                 return this;
             }
 
             public Builder expirationDate(final java.time.Instant expirationDate) {
-                b.add(PROPERTY_EXPIRATIONDATE, expirationDate.toString());
+                b.add(PROPERTY_EXPIRATION_DATE, expirationDate.toString());
                 return this;
             }
 
@@ -361,10 +361,10 @@ public class Medication extends FhirResource {
     public static class MedicationIngredient extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationIngredient";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_ITEMCODEABLECONCEPT = "itemCodeableConcept";
-        public static final String PROPERTY_ITEMREFERENCE = "itemReference";
-        public static final String PROPERTY_ISACTIVE = "isActive";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_ITEM_CODEABLE_CONCEPT = "itemCodeableConcept";
+        public static final String PROPERTY_ITEM_REFERENCE = "itemReference";
+        public static final String PROPERTY_IS_ACTIVE = "isActive";
         public static final String PROPERTY_STRENGTH = "strength";
 
         public static Builder create() {
@@ -405,7 +405,7 @@ public class Medication extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -413,7 +413,7 @@ public class Medication extends FhirResource {
          * another medication of a medication.
          */
         public CodeableConcept itemCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_ITEMCODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_ITEM_CODEABLE_CONCEPT);
         }
 
         /**
@@ -421,7 +421,7 @@ public class Medication extends FhirResource {
          * another medication of a medication.
          */
         public Reference itemReference() {
-            return getObject(Reference.class, PROPERTY_ITEMREFERENCE);
+            return getObject(Reference.class, PROPERTY_ITEM_REFERENCE);
         }
 
         /**
@@ -429,7 +429,7 @@ public class Medication extends FhirResource {
          * of the drug.
          */
         public Boolean isActive() {
-            return data.getBoolean(PROPERTY_ISACTIVE);
+            return data.getBoolean(PROPERTY_IS_ACTIVE);
         }
 
         /**
@@ -458,22 +458,22 @@ public class Medication extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder itemCodeableConcept(final CodeableConcept itemCodeableConcept) {
-                b.add(PROPERTY_ITEMCODEABLECONCEPT, itemCodeableConcept);
+                b.add(PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
                 return this;
             }
 
             public Builder itemReference(final Reference itemReference) {
-                b.add(PROPERTY_ITEMREFERENCE, itemReference);
+                b.add(PROPERTY_ITEM_REFERENCE, itemReference);
                 return this;
             }
 
             public Builder isActive(final Boolean isActive) {
-                b.add(PROPERTY_ISACTIVE, isActive);
+                b.add(PROPERTY_IS_ACTIVE, isActive);
                 return this;
             }
 

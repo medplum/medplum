@@ -12,12 +12,12 @@ import jakarta.json.JsonObjectBuilder;
 public class Population extends FhirResource {
     public static final String RESOURCE_TYPE = "Population";
     public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-    public static final String PROPERTY_AGERANGE = "ageRange";
-    public static final String PROPERTY_AGECODEABLECONCEPT = "ageCodeableConcept";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+    public static final String PROPERTY_AGE_RANGE = "ageRange";
+    public static final String PROPERTY_AGE_CODEABLE_CONCEPT = "ageCodeableConcept";
     public static final String PROPERTY_GENDER = "gender";
     public static final String PROPERTY_RACE = "race";
-    public static final String PROPERTY_PHYSIOLOGICALCONDITION = "physiologicalCondition";
+    public static final String PROPERTY_PHYSIOLOGICAL_CONDITION = "physiologicalCondition";
 
     public static Builder create() {
         return new Builder();
@@ -57,21 +57,21 @@ public class Population extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * The age of the specific population.
      */
     public Range ageRange() {
-        return getObject(Range.class, PROPERTY_AGERANGE);
+        return getObject(Range.class, PROPERTY_AGE_RANGE);
     }
 
     /**
      * The age of the specific population.
      */
     public CodeableConcept ageCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_AGECODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_AGE_CODEABLE_CONCEPT);
     }
 
     /**
@@ -93,7 +93,7 @@ public class Population extends FhirResource {
      * which this applies.
      */
     public CodeableConcept physiologicalCondition() {
-        return getObject(CodeableConcept.class, PROPERTY_PHYSIOLOGICALCONDITION);
+        return getObject(CodeableConcept.class, PROPERTY_PHYSIOLOGICAL_CONDITION);
     }
 
     public static class Builder {
@@ -113,17 +113,17 @@ public class Population extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder ageRange(final Range ageRange) {
-            b.add(PROPERTY_AGERANGE, ageRange);
+            b.add(PROPERTY_AGE_RANGE, ageRange);
             return this;
         }
 
         public Builder ageCodeableConcept(final CodeableConcept ageCodeableConcept) {
-            b.add(PROPERTY_AGECODEABLECONCEPT, ageCodeableConcept);
+            b.add(PROPERTY_AGE_CODEABLE_CONCEPT, ageCodeableConcept);
             return this;
         }
 
@@ -138,7 +138,7 @@ public class Population extends FhirResource {
         }
 
         public Builder physiologicalCondition(final CodeableConcept physiologicalCondition) {
-            b.add(PROPERTY_PHYSIOLOGICALCONDITION, physiologicalCondition);
+            b.add(PROPERTY_PHYSIOLOGICAL_CONDITION, physiologicalCondition);
             return this;
         }
 

@@ -11,17 +11,17 @@ import jakarta.json.JsonObjectBuilder;
 
 public class BiologicallyDerivedProduct extends FhirResource {
     public static final String RESOURCE_TYPE = "BiologicallyDerivedProduct";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_PRODUCTCATEGORY = "productCategory";
-    public static final String PROPERTY_PRODUCTCODE = "productCode";
+    public static final String PROPERTY_PRODUCT_CATEGORY = "productCategory";
+    public static final String PROPERTY_PRODUCT_CODE = "productCode";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_REQUEST = "request";
     public static final String PROPERTY_QUANTITY = "quantity";
@@ -50,7 +50,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -98,7 +98,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -116,7 +116,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
      * Broad category of this product.
      */
     public String productCategory() {
-        return getString(PROPERTY_PRODUCTCATEGORY);
+        return getString(PROPERTY_PRODUCT_CATEGORY);
     }
 
     /**
@@ -124,7 +124,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
      * (SNOMED Ctcode).
      */
     public CodeableConcept productCode() {
-        return getObject(CodeableConcept.class, PROPERTY_PRODUCTCODE);
+        return getObject(CodeableConcept.class, PROPERTY_PRODUCT_CODE);
     }
 
     /**
@@ -198,7 +198,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -213,7 +213,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -233,7 +233,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -243,12 +243,12 @@ public class BiologicallyDerivedProduct extends FhirResource {
         }
 
         public Builder productCategory(final String productCategory) {
-            b.add(PROPERTY_PRODUCTCATEGORY, productCategory);
+            b.add(PROPERTY_PRODUCT_CATEGORY, productCategory);
             return this;
         }
 
         public Builder productCode(final CodeableConcept productCode) {
-            b.add(PROPERTY_PRODUCTCODE, productCode);
+            b.add(PROPERTY_PRODUCT_CODE, productCode);
             return this;
         }
 
@@ -300,11 +300,11 @@ public class BiologicallyDerivedProduct extends FhirResource {
     public static class BiologicallyDerivedProductCollection extends FhirObject {
         public static final String RESOURCE_TYPE = "BiologicallyDerivedProductCollection";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_COLLECTOR = "collector";
         public static final String PROPERTY_SOURCE = "source";
-        public static final String PROPERTY_COLLECTEDDATETIME = "collectedDateTime";
-        public static final String PROPERTY_COLLECTEDPERIOD = "collectedPeriod";
+        public static final String PROPERTY_COLLECTED_DATE_TIME = "collectedDateTime";
+        public static final String PROPERTY_COLLECTED_PERIOD = "collectedPeriod";
 
         public static Builder create() {
             return new Builder();
@@ -344,7 +344,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -366,14 +366,14 @@ public class BiologicallyDerivedProduct extends FhirResource {
          * Time of product collection.
          */
         public String collectedDateTime() {
-            return getString(PROPERTY_COLLECTEDDATETIME);
+            return getString(PROPERTY_COLLECTED_DATE_TIME);
         }
 
         /**
          * Time of product collection.
          */
         public Period collectedPeriod() {
-            return getObject(Period.class, PROPERTY_COLLECTEDPERIOD);
+            return getObject(Period.class, PROPERTY_COLLECTED_PERIOD);
         }
 
         public static class Builder {
@@ -393,7 +393,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -408,12 +408,12 @@ public class BiologicallyDerivedProduct extends FhirResource {
             }
 
             public Builder collectedDateTime(final String collectedDateTime) {
-                b.add(PROPERTY_COLLECTEDDATETIME, collectedDateTime);
+                b.add(PROPERTY_COLLECTED_DATE_TIME, collectedDateTime);
                 return this;
             }
 
             public Builder collectedPeriod(final Period collectedPeriod) {
-                b.add(PROPERTY_COLLECTEDPERIOD, collectedPeriod);
+                b.add(PROPERTY_COLLECTED_PERIOD, collectedPeriod);
                 return this;
             }
 
@@ -426,10 +426,10 @@ public class BiologicallyDerivedProduct extends FhirResource {
     public static class BiologicallyDerivedProductManipulation extends FhirObject {
         public static final String RESOURCE_TYPE = "BiologicallyDerivedProductManipulation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_TIMEDATETIME = "timeDateTime";
-        public static final String PROPERTY_TIMEPERIOD = "timePeriod";
+        public static final String PROPERTY_TIME_DATE_TIME = "timeDateTime";
+        public static final String PROPERTY_TIME_PERIOD = "timePeriod";
 
         public static Builder create() {
             return new Builder();
@@ -469,7 +469,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -483,14 +483,14 @@ public class BiologicallyDerivedProduct extends FhirResource {
          * Time of manipulation.
          */
         public String timeDateTime() {
-            return getString(PROPERTY_TIMEDATETIME);
+            return getString(PROPERTY_TIME_DATE_TIME);
         }
 
         /**
          * Time of manipulation.
          */
         public Period timePeriod() {
-            return getObject(Period.class, PROPERTY_TIMEPERIOD);
+            return getObject(Period.class, PROPERTY_TIME_PERIOD);
         }
 
         public static class Builder {
@@ -510,7 +510,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -520,12 +520,12 @@ public class BiologicallyDerivedProduct extends FhirResource {
             }
 
             public Builder timeDateTime(final String timeDateTime) {
-                b.add(PROPERTY_TIMEDATETIME, timeDateTime);
+                b.add(PROPERTY_TIME_DATE_TIME, timeDateTime);
                 return this;
             }
 
             public Builder timePeriod(final Period timePeriod) {
-                b.add(PROPERTY_TIMEPERIOD, timePeriod);
+                b.add(PROPERTY_TIME_PERIOD, timePeriod);
                 return this;
             }
 
@@ -538,12 +538,12 @@ public class BiologicallyDerivedProduct extends FhirResource {
     public static class BiologicallyDerivedProductProcessing extends FhirObject {
         public static final String RESOURCE_TYPE = "BiologicallyDerivedProductProcessing";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_PROCEDURE = "procedure";
         public static final String PROPERTY_ADDITIVE = "additive";
-        public static final String PROPERTY_TIMEDATETIME = "timeDateTime";
-        public static final String PROPERTY_TIMEPERIOD = "timePeriod";
+        public static final String PROPERTY_TIME_DATE_TIME = "timeDateTime";
+        public static final String PROPERTY_TIME_PERIOD = "timePeriod";
 
         public static Builder create() {
             return new Builder();
@@ -583,7 +583,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -611,14 +611,14 @@ public class BiologicallyDerivedProduct extends FhirResource {
          * Time of processing.
          */
         public String timeDateTime() {
-            return getString(PROPERTY_TIMEDATETIME);
+            return getString(PROPERTY_TIME_DATE_TIME);
         }
 
         /**
          * Time of processing.
          */
         public Period timePeriod() {
-            return getObject(Period.class, PROPERTY_TIMEPERIOD);
+            return getObject(Period.class, PROPERTY_TIME_PERIOD);
         }
 
         public static class Builder {
@@ -638,7 +638,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -658,12 +658,12 @@ public class BiologicallyDerivedProduct extends FhirResource {
             }
 
             public Builder timeDateTime(final String timeDateTime) {
-                b.add(PROPERTY_TIMEDATETIME, timeDateTime);
+                b.add(PROPERTY_TIME_DATE_TIME, timeDateTime);
                 return this;
             }
 
             public Builder timePeriod(final Period timePeriod) {
-                b.add(PROPERTY_TIMEPERIOD, timePeriod);
+                b.add(PROPERTY_TIME_PERIOD, timePeriod);
                 return this;
             }
 
@@ -676,7 +676,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
     public static class BiologicallyDerivedProductStorage extends FhirObject {
         public static final String RESOURCE_TYPE = "BiologicallyDerivedProductStorage";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_TEMPERATURE = "temperature";
         public static final String PROPERTY_SCALE = "scale";
@@ -720,7 +720,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -768,7 +768,7 @@ public class BiologicallyDerivedProduct extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

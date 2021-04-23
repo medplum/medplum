@@ -11,17 +11,17 @@ import jakarta.json.JsonObjectBuilder;
 
 public class SubstanceProtein extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceProtein";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-    public static final String PROPERTY_SEQUENCETYPE = "sequenceType";
-    public static final String PROPERTY_NUMBEROFSUBUNITS = "numberOfSubunits";
-    public static final String PROPERTY_DISULFIDELINKAGE = "disulfideLinkage";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+    public static final String PROPERTY_SEQUENCE_TYPE = "sequenceType";
+    public static final String PROPERTY_NUMBER_OF_SUBUNITS = "numberOfSubunits";
+    public static final String PROPERTY_DISULFIDE_LINKAGE = "disulfideLinkage";
     public static final String PROPERTY_SUBUNIT = "subunit";
 
     public static Builder create() {
@@ -43,7 +43,7 @@ public class SubstanceProtein extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -91,7 +91,7 @@ public class SubstanceProtein extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -100,7 +100,7 @@ public class SubstanceProtein extends FhirResource {
      * a nucleic acid sequence.
      */
     public CodeableConcept sequenceType() {
-        return getObject(CodeableConcept.class, PROPERTY_SEQUENCETYPE);
+        return getObject(CodeableConcept.class, PROPERTY_SEQUENCE_TYPE);
     }
 
     /**
@@ -110,7 +110,7 @@ public class SubstanceProtein extends FhirResource {
      * variable.
      */
     public Integer numberOfSubunits() {
-        return data.getInt(PROPERTY_NUMBEROFSUBUNITS);
+        return data.getInt(PROPERTY_NUMBER_OF_SUBUNITS);
     }
 
     /**
@@ -123,7 +123,7 @@ public class SubstanceProtein extends FhirResource {
      * Cysteine at the respective positions.
      */
     public java.util.List<String> disulfideLinkage() {
-        return getList(String.class, PROPERTY_DISULFIDELINKAGE);
+        return getList(String.class, PROPERTY_DISULFIDE_LINKAGE);
     }
 
     /**
@@ -152,7 +152,7 @@ public class SubstanceProtein extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -167,7 +167,7 @@ public class SubstanceProtein extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -187,22 +187,22 @@ public class SubstanceProtein extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder sequenceType(final CodeableConcept sequenceType) {
-            b.add(PROPERTY_SEQUENCETYPE, sequenceType);
+            b.add(PROPERTY_SEQUENCE_TYPE, sequenceType);
             return this;
         }
 
         public Builder numberOfSubunits(final Integer numberOfSubunits) {
-            b.add(PROPERTY_NUMBEROFSUBUNITS, numberOfSubunits);
+            b.add(PROPERTY_NUMBER_OF_SUBUNITS, numberOfSubunits);
             return this;
         }
 
         public Builder disulfideLinkage(final java.util.List<String> disulfideLinkage) {
-            b.add(PROPERTY_DISULFIDELINKAGE, FhirObject.toStringArray(disulfideLinkage));
+            b.add(PROPERTY_DISULFIDE_LINKAGE, FhirObject.toStringArray(disulfideLinkage));
             return this;
         }
 
@@ -219,15 +219,15 @@ public class SubstanceProtein extends FhirResource {
     public static class SubstanceProteinSubunit extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceProteinSubunit";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SUBUNIT = "subunit";
         public static final String PROPERTY_SEQUENCE = "sequence";
         public static final String PROPERTY_LENGTH = "length";
-        public static final String PROPERTY_SEQUENCEATTACHMENT = "sequenceAttachment";
-        public static final String PROPERTY_NTERMINALMODIFICATIONID = "nTerminalModificationId";
-        public static final String PROPERTY_NTERMINALMODIFICATION = "nTerminalModification";
-        public static final String PROPERTY_CTERMINALMODIFICATIONID = "cTerminalModificationId";
-        public static final String PROPERTY_CTERMINALMODIFICATION = "cTerminalModification";
+        public static final String PROPERTY_SEQUENCE_ATTACHMENT = "sequenceAttachment";
+        public static final String PROPERTY_N_TERMINAL_MODIFICATION_ID = "nTerminalModificationId";
+        public static final String PROPERTY_N_TERMINAL_MODIFICATION = "nTerminalModification";
+        public static final String PROPERTY_C_TERMINAL_MODIFICATION_ID = "cTerminalModificationId";
+        public static final String PROPERTY_C_TERMINAL_MODIFICATION = "cTerminalModification";
 
         public static Builder create() {
             return new Builder();
@@ -267,7 +267,7 @@ public class SubstanceProtein extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -312,7 +312,7 @@ public class SubstanceProtein extends FhirResource {
          * distinguished by their position in the sequence.
          */
         public Attachment sequenceAttachment() {
-            return getObject(Attachment.class, PROPERTY_SEQUENCEATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_SEQUENCE_ATTACHMENT);
         }
 
         /**
@@ -320,7 +320,7 @@ public class SubstanceProtein extends FhirResource {
          * 11238 Substance ID.
          */
         public Identifier nTerminalModificationId() {
-            return getObject(Identifier.class, PROPERTY_NTERMINALMODIFICATIONID);
+            return getObject(Identifier.class, PROPERTY_N_TERMINAL_MODIFICATION_ID);
         }
 
         /**
@@ -328,7 +328,7 @@ public class SubstanceProtein extends FhirResource {
          * SubstanceProtein shall be specified.
          */
         public String nTerminalModification() {
-            return getString(PROPERTY_NTERMINALMODIFICATION);
+            return getString(PROPERTY_N_TERMINAL_MODIFICATION);
         }
 
         /**
@@ -336,14 +336,14 @@ public class SubstanceProtein extends FhirResource {
          * 11238 Substance ID.
          */
         public Identifier cTerminalModificationId() {
-            return getObject(Identifier.class, PROPERTY_CTERMINALMODIFICATIONID);
+            return getObject(Identifier.class, PROPERTY_C_TERMINAL_MODIFICATION_ID);
         }
 
         /**
          * The modification at the C-terminal shall be specified.
          */
         public String cTerminalModification() {
-            return getString(PROPERTY_CTERMINALMODIFICATION);
+            return getString(PROPERTY_C_TERMINAL_MODIFICATION);
         }
 
         public static class Builder {
@@ -363,7 +363,7 @@ public class SubstanceProtein extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -383,27 +383,27 @@ public class SubstanceProtein extends FhirResource {
             }
 
             public Builder sequenceAttachment(final Attachment sequenceAttachment) {
-                b.add(PROPERTY_SEQUENCEATTACHMENT, sequenceAttachment);
+                b.add(PROPERTY_SEQUENCE_ATTACHMENT, sequenceAttachment);
                 return this;
             }
 
             public Builder nTerminalModificationId(final Identifier nTerminalModificationId) {
-                b.add(PROPERTY_NTERMINALMODIFICATIONID, nTerminalModificationId);
+                b.add(PROPERTY_N_TERMINAL_MODIFICATION_ID, nTerminalModificationId);
                 return this;
             }
 
             public Builder nTerminalModification(final String nTerminalModification) {
-                b.add(PROPERTY_NTERMINALMODIFICATION, nTerminalModification);
+                b.add(PROPERTY_N_TERMINAL_MODIFICATION, nTerminalModification);
                 return this;
             }
 
             public Builder cTerminalModificationId(final Identifier cTerminalModificationId) {
-                b.add(PROPERTY_CTERMINALMODIFICATIONID, cTerminalModificationId);
+                b.add(PROPERTY_C_TERMINAL_MODIFICATION_ID, cTerminalModificationId);
                 return this;
             }
 
             public Builder cTerminalModification(final String cTerminalModification) {
-                b.add(PROPERTY_CTERMINALMODIFICATION, cTerminalModification);
+                b.add(PROPERTY_C_TERMINAL_MODIFICATION, cTerminalModification);
                 return this;
             }
 

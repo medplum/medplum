@@ -11,15 +11,15 @@ import jakarta.json.JsonObjectBuilder;
 
 public class DocumentManifest extends FhirResource {
     public static final String RESOURCE_TYPE = "DocumentManifest";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-    public static final String PROPERTY_MASTERIDENTIFIER = "masterIdentifier";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+    public static final String PROPERTY_MASTER_IDENTIFIER = "masterIdentifier";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_TYPE = "type";
@@ -51,7 +51,7 @@ public class DocumentManifest extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -99,7 +99,7 @@ public class DocumentManifest extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -107,7 +107,7 @@ public class DocumentManifest extends FhirResource {
      * Principally used to refer to the manifest in non-FHIR contexts.
      */
     public Identifier masterIdentifier() {
-        return getObject(Identifier.class, PROPERTY_MASTERIDENTIFIER);
+        return getObject(Identifier.class, PROPERTY_MASTER_IDENTIFIER);
     }
 
     /**
@@ -211,7 +211,7 @@ public class DocumentManifest extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -226,7 +226,7 @@ public class DocumentManifest extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -246,12 +246,12 @@ public class DocumentManifest extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder masterIdentifier(final Identifier masterIdentifier) {
-            b.add(PROPERTY_MASTERIDENTIFIER, masterIdentifier);
+            b.add(PROPERTY_MASTER_IDENTIFIER, masterIdentifier);
             return this;
         }
 
@@ -318,7 +318,7 @@ public class DocumentManifest extends FhirResource {
     public static class DocumentManifestRelated extends FhirObject {
         public static final String RESOURCE_TYPE = "DocumentManifestRelated";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTIFIER = "identifier";
         public static final String PROPERTY_REF = "ref";
 
@@ -360,7 +360,7 @@ public class DocumentManifest extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -396,7 +396,7 @@ public class DocumentManifest extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

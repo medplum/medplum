@@ -11,41 +11,41 @@ import jakarta.json.JsonObjectBuilder;
 
 public class DeviceRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "DeviceRequest";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_INSTANTIATESCANONICAL = "instantiatesCanonical";
-    public static final String PROPERTY_INSTANTIATESURI = "instantiatesUri";
-    public static final String PROPERTY_BASEDON = "basedOn";
-    public static final String PROPERTY_PRIORREQUEST = "priorRequest";
-    public static final String PROPERTY_GROUPIDENTIFIER = "groupIdentifier";
+    public static final String PROPERTY_INSTANTIATES_CANONICAL = "instantiatesCanonical";
+    public static final String PROPERTY_INSTANTIATES_URI = "instantiatesUri";
+    public static final String PROPERTY_BASED_ON = "basedOn";
+    public static final String PROPERTY_PRIOR_REQUEST = "priorRequest";
+    public static final String PROPERTY_GROUP_IDENTIFIER = "groupIdentifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_INTENT = "intent";
     public static final String PROPERTY_PRIORITY = "priority";
-    public static final String PROPERTY_CODEREFERENCE = "codeReference";
-    public static final String PROPERTY_CODECODEABLECONCEPT = "codeCodeableConcept";
+    public static final String PROPERTY_CODE_REFERENCE = "codeReference";
+    public static final String PROPERTY_CODE_CODEABLE_CONCEPT = "codeCodeableConcept";
     public static final String PROPERTY_PARAMETER = "parameter";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_OCCURRENCEDATETIME = "occurrenceDateTime";
-    public static final String PROPERTY_OCCURRENCEPERIOD = "occurrencePeriod";
-    public static final String PROPERTY_OCCURRENCETIMING = "occurrenceTiming";
-    public static final String PROPERTY_AUTHOREDON = "authoredOn";
+    public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
+    public static final String PROPERTY_OCCURRENCE_PERIOD = "occurrencePeriod";
+    public static final String PROPERTY_OCCURRENCE_TIMING = "occurrenceTiming";
+    public static final String PROPERTY_AUTHORED_ON = "authoredOn";
     public static final String PROPERTY_REQUESTER = "requester";
-    public static final String PROPERTY_PERFORMERTYPE = "performerType";
+    public static final String PROPERTY_PERFORMER_TYPE = "performerType";
     public static final String PROPERTY_PERFORMER = "performer";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_INSURANCE = "insurance";
-    public static final String PROPERTY_SUPPORTINGINFO = "supportingInfo";
+    public static final String PROPERTY_SUPPORTING_INFO = "supportingInfo";
     public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_RELEVANTHISTORY = "relevantHistory";
+    public static final String PROPERTY_RELEVANT_HISTORY = "relevantHistory";
 
     public static Builder create() {
         return new Builder();
@@ -66,7 +66,7 @@ public class DeviceRequest extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -114,7 +114,7 @@ public class DeviceRequest extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -130,7 +130,7 @@ public class DeviceRequest extends FhirResource {
      * DeviceRequest.
      */
     public java.util.List<String> instantiatesCanonical() {
-        return getList(String.class, PROPERTY_INSTANTIATESCANONICAL);
+        return getList(String.class, PROPERTY_INSTANTIATES_CANONICAL);
     }
 
     /**
@@ -139,14 +139,14 @@ public class DeviceRequest extends FhirResource {
      * this DeviceRequest.
      */
     public java.util.List<String> instantiatesUri() {
-        return getList(String.class, PROPERTY_INSTANTIATESURI);
+        return getList(String.class, PROPERTY_INSTANTIATES_URI);
     }
 
     /**
      * Plan/proposal/order fulfilled by this request.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -154,14 +154,14 @@ public class DeviceRequest extends FhirResource {
      * request(s).
      */
     public java.util.List<Reference> priorRequest() {
-        return getList(Reference.class, PROPERTY_PRIORREQUEST);
+        return getList(Reference.class, PROPERTY_PRIOR_REQUEST);
     }
 
     /**
      * Composite request this is part of.
      */
     public Identifier groupIdentifier() {
-        return getObject(Identifier.class, PROPERTY_GROUPIDENTIFIER);
+        return getObject(Identifier.class, PROPERTY_GROUP_IDENTIFIER);
     }
 
     /**
@@ -191,14 +191,14 @@ public class DeviceRequest extends FhirResource {
      * The details of the device to be used.
      */
     public Reference codeReference() {
-        return getObject(Reference.class, PROPERTY_CODEREFERENCE);
+        return getObject(Reference.class, PROPERTY_CODE_REFERENCE);
     }
 
     /**
      * The details of the device to be used.
      */
     public CodeableConcept codeCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_CODECODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_CODE_CODEABLE_CONCEPT);
     }
 
     /**
@@ -231,7 +231,7 @@ public class DeviceRequest extends FhirResource {
      * 23-Dec 2011:"; "15 Oct 2013, 17 Oct 2013 and 1 Nov 2013".
      */
     public String occurrenceDateTime() {
-        return getString(PROPERTY_OCCURRENCEDATETIME);
+        return getString(PROPERTY_OCCURRENCE_DATE_TIME);
     }
 
     /**
@@ -241,7 +241,7 @@ public class DeviceRequest extends FhirResource {
      * 23-Dec 2011:"; "15 Oct 2013, 17 Oct 2013 and 1 Nov 2013".
      */
     public Period occurrencePeriod() {
-        return getObject(Period.class, PROPERTY_OCCURRENCEPERIOD);
+        return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
     }
 
     /**
@@ -251,14 +251,14 @@ public class DeviceRequest extends FhirResource {
      * 23-Dec 2011:"; "15 Oct 2013, 17 Oct 2013 and 1 Nov 2013".
      */
     public Timing occurrenceTiming() {
-        return getObject(Timing.class, PROPERTY_OCCURRENCETIMING);
+        return getObject(Timing.class, PROPERTY_OCCURRENCE_TIMING);
     }
 
     /**
      * When the request transitioned to being actionable.
      */
     public java.time.Instant authoredOn() {
-        return java.time.Instant.parse(data.getString(PROPERTY_AUTHOREDON));
+        return java.time.Instant.parse(data.getString(PROPERTY_AUTHORED_ON));
     }
 
     /**
@@ -273,7 +273,7 @@ public class DeviceRequest extends FhirResource {
      * Desired type of performer for doing the diagnostic testing.
      */
     public CodeableConcept performerType() {
-        return getObject(CodeableConcept.class, PROPERTY_PERFORMERTYPE);
+        return getObject(CodeableConcept.class, PROPERTY_PERFORMER_TYPE);
     }
 
     /**
@@ -287,14 +287,14 @@ public class DeviceRequest extends FhirResource {
      * Reason or justification for the use of this device.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
      * Reason or justification for the use of this device.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -312,7 +312,7 @@ public class DeviceRequest extends FhirResource {
      * subject's body the device will be used (i.e. the target site).
      */
     public java.util.List<Reference> supportingInfo() {
-        return getList(Reference.class, PROPERTY_SUPPORTINGINFO);
+        return getList(Reference.class, PROPERTY_SUPPORTING_INFO);
     }
 
     /**
@@ -329,7 +329,7 @@ public class DeviceRequest extends FhirResource {
      * Key events in the history of the request.
      */
     public java.util.List<Reference> relevantHistory() {
-        return getList(Reference.class, PROPERTY_RELEVANTHISTORY);
+        return getList(Reference.class, PROPERTY_RELEVANT_HISTORY);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -343,7 +343,7 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -358,7 +358,7 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -378,7 +378,7 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -388,27 +388,27 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder instantiatesCanonical(final java.util.List<String> instantiatesCanonical) {
-            b.add(PROPERTY_INSTANTIATESCANONICAL, FhirObject.toStringArray(instantiatesCanonical));
+            b.add(PROPERTY_INSTANTIATES_CANONICAL, FhirObject.toStringArray(instantiatesCanonical));
             return this;
         }
 
         public Builder instantiatesUri(final java.util.List<String> instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATESURI, FhirObject.toStringArray(instantiatesUri));
+            b.add(PROPERTY_INSTANTIATES_URI, FhirObject.toStringArray(instantiatesUri));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder priorRequest(final java.util.List<Reference> priorRequest) {
-            b.add(PROPERTY_PRIORREQUEST, FhirObject.toArray(priorRequest));
+            b.add(PROPERTY_PRIOR_REQUEST, FhirObject.toArray(priorRequest));
             return this;
         }
 
         public Builder groupIdentifier(final Identifier groupIdentifier) {
-            b.add(PROPERTY_GROUPIDENTIFIER, groupIdentifier);
+            b.add(PROPERTY_GROUP_IDENTIFIER, groupIdentifier);
             return this;
         }
 
@@ -428,12 +428,12 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder codeReference(final Reference codeReference) {
-            b.add(PROPERTY_CODEREFERENCE, codeReference);
+            b.add(PROPERTY_CODE_REFERENCE, codeReference);
             return this;
         }
 
         public Builder codeCodeableConcept(final CodeableConcept codeCodeableConcept) {
-            b.add(PROPERTY_CODECODEABLECONCEPT, codeCodeableConcept);
+            b.add(PROPERTY_CODE_CODEABLE_CONCEPT, codeCodeableConcept);
             return this;
         }
 
@@ -453,22 +453,22 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder occurrenceDateTime(final String occurrenceDateTime) {
-            b.add(PROPERTY_OCCURRENCEDATETIME, occurrenceDateTime);
+            b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
             return this;
         }
 
         public Builder occurrencePeriod(final Period occurrencePeriod) {
-            b.add(PROPERTY_OCCURRENCEPERIOD, occurrencePeriod);
+            b.add(PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
             return this;
         }
 
         public Builder occurrenceTiming(final Timing occurrenceTiming) {
-            b.add(PROPERTY_OCCURRENCETIMING, occurrenceTiming);
+            b.add(PROPERTY_OCCURRENCE_TIMING, occurrenceTiming);
             return this;
         }
 
         public Builder authoredOn(final java.time.Instant authoredOn) {
-            b.add(PROPERTY_AUTHOREDON, authoredOn.toString());
+            b.add(PROPERTY_AUTHORED_ON, authoredOn.toString());
             return this;
         }
 
@@ -478,7 +478,7 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder performerType(final CodeableConcept performerType) {
-            b.add(PROPERTY_PERFORMERTYPE, performerType);
+            b.add(PROPERTY_PERFORMER_TYPE, performerType);
             return this;
         }
 
@@ -488,12 +488,12 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
@@ -503,7 +503,7 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder supportingInfo(final java.util.List<Reference> supportingInfo) {
-            b.add(PROPERTY_SUPPORTINGINFO, FhirObject.toArray(supportingInfo));
+            b.add(PROPERTY_SUPPORTING_INFO, FhirObject.toArray(supportingInfo));
             return this;
         }
 
@@ -513,7 +513,7 @@ public class DeviceRequest extends FhirResource {
         }
 
         public Builder relevantHistory(final java.util.List<Reference> relevantHistory) {
-            b.add(PROPERTY_RELEVANTHISTORY, FhirObject.toArray(relevantHistory));
+            b.add(PROPERTY_RELEVANT_HISTORY, FhirObject.toArray(relevantHistory));
             return this;
         }
 
@@ -525,12 +525,12 @@ public class DeviceRequest extends FhirResource {
     public static class DeviceRequestParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceRequestParameter";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_VALUECODEABLECONCEPT = "valueCodeableConcept";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUERANGE = "valueRange";
-        public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
+        public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_RANGE = "valueRange";
+        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
 
         public static Builder create() {
             return new Builder();
@@ -570,7 +570,7 @@ public class DeviceRequest extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -584,28 +584,28 @@ public class DeviceRequest extends FhirResource {
          * The value of the device detail.
          */
         public CodeableConcept valueCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
         }
 
         /**
          * The value of the device detail.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
          * The value of the device detail.
          */
         public Range valueRange() {
-            return getObject(Range.class, PROPERTY_VALUERANGE);
+            return getObject(Range.class, PROPERTY_VALUE_RANGE);
         }
 
         /**
          * The value of the device detail.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
         }
 
         public static class Builder {
@@ -625,7 +625,7 @@ public class DeviceRequest extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -635,22 +635,22 @@ public class DeviceRequest extends FhirResource {
             }
 
             public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-                b.add(PROPERTY_VALUECODEABLECONCEPT, valueCodeableConcept);
+                b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueRange(final Range valueRange) {
-                b.add(PROPERTY_VALUERANGE, valueRange);
+                b.add(PROPERTY_VALUE_RANGE, valueRange);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 

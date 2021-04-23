@@ -11,26 +11,26 @@ import jakarta.json.JsonObjectBuilder;
 
 public class VerificationResult extends FhirResource {
     public static final String RESOURCE_TYPE = "VerificationResult";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_TARGET = "target";
-    public static final String PROPERTY_TARGETLOCATION = "targetLocation";
+    public static final String PROPERTY_TARGET_LOCATION = "targetLocation";
     public static final String PROPERTY_NEED = "need";
     public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUSDATE = "statusDate";
-    public static final String PROPERTY_VALIDATIONTYPE = "validationType";
-    public static final String PROPERTY_VALIDATIONPROCESS = "validationProcess";
+    public static final String PROPERTY_STATUS_DATE = "statusDate";
+    public static final String PROPERTY_VALIDATION_TYPE = "validationType";
+    public static final String PROPERTY_VALIDATION_PROCESS = "validationProcess";
     public static final String PROPERTY_FREQUENCY = "frequency";
-    public static final String PROPERTY_LASTPERFORMED = "lastPerformed";
-    public static final String PROPERTY_NEXTSCHEDULED = "nextScheduled";
-    public static final String PROPERTY_FAILUREACTION = "failureAction";
-    public static final String PROPERTY_PRIMARYSOURCE = "primarySource";
+    public static final String PROPERTY_LAST_PERFORMED = "lastPerformed";
+    public static final String PROPERTY_NEXT_SCHEDULED = "nextScheduled";
+    public static final String PROPERTY_FAILURE_ACTION = "failureAction";
+    public static final String PROPERTY_PRIMARY_SOURCE = "primarySource";
     public static final String PROPERTY_ATTESTATION = "attestation";
     public static final String PROPERTY_VALIDATOR = "validator";
 
@@ -53,7 +53,7 @@ public class VerificationResult extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -101,7 +101,7 @@ public class VerificationResult extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -115,7 +115,7 @@ public class VerificationResult extends FhirResource {
      * The fhirpath location(s) within the resource that was validated.
      */
     public java.util.List<String> targetLocation() {
-        return getList(String.class, PROPERTY_TARGETLOCATION);
+        return getList(String.class, PROPERTY_TARGET_LOCATION);
     }
 
     /**
@@ -138,7 +138,7 @@ public class VerificationResult extends FhirResource {
      * When the validation status was updated.
      */
     public java.time.Instant statusDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_STATUSDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_STATUS_DATE));
     }
 
     /**
@@ -146,7 +146,7 @@ public class VerificationResult extends FhirResource {
      * multiple sources).
      */
     public CodeableConcept validationType() {
-        return getObject(CodeableConcept.class, PROPERTY_VALIDATIONTYPE);
+        return getObject(CodeableConcept.class, PROPERTY_VALIDATION_TYPE);
     }
 
     /**
@@ -154,7 +154,7 @@ public class VerificationResult extends FhirResource {
      * value set; primary source; multiple sources; standalone; in context).
      */
     public java.util.List<CodeableConcept> validationProcess() {
-        return getList(CodeableConcept.class, PROPERTY_VALIDATIONPROCESS);
+        return getList(CodeableConcept.class, PROPERTY_VALIDATION_PROCESS);
     }
 
     /**
@@ -169,28 +169,28 @@ public class VerificationResult extends FhirResource {
      * validations).
      */
     public java.time.Instant lastPerformed() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTPERFORMED));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_PERFORMED));
     }
 
     /**
      * The date when target is next validated, if appropriate.
      */
     public java.time.Instant nextScheduled() {
-        return java.time.Instant.parse(data.getString(PROPERTY_NEXTSCHEDULED));
+        return java.time.Instant.parse(data.getString(PROPERTY_NEXT_SCHEDULED));
     }
 
     /**
      * The result if validation fails (fatal; warning; record only; none).
      */
     public CodeableConcept failureAction() {
-        return getObject(CodeableConcept.class, PROPERTY_FAILUREACTION);
+        return getObject(CodeableConcept.class, PROPERTY_FAILURE_ACTION);
     }
 
     /**
      * Information about the primary source(s) involved in validation.
      */
     public java.util.List<VerificationResultPrimarySource> primarySource() {
-        return getList(VerificationResultPrimarySource.class, PROPERTY_PRIMARYSOURCE);
+        return getList(VerificationResultPrimarySource.class, PROPERTY_PRIMARY_SOURCE);
     }
 
     /**
@@ -218,7 +218,7 @@ public class VerificationResult extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -233,7 +233,7 @@ public class VerificationResult extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -253,7 +253,7 @@ public class VerificationResult extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -263,7 +263,7 @@ public class VerificationResult extends FhirResource {
         }
 
         public Builder targetLocation(final java.util.List<String> targetLocation) {
-            b.add(PROPERTY_TARGETLOCATION, FhirObject.toStringArray(targetLocation));
+            b.add(PROPERTY_TARGET_LOCATION, FhirObject.toStringArray(targetLocation));
             return this;
         }
 
@@ -278,17 +278,17 @@ public class VerificationResult extends FhirResource {
         }
 
         public Builder statusDate(final java.time.Instant statusDate) {
-            b.add(PROPERTY_STATUSDATE, statusDate.toString());
+            b.add(PROPERTY_STATUS_DATE, statusDate.toString());
             return this;
         }
 
         public Builder validationType(final CodeableConcept validationType) {
-            b.add(PROPERTY_VALIDATIONTYPE, validationType);
+            b.add(PROPERTY_VALIDATION_TYPE, validationType);
             return this;
         }
 
         public Builder validationProcess(final java.util.List<CodeableConcept> validationProcess) {
-            b.add(PROPERTY_VALIDATIONPROCESS, FhirObject.toArray(validationProcess));
+            b.add(PROPERTY_VALIDATION_PROCESS, FhirObject.toArray(validationProcess));
             return this;
         }
 
@@ -298,22 +298,22 @@ public class VerificationResult extends FhirResource {
         }
 
         public Builder lastPerformed(final java.time.Instant lastPerformed) {
-            b.add(PROPERTY_LASTPERFORMED, lastPerformed.toString());
+            b.add(PROPERTY_LAST_PERFORMED, lastPerformed.toString());
             return this;
         }
 
         public Builder nextScheduled(final java.time.Instant nextScheduled) {
-            b.add(PROPERTY_NEXTSCHEDULED, nextScheduled.toString());
+            b.add(PROPERTY_NEXT_SCHEDULED, nextScheduled.toString());
             return this;
         }
 
         public Builder failureAction(final CodeableConcept failureAction) {
-            b.add(PROPERTY_FAILUREACTION, failureAction);
+            b.add(PROPERTY_FAILURE_ACTION, failureAction);
             return this;
         }
 
         public Builder primarySource(final java.util.List<VerificationResultPrimarySource> primarySource) {
-            b.add(PROPERTY_PRIMARYSOURCE, FhirObject.toArray(primarySource));
+            b.add(PROPERTY_PRIMARY_SOURCE, FhirObject.toArray(primarySource));
             return this;
         }
 
@@ -335,15 +335,15 @@ public class VerificationResult extends FhirResource {
     public static class VerificationResultAttestation extends FhirObject {
         public static final String RESOURCE_TYPE = "VerificationResultAttestation";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_WHO = "who";
-        public static final String PROPERTY_ONBEHALFOF = "onBehalfOf";
-        public static final String PROPERTY_COMMUNICATIONMETHOD = "communicationMethod";
+        public static final String PROPERTY_ON_BEHALF_OF = "onBehalfOf";
+        public static final String PROPERTY_COMMUNICATION_METHOD = "communicationMethod";
         public static final String PROPERTY_DATE = "date";
-        public static final String PROPERTY_SOURCEIDENTITYCERTIFICATE = "sourceIdentityCertificate";
-        public static final String PROPERTY_PROXYIDENTITYCERTIFICATE = "proxyIdentityCertificate";
-        public static final String PROPERTY_PROXYSIGNATURE = "proxySignature";
-        public static final String PROPERTY_SOURCESIGNATURE = "sourceSignature";
+        public static final String PROPERTY_SOURCE_IDENTITY_CERTIFICATE = "sourceIdentityCertificate";
+        public static final String PROPERTY_PROXY_IDENTITY_CERTIFICATE = "proxyIdentityCertificate";
+        public static final String PROPERTY_PROXY_SIGNATURE = "proxySignature";
+        public static final String PROPERTY_SOURCE_SIGNATURE = "sourceSignature";
 
         public static Builder create() {
             return new Builder();
@@ -383,7 +383,7 @@ public class VerificationResult extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -398,7 +398,7 @@ public class VerificationResult extends FhirResource {
          * individual).
          */
         public Reference onBehalfOf() {
-            return getObject(Reference.class, PROPERTY_ONBEHALFOF);
+            return getObject(Reference.class, PROPERTY_ON_BEHALF_OF);
         }
 
         /**
@@ -406,7 +406,7 @@ public class VerificationResult extends FhirResource {
          * (manual; API; Push).
          */
         public CodeableConcept communicationMethod() {
-            return getObject(CodeableConcept.class, PROPERTY_COMMUNICATIONMETHOD);
+            return getObject(CodeableConcept.class, PROPERTY_COMMUNICATION_METHOD);
         }
 
         /**
@@ -420,7 +420,7 @@ public class VerificationResult extends FhirResource {
          * A digital identity certificate associated with the attestation source.
          */
         public String sourceIdentityCertificate() {
-            return getString(PROPERTY_SOURCEIDENTITYCERTIFICATE);
+            return getString(PROPERTY_SOURCE_IDENTITY_CERTIFICATE);
         }
 
         /**
@@ -428,7 +428,7 @@ public class VerificationResult extends FhirResource {
          * submitting attested information on behalf of the attestation source.
          */
         public String proxyIdentityCertificate() {
-            return getString(PROPERTY_PROXYIDENTITYCERTIFICATE);
+            return getString(PROPERTY_PROXY_IDENTITY_CERTIFICATE);
         }
 
         /**
@@ -437,7 +437,7 @@ public class VerificationResult extends FhirResource {
          * source.
          */
         public Signature proxySignature() {
-            return getObject(Signature.class, PROPERTY_PROXYSIGNATURE);
+            return getObject(Signature.class, PROPERTY_PROXY_SIGNATURE);
         }
 
         /**
@@ -445,7 +445,7 @@ public class VerificationResult extends FhirResource {
          * the information.
          */
         public Signature sourceSignature() {
-            return getObject(Signature.class, PROPERTY_SOURCESIGNATURE);
+            return getObject(Signature.class, PROPERTY_SOURCE_SIGNATURE);
         }
 
         public static class Builder {
@@ -465,7 +465,7 @@ public class VerificationResult extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -475,12 +475,12 @@ public class VerificationResult extends FhirResource {
             }
 
             public Builder onBehalfOf(final Reference onBehalfOf) {
-                b.add(PROPERTY_ONBEHALFOF, onBehalfOf);
+                b.add(PROPERTY_ON_BEHALF_OF, onBehalfOf);
                 return this;
             }
 
             public Builder communicationMethod(final CodeableConcept communicationMethod) {
-                b.add(PROPERTY_COMMUNICATIONMETHOD, communicationMethod);
+                b.add(PROPERTY_COMMUNICATION_METHOD, communicationMethod);
                 return this;
             }
 
@@ -490,22 +490,22 @@ public class VerificationResult extends FhirResource {
             }
 
             public Builder sourceIdentityCertificate(final String sourceIdentityCertificate) {
-                b.add(PROPERTY_SOURCEIDENTITYCERTIFICATE, sourceIdentityCertificate);
+                b.add(PROPERTY_SOURCE_IDENTITY_CERTIFICATE, sourceIdentityCertificate);
                 return this;
             }
 
             public Builder proxyIdentityCertificate(final String proxyIdentityCertificate) {
-                b.add(PROPERTY_PROXYIDENTITYCERTIFICATE, proxyIdentityCertificate);
+                b.add(PROPERTY_PROXY_IDENTITY_CERTIFICATE, proxyIdentityCertificate);
                 return this;
             }
 
             public Builder proxySignature(final Signature proxySignature) {
-                b.add(PROPERTY_PROXYSIGNATURE, proxySignature);
+                b.add(PROPERTY_PROXY_SIGNATURE, proxySignature);
                 return this;
             }
 
             public Builder sourceSignature(final Signature sourceSignature) {
-                b.add(PROPERTY_SOURCESIGNATURE, sourceSignature);
+                b.add(PROPERTY_SOURCE_SIGNATURE, sourceSignature);
                 return this;
             }
 
@@ -518,14 +518,14 @@ public class VerificationResult extends FhirResource {
     public static class VerificationResultPrimarySource extends FhirObject {
         public static final String RESOURCE_TYPE = "VerificationResultPrimarySource";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_WHO = "who";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_COMMUNICATIONMETHOD = "communicationMethod";
-        public static final String PROPERTY_VALIDATIONSTATUS = "validationStatus";
-        public static final String PROPERTY_VALIDATIONDATE = "validationDate";
-        public static final String PROPERTY_CANPUSHUPDATES = "canPushUpdates";
-        public static final String PROPERTY_PUSHTYPEAVAILABLE = "pushTypeAvailable";
+        public static final String PROPERTY_COMMUNICATION_METHOD = "communicationMethod";
+        public static final String PROPERTY_VALIDATION_STATUS = "validationStatus";
+        public static final String PROPERTY_VALIDATION_DATE = "validationDate";
+        public static final String PROPERTY_CAN_PUSH_UPDATES = "canPushUpdates";
+        public static final String PROPERTY_PUSH_TYPE_AVAILABLE = "pushTypeAvailable";
 
         public static Builder create() {
             return new Builder();
@@ -565,7 +565,7 @@ public class VerificationResult extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -588,7 +588,7 @@ public class VerificationResult extends FhirResource {
          * Method for communicating with the primary source (manual; API; Push).
          */
         public java.util.List<CodeableConcept> communicationMethod() {
-            return getList(CodeableConcept.class, PROPERTY_COMMUNICATIONMETHOD);
+            return getList(CodeableConcept.class, PROPERTY_COMMUNICATION_METHOD);
         }
 
         /**
@@ -596,14 +596,14 @@ public class VerificationResult extends FhirResource {
          * (successful; failed; unknown).
          */
         public CodeableConcept validationStatus() {
-            return getObject(CodeableConcept.class, PROPERTY_VALIDATIONSTATUS);
+            return getObject(CodeableConcept.class, PROPERTY_VALIDATION_STATUS);
         }
 
         /**
          * When the target was validated against the primary source.
          */
         public java.time.Instant validationDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_VALIDATIONDATE));
+            return java.time.Instant.parse(data.getString(PROPERTY_VALIDATION_DATE));
         }
 
         /**
@@ -611,7 +611,7 @@ public class VerificationResult extends FhirResource {
          * undetermined).
          */
         public CodeableConcept canPushUpdates() {
-            return getObject(CodeableConcept.class, PROPERTY_CANPUSHUPDATES);
+            return getObject(CodeableConcept.class, PROPERTY_CAN_PUSH_UPDATES);
         }
 
         /**
@@ -619,7 +619,7 @@ public class VerificationResult extends FhirResource {
          * changes; any changes; as defined by source).
          */
         public java.util.List<CodeableConcept> pushTypeAvailable() {
-            return getList(CodeableConcept.class, PROPERTY_PUSHTYPEAVAILABLE);
+            return getList(CodeableConcept.class, PROPERTY_PUSH_TYPE_AVAILABLE);
         }
 
         public static class Builder {
@@ -639,7 +639,7 @@ public class VerificationResult extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -654,27 +654,27 @@ public class VerificationResult extends FhirResource {
             }
 
             public Builder communicationMethod(final java.util.List<CodeableConcept> communicationMethod) {
-                b.add(PROPERTY_COMMUNICATIONMETHOD, FhirObject.toArray(communicationMethod));
+                b.add(PROPERTY_COMMUNICATION_METHOD, FhirObject.toArray(communicationMethod));
                 return this;
             }
 
             public Builder validationStatus(final CodeableConcept validationStatus) {
-                b.add(PROPERTY_VALIDATIONSTATUS, validationStatus);
+                b.add(PROPERTY_VALIDATION_STATUS, validationStatus);
                 return this;
             }
 
             public Builder validationDate(final java.time.Instant validationDate) {
-                b.add(PROPERTY_VALIDATIONDATE, validationDate.toString());
+                b.add(PROPERTY_VALIDATION_DATE, validationDate.toString());
                 return this;
             }
 
             public Builder canPushUpdates(final CodeableConcept canPushUpdates) {
-                b.add(PROPERTY_CANPUSHUPDATES, canPushUpdates);
+                b.add(PROPERTY_CAN_PUSH_UPDATES, canPushUpdates);
                 return this;
             }
 
             public Builder pushTypeAvailable(final java.util.List<CodeableConcept> pushTypeAvailable) {
-                b.add(PROPERTY_PUSHTYPEAVAILABLE, FhirObject.toArray(pushTypeAvailable));
+                b.add(PROPERTY_PUSH_TYPE_AVAILABLE, FhirObject.toArray(pushTypeAvailable));
                 return this;
             }
 
@@ -687,10 +687,10 @@ public class VerificationResult extends FhirResource {
     public static class VerificationResultValidator extends FhirObject {
         public static final String RESOURCE_TYPE = "VerificationResultValidator";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ORGANIZATION = "organization";
-        public static final String PROPERTY_IDENTITYCERTIFICATE = "identityCertificate";
-        public static final String PROPERTY_ATTESTATIONSIGNATURE = "attestationSignature";
+        public static final String PROPERTY_IDENTITY_CERTIFICATE = "identityCertificate";
+        public static final String PROPERTY_ATTESTATION_SIGNATURE = "attestationSignature";
 
         public static Builder create() {
             return new Builder();
@@ -730,7 +730,7 @@ public class VerificationResult extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -744,7 +744,7 @@ public class VerificationResult extends FhirResource {
          * A digital identity certificate associated with the validator.
          */
         public String identityCertificate() {
-            return getString(PROPERTY_IDENTITYCERTIFICATE);
+            return getString(PROPERTY_IDENTITY_CERTIFICATE);
         }
 
         /**
@@ -752,7 +752,7 @@ public class VerificationResult extends FhirResource {
          * information.
          */
         public Signature attestationSignature() {
-            return getObject(Signature.class, PROPERTY_ATTESTATIONSIGNATURE);
+            return getObject(Signature.class, PROPERTY_ATTESTATION_SIGNATURE);
         }
 
         public static class Builder {
@@ -772,7 +772,7 @@ public class VerificationResult extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -782,12 +782,12 @@ public class VerificationResult extends FhirResource {
             }
 
             public Builder identityCertificate(final String identityCertificate) {
-                b.add(PROPERTY_IDENTITYCERTIFICATE, identityCertificate);
+                b.add(PROPERTY_IDENTITY_CERTIFICATE, identityCertificate);
                 return this;
             }
 
             public Builder attestationSignature(final Signature attestationSignature) {
-                b.add(PROPERTY_ATTESTATIONSIGNATURE, attestationSignature);
+                b.add(PROPERTY_ATTESTATION_SIGNATURE, attestationSignature);
                 return this;
             }
 

@@ -15,8 +15,8 @@ public class SampledData extends FhirResource {
     public static final String PROPERTY_ORIGIN = "origin";
     public static final String PROPERTY_PERIOD = "period";
     public static final String PROPERTY_FACTOR = "factor";
-    public static final String PROPERTY_LOWERLIMIT = "lowerLimit";
-    public static final String PROPERTY_UPPERLIMIT = "upperLimit";
+    public static final String PROPERTY_LOWER_LIMIT = "lowerLimit";
+    public static final String PROPERTY_UPPER_LIMIT = "upperLimit";
     public static final String PROPERTY_DIMENSIONS = "dimensions";
     public static final String PROPERTY_DATA = "data";
 
@@ -69,7 +69,7 @@ public class SampledData extends FhirResource {
      * limit).
      */
     public Double lowerLimit() {
-        return data.getJsonNumber(PROPERTY_LOWERLIMIT).doubleValue();
+        return data.getJsonNumber(PROPERTY_LOWER_LIMIT).doubleValue();
     }
 
     /**
@@ -78,7 +78,7 @@ public class SampledData extends FhirResource {
      * limit).
      */
     public Double upperLimit() {
-        return data.getJsonNumber(PROPERTY_UPPERLIMIT).doubleValue();
+        return data.getJsonNumber(PROPERTY_UPPER_LIMIT).doubleValue();
     }
 
     /**
@@ -132,12 +132,12 @@ public class SampledData extends FhirResource {
         }
 
         public Builder lowerLimit(final Double lowerLimit) {
-            b.add(PROPERTY_LOWERLIMIT, lowerLimit);
+            b.add(PROPERTY_LOWER_LIMIT, lowerLimit);
             return this;
         }
 
         public Builder upperLimit(final Double upperLimit) {
-            b.add(PROPERTY_UPPERLIMIT, upperLimit);
+            b.add(PROPERTY_UPPER_LIMIT, upperLimit);
             return this;
         }
 

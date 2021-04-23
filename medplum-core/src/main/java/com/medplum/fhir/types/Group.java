@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Group extends FhirResource {
     public static final String RESOURCE_TYPE = "Group";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_ACTIVE = "active";
     public static final String PROPERTY_TYPE = "type";
@@ -26,7 +26,7 @@ public class Group extends FhirResource {
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_NAME = "name";
     public static final String PROPERTY_QUANTITY = "quantity";
-    public static final String PROPERTY_MANAGINGENTITY = "managingEntity";
+    public static final String PROPERTY_MANAGING_ENTITY = "managingEntity";
     public static final String PROPERTY_CHARACTERISTIC = "characteristic";
     public static final String PROPERTY_MEMBER = "member";
 
@@ -49,7 +49,7 @@ public class Group extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -97,7 +97,7 @@ public class Group extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -161,7 +161,7 @@ public class Group extends FhirResource {
      * and/or registered members.
      */
     public Reference managingEntity() {
-        return getObject(Reference.class, PROPERTY_MANAGINGENTITY);
+        return getObject(Reference.class, PROPERTY_MANAGING_ENTITY);
     }
 
     /**
@@ -190,7 +190,7 @@ public class Group extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -205,7 +205,7 @@ public class Group extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -225,7 +225,7 @@ public class Group extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -265,7 +265,7 @@ public class Group extends FhirResource {
         }
 
         public Builder managingEntity(final Reference managingEntity) {
-            b.add(PROPERTY_MANAGINGENTITY, managingEntity);
+            b.add(PROPERTY_MANAGING_ENTITY, managingEntity);
             return this;
         }
 
@@ -287,13 +287,13 @@ public class Group extends FhirResource {
     public static class GroupCharacteristic extends FhirObject {
         public static final String RESOURCE_TYPE = "GroupCharacteristic";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_VALUECODEABLECONCEPT = "valueCodeableConcept";
-        public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUERANGE = "valueRange";
-        public static final String PROPERTY_VALUEREFERENCE = "valueReference";
+        public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
+        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_RANGE = "valueRange";
+        public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
         public static final String PROPERTY_EXCLUDE = "exclude";
         public static final String PROPERTY_PERIOD = "period";
 
@@ -335,7 +335,7 @@ public class Group extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -350,7 +350,7 @@ public class Group extends FhirResource {
          * for members of the group.
          */
         public CodeableConcept valueCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
         }
 
         /**
@@ -358,7 +358,7 @@ public class Group extends FhirResource {
          * for members of the group.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
@@ -366,7 +366,7 @@ public class Group extends FhirResource {
          * for members of the group.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
@@ -374,7 +374,7 @@ public class Group extends FhirResource {
          * for members of the group.
          */
         public Range valueRange() {
-            return getObject(Range.class, PROPERTY_VALUERANGE);
+            return getObject(Range.class, PROPERTY_VALUE_RANGE);
         }
 
         /**
@@ -382,7 +382,7 @@ public class Group extends FhirResource {
          * for members of the group.
          */
         public Reference valueReference() {
-            return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
+            return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
         }
 
         /**
@@ -418,7 +418,7 @@ public class Group extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -428,27 +428,27 @@ public class Group extends FhirResource {
             }
 
             public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-                b.add(PROPERTY_VALUECODEABLECONCEPT, valueCodeableConcept);
+                b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueRange(final Range valueRange) {
-                b.add(PROPERTY_VALUERANGE, valueRange);
+                b.add(PROPERTY_VALUE_RANGE, valueRange);
                 return this;
             }
 
             public Builder valueReference(final Reference valueReference) {
-                b.add(PROPERTY_VALUEREFERENCE, valueReference);
+                b.add(PROPERTY_VALUE_REFERENCE, valueReference);
                 return this;
             }
 
@@ -471,7 +471,7 @@ public class Group extends FhirResource {
     public static class GroupMember extends FhirObject {
         public static final String RESOURCE_TYPE = "GroupMember";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_ENTITY = "entity";
         public static final String PROPERTY_PERIOD = "period";
         public static final String PROPERTY_INACTIVE = "inactive";
@@ -514,7 +514,7 @@ public class Group extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -558,7 +558,7 @@ public class Group extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

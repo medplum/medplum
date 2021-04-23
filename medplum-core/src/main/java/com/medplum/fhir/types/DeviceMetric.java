@@ -11,23 +11,23 @@ import jakarta.json.JsonObjectBuilder;
 
 public class DeviceMetric extends FhirResource {
     public static final String RESOURCE_TYPE = "DeviceMetric";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_TYPE = "type";
     public static final String PROPERTY_UNIT = "unit";
     public static final String PROPERTY_SOURCE = "source";
     public static final String PROPERTY_PARENT = "parent";
-    public static final String PROPERTY_OPERATIONALSTATUS = "operationalStatus";
+    public static final String PROPERTY_OPERATIONAL_STATUS = "operationalStatus";
     public static final String PROPERTY_COLOR = "color";
     public static final String PROPERTY_CATEGORY = "category";
-    public static final String PROPERTY_MEASUREMENTPERIOD = "measurementPeriod";
+    public static final String PROPERTY_MEASUREMENT_PERIOD = "measurementPeriod";
     public static final String PROPERTY_CALIBRATION = "calibration";
 
     public static Builder create() {
@@ -49,7 +49,7 @@ public class DeviceMetric extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -97,7 +97,7 @@ public class DeviceMetric extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -151,7 +151,7 @@ public class DeviceMetric extends FhirResource {
      * Off, Standby, etc.
      */
     public String operationalStatus() {
-        return getString(PROPERTY_OPERATIONALSTATUS);
+        return getString(PROPERTY_OPERATIONAL_STATUS);
     }
 
     /**
@@ -186,7 +186,7 @@ public class DeviceMetric extends FhirResource {
      * was measured.
      */
     public Timing measurementPeriod() {
-        return getObject(Timing.class, PROPERTY_MEASUREMENTPERIOD);
+        return getObject(Timing.class, PROPERTY_MEASUREMENT_PERIOD);
     }
 
     /**
@@ -208,7 +208,7 @@ public class DeviceMetric extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -223,7 +223,7 @@ public class DeviceMetric extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -243,7 +243,7 @@ public class DeviceMetric extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -273,7 +273,7 @@ public class DeviceMetric extends FhirResource {
         }
 
         public Builder operationalStatus(final String operationalStatus) {
-            b.add(PROPERTY_OPERATIONALSTATUS, operationalStatus);
+            b.add(PROPERTY_OPERATIONAL_STATUS, operationalStatus);
             return this;
         }
 
@@ -288,7 +288,7 @@ public class DeviceMetric extends FhirResource {
         }
 
         public Builder measurementPeriod(final Timing measurementPeriod) {
-            b.add(PROPERTY_MEASUREMENTPERIOD, measurementPeriod);
+            b.add(PROPERTY_MEASUREMENT_PERIOD, measurementPeriod);
             return this;
         }
 
@@ -305,7 +305,7 @@ public class DeviceMetric extends FhirResource {
     public static class DeviceMetricCalibration extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceMetricCalibration";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_STATE = "state";
         public static final String PROPERTY_TIME = "time";
@@ -348,7 +348,7 @@ public class DeviceMetric extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -389,7 +389,7 @@ public class DeviceMetric extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

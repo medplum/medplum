@@ -11,34 +11,34 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Questionnaire extends FhirResource {
     public static final String RESOURCE_TYPE = "Questionnaire";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_VERSION = "version";
     public static final String PROPERTY_NAME = "name";
     public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_DERIVEDFROM = "derivedFrom";
+    public static final String PROPERTY_DERIVED_FROM = "derivedFrom";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_SUBJECTTYPE = "subjectType";
+    public static final String PROPERTY_SUBJECT_TYPE = "subjectType";
     public static final String PROPERTY_DATE = "date";
     public static final String PROPERTY_PUBLISHER = "publisher";
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_PURPOSE = "purpose";
     public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_APPROVALDATE = "approvalDate";
-    public static final String PROPERTY_LASTREVIEWDATE = "lastReviewDate";
-    public static final String PROPERTY_EFFECTIVEPERIOD = "effectivePeriod";
+    public static final String PROPERTY_APPROVAL_DATE = "approvalDate";
+    public static final String PROPERTY_LAST_REVIEW_DATE = "lastReviewDate";
+    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_ITEM = "item";
 
@@ -61,7 +61,7 @@ public class Questionnaire extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -109,7 +109,7 @@ public class Questionnaire extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -167,7 +167,7 @@ public class Questionnaire extends FhirResource {
      * The URL of a Questionnaire that this Questionnaire is based on.
      */
     public java.util.List<String> derivedFrom() {
-        return getList(String.class, PROPERTY_DERIVEDFROM);
+        return getList(String.class, PROPERTY_DERIVED_FROM);
     }
 
     /**
@@ -192,7 +192,7 @@ public class Questionnaire extends FhirResource {
      * the questionnaire.
      */
     public java.util.List<String> subjectType() {
-        return getList(String.class, PROPERTY_SUBJECTTYPE);
+        return getList(String.class, PROPERTY_SUBJECT_TYPE);
     }
 
     /**
@@ -237,7 +237,7 @@ public class Questionnaire extends FhirResource {
      * indexing and searching for appropriate questionnaire instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -271,7 +271,7 @@ public class Questionnaire extends FhirResource {
      * usage.
      */
     public java.time.Instant approvalDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_APPROVALDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_APPROVAL_DATE));
     }
 
     /**
@@ -280,7 +280,7 @@ public class Questionnaire extends FhirResource {
      * approval date.
      */
     public java.time.Instant lastReviewDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LASTREVIEWDATE));
+        return java.time.Instant.parse(data.getString(PROPERTY_LAST_REVIEW_DATE));
     }
 
     /**
@@ -288,7 +288,7 @@ public class Questionnaire extends FhirResource {
      * be in active use.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVEPERIOD);
+        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -318,7 +318,7 @@ public class Questionnaire extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -333,7 +333,7 @@ public class Questionnaire extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -353,7 +353,7 @@ public class Questionnaire extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -383,7 +383,7 @@ public class Questionnaire extends FhirResource {
         }
 
         public Builder derivedFrom(final java.util.List<String> derivedFrom) {
-            b.add(PROPERTY_DERIVEDFROM, FhirObject.toStringArray(derivedFrom));
+            b.add(PROPERTY_DERIVED_FROM, FhirObject.toStringArray(derivedFrom));
             return this;
         }
 
@@ -398,7 +398,7 @@ public class Questionnaire extends FhirResource {
         }
 
         public Builder subjectType(final java.util.List<String> subjectType) {
-            b.add(PROPERTY_SUBJECTTYPE, FhirObject.toStringArray(subjectType));
+            b.add(PROPERTY_SUBJECT_TYPE, FhirObject.toStringArray(subjectType));
             return this;
         }
 
@@ -423,7 +423,7 @@ public class Questionnaire extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -443,17 +443,17 @@ public class Questionnaire extends FhirResource {
         }
 
         public Builder approvalDate(final java.time.Instant approvalDate) {
-            b.add(PROPERTY_APPROVALDATE, approvalDate.toString());
+            b.add(PROPERTY_APPROVAL_DATE, approvalDate.toString());
             return this;
         }
 
         public Builder lastReviewDate(final java.time.Instant lastReviewDate) {
-            b.add(PROPERTY_LASTREVIEWDATE, lastReviewDate.toString());
+            b.add(PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVEPERIOD, effectivePeriod);
+            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
@@ -475,14 +475,14 @@ public class Questionnaire extends FhirResource {
     public static class QuestionnaireAnswerOption extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireAnswerOption";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_VALUEINTEGER = "valueInteger";
-        public static final String PROPERTY_VALUEDATE = "valueDate";
-        public static final String PROPERTY_VALUETIME = "valueTime";
-        public static final String PROPERTY_VALUESTRING = "valueString";
-        public static final String PROPERTY_VALUECODING = "valueCoding";
-        public static final String PROPERTY_VALUEREFERENCE = "valueReference";
-        public static final String PROPERTY_INITIALSELECTED = "initialSelected";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
+        public static final String PROPERTY_VALUE_DATE = "valueDate";
+        public static final String PROPERTY_VALUE_TIME = "valueTime";
+        public static final String PROPERTY_VALUE_STRING = "valueString";
+        public static final String PROPERTY_VALUE_CODING = "valueCoding";
+        public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
+        public static final String PROPERTY_INITIAL_SELECTED = "initialSelected";
 
         public static Builder create() {
             return new Builder();
@@ -522,49 +522,49 @@ public class Questionnaire extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * A potential answer that's allowed as the answer to this question.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUEINTEGER);
+            return data.getInt(PROPERTY_VALUE_INTEGER);
         }
 
         /**
          * A potential answer that's allowed as the answer to this question.
          */
         public String valueDate() {
-            return getString(PROPERTY_VALUEDATE);
+            return getString(PROPERTY_VALUE_DATE);
         }
 
         /**
          * A potential answer that's allowed as the answer to this question.
          */
         public String valueTime() {
-            return getString(PROPERTY_VALUETIME);
+            return getString(PROPERTY_VALUE_TIME);
         }
 
         /**
          * A potential answer that's allowed as the answer to this question.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUESTRING);
+            return getString(PROPERTY_VALUE_STRING);
         }
 
         /**
          * A potential answer that's allowed as the answer to this question.
          */
         public Coding valueCoding() {
-            return getObject(Coding.class, PROPERTY_VALUECODING);
+            return getObject(Coding.class, PROPERTY_VALUE_CODING);
         }
 
         /**
          * A potential answer that's allowed as the answer to this question.
          */
         public Reference valueReference() {
-            return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
+            return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
         }
 
         /**
@@ -572,7 +572,7 @@ public class Questionnaire extends FhirResource {
          * possible answers is initially shown.
          */
         public Boolean initialSelected() {
-            return data.getBoolean(PROPERTY_INITIALSELECTED);
+            return data.getBoolean(PROPERTY_INITIAL_SELECTED);
         }
 
         public static class Builder {
@@ -592,42 +592,42 @@ public class Questionnaire extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUEINTEGER, valueInteger);
+                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueDate(final String valueDate) {
-                b.add(PROPERTY_VALUEDATE, valueDate);
+                b.add(PROPERTY_VALUE_DATE, valueDate);
                 return this;
             }
 
             public Builder valueTime(final String valueTime) {
-                b.add(PROPERTY_VALUETIME, valueTime);
+                b.add(PROPERTY_VALUE_TIME, valueTime);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUESTRING, valueString);
+                b.add(PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueCoding(final Coding valueCoding) {
-                b.add(PROPERTY_VALUECODING, valueCoding);
+                b.add(PROPERTY_VALUE_CODING, valueCoding);
                 return this;
             }
 
             public Builder valueReference(final Reference valueReference) {
-                b.add(PROPERTY_VALUEREFERENCE, valueReference);
+                b.add(PROPERTY_VALUE_REFERENCE, valueReference);
                 return this;
             }
 
             public Builder initialSelected(final Boolean initialSelected) {
-                b.add(PROPERTY_INITIALSELECTED, initialSelected);
+                b.add(PROPERTY_INITIAL_SELECTED, initialSelected);
                 return this;
             }
 
@@ -640,19 +640,19 @@ public class Questionnaire extends FhirResource {
     public static class QuestionnaireEnableWhen extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireEnableWhen";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_QUESTION = "question";
         public static final String PROPERTY_OPERATOR = "operator";
-        public static final String PROPERTY_ANSWERBOOLEAN = "answerBoolean";
-        public static final String PROPERTY_ANSWERDECIMAL = "answerDecimal";
-        public static final String PROPERTY_ANSWERINTEGER = "answerInteger";
-        public static final String PROPERTY_ANSWERDATE = "answerDate";
-        public static final String PROPERTY_ANSWERDATETIME = "answerDateTime";
-        public static final String PROPERTY_ANSWERTIME = "answerTime";
-        public static final String PROPERTY_ANSWERSTRING = "answerString";
-        public static final String PROPERTY_ANSWERCODING = "answerCoding";
-        public static final String PROPERTY_ANSWERQUANTITY = "answerQuantity";
-        public static final String PROPERTY_ANSWERREFERENCE = "answerReference";
+        public static final String PROPERTY_ANSWER_BOOLEAN = "answerBoolean";
+        public static final String PROPERTY_ANSWER_DECIMAL = "answerDecimal";
+        public static final String PROPERTY_ANSWER_INTEGER = "answerInteger";
+        public static final String PROPERTY_ANSWER_DATE = "answerDate";
+        public static final String PROPERTY_ANSWER_DATE_TIME = "answerDateTime";
+        public static final String PROPERTY_ANSWER_TIME = "answerTime";
+        public static final String PROPERTY_ANSWER_STRING = "answerString";
+        public static final String PROPERTY_ANSWER_CODING = "answerCoding";
+        public static final String PROPERTY_ANSWER_QUANTITY = "answerQuantity";
+        public static final String PROPERTY_ANSWER_REFERENCE = "answerReference";
 
         public static Builder create() {
             return new Builder();
@@ -692,7 +692,7 @@ public class Questionnaire extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -715,7 +715,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public Boolean answerBoolean() {
-            return data.getBoolean(PROPERTY_ANSWERBOOLEAN);
+            return data.getBoolean(PROPERTY_ANSWER_BOOLEAN);
         }
 
         /**
@@ -723,7 +723,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public Integer answerDecimal() {
-            return data.getInt(PROPERTY_ANSWERDECIMAL);
+            return data.getInt(PROPERTY_ANSWER_DECIMAL);
         }
 
         /**
@@ -731,7 +731,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public Integer answerInteger() {
-            return data.getInt(PROPERTY_ANSWERINTEGER);
+            return data.getInt(PROPERTY_ANSWER_INTEGER);
         }
 
         /**
@@ -739,7 +739,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public String answerDate() {
-            return getString(PROPERTY_ANSWERDATE);
+            return getString(PROPERTY_ANSWER_DATE);
         }
 
         /**
@@ -747,7 +747,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public String answerDateTime() {
-            return getString(PROPERTY_ANSWERDATETIME);
+            return getString(PROPERTY_ANSWER_DATE_TIME);
         }
 
         /**
@@ -755,7 +755,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public String answerTime() {
-            return getString(PROPERTY_ANSWERTIME);
+            return getString(PROPERTY_ANSWER_TIME);
         }
 
         /**
@@ -763,7 +763,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public String answerString() {
-            return getString(PROPERTY_ANSWERSTRING);
+            return getString(PROPERTY_ANSWER_STRING);
         }
 
         /**
@@ -771,7 +771,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public Coding answerCoding() {
-            return getObject(Coding.class, PROPERTY_ANSWERCODING);
+            return getObject(Coding.class, PROPERTY_ANSWER_CODING);
         }
 
         /**
@@ -779,7 +779,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public Quantity answerQuantity() {
-            return getObject(Quantity.class, PROPERTY_ANSWERQUANTITY);
+            return getObject(Quantity.class, PROPERTY_ANSWER_QUANTITY);
         }
 
         /**
@@ -787,7 +787,7 @@ public class Questionnaire extends FhirResource {
          * operator in order for the item to be enabled.
          */
         public Reference answerReference() {
-            return getObject(Reference.class, PROPERTY_ANSWERREFERENCE);
+            return getObject(Reference.class, PROPERTY_ANSWER_REFERENCE);
         }
 
         public static class Builder {
@@ -807,7 +807,7 @@ public class Questionnaire extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -822,52 +822,52 @@ public class Questionnaire extends FhirResource {
             }
 
             public Builder answerBoolean(final Boolean answerBoolean) {
-                b.add(PROPERTY_ANSWERBOOLEAN, answerBoolean);
+                b.add(PROPERTY_ANSWER_BOOLEAN, answerBoolean);
                 return this;
             }
 
             public Builder answerDecimal(final Integer answerDecimal) {
-                b.add(PROPERTY_ANSWERDECIMAL, answerDecimal);
+                b.add(PROPERTY_ANSWER_DECIMAL, answerDecimal);
                 return this;
             }
 
             public Builder answerInteger(final Integer answerInteger) {
-                b.add(PROPERTY_ANSWERINTEGER, answerInteger);
+                b.add(PROPERTY_ANSWER_INTEGER, answerInteger);
                 return this;
             }
 
             public Builder answerDate(final String answerDate) {
-                b.add(PROPERTY_ANSWERDATE, answerDate);
+                b.add(PROPERTY_ANSWER_DATE, answerDate);
                 return this;
             }
 
             public Builder answerDateTime(final String answerDateTime) {
-                b.add(PROPERTY_ANSWERDATETIME, answerDateTime);
+                b.add(PROPERTY_ANSWER_DATE_TIME, answerDateTime);
                 return this;
             }
 
             public Builder answerTime(final String answerTime) {
-                b.add(PROPERTY_ANSWERTIME, answerTime);
+                b.add(PROPERTY_ANSWER_TIME, answerTime);
                 return this;
             }
 
             public Builder answerString(final String answerString) {
-                b.add(PROPERTY_ANSWERSTRING, answerString);
+                b.add(PROPERTY_ANSWER_STRING, answerString);
                 return this;
             }
 
             public Builder answerCoding(final Coding answerCoding) {
-                b.add(PROPERTY_ANSWERCODING, answerCoding);
+                b.add(PROPERTY_ANSWER_CODING, answerCoding);
                 return this;
             }
 
             public Builder answerQuantity(final Quantity answerQuantity) {
-                b.add(PROPERTY_ANSWERQUANTITY, answerQuantity);
+                b.add(PROPERTY_ANSWER_QUANTITY, answerQuantity);
                 return this;
             }
 
             public Builder answerReference(final Reference answerReference) {
-                b.add(PROPERTY_ANSWERREFERENCE, answerReference);
+                b.add(PROPERTY_ANSWER_REFERENCE, answerReference);
                 return this;
             }
 
@@ -880,19 +880,19 @@ public class Questionnaire extends FhirResource {
     public static class QuestionnaireInitial extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireInitial";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUEDECIMAL = "valueDecimal";
-        public static final String PROPERTY_VALUEINTEGER = "valueInteger";
-        public static final String PROPERTY_VALUEDATE = "valueDate";
-        public static final String PROPERTY_VALUEDATETIME = "valueDateTime";
-        public static final String PROPERTY_VALUETIME = "valueTime";
-        public static final String PROPERTY_VALUESTRING = "valueString";
-        public static final String PROPERTY_VALUEURI = "valueUri";
-        public static final String PROPERTY_VALUEATTACHMENT = "valueAttachment";
-        public static final String PROPERTY_VALUECODING = "valueCoding";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUEREFERENCE = "valueReference";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
+        public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
+        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
+        public static final String PROPERTY_VALUE_DATE = "valueDate";
+        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
+        public static final String PROPERTY_VALUE_TIME = "valueTime";
+        public static final String PROPERTY_VALUE_STRING = "valueString";
+        public static final String PROPERTY_VALUE_URI = "valueUri";
+        public static final String PROPERTY_VALUE_ATTACHMENT = "valueAttachment";
+        public static final String PROPERTY_VALUE_CODING = "valueCoding";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
 
         public static Builder create() {
             return new Builder();
@@ -932,91 +932,91 @@ public class Questionnaire extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public Integer valueDecimal() {
-            return data.getInt(PROPERTY_VALUEDECIMAL);
+            return data.getInt(PROPERTY_VALUE_DECIMAL);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUEINTEGER);
+            return data.getInt(PROPERTY_VALUE_INTEGER);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public String valueDate() {
-            return getString(PROPERTY_VALUEDATE);
+            return getString(PROPERTY_VALUE_DATE);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUEDATETIME);
+            return getString(PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public String valueTime() {
-            return getString(PROPERTY_VALUETIME);
+            return getString(PROPERTY_VALUE_TIME);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUESTRING);
+            return getString(PROPERTY_VALUE_STRING);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public String valueUri() {
-            return getString(PROPERTY_VALUEURI);
+            return getString(PROPERTY_VALUE_URI);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public Attachment valueAttachment() {
-            return getObject(Attachment.class, PROPERTY_VALUEATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_VALUE_ATTACHMENT);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public Coding valueCoding() {
-            return getObject(Coding.class, PROPERTY_VALUECODING);
+            return getObject(Coding.class, PROPERTY_VALUE_CODING);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
          * The actual value to for an initial answer.
          */
         public Reference valueReference() {
-            return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
+            return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
         }
 
         public static class Builder {
@@ -1036,67 +1036,67 @@ public class Questionnaire extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueDecimal(final Integer valueDecimal) {
-                b.add(PROPERTY_VALUEDECIMAL, valueDecimal);
+                b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUEINTEGER, valueInteger);
+                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueDate(final String valueDate) {
-                b.add(PROPERTY_VALUEDATE, valueDate);
+                b.add(PROPERTY_VALUE_DATE, valueDate);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUEDATETIME, valueDateTime);
+                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valueTime(final String valueTime) {
-                b.add(PROPERTY_VALUETIME, valueTime);
+                b.add(PROPERTY_VALUE_TIME, valueTime);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUESTRING, valueString);
+                b.add(PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueUri(final String valueUri) {
-                b.add(PROPERTY_VALUEURI, valueUri);
+                b.add(PROPERTY_VALUE_URI, valueUri);
                 return this;
             }
 
             public Builder valueAttachment(final Attachment valueAttachment) {
-                b.add(PROPERTY_VALUEATTACHMENT, valueAttachment);
+                b.add(PROPERTY_VALUE_ATTACHMENT, valueAttachment);
                 return this;
             }
 
             public Builder valueCoding(final Coding valueCoding) {
-                b.add(PROPERTY_VALUECODING, valueCoding);
+                b.add(PROPERTY_VALUE_CODING, valueCoding);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueReference(final Reference valueReference) {
-                b.add(PROPERTY_VALUEREFERENCE, valueReference);
+                b.add(PROPERTY_VALUE_REFERENCE, valueReference);
                 return this;
             }
 
@@ -1109,21 +1109,21 @@ public class Questionnaire extends FhirResource {
     public static class QuestionnaireItem extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireItem";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
-        public static final String PROPERTY_LINKID = "linkId";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
+        public static final String PROPERTY_LINK_ID = "linkId";
         public static final String PROPERTY_DEFINITION = "definition";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_PREFIX = "prefix";
         public static final String PROPERTY_TEXT = "text";
         public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_ENABLEWHEN = "enableWhen";
-        public static final String PROPERTY_ENABLEBEHAVIOR = "enableBehavior";
+        public static final String PROPERTY_ENABLE_WHEN = "enableWhen";
+        public static final String PROPERTY_ENABLE_BEHAVIOR = "enableBehavior";
         public static final String PROPERTY_REQUIRED = "required";
         public static final String PROPERTY_REPEATS = "repeats";
-        public static final String PROPERTY_READONLY = "readOnly";
-        public static final String PROPERTY_MAXLENGTH = "maxLength";
-        public static final String PROPERTY_ANSWERVALUESET = "answerValueSet";
-        public static final String PROPERTY_ANSWEROPTION = "answerOption";
+        public static final String PROPERTY_READ_ONLY = "readOnly";
+        public static final String PROPERTY_MAX_LENGTH = "maxLength";
+        public static final String PROPERTY_ANSWER_VALUE_SET = "answerValueSet";
+        public static final String PROPERTY_ANSWER_OPTION = "answerOption";
         public static final String PROPERTY_INITIAL = "initial";
         public static final String PROPERTY_ITEM = "item";
 
@@ -1165,7 +1165,7 @@ public class Questionnaire extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1173,7 +1173,7 @@ public class Questionnaire extends FhirResource {
          * to the equivalent item in a QuestionnaireResponse resource.
          */
         public String linkId() {
-            return getString(PROPERTY_LINKID);
+            return getString(PROPERTY_LINK_ID);
         }
 
         /**
@@ -1237,7 +1237,7 @@ public class Questionnaire extends FhirResource {
          * is true.
          */
         public java.util.List<QuestionnaireEnableWhen> enableWhen() {
-            return getList(QuestionnaireEnableWhen.class, PROPERTY_ENABLEWHEN);
+            return getList(QuestionnaireEnableWhen.class, PROPERTY_ENABLE_WHEN);
         }
 
         /**
@@ -1245,7 +1245,7 @@ public class Questionnaire extends FhirResource {
          * or any must be true.
          */
         public String enableBehavior() {
-            return getString(PROPERTY_ENABLEBEHAVIOR);
+            return getString(PROPERTY_ENABLE_BEHAVIOR);
         }
 
         /**
@@ -1271,7 +1271,7 @@ public class Questionnaire extends FhirResource {
          * respondent to the Questionnaire.
          */
         public Boolean readOnly() {
-            return data.getBoolean(PROPERTY_READONLY);
+            return data.getBoolean(PROPERTY_READ_ONLY);
         }
 
         /**
@@ -1279,7 +1279,7 @@ public class Questionnaire extends FhirResource {
          * be considered a "valid" QuestionnaireResponse.
          */
         public Integer maxLength() {
-            return data.getInt(PROPERTY_MAXLENGTH);
+            return data.getInt(PROPERTY_MAX_LENGTH);
         }
 
         /**
@@ -1287,14 +1287,14 @@ public class Questionnaire extends FhirResource {
          * permitted answers for a "choice" or "open-choice" question.
          */
         public String answerValueSet() {
-            return getString(PROPERTY_ANSWERVALUESET);
+            return getString(PROPERTY_ANSWER_VALUE_SET);
         }
 
         /**
          * One of the permitted answers for a "choice" or "open-choice" question.
          */
         public java.util.List<QuestionnaireAnswerOption> answerOption() {
-            return getList(QuestionnaireAnswerOption.class, PROPERTY_ANSWEROPTION);
+            return getList(QuestionnaireAnswerOption.class, PROPERTY_ANSWER_OPTION);
         }
 
         /**
@@ -1330,12 +1330,12 @@ public class Questionnaire extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder linkId(final String linkId) {
-                b.add(PROPERTY_LINKID, linkId);
+                b.add(PROPERTY_LINK_ID, linkId);
                 return this;
             }
 
@@ -1365,12 +1365,12 @@ public class Questionnaire extends FhirResource {
             }
 
             public Builder enableWhen(final java.util.List<QuestionnaireEnableWhen> enableWhen) {
-                b.add(PROPERTY_ENABLEWHEN, FhirObject.toArray(enableWhen));
+                b.add(PROPERTY_ENABLE_WHEN, FhirObject.toArray(enableWhen));
                 return this;
             }
 
             public Builder enableBehavior(final String enableBehavior) {
-                b.add(PROPERTY_ENABLEBEHAVIOR, enableBehavior);
+                b.add(PROPERTY_ENABLE_BEHAVIOR, enableBehavior);
                 return this;
             }
 
@@ -1385,22 +1385,22 @@ public class Questionnaire extends FhirResource {
             }
 
             public Builder readOnly(final Boolean readOnly) {
-                b.add(PROPERTY_READONLY, readOnly);
+                b.add(PROPERTY_READ_ONLY, readOnly);
                 return this;
             }
 
             public Builder maxLength(final Integer maxLength) {
-                b.add(PROPERTY_MAXLENGTH, maxLength);
+                b.add(PROPERTY_MAX_LENGTH, maxLength);
                 return this;
             }
 
             public Builder answerValueSet(final String answerValueSet) {
-                b.add(PROPERTY_ANSWERVALUESET, answerValueSet);
+                b.add(PROPERTY_ANSWER_VALUE_SET, answerValueSet);
                 return this;
             }
 
             public Builder answerOption(final java.util.List<QuestionnaireAnswerOption> answerOption) {
-                b.add(PROPERTY_ANSWEROPTION, FhirObject.toArray(answerOption));
+                b.add(PROPERTY_ANSWER_OPTION, FhirObject.toArray(answerOption));
                 return this;
             }
 

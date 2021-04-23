@@ -11,10 +11,10 @@ import jakarta.json.JsonObjectBuilder;
 
 public class Bundle extends FhirResource {
     public static final String RESOURCE_TYPE = "Bundle";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_TYPE = "type";
@@ -43,7 +43,7 @@ public class Bundle extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -119,7 +119,7 @@ public class Bundle extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -134,7 +134,7 @@ public class Bundle extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -186,9 +186,9 @@ public class Bundle extends FhirResource {
     public static class BundleEntry extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleEntry";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_LINK = "link";
-        public static final String PROPERTY_FULLURL = "fullUrl";
+        public static final String PROPERTY_FULL_URL = "fullUrl";
         public static final String PROPERTY_RESOURCE = "resource";
         public static final String PROPERTY_SEARCH = "search";
         public static final String PROPERTY_REQUEST = "request";
@@ -232,7 +232,7 @@ public class Bundle extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -254,7 +254,7 @@ public class Bundle extends FhirResource {
          * identified.
          */
         public String fullUrl() {
-            return getString(PROPERTY_FULLURL);
+            return getString(PROPERTY_FULL_URL);
         }
 
         /**
@@ -312,7 +312,7 @@ public class Bundle extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -322,7 +322,7 @@ public class Bundle extends FhirResource {
             }
 
             public Builder fullUrl(final String fullUrl) {
-                b.add(PROPERTY_FULLURL, fullUrl);
+                b.add(PROPERTY_FULL_URL, fullUrl);
                 return this;
             }
 
@@ -355,7 +355,7 @@ public class Bundle extends FhirResource {
     public static class BundleLink extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleLink";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_RELATION = "relation";
         public static final String PROPERTY_URL = "url";
 
@@ -397,7 +397,7 @@ public class Bundle extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -432,7 +432,7 @@ public class Bundle extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -455,13 +455,13 @@ public class Bundle extends FhirResource {
     public static class BundleRequest extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleRequest";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_METHOD = "method";
         public static final String PROPERTY_URL = "url";
-        public static final String PROPERTY_IFNONEMATCH = "ifNoneMatch";
-        public static final String PROPERTY_IFMODIFIEDSINCE = "ifModifiedSince";
-        public static final String PROPERTY_IFMATCH = "ifMatch";
-        public static final String PROPERTY_IFNONEEXIST = "ifNoneExist";
+        public static final String PROPERTY_IF_NONE_MATCH = "ifNoneMatch";
+        public static final String PROPERTY_IF_MODIFIED_SINCE = "ifModifiedSince";
+        public static final String PROPERTY_IF_MATCH = "ifMatch";
+        public static final String PROPERTY_IF_NONE_EXIST = "ifNoneExist";
 
         public static Builder create() {
             return new Builder();
@@ -501,7 +501,7 @@ public class Bundle extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -526,7 +526,7 @@ public class Bundle extends FhirResource {
          * API documentation for ["Conditional Read"](http.html#cread).
          */
         public String ifNoneMatch() {
-            return getString(PROPERTY_IFNONEMATCH);
+            return getString(PROPERTY_IF_NONE_MATCH);
         }
 
         /**
@@ -534,7 +534,7 @@ public class Bundle extends FhirResource {
          * API documentation for ["Conditional Read"](http.html#cread).
          */
         public java.time.Instant ifModifiedSince() {
-            return java.time.Instant.parse(data.getString(PROPERTY_IFMODIFIEDSINCE));
+            return java.time.Instant.parse(data.getString(PROPERTY_IF_MODIFIED_SINCE));
         }
 
         /**
@@ -543,7 +543,7 @@ public class Bundle extends FhirResource {
          * Contention"](http.html#concurrency).
          */
         public String ifMatch() {
-            return getString(PROPERTY_IFMATCH);
+            return getString(PROPERTY_IF_MATCH);
         }
 
         /**
@@ -553,7 +553,7 @@ public class Bundle extends FhirResource {
          * portion of the URL - what follows the "?" (not including the "?").
          */
         public String ifNoneExist() {
-            return getString(PROPERTY_IFNONEEXIST);
+            return getString(PROPERTY_IF_NONE_EXIST);
         }
 
         public static class Builder {
@@ -573,7 +573,7 @@ public class Bundle extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -588,22 +588,22 @@ public class Bundle extends FhirResource {
             }
 
             public Builder ifNoneMatch(final String ifNoneMatch) {
-                b.add(PROPERTY_IFNONEMATCH, ifNoneMatch);
+                b.add(PROPERTY_IF_NONE_MATCH, ifNoneMatch);
                 return this;
             }
 
             public Builder ifModifiedSince(final java.time.Instant ifModifiedSince) {
-                b.add(PROPERTY_IFMODIFIEDSINCE, ifModifiedSince.toString());
+                b.add(PROPERTY_IF_MODIFIED_SINCE, ifModifiedSince.toString());
                 return this;
             }
 
             public Builder ifMatch(final String ifMatch) {
-                b.add(PROPERTY_IFMATCH, ifMatch);
+                b.add(PROPERTY_IF_MATCH, ifMatch);
                 return this;
             }
 
             public Builder ifNoneExist(final String ifNoneExist) {
-                b.add(PROPERTY_IFNONEEXIST, ifNoneExist);
+                b.add(PROPERTY_IF_NONE_EXIST, ifNoneExist);
                 return this;
             }
 
@@ -616,11 +616,11 @@ public class Bundle extends FhirResource {
     public static class BundleResponse extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleResponse";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_STATUS = "status";
         public static final String PROPERTY_LOCATION = "location";
         public static final String PROPERTY_ETAG = "etag";
-        public static final String PROPERTY_LASTMODIFIED = "lastModified";
+        public static final String PROPERTY_LAST_MODIFIED = "lastModified";
         public static final String PROPERTY_OUTCOME = "outcome";
 
         public static Builder create() {
@@ -661,7 +661,7 @@ public class Bundle extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -695,7 +695,7 @@ public class Bundle extends FhirResource {
          * The date/time that the resource was modified on the server.
          */
         public java.time.Instant lastModified() {
-            return java.time.Instant.parse(data.getString(PROPERTY_LASTMODIFIED));
+            return java.time.Instant.parse(data.getString(PROPERTY_LAST_MODIFIED));
         }
 
         /**
@@ -727,7 +727,7 @@ public class Bundle extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -747,7 +747,7 @@ public class Bundle extends FhirResource {
             }
 
             public Builder lastModified(final java.time.Instant lastModified) {
-                b.add(PROPERTY_LASTMODIFIED, lastModified.toString());
+                b.add(PROPERTY_LAST_MODIFIED, lastModified.toString());
                 return this;
             }
 
@@ -765,7 +765,7 @@ public class Bundle extends FhirResource {
     public static class BundleSearch extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleSearch";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_MODE = "mode";
         public static final String PROPERTY_SCORE = "score";
 
@@ -807,7 +807,7 @@ public class Bundle extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -843,7 +843,7 @@ public class Bundle extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

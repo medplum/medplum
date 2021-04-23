@@ -11,32 +11,32 @@ import jakarta.json.JsonObjectBuilder;
 
 public class SupplyRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "SupplyRequest";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_PRIORITY = "priority";
-    public static final String PROPERTY_ITEMCODEABLECONCEPT = "itemCodeableConcept";
-    public static final String PROPERTY_ITEMREFERENCE = "itemReference";
+    public static final String PROPERTY_ITEM_CODEABLE_CONCEPT = "itemCodeableConcept";
+    public static final String PROPERTY_ITEM_REFERENCE = "itemReference";
     public static final String PROPERTY_QUANTITY = "quantity";
     public static final String PROPERTY_PARAMETER = "parameter";
-    public static final String PROPERTY_OCCURRENCEDATETIME = "occurrenceDateTime";
-    public static final String PROPERTY_OCCURRENCEPERIOD = "occurrencePeriod";
-    public static final String PROPERTY_OCCURRENCETIMING = "occurrenceTiming";
-    public static final String PROPERTY_AUTHOREDON = "authoredOn";
+    public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
+    public static final String PROPERTY_OCCURRENCE_PERIOD = "occurrencePeriod";
+    public static final String PROPERTY_OCCURRENCE_TIMING = "occurrenceTiming";
+    public static final String PROPERTY_AUTHORED_ON = "authoredOn";
     public static final String PROPERTY_REQUESTER = "requester";
     public static final String PROPERTY_SUPPLIER = "supplier";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
-    public static final String PROPERTY_DELIVERFROM = "deliverFrom";
-    public static final String PROPERTY_DELIVERTO = "deliverTo";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
+    public static final String PROPERTY_DELIVER_FROM = "deliverFrom";
+    public static final String PROPERTY_DELIVER_TO = "deliverTo";
 
     public static Builder create() {
         return new Builder();
@@ -57,7 +57,7 @@ public class SupplyRequest extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -105,7 +105,7 @@ public class SupplyRequest extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -146,7 +146,7 @@ public class SupplyRequest extends FhirResource {
      * identifies the item from a known list.
      */
     public CodeableConcept itemCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_ITEMCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_ITEM_CODEABLE_CONCEPT);
     }
 
     /**
@@ -155,7 +155,7 @@ public class SupplyRequest extends FhirResource {
      * identifies the item from a known list.
      */
     public Reference itemReference() {
-        return getObject(Reference.class, PROPERTY_ITEMREFERENCE);
+        return getObject(Reference.class, PROPERTY_ITEM_REFERENCE);
     }
 
     /**
@@ -177,28 +177,28 @@ public class SupplyRequest extends FhirResource {
      * When the request should be fulfilled.
      */
     public String occurrenceDateTime() {
-        return getString(PROPERTY_OCCURRENCEDATETIME);
+        return getString(PROPERTY_OCCURRENCE_DATE_TIME);
     }
 
     /**
      * When the request should be fulfilled.
      */
     public Period occurrencePeriod() {
-        return getObject(Period.class, PROPERTY_OCCURRENCEPERIOD);
+        return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
     }
 
     /**
      * When the request should be fulfilled.
      */
     public Timing occurrenceTiming() {
-        return getObject(Timing.class, PROPERTY_OCCURRENCETIMING);
+        return getObject(Timing.class, PROPERTY_OCCURRENCE_TIMING);
     }
 
     /**
      * When the request was made.
      */
     public java.time.Instant authoredOn() {
-        return java.time.Instant.parse(data.getString(PROPERTY_AUTHOREDON));
+        return java.time.Instant.parse(data.getString(PROPERTY_AUTHORED_ON));
     }
 
     /**
@@ -219,28 +219,28 @@ public class SupplyRequest extends FhirResource {
      * The reason why the supply item was requested.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
      * The reason why the supply item was requested.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
      * Where the supply is expected to come from.
      */
     public Reference deliverFrom() {
-        return getObject(Reference.class, PROPERTY_DELIVERFROM);
+        return getObject(Reference.class, PROPERTY_DELIVER_FROM);
     }
 
     /**
      * Where the supply is destined to go.
      */
     public Reference deliverTo() {
-        return getObject(Reference.class, PROPERTY_DELIVERTO);
+        return getObject(Reference.class, PROPERTY_DELIVER_TO);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -254,7 +254,7 @@ public class SupplyRequest extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -269,7 +269,7 @@ public class SupplyRequest extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -289,7 +289,7 @@ public class SupplyRequest extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -314,12 +314,12 @@ public class SupplyRequest extends FhirResource {
         }
 
         public Builder itemCodeableConcept(final CodeableConcept itemCodeableConcept) {
-            b.add(PROPERTY_ITEMCODEABLECONCEPT, itemCodeableConcept);
+            b.add(PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
             return this;
         }
 
         public Builder itemReference(final Reference itemReference) {
-            b.add(PROPERTY_ITEMREFERENCE, itemReference);
+            b.add(PROPERTY_ITEM_REFERENCE, itemReference);
             return this;
         }
 
@@ -334,22 +334,22 @@ public class SupplyRequest extends FhirResource {
         }
 
         public Builder occurrenceDateTime(final String occurrenceDateTime) {
-            b.add(PROPERTY_OCCURRENCEDATETIME, occurrenceDateTime);
+            b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
             return this;
         }
 
         public Builder occurrencePeriod(final Period occurrencePeriod) {
-            b.add(PROPERTY_OCCURRENCEPERIOD, occurrencePeriod);
+            b.add(PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
             return this;
         }
 
         public Builder occurrenceTiming(final Timing occurrenceTiming) {
-            b.add(PROPERTY_OCCURRENCETIMING, occurrenceTiming);
+            b.add(PROPERTY_OCCURRENCE_TIMING, occurrenceTiming);
             return this;
         }
 
         public Builder authoredOn(final java.time.Instant authoredOn) {
-            b.add(PROPERTY_AUTHOREDON, authoredOn.toString());
+            b.add(PROPERTY_AUTHORED_ON, authoredOn.toString());
             return this;
         }
 
@@ -364,22 +364,22 @@ public class SupplyRequest extends FhirResource {
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
         public Builder deliverFrom(final Reference deliverFrom) {
-            b.add(PROPERTY_DELIVERFROM, deliverFrom);
+            b.add(PROPERTY_DELIVER_FROM, deliverFrom);
             return this;
         }
 
         public Builder deliverTo(final Reference deliverTo) {
-            b.add(PROPERTY_DELIVERTO, deliverTo);
+            b.add(PROPERTY_DELIVER_TO, deliverTo);
             return this;
         }
 
@@ -391,12 +391,12 @@ public class SupplyRequest extends FhirResource {
     public static class SupplyRequestParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "SupplyRequestParameter";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_VALUECODEABLECONCEPT = "valueCodeableConcept";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUERANGE = "valueRange";
-        public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
+        public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_RANGE = "valueRange";
+        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
 
         public static Builder create() {
             return new Builder();
@@ -436,7 +436,7 @@ public class SupplyRequest extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -450,28 +450,28 @@ public class SupplyRequest extends FhirResource {
          * The value of the device detail.
          */
         public CodeableConcept valueCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
         }
 
         /**
          * The value of the device detail.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
          * The value of the device detail.
          */
         public Range valueRange() {
-            return getObject(Range.class, PROPERTY_VALUERANGE);
+            return getObject(Range.class, PROPERTY_VALUE_RANGE);
         }
 
         /**
          * The value of the device detail.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
         }
 
         public static class Builder {
@@ -491,7 +491,7 @@ public class SupplyRequest extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -501,22 +501,22 @@ public class SupplyRequest extends FhirResource {
             }
 
             public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-                b.add(PROPERTY_VALUECODEABLECONCEPT, valueCodeableConcept);
+                b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueRange(final Range valueRange) {
-                b.add(PROPERTY_VALUERANGE, valueRange);
+                b.add(PROPERTY_VALUE_RANGE, valueRange);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 

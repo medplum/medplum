@@ -9,52 +9,52 @@ import jakarta.json.JsonObject;
 
 public class ServiceRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "ServiceRequest";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_INSTANTIATESCANONICAL = "instantiatesCanonical";
-    public static final String PROPERTY_INSTANTIATESURI = "instantiatesUri";
-    public static final String PROPERTY_BASEDON = "basedOn";
+    public static final String PROPERTY_INSTANTIATES_CANONICAL = "instantiatesCanonical";
+    public static final String PROPERTY_INSTANTIATES_URI = "instantiatesUri";
+    public static final String PROPERTY_BASED_ON = "basedOn";
     public static final String PROPERTY_REPLACES = "replaces";
     public static final String PROPERTY_REQUISITION = "requisition";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_INTENT = "intent";
     public static final String PROPERTY_CATEGORY = "category";
     public static final String PROPERTY_PRIORITY = "priority";
-    public static final String PROPERTY_DONOTPERFORM = "doNotPerform";
+    public static final String PROPERTY_DO_NOT_PERFORM = "doNotPerform";
     public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_ORDERDETAIL = "orderDetail";
-    public static final String PROPERTY_QUANTITYQUANTITY = "quantityQuantity";
-    public static final String PROPERTY_QUANTITYRATIO = "quantityRatio";
-    public static final String PROPERTY_QUANTITYRANGE = "quantityRange";
+    public static final String PROPERTY_ORDER_DETAIL = "orderDetail";
+    public static final String PROPERTY_QUANTITY_QUANTITY = "quantityQuantity";
+    public static final String PROPERTY_QUANTITY_RATIO = "quantityRatio";
+    public static final String PROPERTY_QUANTITY_RANGE = "quantityRange";
     public static final String PROPERTY_SUBJECT = "subject";
     public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_OCCURRENCEDATETIME = "occurrenceDateTime";
-    public static final String PROPERTY_OCCURRENCEPERIOD = "occurrencePeriod";
-    public static final String PROPERTY_OCCURRENCETIMING = "occurrenceTiming";
-    public static final String PROPERTY_ASNEEDEDBOOLEAN = "asNeededBoolean";
-    public static final String PROPERTY_ASNEEDEDCODEABLECONCEPT = "asNeededCodeableConcept";
-    public static final String PROPERTY_AUTHOREDON = "authoredOn";
+    public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
+    public static final String PROPERTY_OCCURRENCE_PERIOD = "occurrencePeriod";
+    public static final String PROPERTY_OCCURRENCE_TIMING = "occurrenceTiming";
+    public static final String PROPERTY_AS_NEEDED_BOOLEAN = "asNeededBoolean";
+    public static final String PROPERTY_AS_NEEDED_CODEABLE_CONCEPT = "asNeededCodeableConcept";
+    public static final String PROPERTY_AUTHORED_ON = "authoredOn";
     public static final String PROPERTY_REQUESTER = "requester";
-    public static final String PROPERTY_PERFORMERTYPE = "performerType";
+    public static final String PROPERTY_PERFORMER_TYPE = "performerType";
     public static final String PROPERTY_PERFORMER = "performer";
-    public static final String PROPERTY_LOCATIONCODE = "locationCode";
-    public static final String PROPERTY_LOCATIONREFERENCE = "locationReference";
-    public static final String PROPERTY_REASONCODE = "reasonCode";
-    public static final String PROPERTY_REASONREFERENCE = "reasonReference";
+    public static final String PROPERTY_LOCATION_CODE = "locationCode";
+    public static final String PROPERTY_LOCATION_REFERENCE = "locationReference";
+    public static final String PROPERTY_REASON_CODE = "reasonCode";
+    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
     public static final String PROPERTY_INSURANCE = "insurance";
-    public static final String PROPERTY_SUPPORTINGINFO = "supportingInfo";
+    public static final String PROPERTY_SUPPORTING_INFO = "supportingInfo";
     public static final String PROPERTY_SPECIMEN = "specimen";
-    public static final String PROPERTY_BODYSITE = "bodySite";
+    public static final String PROPERTY_BODY_SITE = "bodySite";
     public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_PATIENTINSTRUCTION = "patientInstruction";
-    public static final String PROPERTY_RELEVANTHISTORY = "relevantHistory";
+    public static final String PROPERTY_PATIENT_INSTRUCTION = "patientInstruction";
+    public static final String PROPERTY_RELEVANT_HISTORY = "relevantHistory";
 
     public static Builder create() {
         return new Builder();
@@ -75,7 +75,7 @@ public class ServiceRequest extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -123,7 +123,7 @@ public class ServiceRequest extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -140,7 +140,7 @@ public class ServiceRequest extends FhirResource {
      * ServiceRequest.
      */
     public java.util.List<String> instantiatesCanonical() {
-        return getList(String.class, PROPERTY_INSTANTIATESCANONICAL);
+        return getList(String.class, PROPERTY_INSTANTIATES_CANONICAL);
     }
 
     /**
@@ -149,14 +149,14 @@ public class ServiceRequest extends FhirResource {
      * this ServiceRequest.
      */
     public java.util.List<String> instantiatesUri() {
-        return getList(String.class, PROPERTY_INSTANTIATESURI);
+        return getList(String.class, PROPERTY_INSTANTIATES_URI);
     }
 
     /**
      * Plan/proposal/order fulfilled by this request.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASEDON);
+        return getList(Reference.class, PROPERTY_BASED_ON);
     }
 
     /**
@@ -212,7 +212,7 @@ public class ServiceRequest extends FhirResource {
      * should NOT be performed.
      */
     public Boolean doNotPerform() {
-        return data.getBoolean(PROPERTY_DONOTPERFORM);
+        return data.getBoolean(PROPERTY_DO_NOT_PERFORM);
     }
 
     /**
@@ -232,7 +232,7 @@ public class ServiceRequest extends FhirResource {
      * bandage should be applied.
      */
     public java.util.List<CodeableConcept> orderDetail() {
-        return getList(CodeableConcept.class, PROPERTY_ORDERDETAIL);
+        return getList(CodeableConcept.class, PROPERTY_ORDER_DETAIL);
     }
 
     /**
@@ -241,7 +241,7 @@ public class ServiceRequest extends FhirResource {
      * visits per month), or a range (2.0 to 1.8 Gy per fraction).
      */
     public Quantity quantityQuantity() {
-        return getObject(Quantity.class, PROPERTY_QUANTITYQUANTITY);
+        return getObject(Quantity.class, PROPERTY_QUANTITY_QUANTITY);
     }
 
     /**
@@ -250,7 +250,7 @@ public class ServiceRequest extends FhirResource {
      * visits per month), or a range (2.0 to 1.8 Gy per fraction).
      */
     public Ratio quantityRatio() {
-        return getObject(Ratio.class, PROPERTY_QUANTITYRATIO);
+        return getObject(Ratio.class, PROPERTY_QUANTITY_RATIO);
     }
 
     /**
@@ -259,7 +259,7 @@ public class ServiceRequest extends FhirResource {
      * visits per month), or a range (2.0 to 1.8 Gy per fraction).
      */
     public Range quantityRange() {
-        return getObject(Range.class, PROPERTY_QUANTITYRANGE);
+        return getObject(Range.class, PROPERTY_QUANTITY_RANGE);
     }
 
     /**
@@ -284,21 +284,21 @@ public class ServiceRequest extends FhirResource {
      * The date/time at which the requested service should occur.
      */
     public String occurrenceDateTime() {
-        return getString(PROPERTY_OCCURRENCEDATETIME);
+        return getString(PROPERTY_OCCURRENCE_DATE_TIME);
     }
 
     /**
      * The date/time at which the requested service should occur.
      */
     public Period occurrencePeriod() {
-        return getObject(Period.class, PROPERTY_OCCURRENCEPERIOD);
+        return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
     }
 
     /**
      * The date/time at which the requested service should occur.
      */
     public Timing occurrenceTiming() {
-        return getObject(Timing.class, PROPERTY_OCCURRENCETIMING);
+        return getObject(Timing.class, PROPERTY_OCCURRENCE_TIMING);
     }
 
     /**
@@ -306,7 +306,7 @@ public class ServiceRequest extends FhirResource {
      * performing the service.  For example "pain", "on flare-up", etc.
      */
     public Boolean asNeededBoolean() {
-        return data.getBoolean(PROPERTY_ASNEEDEDBOOLEAN);
+        return data.getBoolean(PROPERTY_AS_NEEDED_BOOLEAN);
     }
 
     /**
@@ -314,14 +314,14 @@ public class ServiceRequest extends FhirResource {
      * performing the service.  For example "pain", "on flare-up", etc.
      */
     public CodeableConcept asNeededCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_ASNEEDEDCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_AS_NEEDED_CODEABLE_CONCEPT);
     }
 
     /**
      * When the request transitioned to being actionable.
      */
     public java.time.Instant authoredOn() {
-        return java.time.Instant.parse(data.getString(PROPERTY_AUTHOREDON));
+        return java.time.Instant.parse(data.getString(PROPERTY_AUTHORED_ON));
     }
 
     /**
@@ -336,7 +336,7 @@ public class ServiceRequest extends FhirResource {
      * Desired type of performer for doing the requested service.
      */
     public CodeableConcept performerType() {
-        return getObject(CodeableConcept.class, PROPERTY_PERFORMERTYPE);
+        return getObject(CodeableConcept.class, PROPERTY_PERFORMER_TYPE);
     }
 
     /**
@@ -352,7 +352,7 @@ public class ServiceRequest extends FhirResource {
      * in coded or free text form. E.g. at home or nursing day care center.
      */
     public java.util.List<CodeableConcept> locationCode() {
-        return getList(CodeableConcept.class, PROPERTY_LOCATIONCODE);
+        return getList(CodeableConcept.class, PROPERTY_LOCATION_CODE);
     }
 
     /**
@@ -360,7 +360,7 @@ public class ServiceRequest extends FhirResource {
      * should actually happen. E.g. at home or nursing day care center.
      */
     public java.util.List<Reference> locationReference() {
-        return getList(Reference.class, PROPERTY_LOCATIONREFERENCE);
+        return getList(Reference.class, PROPERTY_LOCATION_REFERENCE);
     }
 
     /**
@@ -370,7 +370,7 @@ public class ServiceRequest extends FhirResource {
      * `supportingInfo`.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASONCODE);
+        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
     }
 
     /**
@@ -379,7 +379,7 @@ public class ServiceRequest extends FhirResource {
      * in `supportingInfo`.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASONREFERENCE);
+        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -402,7 +402,7 @@ public class ServiceRequest extends FhirResource {
      * amount of inspired oxygen for blood gas measurements.
      */
     public java.util.List<Reference> supportingInfo() {
-        return getList(Reference.class, PROPERTY_SUPPORTINGINFO);
+        return getList(Reference.class, PROPERTY_SUPPORTING_INFO);
     }
 
     /**
@@ -417,7 +417,7 @@ public class ServiceRequest extends FhirResource {
      * target site.
      */
     public java.util.List<CodeableConcept> bodySite() {
-        return getList(CodeableConcept.class, PROPERTY_BODYSITE);
+        return getList(CodeableConcept.class, PROPERTY_BODY_SITE);
     }
 
     /**
@@ -432,14 +432,14 @@ public class ServiceRequest extends FhirResource {
      * Instructions in terms that are understood by the patient or consumer.
      */
     public String patientInstruction() {
-        return getString(PROPERTY_PATIENTINSTRUCTION);
+        return getString(PROPERTY_PATIENT_INSTRUCTION);
     }
 
     /**
      * Key events in the history of the request.
      */
     public java.util.List<Reference> relevantHistory() {
-        return getList(Reference.class, PROPERTY_RELEVANTHISTORY);
+        return getList(Reference.class, PROPERTY_RELEVANT_HISTORY);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -453,7 +453,7 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -468,7 +468,7 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -488,7 +488,7 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -498,17 +498,17 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder instantiatesCanonical(final java.util.List<String> instantiatesCanonical) {
-            b.add(PROPERTY_INSTANTIATESCANONICAL, FhirObject.toStringArray(instantiatesCanonical));
+            b.add(PROPERTY_INSTANTIATES_CANONICAL, FhirObject.toStringArray(instantiatesCanonical));
             return this;
         }
 
         public Builder instantiatesUri(final java.util.List<String> instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATESURI, FhirObject.toStringArray(instantiatesUri));
+            b.add(PROPERTY_INSTANTIATES_URI, FhirObject.toStringArray(instantiatesUri));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASEDON, FhirObject.toArray(basedOn));
+            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
@@ -543,7 +543,7 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder doNotPerform(final Boolean doNotPerform) {
-            b.add(PROPERTY_DONOTPERFORM, doNotPerform);
+            b.add(PROPERTY_DO_NOT_PERFORM, doNotPerform);
             return this;
         }
 
@@ -553,22 +553,22 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder orderDetail(final java.util.List<CodeableConcept> orderDetail) {
-            b.add(PROPERTY_ORDERDETAIL, FhirObject.toArray(orderDetail));
+            b.add(PROPERTY_ORDER_DETAIL, FhirObject.toArray(orderDetail));
             return this;
         }
 
         public Builder quantityQuantity(final Quantity quantityQuantity) {
-            b.add(PROPERTY_QUANTITYQUANTITY, quantityQuantity);
+            b.add(PROPERTY_QUANTITY_QUANTITY, quantityQuantity);
             return this;
         }
 
         public Builder quantityRatio(final Ratio quantityRatio) {
-            b.add(PROPERTY_QUANTITYRATIO, quantityRatio);
+            b.add(PROPERTY_QUANTITY_RATIO, quantityRatio);
             return this;
         }
 
         public Builder quantityRange(final Range quantityRange) {
-            b.add(PROPERTY_QUANTITYRANGE, quantityRange);
+            b.add(PROPERTY_QUANTITY_RANGE, quantityRange);
             return this;
         }
 
@@ -583,32 +583,32 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder occurrenceDateTime(final String occurrenceDateTime) {
-            b.add(PROPERTY_OCCURRENCEDATETIME, occurrenceDateTime);
+            b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
             return this;
         }
 
         public Builder occurrencePeriod(final Period occurrencePeriod) {
-            b.add(PROPERTY_OCCURRENCEPERIOD, occurrencePeriod);
+            b.add(PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
             return this;
         }
 
         public Builder occurrenceTiming(final Timing occurrenceTiming) {
-            b.add(PROPERTY_OCCURRENCETIMING, occurrenceTiming);
+            b.add(PROPERTY_OCCURRENCE_TIMING, occurrenceTiming);
             return this;
         }
 
         public Builder asNeededBoolean(final Boolean asNeededBoolean) {
-            b.add(PROPERTY_ASNEEDEDBOOLEAN, asNeededBoolean);
+            b.add(PROPERTY_AS_NEEDED_BOOLEAN, asNeededBoolean);
             return this;
         }
 
         public Builder asNeededCodeableConcept(final CodeableConcept asNeededCodeableConcept) {
-            b.add(PROPERTY_ASNEEDEDCODEABLECONCEPT, asNeededCodeableConcept);
+            b.add(PROPERTY_AS_NEEDED_CODEABLE_CONCEPT, asNeededCodeableConcept);
             return this;
         }
 
         public Builder authoredOn(final java.time.Instant authoredOn) {
-            b.add(PROPERTY_AUTHOREDON, authoredOn.toString());
+            b.add(PROPERTY_AUTHORED_ON, authoredOn.toString());
             return this;
         }
 
@@ -618,7 +618,7 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder performerType(final CodeableConcept performerType) {
-            b.add(PROPERTY_PERFORMERTYPE, performerType);
+            b.add(PROPERTY_PERFORMER_TYPE, performerType);
             return this;
         }
 
@@ -628,22 +628,22 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder locationCode(final java.util.List<CodeableConcept> locationCode) {
-            b.add(PROPERTY_LOCATIONCODE, FhirObject.toArray(locationCode));
+            b.add(PROPERTY_LOCATION_CODE, FhirObject.toArray(locationCode));
             return this;
         }
 
         public Builder locationReference(final java.util.List<Reference> locationReference) {
-            b.add(PROPERTY_LOCATIONREFERENCE, FhirObject.toArray(locationReference));
+            b.add(PROPERTY_LOCATION_REFERENCE, FhirObject.toArray(locationReference));
             return this;
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASONCODE, FhirObject.toArray(reasonCode));
+            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASONREFERENCE, FhirObject.toArray(reasonReference));
+            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
@@ -653,7 +653,7 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder supportingInfo(final java.util.List<Reference> supportingInfo) {
-            b.add(PROPERTY_SUPPORTINGINFO, FhirObject.toArray(supportingInfo));
+            b.add(PROPERTY_SUPPORTING_INFO, FhirObject.toArray(supportingInfo));
             return this;
         }
 
@@ -663,7 +663,7 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder bodySite(final java.util.List<CodeableConcept> bodySite) {
-            b.add(PROPERTY_BODYSITE, FhirObject.toArray(bodySite));
+            b.add(PROPERTY_BODY_SITE, FhirObject.toArray(bodySite));
             return this;
         }
 
@@ -673,12 +673,12 @@ public class ServiceRequest extends FhirResource {
         }
 
         public Builder patientInstruction(final String patientInstruction) {
-            b.add(PROPERTY_PATIENTINSTRUCTION, patientInstruction);
+            b.add(PROPERTY_PATIENT_INSTRUCTION, patientInstruction);
             return this;
         }
 
         public Builder relevantHistory(final java.util.List<Reference> relevantHistory) {
-            b.add(PROPERTY_RELEVANTHISTORY, FhirObject.toArray(relevantHistory));
+            b.add(PROPERTY_RELEVANT_HISTORY, FhirObject.toArray(relevantHistory));
             return this;
         }
 

@@ -9,21 +9,21 @@ import jakarta.json.JsonObject;
 
 public class ResearchSubject extends FhirResource {
     public static final String RESOURCE_TYPE = "ResearchSubject";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
     public static final String PROPERTY_PERIOD = "period";
     public static final String PROPERTY_STUDY = "study";
     public static final String PROPERTY_INDIVIDUAL = "individual";
-    public static final String PROPERTY_ASSIGNEDARM = "assignedArm";
-    public static final String PROPERTY_ACTUALARM = "actualArm";
+    public static final String PROPERTY_ASSIGNED_ARM = "assignedArm";
+    public static final String PROPERTY_ACTUAL_ARM = "actualArm";
     public static final String PROPERTY_CONSENT = "consent";
 
     public static Builder create() {
@@ -45,7 +45,7 @@ public class ResearchSubject extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -93,7 +93,7 @@ public class ResearchSubject extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -137,7 +137,7 @@ public class ResearchSubject extends FhirResource {
      * part of this study.
      */
     public String assignedArm() {
-        return getString(PROPERTY_ASSIGNEDARM);
+        return getString(PROPERTY_ASSIGNED_ARM);
     }
 
     /**
@@ -145,7 +145,7 @@ public class ResearchSubject extends FhirResource {
      * of this study.
      */
     public String actualArm() {
-        return getString(PROPERTY_ACTUALARM);
+        return getString(PROPERTY_ACTUAL_ARM);
     }
 
     /**
@@ -167,7 +167,7 @@ public class ResearchSubject extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -182,7 +182,7 @@ public class ResearchSubject extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -202,7 +202,7 @@ public class ResearchSubject extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -232,12 +232,12 @@ public class ResearchSubject extends FhirResource {
         }
 
         public Builder assignedArm(final String assignedArm) {
-            b.add(PROPERTY_ASSIGNEDARM, assignedArm);
+            b.add(PROPERTY_ASSIGNED_ARM, assignedArm);
             return this;
         }
 
         public Builder actualArm(final String actualArm) {
-            b.add(PROPERTY_ACTUALARM, actualArm);
+            b.add(PROPERTY_ACTUAL_ARM, actualArm);
             return this;
         }
 

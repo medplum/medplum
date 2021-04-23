@@ -12,11 +12,11 @@ import jakarta.json.JsonObjectBuilder;
 public class ElementDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ElementDefinition";
     public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_PATH = "path";
     public static final String PROPERTY_REPRESENTATION = "representation";
-    public static final String PROPERTY_SLICENAME = "sliceName";
-    public static final String PROPERTY_SLICEISCONSTRAINING = "sliceIsConstraining";
+    public static final String PROPERTY_SLICE_NAME = "sliceName";
+    public static final String PROPERTY_SLICE_IS_CONSTRAINING = "sliceIsConstraining";
     public static final String PROPERTY_LABEL = "label";
     public static final String PROPERTY_CODE = "code";
     public static final String PROPERTY_SLICING = "slicing";
@@ -28,186 +28,186 @@ public class ElementDefinition extends FhirResource {
     public static final String PROPERTY_MIN = "min";
     public static final String PROPERTY_MAX = "max";
     public static final String PROPERTY_BASE = "base";
-    public static final String PROPERTY_CONTENTREFERENCE = "contentReference";
+    public static final String PROPERTY_CONTENT_REFERENCE = "contentReference";
     public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_DEFAULTVALUEBASE64BINARY = "defaultValueBase64Binary";
-    public static final String PROPERTY_DEFAULTVALUEBOOLEAN = "defaultValueBoolean";
-    public static final String PROPERTY_DEFAULTVALUECANONICAL = "defaultValueCanonical";
-    public static final String PROPERTY_DEFAULTVALUECODE = "defaultValueCode";
-    public static final String PROPERTY_DEFAULTVALUEDATE = "defaultValueDate";
-    public static final String PROPERTY_DEFAULTVALUEDATETIME = "defaultValueDateTime";
-    public static final String PROPERTY_DEFAULTVALUEDECIMAL = "defaultValueDecimal";
-    public static final String PROPERTY_DEFAULTVALUEID = "defaultValueId";
-    public static final String PROPERTY_DEFAULTVALUEINSTANT = "defaultValueInstant";
-    public static final String PROPERTY_DEFAULTVALUEINTEGER = "defaultValueInteger";
-    public static final String PROPERTY_DEFAULTVALUEMARKDOWN = "defaultValueMarkdown";
-    public static final String PROPERTY_DEFAULTVALUEOID = "defaultValueOid";
-    public static final String PROPERTY_DEFAULTVALUEPOSITIVEINT = "defaultValuePositiveInt";
-    public static final String PROPERTY_DEFAULTVALUESTRING = "defaultValueString";
-    public static final String PROPERTY_DEFAULTVALUETIME = "defaultValueTime";
-    public static final String PROPERTY_DEFAULTVALUEUNSIGNEDINT = "defaultValueUnsignedInt";
-    public static final String PROPERTY_DEFAULTVALUEURI = "defaultValueUri";
-    public static final String PROPERTY_DEFAULTVALUEURL = "defaultValueUrl";
-    public static final String PROPERTY_DEFAULTVALUEUUID = "defaultValueUuid";
-    public static final String PROPERTY_DEFAULTVALUEADDRESS = "defaultValueAddress";
-    public static final String PROPERTY_DEFAULTVALUEAGE = "defaultValueAge";
-    public static final String PROPERTY_DEFAULTVALUEANNOTATION = "defaultValueAnnotation";
-    public static final String PROPERTY_DEFAULTVALUEATTACHMENT = "defaultValueAttachment";
-    public static final String PROPERTY_DEFAULTVALUECODEABLECONCEPT = "defaultValueCodeableConcept";
-    public static final String PROPERTY_DEFAULTVALUECODING = "defaultValueCoding";
-    public static final String PROPERTY_DEFAULTVALUECONTACTPOINT = "defaultValueContactPoint";
-    public static final String PROPERTY_DEFAULTVALUECOUNT = "defaultValueCount";
-    public static final String PROPERTY_DEFAULTVALUEDISTANCE = "defaultValueDistance";
-    public static final String PROPERTY_DEFAULTVALUEDURATION = "defaultValueDuration";
-    public static final String PROPERTY_DEFAULTVALUEHUMANNAME = "defaultValueHumanName";
-    public static final String PROPERTY_DEFAULTVALUEIDENTIFIER = "defaultValueIdentifier";
-    public static final String PROPERTY_DEFAULTVALUEMONEY = "defaultValueMoney";
-    public static final String PROPERTY_DEFAULTVALUEPERIOD = "defaultValuePeriod";
-    public static final String PROPERTY_DEFAULTVALUEQUANTITY = "defaultValueQuantity";
-    public static final String PROPERTY_DEFAULTVALUERANGE = "defaultValueRange";
-    public static final String PROPERTY_DEFAULTVALUERATIO = "defaultValueRatio";
-    public static final String PROPERTY_DEFAULTVALUEREFERENCE = "defaultValueReference";
-    public static final String PROPERTY_DEFAULTVALUESAMPLEDDATA = "defaultValueSampledData";
-    public static final String PROPERTY_DEFAULTVALUESIGNATURE = "defaultValueSignature";
-    public static final String PROPERTY_DEFAULTVALUETIMING = "defaultValueTiming";
-    public static final String PROPERTY_DEFAULTVALUECONTACTDETAIL = "defaultValueContactDetail";
-    public static final String PROPERTY_DEFAULTVALUECONTRIBUTOR = "defaultValueContributor";
-    public static final String PROPERTY_DEFAULTVALUEDATAREQUIREMENT = "defaultValueDataRequirement";
-    public static final String PROPERTY_DEFAULTVALUEEXPRESSION = "defaultValueExpression";
-    public static final String PROPERTY_DEFAULTVALUEPARAMETERDEFINITION = "defaultValueParameterDefinition";
-    public static final String PROPERTY_DEFAULTVALUERELATEDARTIFACT = "defaultValueRelatedArtifact";
-    public static final String PROPERTY_DEFAULTVALUETRIGGERDEFINITION = "defaultValueTriggerDefinition";
-    public static final String PROPERTY_DEFAULTVALUEUSAGECONTEXT = "defaultValueUsageContext";
-    public static final String PROPERTY_DEFAULTVALUEDOSAGE = "defaultValueDosage";
-    public static final String PROPERTY_DEFAULTVALUEMETA = "defaultValueMeta";
-    public static final String PROPERTY_MEANINGWHENMISSING = "meaningWhenMissing";
-    public static final String PROPERTY_ORDERMEANING = "orderMeaning";
-    public static final String PROPERTY_FIXEDBASE64BINARY = "fixedBase64Binary";
-    public static final String PROPERTY_FIXEDBOOLEAN = "fixedBoolean";
-    public static final String PROPERTY_FIXEDCANONICAL = "fixedCanonical";
-    public static final String PROPERTY_FIXEDCODE = "fixedCode";
-    public static final String PROPERTY_FIXEDDATE = "fixedDate";
-    public static final String PROPERTY_FIXEDDATETIME = "fixedDateTime";
-    public static final String PROPERTY_FIXEDDECIMAL = "fixedDecimal";
-    public static final String PROPERTY_FIXEDID = "fixedId";
-    public static final String PROPERTY_FIXEDINSTANT = "fixedInstant";
-    public static final String PROPERTY_FIXEDINTEGER = "fixedInteger";
-    public static final String PROPERTY_FIXEDMARKDOWN = "fixedMarkdown";
-    public static final String PROPERTY_FIXEDOID = "fixedOid";
-    public static final String PROPERTY_FIXEDPOSITIVEINT = "fixedPositiveInt";
-    public static final String PROPERTY_FIXEDSTRING = "fixedString";
-    public static final String PROPERTY_FIXEDTIME = "fixedTime";
-    public static final String PROPERTY_FIXEDUNSIGNEDINT = "fixedUnsignedInt";
-    public static final String PROPERTY_FIXEDURI = "fixedUri";
-    public static final String PROPERTY_FIXEDURL = "fixedUrl";
-    public static final String PROPERTY_FIXEDUUID = "fixedUuid";
-    public static final String PROPERTY_FIXEDADDRESS = "fixedAddress";
-    public static final String PROPERTY_FIXEDAGE = "fixedAge";
-    public static final String PROPERTY_FIXEDANNOTATION = "fixedAnnotation";
-    public static final String PROPERTY_FIXEDATTACHMENT = "fixedAttachment";
-    public static final String PROPERTY_FIXEDCODEABLECONCEPT = "fixedCodeableConcept";
-    public static final String PROPERTY_FIXEDCODING = "fixedCoding";
-    public static final String PROPERTY_FIXEDCONTACTPOINT = "fixedContactPoint";
-    public static final String PROPERTY_FIXEDCOUNT = "fixedCount";
-    public static final String PROPERTY_FIXEDDISTANCE = "fixedDistance";
-    public static final String PROPERTY_FIXEDDURATION = "fixedDuration";
-    public static final String PROPERTY_FIXEDHUMANNAME = "fixedHumanName";
-    public static final String PROPERTY_FIXEDIDENTIFIER = "fixedIdentifier";
-    public static final String PROPERTY_FIXEDMONEY = "fixedMoney";
-    public static final String PROPERTY_FIXEDPERIOD = "fixedPeriod";
-    public static final String PROPERTY_FIXEDQUANTITY = "fixedQuantity";
-    public static final String PROPERTY_FIXEDRANGE = "fixedRange";
-    public static final String PROPERTY_FIXEDRATIO = "fixedRatio";
-    public static final String PROPERTY_FIXEDREFERENCE = "fixedReference";
-    public static final String PROPERTY_FIXEDSAMPLEDDATA = "fixedSampledData";
-    public static final String PROPERTY_FIXEDSIGNATURE = "fixedSignature";
-    public static final String PROPERTY_FIXEDTIMING = "fixedTiming";
-    public static final String PROPERTY_FIXEDCONTACTDETAIL = "fixedContactDetail";
-    public static final String PROPERTY_FIXEDCONTRIBUTOR = "fixedContributor";
-    public static final String PROPERTY_FIXEDDATAREQUIREMENT = "fixedDataRequirement";
-    public static final String PROPERTY_FIXEDEXPRESSION = "fixedExpression";
-    public static final String PROPERTY_FIXEDPARAMETERDEFINITION = "fixedParameterDefinition";
-    public static final String PROPERTY_FIXEDRELATEDARTIFACT = "fixedRelatedArtifact";
-    public static final String PROPERTY_FIXEDTRIGGERDEFINITION = "fixedTriggerDefinition";
-    public static final String PROPERTY_FIXEDUSAGECONTEXT = "fixedUsageContext";
-    public static final String PROPERTY_FIXEDDOSAGE = "fixedDosage";
-    public static final String PROPERTY_FIXEDMETA = "fixedMeta";
-    public static final String PROPERTY_PATTERNBASE64BINARY = "patternBase64Binary";
-    public static final String PROPERTY_PATTERNBOOLEAN = "patternBoolean";
-    public static final String PROPERTY_PATTERNCANONICAL = "patternCanonical";
-    public static final String PROPERTY_PATTERNCODE = "patternCode";
-    public static final String PROPERTY_PATTERNDATE = "patternDate";
-    public static final String PROPERTY_PATTERNDATETIME = "patternDateTime";
-    public static final String PROPERTY_PATTERNDECIMAL = "patternDecimal";
-    public static final String PROPERTY_PATTERNID = "patternId";
-    public static final String PROPERTY_PATTERNINSTANT = "patternInstant";
-    public static final String PROPERTY_PATTERNINTEGER = "patternInteger";
-    public static final String PROPERTY_PATTERNMARKDOWN = "patternMarkdown";
-    public static final String PROPERTY_PATTERNOID = "patternOid";
-    public static final String PROPERTY_PATTERNPOSITIVEINT = "patternPositiveInt";
-    public static final String PROPERTY_PATTERNSTRING = "patternString";
-    public static final String PROPERTY_PATTERNTIME = "patternTime";
-    public static final String PROPERTY_PATTERNUNSIGNEDINT = "patternUnsignedInt";
-    public static final String PROPERTY_PATTERNURI = "patternUri";
-    public static final String PROPERTY_PATTERNURL = "patternUrl";
-    public static final String PROPERTY_PATTERNUUID = "patternUuid";
-    public static final String PROPERTY_PATTERNADDRESS = "patternAddress";
-    public static final String PROPERTY_PATTERNAGE = "patternAge";
-    public static final String PROPERTY_PATTERNANNOTATION = "patternAnnotation";
-    public static final String PROPERTY_PATTERNATTACHMENT = "patternAttachment";
-    public static final String PROPERTY_PATTERNCODEABLECONCEPT = "patternCodeableConcept";
-    public static final String PROPERTY_PATTERNCODING = "patternCoding";
-    public static final String PROPERTY_PATTERNCONTACTPOINT = "patternContactPoint";
-    public static final String PROPERTY_PATTERNCOUNT = "patternCount";
-    public static final String PROPERTY_PATTERNDISTANCE = "patternDistance";
-    public static final String PROPERTY_PATTERNDURATION = "patternDuration";
-    public static final String PROPERTY_PATTERNHUMANNAME = "patternHumanName";
-    public static final String PROPERTY_PATTERNIDENTIFIER = "patternIdentifier";
-    public static final String PROPERTY_PATTERNMONEY = "patternMoney";
-    public static final String PROPERTY_PATTERNPERIOD = "patternPeriod";
-    public static final String PROPERTY_PATTERNQUANTITY = "patternQuantity";
-    public static final String PROPERTY_PATTERNRANGE = "patternRange";
-    public static final String PROPERTY_PATTERNRATIO = "patternRatio";
-    public static final String PROPERTY_PATTERNREFERENCE = "patternReference";
-    public static final String PROPERTY_PATTERNSAMPLEDDATA = "patternSampledData";
-    public static final String PROPERTY_PATTERNSIGNATURE = "patternSignature";
-    public static final String PROPERTY_PATTERNTIMING = "patternTiming";
-    public static final String PROPERTY_PATTERNCONTACTDETAIL = "patternContactDetail";
-    public static final String PROPERTY_PATTERNCONTRIBUTOR = "patternContributor";
-    public static final String PROPERTY_PATTERNDATAREQUIREMENT = "patternDataRequirement";
-    public static final String PROPERTY_PATTERNEXPRESSION = "patternExpression";
-    public static final String PROPERTY_PATTERNPARAMETERDEFINITION = "patternParameterDefinition";
-    public static final String PROPERTY_PATTERNRELATEDARTIFACT = "patternRelatedArtifact";
-    public static final String PROPERTY_PATTERNTRIGGERDEFINITION = "patternTriggerDefinition";
-    public static final String PROPERTY_PATTERNUSAGECONTEXT = "patternUsageContext";
-    public static final String PROPERTY_PATTERNDOSAGE = "patternDosage";
-    public static final String PROPERTY_PATTERNMETA = "patternMeta";
+    public static final String PROPERTY_DEFAULT_VALUE_BASE64_BINARY = "defaultValueBase64Binary";
+    public static final String PROPERTY_DEFAULT_VALUE_BOOLEAN = "defaultValueBoolean";
+    public static final String PROPERTY_DEFAULT_VALUE_CANONICAL = "defaultValueCanonical";
+    public static final String PROPERTY_DEFAULT_VALUE_CODE = "defaultValueCode";
+    public static final String PROPERTY_DEFAULT_VALUE_DATE = "defaultValueDate";
+    public static final String PROPERTY_DEFAULT_VALUE_DATE_TIME = "defaultValueDateTime";
+    public static final String PROPERTY_DEFAULT_VALUE_DECIMAL = "defaultValueDecimal";
+    public static final String PROPERTY_DEFAULT_VALUE_ID = "defaultValueId";
+    public static final String PROPERTY_DEFAULT_VALUE_INSTANT = "defaultValueInstant";
+    public static final String PROPERTY_DEFAULT_VALUE_INTEGER = "defaultValueInteger";
+    public static final String PROPERTY_DEFAULT_VALUE_MARKDOWN = "defaultValueMarkdown";
+    public static final String PROPERTY_DEFAULT_VALUE_OID = "defaultValueOid";
+    public static final String PROPERTY_DEFAULT_VALUE_POSITIVE_INT = "defaultValuePositiveInt";
+    public static final String PROPERTY_DEFAULT_VALUE_STRING = "defaultValueString";
+    public static final String PROPERTY_DEFAULT_VALUE_TIME = "defaultValueTime";
+    public static final String PROPERTY_DEFAULT_VALUE_UNSIGNED_INT = "defaultValueUnsignedInt";
+    public static final String PROPERTY_DEFAULT_VALUE_URI = "defaultValueUri";
+    public static final String PROPERTY_DEFAULT_VALUE_URL = "defaultValueUrl";
+    public static final String PROPERTY_DEFAULT_VALUE_UUID = "defaultValueUuid";
+    public static final String PROPERTY_DEFAULT_VALUE_ADDRESS = "defaultValueAddress";
+    public static final String PROPERTY_DEFAULT_VALUE_AGE = "defaultValueAge";
+    public static final String PROPERTY_DEFAULT_VALUE_ANNOTATION = "defaultValueAnnotation";
+    public static final String PROPERTY_DEFAULT_VALUE_ATTACHMENT = "defaultValueAttachment";
+    public static final String PROPERTY_DEFAULT_VALUE_CODEABLE_CONCEPT = "defaultValueCodeableConcept";
+    public static final String PROPERTY_DEFAULT_VALUE_CODING = "defaultValueCoding";
+    public static final String PROPERTY_DEFAULT_VALUE_CONTACT_POINT = "defaultValueContactPoint";
+    public static final String PROPERTY_DEFAULT_VALUE_COUNT = "defaultValueCount";
+    public static final String PROPERTY_DEFAULT_VALUE_DISTANCE = "defaultValueDistance";
+    public static final String PROPERTY_DEFAULT_VALUE_DURATION = "defaultValueDuration";
+    public static final String PROPERTY_DEFAULT_VALUE_HUMAN_NAME = "defaultValueHumanName";
+    public static final String PROPERTY_DEFAULT_VALUE_IDENTIFIER = "defaultValueIdentifier";
+    public static final String PROPERTY_DEFAULT_VALUE_MONEY = "defaultValueMoney";
+    public static final String PROPERTY_DEFAULT_VALUE_PERIOD = "defaultValuePeriod";
+    public static final String PROPERTY_DEFAULT_VALUE_QUANTITY = "defaultValueQuantity";
+    public static final String PROPERTY_DEFAULT_VALUE_RANGE = "defaultValueRange";
+    public static final String PROPERTY_DEFAULT_VALUE_RATIO = "defaultValueRatio";
+    public static final String PROPERTY_DEFAULT_VALUE_REFERENCE = "defaultValueReference";
+    public static final String PROPERTY_DEFAULT_VALUE_SAMPLED_DATA = "defaultValueSampledData";
+    public static final String PROPERTY_DEFAULT_VALUE_SIGNATURE = "defaultValueSignature";
+    public static final String PROPERTY_DEFAULT_VALUE_TIMING = "defaultValueTiming";
+    public static final String PROPERTY_DEFAULT_VALUE_CONTACT_DETAIL = "defaultValueContactDetail";
+    public static final String PROPERTY_DEFAULT_VALUE_CONTRIBUTOR = "defaultValueContributor";
+    public static final String PROPERTY_DEFAULT_VALUE_DATA_REQUIREMENT = "defaultValueDataRequirement";
+    public static final String PROPERTY_DEFAULT_VALUE_EXPRESSION = "defaultValueExpression";
+    public static final String PROPERTY_DEFAULT_VALUE_PARAMETER_DEFINITION = "defaultValueParameterDefinition";
+    public static final String PROPERTY_DEFAULT_VALUE_RELATED_ARTIFACT = "defaultValueRelatedArtifact";
+    public static final String PROPERTY_DEFAULT_VALUE_TRIGGER_DEFINITION = "defaultValueTriggerDefinition";
+    public static final String PROPERTY_DEFAULT_VALUE_USAGE_CONTEXT = "defaultValueUsageContext";
+    public static final String PROPERTY_DEFAULT_VALUE_DOSAGE = "defaultValueDosage";
+    public static final String PROPERTY_DEFAULT_VALUE_META = "defaultValueMeta";
+    public static final String PROPERTY_MEANING_WHEN_MISSING = "meaningWhenMissing";
+    public static final String PROPERTY_ORDER_MEANING = "orderMeaning";
+    public static final String PROPERTY_FIXED_BASE64_BINARY = "fixedBase64Binary";
+    public static final String PROPERTY_FIXED_BOOLEAN = "fixedBoolean";
+    public static final String PROPERTY_FIXED_CANONICAL = "fixedCanonical";
+    public static final String PROPERTY_FIXED_CODE = "fixedCode";
+    public static final String PROPERTY_FIXED_DATE = "fixedDate";
+    public static final String PROPERTY_FIXED_DATE_TIME = "fixedDateTime";
+    public static final String PROPERTY_FIXED_DECIMAL = "fixedDecimal";
+    public static final String PROPERTY_FIXED_ID = "fixedId";
+    public static final String PROPERTY_FIXED_INSTANT = "fixedInstant";
+    public static final String PROPERTY_FIXED_INTEGER = "fixedInteger";
+    public static final String PROPERTY_FIXED_MARKDOWN = "fixedMarkdown";
+    public static final String PROPERTY_FIXED_OID = "fixedOid";
+    public static final String PROPERTY_FIXED_POSITIVE_INT = "fixedPositiveInt";
+    public static final String PROPERTY_FIXED_STRING = "fixedString";
+    public static final String PROPERTY_FIXED_TIME = "fixedTime";
+    public static final String PROPERTY_FIXED_UNSIGNED_INT = "fixedUnsignedInt";
+    public static final String PROPERTY_FIXED_URI = "fixedUri";
+    public static final String PROPERTY_FIXED_URL = "fixedUrl";
+    public static final String PROPERTY_FIXED_UUID = "fixedUuid";
+    public static final String PROPERTY_FIXED_ADDRESS = "fixedAddress";
+    public static final String PROPERTY_FIXED_AGE = "fixedAge";
+    public static final String PROPERTY_FIXED_ANNOTATION = "fixedAnnotation";
+    public static final String PROPERTY_FIXED_ATTACHMENT = "fixedAttachment";
+    public static final String PROPERTY_FIXED_CODEABLE_CONCEPT = "fixedCodeableConcept";
+    public static final String PROPERTY_FIXED_CODING = "fixedCoding";
+    public static final String PROPERTY_FIXED_CONTACT_POINT = "fixedContactPoint";
+    public static final String PROPERTY_FIXED_COUNT = "fixedCount";
+    public static final String PROPERTY_FIXED_DISTANCE = "fixedDistance";
+    public static final String PROPERTY_FIXED_DURATION = "fixedDuration";
+    public static final String PROPERTY_FIXED_HUMAN_NAME = "fixedHumanName";
+    public static final String PROPERTY_FIXED_IDENTIFIER = "fixedIdentifier";
+    public static final String PROPERTY_FIXED_MONEY = "fixedMoney";
+    public static final String PROPERTY_FIXED_PERIOD = "fixedPeriod";
+    public static final String PROPERTY_FIXED_QUANTITY = "fixedQuantity";
+    public static final String PROPERTY_FIXED_RANGE = "fixedRange";
+    public static final String PROPERTY_FIXED_RATIO = "fixedRatio";
+    public static final String PROPERTY_FIXED_REFERENCE = "fixedReference";
+    public static final String PROPERTY_FIXED_SAMPLED_DATA = "fixedSampledData";
+    public static final String PROPERTY_FIXED_SIGNATURE = "fixedSignature";
+    public static final String PROPERTY_FIXED_TIMING = "fixedTiming";
+    public static final String PROPERTY_FIXED_CONTACT_DETAIL = "fixedContactDetail";
+    public static final String PROPERTY_FIXED_CONTRIBUTOR = "fixedContributor";
+    public static final String PROPERTY_FIXED_DATA_REQUIREMENT = "fixedDataRequirement";
+    public static final String PROPERTY_FIXED_EXPRESSION = "fixedExpression";
+    public static final String PROPERTY_FIXED_PARAMETER_DEFINITION = "fixedParameterDefinition";
+    public static final String PROPERTY_FIXED_RELATED_ARTIFACT = "fixedRelatedArtifact";
+    public static final String PROPERTY_FIXED_TRIGGER_DEFINITION = "fixedTriggerDefinition";
+    public static final String PROPERTY_FIXED_USAGE_CONTEXT = "fixedUsageContext";
+    public static final String PROPERTY_FIXED_DOSAGE = "fixedDosage";
+    public static final String PROPERTY_FIXED_META = "fixedMeta";
+    public static final String PROPERTY_PATTERN_BASE64_BINARY = "patternBase64Binary";
+    public static final String PROPERTY_PATTERN_BOOLEAN = "patternBoolean";
+    public static final String PROPERTY_PATTERN_CANONICAL = "patternCanonical";
+    public static final String PROPERTY_PATTERN_CODE = "patternCode";
+    public static final String PROPERTY_PATTERN_DATE = "patternDate";
+    public static final String PROPERTY_PATTERN_DATE_TIME = "patternDateTime";
+    public static final String PROPERTY_PATTERN_DECIMAL = "patternDecimal";
+    public static final String PROPERTY_PATTERN_ID = "patternId";
+    public static final String PROPERTY_PATTERN_INSTANT = "patternInstant";
+    public static final String PROPERTY_PATTERN_INTEGER = "patternInteger";
+    public static final String PROPERTY_PATTERN_MARKDOWN = "patternMarkdown";
+    public static final String PROPERTY_PATTERN_OID = "patternOid";
+    public static final String PROPERTY_PATTERN_POSITIVE_INT = "patternPositiveInt";
+    public static final String PROPERTY_PATTERN_STRING = "patternString";
+    public static final String PROPERTY_PATTERN_TIME = "patternTime";
+    public static final String PROPERTY_PATTERN_UNSIGNED_INT = "patternUnsignedInt";
+    public static final String PROPERTY_PATTERN_URI = "patternUri";
+    public static final String PROPERTY_PATTERN_URL = "patternUrl";
+    public static final String PROPERTY_PATTERN_UUID = "patternUuid";
+    public static final String PROPERTY_PATTERN_ADDRESS = "patternAddress";
+    public static final String PROPERTY_PATTERN_AGE = "patternAge";
+    public static final String PROPERTY_PATTERN_ANNOTATION = "patternAnnotation";
+    public static final String PROPERTY_PATTERN_ATTACHMENT = "patternAttachment";
+    public static final String PROPERTY_PATTERN_CODEABLE_CONCEPT = "patternCodeableConcept";
+    public static final String PROPERTY_PATTERN_CODING = "patternCoding";
+    public static final String PROPERTY_PATTERN_CONTACT_POINT = "patternContactPoint";
+    public static final String PROPERTY_PATTERN_COUNT = "patternCount";
+    public static final String PROPERTY_PATTERN_DISTANCE = "patternDistance";
+    public static final String PROPERTY_PATTERN_DURATION = "patternDuration";
+    public static final String PROPERTY_PATTERN_HUMAN_NAME = "patternHumanName";
+    public static final String PROPERTY_PATTERN_IDENTIFIER = "patternIdentifier";
+    public static final String PROPERTY_PATTERN_MONEY = "patternMoney";
+    public static final String PROPERTY_PATTERN_PERIOD = "patternPeriod";
+    public static final String PROPERTY_PATTERN_QUANTITY = "patternQuantity";
+    public static final String PROPERTY_PATTERN_RANGE = "patternRange";
+    public static final String PROPERTY_PATTERN_RATIO = "patternRatio";
+    public static final String PROPERTY_PATTERN_REFERENCE = "patternReference";
+    public static final String PROPERTY_PATTERN_SAMPLED_DATA = "patternSampledData";
+    public static final String PROPERTY_PATTERN_SIGNATURE = "patternSignature";
+    public static final String PROPERTY_PATTERN_TIMING = "patternTiming";
+    public static final String PROPERTY_PATTERN_CONTACT_DETAIL = "patternContactDetail";
+    public static final String PROPERTY_PATTERN_CONTRIBUTOR = "patternContributor";
+    public static final String PROPERTY_PATTERN_DATA_REQUIREMENT = "patternDataRequirement";
+    public static final String PROPERTY_PATTERN_EXPRESSION = "patternExpression";
+    public static final String PROPERTY_PATTERN_PARAMETER_DEFINITION = "patternParameterDefinition";
+    public static final String PROPERTY_PATTERN_RELATED_ARTIFACT = "patternRelatedArtifact";
+    public static final String PROPERTY_PATTERN_TRIGGER_DEFINITION = "patternTriggerDefinition";
+    public static final String PROPERTY_PATTERN_USAGE_CONTEXT = "patternUsageContext";
+    public static final String PROPERTY_PATTERN_DOSAGE = "patternDosage";
+    public static final String PROPERTY_PATTERN_META = "patternMeta";
     public static final String PROPERTY_EXAMPLE = "example";
-    public static final String PROPERTY_MINVALUEDATE = "minValueDate";
-    public static final String PROPERTY_MINVALUEDATETIME = "minValueDateTime";
-    public static final String PROPERTY_MINVALUEINSTANT = "minValueInstant";
-    public static final String PROPERTY_MINVALUETIME = "minValueTime";
-    public static final String PROPERTY_MINVALUEDECIMAL = "minValueDecimal";
-    public static final String PROPERTY_MINVALUEINTEGER = "minValueInteger";
-    public static final String PROPERTY_MINVALUEPOSITIVEINT = "minValuePositiveInt";
-    public static final String PROPERTY_MINVALUEUNSIGNEDINT = "minValueUnsignedInt";
-    public static final String PROPERTY_MINVALUEQUANTITY = "minValueQuantity";
-    public static final String PROPERTY_MAXVALUEDATE = "maxValueDate";
-    public static final String PROPERTY_MAXVALUEDATETIME = "maxValueDateTime";
-    public static final String PROPERTY_MAXVALUEINSTANT = "maxValueInstant";
-    public static final String PROPERTY_MAXVALUETIME = "maxValueTime";
-    public static final String PROPERTY_MAXVALUEDECIMAL = "maxValueDecimal";
-    public static final String PROPERTY_MAXVALUEINTEGER = "maxValueInteger";
-    public static final String PROPERTY_MAXVALUEPOSITIVEINT = "maxValuePositiveInt";
-    public static final String PROPERTY_MAXVALUEUNSIGNEDINT = "maxValueUnsignedInt";
-    public static final String PROPERTY_MAXVALUEQUANTITY = "maxValueQuantity";
-    public static final String PROPERTY_MAXLENGTH = "maxLength";
+    public static final String PROPERTY_MIN_VALUE_DATE = "minValueDate";
+    public static final String PROPERTY_MIN_VALUE_DATE_TIME = "minValueDateTime";
+    public static final String PROPERTY_MIN_VALUE_INSTANT = "minValueInstant";
+    public static final String PROPERTY_MIN_VALUE_TIME = "minValueTime";
+    public static final String PROPERTY_MIN_VALUE_DECIMAL = "minValueDecimal";
+    public static final String PROPERTY_MIN_VALUE_INTEGER = "minValueInteger";
+    public static final String PROPERTY_MIN_VALUE_POSITIVE_INT = "minValuePositiveInt";
+    public static final String PROPERTY_MIN_VALUE_UNSIGNED_INT = "minValueUnsignedInt";
+    public static final String PROPERTY_MIN_VALUE_QUANTITY = "minValueQuantity";
+    public static final String PROPERTY_MAX_VALUE_DATE = "maxValueDate";
+    public static final String PROPERTY_MAX_VALUE_DATE_TIME = "maxValueDateTime";
+    public static final String PROPERTY_MAX_VALUE_INSTANT = "maxValueInstant";
+    public static final String PROPERTY_MAX_VALUE_TIME = "maxValueTime";
+    public static final String PROPERTY_MAX_VALUE_DECIMAL = "maxValueDecimal";
+    public static final String PROPERTY_MAX_VALUE_INTEGER = "maxValueInteger";
+    public static final String PROPERTY_MAX_VALUE_POSITIVE_INT = "maxValuePositiveInt";
+    public static final String PROPERTY_MAX_VALUE_UNSIGNED_INT = "maxValueUnsignedInt";
+    public static final String PROPERTY_MAX_VALUE_QUANTITY = "maxValueQuantity";
+    public static final String PROPERTY_MAX_LENGTH = "maxLength";
     public static final String PROPERTY_CONDITION = "condition";
     public static final String PROPERTY_CONSTRAINT = "constraint";
-    public static final String PROPERTY_MUSTSUPPORT = "mustSupport";
-    public static final String PROPERTY_ISMODIFIER = "isModifier";
-    public static final String PROPERTY_ISMODIFIERREASON = "isModifierReason";
-    public static final String PROPERTY_ISSUMMARY = "isSummary";
+    public static final String PROPERTY_MUST_SUPPORT = "mustSupport";
+    public static final String PROPERTY_IS_MODIFIER = "isModifier";
+    public static final String PROPERTY_IS_MODIFIER_REASON = "isModifierReason";
+    public static final String PROPERTY_IS_SUMMARY = "isSummary";
     public static final String PROPERTY_BINDING = "binding";
     public static final String PROPERTY_MAPPING = "mapping";
 
@@ -249,7 +249,7 @@ public class ElementDefinition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -276,7 +276,7 @@ public class ElementDefinition extends FhirResource {
      * used to provide a name to different slices of the same element.
      */
     public String sliceName() {
-        return getString(PROPERTY_SLICENAME);
+        return getString(PROPERTY_SLICE_NAME);
     }
 
     /**
@@ -287,7 +287,7 @@ public class ElementDefinition extends FhirResource {
      * profile, depending on the sliceName.
      */
     public Boolean sliceIsConstraining() {
-        return data.getBoolean(PROPERTY_SLICEISCONSTRAINING);
+        return data.getBoolean(PROPERTY_SLICE_IS_CONSTRAINING);
     }
 
     /**
@@ -405,7 +405,7 @@ public class ElementDefinition extends FhirResource {
      * constraints, bindings, invariants etc.
      */
     public String contentReference() {
-        return getString(PROPERTY_CONTENTREFERENCE);
+        return getString(PROPERTY_CONTENT_REFERENCE);
     }
 
     /**
@@ -421,7 +421,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueBase64Binary() {
-        return getString(PROPERTY_DEFAULTVALUEBASE64BINARY);
+        return getString(PROPERTY_DEFAULT_VALUE_BASE64_BINARY);
     }
 
     /**
@@ -429,7 +429,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Boolean defaultValueBoolean() {
-        return data.getBoolean(PROPERTY_DEFAULTVALUEBOOLEAN);
+        return data.getBoolean(PROPERTY_DEFAULT_VALUE_BOOLEAN);
     }
 
     /**
@@ -437,7 +437,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueCanonical() {
-        return getString(PROPERTY_DEFAULTVALUECANONICAL);
+        return getString(PROPERTY_DEFAULT_VALUE_CANONICAL);
     }
 
     /**
@@ -445,7 +445,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueCode() {
-        return getString(PROPERTY_DEFAULTVALUECODE);
+        return getString(PROPERTY_DEFAULT_VALUE_CODE);
     }
 
     /**
@@ -453,7 +453,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueDate() {
-        return getString(PROPERTY_DEFAULTVALUEDATE);
+        return getString(PROPERTY_DEFAULT_VALUE_DATE);
     }
 
     /**
@@ -461,7 +461,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueDateTime() {
-        return getString(PROPERTY_DEFAULTVALUEDATETIME);
+        return getString(PROPERTY_DEFAULT_VALUE_DATE_TIME);
     }
 
     /**
@@ -469,7 +469,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Integer defaultValueDecimal() {
-        return data.getInt(PROPERTY_DEFAULTVALUEDECIMAL);
+        return data.getInt(PROPERTY_DEFAULT_VALUE_DECIMAL);
     }
 
     /**
@@ -477,7 +477,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueId() {
-        return getString(PROPERTY_DEFAULTVALUEID);
+        return getString(PROPERTY_DEFAULT_VALUE_ID);
     }
 
     /**
@@ -485,7 +485,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueInstant() {
-        return getString(PROPERTY_DEFAULTVALUEINSTANT);
+        return getString(PROPERTY_DEFAULT_VALUE_INSTANT);
     }
 
     /**
@@ -493,7 +493,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Integer defaultValueInteger() {
-        return data.getInt(PROPERTY_DEFAULTVALUEINTEGER);
+        return data.getInt(PROPERTY_DEFAULT_VALUE_INTEGER);
     }
 
     /**
@@ -501,7 +501,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueMarkdown() {
-        return getString(PROPERTY_DEFAULTVALUEMARKDOWN);
+        return getString(PROPERTY_DEFAULT_VALUE_MARKDOWN);
     }
 
     /**
@@ -509,7 +509,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueOid() {
-        return getString(PROPERTY_DEFAULTVALUEOID);
+        return getString(PROPERTY_DEFAULT_VALUE_OID);
     }
 
     /**
@@ -517,7 +517,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Integer defaultValuePositiveInt() {
-        return data.getInt(PROPERTY_DEFAULTVALUEPOSITIVEINT);
+        return data.getInt(PROPERTY_DEFAULT_VALUE_POSITIVE_INT);
     }
 
     /**
@@ -525,7 +525,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueString() {
-        return getString(PROPERTY_DEFAULTVALUESTRING);
+        return getString(PROPERTY_DEFAULT_VALUE_STRING);
     }
 
     /**
@@ -533,7 +533,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueTime() {
-        return getString(PROPERTY_DEFAULTVALUETIME);
+        return getString(PROPERTY_DEFAULT_VALUE_TIME);
     }
 
     /**
@@ -541,7 +541,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Integer defaultValueUnsignedInt() {
-        return data.getInt(PROPERTY_DEFAULTVALUEUNSIGNEDINT);
+        return data.getInt(PROPERTY_DEFAULT_VALUE_UNSIGNED_INT);
     }
 
     /**
@@ -549,7 +549,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueUri() {
-        return getString(PROPERTY_DEFAULTVALUEURI);
+        return getString(PROPERTY_DEFAULT_VALUE_URI);
     }
 
     /**
@@ -557,7 +557,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueUrl() {
-        return getString(PROPERTY_DEFAULTVALUEURL);
+        return getString(PROPERTY_DEFAULT_VALUE_URL);
     }
 
     /**
@@ -565,7 +565,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public String defaultValueUuid() {
-        return getString(PROPERTY_DEFAULTVALUEUUID);
+        return getString(PROPERTY_DEFAULT_VALUE_UUID);
     }
 
     /**
@@ -573,7 +573,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Address defaultValueAddress() {
-        return getObject(Address.class, PROPERTY_DEFAULTVALUEADDRESS);
+        return getObject(Address.class, PROPERTY_DEFAULT_VALUE_ADDRESS);
     }
 
     /**
@@ -581,7 +581,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Age defaultValueAge() {
-        return getObject(Age.class, PROPERTY_DEFAULTVALUEAGE);
+        return getObject(Age.class, PROPERTY_DEFAULT_VALUE_AGE);
     }
 
     /**
@@ -589,7 +589,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Annotation defaultValueAnnotation() {
-        return getObject(Annotation.class, PROPERTY_DEFAULTVALUEANNOTATION);
+        return getObject(Annotation.class, PROPERTY_DEFAULT_VALUE_ANNOTATION);
     }
 
     /**
@@ -597,7 +597,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Attachment defaultValueAttachment() {
-        return getObject(Attachment.class, PROPERTY_DEFAULTVALUEATTACHMENT);
+        return getObject(Attachment.class, PROPERTY_DEFAULT_VALUE_ATTACHMENT);
     }
 
     /**
@@ -605,7 +605,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public CodeableConcept defaultValueCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_DEFAULTVALUECODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_DEFAULT_VALUE_CODEABLE_CONCEPT);
     }
 
     /**
@@ -613,7 +613,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Coding defaultValueCoding() {
-        return getObject(Coding.class, PROPERTY_DEFAULTVALUECODING);
+        return getObject(Coding.class, PROPERTY_DEFAULT_VALUE_CODING);
     }
 
     /**
@@ -621,7 +621,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public ContactPoint defaultValueContactPoint() {
-        return getObject(ContactPoint.class, PROPERTY_DEFAULTVALUECONTACTPOINT);
+        return getObject(ContactPoint.class, PROPERTY_DEFAULT_VALUE_CONTACT_POINT);
     }
 
     /**
@@ -629,7 +629,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Count defaultValueCount() {
-        return getObject(Count.class, PROPERTY_DEFAULTVALUECOUNT);
+        return getObject(Count.class, PROPERTY_DEFAULT_VALUE_COUNT);
     }
 
     /**
@@ -637,7 +637,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Distance defaultValueDistance() {
-        return getObject(Distance.class, PROPERTY_DEFAULTVALUEDISTANCE);
+        return getObject(Distance.class, PROPERTY_DEFAULT_VALUE_DISTANCE);
     }
 
     /**
@@ -645,7 +645,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Duration defaultValueDuration() {
-        return getObject(Duration.class, PROPERTY_DEFAULTVALUEDURATION);
+        return getObject(Duration.class, PROPERTY_DEFAULT_VALUE_DURATION);
     }
 
     /**
@@ -653,7 +653,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public HumanName defaultValueHumanName() {
-        return getObject(HumanName.class, PROPERTY_DEFAULTVALUEHUMANNAME);
+        return getObject(HumanName.class, PROPERTY_DEFAULT_VALUE_HUMAN_NAME);
     }
 
     /**
@@ -661,7 +661,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Identifier defaultValueIdentifier() {
-        return getObject(Identifier.class, PROPERTY_DEFAULTVALUEIDENTIFIER);
+        return getObject(Identifier.class, PROPERTY_DEFAULT_VALUE_IDENTIFIER);
     }
 
     /**
@@ -669,7 +669,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Money defaultValueMoney() {
-        return getObject(Money.class, PROPERTY_DEFAULTVALUEMONEY);
+        return getObject(Money.class, PROPERTY_DEFAULT_VALUE_MONEY);
     }
 
     /**
@@ -677,7 +677,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Period defaultValuePeriod() {
-        return getObject(Period.class, PROPERTY_DEFAULTVALUEPERIOD);
+        return getObject(Period.class, PROPERTY_DEFAULT_VALUE_PERIOD);
     }
 
     /**
@@ -685,7 +685,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Quantity defaultValueQuantity() {
-        return getObject(Quantity.class, PROPERTY_DEFAULTVALUEQUANTITY);
+        return getObject(Quantity.class, PROPERTY_DEFAULT_VALUE_QUANTITY);
     }
 
     /**
@@ -693,7 +693,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Range defaultValueRange() {
-        return getObject(Range.class, PROPERTY_DEFAULTVALUERANGE);
+        return getObject(Range.class, PROPERTY_DEFAULT_VALUE_RANGE);
     }
 
     /**
@@ -701,7 +701,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Ratio defaultValueRatio() {
-        return getObject(Ratio.class, PROPERTY_DEFAULTVALUERATIO);
+        return getObject(Ratio.class, PROPERTY_DEFAULT_VALUE_RATIO);
     }
 
     /**
@@ -709,7 +709,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Reference defaultValueReference() {
-        return getObject(Reference.class, PROPERTY_DEFAULTVALUEREFERENCE);
+        return getObject(Reference.class, PROPERTY_DEFAULT_VALUE_REFERENCE);
     }
 
     /**
@@ -717,7 +717,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public SampledData defaultValueSampledData() {
-        return getObject(SampledData.class, PROPERTY_DEFAULTVALUESAMPLEDDATA);
+        return getObject(SampledData.class, PROPERTY_DEFAULT_VALUE_SAMPLED_DATA);
     }
 
     /**
@@ -725,7 +725,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Signature defaultValueSignature() {
-        return getObject(Signature.class, PROPERTY_DEFAULTVALUESIGNATURE);
+        return getObject(Signature.class, PROPERTY_DEFAULT_VALUE_SIGNATURE);
     }
 
     /**
@@ -733,7 +733,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Timing defaultValueTiming() {
-        return getObject(Timing.class, PROPERTY_DEFAULTVALUETIMING);
+        return getObject(Timing.class, PROPERTY_DEFAULT_VALUE_TIMING);
     }
 
     /**
@@ -741,7 +741,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public ContactDetail defaultValueContactDetail() {
-        return getObject(ContactDetail.class, PROPERTY_DEFAULTVALUECONTACTDETAIL);
+        return getObject(ContactDetail.class, PROPERTY_DEFAULT_VALUE_CONTACT_DETAIL);
     }
 
     /**
@@ -749,7 +749,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Contributor defaultValueContributor() {
-        return getObject(Contributor.class, PROPERTY_DEFAULTVALUECONTRIBUTOR);
+        return getObject(Contributor.class, PROPERTY_DEFAULT_VALUE_CONTRIBUTOR);
     }
 
     /**
@@ -757,7 +757,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public DataRequirement defaultValueDataRequirement() {
-        return getObject(DataRequirement.class, PROPERTY_DEFAULTVALUEDATAREQUIREMENT);
+        return getObject(DataRequirement.class, PROPERTY_DEFAULT_VALUE_DATA_REQUIREMENT);
     }
 
     /**
@@ -765,7 +765,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Expression defaultValueExpression() {
-        return getObject(Expression.class, PROPERTY_DEFAULTVALUEEXPRESSION);
+        return getObject(Expression.class, PROPERTY_DEFAULT_VALUE_EXPRESSION);
     }
 
     /**
@@ -773,7 +773,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public ParameterDefinition defaultValueParameterDefinition() {
-        return getObject(ParameterDefinition.class, PROPERTY_DEFAULTVALUEPARAMETERDEFINITION);
+        return getObject(ParameterDefinition.class, PROPERTY_DEFAULT_VALUE_PARAMETER_DEFINITION);
     }
 
     /**
@@ -781,7 +781,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public RelatedArtifact defaultValueRelatedArtifact() {
-        return getObject(RelatedArtifact.class, PROPERTY_DEFAULTVALUERELATEDARTIFACT);
+        return getObject(RelatedArtifact.class, PROPERTY_DEFAULT_VALUE_RELATED_ARTIFACT);
     }
 
     /**
@@ -789,7 +789,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public TriggerDefinition defaultValueTriggerDefinition() {
-        return getObject(TriggerDefinition.class, PROPERTY_DEFAULTVALUETRIGGERDEFINITION);
+        return getObject(TriggerDefinition.class, PROPERTY_DEFAULT_VALUE_TRIGGER_DEFINITION);
     }
 
     /**
@@ -797,7 +797,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public UsageContext defaultValueUsageContext() {
-        return getObject(UsageContext.class, PROPERTY_DEFAULTVALUEUSAGECONTEXT);
+        return getObject(UsageContext.class, PROPERTY_DEFAULT_VALUE_USAGE_CONTEXT);
     }
 
     /**
@@ -805,7 +805,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Dosage defaultValueDosage() {
-        return getObject(Dosage.class, PROPERTY_DEFAULTVALUEDOSAGE);
+        return getObject(Dosage.class, PROPERTY_DEFAULT_VALUE_DOSAGE);
     }
 
     /**
@@ -813,7 +813,7 @@ public class ElementDefinition extends FhirResource {
      * instance (e.g. 'if not otherwise specified, the abstract is false').
      */
     public Meta defaultValueMeta() {
-        return getObject(Meta.class, PROPERTY_DEFAULTVALUEMETA);
+        return getObject(Meta.class, PROPERTY_DEFAULT_VALUE_META);
     }
 
     /**
@@ -821,7 +821,7 @@ public class ElementDefinition extends FhirResource {
      * missing (e.g. 'when this element is missing, the period is ongoing').
      */
     public String meaningWhenMissing() {
-        return getString(PROPERTY_MEANINGWHENMISSING);
+        return getString(PROPERTY_MEANING_WHEN_MISSING);
     }
 
     /**
@@ -830,7 +830,7 @@ public class ElementDefinition extends FhirResource {
      * the order of the element has no meaning.
      */
     public String orderMeaning() {
-        return getString(PROPERTY_ORDERMEANING);
+        return getString(PROPERTY_ORDER_MEANING);
     }
 
     /**
@@ -840,7 +840,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedBase64Binary() {
-        return getString(PROPERTY_FIXEDBASE64BINARY);
+        return getString(PROPERTY_FIXED_BASE64_BINARY);
     }
 
     /**
@@ -850,7 +850,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Boolean fixedBoolean() {
-        return data.getBoolean(PROPERTY_FIXEDBOOLEAN);
+        return data.getBoolean(PROPERTY_FIXED_BOOLEAN);
     }
 
     /**
@@ -860,7 +860,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedCanonical() {
-        return getString(PROPERTY_FIXEDCANONICAL);
+        return getString(PROPERTY_FIXED_CANONICAL);
     }
 
     /**
@@ -870,7 +870,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedCode() {
-        return getString(PROPERTY_FIXEDCODE);
+        return getString(PROPERTY_FIXED_CODE);
     }
 
     /**
@@ -880,7 +880,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedDate() {
-        return getString(PROPERTY_FIXEDDATE);
+        return getString(PROPERTY_FIXED_DATE);
     }
 
     /**
@@ -890,7 +890,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedDateTime() {
-        return getString(PROPERTY_FIXEDDATETIME);
+        return getString(PROPERTY_FIXED_DATE_TIME);
     }
 
     /**
@@ -900,7 +900,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Integer fixedDecimal() {
-        return data.getInt(PROPERTY_FIXEDDECIMAL);
+        return data.getInt(PROPERTY_FIXED_DECIMAL);
     }
 
     /**
@@ -910,7 +910,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedId() {
-        return getString(PROPERTY_FIXEDID);
+        return getString(PROPERTY_FIXED_ID);
     }
 
     /**
@@ -920,7 +920,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedInstant() {
-        return getString(PROPERTY_FIXEDINSTANT);
+        return getString(PROPERTY_FIXED_INSTANT);
     }
 
     /**
@@ -930,7 +930,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Integer fixedInteger() {
-        return data.getInt(PROPERTY_FIXEDINTEGER);
+        return data.getInt(PROPERTY_FIXED_INTEGER);
     }
 
     /**
@@ -940,7 +940,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedMarkdown() {
-        return getString(PROPERTY_FIXEDMARKDOWN);
+        return getString(PROPERTY_FIXED_MARKDOWN);
     }
 
     /**
@@ -950,7 +950,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedOid() {
-        return getString(PROPERTY_FIXEDOID);
+        return getString(PROPERTY_FIXED_OID);
     }
 
     /**
@@ -960,7 +960,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Integer fixedPositiveInt() {
-        return data.getInt(PROPERTY_FIXEDPOSITIVEINT);
+        return data.getInt(PROPERTY_FIXED_POSITIVE_INT);
     }
 
     /**
@@ -970,7 +970,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedString() {
-        return getString(PROPERTY_FIXEDSTRING);
+        return getString(PROPERTY_FIXED_STRING);
     }
 
     /**
@@ -980,7 +980,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedTime() {
-        return getString(PROPERTY_FIXEDTIME);
+        return getString(PROPERTY_FIXED_TIME);
     }
 
     /**
@@ -990,7 +990,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Integer fixedUnsignedInt() {
-        return data.getInt(PROPERTY_FIXEDUNSIGNEDINT);
+        return data.getInt(PROPERTY_FIXED_UNSIGNED_INT);
     }
 
     /**
@@ -1000,7 +1000,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedUri() {
-        return getString(PROPERTY_FIXEDURI);
+        return getString(PROPERTY_FIXED_URI);
     }
 
     /**
@@ -1010,7 +1010,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedUrl() {
-        return getString(PROPERTY_FIXEDURL);
+        return getString(PROPERTY_FIXED_URL);
     }
 
     /**
@@ -1020,7 +1020,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public String fixedUuid() {
-        return getString(PROPERTY_FIXEDUUID);
+        return getString(PROPERTY_FIXED_UUID);
     }
 
     /**
@@ -1030,7 +1030,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Address fixedAddress() {
-        return getObject(Address.class, PROPERTY_FIXEDADDRESS);
+        return getObject(Address.class, PROPERTY_FIXED_ADDRESS);
     }
 
     /**
@@ -1040,7 +1040,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Age fixedAge() {
-        return getObject(Age.class, PROPERTY_FIXEDAGE);
+        return getObject(Age.class, PROPERTY_FIXED_AGE);
     }
 
     /**
@@ -1050,7 +1050,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Annotation fixedAnnotation() {
-        return getObject(Annotation.class, PROPERTY_FIXEDANNOTATION);
+        return getObject(Annotation.class, PROPERTY_FIXED_ANNOTATION);
     }
 
     /**
@@ -1060,7 +1060,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Attachment fixedAttachment() {
-        return getObject(Attachment.class, PROPERTY_FIXEDATTACHMENT);
+        return getObject(Attachment.class, PROPERTY_FIXED_ATTACHMENT);
     }
 
     /**
@@ -1070,7 +1070,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public CodeableConcept fixedCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_FIXEDCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_FIXED_CODEABLE_CONCEPT);
     }
 
     /**
@@ -1080,7 +1080,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Coding fixedCoding() {
-        return getObject(Coding.class, PROPERTY_FIXEDCODING);
+        return getObject(Coding.class, PROPERTY_FIXED_CODING);
     }
 
     /**
@@ -1090,7 +1090,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public ContactPoint fixedContactPoint() {
-        return getObject(ContactPoint.class, PROPERTY_FIXEDCONTACTPOINT);
+        return getObject(ContactPoint.class, PROPERTY_FIXED_CONTACT_POINT);
     }
 
     /**
@@ -1100,7 +1100,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Count fixedCount() {
-        return getObject(Count.class, PROPERTY_FIXEDCOUNT);
+        return getObject(Count.class, PROPERTY_FIXED_COUNT);
     }
 
     /**
@@ -1110,7 +1110,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Distance fixedDistance() {
-        return getObject(Distance.class, PROPERTY_FIXEDDISTANCE);
+        return getObject(Distance.class, PROPERTY_FIXED_DISTANCE);
     }
 
     /**
@@ -1120,7 +1120,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Duration fixedDuration() {
-        return getObject(Duration.class, PROPERTY_FIXEDDURATION);
+        return getObject(Duration.class, PROPERTY_FIXED_DURATION);
     }
 
     /**
@@ -1130,7 +1130,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public HumanName fixedHumanName() {
-        return getObject(HumanName.class, PROPERTY_FIXEDHUMANNAME);
+        return getObject(HumanName.class, PROPERTY_FIXED_HUMAN_NAME);
     }
 
     /**
@@ -1140,7 +1140,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Identifier fixedIdentifier() {
-        return getObject(Identifier.class, PROPERTY_FIXEDIDENTIFIER);
+        return getObject(Identifier.class, PROPERTY_FIXED_IDENTIFIER);
     }
 
     /**
@@ -1150,7 +1150,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Money fixedMoney() {
-        return getObject(Money.class, PROPERTY_FIXEDMONEY);
+        return getObject(Money.class, PROPERTY_FIXED_MONEY);
     }
 
     /**
@@ -1160,7 +1160,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Period fixedPeriod() {
-        return getObject(Period.class, PROPERTY_FIXEDPERIOD);
+        return getObject(Period.class, PROPERTY_FIXED_PERIOD);
     }
 
     /**
@@ -1170,7 +1170,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Quantity fixedQuantity() {
-        return getObject(Quantity.class, PROPERTY_FIXEDQUANTITY);
+        return getObject(Quantity.class, PROPERTY_FIXED_QUANTITY);
     }
 
     /**
@@ -1180,7 +1180,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Range fixedRange() {
-        return getObject(Range.class, PROPERTY_FIXEDRANGE);
+        return getObject(Range.class, PROPERTY_FIXED_RANGE);
     }
 
     /**
@@ -1190,7 +1190,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Ratio fixedRatio() {
-        return getObject(Ratio.class, PROPERTY_FIXEDRATIO);
+        return getObject(Ratio.class, PROPERTY_FIXED_RATIO);
     }
 
     /**
@@ -1200,7 +1200,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Reference fixedReference() {
-        return getObject(Reference.class, PROPERTY_FIXEDREFERENCE);
+        return getObject(Reference.class, PROPERTY_FIXED_REFERENCE);
     }
 
     /**
@@ -1210,7 +1210,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public SampledData fixedSampledData() {
-        return getObject(SampledData.class, PROPERTY_FIXEDSAMPLEDDATA);
+        return getObject(SampledData.class, PROPERTY_FIXED_SAMPLED_DATA);
     }
 
     /**
@@ -1220,7 +1220,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Signature fixedSignature() {
-        return getObject(Signature.class, PROPERTY_FIXEDSIGNATURE);
+        return getObject(Signature.class, PROPERTY_FIXED_SIGNATURE);
     }
 
     /**
@@ -1230,7 +1230,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Timing fixedTiming() {
-        return getObject(Timing.class, PROPERTY_FIXEDTIMING);
+        return getObject(Timing.class, PROPERTY_FIXED_TIMING);
     }
 
     /**
@@ -1240,7 +1240,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public ContactDetail fixedContactDetail() {
-        return getObject(ContactDetail.class, PROPERTY_FIXEDCONTACTDETAIL);
+        return getObject(ContactDetail.class, PROPERTY_FIXED_CONTACT_DETAIL);
     }
 
     /**
@@ -1250,7 +1250,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Contributor fixedContributor() {
-        return getObject(Contributor.class, PROPERTY_FIXEDCONTRIBUTOR);
+        return getObject(Contributor.class, PROPERTY_FIXED_CONTRIBUTOR);
     }
 
     /**
@@ -1260,7 +1260,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public DataRequirement fixedDataRequirement() {
-        return getObject(DataRequirement.class, PROPERTY_FIXEDDATAREQUIREMENT);
+        return getObject(DataRequirement.class, PROPERTY_FIXED_DATA_REQUIREMENT);
     }
 
     /**
@@ -1270,7 +1270,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Expression fixedExpression() {
-        return getObject(Expression.class, PROPERTY_FIXEDEXPRESSION);
+        return getObject(Expression.class, PROPERTY_FIXED_EXPRESSION);
     }
 
     /**
@@ -1280,7 +1280,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public ParameterDefinition fixedParameterDefinition() {
-        return getObject(ParameterDefinition.class, PROPERTY_FIXEDPARAMETERDEFINITION);
+        return getObject(ParameterDefinition.class, PROPERTY_FIXED_PARAMETER_DEFINITION);
     }
 
     /**
@@ -1290,7 +1290,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public RelatedArtifact fixedRelatedArtifact() {
-        return getObject(RelatedArtifact.class, PROPERTY_FIXEDRELATEDARTIFACT);
+        return getObject(RelatedArtifact.class, PROPERTY_FIXED_RELATED_ARTIFACT);
     }
 
     /**
@@ -1300,7 +1300,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public TriggerDefinition fixedTriggerDefinition() {
-        return getObject(TriggerDefinition.class, PROPERTY_FIXEDTRIGGERDEFINITION);
+        return getObject(TriggerDefinition.class, PROPERTY_FIXED_TRIGGER_DEFINITION);
     }
 
     /**
@@ -1310,7 +1310,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public UsageContext fixedUsageContext() {
-        return getObject(UsageContext.class, PROPERTY_FIXEDUSAGECONTEXT);
+        return getObject(UsageContext.class, PROPERTY_FIXED_USAGE_CONTEXT);
     }
 
     /**
@@ -1320,7 +1320,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Dosage fixedDosage() {
-        return getObject(Dosage.class, PROPERTY_FIXEDDOSAGE);
+        return getObject(Dosage.class, PROPERTY_FIXED_DOSAGE);
     }
 
     /**
@@ -1330,7 +1330,7 @@ public class ElementDefinition extends FhirResource {
      * sensitive). Missing elements/attributes must also be missing.
      */
     public Meta fixedMeta() {
-        return getObject(Meta.class, PROPERTY_FIXEDMETA);
+        return getObject(Meta.class, PROPERTY_FIXED_META);
     }
 
     /**
@@ -1356,7 +1356,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternBase64Binary() {
-        return getString(PROPERTY_PATTERNBASE64BINARY);
+        return getString(PROPERTY_PATTERN_BASE64_BINARY);
     }
 
     /**
@@ -1382,7 +1382,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Boolean patternBoolean() {
-        return data.getBoolean(PROPERTY_PATTERNBOOLEAN);
+        return data.getBoolean(PROPERTY_PATTERN_BOOLEAN);
     }
 
     /**
@@ -1408,7 +1408,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternCanonical() {
-        return getString(PROPERTY_PATTERNCANONICAL);
+        return getString(PROPERTY_PATTERN_CANONICAL);
     }
 
     /**
@@ -1434,7 +1434,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternCode() {
-        return getString(PROPERTY_PATTERNCODE);
+        return getString(PROPERTY_PATTERN_CODE);
     }
 
     /**
@@ -1460,7 +1460,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternDate() {
-        return getString(PROPERTY_PATTERNDATE);
+        return getString(PROPERTY_PATTERN_DATE);
     }
 
     /**
@@ -1486,7 +1486,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternDateTime() {
-        return getString(PROPERTY_PATTERNDATETIME);
+        return getString(PROPERTY_PATTERN_DATE_TIME);
     }
 
     /**
@@ -1512,7 +1512,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Integer patternDecimal() {
-        return data.getInt(PROPERTY_PATTERNDECIMAL);
+        return data.getInt(PROPERTY_PATTERN_DECIMAL);
     }
 
     /**
@@ -1538,7 +1538,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternId() {
-        return getString(PROPERTY_PATTERNID);
+        return getString(PROPERTY_PATTERN_ID);
     }
 
     /**
@@ -1564,7 +1564,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternInstant() {
-        return getString(PROPERTY_PATTERNINSTANT);
+        return getString(PROPERTY_PATTERN_INSTANT);
     }
 
     /**
@@ -1590,7 +1590,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Integer patternInteger() {
-        return data.getInt(PROPERTY_PATTERNINTEGER);
+        return data.getInt(PROPERTY_PATTERN_INTEGER);
     }
 
     /**
@@ -1616,7 +1616,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternMarkdown() {
-        return getString(PROPERTY_PATTERNMARKDOWN);
+        return getString(PROPERTY_PATTERN_MARKDOWN);
     }
 
     /**
@@ -1642,7 +1642,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternOid() {
-        return getString(PROPERTY_PATTERNOID);
+        return getString(PROPERTY_PATTERN_OID);
     }
 
     /**
@@ -1668,7 +1668,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Integer patternPositiveInt() {
-        return data.getInt(PROPERTY_PATTERNPOSITIVEINT);
+        return data.getInt(PROPERTY_PATTERN_POSITIVE_INT);
     }
 
     /**
@@ -1694,7 +1694,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternString() {
-        return getString(PROPERTY_PATTERNSTRING);
+        return getString(PROPERTY_PATTERN_STRING);
     }
 
     /**
@@ -1720,7 +1720,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternTime() {
-        return getString(PROPERTY_PATTERNTIME);
+        return getString(PROPERTY_PATTERN_TIME);
     }
 
     /**
@@ -1746,7 +1746,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Integer patternUnsignedInt() {
-        return data.getInt(PROPERTY_PATTERNUNSIGNEDINT);
+        return data.getInt(PROPERTY_PATTERN_UNSIGNED_INT);
     }
 
     /**
@@ -1772,7 +1772,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternUri() {
-        return getString(PROPERTY_PATTERNURI);
+        return getString(PROPERTY_PATTERN_URI);
     }
 
     /**
@@ -1798,7 +1798,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternUrl() {
-        return getString(PROPERTY_PATTERNURL);
+        return getString(PROPERTY_PATTERN_URL);
     }
 
     /**
@@ -1824,7 +1824,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public String patternUuid() {
-        return getString(PROPERTY_PATTERNUUID);
+        return getString(PROPERTY_PATTERN_UUID);
     }
 
     /**
@@ -1850,7 +1850,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Address patternAddress() {
-        return getObject(Address.class, PROPERTY_PATTERNADDRESS);
+        return getObject(Address.class, PROPERTY_PATTERN_ADDRESS);
     }
 
     /**
@@ -1876,7 +1876,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Age patternAge() {
-        return getObject(Age.class, PROPERTY_PATTERNAGE);
+        return getObject(Age.class, PROPERTY_PATTERN_AGE);
     }
 
     /**
@@ -1902,7 +1902,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Annotation patternAnnotation() {
-        return getObject(Annotation.class, PROPERTY_PATTERNANNOTATION);
+        return getObject(Annotation.class, PROPERTY_PATTERN_ANNOTATION);
     }
 
     /**
@@ -1928,7 +1928,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Attachment patternAttachment() {
-        return getObject(Attachment.class, PROPERTY_PATTERNATTACHMENT);
+        return getObject(Attachment.class, PROPERTY_PATTERN_ATTACHMENT);
     }
 
     /**
@@ -1954,7 +1954,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public CodeableConcept patternCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_PATTERNCODEABLECONCEPT);
+        return getObject(CodeableConcept.class, PROPERTY_PATTERN_CODEABLE_CONCEPT);
     }
 
     /**
@@ -1980,7 +1980,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Coding patternCoding() {
-        return getObject(Coding.class, PROPERTY_PATTERNCODING);
+        return getObject(Coding.class, PROPERTY_PATTERN_CODING);
     }
 
     /**
@@ -2006,7 +2006,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public ContactPoint patternContactPoint() {
-        return getObject(ContactPoint.class, PROPERTY_PATTERNCONTACTPOINT);
+        return getObject(ContactPoint.class, PROPERTY_PATTERN_CONTACT_POINT);
     }
 
     /**
@@ -2032,7 +2032,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Count patternCount() {
-        return getObject(Count.class, PROPERTY_PATTERNCOUNT);
+        return getObject(Count.class, PROPERTY_PATTERN_COUNT);
     }
 
     /**
@@ -2058,7 +2058,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Distance patternDistance() {
-        return getObject(Distance.class, PROPERTY_PATTERNDISTANCE);
+        return getObject(Distance.class, PROPERTY_PATTERN_DISTANCE);
     }
 
     /**
@@ -2084,7 +2084,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Duration patternDuration() {
-        return getObject(Duration.class, PROPERTY_PATTERNDURATION);
+        return getObject(Duration.class, PROPERTY_PATTERN_DURATION);
     }
 
     /**
@@ -2110,7 +2110,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public HumanName patternHumanName() {
-        return getObject(HumanName.class, PROPERTY_PATTERNHUMANNAME);
+        return getObject(HumanName.class, PROPERTY_PATTERN_HUMAN_NAME);
     }
 
     /**
@@ -2136,7 +2136,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Identifier patternIdentifier() {
-        return getObject(Identifier.class, PROPERTY_PATTERNIDENTIFIER);
+        return getObject(Identifier.class, PROPERTY_PATTERN_IDENTIFIER);
     }
 
     /**
@@ -2162,7 +2162,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Money patternMoney() {
-        return getObject(Money.class, PROPERTY_PATTERNMONEY);
+        return getObject(Money.class, PROPERTY_PATTERN_MONEY);
     }
 
     /**
@@ -2188,7 +2188,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Period patternPeriod() {
-        return getObject(Period.class, PROPERTY_PATTERNPERIOD);
+        return getObject(Period.class, PROPERTY_PATTERN_PERIOD);
     }
 
     /**
@@ -2214,7 +2214,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Quantity patternQuantity() {
-        return getObject(Quantity.class, PROPERTY_PATTERNQUANTITY);
+        return getObject(Quantity.class, PROPERTY_PATTERN_QUANTITY);
     }
 
     /**
@@ -2240,7 +2240,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Range patternRange() {
-        return getObject(Range.class, PROPERTY_PATTERNRANGE);
+        return getObject(Range.class, PROPERTY_PATTERN_RANGE);
     }
 
     /**
@@ -2266,7 +2266,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Ratio patternRatio() {
-        return getObject(Ratio.class, PROPERTY_PATTERNRATIO);
+        return getObject(Ratio.class, PROPERTY_PATTERN_RATIO);
     }
 
     /**
@@ -2292,7 +2292,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Reference patternReference() {
-        return getObject(Reference.class, PROPERTY_PATTERNREFERENCE);
+        return getObject(Reference.class, PROPERTY_PATTERN_REFERENCE);
     }
 
     /**
@@ -2318,7 +2318,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public SampledData patternSampledData() {
-        return getObject(SampledData.class, PROPERTY_PATTERNSAMPLEDDATA);
+        return getObject(SampledData.class, PROPERTY_PATTERN_SAMPLED_DATA);
     }
 
     /**
@@ -2344,7 +2344,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Signature patternSignature() {
-        return getObject(Signature.class, PROPERTY_PATTERNSIGNATURE);
+        return getObject(Signature.class, PROPERTY_PATTERN_SIGNATURE);
     }
 
     /**
@@ -2370,7 +2370,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Timing patternTiming() {
-        return getObject(Timing.class, PROPERTY_PATTERNTIMING);
+        return getObject(Timing.class, PROPERTY_PATTERN_TIMING);
     }
 
     /**
@@ -2396,7 +2396,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public ContactDetail patternContactDetail() {
-        return getObject(ContactDetail.class, PROPERTY_PATTERNCONTACTDETAIL);
+        return getObject(ContactDetail.class, PROPERTY_PATTERN_CONTACT_DETAIL);
     }
 
     /**
@@ -2422,7 +2422,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Contributor patternContributor() {
-        return getObject(Contributor.class, PROPERTY_PATTERNCONTRIBUTOR);
+        return getObject(Contributor.class, PROPERTY_PATTERN_CONTRIBUTOR);
     }
 
     /**
@@ -2448,7 +2448,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public DataRequirement patternDataRequirement() {
-        return getObject(DataRequirement.class, PROPERTY_PATTERNDATAREQUIREMENT);
+        return getObject(DataRequirement.class, PROPERTY_PATTERN_DATA_REQUIREMENT);
     }
 
     /**
@@ -2474,7 +2474,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Expression patternExpression() {
-        return getObject(Expression.class, PROPERTY_PATTERNEXPRESSION);
+        return getObject(Expression.class, PROPERTY_PATTERN_EXPRESSION);
     }
 
     /**
@@ -2500,7 +2500,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public ParameterDefinition patternParameterDefinition() {
-        return getObject(ParameterDefinition.class, PROPERTY_PATTERNPARAMETERDEFINITION);
+        return getObject(ParameterDefinition.class, PROPERTY_PATTERN_PARAMETER_DEFINITION);
     }
 
     /**
@@ -2526,7 +2526,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public RelatedArtifact patternRelatedArtifact() {
-        return getObject(RelatedArtifact.class, PROPERTY_PATTERNRELATEDARTIFACT);
+        return getObject(RelatedArtifact.class, PROPERTY_PATTERN_RELATED_ARTIFACT);
     }
 
     /**
@@ -2552,7 +2552,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public TriggerDefinition patternTriggerDefinition() {
-        return getObject(TriggerDefinition.class, PROPERTY_PATTERNTRIGGERDEFINITION);
+        return getObject(TriggerDefinition.class, PROPERTY_PATTERN_TRIGGER_DEFINITION);
     }
 
     /**
@@ -2578,7 +2578,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public UsageContext patternUsageContext() {
-        return getObject(UsageContext.class, PROPERTY_PATTERNUSAGECONTEXT);
+        return getObject(UsageContext.class, PROPERTY_PATTERN_USAGE_CONTEXT);
     }
 
     /**
@@ -2604,7 +2604,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Dosage patternDosage() {
-        return getObject(Dosage.class, PROPERTY_PATTERNDOSAGE);
+        return getObject(Dosage.class, PROPERTY_PATTERN_DOSAGE);
     }
 
     /**
@@ -2630,7 +2630,7 @@ public class ElementDefinition extends FhirResource {
      * 3. If an array: it must match (recursively) the pattern value.
      */
     public Meta patternMeta() {
-        return getObject(Meta.class, PROPERTY_PATTERNMETA);
+        return getObject(Meta.class, PROPERTY_PATTERN_META);
     }
 
     /**
@@ -2647,7 +2647,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public String minValueDate() {
-        return getString(PROPERTY_MINVALUEDATE);
+        return getString(PROPERTY_MIN_VALUE_DATE);
     }
 
     /**
@@ -2656,7 +2656,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public String minValueDateTime() {
-        return getString(PROPERTY_MINVALUEDATETIME);
+        return getString(PROPERTY_MIN_VALUE_DATE_TIME);
     }
 
     /**
@@ -2665,7 +2665,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public String minValueInstant() {
-        return getString(PROPERTY_MINVALUEINSTANT);
+        return getString(PROPERTY_MIN_VALUE_INSTANT);
     }
 
     /**
@@ -2674,7 +2674,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public String minValueTime() {
-        return getString(PROPERTY_MINVALUETIME);
+        return getString(PROPERTY_MIN_VALUE_TIME);
     }
 
     /**
@@ -2683,7 +2683,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Integer minValueDecimal() {
-        return data.getInt(PROPERTY_MINVALUEDECIMAL);
+        return data.getInt(PROPERTY_MIN_VALUE_DECIMAL);
     }
 
     /**
@@ -2692,7 +2692,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Integer minValueInteger() {
-        return data.getInt(PROPERTY_MINVALUEINTEGER);
+        return data.getInt(PROPERTY_MIN_VALUE_INTEGER);
     }
 
     /**
@@ -2701,7 +2701,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Integer minValuePositiveInt() {
-        return data.getInt(PROPERTY_MINVALUEPOSITIVEINT);
+        return data.getInt(PROPERTY_MIN_VALUE_POSITIVE_INT);
     }
 
     /**
@@ -2710,7 +2710,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Integer minValueUnsignedInt() {
-        return data.getInt(PROPERTY_MINVALUEUNSIGNEDINT);
+        return data.getInt(PROPERTY_MIN_VALUE_UNSIGNED_INT);
     }
 
     /**
@@ -2719,7 +2719,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Quantity minValueQuantity() {
-        return getObject(Quantity.class, PROPERTY_MINVALUEQUANTITY);
+        return getObject(Quantity.class, PROPERTY_MIN_VALUE_QUANTITY);
     }
 
     /**
@@ -2728,7 +2728,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public String maxValueDate() {
-        return getString(PROPERTY_MAXVALUEDATE);
+        return getString(PROPERTY_MAX_VALUE_DATE);
     }
 
     /**
@@ -2737,7 +2737,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public String maxValueDateTime() {
-        return getString(PROPERTY_MAXVALUEDATETIME);
+        return getString(PROPERTY_MAX_VALUE_DATE_TIME);
     }
 
     /**
@@ -2746,7 +2746,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public String maxValueInstant() {
-        return getString(PROPERTY_MAXVALUEINSTANT);
+        return getString(PROPERTY_MAX_VALUE_INSTANT);
     }
 
     /**
@@ -2755,7 +2755,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public String maxValueTime() {
-        return getString(PROPERTY_MAXVALUETIME);
+        return getString(PROPERTY_MAX_VALUE_TIME);
     }
 
     /**
@@ -2764,7 +2764,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Integer maxValueDecimal() {
-        return data.getInt(PROPERTY_MAXVALUEDECIMAL);
+        return data.getInt(PROPERTY_MAX_VALUE_DECIMAL);
     }
 
     /**
@@ -2773,7 +2773,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Integer maxValueInteger() {
-        return data.getInt(PROPERTY_MAXVALUEINTEGER);
+        return data.getInt(PROPERTY_MAX_VALUE_INTEGER);
     }
 
     /**
@@ -2782,7 +2782,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Integer maxValuePositiveInt() {
-        return data.getInt(PROPERTY_MAXVALUEPOSITIVEINT);
+        return data.getInt(PROPERTY_MAX_VALUE_POSITIVE_INT);
     }
 
     /**
@@ -2791,7 +2791,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Integer maxValueUnsignedInt() {
-        return data.getInt(PROPERTY_MAXVALUEUNSIGNEDINT);
+        return data.getInt(PROPERTY_MAX_VALUE_UNSIGNED_INT);
     }
 
     /**
@@ -2800,7 +2800,7 @@ public class ElementDefinition extends FhirResource {
      * integer, and Quantity.
      */
     public Quantity maxValueQuantity() {
-        return getObject(Quantity.class, PROPERTY_MAXVALUEQUANTITY);
+        return getObject(Quantity.class, PROPERTY_MAX_VALUE_QUANTITY);
     }
 
     /**
@@ -2809,7 +2809,7 @@ public class ElementDefinition extends FhirResource {
      * by conformant consumers that support the element.
      */
     public Integer maxLength() {
-        return data.getInt(PROPERTY_MAXLENGTH);
+        return data.getInt(PROPERTY_MAX_LENGTH);
     }
 
     /**
@@ -2836,7 +2836,7 @@ public class ElementDefinition extends FhirResource {
      * the implementation.
      */
     public Boolean mustSupport() {
-        return data.getBoolean(PROPERTY_MUSTSUPPORT);
+        return data.getBoolean(PROPERTY_MUST_SUPPORT);
     }
 
     /**
@@ -2849,7 +2849,7 @@ public class ElementDefinition extends FhirResource {
      * relevant to their particular system.
      */
     public Boolean isModifier() {
-        return data.getBoolean(PROPERTY_ISMODIFIER);
+        return data.getBoolean(PROPERTY_IS_MODIFIER);
     }
 
     /**
@@ -2857,7 +2857,7 @@ public class ElementDefinition extends FhirResource {
      * or element that contains it.
      */
     public String isModifierReason() {
-        return getString(PROPERTY_ISMODIFIERREASON);
+        return getString(PROPERTY_IS_MODIFIER_REASON);
     }
 
     /**
@@ -2865,7 +2865,7 @@ public class ElementDefinition extends FhirResource {
      * with the parameter _summary=true.
      */
     public Boolean isSummary() {
-        return data.getBoolean(PROPERTY_ISSUMMARY);
+        return data.getBoolean(PROPERTY_IS_SUMMARY);
     }
 
     /**
@@ -2901,7 +2901,7 @@ public class ElementDefinition extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -2916,12 +2916,12 @@ public class ElementDefinition extends FhirResource {
         }
 
         public Builder sliceName(final String sliceName) {
-            b.add(PROPERTY_SLICENAME, sliceName);
+            b.add(PROPERTY_SLICE_NAME, sliceName);
             return this;
         }
 
         public Builder sliceIsConstraining(final Boolean sliceIsConstraining) {
-            b.add(PROPERTY_SLICEISCONSTRAINING, sliceIsConstraining);
+            b.add(PROPERTY_SLICE_IS_CONSTRAINING, sliceIsConstraining);
             return this;
         }
 
@@ -2981,7 +2981,7 @@ public class ElementDefinition extends FhirResource {
         }
 
         public Builder contentReference(final String contentReference) {
-            b.add(PROPERTY_CONTENTREFERENCE, contentReference);
+            b.add(PROPERTY_CONTENT_REFERENCE, contentReference);
             return this;
         }
 
@@ -2991,762 +2991,762 @@ public class ElementDefinition extends FhirResource {
         }
 
         public Builder defaultValueBase64Binary(final String defaultValueBase64Binary) {
-            b.add(PROPERTY_DEFAULTVALUEBASE64BINARY, defaultValueBase64Binary);
+            b.add(PROPERTY_DEFAULT_VALUE_BASE64_BINARY, defaultValueBase64Binary);
             return this;
         }
 
         public Builder defaultValueBoolean(final Boolean defaultValueBoolean) {
-            b.add(PROPERTY_DEFAULTVALUEBOOLEAN, defaultValueBoolean);
+            b.add(PROPERTY_DEFAULT_VALUE_BOOLEAN, defaultValueBoolean);
             return this;
         }
 
         public Builder defaultValueCanonical(final String defaultValueCanonical) {
-            b.add(PROPERTY_DEFAULTVALUECANONICAL, defaultValueCanonical);
+            b.add(PROPERTY_DEFAULT_VALUE_CANONICAL, defaultValueCanonical);
             return this;
         }
 
         public Builder defaultValueCode(final String defaultValueCode) {
-            b.add(PROPERTY_DEFAULTVALUECODE, defaultValueCode);
+            b.add(PROPERTY_DEFAULT_VALUE_CODE, defaultValueCode);
             return this;
         }
 
         public Builder defaultValueDate(final String defaultValueDate) {
-            b.add(PROPERTY_DEFAULTVALUEDATE, defaultValueDate);
+            b.add(PROPERTY_DEFAULT_VALUE_DATE, defaultValueDate);
             return this;
         }
 
         public Builder defaultValueDateTime(final String defaultValueDateTime) {
-            b.add(PROPERTY_DEFAULTVALUEDATETIME, defaultValueDateTime);
+            b.add(PROPERTY_DEFAULT_VALUE_DATE_TIME, defaultValueDateTime);
             return this;
         }
 
         public Builder defaultValueDecimal(final Integer defaultValueDecimal) {
-            b.add(PROPERTY_DEFAULTVALUEDECIMAL, defaultValueDecimal);
+            b.add(PROPERTY_DEFAULT_VALUE_DECIMAL, defaultValueDecimal);
             return this;
         }
 
         public Builder defaultValueId(final String defaultValueId) {
-            b.add(PROPERTY_DEFAULTVALUEID, defaultValueId);
+            b.add(PROPERTY_DEFAULT_VALUE_ID, defaultValueId);
             return this;
         }
 
         public Builder defaultValueInstant(final String defaultValueInstant) {
-            b.add(PROPERTY_DEFAULTVALUEINSTANT, defaultValueInstant);
+            b.add(PROPERTY_DEFAULT_VALUE_INSTANT, defaultValueInstant);
             return this;
         }
 
         public Builder defaultValueInteger(final Integer defaultValueInteger) {
-            b.add(PROPERTY_DEFAULTVALUEINTEGER, defaultValueInteger);
+            b.add(PROPERTY_DEFAULT_VALUE_INTEGER, defaultValueInteger);
             return this;
         }
 
         public Builder defaultValueMarkdown(final String defaultValueMarkdown) {
-            b.add(PROPERTY_DEFAULTVALUEMARKDOWN, defaultValueMarkdown);
+            b.add(PROPERTY_DEFAULT_VALUE_MARKDOWN, defaultValueMarkdown);
             return this;
         }
 
         public Builder defaultValueOid(final String defaultValueOid) {
-            b.add(PROPERTY_DEFAULTVALUEOID, defaultValueOid);
+            b.add(PROPERTY_DEFAULT_VALUE_OID, defaultValueOid);
             return this;
         }
 
         public Builder defaultValuePositiveInt(final Integer defaultValuePositiveInt) {
-            b.add(PROPERTY_DEFAULTVALUEPOSITIVEINT, defaultValuePositiveInt);
+            b.add(PROPERTY_DEFAULT_VALUE_POSITIVE_INT, defaultValuePositiveInt);
             return this;
         }
 
         public Builder defaultValueString(final String defaultValueString) {
-            b.add(PROPERTY_DEFAULTVALUESTRING, defaultValueString);
+            b.add(PROPERTY_DEFAULT_VALUE_STRING, defaultValueString);
             return this;
         }
 
         public Builder defaultValueTime(final String defaultValueTime) {
-            b.add(PROPERTY_DEFAULTVALUETIME, defaultValueTime);
+            b.add(PROPERTY_DEFAULT_VALUE_TIME, defaultValueTime);
             return this;
         }
 
         public Builder defaultValueUnsignedInt(final Integer defaultValueUnsignedInt) {
-            b.add(PROPERTY_DEFAULTVALUEUNSIGNEDINT, defaultValueUnsignedInt);
+            b.add(PROPERTY_DEFAULT_VALUE_UNSIGNED_INT, defaultValueUnsignedInt);
             return this;
         }
 
         public Builder defaultValueUri(final String defaultValueUri) {
-            b.add(PROPERTY_DEFAULTVALUEURI, defaultValueUri);
+            b.add(PROPERTY_DEFAULT_VALUE_URI, defaultValueUri);
             return this;
         }
 
         public Builder defaultValueUrl(final String defaultValueUrl) {
-            b.add(PROPERTY_DEFAULTVALUEURL, defaultValueUrl);
+            b.add(PROPERTY_DEFAULT_VALUE_URL, defaultValueUrl);
             return this;
         }
 
         public Builder defaultValueUuid(final String defaultValueUuid) {
-            b.add(PROPERTY_DEFAULTVALUEUUID, defaultValueUuid);
+            b.add(PROPERTY_DEFAULT_VALUE_UUID, defaultValueUuid);
             return this;
         }
 
         public Builder defaultValueAddress(final Address defaultValueAddress) {
-            b.add(PROPERTY_DEFAULTVALUEADDRESS, defaultValueAddress);
+            b.add(PROPERTY_DEFAULT_VALUE_ADDRESS, defaultValueAddress);
             return this;
         }
 
         public Builder defaultValueAge(final Age defaultValueAge) {
-            b.add(PROPERTY_DEFAULTVALUEAGE, defaultValueAge);
+            b.add(PROPERTY_DEFAULT_VALUE_AGE, defaultValueAge);
             return this;
         }
 
         public Builder defaultValueAnnotation(final Annotation defaultValueAnnotation) {
-            b.add(PROPERTY_DEFAULTVALUEANNOTATION, defaultValueAnnotation);
+            b.add(PROPERTY_DEFAULT_VALUE_ANNOTATION, defaultValueAnnotation);
             return this;
         }
 
         public Builder defaultValueAttachment(final Attachment defaultValueAttachment) {
-            b.add(PROPERTY_DEFAULTVALUEATTACHMENT, defaultValueAttachment);
+            b.add(PROPERTY_DEFAULT_VALUE_ATTACHMENT, defaultValueAttachment);
             return this;
         }
 
         public Builder defaultValueCodeableConcept(final CodeableConcept defaultValueCodeableConcept) {
-            b.add(PROPERTY_DEFAULTVALUECODEABLECONCEPT, defaultValueCodeableConcept);
+            b.add(PROPERTY_DEFAULT_VALUE_CODEABLE_CONCEPT, defaultValueCodeableConcept);
             return this;
         }
 
         public Builder defaultValueCoding(final Coding defaultValueCoding) {
-            b.add(PROPERTY_DEFAULTVALUECODING, defaultValueCoding);
+            b.add(PROPERTY_DEFAULT_VALUE_CODING, defaultValueCoding);
             return this;
         }
 
         public Builder defaultValueContactPoint(final ContactPoint defaultValueContactPoint) {
-            b.add(PROPERTY_DEFAULTVALUECONTACTPOINT, defaultValueContactPoint);
+            b.add(PROPERTY_DEFAULT_VALUE_CONTACT_POINT, defaultValueContactPoint);
             return this;
         }
 
         public Builder defaultValueCount(final Count defaultValueCount) {
-            b.add(PROPERTY_DEFAULTVALUECOUNT, defaultValueCount);
+            b.add(PROPERTY_DEFAULT_VALUE_COUNT, defaultValueCount);
             return this;
         }
 
         public Builder defaultValueDistance(final Distance defaultValueDistance) {
-            b.add(PROPERTY_DEFAULTVALUEDISTANCE, defaultValueDistance);
+            b.add(PROPERTY_DEFAULT_VALUE_DISTANCE, defaultValueDistance);
             return this;
         }
 
         public Builder defaultValueDuration(final Duration defaultValueDuration) {
-            b.add(PROPERTY_DEFAULTVALUEDURATION, defaultValueDuration);
+            b.add(PROPERTY_DEFAULT_VALUE_DURATION, defaultValueDuration);
             return this;
         }
 
         public Builder defaultValueHumanName(final HumanName defaultValueHumanName) {
-            b.add(PROPERTY_DEFAULTVALUEHUMANNAME, defaultValueHumanName);
+            b.add(PROPERTY_DEFAULT_VALUE_HUMAN_NAME, defaultValueHumanName);
             return this;
         }
 
         public Builder defaultValueIdentifier(final Identifier defaultValueIdentifier) {
-            b.add(PROPERTY_DEFAULTVALUEIDENTIFIER, defaultValueIdentifier);
+            b.add(PROPERTY_DEFAULT_VALUE_IDENTIFIER, defaultValueIdentifier);
             return this;
         }
 
         public Builder defaultValueMoney(final Money defaultValueMoney) {
-            b.add(PROPERTY_DEFAULTVALUEMONEY, defaultValueMoney);
+            b.add(PROPERTY_DEFAULT_VALUE_MONEY, defaultValueMoney);
             return this;
         }
 
         public Builder defaultValuePeriod(final Period defaultValuePeriod) {
-            b.add(PROPERTY_DEFAULTVALUEPERIOD, defaultValuePeriod);
+            b.add(PROPERTY_DEFAULT_VALUE_PERIOD, defaultValuePeriod);
             return this;
         }
 
         public Builder defaultValueQuantity(final Quantity defaultValueQuantity) {
-            b.add(PROPERTY_DEFAULTVALUEQUANTITY, defaultValueQuantity);
+            b.add(PROPERTY_DEFAULT_VALUE_QUANTITY, defaultValueQuantity);
             return this;
         }
 
         public Builder defaultValueRange(final Range defaultValueRange) {
-            b.add(PROPERTY_DEFAULTVALUERANGE, defaultValueRange);
+            b.add(PROPERTY_DEFAULT_VALUE_RANGE, defaultValueRange);
             return this;
         }
 
         public Builder defaultValueRatio(final Ratio defaultValueRatio) {
-            b.add(PROPERTY_DEFAULTVALUERATIO, defaultValueRatio);
+            b.add(PROPERTY_DEFAULT_VALUE_RATIO, defaultValueRatio);
             return this;
         }
 
         public Builder defaultValueReference(final Reference defaultValueReference) {
-            b.add(PROPERTY_DEFAULTVALUEREFERENCE, defaultValueReference);
+            b.add(PROPERTY_DEFAULT_VALUE_REFERENCE, defaultValueReference);
             return this;
         }
 
         public Builder defaultValueSampledData(final SampledData defaultValueSampledData) {
-            b.add(PROPERTY_DEFAULTVALUESAMPLEDDATA, defaultValueSampledData);
+            b.add(PROPERTY_DEFAULT_VALUE_SAMPLED_DATA, defaultValueSampledData);
             return this;
         }
 
         public Builder defaultValueSignature(final Signature defaultValueSignature) {
-            b.add(PROPERTY_DEFAULTVALUESIGNATURE, defaultValueSignature);
+            b.add(PROPERTY_DEFAULT_VALUE_SIGNATURE, defaultValueSignature);
             return this;
         }
 
         public Builder defaultValueTiming(final Timing defaultValueTiming) {
-            b.add(PROPERTY_DEFAULTVALUETIMING, defaultValueTiming);
+            b.add(PROPERTY_DEFAULT_VALUE_TIMING, defaultValueTiming);
             return this;
         }
 
         public Builder defaultValueContactDetail(final ContactDetail defaultValueContactDetail) {
-            b.add(PROPERTY_DEFAULTVALUECONTACTDETAIL, defaultValueContactDetail);
+            b.add(PROPERTY_DEFAULT_VALUE_CONTACT_DETAIL, defaultValueContactDetail);
             return this;
         }
 
         public Builder defaultValueContributor(final Contributor defaultValueContributor) {
-            b.add(PROPERTY_DEFAULTVALUECONTRIBUTOR, defaultValueContributor);
+            b.add(PROPERTY_DEFAULT_VALUE_CONTRIBUTOR, defaultValueContributor);
             return this;
         }
 
         public Builder defaultValueDataRequirement(final DataRequirement defaultValueDataRequirement) {
-            b.add(PROPERTY_DEFAULTVALUEDATAREQUIREMENT, defaultValueDataRequirement);
+            b.add(PROPERTY_DEFAULT_VALUE_DATA_REQUIREMENT, defaultValueDataRequirement);
             return this;
         }
 
         public Builder defaultValueExpression(final Expression defaultValueExpression) {
-            b.add(PROPERTY_DEFAULTVALUEEXPRESSION, defaultValueExpression);
+            b.add(PROPERTY_DEFAULT_VALUE_EXPRESSION, defaultValueExpression);
             return this;
         }
 
         public Builder defaultValueParameterDefinition(final ParameterDefinition defaultValueParameterDefinition) {
-            b.add(PROPERTY_DEFAULTVALUEPARAMETERDEFINITION, defaultValueParameterDefinition);
+            b.add(PROPERTY_DEFAULT_VALUE_PARAMETER_DEFINITION, defaultValueParameterDefinition);
             return this;
         }
 
         public Builder defaultValueRelatedArtifact(final RelatedArtifact defaultValueRelatedArtifact) {
-            b.add(PROPERTY_DEFAULTVALUERELATEDARTIFACT, defaultValueRelatedArtifact);
+            b.add(PROPERTY_DEFAULT_VALUE_RELATED_ARTIFACT, defaultValueRelatedArtifact);
             return this;
         }
 
         public Builder defaultValueTriggerDefinition(final TriggerDefinition defaultValueTriggerDefinition) {
-            b.add(PROPERTY_DEFAULTVALUETRIGGERDEFINITION, defaultValueTriggerDefinition);
+            b.add(PROPERTY_DEFAULT_VALUE_TRIGGER_DEFINITION, defaultValueTriggerDefinition);
             return this;
         }
 
         public Builder defaultValueUsageContext(final UsageContext defaultValueUsageContext) {
-            b.add(PROPERTY_DEFAULTVALUEUSAGECONTEXT, defaultValueUsageContext);
+            b.add(PROPERTY_DEFAULT_VALUE_USAGE_CONTEXT, defaultValueUsageContext);
             return this;
         }
 
         public Builder defaultValueDosage(final Dosage defaultValueDosage) {
-            b.add(PROPERTY_DEFAULTVALUEDOSAGE, defaultValueDosage);
+            b.add(PROPERTY_DEFAULT_VALUE_DOSAGE, defaultValueDosage);
             return this;
         }
 
         public Builder defaultValueMeta(final Meta defaultValueMeta) {
-            b.add(PROPERTY_DEFAULTVALUEMETA, defaultValueMeta);
+            b.add(PROPERTY_DEFAULT_VALUE_META, defaultValueMeta);
             return this;
         }
 
         public Builder meaningWhenMissing(final String meaningWhenMissing) {
-            b.add(PROPERTY_MEANINGWHENMISSING, meaningWhenMissing);
+            b.add(PROPERTY_MEANING_WHEN_MISSING, meaningWhenMissing);
             return this;
         }
 
         public Builder orderMeaning(final String orderMeaning) {
-            b.add(PROPERTY_ORDERMEANING, orderMeaning);
+            b.add(PROPERTY_ORDER_MEANING, orderMeaning);
             return this;
         }
 
         public Builder fixedBase64Binary(final String fixedBase64Binary) {
-            b.add(PROPERTY_FIXEDBASE64BINARY, fixedBase64Binary);
+            b.add(PROPERTY_FIXED_BASE64_BINARY, fixedBase64Binary);
             return this;
         }
 
         public Builder fixedBoolean(final Boolean fixedBoolean) {
-            b.add(PROPERTY_FIXEDBOOLEAN, fixedBoolean);
+            b.add(PROPERTY_FIXED_BOOLEAN, fixedBoolean);
             return this;
         }
 
         public Builder fixedCanonical(final String fixedCanonical) {
-            b.add(PROPERTY_FIXEDCANONICAL, fixedCanonical);
+            b.add(PROPERTY_FIXED_CANONICAL, fixedCanonical);
             return this;
         }
 
         public Builder fixedCode(final String fixedCode) {
-            b.add(PROPERTY_FIXEDCODE, fixedCode);
+            b.add(PROPERTY_FIXED_CODE, fixedCode);
             return this;
         }
 
         public Builder fixedDate(final String fixedDate) {
-            b.add(PROPERTY_FIXEDDATE, fixedDate);
+            b.add(PROPERTY_FIXED_DATE, fixedDate);
             return this;
         }
 
         public Builder fixedDateTime(final String fixedDateTime) {
-            b.add(PROPERTY_FIXEDDATETIME, fixedDateTime);
+            b.add(PROPERTY_FIXED_DATE_TIME, fixedDateTime);
             return this;
         }
 
         public Builder fixedDecimal(final Integer fixedDecimal) {
-            b.add(PROPERTY_FIXEDDECIMAL, fixedDecimal);
+            b.add(PROPERTY_FIXED_DECIMAL, fixedDecimal);
             return this;
         }
 
         public Builder fixedId(final String fixedId) {
-            b.add(PROPERTY_FIXEDID, fixedId);
+            b.add(PROPERTY_FIXED_ID, fixedId);
             return this;
         }
 
         public Builder fixedInstant(final String fixedInstant) {
-            b.add(PROPERTY_FIXEDINSTANT, fixedInstant);
+            b.add(PROPERTY_FIXED_INSTANT, fixedInstant);
             return this;
         }
 
         public Builder fixedInteger(final Integer fixedInteger) {
-            b.add(PROPERTY_FIXEDINTEGER, fixedInteger);
+            b.add(PROPERTY_FIXED_INTEGER, fixedInteger);
             return this;
         }
 
         public Builder fixedMarkdown(final String fixedMarkdown) {
-            b.add(PROPERTY_FIXEDMARKDOWN, fixedMarkdown);
+            b.add(PROPERTY_FIXED_MARKDOWN, fixedMarkdown);
             return this;
         }
 
         public Builder fixedOid(final String fixedOid) {
-            b.add(PROPERTY_FIXEDOID, fixedOid);
+            b.add(PROPERTY_FIXED_OID, fixedOid);
             return this;
         }
 
         public Builder fixedPositiveInt(final Integer fixedPositiveInt) {
-            b.add(PROPERTY_FIXEDPOSITIVEINT, fixedPositiveInt);
+            b.add(PROPERTY_FIXED_POSITIVE_INT, fixedPositiveInt);
             return this;
         }
 
         public Builder fixedString(final String fixedString) {
-            b.add(PROPERTY_FIXEDSTRING, fixedString);
+            b.add(PROPERTY_FIXED_STRING, fixedString);
             return this;
         }
 
         public Builder fixedTime(final String fixedTime) {
-            b.add(PROPERTY_FIXEDTIME, fixedTime);
+            b.add(PROPERTY_FIXED_TIME, fixedTime);
             return this;
         }
 
         public Builder fixedUnsignedInt(final Integer fixedUnsignedInt) {
-            b.add(PROPERTY_FIXEDUNSIGNEDINT, fixedUnsignedInt);
+            b.add(PROPERTY_FIXED_UNSIGNED_INT, fixedUnsignedInt);
             return this;
         }
 
         public Builder fixedUri(final String fixedUri) {
-            b.add(PROPERTY_FIXEDURI, fixedUri);
+            b.add(PROPERTY_FIXED_URI, fixedUri);
             return this;
         }
 
         public Builder fixedUrl(final String fixedUrl) {
-            b.add(PROPERTY_FIXEDURL, fixedUrl);
+            b.add(PROPERTY_FIXED_URL, fixedUrl);
             return this;
         }
 
         public Builder fixedUuid(final String fixedUuid) {
-            b.add(PROPERTY_FIXEDUUID, fixedUuid);
+            b.add(PROPERTY_FIXED_UUID, fixedUuid);
             return this;
         }
 
         public Builder fixedAddress(final Address fixedAddress) {
-            b.add(PROPERTY_FIXEDADDRESS, fixedAddress);
+            b.add(PROPERTY_FIXED_ADDRESS, fixedAddress);
             return this;
         }
 
         public Builder fixedAge(final Age fixedAge) {
-            b.add(PROPERTY_FIXEDAGE, fixedAge);
+            b.add(PROPERTY_FIXED_AGE, fixedAge);
             return this;
         }
 
         public Builder fixedAnnotation(final Annotation fixedAnnotation) {
-            b.add(PROPERTY_FIXEDANNOTATION, fixedAnnotation);
+            b.add(PROPERTY_FIXED_ANNOTATION, fixedAnnotation);
             return this;
         }
 
         public Builder fixedAttachment(final Attachment fixedAttachment) {
-            b.add(PROPERTY_FIXEDATTACHMENT, fixedAttachment);
+            b.add(PROPERTY_FIXED_ATTACHMENT, fixedAttachment);
             return this;
         }
 
         public Builder fixedCodeableConcept(final CodeableConcept fixedCodeableConcept) {
-            b.add(PROPERTY_FIXEDCODEABLECONCEPT, fixedCodeableConcept);
+            b.add(PROPERTY_FIXED_CODEABLE_CONCEPT, fixedCodeableConcept);
             return this;
         }
 
         public Builder fixedCoding(final Coding fixedCoding) {
-            b.add(PROPERTY_FIXEDCODING, fixedCoding);
+            b.add(PROPERTY_FIXED_CODING, fixedCoding);
             return this;
         }
 
         public Builder fixedContactPoint(final ContactPoint fixedContactPoint) {
-            b.add(PROPERTY_FIXEDCONTACTPOINT, fixedContactPoint);
+            b.add(PROPERTY_FIXED_CONTACT_POINT, fixedContactPoint);
             return this;
         }
 
         public Builder fixedCount(final Count fixedCount) {
-            b.add(PROPERTY_FIXEDCOUNT, fixedCount);
+            b.add(PROPERTY_FIXED_COUNT, fixedCount);
             return this;
         }
 
         public Builder fixedDistance(final Distance fixedDistance) {
-            b.add(PROPERTY_FIXEDDISTANCE, fixedDistance);
+            b.add(PROPERTY_FIXED_DISTANCE, fixedDistance);
             return this;
         }
 
         public Builder fixedDuration(final Duration fixedDuration) {
-            b.add(PROPERTY_FIXEDDURATION, fixedDuration);
+            b.add(PROPERTY_FIXED_DURATION, fixedDuration);
             return this;
         }
 
         public Builder fixedHumanName(final HumanName fixedHumanName) {
-            b.add(PROPERTY_FIXEDHUMANNAME, fixedHumanName);
+            b.add(PROPERTY_FIXED_HUMAN_NAME, fixedHumanName);
             return this;
         }
 
         public Builder fixedIdentifier(final Identifier fixedIdentifier) {
-            b.add(PROPERTY_FIXEDIDENTIFIER, fixedIdentifier);
+            b.add(PROPERTY_FIXED_IDENTIFIER, fixedIdentifier);
             return this;
         }
 
         public Builder fixedMoney(final Money fixedMoney) {
-            b.add(PROPERTY_FIXEDMONEY, fixedMoney);
+            b.add(PROPERTY_FIXED_MONEY, fixedMoney);
             return this;
         }
 
         public Builder fixedPeriod(final Period fixedPeriod) {
-            b.add(PROPERTY_FIXEDPERIOD, fixedPeriod);
+            b.add(PROPERTY_FIXED_PERIOD, fixedPeriod);
             return this;
         }
 
         public Builder fixedQuantity(final Quantity fixedQuantity) {
-            b.add(PROPERTY_FIXEDQUANTITY, fixedQuantity);
+            b.add(PROPERTY_FIXED_QUANTITY, fixedQuantity);
             return this;
         }
 
         public Builder fixedRange(final Range fixedRange) {
-            b.add(PROPERTY_FIXEDRANGE, fixedRange);
+            b.add(PROPERTY_FIXED_RANGE, fixedRange);
             return this;
         }
 
         public Builder fixedRatio(final Ratio fixedRatio) {
-            b.add(PROPERTY_FIXEDRATIO, fixedRatio);
+            b.add(PROPERTY_FIXED_RATIO, fixedRatio);
             return this;
         }
 
         public Builder fixedReference(final Reference fixedReference) {
-            b.add(PROPERTY_FIXEDREFERENCE, fixedReference);
+            b.add(PROPERTY_FIXED_REFERENCE, fixedReference);
             return this;
         }
 
         public Builder fixedSampledData(final SampledData fixedSampledData) {
-            b.add(PROPERTY_FIXEDSAMPLEDDATA, fixedSampledData);
+            b.add(PROPERTY_FIXED_SAMPLED_DATA, fixedSampledData);
             return this;
         }
 
         public Builder fixedSignature(final Signature fixedSignature) {
-            b.add(PROPERTY_FIXEDSIGNATURE, fixedSignature);
+            b.add(PROPERTY_FIXED_SIGNATURE, fixedSignature);
             return this;
         }
 
         public Builder fixedTiming(final Timing fixedTiming) {
-            b.add(PROPERTY_FIXEDTIMING, fixedTiming);
+            b.add(PROPERTY_FIXED_TIMING, fixedTiming);
             return this;
         }
 
         public Builder fixedContactDetail(final ContactDetail fixedContactDetail) {
-            b.add(PROPERTY_FIXEDCONTACTDETAIL, fixedContactDetail);
+            b.add(PROPERTY_FIXED_CONTACT_DETAIL, fixedContactDetail);
             return this;
         }
 
         public Builder fixedContributor(final Contributor fixedContributor) {
-            b.add(PROPERTY_FIXEDCONTRIBUTOR, fixedContributor);
+            b.add(PROPERTY_FIXED_CONTRIBUTOR, fixedContributor);
             return this;
         }
 
         public Builder fixedDataRequirement(final DataRequirement fixedDataRequirement) {
-            b.add(PROPERTY_FIXEDDATAREQUIREMENT, fixedDataRequirement);
+            b.add(PROPERTY_FIXED_DATA_REQUIREMENT, fixedDataRequirement);
             return this;
         }
 
         public Builder fixedExpression(final Expression fixedExpression) {
-            b.add(PROPERTY_FIXEDEXPRESSION, fixedExpression);
+            b.add(PROPERTY_FIXED_EXPRESSION, fixedExpression);
             return this;
         }
 
         public Builder fixedParameterDefinition(final ParameterDefinition fixedParameterDefinition) {
-            b.add(PROPERTY_FIXEDPARAMETERDEFINITION, fixedParameterDefinition);
+            b.add(PROPERTY_FIXED_PARAMETER_DEFINITION, fixedParameterDefinition);
             return this;
         }
 
         public Builder fixedRelatedArtifact(final RelatedArtifact fixedRelatedArtifact) {
-            b.add(PROPERTY_FIXEDRELATEDARTIFACT, fixedRelatedArtifact);
+            b.add(PROPERTY_FIXED_RELATED_ARTIFACT, fixedRelatedArtifact);
             return this;
         }
 
         public Builder fixedTriggerDefinition(final TriggerDefinition fixedTriggerDefinition) {
-            b.add(PROPERTY_FIXEDTRIGGERDEFINITION, fixedTriggerDefinition);
+            b.add(PROPERTY_FIXED_TRIGGER_DEFINITION, fixedTriggerDefinition);
             return this;
         }
 
         public Builder fixedUsageContext(final UsageContext fixedUsageContext) {
-            b.add(PROPERTY_FIXEDUSAGECONTEXT, fixedUsageContext);
+            b.add(PROPERTY_FIXED_USAGE_CONTEXT, fixedUsageContext);
             return this;
         }
 
         public Builder fixedDosage(final Dosage fixedDosage) {
-            b.add(PROPERTY_FIXEDDOSAGE, fixedDosage);
+            b.add(PROPERTY_FIXED_DOSAGE, fixedDosage);
             return this;
         }
 
         public Builder fixedMeta(final Meta fixedMeta) {
-            b.add(PROPERTY_FIXEDMETA, fixedMeta);
+            b.add(PROPERTY_FIXED_META, fixedMeta);
             return this;
         }
 
         public Builder patternBase64Binary(final String patternBase64Binary) {
-            b.add(PROPERTY_PATTERNBASE64BINARY, patternBase64Binary);
+            b.add(PROPERTY_PATTERN_BASE64_BINARY, patternBase64Binary);
             return this;
         }
 
         public Builder patternBoolean(final Boolean patternBoolean) {
-            b.add(PROPERTY_PATTERNBOOLEAN, patternBoolean);
+            b.add(PROPERTY_PATTERN_BOOLEAN, patternBoolean);
             return this;
         }
 
         public Builder patternCanonical(final String patternCanonical) {
-            b.add(PROPERTY_PATTERNCANONICAL, patternCanonical);
+            b.add(PROPERTY_PATTERN_CANONICAL, patternCanonical);
             return this;
         }
 
         public Builder patternCode(final String patternCode) {
-            b.add(PROPERTY_PATTERNCODE, patternCode);
+            b.add(PROPERTY_PATTERN_CODE, patternCode);
             return this;
         }
 
         public Builder patternDate(final String patternDate) {
-            b.add(PROPERTY_PATTERNDATE, patternDate);
+            b.add(PROPERTY_PATTERN_DATE, patternDate);
             return this;
         }
 
         public Builder patternDateTime(final String patternDateTime) {
-            b.add(PROPERTY_PATTERNDATETIME, patternDateTime);
+            b.add(PROPERTY_PATTERN_DATE_TIME, patternDateTime);
             return this;
         }
 
         public Builder patternDecimal(final Integer patternDecimal) {
-            b.add(PROPERTY_PATTERNDECIMAL, patternDecimal);
+            b.add(PROPERTY_PATTERN_DECIMAL, patternDecimal);
             return this;
         }
 
         public Builder patternId(final String patternId) {
-            b.add(PROPERTY_PATTERNID, patternId);
+            b.add(PROPERTY_PATTERN_ID, patternId);
             return this;
         }
 
         public Builder patternInstant(final String patternInstant) {
-            b.add(PROPERTY_PATTERNINSTANT, patternInstant);
+            b.add(PROPERTY_PATTERN_INSTANT, patternInstant);
             return this;
         }
 
         public Builder patternInteger(final Integer patternInteger) {
-            b.add(PROPERTY_PATTERNINTEGER, patternInteger);
+            b.add(PROPERTY_PATTERN_INTEGER, patternInteger);
             return this;
         }
 
         public Builder patternMarkdown(final String patternMarkdown) {
-            b.add(PROPERTY_PATTERNMARKDOWN, patternMarkdown);
+            b.add(PROPERTY_PATTERN_MARKDOWN, patternMarkdown);
             return this;
         }
 
         public Builder patternOid(final String patternOid) {
-            b.add(PROPERTY_PATTERNOID, patternOid);
+            b.add(PROPERTY_PATTERN_OID, patternOid);
             return this;
         }
 
         public Builder patternPositiveInt(final Integer patternPositiveInt) {
-            b.add(PROPERTY_PATTERNPOSITIVEINT, patternPositiveInt);
+            b.add(PROPERTY_PATTERN_POSITIVE_INT, patternPositiveInt);
             return this;
         }
 
         public Builder patternString(final String patternString) {
-            b.add(PROPERTY_PATTERNSTRING, patternString);
+            b.add(PROPERTY_PATTERN_STRING, patternString);
             return this;
         }
 
         public Builder patternTime(final String patternTime) {
-            b.add(PROPERTY_PATTERNTIME, patternTime);
+            b.add(PROPERTY_PATTERN_TIME, patternTime);
             return this;
         }
 
         public Builder patternUnsignedInt(final Integer patternUnsignedInt) {
-            b.add(PROPERTY_PATTERNUNSIGNEDINT, patternUnsignedInt);
+            b.add(PROPERTY_PATTERN_UNSIGNED_INT, patternUnsignedInt);
             return this;
         }
 
         public Builder patternUri(final String patternUri) {
-            b.add(PROPERTY_PATTERNURI, patternUri);
+            b.add(PROPERTY_PATTERN_URI, patternUri);
             return this;
         }
 
         public Builder patternUrl(final String patternUrl) {
-            b.add(PROPERTY_PATTERNURL, patternUrl);
+            b.add(PROPERTY_PATTERN_URL, patternUrl);
             return this;
         }
 
         public Builder patternUuid(final String patternUuid) {
-            b.add(PROPERTY_PATTERNUUID, patternUuid);
+            b.add(PROPERTY_PATTERN_UUID, patternUuid);
             return this;
         }
 
         public Builder patternAddress(final Address patternAddress) {
-            b.add(PROPERTY_PATTERNADDRESS, patternAddress);
+            b.add(PROPERTY_PATTERN_ADDRESS, patternAddress);
             return this;
         }
 
         public Builder patternAge(final Age patternAge) {
-            b.add(PROPERTY_PATTERNAGE, patternAge);
+            b.add(PROPERTY_PATTERN_AGE, patternAge);
             return this;
         }
 
         public Builder patternAnnotation(final Annotation patternAnnotation) {
-            b.add(PROPERTY_PATTERNANNOTATION, patternAnnotation);
+            b.add(PROPERTY_PATTERN_ANNOTATION, patternAnnotation);
             return this;
         }
 
         public Builder patternAttachment(final Attachment patternAttachment) {
-            b.add(PROPERTY_PATTERNATTACHMENT, patternAttachment);
+            b.add(PROPERTY_PATTERN_ATTACHMENT, patternAttachment);
             return this;
         }
 
         public Builder patternCodeableConcept(final CodeableConcept patternCodeableConcept) {
-            b.add(PROPERTY_PATTERNCODEABLECONCEPT, patternCodeableConcept);
+            b.add(PROPERTY_PATTERN_CODEABLE_CONCEPT, patternCodeableConcept);
             return this;
         }
 
         public Builder patternCoding(final Coding patternCoding) {
-            b.add(PROPERTY_PATTERNCODING, patternCoding);
+            b.add(PROPERTY_PATTERN_CODING, patternCoding);
             return this;
         }
 
         public Builder patternContactPoint(final ContactPoint patternContactPoint) {
-            b.add(PROPERTY_PATTERNCONTACTPOINT, patternContactPoint);
+            b.add(PROPERTY_PATTERN_CONTACT_POINT, patternContactPoint);
             return this;
         }
 
         public Builder patternCount(final Count patternCount) {
-            b.add(PROPERTY_PATTERNCOUNT, patternCount);
+            b.add(PROPERTY_PATTERN_COUNT, patternCount);
             return this;
         }
 
         public Builder patternDistance(final Distance patternDistance) {
-            b.add(PROPERTY_PATTERNDISTANCE, patternDistance);
+            b.add(PROPERTY_PATTERN_DISTANCE, patternDistance);
             return this;
         }
 
         public Builder patternDuration(final Duration patternDuration) {
-            b.add(PROPERTY_PATTERNDURATION, patternDuration);
+            b.add(PROPERTY_PATTERN_DURATION, patternDuration);
             return this;
         }
 
         public Builder patternHumanName(final HumanName patternHumanName) {
-            b.add(PROPERTY_PATTERNHUMANNAME, patternHumanName);
+            b.add(PROPERTY_PATTERN_HUMAN_NAME, patternHumanName);
             return this;
         }
 
         public Builder patternIdentifier(final Identifier patternIdentifier) {
-            b.add(PROPERTY_PATTERNIDENTIFIER, patternIdentifier);
+            b.add(PROPERTY_PATTERN_IDENTIFIER, patternIdentifier);
             return this;
         }
 
         public Builder patternMoney(final Money patternMoney) {
-            b.add(PROPERTY_PATTERNMONEY, patternMoney);
+            b.add(PROPERTY_PATTERN_MONEY, patternMoney);
             return this;
         }
 
         public Builder patternPeriod(final Period patternPeriod) {
-            b.add(PROPERTY_PATTERNPERIOD, patternPeriod);
+            b.add(PROPERTY_PATTERN_PERIOD, patternPeriod);
             return this;
         }
 
         public Builder patternQuantity(final Quantity patternQuantity) {
-            b.add(PROPERTY_PATTERNQUANTITY, patternQuantity);
+            b.add(PROPERTY_PATTERN_QUANTITY, patternQuantity);
             return this;
         }
 
         public Builder patternRange(final Range patternRange) {
-            b.add(PROPERTY_PATTERNRANGE, patternRange);
+            b.add(PROPERTY_PATTERN_RANGE, patternRange);
             return this;
         }
 
         public Builder patternRatio(final Ratio patternRatio) {
-            b.add(PROPERTY_PATTERNRATIO, patternRatio);
+            b.add(PROPERTY_PATTERN_RATIO, patternRatio);
             return this;
         }
 
         public Builder patternReference(final Reference patternReference) {
-            b.add(PROPERTY_PATTERNREFERENCE, patternReference);
+            b.add(PROPERTY_PATTERN_REFERENCE, patternReference);
             return this;
         }
 
         public Builder patternSampledData(final SampledData patternSampledData) {
-            b.add(PROPERTY_PATTERNSAMPLEDDATA, patternSampledData);
+            b.add(PROPERTY_PATTERN_SAMPLED_DATA, patternSampledData);
             return this;
         }
 
         public Builder patternSignature(final Signature patternSignature) {
-            b.add(PROPERTY_PATTERNSIGNATURE, patternSignature);
+            b.add(PROPERTY_PATTERN_SIGNATURE, patternSignature);
             return this;
         }
 
         public Builder patternTiming(final Timing patternTiming) {
-            b.add(PROPERTY_PATTERNTIMING, patternTiming);
+            b.add(PROPERTY_PATTERN_TIMING, patternTiming);
             return this;
         }
 
         public Builder patternContactDetail(final ContactDetail patternContactDetail) {
-            b.add(PROPERTY_PATTERNCONTACTDETAIL, patternContactDetail);
+            b.add(PROPERTY_PATTERN_CONTACT_DETAIL, patternContactDetail);
             return this;
         }
 
         public Builder patternContributor(final Contributor patternContributor) {
-            b.add(PROPERTY_PATTERNCONTRIBUTOR, patternContributor);
+            b.add(PROPERTY_PATTERN_CONTRIBUTOR, patternContributor);
             return this;
         }
 
         public Builder patternDataRequirement(final DataRequirement patternDataRequirement) {
-            b.add(PROPERTY_PATTERNDATAREQUIREMENT, patternDataRequirement);
+            b.add(PROPERTY_PATTERN_DATA_REQUIREMENT, patternDataRequirement);
             return this;
         }
 
         public Builder patternExpression(final Expression patternExpression) {
-            b.add(PROPERTY_PATTERNEXPRESSION, patternExpression);
+            b.add(PROPERTY_PATTERN_EXPRESSION, patternExpression);
             return this;
         }
 
         public Builder patternParameterDefinition(final ParameterDefinition patternParameterDefinition) {
-            b.add(PROPERTY_PATTERNPARAMETERDEFINITION, patternParameterDefinition);
+            b.add(PROPERTY_PATTERN_PARAMETER_DEFINITION, patternParameterDefinition);
             return this;
         }
 
         public Builder patternRelatedArtifact(final RelatedArtifact patternRelatedArtifact) {
-            b.add(PROPERTY_PATTERNRELATEDARTIFACT, patternRelatedArtifact);
+            b.add(PROPERTY_PATTERN_RELATED_ARTIFACT, patternRelatedArtifact);
             return this;
         }
 
         public Builder patternTriggerDefinition(final TriggerDefinition patternTriggerDefinition) {
-            b.add(PROPERTY_PATTERNTRIGGERDEFINITION, patternTriggerDefinition);
+            b.add(PROPERTY_PATTERN_TRIGGER_DEFINITION, patternTriggerDefinition);
             return this;
         }
 
         public Builder patternUsageContext(final UsageContext patternUsageContext) {
-            b.add(PROPERTY_PATTERNUSAGECONTEXT, patternUsageContext);
+            b.add(PROPERTY_PATTERN_USAGE_CONTEXT, patternUsageContext);
             return this;
         }
 
         public Builder patternDosage(final Dosage patternDosage) {
-            b.add(PROPERTY_PATTERNDOSAGE, patternDosage);
+            b.add(PROPERTY_PATTERN_DOSAGE, patternDosage);
             return this;
         }
 
         public Builder patternMeta(final Meta patternMeta) {
-            b.add(PROPERTY_PATTERNMETA, patternMeta);
+            b.add(PROPERTY_PATTERN_META, patternMeta);
             return this;
         }
 
@@ -3756,97 +3756,97 @@ public class ElementDefinition extends FhirResource {
         }
 
         public Builder minValueDate(final String minValueDate) {
-            b.add(PROPERTY_MINVALUEDATE, minValueDate);
+            b.add(PROPERTY_MIN_VALUE_DATE, minValueDate);
             return this;
         }
 
         public Builder minValueDateTime(final String minValueDateTime) {
-            b.add(PROPERTY_MINVALUEDATETIME, minValueDateTime);
+            b.add(PROPERTY_MIN_VALUE_DATE_TIME, minValueDateTime);
             return this;
         }
 
         public Builder minValueInstant(final String minValueInstant) {
-            b.add(PROPERTY_MINVALUEINSTANT, minValueInstant);
+            b.add(PROPERTY_MIN_VALUE_INSTANT, minValueInstant);
             return this;
         }
 
         public Builder minValueTime(final String minValueTime) {
-            b.add(PROPERTY_MINVALUETIME, minValueTime);
+            b.add(PROPERTY_MIN_VALUE_TIME, minValueTime);
             return this;
         }
 
         public Builder minValueDecimal(final Integer minValueDecimal) {
-            b.add(PROPERTY_MINVALUEDECIMAL, minValueDecimal);
+            b.add(PROPERTY_MIN_VALUE_DECIMAL, minValueDecimal);
             return this;
         }
 
         public Builder minValueInteger(final Integer minValueInteger) {
-            b.add(PROPERTY_MINVALUEINTEGER, minValueInteger);
+            b.add(PROPERTY_MIN_VALUE_INTEGER, minValueInteger);
             return this;
         }
 
         public Builder minValuePositiveInt(final Integer minValuePositiveInt) {
-            b.add(PROPERTY_MINVALUEPOSITIVEINT, minValuePositiveInt);
+            b.add(PROPERTY_MIN_VALUE_POSITIVE_INT, minValuePositiveInt);
             return this;
         }
 
         public Builder minValueUnsignedInt(final Integer minValueUnsignedInt) {
-            b.add(PROPERTY_MINVALUEUNSIGNEDINT, minValueUnsignedInt);
+            b.add(PROPERTY_MIN_VALUE_UNSIGNED_INT, minValueUnsignedInt);
             return this;
         }
 
         public Builder minValueQuantity(final Quantity minValueQuantity) {
-            b.add(PROPERTY_MINVALUEQUANTITY, minValueQuantity);
+            b.add(PROPERTY_MIN_VALUE_QUANTITY, minValueQuantity);
             return this;
         }
 
         public Builder maxValueDate(final String maxValueDate) {
-            b.add(PROPERTY_MAXVALUEDATE, maxValueDate);
+            b.add(PROPERTY_MAX_VALUE_DATE, maxValueDate);
             return this;
         }
 
         public Builder maxValueDateTime(final String maxValueDateTime) {
-            b.add(PROPERTY_MAXVALUEDATETIME, maxValueDateTime);
+            b.add(PROPERTY_MAX_VALUE_DATE_TIME, maxValueDateTime);
             return this;
         }
 
         public Builder maxValueInstant(final String maxValueInstant) {
-            b.add(PROPERTY_MAXVALUEINSTANT, maxValueInstant);
+            b.add(PROPERTY_MAX_VALUE_INSTANT, maxValueInstant);
             return this;
         }
 
         public Builder maxValueTime(final String maxValueTime) {
-            b.add(PROPERTY_MAXVALUETIME, maxValueTime);
+            b.add(PROPERTY_MAX_VALUE_TIME, maxValueTime);
             return this;
         }
 
         public Builder maxValueDecimal(final Integer maxValueDecimal) {
-            b.add(PROPERTY_MAXVALUEDECIMAL, maxValueDecimal);
+            b.add(PROPERTY_MAX_VALUE_DECIMAL, maxValueDecimal);
             return this;
         }
 
         public Builder maxValueInteger(final Integer maxValueInteger) {
-            b.add(PROPERTY_MAXVALUEINTEGER, maxValueInteger);
+            b.add(PROPERTY_MAX_VALUE_INTEGER, maxValueInteger);
             return this;
         }
 
         public Builder maxValuePositiveInt(final Integer maxValuePositiveInt) {
-            b.add(PROPERTY_MAXVALUEPOSITIVEINT, maxValuePositiveInt);
+            b.add(PROPERTY_MAX_VALUE_POSITIVE_INT, maxValuePositiveInt);
             return this;
         }
 
         public Builder maxValueUnsignedInt(final Integer maxValueUnsignedInt) {
-            b.add(PROPERTY_MAXVALUEUNSIGNEDINT, maxValueUnsignedInt);
+            b.add(PROPERTY_MAX_VALUE_UNSIGNED_INT, maxValueUnsignedInt);
             return this;
         }
 
         public Builder maxValueQuantity(final Quantity maxValueQuantity) {
-            b.add(PROPERTY_MAXVALUEQUANTITY, maxValueQuantity);
+            b.add(PROPERTY_MAX_VALUE_QUANTITY, maxValueQuantity);
             return this;
         }
 
         public Builder maxLength(final Integer maxLength) {
-            b.add(PROPERTY_MAXLENGTH, maxLength);
+            b.add(PROPERTY_MAX_LENGTH, maxLength);
             return this;
         }
 
@@ -3861,22 +3861,22 @@ public class ElementDefinition extends FhirResource {
         }
 
         public Builder mustSupport(final Boolean mustSupport) {
-            b.add(PROPERTY_MUSTSUPPORT, mustSupport);
+            b.add(PROPERTY_MUST_SUPPORT, mustSupport);
             return this;
         }
 
         public Builder isModifier(final Boolean isModifier) {
-            b.add(PROPERTY_ISMODIFIER, isModifier);
+            b.add(PROPERTY_IS_MODIFIER, isModifier);
             return this;
         }
 
         public Builder isModifierReason(final String isModifierReason) {
-            b.add(PROPERTY_ISMODIFIERREASON, isModifierReason);
+            b.add(PROPERTY_IS_MODIFIER_REASON, isModifierReason);
             return this;
         }
 
         public Builder isSummary(final Boolean isSummary) {
-            b.add(PROPERTY_ISSUMMARY, isSummary);
+            b.add(PROPERTY_IS_SUMMARY, isSummary);
             return this;
         }
 
@@ -3898,7 +3898,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionBase extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionBase";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PATH = "path";
         public static final String PROPERTY_MIN = "min";
         public static final String PROPERTY_MAX = "max";
@@ -3941,7 +3941,7 @@ public class ElementDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -3985,7 +3985,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -4013,10 +4013,10 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionBinding extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionBinding";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_STRENGTH = "strength";
         public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_VALUESET = "valueSet";
+        public static final String PROPERTY_VALUE_SET = "valueSet";
 
         public static Builder create() {
             return new Builder();
@@ -4056,7 +4056,7 @@ public class ElementDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -4080,7 +4080,7 @@ public class ElementDefinition extends FhirResource {
          * refers to.
          */
         public String valueSet() {
-            return getString(PROPERTY_VALUESET);
+            return getString(PROPERTY_VALUE_SET);
         }
 
         public static class Builder {
@@ -4100,7 +4100,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -4115,7 +4115,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder valueSet(final String valueSet) {
-                b.add(PROPERTY_VALUESET, valueSet);
+                b.add(PROPERTY_VALUE_SET, valueSet);
                 return this;
             }
 
@@ -4128,7 +4128,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionConstraint extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionConstraint";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_KEY = "key";
         public static final String PROPERTY_REQUIREMENTS = "requirements";
         public static final String PROPERTY_SEVERITY = "severity";
@@ -4175,7 +4175,7 @@ public class ElementDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -4251,7 +4251,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -4299,7 +4299,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionDiscriminator extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionDiscriminator";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_PATH = "path";
 
@@ -4341,7 +4341,7 @@ public class ElementDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -4377,7 +4377,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -4400,58 +4400,58 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionExample extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionExample";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_LABEL = "label";
-        public static final String PROPERTY_VALUEBASE64BINARY = "valueBase64Binary";
-        public static final String PROPERTY_VALUEBOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUECANONICAL = "valueCanonical";
-        public static final String PROPERTY_VALUECODE = "valueCode";
-        public static final String PROPERTY_VALUEDATE = "valueDate";
-        public static final String PROPERTY_VALUEDATETIME = "valueDateTime";
-        public static final String PROPERTY_VALUEDECIMAL = "valueDecimal";
-        public static final String PROPERTY_VALUEID = "valueId";
-        public static final String PROPERTY_VALUEINSTANT = "valueInstant";
-        public static final String PROPERTY_VALUEINTEGER = "valueInteger";
-        public static final String PROPERTY_VALUEMARKDOWN = "valueMarkdown";
-        public static final String PROPERTY_VALUEOID = "valueOid";
-        public static final String PROPERTY_VALUEPOSITIVEINT = "valuePositiveInt";
-        public static final String PROPERTY_VALUESTRING = "valueString";
-        public static final String PROPERTY_VALUETIME = "valueTime";
-        public static final String PROPERTY_VALUEUNSIGNEDINT = "valueUnsignedInt";
-        public static final String PROPERTY_VALUEURI = "valueUri";
-        public static final String PROPERTY_VALUEURL = "valueUrl";
-        public static final String PROPERTY_VALUEUUID = "valueUuid";
-        public static final String PROPERTY_VALUEADDRESS = "valueAddress";
-        public static final String PROPERTY_VALUEAGE = "valueAge";
-        public static final String PROPERTY_VALUEANNOTATION = "valueAnnotation";
-        public static final String PROPERTY_VALUEATTACHMENT = "valueAttachment";
-        public static final String PROPERTY_VALUECODEABLECONCEPT = "valueCodeableConcept";
-        public static final String PROPERTY_VALUECODING = "valueCoding";
-        public static final String PROPERTY_VALUECONTACTPOINT = "valueContactPoint";
-        public static final String PROPERTY_VALUECOUNT = "valueCount";
-        public static final String PROPERTY_VALUEDISTANCE = "valueDistance";
-        public static final String PROPERTY_VALUEDURATION = "valueDuration";
-        public static final String PROPERTY_VALUEHUMANNAME = "valueHumanName";
-        public static final String PROPERTY_VALUEIDENTIFIER = "valueIdentifier";
-        public static final String PROPERTY_VALUEMONEY = "valueMoney";
-        public static final String PROPERTY_VALUEPERIOD = "valuePeriod";
-        public static final String PROPERTY_VALUEQUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUERANGE = "valueRange";
-        public static final String PROPERTY_VALUERATIO = "valueRatio";
-        public static final String PROPERTY_VALUEREFERENCE = "valueReference";
-        public static final String PROPERTY_VALUESAMPLEDDATA = "valueSampledData";
-        public static final String PROPERTY_VALUESIGNATURE = "valueSignature";
-        public static final String PROPERTY_VALUETIMING = "valueTiming";
-        public static final String PROPERTY_VALUECONTACTDETAIL = "valueContactDetail";
-        public static final String PROPERTY_VALUECONTRIBUTOR = "valueContributor";
-        public static final String PROPERTY_VALUEDATAREQUIREMENT = "valueDataRequirement";
-        public static final String PROPERTY_VALUEEXPRESSION = "valueExpression";
-        public static final String PROPERTY_VALUEPARAMETERDEFINITION = "valueParameterDefinition";
-        public static final String PROPERTY_VALUERELATEDARTIFACT = "valueRelatedArtifact";
-        public static final String PROPERTY_VALUETRIGGERDEFINITION = "valueTriggerDefinition";
-        public static final String PROPERTY_VALUEUSAGECONTEXT = "valueUsageContext";
-        public static final String PROPERTY_VALUEDOSAGE = "valueDosage";
-        public static final String PROPERTY_VALUEMETA = "valueMeta";
+        public static final String PROPERTY_VALUE_BASE64_BINARY = "valueBase64Binary";
+        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
+        public static final String PROPERTY_VALUE_CANONICAL = "valueCanonical";
+        public static final String PROPERTY_VALUE_CODE = "valueCode";
+        public static final String PROPERTY_VALUE_DATE = "valueDate";
+        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
+        public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
+        public static final String PROPERTY_VALUE_ID = "valueId";
+        public static final String PROPERTY_VALUE_INSTANT = "valueInstant";
+        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
+        public static final String PROPERTY_VALUE_MARKDOWN = "valueMarkdown";
+        public static final String PROPERTY_VALUE_OID = "valueOid";
+        public static final String PROPERTY_VALUE_POSITIVE_INT = "valuePositiveInt";
+        public static final String PROPERTY_VALUE_STRING = "valueString";
+        public static final String PROPERTY_VALUE_TIME = "valueTime";
+        public static final String PROPERTY_VALUE_UNSIGNED_INT = "valueUnsignedInt";
+        public static final String PROPERTY_VALUE_URI = "valueUri";
+        public static final String PROPERTY_VALUE_URL = "valueUrl";
+        public static final String PROPERTY_VALUE_UUID = "valueUuid";
+        public static final String PROPERTY_VALUE_ADDRESS = "valueAddress";
+        public static final String PROPERTY_VALUE_AGE = "valueAge";
+        public static final String PROPERTY_VALUE_ANNOTATION = "valueAnnotation";
+        public static final String PROPERTY_VALUE_ATTACHMENT = "valueAttachment";
+        public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
+        public static final String PROPERTY_VALUE_CODING = "valueCoding";
+        public static final String PROPERTY_VALUE_CONTACT_POINT = "valueContactPoint";
+        public static final String PROPERTY_VALUE_COUNT = "valueCount";
+        public static final String PROPERTY_VALUE_DISTANCE = "valueDistance";
+        public static final String PROPERTY_VALUE_DURATION = "valueDuration";
+        public static final String PROPERTY_VALUE_HUMAN_NAME = "valueHumanName";
+        public static final String PROPERTY_VALUE_IDENTIFIER = "valueIdentifier";
+        public static final String PROPERTY_VALUE_MONEY = "valueMoney";
+        public static final String PROPERTY_VALUE_PERIOD = "valuePeriod";
+        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
+        public static final String PROPERTY_VALUE_RANGE = "valueRange";
+        public static final String PROPERTY_VALUE_RATIO = "valueRatio";
+        public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
+        public static final String PROPERTY_VALUE_SAMPLED_DATA = "valueSampledData";
+        public static final String PROPERTY_VALUE_SIGNATURE = "valueSignature";
+        public static final String PROPERTY_VALUE_TIMING = "valueTiming";
+        public static final String PROPERTY_VALUE_CONTACT_DETAIL = "valueContactDetail";
+        public static final String PROPERTY_VALUE_CONTRIBUTOR = "valueContributor";
+        public static final String PROPERTY_VALUE_DATA_REQUIREMENT = "valueDataRequirement";
+        public static final String PROPERTY_VALUE_EXPRESSION = "valueExpression";
+        public static final String PROPERTY_VALUE_PARAMETER_DEFINITION = "valueParameterDefinition";
+        public static final String PROPERTY_VALUE_RELATED_ARTIFACT = "valueRelatedArtifact";
+        public static final String PROPERTY_VALUE_TRIGGER_DEFINITION = "valueTriggerDefinition";
+        public static final String PROPERTY_VALUE_USAGE_CONTEXT = "valueUsageContext";
+        public static final String PROPERTY_VALUE_DOSAGE = "valueDosage";
+        public static final String PROPERTY_VALUE_META = "valueMeta";
 
         public static Builder create() {
             return new Builder();
@@ -4491,7 +4491,7 @@ public class ElementDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -4506,7 +4506,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueBase64Binary() {
-            return getString(PROPERTY_VALUEBASE64BINARY);
+            return getString(PROPERTY_VALUE_BASE64_BINARY);
         }
 
         /**
@@ -4514,7 +4514,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUEBOOLEAN);
+            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
@@ -4522,7 +4522,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueCanonical() {
-            return getString(PROPERTY_VALUECANONICAL);
+            return getString(PROPERTY_VALUE_CANONICAL);
         }
 
         /**
@@ -4530,7 +4530,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueCode() {
-            return getString(PROPERTY_VALUECODE);
+            return getString(PROPERTY_VALUE_CODE);
         }
 
         /**
@@ -4538,7 +4538,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueDate() {
-            return getString(PROPERTY_VALUEDATE);
+            return getString(PROPERTY_VALUE_DATE);
         }
 
         /**
@@ -4546,7 +4546,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUEDATETIME);
+            return getString(PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
@@ -4554,7 +4554,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Integer valueDecimal() {
-            return data.getInt(PROPERTY_VALUEDECIMAL);
+            return data.getInt(PROPERTY_VALUE_DECIMAL);
         }
 
         /**
@@ -4562,7 +4562,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueId() {
-            return getString(PROPERTY_VALUEID);
+            return getString(PROPERTY_VALUE_ID);
         }
 
         /**
@@ -4570,7 +4570,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueInstant() {
-            return getString(PROPERTY_VALUEINSTANT);
+            return getString(PROPERTY_VALUE_INSTANT);
         }
 
         /**
@@ -4578,7 +4578,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUEINTEGER);
+            return data.getInt(PROPERTY_VALUE_INTEGER);
         }
 
         /**
@@ -4586,7 +4586,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueMarkdown() {
-            return getString(PROPERTY_VALUEMARKDOWN);
+            return getString(PROPERTY_VALUE_MARKDOWN);
         }
 
         /**
@@ -4594,7 +4594,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueOid() {
-            return getString(PROPERTY_VALUEOID);
+            return getString(PROPERTY_VALUE_OID);
         }
 
         /**
@@ -4602,7 +4602,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Integer valuePositiveInt() {
-            return data.getInt(PROPERTY_VALUEPOSITIVEINT);
+            return data.getInt(PROPERTY_VALUE_POSITIVE_INT);
         }
 
         /**
@@ -4610,7 +4610,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUESTRING);
+            return getString(PROPERTY_VALUE_STRING);
         }
 
         /**
@@ -4618,7 +4618,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueTime() {
-            return getString(PROPERTY_VALUETIME);
+            return getString(PROPERTY_VALUE_TIME);
         }
 
         /**
@@ -4626,7 +4626,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Integer valueUnsignedInt() {
-            return data.getInt(PROPERTY_VALUEUNSIGNEDINT);
+            return data.getInt(PROPERTY_VALUE_UNSIGNED_INT);
         }
 
         /**
@@ -4634,7 +4634,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueUri() {
-            return getString(PROPERTY_VALUEURI);
+            return getString(PROPERTY_VALUE_URI);
         }
 
         /**
@@ -4642,7 +4642,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueUrl() {
-            return getString(PROPERTY_VALUEURL);
+            return getString(PROPERTY_VALUE_URL);
         }
 
         /**
@@ -4650,7 +4650,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public String valueUuid() {
-            return getString(PROPERTY_VALUEUUID);
+            return getString(PROPERTY_VALUE_UUID);
         }
 
         /**
@@ -4658,7 +4658,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Address valueAddress() {
-            return getObject(Address.class, PROPERTY_VALUEADDRESS);
+            return getObject(Address.class, PROPERTY_VALUE_ADDRESS);
         }
 
         /**
@@ -4666,7 +4666,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Age valueAge() {
-            return getObject(Age.class, PROPERTY_VALUEAGE);
+            return getObject(Age.class, PROPERTY_VALUE_AGE);
         }
 
         /**
@@ -4674,7 +4674,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Annotation valueAnnotation() {
-            return getObject(Annotation.class, PROPERTY_VALUEANNOTATION);
+            return getObject(Annotation.class, PROPERTY_VALUE_ANNOTATION);
         }
 
         /**
@@ -4682,7 +4682,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Attachment valueAttachment() {
-            return getObject(Attachment.class, PROPERTY_VALUEATTACHMENT);
+            return getObject(Attachment.class, PROPERTY_VALUE_ATTACHMENT);
         }
 
         /**
@@ -4690,7 +4690,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public CodeableConcept valueCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUECODEABLECONCEPT);
+            return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
         }
 
         /**
@@ -4698,7 +4698,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Coding valueCoding() {
-            return getObject(Coding.class, PROPERTY_VALUECODING);
+            return getObject(Coding.class, PROPERTY_VALUE_CODING);
         }
 
         /**
@@ -4706,7 +4706,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public ContactPoint valueContactPoint() {
-            return getObject(ContactPoint.class, PROPERTY_VALUECONTACTPOINT);
+            return getObject(ContactPoint.class, PROPERTY_VALUE_CONTACT_POINT);
         }
 
         /**
@@ -4714,7 +4714,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Count valueCount() {
-            return getObject(Count.class, PROPERTY_VALUECOUNT);
+            return getObject(Count.class, PROPERTY_VALUE_COUNT);
         }
 
         /**
@@ -4722,7 +4722,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Distance valueDistance() {
-            return getObject(Distance.class, PROPERTY_VALUEDISTANCE);
+            return getObject(Distance.class, PROPERTY_VALUE_DISTANCE);
         }
 
         /**
@@ -4730,7 +4730,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Duration valueDuration() {
-            return getObject(Duration.class, PROPERTY_VALUEDURATION);
+            return getObject(Duration.class, PROPERTY_VALUE_DURATION);
         }
 
         /**
@@ -4738,7 +4738,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public HumanName valueHumanName() {
-            return getObject(HumanName.class, PROPERTY_VALUEHUMANNAME);
+            return getObject(HumanName.class, PROPERTY_VALUE_HUMAN_NAME);
         }
 
         /**
@@ -4746,7 +4746,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Identifier valueIdentifier() {
-            return getObject(Identifier.class, PROPERTY_VALUEIDENTIFIER);
+            return getObject(Identifier.class, PROPERTY_VALUE_IDENTIFIER);
         }
 
         /**
@@ -4754,7 +4754,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Money valueMoney() {
-            return getObject(Money.class, PROPERTY_VALUEMONEY);
+            return getObject(Money.class, PROPERTY_VALUE_MONEY);
         }
 
         /**
@@ -4762,7 +4762,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Period valuePeriod() {
-            return getObject(Period.class, PROPERTY_VALUEPERIOD);
+            return getObject(Period.class, PROPERTY_VALUE_PERIOD);
         }
 
         /**
@@ -4770,7 +4770,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUEQUANTITY);
+            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
         }
 
         /**
@@ -4778,7 +4778,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Range valueRange() {
-            return getObject(Range.class, PROPERTY_VALUERANGE);
+            return getObject(Range.class, PROPERTY_VALUE_RANGE);
         }
 
         /**
@@ -4786,7 +4786,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Ratio valueRatio() {
-            return getObject(Ratio.class, PROPERTY_VALUERATIO);
+            return getObject(Ratio.class, PROPERTY_VALUE_RATIO);
         }
 
         /**
@@ -4794,7 +4794,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Reference valueReference() {
-            return getObject(Reference.class, PROPERTY_VALUEREFERENCE);
+            return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
         }
 
         /**
@@ -4802,7 +4802,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public SampledData valueSampledData() {
-            return getObject(SampledData.class, PROPERTY_VALUESAMPLEDDATA);
+            return getObject(SampledData.class, PROPERTY_VALUE_SAMPLED_DATA);
         }
 
         /**
@@ -4810,7 +4810,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Signature valueSignature() {
-            return getObject(Signature.class, PROPERTY_VALUESIGNATURE);
+            return getObject(Signature.class, PROPERTY_VALUE_SIGNATURE);
         }
 
         /**
@@ -4818,7 +4818,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Timing valueTiming() {
-            return getObject(Timing.class, PROPERTY_VALUETIMING);
+            return getObject(Timing.class, PROPERTY_VALUE_TIMING);
         }
 
         /**
@@ -4826,7 +4826,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public ContactDetail valueContactDetail() {
-            return getObject(ContactDetail.class, PROPERTY_VALUECONTACTDETAIL);
+            return getObject(ContactDetail.class, PROPERTY_VALUE_CONTACT_DETAIL);
         }
 
         /**
@@ -4834,7 +4834,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Contributor valueContributor() {
-            return getObject(Contributor.class, PROPERTY_VALUECONTRIBUTOR);
+            return getObject(Contributor.class, PROPERTY_VALUE_CONTRIBUTOR);
         }
 
         /**
@@ -4842,7 +4842,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public DataRequirement valueDataRequirement() {
-            return getObject(DataRequirement.class, PROPERTY_VALUEDATAREQUIREMENT);
+            return getObject(DataRequirement.class, PROPERTY_VALUE_DATA_REQUIREMENT);
         }
 
         /**
@@ -4850,7 +4850,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Expression valueExpression() {
-            return getObject(Expression.class, PROPERTY_VALUEEXPRESSION);
+            return getObject(Expression.class, PROPERTY_VALUE_EXPRESSION);
         }
 
         /**
@@ -4858,7 +4858,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public ParameterDefinition valueParameterDefinition() {
-            return getObject(ParameterDefinition.class, PROPERTY_VALUEPARAMETERDEFINITION);
+            return getObject(ParameterDefinition.class, PROPERTY_VALUE_PARAMETER_DEFINITION);
         }
 
         /**
@@ -4866,7 +4866,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public RelatedArtifact valueRelatedArtifact() {
-            return getObject(RelatedArtifact.class, PROPERTY_VALUERELATEDARTIFACT);
+            return getObject(RelatedArtifact.class, PROPERTY_VALUE_RELATED_ARTIFACT);
         }
 
         /**
@@ -4874,7 +4874,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public TriggerDefinition valueTriggerDefinition() {
-            return getObject(TriggerDefinition.class, PROPERTY_VALUETRIGGERDEFINITION);
+            return getObject(TriggerDefinition.class, PROPERTY_VALUE_TRIGGER_DEFINITION);
         }
 
         /**
@@ -4882,7 +4882,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public UsageContext valueUsageContext() {
-            return getObject(UsageContext.class, PROPERTY_VALUEUSAGECONTEXT);
+            return getObject(UsageContext.class, PROPERTY_VALUE_USAGE_CONTEXT);
         }
 
         /**
@@ -4890,7 +4890,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Dosage valueDosage() {
-            return getObject(Dosage.class, PROPERTY_VALUEDOSAGE);
+            return getObject(Dosage.class, PROPERTY_VALUE_DOSAGE);
         }
 
         /**
@@ -4898,7 +4898,7 @@ public class ElementDefinition extends FhirResource {
          * allowed for this element.
          */
         public Meta valueMeta() {
-            return getObject(Meta.class, PROPERTY_VALUEMETA);
+            return getObject(Meta.class, PROPERTY_VALUE_META);
         }
 
         public static class Builder {
@@ -4918,7 +4918,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -4928,252 +4928,252 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder valueBase64Binary(final String valueBase64Binary) {
-                b.add(PROPERTY_VALUEBASE64BINARY, valueBase64Binary);
+                b.add(PROPERTY_VALUE_BASE64_BINARY, valueBase64Binary);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUEBOOLEAN, valueBoolean);
+                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueCanonical(final String valueCanonical) {
-                b.add(PROPERTY_VALUECANONICAL, valueCanonical);
+                b.add(PROPERTY_VALUE_CANONICAL, valueCanonical);
                 return this;
             }
 
             public Builder valueCode(final String valueCode) {
-                b.add(PROPERTY_VALUECODE, valueCode);
+                b.add(PROPERTY_VALUE_CODE, valueCode);
                 return this;
             }
 
             public Builder valueDate(final String valueDate) {
-                b.add(PROPERTY_VALUEDATE, valueDate);
+                b.add(PROPERTY_VALUE_DATE, valueDate);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUEDATETIME, valueDateTime);
+                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valueDecimal(final Integer valueDecimal) {
-                b.add(PROPERTY_VALUEDECIMAL, valueDecimal);
+                b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
                 return this;
             }
 
             public Builder valueId(final String valueId) {
-                b.add(PROPERTY_VALUEID, valueId);
+                b.add(PROPERTY_VALUE_ID, valueId);
                 return this;
             }
 
             public Builder valueInstant(final String valueInstant) {
-                b.add(PROPERTY_VALUEINSTANT, valueInstant);
+                b.add(PROPERTY_VALUE_INSTANT, valueInstant);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUEINTEGER, valueInteger);
+                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueMarkdown(final String valueMarkdown) {
-                b.add(PROPERTY_VALUEMARKDOWN, valueMarkdown);
+                b.add(PROPERTY_VALUE_MARKDOWN, valueMarkdown);
                 return this;
             }
 
             public Builder valueOid(final String valueOid) {
-                b.add(PROPERTY_VALUEOID, valueOid);
+                b.add(PROPERTY_VALUE_OID, valueOid);
                 return this;
             }
 
             public Builder valuePositiveInt(final Integer valuePositiveInt) {
-                b.add(PROPERTY_VALUEPOSITIVEINT, valuePositiveInt);
+                b.add(PROPERTY_VALUE_POSITIVE_INT, valuePositiveInt);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUESTRING, valueString);
+                b.add(PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueTime(final String valueTime) {
-                b.add(PROPERTY_VALUETIME, valueTime);
+                b.add(PROPERTY_VALUE_TIME, valueTime);
                 return this;
             }
 
             public Builder valueUnsignedInt(final Integer valueUnsignedInt) {
-                b.add(PROPERTY_VALUEUNSIGNEDINT, valueUnsignedInt);
+                b.add(PROPERTY_VALUE_UNSIGNED_INT, valueUnsignedInt);
                 return this;
             }
 
             public Builder valueUri(final String valueUri) {
-                b.add(PROPERTY_VALUEURI, valueUri);
+                b.add(PROPERTY_VALUE_URI, valueUri);
                 return this;
             }
 
             public Builder valueUrl(final String valueUrl) {
-                b.add(PROPERTY_VALUEURL, valueUrl);
+                b.add(PROPERTY_VALUE_URL, valueUrl);
                 return this;
             }
 
             public Builder valueUuid(final String valueUuid) {
-                b.add(PROPERTY_VALUEUUID, valueUuid);
+                b.add(PROPERTY_VALUE_UUID, valueUuid);
                 return this;
             }
 
             public Builder valueAddress(final Address valueAddress) {
-                b.add(PROPERTY_VALUEADDRESS, valueAddress);
+                b.add(PROPERTY_VALUE_ADDRESS, valueAddress);
                 return this;
             }
 
             public Builder valueAge(final Age valueAge) {
-                b.add(PROPERTY_VALUEAGE, valueAge);
+                b.add(PROPERTY_VALUE_AGE, valueAge);
                 return this;
             }
 
             public Builder valueAnnotation(final Annotation valueAnnotation) {
-                b.add(PROPERTY_VALUEANNOTATION, valueAnnotation);
+                b.add(PROPERTY_VALUE_ANNOTATION, valueAnnotation);
                 return this;
             }
 
             public Builder valueAttachment(final Attachment valueAttachment) {
-                b.add(PROPERTY_VALUEATTACHMENT, valueAttachment);
+                b.add(PROPERTY_VALUE_ATTACHMENT, valueAttachment);
                 return this;
             }
 
             public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-                b.add(PROPERTY_VALUECODEABLECONCEPT, valueCodeableConcept);
+                b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
                 return this;
             }
 
             public Builder valueCoding(final Coding valueCoding) {
-                b.add(PROPERTY_VALUECODING, valueCoding);
+                b.add(PROPERTY_VALUE_CODING, valueCoding);
                 return this;
             }
 
             public Builder valueContactPoint(final ContactPoint valueContactPoint) {
-                b.add(PROPERTY_VALUECONTACTPOINT, valueContactPoint);
+                b.add(PROPERTY_VALUE_CONTACT_POINT, valueContactPoint);
                 return this;
             }
 
             public Builder valueCount(final Count valueCount) {
-                b.add(PROPERTY_VALUECOUNT, valueCount);
+                b.add(PROPERTY_VALUE_COUNT, valueCount);
                 return this;
             }
 
             public Builder valueDistance(final Distance valueDistance) {
-                b.add(PROPERTY_VALUEDISTANCE, valueDistance);
+                b.add(PROPERTY_VALUE_DISTANCE, valueDistance);
                 return this;
             }
 
             public Builder valueDuration(final Duration valueDuration) {
-                b.add(PROPERTY_VALUEDURATION, valueDuration);
+                b.add(PROPERTY_VALUE_DURATION, valueDuration);
                 return this;
             }
 
             public Builder valueHumanName(final HumanName valueHumanName) {
-                b.add(PROPERTY_VALUEHUMANNAME, valueHumanName);
+                b.add(PROPERTY_VALUE_HUMAN_NAME, valueHumanName);
                 return this;
             }
 
             public Builder valueIdentifier(final Identifier valueIdentifier) {
-                b.add(PROPERTY_VALUEIDENTIFIER, valueIdentifier);
+                b.add(PROPERTY_VALUE_IDENTIFIER, valueIdentifier);
                 return this;
             }
 
             public Builder valueMoney(final Money valueMoney) {
-                b.add(PROPERTY_VALUEMONEY, valueMoney);
+                b.add(PROPERTY_VALUE_MONEY, valueMoney);
                 return this;
             }
 
             public Builder valuePeriod(final Period valuePeriod) {
-                b.add(PROPERTY_VALUEPERIOD, valuePeriod);
+                b.add(PROPERTY_VALUE_PERIOD, valuePeriod);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUEQUANTITY, valueQuantity);
+                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueRange(final Range valueRange) {
-                b.add(PROPERTY_VALUERANGE, valueRange);
+                b.add(PROPERTY_VALUE_RANGE, valueRange);
                 return this;
             }
 
             public Builder valueRatio(final Ratio valueRatio) {
-                b.add(PROPERTY_VALUERATIO, valueRatio);
+                b.add(PROPERTY_VALUE_RATIO, valueRatio);
                 return this;
             }
 
             public Builder valueReference(final Reference valueReference) {
-                b.add(PROPERTY_VALUEREFERENCE, valueReference);
+                b.add(PROPERTY_VALUE_REFERENCE, valueReference);
                 return this;
             }
 
             public Builder valueSampledData(final SampledData valueSampledData) {
-                b.add(PROPERTY_VALUESAMPLEDDATA, valueSampledData);
+                b.add(PROPERTY_VALUE_SAMPLED_DATA, valueSampledData);
                 return this;
             }
 
             public Builder valueSignature(final Signature valueSignature) {
-                b.add(PROPERTY_VALUESIGNATURE, valueSignature);
+                b.add(PROPERTY_VALUE_SIGNATURE, valueSignature);
                 return this;
             }
 
             public Builder valueTiming(final Timing valueTiming) {
-                b.add(PROPERTY_VALUETIMING, valueTiming);
+                b.add(PROPERTY_VALUE_TIMING, valueTiming);
                 return this;
             }
 
             public Builder valueContactDetail(final ContactDetail valueContactDetail) {
-                b.add(PROPERTY_VALUECONTACTDETAIL, valueContactDetail);
+                b.add(PROPERTY_VALUE_CONTACT_DETAIL, valueContactDetail);
                 return this;
             }
 
             public Builder valueContributor(final Contributor valueContributor) {
-                b.add(PROPERTY_VALUECONTRIBUTOR, valueContributor);
+                b.add(PROPERTY_VALUE_CONTRIBUTOR, valueContributor);
                 return this;
             }
 
             public Builder valueDataRequirement(final DataRequirement valueDataRequirement) {
-                b.add(PROPERTY_VALUEDATAREQUIREMENT, valueDataRequirement);
+                b.add(PROPERTY_VALUE_DATA_REQUIREMENT, valueDataRequirement);
                 return this;
             }
 
             public Builder valueExpression(final Expression valueExpression) {
-                b.add(PROPERTY_VALUEEXPRESSION, valueExpression);
+                b.add(PROPERTY_VALUE_EXPRESSION, valueExpression);
                 return this;
             }
 
             public Builder valueParameterDefinition(final ParameterDefinition valueParameterDefinition) {
-                b.add(PROPERTY_VALUEPARAMETERDEFINITION, valueParameterDefinition);
+                b.add(PROPERTY_VALUE_PARAMETER_DEFINITION, valueParameterDefinition);
                 return this;
             }
 
             public Builder valueRelatedArtifact(final RelatedArtifact valueRelatedArtifact) {
-                b.add(PROPERTY_VALUERELATEDARTIFACT, valueRelatedArtifact);
+                b.add(PROPERTY_VALUE_RELATED_ARTIFACT, valueRelatedArtifact);
                 return this;
             }
 
             public Builder valueTriggerDefinition(final TriggerDefinition valueTriggerDefinition) {
-                b.add(PROPERTY_VALUETRIGGERDEFINITION, valueTriggerDefinition);
+                b.add(PROPERTY_VALUE_TRIGGER_DEFINITION, valueTriggerDefinition);
                 return this;
             }
 
             public Builder valueUsageContext(final UsageContext valueUsageContext) {
-                b.add(PROPERTY_VALUEUSAGECONTEXT, valueUsageContext);
+                b.add(PROPERTY_VALUE_USAGE_CONTEXT, valueUsageContext);
                 return this;
             }
 
             public Builder valueDosage(final Dosage valueDosage) {
-                b.add(PROPERTY_VALUEDOSAGE, valueDosage);
+                b.add(PROPERTY_VALUE_DOSAGE, valueDosage);
                 return this;
             }
 
             public Builder valueMeta(final Meta valueMeta) {
-                b.add(PROPERTY_VALUEMETA, valueMeta);
+                b.add(PROPERTY_VALUE_META, valueMeta);
                 return this;
             }
 
@@ -5186,7 +5186,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionMapping extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionMapping";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTITY = "identity";
         public static final String PROPERTY_LANGUAGE = "language";
         public static final String PROPERTY_MAP = "map";
@@ -5230,7 +5230,7 @@ public class ElementDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -5279,7 +5279,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -5312,7 +5312,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionSlicing extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionSlicing";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DISCRIMINATOR = "discriminator";
         public static final String PROPERTY_DESCRIPTION = "description";
         public static final String PROPERTY_ORDERED = "ordered";
@@ -5356,7 +5356,7 @@ public class ElementDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -5414,7 +5414,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -5447,10 +5447,10 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionType extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionType";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_PROFILE = "profile";
-        public static final String PROPERTY_TARGETPROFILE = "targetProfile";
+        public static final String PROPERTY_TARGET_PROFILE = "targetProfile";
         public static final String PROPERTY_AGGREGATION = "aggregation";
         public static final String PROPERTY_VERSIONING = "versioning";
 
@@ -5492,7 +5492,7 @@ public class ElementDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -5531,7 +5531,7 @@ public class ElementDefinition extends FhirResource {
          * implementation guide.
          */
         public java.util.List<String> targetProfile() {
-            return getList(String.class, PROPERTY_TARGETPROFILE);
+            return getList(String.class, PROPERTY_TARGET_PROFILE);
         }
 
         /**
@@ -5568,7 +5568,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -5583,7 +5583,7 @@ public class ElementDefinition extends FhirResource {
             }
 
             public Builder targetProfile(final java.util.List<String> targetProfile) {
-                b.add(PROPERTY_TARGETPROFILE, FhirObject.toStringArray(targetProfile));
+                b.add(PROPERTY_TARGET_PROFILE, FhirObject.toStringArray(targetProfile));
                 return this;
             }
 

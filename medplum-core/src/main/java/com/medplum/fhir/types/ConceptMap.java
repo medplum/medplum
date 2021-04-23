@@ -11,14 +11,14 @@ import jakarta.json.JsonObjectBuilder;
 
 public class ConceptMap extends FhirResource {
     public static final String RESOURCE_TYPE = "ConceptMap";
-    public static final String PROPERTY_RESOURCETYPE = "resourceType";
+    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
     public static final String PROPERTY_ID = "id";
     public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICITRULES = "implicitRules";
+    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_URL = "url";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_VERSION = "version";
@@ -30,14 +30,14 @@ public class ConceptMap extends FhirResource {
     public static final String PROPERTY_PUBLISHER = "publisher";
     public static final String PROPERTY_CONTACT = "contact";
     public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USECONTEXT = "useContext";
+    public static final String PROPERTY_USE_CONTEXT = "useContext";
     public static final String PROPERTY_JURISDICTION = "jurisdiction";
     public static final String PROPERTY_PURPOSE = "purpose";
     public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_SOURCEURI = "sourceUri";
-    public static final String PROPERTY_SOURCECANONICAL = "sourceCanonical";
-    public static final String PROPERTY_TARGETURI = "targetUri";
-    public static final String PROPERTY_TARGETCANONICAL = "targetCanonical";
+    public static final String PROPERTY_SOURCE_URI = "sourceUri";
+    public static final String PROPERTY_SOURCE_CANONICAL = "sourceCanonical";
+    public static final String PROPERTY_TARGET_URI = "targetUri";
+    public static final String PROPERTY_TARGET_CANONICAL = "targetCanonical";
     public static final String PROPERTY_GROUP = "group";
 
     public static Builder create() {
@@ -59,7 +59,7 @@ public class ConceptMap extends FhirResource {
      * special rules along with other profiles etc.
      */
     public String implicitRules() {
-        return getString(PROPERTY_IMPLICITRULES);
+        return getString(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -107,7 +107,7 @@ public class ConceptMap extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -220,7 +220,7 @@ public class ConceptMap extends FhirResource {
      * indexing and searching for appropriate concept map instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USECONTEXT);
+        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -253,7 +253,7 @@ public class ConceptMap extends FhirResource {
      * are being mapped and provides context for the mappings.
      */
     public String sourceUri() {
-        return getString(PROPERTY_SOURCEURI);
+        return getString(PROPERTY_SOURCE_URI);
     }
 
     /**
@@ -261,7 +261,7 @@ public class ConceptMap extends FhirResource {
      * are being mapped and provides context for the mappings.
      */
     public String sourceCanonical() {
-        return getString(PROPERTY_SOURCECANONICAL);
+        return getString(PROPERTY_SOURCE_CANONICAL);
     }
 
     /**
@@ -271,7 +271,7 @@ public class ConceptMap extends FhirResource {
      * choices are made.
      */
     public String targetUri() {
-        return getString(PROPERTY_TARGETURI);
+        return getString(PROPERTY_TARGET_URI);
     }
 
     /**
@@ -281,7 +281,7 @@ public class ConceptMap extends FhirResource {
      * choices are made.
      */
     public String targetCanonical() {
-        return getString(PROPERTY_TARGETCANONICAL);
+        return getString(PROPERTY_TARGET_CANONICAL);
     }
 
     /**
@@ -302,7 +302,7 @@ public class ConceptMap extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCETYPE, resourceType);
+            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
@@ -317,7 +317,7 @@ public class ConceptMap extends FhirResource {
         }
 
         public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICITRULES, implicitRules);
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
             return this;
         }
 
@@ -337,7 +337,7 @@ public class ConceptMap extends FhirResource {
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
@@ -397,7 +397,7 @@ public class ConceptMap extends FhirResource {
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USECONTEXT, FhirObject.toArray(useContext));
+            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
@@ -417,22 +417,22 @@ public class ConceptMap extends FhirResource {
         }
 
         public Builder sourceUri(final String sourceUri) {
-            b.add(PROPERTY_SOURCEURI, sourceUri);
+            b.add(PROPERTY_SOURCE_URI, sourceUri);
             return this;
         }
 
         public Builder sourceCanonical(final String sourceCanonical) {
-            b.add(PROPERTY_SOURCECANONICAL, sourceCanonical);
+            b.add(PROPERTY_SOURCE_CANONICAL, sourceCanonical);
             return this;
         }
 
         public Builder targetUri(final String targetUri) {
-            b.add(PROPERTY_TARGETURI, targetUri);
+            b.add(PROPERTY_TARGET_URI, targetUri);
             return this;
         }
 
         public Builder targetCanonical(final String targetCanonical) {
-            b.add(PROPERTY_TARGETCANONICAL, targetCanonical);
+            b.add(PROPERTY_TARGET_CANONICAL, targetCanonical);
             return this;
         }
 
@@ -449,7 +449,7 @@ public class ConceptMap extends FhirResource {
     public static class ConceptMapDependsOn extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapDependsOn";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PROPERTY = "property";
         public static final String PROPERTY_SYSTEM = "system";
         public static final String PROPERTY_VALUE = "value";
@@ -493,7 +493,7 @@ public class ConceptMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -547,7 +547,7 @@ public class ConceptMap extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -580,7 +580,7 @@ public class ConceptMap extends FhirResource {
     public static class ConceptMapElement extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapElement";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DISPLAY = "display";
         public static final String PROPERTY_TARGET = "target";
@@ -623,7 +623,7 @@ public class ConceptMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -665,7 +665,7 @@ public class ConceptMap extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -693,11 +693,11 @@ public class ConceptMap extends FhirResource {
     public static class ConceptMapGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapGroup";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_SOURCE = "source";
-        public static final String PROPERTY_SOURCEVERSION = "sourceVersion";
+        public static final String PROPERTY_SOURCE_VERSION = "sourceVersion";
         public static final String PROPERTY_TARGET = "target";
-        public static final String PROPERTY_TARGETVERSION = "targetVersion";
+        public static final String PROPERTY_TARGET_VERSION = "targetVersion";
         public static final String PROPERTY_ELEMENT = "element";
         public static final String PROPERTY_UNMAPPED = "unmapped";
 
@@ -739,7 +739,7 @@ public class ConceptMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -755,7 +755,7 @@ public class ConceptMap extends FhirResource {
          * system authority.
          */
         public String sourceVersion() {
-            return getString(PROPERTY_SOURCEVERSION);
+            return getString(PROPERTY_SOURCE_VERSION);
         }
 
         /**
@@ -771,7 +771,7 @@ public class ConceptMap extends FhirResource {
          * system authority.
          */
         public String targetVersion() {
-            return getString(PROPERTY_TARGETVERSION);
+            return getString(PROPERTY_TARGET_VERSION);
         }
 
         /**
@@ -808,7 +808,7 @@ public class ConceptMap extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -818,7 +818,7 @@ public class ConceptMap extends FhirResource {
             }
 
             public Builder sourceVersion(final String sourceVersion) {
-                b.add(PROPERTY_SOURCEVERSION, sourceVersion);
+                b.add(PROPERTY_SOURCE_VERSION, sourceVersion);
                 return this;
             }
 
@@ -828,7 +828,7 @@ public class ConceptMap extends FhirResource {
             }
 
             public Builder targetVersion(final String targetVersion) {
-                b.add(PROPERTY_TARGETVERSION, targetVersion);
+                b.add(PROPERTY_TARGET_VERSION, targetVersion);
                 return this;
             }
 
@@ -851,12 +851,12 @@ public class ConceptMap extends FhirResource {
     public static class ConceptMapTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapTarget";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DISPLAY = "display";
         public static final String PROPERTY_EQUIVALENCE = "equivalence";
         public static final String PROPERTY_COMMENT = "comment";
-        public static final String PROPERTY_DEPENDSON = "dependsOn";
+        public static final String PROPERTY_DEPENDS_ON = "dependsOn";
         public static final String PROPERTY_PRODUCT = "product";
 
         public static Builder create() {
@@ -897,7 +897,7 @@ public class ConceptMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -938,7 +938,7 @@ public class ConceptMap extends FhirResource {
          * and it has the specified value.
          */
         public java.util.List<ConceptMapDependsOn> dependsOn() {
-            return getList(ConceptMapDependsOn.class, PROPERTY_DEPENDSON);
+            return getList(ConceptMapDependsOn.class, PROPERTY_DEPENDS_ON);
         }
 
         /**
@@ -969,7 +969,7 @@ public class ConceptMap extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
@@ -994,7 +994,7 @@ public class ConceptMap extends FhirResource {
             }
 
             public Builder dependsOn(final java.util.List<ConceptMapDependsOn> dependsOn) {
-                b.add(PROPERTY_DEPENDSON, FhirObject.toArray(dependsOn));
+                b.add(PROPERTY_DEPENDS_ON, FhirObject.toArray(dependsOn));
                 return this;
             }
 
@@ -1012,7 +1012,7 @@ public class ConceptMap extends FhirResource {
     public static class ConceptMapUnmapped extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapUnmapped";
         public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_MODIFIEREXTENSION = "modifierExtension";
+        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_MODE = "mode";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_DISPLAY = "display";
@@ -1056,7 +1056,7 @@ public class ConceptMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIEREXTENSION);
+            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1113,7 +1113,7 @@ public class ConceptMap extends FhirResource {
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIEREXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 

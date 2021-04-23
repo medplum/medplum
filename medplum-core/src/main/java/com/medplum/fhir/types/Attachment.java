@@ -12,7 +12,7 @@ import jakarta.json.JsonObjectBuilder;
 public class Attachment extends FhirResource {
     public static final String RESOURCE_TYPE = "Attachment";
     public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_CONTENTTYPE = "contentType";
+    public static final String PROPERTY_CONTENT_TYPE = "contentType";
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_DATA = "data";
     public static final String PROPERTY_URL = "url";
@@ -47,7 +47,7 @@ public class Attachment extends FhirResource {
      * parameters such as charset where appropriate.
      */
     public String contentType() {
-        return getString(PROPERTY_CONTENTTYPE);
+        return getString(PROPERTY_CONTENT_TYPE);
     }
 
     /**
@@ -119,7 +119,7 @@ public class Attachment extends FhirResource {
         }
 
         public Builder contentType(final String contentType) {
-            b.add(PROPERTY_CONTENTTYPE, contentType);
+            b.add(PROPERTY_CONTENT_TYPE, contentType);
             return this;
         }
 
