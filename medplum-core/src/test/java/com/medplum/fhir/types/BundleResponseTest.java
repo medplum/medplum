@@ -7,9 +7,21 @@ package com.medplum.fhir.types;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import jakarta.json.Json;
+
 import org.junit.Test;
 
 public class BundleResponseTest {
+
+    @Test
+    public void testConstructor() {
+        assertNotNull(new Bundle.BundleResponse(Json.createObjectBuilder().build()));
+    }
+
+    @Test
+    public void testBuilderFromJsonObject() {
+        assertNotNull(Bundle.BundleResponse.create(Json.createObjectBuilder().build()).build());
+    }
 
     @Test
     public void testId() {
@@ -45,9 +57,13 @@ public class BundleResponseTest {
 
     @Test
     public void testOutcome() {
+        final Patient p = Patient.create().build();
+        assertEquals(p, Bundle.BundleResponse.create().outcome(p).build().outcome());
     }
 
     @Test
     public void testOutcomeAsClass() {
+        final Patient p = Patient.create().build();
+        assertEquals(p, Bundle.BundleResponse.create().outcome(p).build().outcome(Patient.class));
     }
 }

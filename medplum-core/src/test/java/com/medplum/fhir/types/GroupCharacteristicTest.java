@@ -7,9 +7,21 @@ package com.medplum.fhir.types;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import jakarta.json.Json;
+
 import org.junit.Test;
 
 public class GroupCharacteristicTest {
+
+    @Test
+    public void testConstructor() {
+        assertNotNull(new Group.GroupCharacteristic(Json.createObjectBuilder().build()));
+    }
+
+    @Test
+    public void testBuilderFromJsonObject() {
+        assertNotNull(Group.GroupCharacteristic.create(Json.createObjectBuilder().build()).build());
+    }
 
     @Test
     public void testId() {

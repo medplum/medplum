@@ -7,9 +7,21 @@ package com.medplum.fhir.types;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import jakarta.json.Json;
+
 import org.junit.Test;
 
 public class MedicinalProductNameTest {
+
+    @Test
+    public void testConstructor() {
+        assertNotNull(new MedicinalProduct.MedicinalProductName(Json.createObjectBuilder().build()));
+    }
+
+    @Test
+    public void testBuilderFromJsonObject() {
+        assertNotNull(MedicinalProduct.MedicinalProductName.create(Json.createObjectBuilder().build()).build());
+    }
 
     @Test
     public void testId() {

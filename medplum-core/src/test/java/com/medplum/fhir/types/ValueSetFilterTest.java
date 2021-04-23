@@ -7,9 +7,21 @@ package com.medplum.fhir.types;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import jakarta.json.Json;
+
 import org.junit.Test;
 
 public class ValueSetFilterTest {
+
+    @Test
+    public void testConstructor() {
+        assertNotNull(new ValueSet.ValueSetFilter(Json.createObjectBuilder().build()));
+    }
+
+    @Test
+    public void testBuilderFromJsonObject() {
+        assertNotNull(ValueSet.ValueSetFilter.create(Json.createObjectBuilder().build()).build());
+    }
 
     @Test
     public void testId() {

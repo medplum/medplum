@@ -7,9 +7,21 @@ package com.medplum.fhir.types;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import jakarta.json.Json;
+
 import org.junit.Test;
 
 public class ConceptMapTargetTest {
+
+    @Test
+    public void testConstructor() {
+        assertNotNull(new ConceptMap.ConceptMapTarget(Json.createObjectBuilder().build()));
+    }
+
+    @Test
+    public void testBuilderFromJsonObject() {
+        assertNotNull(ConceptMap.ConceptMapTarget.create(Json.createObjectBuilder().build()).build());
+    }
 
     @Test
     public void testId() {

@@ -7,9 +7,21 @@ package com.medplum.fhir.types;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import jakarta.json.Json;
+
 import org.junit.Test;
 
 public class ElementDefinitionDiscriminatorTest {
+
+    @Test
+    public void testConstructor() {
+        assertNotNull(new ElementDefinition.ElementDefinitionDiscriminator(Json.createObjectBuilder().build()));
+    }
+
+    @Test
+    public void testBuilderFromJsonObject() {
+        assertNotNull(ElementDefinition.ElementDefinitionDiscriminator.create(Json.createObjectBuilder().build()).build());
+    }
 
     @Test
     public void testId() {

@@ -342,11 +342,23 @@ public class Generator {
         b.newLine();
         b.append("import static org.junit.jupiter.api.Assertions.*;");
         b.newLine();
+        b.append("import jakarta.json.Json;");
+        b.newLine();
         b.append("import org.junit.Test;");
         b.newLine();
         b.append("public class " + fhirType.getOutputName() + "Test {");
         b.newLine();
         b.increaseIndent();
+
+        b.append("@Test");
+        b.append("public void testConstructor() {");
+        b.append("    assertNotNull(new " + qualifiedType + "(Json.createObjectBuilder().build()));");
+        b.append("}");
+        b.newLine();
+        b.append("@Test");
+        b.append("public void testBuilderFromJsonObject() {");
+        b.append("    assertNotNull(" + qualifiedType + ".create(Json.createObjectBuilder().build()).build());");
+        b.append("}");
 
         for (final Property property : fhirType.getProperties()) {
             final String propertyName = property.getOutputName();
@@ -358,10 +370,14 @@ public class Generator {
             if (javaType.equals("FhirResource")) {
                 b.append("@Test");
                 b.append("public void " + testName + "() {");
+                b.append("    final Patient p = Patient.create().build();");
+                b.append("    assertEquals(p, " + qualifiedType + ".create()." + propertyName + "(p).build()." + propertyName + "());");
                 b.append("}");
                 b.newLine();
                 b.append("@Test");
                 b.append("public void " + testName + "AsClass() {");
+                b.append("    final Patient p = Patient.create().build();");
+                b.append("    assertEquals(p, " + qualifiedType + ".create()." + propertyName + "(p).build()." + propertyName + "(Patient.class));");
                 b.append("}");
             } else {
                 String valueDecl = null;
