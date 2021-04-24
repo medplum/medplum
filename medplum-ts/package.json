@@ -2,18 +2,13 @@
   "name": "medplum",
   "version": "0.0.1",
   "description": "MedPlum TS/JS Library",
+  "author": "MedPlum <hello@medplum.com>",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "start-storybook -p 6006",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "medplum",
-    "typescript",
-    "fhir"
-  ],
-  "author": "MedPlum <hello@medplum.com>",
-  "license": "MIT",
   "devDependencies": {
     "@types/jsrsasign": "^8.0.10",
     "@types/node": "^14.14.37",

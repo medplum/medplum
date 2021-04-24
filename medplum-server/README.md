@@ -1,4 +1,4 @@
-# medplum-server
+# MedPlum Server
 
 ## Configuration
 

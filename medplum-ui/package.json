@@ -2,6 +2,8 @@
   "name": "medplum-ui",
   "version": "0.0.1",
   "description": "MedPlum React Component Library",
+  "author": "MedPlum <hello@medplum.com>",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "start-storybook -p 6006",
     "build": "tsc && npm run copyfiles",
@@ -10,15 +12,6 @@
     "build-storybook": "build-storybook",
     "copyfiles": "copyfiles -u 1 \"./src/**/*.css\" lib"
   },
-  "keywords": [
-    "medplum",
-    "components",
-    "typescript",
-    "jsx",
-    "fhir"
-  ],
-  "author": "MedPlum <hello@medplum.com>",
-  "license": "MIT",
   "devDependencies": {
     "@storybook/addon-actions": "^6.2.7",
     "@storybook/addon-essentials": "^6.2.7",

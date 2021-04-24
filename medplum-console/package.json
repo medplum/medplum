@@ -2,14 +2,14 @@
   "name": "medplum-console",
   "version": "0.0.1",
   "description": "MedPlum Console",
+  "author": "MedPlum <hello@medplum.com>",
+  "license": "Apache-2.0",
   "main": "src/index.ts",
   "scripts": {
     "dev": "webpack serve --mode development",
     "build": "webpack --mode production",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "MedPlum <hello@medplum.com>",
-  "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.13.15",
     "@babel/plugin-transform-react-jsx": "^7.13.12",

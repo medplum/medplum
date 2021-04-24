@@ -1,4 +1,3 @@
-# medplum-java-fhir-sdk
+# MedPlum Code Generator
 
-Lightweight Java FHIR SDK based on Jakarta Client and Jakarta JSON.
-
+This project is a utility to autogenerate Java and TypeScript code from data definitions such as the FHIR spec.
