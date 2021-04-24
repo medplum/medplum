@@ -54,6 +54,20 @@ http://localhost:4567/inferno/oauth2/static/launch?iss=http%3A%2F%2Fhost.docker.
 | Check for plugin updates      | `mvn versions:display-plugin-updates`                    |
 | Sort pom.xml files            | `mvn com.github.ekryd.sortpom:sortpom-maven-plugin:sort` |
 
+## Deployment
+
+First, log into Docker with the AWS ECR credentials.  By default, you will stay logged in for 72 hours (3 days).
+
+```
+aws ecr get-login-password --profile medplum --region us-east-1 | docker login --username AWS --password-stdin 647991932601.dkr.ecr.us-east-1.amazonaws.com
+```
+
+Push the docker image into the repository
+
+```
+mvn -P fargate deploy
+```
+
 ## TODO:
 
 * Auth

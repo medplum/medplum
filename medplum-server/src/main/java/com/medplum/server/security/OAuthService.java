@@ -299,8 +299,7 @@ public class OAuthService {
                 .setRequireSubject() // the JWT must have a subject claim
                 .setExpectedIssuer(issuer)
                 .setVerificationKeyResolver(keyResolver) // verify the signature with the public key
-                .setJwsAlgorithmConstraints( // only allow the expected signature algorithm(s) in the given context
-                        ConstraintType.PERMIT, AlgorithmIdentifiers.RSA_USING_SHA256) // which is only RS256 here
+                .setJwsAlgorithmConstraints(ConstraintType.PERMIT, AlgorithmIdentifiers.RSA_USING_SHA256)
                 .build(); // create the JwtConsumer instance
         return jwtConsumer.processToClaims(token);
     }

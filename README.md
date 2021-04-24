@@ -7,15 +7,15 @@ MedPlum is a healthcare platform that helps you quickly develop high-quality com
 MedPlum uses a [monorepo](https://en.wikipedia.org/wiki/Monorepo) structure.
 Here is a quick summary of the subprojects:
 
-| Folder               | Language     | Type     | Port  | Description                                             |
-| -------------------- | ------------ | -------- | ----- | ------------------------------------------------------- |
-| `medplum-console`    | TypeScript   | App      | 3000  | Developer console application                           |
-| `medplum-core`       | Java         | Library  |       | Core FHIR library, Java SDK, etc                        |
-| `medplum-generator`  | Java         | App      |       | Developer tool to autogenerate code from the FHIR spec  |
-| `medplum-graphiql`   | TypeScript   | App      | 8080  | GraphQL debug tool                                      |
-| `medplum-server`     | Java         | App      | 5000  | Main FHIR server                                        |
-| `medplum-ts`         | TypeScript   | Library  |       | TypeScript FHIR client library                          |
-| `medplum-ui`         | TypeScript   | Library  | 6006  | React component library and Storybook                   |
+| Folder               | Language     | Type     | Port  | Description                            |
+| -------------------- | ------------ | -------- | ----- | -------------------------------------- |
+| `medplum-console`    | TypeScript   | App      | 3000  | Developer console application          |
+| `medplum-core`       | Java         | Library  |       | Core FHIR library, Java SDK, etc       |
+| `medplum-generator`  | Java         | App      |       | Code generator from the FHIR spec      |
+| `medplum-graphiql`   | TypeScript   | App      | 8080  | GraphQL debug tool                     |
+| `medplum-server`     | Java         | App      | 5000  | Main FHIR server                       |
+| `medplum-ts`         | TypeScript   | Library  |       | TypeScript FHIR client library         |
+| `medplum-ui`         | TypeScript   | Library  | 6006  | React component library and Storybook  |
 
 ## Getting Started
 
@@ -71,27 +71,3 @@ npm run dev
 | Check for plugin updates      | `mvn versions:display-plugin-updates`                    |
 | Sort pom.xml files            | `mvn com.github.ekryd.sortpom:sortpom-maven-plugin:sort` |
 
-## TODO:
-
-* Auth
-* Compartment access controls
-* Batch processing
-* Bundle transactions
-* Binary/blob storage
-* Reference integrity
-* Synthea support
-* Inferno support
-* SMART-on-FHIR
-* [UDAP](https://www.udap.org/)
-* Version Mapping
-
-## Blog posts
-
-* Naming conventions
-* Domain conventions
-* Dependencies
-* Security review
-* Pen test
-* OpenID compliance
-* FHIR/Inferno compliance
-* DICOM FDA application

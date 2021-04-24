@@ -23,6 +23,34 @@
             <groupId>software.amazon.awscdk</groupId>
             <artifactId>core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>ec2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>ecs</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>elasticloadbalancingv2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>iam</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>rds</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>route53</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>ssm</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -31,7 +59,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <mainClass>com.myorg.MedplumCdkApp</mainClass>
+                    <mainClass>com.medplum.cdk.MedPlumApp</mainClass>
                 </configuration>
             </plugin>
         </plugins>

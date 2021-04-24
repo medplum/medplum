@@ -7,10 +7,10 @@
     <packaging>pom</packaging>
     <name>medplum</name>
     <description>MedPlum</description>
-    <url>https://medplum.org/maven/${project.version}</url>
+    <url>https://medplum.com/maven/${project.version}</url>
     <organization>
-        <name>Minijax</name>
-        <url>https://medplum.org</url>
+        <name>MedPlum</name>
+        <url>https://medplum.com</url>
     </organization>
     <licenses>
         <license>
@@ -24,7 +24,7 @@
             <name>Cody Ebberson</name>
             <email>cody@ebberson.com</email>
             <url>https://cody.ebberson.com</url>
-            <organization>Medplum</organization>
+            <organization>MedPlum</organization>
             <organizationUrl>https://www.medplum.com</organizationUrl>
             <timezone>America/Los_Angeles</timezone>
         </developer>
@@ -33,7 +33,7 @@
             <name>Reshma Khilnani</name>
             <email>reshma.khilnani@gmail.com</email>
             <url>https://reshmakhilnani.com</url>
-            <organization>Medplum</organization>
+            <organization>MedPlum</organization>
             <organizationUrl>https://www.medplum.com</organizationUrl>
             <timezone>America/Los_Angeles</timezone>
         </developer>
@@ -59,26 +59,12 @@
         <system>Travis CI</system>
         <url>https://github.com/medplum/medplum/actions</url>
     </ciManagement>
-    <distributionManagement>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <site>
-            <id>medplum-site</id>
-            <url>s3://medplum.org/maven/${project.version}</url>
-        </site>
-    </distributionManagement>
     <properties>
         <aws.version>2.16.44</aws.version>
         <bcrypt.version>0.4</bcrypt.version>
         <cdk.version>1.94.1</cdk.version>
         <checkstyle.version>8.41.1</checkstyle.version>
-        <dockerfile.version>1.4.0</dockerfile.version>
+        <dockerfile.version>1.4.13</dockerfile.version>
         <eclipselink.version>3.0.0</eclipselink.version>
         <graphql.version>2021-04-19T03-51-46-d783ec7e</graphql.version>
         <h2.version>1.4.200</h2.version>
@@ -313,6 +299,41 @@
                 <version>${cdk.version}</version>
             </dependency>
             <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>ec2</artifactId>
+                <version>${cdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>ecs</artifactId>
+                <version>${cdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>elasticloadbalancingv2</artifactId>
+                <version>${cdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>iam</artifactId>
+                <version>${cdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>rds</artifactId>
+                <version>${cdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>route53</artifactId>
+                <version>${cdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>ssm</artifactId>
+                <version>${cdk.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>cloudfront</artifactId>
                 <version>${aws.version}</version>
@@ -358,6 +379,11 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>5.2.1</version>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>3.0.0-M3</version>
@@ -378,13 +404,20 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.6</version>
+                <version>${jacoco.version}</version>
                 <executions>
                     <execution>
-                        <id>prepare-agent</id>
+                        <id>default-prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -416,23 +449,16 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.8</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <keepStagingRepositoryOnFailure>true</keepStagingRepositoryOnFailure>
-                    <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
-                    <stagingProgressTimeoutMinutes>30</stagingProgressTimeoutMinutes>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.1.2</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <goals>
@@ -461,6 +487,38 @@
                         <version>${junit.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <artifactId>maven-scm-plugin</artifactId>
+                <version>1.11.2</version>
+                <configuration>
+                    <tag>${project.artifactId}-${project.version}</tag>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.6.0.1398</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.0.0-M1</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -512,53 +570,4 @@
             </plugin>
         </plugins>
     </reporting>
-    <profiles>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <phase>verify</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>3.2.1</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.2.0</version>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

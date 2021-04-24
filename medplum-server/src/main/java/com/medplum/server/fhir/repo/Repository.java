@@ -13,8 +13,8 @@ public interface Repository {
     /**
      * Creates a new resource version from key value pairs.
      * Always creates a new resource with a new ID.
-     * @param securityContext TODO
-     * @param resourceType JsonObject type.
+     * @param user The user performing the operation.
+     * @param resourceType The FHIR resource type.
      * @param data Initializer data.
      * @return Operation outcome.
      */
@@ -22,33 +22,36 @@ public interface Repository {
 
     /**
      * Returns a resource by ID.
-     * @param resourceType JsonObject type.
-     * @param id JsonObject ID.
+     * @param user The user performing the operation.
+     * @param resourceType The FHIR resource type.
+     * @param id The FHIR resource ID.
      * @return Operation outcome.
      */
     OperationOutcome read(SecurityUser user, String resourceType, String id);
 
     /**
      * Returns a resource by ID.
-     * @param resourceType JsonObject type.
-     * @param id JsonObject ID.
+     * @param user The user performing the operation.
+     * @param reference A FHIR reference object.
      * @return Operation outcome.
      */
     OperationOutcome readReference(SecurityUser user, Reference reference);
 
     /**
      * Returns a resource history.
-     * @param resourceType JsonObject type.
-     * @param id JsonObject ID.
+     * @param user The user performing the operation.
+     * @param resourceType The FHIR resource type.
+     * @param id The FHIR resource ID.
      * @return Operation outcome.
      */
     OperationOutcome readHistory(SecurityUser user, String resourceType, String id);
 
     /**
      * Returns a resource by ID and version ID.
-     * @param resourceType JsonObject type.
-     * @param id JsonObject ID.
-     * @param vid JsonObject version ID.
+     * @param user The user performing the operation.
+     * @param resourceType The FHIR resource type.
+     * @param id The FHIR resource ID.
+     * @param vid The FHIR resource version ID.
      * @return Operation outcome.
      */
     OperationOutcome readVersion(SecurityUser user, String resourceType, String id, String vid);
@@ -56,8 +59,9 @@ public interface Repository {
     /**
      * Updates a resource from key value pairs.
      * If the resource does not exist, it will be created.
-     * @param resourceType JsonObject type.
-     * @param id JsonObject ID.
+     * @param user The user performing the operation.
+     * @param resourceType The FHIR resource type.
+     * @param id The FHIR resource ID.
      * @param data Updated data.
      * @return Operation outcome.
      */
@@ -65,14 +69,16 @@ public interface Repository {
 
     /**
      * Deletes a resource by ID.
-     * @param resourceType JsonObject type.
-     * @param id JsonObject ID.
+     * @param user The user performing the operation.
+     * @param resourceType The FHIR resource type.
+     * @param id The FHIR resource ID.
      * @return Operation outcome.
      */
     OperationOutcome delete(SecurityUser user, String resourceType, String id);
 
     /**
      * Searches for all resources that match the search criteria.
+     * @param user The user performing the operation.
      * @param searchRequest Search criteria.
      * @return Operation outcome.
      */
@@ -81,8 +87,8 @@ public interface Repository {
     /**
      * Creates records from a FHIR Bundle.
      * see: https://www.hl7.org/fhir/http.html#transaction
-     * @param ctx Request context.
-     * @param bundle
+     * @param user The user performing the operation.
+     * @param bundle The FHIR bundle data.
      * @return Operation outcome.
      */
     OperationOutcome createBatch(SecurityUser user, JsonObject bundle);
@@ -90,25 +96,25 @@ public interface Repository {
     /**
      * Processes a FHIR message bundle.
      * see: https://www.hl7.org/fhir/messaging.html
-     * @param ctx Request context.
-     * @param bundle
+     * @param user The user performing the operation.
+     * @param bundle The FHIR bundle data.
      * @return Operation outcome.
      */
     OperationOutcome processMessage(SecurityUser user, JsonObject bundle);
 
     /**
      * Updates a resource by patch edit operations.
-     * @param ctx Request context.
-     * @param resourceType JsonObject type.
-     * @param id JsonObject ID.
-     * @param patch
+     * @param user The user performing the operation.
+     * @param resourceType The FHIR resource type.
+     * @param id The FHIR resource ID.
+     * @param patch The JSON patch data.
      * @return Operation outcome.
      */
     OperationOutcome patch(SecurityUser user, String resourceType, String id, JsonPatch patch);
 
     /**
      * Searches for all resources related to a patient ID.
-     * @param ctx Request context.
+     * @param user The user performing the operation.
      * @param patientId Patient ID.
      * @return Operation outcome.
      */
