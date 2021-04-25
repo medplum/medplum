@@ -62,10 +62,28 @@ First, log into Docker with the AWS ECR credentials.  By default, you will stay 
 aws ecr get-login-password --profile medplum --region us-east-1 | docker login --username AWS --password-stdin 647991932601.dkr.ecr.us-east-1.amazonaws.com
 ```
 
-Push the docker image into the repository
+Build the Docker image
 
 ```
-mvn -P fargate deploy
+mvn -B -P fargate -DskipTests=true package
+```
+
+Tag and deploy the new Docker image
+
+```
+docker tag medplum:$VERSION $REPO:$VERSION
+docker tag medplum:$VERSION $REPO:latest
+docker push $REPO:$VERSION
+docker push $REPO:latest
+```
+
+For example:
+
+```
+docker tag medplum-server:0.0.2 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.0.2
+docker tag medplum-server:0.0.2 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest
+docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.0.2
+docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest
 ```
 
 ## TODO:
