@@ -93,8 +93,6 @@
         <jose4j.version>0.7.7</jose4j.version>
         <junit.version>5.7.0</junit.version>
         <junit4.version>4.13.2</junit4.version>
-        <kotlin.version>1.4.21</kotlin.version>
-        <liquibase.version>4.3.4</liquibase.version>
         <logback.version>1.2.3</logback.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
@@ -131,21 +129,6 @@
                 <version>${logback.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.spullara.mustache.java</groupId>
-                <artifactId>compiler</artifactId>
-                <version>${mustache.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.graphql-java</groupId>
-                <artifactId>graphql-java</artifactId>
-                <version>${graphql.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>${h2.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.medplum</groupId>
                 <artifactId>medplum-core</artifactId>
                 <version>${project.version}</version>
@@ -159,11 +142,6 @@
                 <groupId>com.medplum</groupId>
                 <artifactId>medplum-server</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.zaxxer</groupId>
-                <artifactId>HikariCP</artifactId>
-                <version>${hikaricp.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
@@ -206,29 +184,8 @@
                 <version>${yasson.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.persistence</groupId>
-                <artifactId>org.eclipse.persistence.jpa</artifactId>
-                <version>${eclipselink.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish.jersey.containers</groupId>
-                <artifactId>jersey-container-netty-http</artifactId>
-                <version>${jersey.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.netty</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
                 <groupId>org.glassfish.jersey.core</groupId>
                 <artifactId>jersey-client</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish.jersey.ext</groupId>
-                <artifactId>jersey-mvc-mustache</artifactId>
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
@@ -267,22 +224,6 @@
                 <version>${junit.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.liquibase</groupId>
-                <artifactId>liquibase-core</artifactId>
-                <version>${liquibase.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>servlet-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.mindrot</groupId>
-                <artifactId>jbcrypt</artifactId>
-                <version>${bcrypt.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>${mockito.version}</version>
@@ -293,11 +234,6 @@
                 <version>${mockito.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>${postgresql.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.reactivestreams</groupId>
                 <artifactId>reactive-streams</artifactId>
                 <version>${reactive.version}</version>
@@ -306,87 +242,6 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>core</artifactId>
-                <version>${cdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>ec2</artifactId>
-                <version>${cdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>ecs</artifactId>
-                <version>${cdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>elasticloadbalancingv2</artifactId>
-                <version>${cdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>iam</artifactId>
-                <version>${cdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>rds</artifactId>
-                <version>${cdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>route53</artifactId>
-                <version>${cdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>ssm</artifactId>
-                <version>${cdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>cloudfront</artifactId>
-                <version>${aws.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>elastictranscoder</artifactId>
-                <version>${aws.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>netty-nio-client</artifactId>
-                <version>${aws.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.netty</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>s3</artifactId>
-                <version>${aws.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>ses</artifactId>
-                <version>${aws.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>sns</artifactId>
-                <version>${aws.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>ssm</artifactId>
-                <version>${aws.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
