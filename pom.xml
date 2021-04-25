@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.medplum</groupId>
     <artifactId>medplum</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <packaging>pom</packaging>
     <name>medplum</name>
     <description>MedPlum</description>
@@ -39,11 +39,7 @@
         </developer>
     </developers>
     <modules>
-        <module>medplum-cdk</module>
         <module>medplum-core</module>
-        <module>medplum-coverage</module>
-        <module>medplum-generator</module>
-        <module>medplum-server</module>
     </modules>
     <scm>
         <connection>scm:git:git@github.com:medplum/medplum.git</connection>
