@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 import software.amazon.awscdk.core.Construct;
 import software.amazon.awscdk.core.Duration;
+import software.amazon.awscdk.core.RemovalPolicy;
 import software.amazon.awscdk.services.ec2.SecurityGroup;
 import software.amazon.awscdk.services.ec2.SecurityGroupProps;
 import software.amazon.awscdk.services.ec2.SubnetSelection;
@@ -57,13 +58,14 @@ import software.amazon.awscdk.services.ssm.StringParameter;
 import software.amazon.awscdk.services.ssm.StringParameterProps;
 
 public class MedPlumBackEnd extends Construct {
-    private static final String API_CERTIFICATE_ARN = " arn:aws:acm:us-east-1:647991932601:certificate/08bf1daf-3a2b-4cbe-91a0-739b4364a1ec";
+    private static final String API_CERTIFICATE_ARN = "arn:aws:acm:us-east-1:647991932601:certificate/08bf1daf-3a2b-4cbe-91a0-739b4364a1ec";
 
     public MedPlumBackEnd(final Construct scope, final String id) {
         super(scope, id);
 
         final String medplumName = "www";
-        final String domainName = "api.medplum.com";
+        final String domainName = "medplum.com";
+        final String apiDomainName = "api." + domainName;
 
         // VPC
         final var vpc = new Vpc(this, "VPC");
@@ -120,6 +122,7 @@ public class MedPlumBackEnd extends Construct {
         // Log Group
         final var logGroup = new LogGroup(this, "LogGroup", LogGroupProps.builder()
                 .logGroupName("/ecs/medplum/" + medplumName)
+                .removalPolicy(RemovalPolicy.DESTROY)
                 .build());
 
         final var logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
@@ -131,9 +134,8 @@ public class MedPlumBackEnd extends Construct {
         final var serviceRepo = Repository.fromRepositoryName(this, "MedPlumRepo", "medplum-server");
 
         // Task Container
-        // Note that "medplumName" == "tag"
         final var serviceContainer = taskDefinition.addContainer("MedPlumTaskDefinition", ContainerDefinitionOptions.builder()
-                .image(ContainerImage.fromEcrRepository(serviceRepo, medplumName))
+                .image(ContainerImage.fromEcrRepository(serviceRepo, "latest"))
                 .logging(logDriver)
                 .build());
 
@@ -196,7 +198,7 @@ public class MedPlumBackEnd extends Construct {
                 .build());
 
         new ARecord(this, "LoadBalancerAliasRecord", ARecordProps.builder()
-                .recordName(domainName)
+                .recordName(apiDomainName)
                 .target(RecordTarget.fromAlias(new LoadBalancerTarget(loadBalancer)))
                 .zone(zone)
                 .build());
