@@ -7,6 +7,8 @@ import java.util.TimeZone;
 import javax.sql.DataSource;
 
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.jsonb.JsonBindingFeature;
+import org.glassfish.jersey.jsonp.JsonProcessingFeature;
 import org.glassfish.jersey.process.internal.RequestScoped;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
@@ -50,6 +52,8 @@ public class App extends ResourceConfig {
         property(ServerProperties.WADL_FEATURE_DISABLE, "true");
         property(MustacheMvcFeature.TEMPLATE_BASE_PATH, "templates");
         register(MustacheMvcFeature.class);
+        register(JsonProcessingFeature.class);
+        register(JsonBindingFeature.class);
 
         // Pass all config properties to Jersey
         addProperties(properties);
