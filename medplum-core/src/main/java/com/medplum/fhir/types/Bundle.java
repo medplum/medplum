@@ -523,7 +523,7 @@ public class Bundle extends FhirResource {
 
         /**
          * If the ETag values match, return a 304 Not Modified status. See the
-         * API documentation for ["Conditional Read"](http.html#cread).
+         * API documentation for [&quot;Conditional Read&quot;](http.html#cread).
          */
         public String ifNoneMatch() {
             return getString(PROPERTY_IF_NONE_MATCH);
@@ -531,7 +531,7 @@ public class Bundle extends FhirResource {
 
         /**
          * Only perform the operation if the last updated date matches. See the
-         * API documentation for ["Conditional Read"](http.html#cread).
+         * API documentation for [&quot;Conditional Read&quot;](http.html#cread).
          */
         public java.time.Instant ifModifiedSince() {
             return java.time.Instant.parse(data.getString(PROPERTY_IF_MODIFIED_SINCE));
@@ -539,8 +539,8 @@ public class Bundle extends FhirResource {
 
         /**
          * Only perform the operation if the Etag value matches. For more
-         * information, see the API section ["Managing Resource
-         * Contention"](http.html#concurrency).
+         * information, see the API section [&quot;Managing Resource
+         * Contention&quot;](http.html#concurrency).
          */
         public String ifMatch() {
             return getString(PROPERTY_IF_MATCH);
@@ -549,8 +549,8 @@ public class Bundle extends FhirResource {
         /**
          * Instruct the server not to perform the create if a specified resource
          * already exists. For further information, see the API documentation for
-         * ["Conditional Create"](http.html#ccreate). This is just the query
-         * portion of the URL - what follows the "?" (not including the "?").
+         * [&quot;Conditional Create&quot;](http.html#ccreate). This is just the query
+         * portion of the URL - what follows the &quot;?&quot; (not including the &quot;?&quot;).
          */
         public String ifNoneExist() {
             return getString(PROPERTY_IF_NONE_EXIST);

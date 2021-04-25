@@ -87,7 +87,7 @@ public class MedicationRequest extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -723,7 +723,7 @@ public class MedicationRequest extends FhirResource {
          * dispense, (aka refills or repeats) that the patient can receive the
          * prescribed medication. Usage Notes: This integer does not include the
          * original order dispense. This means that if an order indicates
-         * dispense 30 tablets plus "3 repeats", then the order can be dispensed
+         * dispense 30 tablets plus &quot;3 repeats&quot;, then the order can be dispensed
          * a total of 4 times and the patient can receive a total of 120 tablets.
          * A prescriber may explicitly say that zero refills are permitted after
          * the initial dispense.

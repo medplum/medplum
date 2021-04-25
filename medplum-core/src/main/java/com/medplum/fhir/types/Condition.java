@@ -78,7 +78,7 @@ public class Condition extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -226,8 +226,8 @@ public class Condition extends FhirResource {
 
     /**
      * The date or estimated date that the condition resolved or went into
-     * remission. This is called "abatement" because of the many overloaded
-     * connotations associated with "remission" or "resolution" - Conditions
+     * remission. This is called &quot;abatement&quot; because of the many overloaded
+     * connotations associated with &quot;remission&quot; or &quot;resolution&quot; - Conditions
      * are never really resolved, but they can abate.
      */
     public String abatementDateTime() {
@@ -236,8 +236,8 @@ public class Condition extends FhirResource {
 
     /**
      * The date or estimated date that the condition resolved or went into
-     * remission. This is called "abatement" because of the many overloaded
-     * connotations associated with "remission" or "resolution" - Conditions
+     * remission. This is called &quot;abatement&quot; because of the many overloaded
+     * connotations associated with &quot;remission&quot; or &quot;resolution&quot; - Conditions
      * are never really resolved, but they can abate.
      */
     public Age abatementAge() {
@@ -246,8 +246,8 @@ public class Condition extends FhirResource {
 
     /**
      * The date or estimated date that the condition resolved or went into
-     * remission. This is called "abatement" because of the many overloaded
-     * connotations associated with "remission" or "resolution" - Conditions
+     * remission. This is called &quot;abatement&quot; because of the many overloaded
+     * connotations associated with &quot;remission&quot; or &quot;resolution&quot; - Conditions
      * are never really resolved, but they can abate.
      */
     public Period abatementPeriod() {
@@ -256,8 +256,8 @@ public class Condition extends FhirResource {
 
     /**
      * The date or estimated date that the condition resolved or went into
-     * remission. This is called "abatement" because of the many overloaded
-     * connotations associated with "remission" or "resolution" - Conditions
+     * remission. This is called &quot;abatement&quot; because of the many overloaded
+     * connotations associated with &quot;remission&quot; or &quot;resolution&quot; - Conditions
      * are never really resolved, but they can abate.
      */
     public Range abatementRange() {
@@ -266,8 +266,8 @@ public class Condition extends FhirResource {
 
     /**
      * The date or estimated date that the condition resolved or went into
-     * remission. This is called "abatement" because of the many overloaded
-     * connotations associated with "remission" or "resolution" - Conditions
+     * remission. This is called &quot;abatement&quot; because of the many overloaded
+     * connotations associated with &quot;remission&quot; or &quot;resolution&quot; - Conditions
      * are never really resolved, but they can abate.
      */
     public String abatementString() {
@@ -653,7 +653,7 @@ public class Condition extends FhirResource {
         }
 
         /**
-         * A simple summary of the stage such as "Stage 3". The determination of
+         * A simple summary of the stage such as &quot;Stage 3&quot;. The determination of
          * the stage is disease-specific.
          */
         public CodeableConcept summary() {

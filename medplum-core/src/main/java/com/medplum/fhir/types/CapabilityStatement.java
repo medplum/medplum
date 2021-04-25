@@ -79,7 +79,7 @@ public class CapabilityStatement extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -1413,7 +1413,7 @@ public class CapabilityStatement extends FhirResource {
 
         /**
          * A list of profiles that represent different use cases supported by the
-         * system. For a server, "supported by the system" means the system
+         * system. For a server, &quot;supported by the system&quot; means the system
          * hosts/produces a set of resources that are conformant to a particular
          * profile, and allows clients that use its services to search using this
          * profile and to find appropriate data. For a client, it means the

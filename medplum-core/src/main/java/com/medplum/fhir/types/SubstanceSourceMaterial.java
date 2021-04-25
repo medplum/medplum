@@ -66,7 +66,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -162,7 +162,7 @@ public class SubstanceSourceMaterial extends FhirResource {
     /**
      * The country where the plant material is harvested or the countries
      * where the plasma is sourced from as laid down in accordance with the
-     * Plasma Master File. For “Plasma-derived substances” the attribute
+     * Plasma Master File. For &ldquo;Plasma-derived substances&rdquo; the attribute
      * country of origin provides information about the countries used for
      * the manufacturing of the Cryopoor plama or Crioprecipitate.
      */
@@ -601,7 +601,7 @@ public class SubstanceSourceMaterial extends FhirResource {
         /**
          * The identifier of the maternal species constituting the hybrid
          * organism shall be specified based on a controlled vocabulary. For
-         * plants, the parents aren’t always known, and it is unlikely that it
+         * plants, the parents aren&rsquo;t always known, and it is unlikely that it
          * will be known which is maternal and which is paternal.
          */
         public String maternalOrganismId() {
@@ -610,7 +610,7 @@ public class SubstanceSourceMaterial extends FhirResource {
 
         /**
          * The name of the maternal species constituting the hybrid organism
-         * shall be specified. For plants, the parents aren’t always known, and
+         * shall be specified. For plants, the parents aren&rsquo;t always known, and
          * it is unlikely that it will be known which is maternal and which is
          * paternal.
          */

@@ -72,7 +72,7 @@ public class SubstanceSpecification extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -1536,7 +1536,7 @@ public class SubstanceSpecification extends FhirResource {
         }
 
         /**
-         * For example "salt to parent", "active moiety", "starting material".
+         * For example &quot;salt to parent&quot;, &quot;active moiety&quot;, &quot;starting material&quot;.
          */
         public CodeableConcept relationship() {
             return getObject(CodeableConcept.class, PROPERTY_RELATIONSHIP);
@@ -1595,8 +1595,8 @@ public class SubstanceSpecification extends FhirResource {
         }
 
         /**
-         * An operator for the amount, for example "average", "approximately",
-         * "less than".
+         * An operator for the amount, for example &quot;average&quot;, &quot;approximately&quot;,
+         * &quot;less than&quot;.
          */
         public CodeableConcept amountType() {
             return getObject(CodeableConcept.class, PROPERTY_AMOUNT_TYPE);

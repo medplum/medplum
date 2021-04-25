@@ -80,7 +80,7 @@ public class DeviceRequest extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -226,9 +226,9 @@ public class DeviceRequest extends FhirResource {
 
     /**
      * The timing schedule for the use of the device. The Schedule data type
-     * allows many different expressions, for example. "Every 8 hours";
-     * "Three times a day"; "1/2 an hour before breakfast for 10 days from
-     * 23-Dec 2011:"; "15 Oct 2013, 17 Oct 2013 and 1 Nov 2013".
+     * allows many different expressions, for example. &quot;Every 8 hours&quot;;
+     * &quot;Three times a day&quot;; &quot;1/2 an hour before breakfast for 10 days from
+     * 23-Dec 2011:&quot;; &quot;15 Oct 2013, 17 Oct 2013 and 1 Nov 2013&quot;.
      */
     public String occurrenceDateTime() {
         return getString(PROPERTY_OCCURRENCE_DATE_TIME);
@@ -236,9 +236,9 @@ public class DeviceRequest extends FhirResource {
 
     /**
      * The timing schedule for the use of the device. The Schedule data type
-     * allows many different expressions, for example. "Every 8 hours";
-     * "Three times a day"; "1/2 an hour before breakfast for 10 days from
-     * 23-Dec 2011:"; "15 Oct 2013, 17 Oct 2013 and 1 Nov 2013".
+     * allows many different expressions, for example. &quot;Every 8 hours&quot;;
+     * &quot;Three times a day&quot;; &quot;1/2 an hour before breakfast for 10 days from
+     * 23-Dec 2011:&quot;; &quot;15 Oct 2013, 17 Oct 2013 and 1 Nov 2013&quot;.
      */
     public Period occurrencePeriod() {
         return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
@@ -246,9 +246,9 @@ public class DeviceRequest extends FhirResource {
 
     /**
      * The timing schedule for the use of the device. The Schedule data type
-     * allows many different expressions, for example. "Every 8 hours";
-     * "Three times a day"; "1/2 an hour before breakfast for 10 days from
-     * 23-Dec 2011:"; "15 Oct 2013, 17 Oct 2013 and 1 Nov 2013".
+     * allows many different expressions, for example. &quot;Every 8 hours&quot;;
+     * &quot;Three times a day&quot;; &quot;1/2 an hour before breakfast for 10 days from
+     * 23-Dec 2011:&quot;; &quot;15 Oct 2013, 17 Oct 2013 and 1 Nov 2013&quot;.
      */
     public Timing occurrenceTiming() {
         return getObject(Timing.class, PROPERTY_OCCURRENCE_TIMING);

@@ -94,7 +94,7 @@ public class MarketingStatus extends FhirResource {
      * Marketing Authorisation Holder (or where applicable, the
      * manufacturer/distributor) in a country and/or jurisdiction shall be
      * provided A complete date consisting of day, month and year shall be
-     * specified using the ISO 8601 date format NOTE “Placed on the market”
+     * specified using the ISO 8601 date format NOTE &ldquo;Placed on the market&rdquo;
      * refers to the release of the Medicinal Product into the distribution
      * chain.
      */
@@ -107,7 +107,7 @@ public class MarketingStatus extends FhirResource {
      * Marketing Authorisation Holder (or where applicable, the
      * manufacturer/distributor) in a country and/or jurisdiction shall be
      * provided A complete date consisting of day, month and year shall be
-     * specified using the ISO 8601 date format NOTE “Placed on the market”
+     * specified using the ISO 8601 date format NOTE &ldquo;Placed on the market&rdquo;
      * refers to the release of the Medicinal Product into the distribution
      * chain.
      */

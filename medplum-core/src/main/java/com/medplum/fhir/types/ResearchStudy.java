@@ -77,7 +77,7 @@ public class ResearchStudy extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -189,7 +189,7 @@ public class ResearchStudy extends FhirResource {
     /**
      * The condition that is the focus of the study.  For example, In a study
      * to examine risk factors for Lupus, might have as an inclusion
-     * criterion "healthy volunteer", but the target condition code would be
+     * criterion &quot;healthy volunteer&quot;, but the target condition code would be
      * a Lupus SNOMED code.
      */
     public java.util.List<CodeableConcept> condition() {
@@ -235,8 +235,8 @@ public class ResearchStudy extends FhirResource {
 
     /**
      * Reference to a Group that defines the criteria for and quantity of
-     * subjects participating in the study.  E.g. " 200 female Europeans
-     * between the ages of 20 and 45 with early onset diabetes".
+     * subjects participating in the study.  E.g. &quot; 200 female Europeans
+     * between the ages of 20 and 45 with early onset diabetes&quot;.
      */
     public java.util.List<Reference> enrollment() {
         return getList(Reference.class, PROPERTY_ENROLLMENT);

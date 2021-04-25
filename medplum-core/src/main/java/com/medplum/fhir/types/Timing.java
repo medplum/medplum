@@ -278,8 +278,8 @@ public class Timing extends FhirResource {
 
         /**
          * Indicates the duration of time over which repetitions are to occur;
-         * e.g. to express "3 times per day", 3 would be the frequency and "1
-         * day" would be the period. If periodMax is present, this element
+         * e.g. to express &quot;3 times per day&quot;, 3 would be the frequency and &quot;1
+         * day&quot; would be the period. If periodMax is present, this element
          * indicates the lower bound of the allowed range of the period length.
          */
         public Double period() {
@@ -288,7 +288,7 @@ public class Timing extends FhirResource {
 
         /**
          * If present, indicates that the period is a range from [period] to
-         * [periodMax], allowing expressing concepts such as "do this once every
+         * [periodMax], allowing expressing concepts such as &quot;do this once every
          * 3-5 days.
          */
         public Double periodMax() {

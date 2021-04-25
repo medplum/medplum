@@ -86,9 +86,9 @@ public class Dosage extends FhirResource {
 
     /**
      * Supplemental instructions to the patient on how to take the medication
-     * (e.g. "with meals" or"take half to one hour before food") or warnings
-     * for the patient about the medication (e.g. "may cause drowsiness" or
-     * "avoid exposure of skin to direct sunlight or sunlamps").
+     * (e.g. &quot;with meals&quot; or&quot;take half to one hour before food&quot;) or warnings
+     * for the patient about the medication (e.g. &quot;may cause drowsiness&quot; or
+     * &quot;avoid exposure of skin to direct sunlight or sunlamps&quot;).
      */
     public java.util.List<CodeableConcept> additionalInstruction() {
         return getList(CodeableConcept.class, PROPERTY_ADDITIONAL_INSTRUCTION);

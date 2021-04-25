@@ -69,7 +69,7 @@ public class DocumentReference extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -215,7 +215,7 @@ public class DocumentReference extends FhirResource {
     /**
      * A set of Security-Tag codes specifying the level of privacy/security
      * of the Document. Note that DocumentReference.meta.security contains
-     * the security labels of the "reference" to the document, while
+     * the security labels of the &quot;reference&quot; to the document, while
      * DocumentReference.securityLabel contains a snapshot of the security
      * labels on the document the reference refers to.
      */
@@ -539,9 +539,9 @@ public class DocumentReference extends FhirResource {
         /**
          * This list of codes represents the main clinical acts, such as a
          * colonoscopy or an appendectomy, being documented. In some cases, the
-         * event is inherent in the type Code, such as a "History and Physical
-         * Report" in which the procedure being documented is necessarily a
-         * "History and Physical" act.
+         * event is inherent in the type Code, such as a &quot;History and Physical
+         * Report&quot; in which the procedure being documented is necessarily a
+         * &quot;History and Physical&quot; act.
          */
         public java.util.List<CodeableConcept> event() {
             return getList(CodeableConcept.class, PROPERTY_EVENT);

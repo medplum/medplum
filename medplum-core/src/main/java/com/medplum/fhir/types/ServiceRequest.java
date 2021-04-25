@@ -89,7 +89,7 @@ public class ServiceRequest extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -193,7 +193,7 @@ public class ServiceRequest extends FhirResource {
 
     /**
      * A code that classifies the service for searching, sorting and display
-     * purposes (e.g. "Surgical Procedure").
+     * purposes (e.g. &quot;Surgical Procedure&quot;).
      */
     public java.util.List<CodeableConcept> category() {
         return getList(CodeableConcept.class, PROPERTY_CATEGORY);
@@ -303,7 +303,7 @@ public class ServiceRequest extends FhirResource {
 
     /**
      * If a CodeableConcept is present, it indicates the pre-condition for
-     * performing the service.  For example "pain", "on flare-up", etc.
+     * performing the service.  For example &quot;pain&quot;, &quot;on flare-up&quot;, etc.
      */
     public Boolean asNeededBoolean() {
         return data.getBoolean(PROPERTY_AS_NEEDED_BOOLEAN);
@@ -311,7 +311,7 @@ public class ServiceRequest extends FhirResource {
 
     /**
      * If a CodeableConcept is present, it indicates the pre-condition for
-     * performing the service.  For example "pain", "on flare-up", etc.
+     * performing the service.  For example &quot;pain&quot;, &quot;on flare-up&quot;, etc.
      */
     public CodeableConcept asNeededCodeableConcept() {
         return getObject(CodeableConcept.class, PROPERTY_AS_NEEDED_CODEABLE_CONCEPT);
@@ -395,8 +395,8 @@ public class ServiceRequest extends FhirResource {
      * Additional clinical information about the patient or specimen that may
      * influence the services or their interpretations.     This information
      * includes diagnosis, clinical findings and other observations.  In
-     * laboratory ordering these are typically referred to as "ask at order
-     * entry questions (AOEs)".  This includes observations explicitly
+     * laboratory ordering these are typically referred to as &quot;ask at order
+     * entry questions (AOEs)&quot;.  This includes observations explicitly
      * requested by the producer (filler) to provide context or supporting
      * information needed to complete the order. For example,  reporting the
      * amount of inspired oxygen for blood gas measurements.

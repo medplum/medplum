@@ -74,7 +74,7 @@ public class ClinicalImpression extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -597,8 +597,8 @@ public class ClinicalImpression extends FhirResource {
         }
 
         /**
-         * A name/code for the group ("set") of investigations. Typically, this
-         * will be something like "signs", "symptoms", "clinical", "diagnostic",
+         * A name/code for the group (&quot;set&quot;) of investigations. Typically, this
+         * will be something like &quot;signs&quot;, &quot;symptoms&quot;, &quot;clinical&quot;, &quot;diagnostic&quot;,
          * but the list is not constrained, and others such groups such as
          * (exposure|family|travel|nutritional) history may be used.
          */

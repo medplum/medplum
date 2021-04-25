@@ -65,7 +65,7 @@ public class MessageHeader extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -106,7 +106,7 @@ public class MessageHeader extends FhirResource {
      * Code that identifies the event this message represents and connects it
      * with its definition. Events defined as part of the FHIR specification
      * have the system value
-     * "http://terminology.hl7.org/CodeSystem/message-events".  Alternatively
+     * &quot;http://terminology.hl7.org/CodeSystem/message-events&quot;.  Alternatively
      * uri to the EventDefinition.
      */
     public Coding eventCoding() {
@@ -117,7 +117,7 @@ public class MessageHeader extends FhirResource {
      * Code that identifies the event this message represents and connects it
      * with its definition. Events defined as part of the FHIR specification
      * have the system value
-     * "http://terminology.hl7.org/CodeSystem/message-events".  Alternatively
+     * &quot;http://terminology.hl7.org/CodeSystem/message-events&quot;.  Alternatively
      * uri to the EventDefinition.
      */
     public String eventUri() {

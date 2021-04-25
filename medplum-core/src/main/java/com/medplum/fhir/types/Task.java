@@ -84,7 +84,7 @@ public class Task extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -147,9 +147,9 @@ public class Task extends FhirResource {
 
     /**
      * BasedOn refers to a higher-level authorization that triggered the
-     * creation of the task.  It references a "request" resource such as a
+     * creation of the task.  It references a &quot;request&quot; resource such as a
      * ServiceRequest, MedicationRequest, ServiceRequest, CarePlan, etc.
-     * which is distinct from the "request" resource the task is seeking to
+     * which is distinct from the &quot;request&quot; resource the task is seeking to
      * fulfill.  This latter resource is referenced by FocusOn.  For example,
      * based on a ServiceRequest (= BasedOn), a task is created to fulfill a
      * procedureRequest ( = FocusOn ) to collect a specimen from a patient.
@@ -195,7 +195,7 @@ public class Task extends FhirResource {
     }
 
     /**
-     * Indicates the "level" of actionability associated with the Task, i.e.
+     * Indicates the &quot;level&quot; of actionability associated with the Task, i.e.
      * i+R[9]Cs this a proposed task, a planned task, an actionable task,
      * etc.
      */

@@ -77,7 +77,7 @@ public class TestScript extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -874,7 +874,7 @@ public class TestScript extends FhirResource {
 
         /**
          * Id of the source fixture used as the contents to be evaluated by
-         * either the "source/expression" or "sourceId/path" definition.
+         * either the &quot;source/expression&quot; or &quot;sourceId/path&quot; definition.
          */
         public String compareToSourceId() {
             return getString(PROPERTY_COMPARE_TO_SOURCE_ID);
@@ -2202,14 +2202,14 @@ public class TestScript extends FhirResource {
         }
 
         /**
-         * The HTTP header field e.g. "Accept".
+         * The HTTP header field e.g. &quot;Accept&quot;.
          */
         public String field() {
             return getString(PROPERTY_FIELD);
         }
 
         /**
-         * The value of the header e.g. "application/fhir+xml".
+         * The value of the header e.g. &quot;application/fhir+xml&quot;.
          */
         public String value() {
             return getString(PROPERTY_VALUE);

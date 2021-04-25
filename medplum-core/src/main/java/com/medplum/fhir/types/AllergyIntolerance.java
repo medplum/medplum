@@ -73,7 +73,7 @@ public class AllergyIntolerance extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -162,11 +162,11 @@ public class AllergyIntolerance extends FhirResource {
      * Code for an allergy or intolerance statement (either a positive or a
      * negated/excluded statement).  This may be a code for a substance or
      * pharmaceutical product that is considered to be responsible for the
-     * adverse reaction risk (e.g., "Latex"), an allergy or intolerance
-     * condition (e.g., "Latex allergy"), or a negated/excluded code for a
-     * specific substance or class (e.g., "No latex allergy") or a general or
-     * categorical negated statement (e.g.,  "No known allergy", "No known
-     * drug allergies").  Note: the substance for a specific reaction may be
+     * adverse reaction risk (e.g., &quot;Latex&quot;), an allergy or intolerance
+     * condition (e.g., &quot;Latex allergy&quot;), or a negated/excluded code for a
+     * specific substance or class (e.g., &quot;No latex allergy&quot;) or a general or
+     * categorical negated statement (e.g.,  &quot;No known allergy&quot;, &quot;No known
+     * drug allergies&quot;).  Note: the substance for a specific reaction may be
      * different from the substance identified as the cause of the risk, but
      * it must be consistent with it. For instance, it may be a more specific
      * substance (e.g. a brand medication) or a composite product that

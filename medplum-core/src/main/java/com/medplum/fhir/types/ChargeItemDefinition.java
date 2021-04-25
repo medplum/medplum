@@ -76,7 +76,7 @@ public class ChargeItemDefinition extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -551,8 +551,8 @@ public class ChargeItemDefinition extends FhirResource {
         }
 
         /**
-         * The media type of the language for the expression, e.g. "text/cql" for
-         * Clinical Query Language expressions or "text/fhirpath" for FHIRPath
+         * The media type of the language for the expression, e.g. &quot;text/cql&quot; for
+         * Clinical Query Language expressions or &quot;text/fhirpath&quot; for FHIRPath
          * expressions.
          */
         public String language() {

@@ -59,7 +59,7 @@ public class Schedule extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -147,7 +147,7 @@ public class Schedule extends FhirResource {
      * resource cover (even if none exist). These  cover the amount of time
      * that an organization's planning horizon; the interval for which they
      * are currently accepting appointments. This does not define a
-     * "template" for planning outside these dates.
+     * &quot;template&quot; for planning outside these dates.
      */
     public Period planningHorizon() {
         return getObject(Period.class, PROPERTY_PLANNING_HORIZON);

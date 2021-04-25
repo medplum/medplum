@@ -80,7 +80,7 @@ public class StructureDefinition extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -325,7 +325,7 @@ public class StructureDefinition extends FhirResource {
      * including abstract ones). Otherwise the structure definition is a
      * constraint on the stated type (and in this case, the type cannot be an
      * abstract type).  References are URLs that are relative to
-     * http://hl7.org/fhir/StructureDefinition e.g. "string" is a reference
+     * http://hl7.org/fhir/StructureDefinition e.g. &quot;string&quot; is a reference
      * to http://hl7.org/fhir/StructureDefinition/string. Absolute URLs are
      * only allowed in logical models.
      */

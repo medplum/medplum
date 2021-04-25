@@ -69,7 +69,7 @@ public class MolecularSequence extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -941,8 +941,8 @@ public class MolecularSequence extends FhirResource {
 
         /**
          * A relative reference to a DNA strand based on gene orientation. The
-         * strand that contains the open reading frame of the gene is the "sense"
-         * strand, and the opposite complementary strand is the "antisense"
+         * strand that contains the open reading frame of the gene is the &quot;sense&quot;
+         * strand, and the opposite complementary strand is the &quot;antisense&quot;
          * strand.
          */
         public String orientation() {
@@ -952,8 +952,8 @@ public class MolecularSequence extends FhirResource {
         /**
          * Reference identifier of reference sequence submitted to NCBI. It must
          * match the type in the MolecularSequence.type field. For example, the
-         * prefix, “NG_” identifies reference sequence for genes, “NM_” for
-         * messenger RNA transcripts, and “NP_” for amino acid sequences.
+         * prefix, &ldquo;NG_&rdquo; identifies reference sequence for genes, &ldquo;NM_&rdquo; for
+         * messenger RNA transcripts, and &ldquo;NP_&rdquo; for amino acid sequences.
          */
         public CodeableConcept referenceSeqId() {
             return getObject(CodeableConcept.class, PROPERTY_REFERENCE_SEQ_ID);
@@ -967,7 +967,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         /**
-         * A string like "ACGT".
+         * A string like &quot;ACGT&quot;.
          */
         public String referenceSeqString() {
             return getString(PROPERTY_REFERENCE_SEQ_STRING);
@@ -1294,7 +1294,7 @@ public class MolecularSequence extends FhirResource {
 
         /**
          * The number of true positives if the GQ score threshold was set to
-         * "score" field value.
+         * &quot;score&quot; field value.
          */
         public java.util.List<Integer> numTP() {
             return getList(Integer.class, PROPERTY_NUM_T_P);
@@ -1302,7 +1302,7 @@ public class MolecularSequence extends FhirResource {
 
         /**
          * The number of false positives if the GQ score threshold was set to
-         * "score" field value.
+         * &quot;score&quot; field value.
          */
         public java.util.List<Integer> numFP() {
             return getList(Integer.class, PROPERTY_NUM_F_P);
@@ -1310,14 +1310,14 @@ public class MolecularSequence extends FhirResource {
 
         /**
          * The number of false negatives if the GQ score threshold was set to
-         * "score" field value.
+         * &quot;score&quot; field value.
          */
         public java.util.List<Integer> numFN() {
             return getList(Integer.class, PROPERTY_NUM_F_N);
         }
 
         /**
-         * Calculated precision if the GQ score threshold was set to "score"
+         * Calculated precision if the GQ score threshold was set to &quot;score&quot;
          * field value.
          */
         public java.util.List<Double> precision() {
@@ -1325,7 +1325,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         /**
-         * Calculated sensitivity if the GQ score threshold was set to "score"
+         * Calculated sensitivity if the GQ score threshold was set to &quot;score&quot;
          * field value.
          */
         public java.util.List<Double> sensitivity() {
@@ -1333,7 +1333,7 @@ public class MolecularSequence extends FhirResource {
         }
 
         /**
-         * Calculated fScore if the GQ score threshold was set to "score" field
+         * Calculated fScore if the GQ score threshold was set to &quot;score&quot; field
          * value.
          */
         public java.util.List<Double> fMeasure() {

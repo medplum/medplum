@@ -79,7 +79,7 @@ public class OperationDefinition extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -831,7 +831,7 @@ public class OperationDefinition extends FhirResource {
         }
 
         /**
-         * Used when the type is "Reference" or "canonical", and identifies a
+         * Used when the type is &quot;Reference&quot; or &quot;canonical&quot;, and identifies a
          * profile structure or implementation Guide that applies to the target
          * of the reference this parameter refers to. If any profiles are
          * specified, then the content must conform to at least one of them. The

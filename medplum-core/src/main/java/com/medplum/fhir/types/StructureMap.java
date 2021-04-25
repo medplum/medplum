@@ -71,7 +71,7 @@ public class StructureMap extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -1204,7 +1204,7 @@ public class StructureMap extends FhirResource {
         }
 
         /**
-         * Specified maximum cardinality for the element - a number or a "*".
+         * Specified maximum cardinality for the element - a number or a &quot;*&quot;.
          * This is optional; if present, it acts an implicit check on the input
          * content (* just serves as documentation; it's the default value).
          */

@@ -75,7 +75,7 @@ public class Questionnaire extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -1249,7 +1249,7 @@ public class Questionnaire extends FhirResource {
         }
 
         /**
-         * An indication, if true, that the item must be present in a "completed"
+         * An indication, if true, that the item must be present in a &quot;completed&quot;
          * QuestionnaireResponse.  If false, the item may be skipped when
          * answering the questionnaire.
          */
@@ -1276,7 +1276,7 @@ public class Questionnaire extends FhirResource {
 
         /**
          * The maximum number of characters that are permitted in the answer to
-         * be considered a "valid" QuestionnaireResponse.
+         * be considered a &quot;valid&quot; QuestionnaireResponse.
          */
         public Integer maxLength() {
             return data.getInt(PROPERTY_MAX_LENGTH);
@@ -1284,14 +1284,14 @@ public class Questionnaire extends FhirResource {
 
         /**
          * A reference to a value set containing a list of codes representing
-         * permitted answers for a "choice" or "open-choice" question.
+         * permitted answers for a &quot;choice&quot; or &quot;open-choice&quot; question.
          */
         public String answerValueSet() {
             return getString(PROPERTY_ANSWER_VALUE_SET);
         }
 
         /**
-         * One of the permitted answers for a "choice" or "open-choice" question.
+         * One of the permitted answers for a &quot;choice&quot; or &quot;open-choice&quot; question.
          */
         public java.util.List<QuestionnaireAnswerOption> answerOption() {
             return getList(QuestionnaireAnswerOption.class, PROPERTY_ANSWER_OPTION);

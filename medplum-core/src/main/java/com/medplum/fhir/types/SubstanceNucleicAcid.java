@@ -58,7 +58,7 @@ public class SubstanceNucleicAcid extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -118,8 +118,8 @@ public class SubstanceNucleicAcid extends FhirResource {
      * The area of hybridisation shall be described if applicable for double
      * stranded RNA or DNA. The number associated with the subunit followed
      * by the number associated to the residue shall be specified in
-     * increasing order. The underscore “” shall be used as separator as
-     * follows: “Subunitnumber Residue”.
+     * increasing order. The underscore &ldquo;&rdquo; shall be used as separator as
+     * follows: &ldquo;Subunitnumber Residue&rdquo;.
      */
     public String areaOfHybridisation() {
         return getString(PROPERTY_AREA_OF_HYBRIDISATION);
@@ -276,7 +276,7 @@ public class SubstanceNucleicAcid extends FhirResource {
          * captured for nearly all naturally occurring nucleic acid the linkage
          * is a phosphate group. For many synthetic oligonucleotides
          * phosphorothioate linkages are often seen. Linkage connectivity is
-         * assumed to be 3’-5’. If the linkage is either 3’-3’ or 5’-5’ this
+         * assumed to be 3&rsquo;-5&rsquo;. If the linkage is either 3&rsquo;-3&rsquo; or 5&rsquo;-5&rsquo; this
          * should be specified.
          */
         public String connectivity() {
@@ -440,9 +440,9 @@ public class SubstanceNucleicAcid extends FhirResource {
         }
 
         /**
-         * The nucleotide present at the 5’ terminal shall be specified based on
+         * The nucleotide present at the 5&rsquo; terminal shall be specified based on
          * a controlled vocabulary. Since the sequence is represented from the 5'
-         * to the 3' end, the 5’ prime nucleotide is the letter at the first
+         * to the 3' end, the 5&rsquo; prime nucleotide is the letter at the first
          * position in the sequence. A separate representation would be
          * redundant.
          */
@@ -451,9 +451,9 @@ public class SubstanceNucleicAcid extends FhirResource {
         }
 
         /**
-         * The nucleotide present at the 3’ terminal shall be specified based on
+         * The nucleotide present at the 3&rsquo; terminal shall be specified based on
          * a controlled vocabulary. Since the sequence is represented from the 5'
-         * to the 3' end, the 5’ prime nucleotide is the letter at the last
+         * to the 3' end, the 5&rsquo; prime nucleotide is the letter at the last
          * position in the sequence. A separate representation would be
          * redundant.
          */
@@ -609,7 +609,7 @@ public class SubstanceNucleicAcid extends FhirResource {
 
         /**
          * The residues that contain a given sugar will be captured. The order of
-         * given residues will be captured in the 5‘-3‘direction consistent with
+         * given residues will be captured in the 5&lsquo;-3&lsquo;direction consistent with
          * the base sequences listed above.
          */
         public String residueSite() {

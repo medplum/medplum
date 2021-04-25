@@ -88,7 +88,7 @@ public class Contract extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -386,8 +386,8 @@ public class Contract extends FhirResource {
     }
 
     /**
-     * The "patient friendly language" versionof the Contract in whole or in
-     * parts. "Patient friendly language" means the representation of the
+     * The &quot;patient friendly language&quot; versionof the Contract in whole or in
+     * parts. &quot;Patient friendly language&quot; means the representation of the
      * Contract and Contract Provisions in a manner that is readily
      * accessible and understandable by a layperson in accordance with best
      * practices for communication styles that ensure that those agreeing to
@@ -415,8 +415,8 @@ public class Contract extends FhirResource {
 
     /**
      * Legally binding Contract: This is the signed and legally recognized
-     * representation of the Contract, which is considered the "source of
-     * truth" and which would be the basis for legal action related to
+     * representation of the Contract, which is considered the &quot;source of
+     * truth&quot; and which would be the basis for legal action related to
      * enforcement of this Contract.
      */
     public Attachment legallyBindingAttachment() {
@@ -425,8 +425,8 @@ public class Contract extends FhirResource {
 
     /**
      * Legally binding Contract: This is the signed and legally recognized
-     * representation of the Contract, which is considered the "source of
-     * truth" and which would be the basis for legal action related to
+     * representation of the Contract, which is considered the &quot;source of
+     * truth&quot; and which would be the basis for legal action related to
      * enforcement of this Contract.
      */
     public Reference legallyBindingReference() {

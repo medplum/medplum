@@ -70,7 +70,7 @@ public class NutritionOrder extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -216,7 +216,7 @@ public class NutritionOrder extends FhirResource {
      * be necessary to repeat allergy or intolerance information captured in
      * the referenced AllergyIntolerance resource in the excludeFoodModifier,
      * this element may be used to convey additional specificity related to
-     * foods that should be eliminated from the patient’s diet for any
+     * foods that should be eliminated from the patient&rsquo;s diet for any
      * reason.  This modifier applies to the entire nutrition order inclusive
      * of the oral diet, nutritional supplements and enteral formula
      * feedings.
@@ -590,7 +590,7 @@ public class NutritionOrder extends FhirResource {
 
         /**
          * The product or brand name of the enteral or infant formula product
-         * such as "ACME Adult Standard Formula".
+         * such as &quot;ACME Adult Standard Formula&quot;.
          */
         public String baseFormulaProductName() {
             return getString(PROPERTY_BASE_FORMULA_PRODUCT_NAME);
@@ -1050,8 +1050,8 @@ public class NutritionOrder extends FhirResource {
         }
 
         /**
-         * The product or brand name of the nutritional supplement such as "Acme
-         * Protein Shake".
+         * The product or brand name of the nutritional supplement such as &quot;Acme
+         * Protein Shake&quot;.
          */
         public String productName() {
             return getString(PROPERTY_PRODUCT_NAME);

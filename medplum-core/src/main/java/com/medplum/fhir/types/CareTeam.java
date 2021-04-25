@@ -66,7 +66,7 @@ public class CareTeam extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -130,7 +130,7 @@ public class CareTeam extends FhirResource {
 
     /**
      * A label for human use intended to distinguish like teams.  E.g. the
-     * "red" vs. "green" trauma teams.
+     * &quot;red&quot; vs. &quot;green&quot; trauma teams.
      */
     public String name() {
         return getString(PROPERTY_NAME);
@@ -376,8 +376,8 @@ public class CareTeam extends FhirResource {
 
         /**
          * Indicates specific responsibility of an individual within the care
-         * team, such as "Primary care physician", "Trained social worker
-         * counselor", "Caregiver", etc.
+         * team, such as &quot;Primary care physician&quot;, &quot;Trained social worker
+         * counselor&quot;, &quot;Caregiver&quot;, etc.
          */
         public java.util.List<CodeableConcept> role() {
             return getList(CodeableConcept.class, PROPERTY_ROLE);

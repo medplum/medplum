@@ -71,7 +71,7 @@ public class Patient extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -444,8 +444,8 @@ public class Patient extends FhirResource {
         /**
          * The ISO-639-1 alpha 2 code in lower case for the language, optionally
          * followed by a hyphen and the ISO-3166-1 alpha 2 code for the region in
-         * upper case; e.g. "en" for English, or "en-US" for American English
-         * versus "en-EN" for England English.
+         * upper case; e.g. &quot;en&quot; for English, or &quot;en-US&quot; for American English
+         * versus &quot;en-EN&quot; for England English.
          */
         public CodeableConcept language() {
             return getObject(CodeableConcept.class, PROPERTY_LANGUAGE);

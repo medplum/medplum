@@ -79,7 +79,7 @@ public class CodeSystem extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -1005,7 +1005,7 @@ public class CodeSystem extends FhirResource {
         }
 
         /**
-         * The type of the property value. Properties of type "code" contain a
+         * The type of the property value. Properties of type &quot;code&quot; contain a
          * code defined by the code system (e.g. a reference to another defined
          * concept).
          */

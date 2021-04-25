@@ -58,7 +58,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -104,7 +104,7 @@ public class MedicinalProductManufactured extends FhirResource {
     }
 
     /**
-     * The “real world” units in which the quantity of the manufactured item
+     * The &ldquo;real world&rdquo; units in which the quantity of the manufactured item
      * is described.
      */
     public CodeableConcept unitOfPresentation() {
@@ -112,7 +112,7 @@ public class MedicinalProductManufactured extends FhirResource {
     }
 
     /**
-     * The quantity or "count number" of the manufactured item.
+     * The quantity or &quot;count number&quot; of the manufactured item.
      */
     public Quantity quantity() {
         return getObject(Quantity.class, PROPERTY_QUANTITY);
@@ -120,7 +120,7 @@ public class MedicinalProductManufactured extends FhirResource {
 
     /**
      * Manufacturer of the item (Note that this should be named
-     * "manufacturer" but it currently causes technical issues).
+     * &quot;manufacturer&quot; but it currently causes technical issues).
      */
     public java.util.List<Reference> manufacturer() {
         return getList(Reference.class, PROPERTY_MANUFACTURER);

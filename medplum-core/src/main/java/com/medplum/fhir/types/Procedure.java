@@ -85,7 +85,7 @@ public class Procedure extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -182,7 +182,7 @@ public class Procedure extends FhirResource {
 
     /**
      * A code that classifies the procedure for searching, sorting and
-     * display purposes (e.g. "Surgical Procedure").
+     * display purposes (e.g. &quot;Surgical Procedure&quot;).
      */
     public CodeableConcept category() {
         return getObject(CodeableConcept.class, PROPERTY_CATEGORY);
@@ -190,7 +190,7 @@ public class Procedure extends FhirResource {
 
     /**
      * The specific procedure that is performed. Use text if the exact nature
-     * of the procedure cannot be coded (e.g. "Laparoscopic Appendectomy").
+     * of the procedure cannot be coded (e.g. &quot;Laparoscopic Appendectomy&quot;).
      */
     public CodeableConcept code() {
         return getObject(CodeableConcept.class, PROPERTY_CODE);
@@ -277,7 +277,7 @@ public class Procedure extends FhirResource {
     }
 
     /**
-     * Limited to "real" people rather than equipment.
+     * Limited to &quot;real&quot; people rather than equipment.
      */
     public java.util.List<ProcedurePerformer> performer() {
         return getList(ProcedurePerformer.class, PROPERTY_PERFORMER);

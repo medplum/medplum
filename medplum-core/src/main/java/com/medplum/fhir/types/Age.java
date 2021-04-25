@@ -49,8 +49,8 @@ public class Age extends FhirResource {
     /**
      * How the value should be understood and represented - whether the
      * actual value is greater or less than the stated value due to
-     * measurement issues; e.g. if the comparator is "<" , then the real
-     * value is < stated value.
+     * measurement issues; e.g. if the comparator is &quot;&lt;&quot; , then the real
+     * value is &lt; stated value.
      */
     public String comparator() {
         return getString(PROPERTY_COMPARATOR);

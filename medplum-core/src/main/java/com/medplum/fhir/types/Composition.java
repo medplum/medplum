@@ -68,7 +68,7 @@ public class Composition extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -520,9 +520,9 @@ public class Composition extends FhirResource {
         /**
          * This list of codes represents the main clinical acts, such as a
          * colonoscopy or an appendectomy, being documented. In some cases, the
-         * event is inherent in the typeCode, such as a "History and Physical
-         * Report" in which the procedure being documented is necessarily a
-         * "History and Physical" act.
+         * event is inherent in the typeCode, such as a &quot;History and Physical
+         * Report&quot; in which the procedure being documented is necessarily a
+         * &quot;History and Physical&quot; act.
          */
         public java.util.List<CodeableConcept> code() {
             return getList(CodeableConcept.class, PROPERTY_CODE);
@@ -801,7 +801,7 @@ public class Composition extends FhirResource {
          * A human-readable narrative that contains the attested content of the
          * section, used to represent the content of the resource to a human. The
          * narrative need not encode all the structured data, but is required to
-         * contain sufficient detail to make it "clinically safe" for a human to
+         * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
          * just read the narrative.
          */
         public Narrative text() {

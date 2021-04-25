@@ -70,7 +70,7 @@ public class Goal extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -148,8 +148,8 @@ public class Goal extends FhirResource {
 
     /**
      * Human-readable and/or coded description of a specific desired
-     * objective of care, such as "control blood pressure" or "negotiate an
-     * obstacle course" or "dance with child at wedding".
+     * objective of care, such as &quot;control blood pressure&quot; or &quot;negotiate an
+     * obstacle course&quot; or &quot;dance with child at wedding&quot;.
      */
     public CodeableConcept description() {
         return getObject(CodeableConcept.class, PROPERTY_DESCRIPTION);

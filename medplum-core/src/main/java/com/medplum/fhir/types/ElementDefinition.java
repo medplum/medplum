@@ -253,7 +253,7 @@ public class ElementDefinition extends FhirResource {
     }
 
     /**
-     * The path identifies the element and is expressed as a "."-separated
+     * The path identifies the element and is expressed as a &quot;.&quot;-separated
      * list of ancestor elements, beginning with the name of the resource or
      * extension.
      */
@@ -2830,7 +2830,7 @@ public class ElementDefinition extends FhirResource {
 
     /**
      * If true, implementations that produce or consume resources SHALL
-     * provide "support" for the element in some meaningful way.  If false,
+     * provide &quot;support&quot; for the element in some meaningful way.  If false,
      * the element may be ignored and not supported. If false, whether to
      * populate or use the data element in any way is at the discretion of
      * the implementation.
@@ -5498,7 +5498,7 @@ public class ElementDefinition extends FhirResource {
         /**
          * URL of Data type or Resource that is a(or the) type used for this
          * element. References are URLs that are relative to
-         * http://hl7.org/fhir/StructureDefinition e.g. "string" is a reference
+         * http://hl7.org/fhir/StructureDefinition e.g. &quot;string&quot; is a reference
          * to http://hl7.org/fhir/StructureDefinition/string. Absolute URLs are
          * only allowed in logical models.
          */
@@ -5520,7 +5520,7 @@ public class ElementDefinition extends FhirResource {
         }
 
         /**
-         * Used when the type is "Reference" or "canonical", and identifies a
+         * Used when the type is &quot;Reference&quot; or &quot;canonical&quot;, and identifies a
          * profile structure or implementation Guide that applies to the target
          * of the reference this element refers to. If any profiles are
          * specified, then the content must conform to at least one of them. The

@@ -65,7 +65,7 @@ public class DocumentManifest extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -180,7 +180,7 @@ public class DocumentManifest extends FhirResource {
 
     /**
      * Human-readable description of the source document. This is sometimes
-     * known as the "title".
+     * known as the &quot;title&quot;.
      */
     public String description() {
         return getString(PROPERTY_DESCRIPTION);

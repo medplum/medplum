@@ -76,7 +76,7 @@ public class CarePlan extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -180,9 +180,9 @@ public class CarePlan extends FhirResource {
     }
 
     /**
-     * Identifies what "kind" of plan this is to support differentiation
-     * between multiple co-existing plans; e.g. "Home health", "psychiatric",
-     * "asthma", "disease management", "wellness plan", etc.
+     * Identifies what &quot;kind&quot; of plan this is to support differentiation
+     * between multiple co-existing plans; e.g. &quot;Home health&quot;, &quot;psychiatric&quot;,
+     * &quot;asthma&quot;, &quot;disease management&quot;, &quot;wellness plan&quot;, etc.
      */
     public java.util.List<CodeableConcept> category() {
         return getList(CodeableConcept.class, PROPERTY_CATEGORY);
@@ -531,10 +531,10 @@ public class CarePlan extends FhirResource {
 
         /**
          * Details of the outcome or action resulting from the activity.  The
-         * reference to an "event" resource, such as Procedure or Encounter or
+         * reference to an &quot;event&quot; resource, such as Procedure or Encounter or
          * Observation, is the result/outcome of the activity itself.  The
          * activity can be conveyed using CarePlan.activity.detail OR using the
-         * CarePlan.activity.reference (a reference to a “request” resource).
+         * CarePlan.activity.reference (a reference to a &ldquo;request&rdquo; resource).
          */
         public java.util.List<Reference> outcomeReference() {
             return getList(Reference.class, PROPERTY_OUTCOME_REFERENCE);

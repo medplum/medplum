@@ -60,7 +60,7 @@ public class Subscription extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -309,7 +309,7 @@ public class Subscription extends FhirResource {
          * The mime type to send the payload in - either application/fhir+xml, or
          * application/fhir+json. If the payload is not present, then there is no
          * payload in the notification, just a notification. The mime type
-         * "text/plain" may also be used for Email and SMS subscriptions.
+         * &quot;text/plain&quot; may also be used for Email and SMS subscriptions.
          */
         public String payload() {
             return getString(PROPERTY_PAYLOAD);

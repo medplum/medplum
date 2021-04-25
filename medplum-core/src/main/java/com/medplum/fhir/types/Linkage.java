@@ -56,7 +56,7 @@ public class Linkage extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -95,7 +95,7 @@ public class Linkage extends FhirResource {
 
     /**
      * Indicates whether the asserted set of linkages are considered to be
-     * "in effect".
+     * &quot;in effect&quot;.
      */
     public Boolean active() {
         return data.getBoolean(PROPERTY_ACTIVE);
@@ -238,7 +238,7 @@ public class Linkage extends FhirResource {
         }
 
         /**
-         * Distinguishes which item is "source of truth" (if any) and which items
+         * Distinguishes which item is &quot;source of truth&quot; (if any) and which items
          * are no longer considered to be current representations.
          */
         public String type() {

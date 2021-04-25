@@ -56,7 +56,7 @@ public class Basic extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -111,7 +111,7 @@ public class Basic extends FhirResource {
 
     /**
      * Identifies the patient, practitioner, device or any other resource
-     * that is the "focus" of this resource.
+     * that is the &quot;focus&quot; of this resource.
      */
     public Reference subject() {
         return getObject(Reference.class, PROPERTY_SUBJECT);

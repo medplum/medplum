@@ -65,7 +65,7 @@ public class SampledData extends FhirResource {
 
     /**
      * The lower limit of detection of the measured points. This is needed if
-     * any of the data points have the value "L" (lower than detection
+     * any of the data points have the value &quot;L&quot; (lower than detection
      * limit).
      */
     public Double lowerLimit() {
@@ -74,7 +74,7 @@ public class SampledData extends FhirResource {
 
     /**
      * The upper limit of detection of the measured points. This is needed if
-     * any of the data points have the value "U" (higher than detection
+     * any of the data points have the value &quot;U&quot; (higher than detection
      * limit).
      */
     public Double upperLimit() {
@@ -92,8 +92,8 @@ public class SampledData extends FhirResource {
 
     /**
      * A series of data points which are decimal values separated by a single
-     * space (character u20). The special values "E" (error), "L" (below
-     * detection limit) and "U" (above detection limit) can also be used in
+     * space (character u20). The special values &quot;E&quot; (error), &quot;L&quot; (below
+     * detection limit) and &quot;U&quot; (above detection limit) can also be used in
      * place of a decimal value.
      */
     public String data() {

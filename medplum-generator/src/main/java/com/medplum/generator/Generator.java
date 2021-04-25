@@ -19,6 +19,7 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import jakarta.json.stream.JsonParser;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.text.WordUtils;
 
 public class Generator {
@@ -206,7 +207,7 @@ public class Generator {
                     if (javadocLine.isBlank()) {
                         b.append(" *");
                     } else {
-                        b.append(" * " + javadocLine);
+                        b.append(" * " + StringEscapeUtils.escapeHtml4(javadocLine));
                     }
                 }
             }

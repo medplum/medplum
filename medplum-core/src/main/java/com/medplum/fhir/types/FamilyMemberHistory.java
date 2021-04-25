@@ -79,7 +79,7 @@ public class FamilyMemberHistory extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -174,8 +174,8 @@ public class FamilyMemberHistory extends FhirResource {
     }
 
     /**
-     * This will either be a name or a description; e.g. "Aunt Susan", "my
-     * cousin with the red hair".
+     * This will either be a name or a description; e.g. &quot;Aunt Susan&quot;, &quot;my
+     * cousin with the red hair&quot;.
      */
     public String name() {
         return getString(PROPERTY_NAME);

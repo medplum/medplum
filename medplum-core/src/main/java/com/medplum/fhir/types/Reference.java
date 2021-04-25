@@ -58,7 +58,7 @@ public class Reference extends FhirResource {
      *
      * The type is the Canonical URL of Resource Definition that is the type
      * this reference refers to. References are URLs that are relative to
-     * http://hl7.org/fhir/StructureDefinition/ e.g. "Patient" is a reference
+     * http://hl7.org/fhir/StructureDefinition/ e.g. &quot;Patient&quot; is a reference
      * to http://hl7.org/fhir/StructureDefinition/Patient. Absolute URLs are
      * only allowed for logical models (and can only be used in references in
      * logical models, not resources).

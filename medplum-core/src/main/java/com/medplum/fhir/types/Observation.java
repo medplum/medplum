@@ -90,7 +90,7 @@ public class Observation extends FhirResource {
      * A human-readable narrative that contains a summary of the resource and
      * can be used to represent the content of the resource to a human. The
      * narrative need not encode all the structured data, but is required to
-     * contain sufficient detail to make it "clinically safe" for a human to
+     * contain sufficient detail to make it &quot;clinically safe&quot; for a human to
      * just read the narrative. Resource definitions may define what content
      * should be represented in the narrative to ensure clinical safety.
      */
@@ -167,7 +167,7 @@ public class Observation extends FhirResource {
 
     /**
      * Describes what was observed. Sometimes this is called the observation
-     * "name".
+     * &quot;name&quot;.
      */
     public CodeableConcept code() {
         return getObject(CodeableConcept.class, PROPERTY_CODE);
@@ -211,7 +211,7 @@ public class Observation extends FhirResource {
     /**
      * The time or time-period the observed value is asserted as being true.
      * For biological subjects - e.g. human patients - this is usually called
-     * the "physiologically relevant time". This is usually either the time
+     * the &quot;physiologically relevant time&quot;. This is usually either the time
      * of the procedure or of specimen collection, but very often the source
      * of the date/time is not known, only the date/time itself.
      */
@@ -222,7 +222,7 @@ public class Observation extends FhirResource {
     /**
      * The time or time-period the observed value is asserted as being true.
      * For biological subjects - e.g. human patients - this is usually called
-     * the "physiologically relevant time". This is usually either the time
+     * the &quot;physiologically relevant time&quot;. This is usually either the time
      * of the procedure or of specimen collection, but very often the source
      * of the date/time is not known, only the date/time itself.
      */
@@ -233,7 +233,7 @@ public class Observation extends FhirResource {
     /**
      * The time or time-period the observed value is asserted as being true.
      * For biological subjects - e.g. human patients - this is usually called
-     * the "physiologically relevant time". This is usually either the time
+     * the &quot;physiologically relevant time&quot;. This is usually either the time
      * of the procedure or of specimen collection, but very often the source
      * of the date/time is not known, only the date/time itself.
      */
@@ -244,7 +244,7 @@ public class Observation extends FhirResource {
     /**
      * The time or time-period the observed value is asserted as being true.
      * For biological subjects - e.g. human patients - this is usually called
-     * the "physiologically relevant time". This is usually either the time
+     * the &quot;physiologically relevant time&quot;. This is usually either the time
      * of the procedure or of specimen collection, but very often the source
      * of the date/time is not known, only the date/time itself.
      */
@@ -262,7 +262,7 @@ public class Observation extends FhirResource {
     }
 
     /**
-     * Who was responsible for asserting the observed value as "true".
+     * Who was responsible for asserting the observed value as &quot;true&quot;.
      */
     public java.util.List<Reference> performer() {
         return getList(Reference.class, PROPERTY_PERFORMER);
@@ -411,7 +411,7 @@ public class Observation extends FhirResource {
     /**
      * Guidance on how to interpret the value by comparison to a normal or
      * recommended range.  Multiple reference ranges are interpreted as an
-     * "OR".   In other words, to represent two distinct target populations,
+     * &quot;OR&quot;.   In other words, to represent two distinct target populations,
      * two `referenceRange` elements would be used.
      */
     public java.util.List<ObservationReferenceRange> referenceRange() {
@@ -750,7 +750,7 @@ public class Observation extends FhirResource {
 
         /**
          * Describes what was observed. Sometimes this is called the observation
-         * "code".
+         * &quot;code&quot;.
          */
         public CodeableConcept code() {
             return getObject(CodeableConcept.class, PROPERTY_CODE);
@@ -1025,8 +1025,8 @@ public class Observation extends FhirResource {
         /**
          * The value of the low bound of the reference range.  The low bound of
          * the reference range endpoint is inclusive of the value (e.g. 
-         * reference range is >=5 - <=9). If the low bound is omitted,  it is
-         * assumed to be meaningless (e.g. reference range is <=2.3).
+         * reference range is &gt;=5 - &lt;=9). If the low bound is omitted,  it is
+         * assumed to be meaningless (e.g. reference range is &lt;=2.3).
          */
         public Quantity low() {
             return getObject(Quantity.class, PROPERTY_LOW);
@@ -1035,8 +1035,8 @@ public class Observation extends FhirResource {
         /**
          * The value of the high bound of the reference range.  The high bound of
          * the reference range endpoint is inclusive of the value (e.g. 
-         * reference range is >=5 - <=9). If the high bound is omitted,  it is
-         * assumed to be meaningless (e.g. reference range is >= 2.3).
+         * reference range is &gt;=5 - &lt;=9). If the high bound is omitted,  it is
+         * assumed to be meaningless (e.g. reference range is &gt;= 2.3).
          */
         public Quantity high() {
             return getObject(Quantity.class, PROPERTY_HIGH);
@@ -1054,7 +1054,7 @@ public class Observation extends FhirResource {
          * Codes to indicate the target population this reference range applies
          * to.  For example, a reference range may be based on the normal
          * population or a particular sex or race.  Multiple `appliesTo`  are
-         * interpreted as an "AND" of the target populations.  For example, to
+         * interpreted as an &quot;AND&quot; of the target populations.  For example, to
          * represent a target population of African American females, both a code
          * of female and a code for African American would be used.
          */
@@ -1073,8 +1073,8 @@ public class Observation extends FhirResource {
         /**
          * Text based reference range in an observation which may be used when a
          * quantitative range is not appropriate for an observation.  An example
-         * would be a reference value of "Negative" or a list or table of
-         * "normals".
+         * would be a reference value of &quot;Negative&quot; or a list or table of
+         * &quot;normals&quot;.
          */
         public String text() {
             return getString(PROPERTY_TEXT);
