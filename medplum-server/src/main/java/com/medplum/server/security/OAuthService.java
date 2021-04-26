@@ -153,14 +153,6 @@ public class OAuthService {
         return outcome.resource(ClientApplication.class);
     }
 
-    public Login generateCode(final String scope) {
-        final OperationOutcome outcome = repo.create(null, Login.RESOURCE_TYPE, Login.create().scope(scope).build());
-        if (!outcome.isOk()) {
-            return null;
-        }
-        return outcome.resource(Login.class);
-    }
-
     public Login validateCode(final String code) {
         final OperationOutcome outcome = repo.read(SecurityUser.SYSTEM_USER, Login.RESOURCE_TYPE, code);
         if (!outcome.isOk()) {
