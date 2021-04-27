@@ -29,6 +29,12 @@ public class ContactDetailTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ContactDetail.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testName() {
         assertEquals("x", ContactDetail.create().name("x").build().name());
     }

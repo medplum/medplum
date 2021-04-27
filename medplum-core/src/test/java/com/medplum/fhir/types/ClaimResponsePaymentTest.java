@@ -29,6 +29,12 @@ public class ClaimResponsePaymentTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ClaimResponse.ClaimResponsePayment.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ClaimResponse.ClaimResponsePayment.create().modifierExtension(value).build().modifierExtension());
@@ -54,7 +60,7 @@ public class ClaimResponsePaymentTest {
 
     @Test
     public void testDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, ClaimResponse.ClaimResponsePayment.create().date(value).build().date());
     }
 

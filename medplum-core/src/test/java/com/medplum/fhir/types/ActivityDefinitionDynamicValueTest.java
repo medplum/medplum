@@ -29,6 +29,12 @@ public class ActivityDefinitionDynamicValueTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ActivityDefinition.ActivityDefinitionDynamicValue.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ActivityDefinition.ActivityDefinitionDynamicValue.create().modifierExtension(value).build().modifierExtension());

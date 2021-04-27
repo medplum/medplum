@@ -62,6 +62,12 @@ public class PaymentNoticeTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, PaymentNotice.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, PaymentNotice.create().modifierExtension(value).build().modifierExtension());
@@ -110,7 +116,7 @@ public class PaymentNoticeTest {
 
     @Test
     public void testPaymentDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, PaymentNotice.create().paymentDate(value).build().paymentDate());
     }
 

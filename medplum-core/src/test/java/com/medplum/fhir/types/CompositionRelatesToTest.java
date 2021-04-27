@@ -29,6 +29,12 @@ public class CompositionRelatesToTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Composition.CompositionRelatesTo.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Composition.CompositionRelatesTo.create().modifierExtension(value).build().modifierExtension());

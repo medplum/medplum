@@ -29,6 +29,12 @@ public class ConditionEvidenceTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Condition.ConditionEvidence.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Condition.ConditionEvidence.create().modifierExtension(value).build().modifierExtension());

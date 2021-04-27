@@ -29,6 +29,12 @@ public class SignatureTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Signature.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testType() {
         final java.util.List<Coding> value = java.util.Collections.emptyList();
         assertEquals(value, Signature.create().type(value).build().type());

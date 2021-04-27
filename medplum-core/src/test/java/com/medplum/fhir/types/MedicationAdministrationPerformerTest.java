@@ -29,6 +29,12 @@ public class MedicationAdministrationPerformerTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, MedicationAdministration.MedicationAdministrationPerformer.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, MedicationAdministration.MedicationAdministrationPerformer.create().modifierExtension(value).build().modifierExtension());

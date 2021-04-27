@@ -18,6 +18,7 @@ public class Person extends FhirResource {
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
+    public static final String PROPERTY_EXTENSION = "extension";
     public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_NAME = "name";
@@ -82,6 +83,18 @@ public class Person extends FhirResource {
 
     /**
      * May be used to represent additional information that is not part of
+     * the basic definition of the resource. To make the use of extensions
+     * safe and manageable, there is a strict set of governance  applied to
+     * the definition and use of extensions. Though any implementer can
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension.
+     */
+    public java.util.List<Extension> extension() {
+        return getList(Extension.class, PROPERTY_EXTENSION);
+    }
+
+    /**
+     * May be used to represent additional information that is not part of
      * the basic definition of the resource and that modifies the
      * understanding of the element that contains it and/or the understanding
      * of the containing element's descendants. Usually modifier elements
@@ -132,8 +145,8 @@ public class Person extends FhirResource {
     /**
      * The birth date for the person.
      */
-    public java.time.Instant birthDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_BIRTH_DATE));
+    public java.time.LocalDate birthDate() {
+        return java.time.LocalDate.parse(data.getString(PROPERTY_BIRTH_DATE));
     }
 
     /**
@@ -217,6 +230,11 @@ public class Person extends FhirResource {
             return this;
         }
 
+        public Builder extension(final java.util.List<Extension> extension) {
+            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            return this;
+        }
+
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
             b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
@@ -242,7 +260,7 @@ public class Person extends FhirResource {
             return this;
         }
 
-        public Builder birthDate(final java.time.Instant birthDate) {
+        public Builder birthDate(final java.time.LocalDate birthDate) {
             b.add(PROPERTY_BIRTH_DATE, birthDate.toString());
             return this;
         }
@@ -280,6 +298,7 @@ public class Person extends FhirResource {
     public static class PersonLink extends FhirObject {
         public static final String RESOURCE_TYPE = "PersonLink";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TARGET = "target";
         public static final String PROPERTY_ASSURANCE = "assurance";
@@ -302,6 +321,18 @@ public class Person extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -353,6 +384,11 @@ public class Person extends FhirResource {
 
             public Builder id(final String id) {
                 b.add(PROPERTY_ID, id);
+                return this;
+            }
+
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 

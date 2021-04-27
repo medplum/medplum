@@ -62,6 +62,12 @@ public class VisionPrescriptionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, VisionPrescription.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, VisionPrescription.create().modifierExtension(value).build().modifierExtension());

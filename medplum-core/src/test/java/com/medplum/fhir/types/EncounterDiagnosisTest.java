@@ -29,6 +29,12 @@ public class EncounterDiagnosisTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Encounter.EncounterDiagnosis.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Encounter.EncounterDiagnosis.create().modifierExtension(value).build().modifierExtension());

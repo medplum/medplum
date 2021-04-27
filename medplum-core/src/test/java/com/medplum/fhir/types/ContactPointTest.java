@@ -29,6 +29,12 @@ public class ContactPointTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ContactPoint.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testSystem() {
         assertEquals("x", ContactPoint.create().system("x").build().system());
     }

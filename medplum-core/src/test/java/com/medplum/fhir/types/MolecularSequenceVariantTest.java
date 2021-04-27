@@ -29,6 +29,12 @@ public class MolecularSequenceVariantTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, MolecularSequence.MolecularSequenceVariant.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, MolecularSequence.MolecularSequenceVariant.create().modifierExtension(value).build().modifierExtension());

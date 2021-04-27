@@ -29,6 +29,12 @@ public class CodingTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Coding.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testSystem() {
         assertEquals("x", Coding.create().system("x").build().system());
     }

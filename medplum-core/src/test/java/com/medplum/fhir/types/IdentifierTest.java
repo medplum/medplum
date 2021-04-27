@@ -29,6 +29,12 @@ public class IdentifierTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Identifier.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testUse() {
         assertEquals("x", Identifier.create().use("x").build().use());
     }

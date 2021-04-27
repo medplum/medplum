@@ -29,6 +29,12 @@ public class AttachmentTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Attachment.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testContentType() {
         assertEquals("x", Attachment.create().contentType("x").build().contentType());
     }

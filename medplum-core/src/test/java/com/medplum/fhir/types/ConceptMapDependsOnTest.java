@@ -29,6 +29,12 @@ public class ConceptMapDependsOnTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ConceptMap.ConceptMapDependsOn.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ConceptMap.ConceptMapDependsOn.create().modifierExtension(value).build().modifierExtension());

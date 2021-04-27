@@ -29,6 +29,12 @@ public class NutritionOrderNutrientTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, NutritionOrder.NutritionOrderNutrient.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, NutritionOrder.NutritionOrderNutrient.create().modifierExtension(value).build().modifierExtension());

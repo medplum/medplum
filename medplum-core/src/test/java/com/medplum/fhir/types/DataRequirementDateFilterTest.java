@@ -29,6 +29,12 @@ public class DataRequirementDateFilterTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, DataRequirement.DataRequirementDateFilter.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, DataRequirement.DataRequirementDateFilter.create().modifierExtension(value).build().modifierExtension());

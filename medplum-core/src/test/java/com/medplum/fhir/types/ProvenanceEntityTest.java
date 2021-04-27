@@ -29,6 +29,12 @@ public class ProvenanceEntityTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Provenance.ProvenanceEntity.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Provenance.ProvenanceEntity.create().modifierExtension(value).build().modifierExtension());

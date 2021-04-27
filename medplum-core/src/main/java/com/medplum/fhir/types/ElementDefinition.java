@@ -12,6 +12,7 @@ import jakarta.json.JsonObjectBuilder;
 public class ElementDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ElementDefinition";
     public static final String PROPERTY_ID = "id";
+    public static final String PROPERTY_EXTENSION = "extension";
     public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_PATH = "path";
     public static final String PROPERTY_REPRESENTATION = "representation";
@@ -229,6 +230,18 @@ public class ElementDefinition extends FhirResource {
      */
     public String id() {
         return getString(PROPERTY_ID);
+    }
+
+    /**
+     * May be used to represent additional information that is not part of
+     * the basic definition of the element. To make the use of extensions
+     * safe and manageable, there is a strict set of governance  applied to
+     * the definition and use of extensions. Though any implementer can
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension.
+     */
+    public java.util.List<Extension> extension() {
+        return getList(Extension.class, PROPERTY_EXTENSION);
     }
 
     /**
@@ -2900,6 +2913,11 @@ public class ElementDefinition extends FhirResource {
             return this;
         }
 
+        public Builder extension(final java.util.List<Extension> extension) {
+            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            return this;
+        }
+
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
             b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
@@ -3898,6 +3916,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionBase extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionBase";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PATH = "path";
         public static final String PROPERTY_MIN = "min";
@@ -3921,6 +3940,18 @@ public class ElementDefinition extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -3984,6 +4015,11 @@ public class ElementDefinition extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -4013,6 +4049,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionBinding extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionBinding";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_STRENGTH = "strength";
         public static final String PROPERTY_DESCRIPTION = "description";
@@ -4036,6 +4073,18 @@ public class ElementDefinition extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -4099,6 +4148,11 @@ public class ElementDefinition extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -4128,6 +4182,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionConstraint extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionConstraint";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_KEY = "key";
         public static final String PROPERTY_REQUIREMENTS = "requirements";
@@ -4155,6 +4210,18 @@ public class ElementDefinition extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -4250,6 +4317,11 @@ public class ElementDefinition extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -4299,6 +4371,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionDiscriminator extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionDiscriminator";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_TYPE = "type";
         public static final String PROPERTY_PATH = "path";
@@ -4321,6 +4394,18 @@ public class ElementDefinition extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -4376,6 +4461,11 @@ public class ElementDefinition extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -4400,6 +4490,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionExample extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionExample";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_LABEL = "label";
         public static final String PROPERTY_VALUE_BASE64_BINARY = "valueBase64Binary";
@@ -4471,6 +4562,18 @@ public class ElementDefinition extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -4917,6 +5020,11 @@ public class ElementDefinition extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -5186,6 +5294,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionMapping extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionMapping";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_IDENTITY = "identity";
         public static final String PROPERTY_LANGUAGE = "language";
@@ -5210,6 +5319,18 @@ public class ElementDefinition extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -5278,6 +5399,11 @@ public class ElementDefinition extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -5312,6 +5438,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionSlicing extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionSlicing";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_DISCRIMINATOR = "discriminator";
         public static final String PROPERTY_DESCRIPTION = "description";
@@ -5336,6 +5463,18 @@ public class ElementDefinition extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -5413,6 +5552,11 @@ public class ElementDefinition extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -5447,6 +5591,7 @@ public class ElementDefinition extends FhirResource {
     public static class ElementDefinitionType extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionType";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_CODE = "code";
         public static final String PROPERTY_PROFILE = "profile";
@@ -5472,6 +5617,18 @@ public class ElementDefinition extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -5564,6 +5721,11 @@ public class ElementDefinition extends FhirResource {
 
             public Builder id(final String id) {
                 b.add(PROPERTY_ID, id);
+                return this;
+            }
+
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 

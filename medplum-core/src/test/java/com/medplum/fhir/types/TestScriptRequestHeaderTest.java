@@ -29,6 +29,12 @@ public class TestScriptRequestHeaderTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, TestScript.TestScriptRequestHeader.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, TestScript.TestScriptRequestHeader.create().modifierExtension(value).build().modifierExtension());

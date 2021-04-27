@@ -29,6 +29,12 @@ public class ExtensionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Extension.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testUrl() {
         assertEquals("x", Extension.create().url("x").build().url());
     }

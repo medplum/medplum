@@ -29,6 +29,12 @@ public class CodeSystemDesignationTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, CodeSystem.CodeSystemDesignation.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, CodeSystem.CodeSystemDesignation.create().modifierExtension(value).build().modifierExtension());

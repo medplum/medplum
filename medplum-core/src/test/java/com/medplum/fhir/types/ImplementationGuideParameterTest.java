@@ -29,6 +29,12 @@ public class ImplementationGuideParameterTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ImplementationGuide.ImplementationGuideParameter.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ImplementationGuide.ImplementationGuideParameter.create().modifierExtension(value).build().modifierExtension());

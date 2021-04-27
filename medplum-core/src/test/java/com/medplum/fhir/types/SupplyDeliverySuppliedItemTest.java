@@ -29,6 +29,12 @@ public class SupplyDeliverySuppliedItemTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, SupplyDelivery.SupplyDeliverySuppliedItem.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, SupplyDelivery.SupplyDeliverySuppliedItem.create().modifierExtension(value).build().modifierExtension());

@@ -16,6 +16,7 @@ public class PaymentNotice extends FhirResource {
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
+    public static final String PROPERTY_EXTENSION = "extension";
     public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_IDENTIFIER = "identifier";
     public static final String PROPERTY_STATUS = "status";
@@ -78,6 +79,18 @@ public class PaymentNotice extends FhirResource {
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
+    }
+
+    /**
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource. To make the use of extensions
+     * safe and manageable, there is a strict set of governance  applied to
+     * the definition and use of extensions. Though any implementer can
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension.
+     */
+    public java.util.List<Extension> extension() {
+        return getList(Extension.class, PROPERTY_EXTENSION);
     }
 
     /**
@@ -153,8 +166,8 @@ public class PaymentNotice extends FhirResource {
     /**
      * The date when the above payment action occurred.
      */
-    public java.time.Instant paymentDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_PAYMENT_DATE));
+    public java.time.LocalDate paymentDate() {
+        return java.time.LocalDate.parse(data.getString(PROPERTY_PAYMENT_DATE));
     }
 
     /**
@@ -231,6 +244,11 @@ public class PaymentNotice extends FhirResource {
             return this;
         }
 
+        public Builder extension(final java.util.List<Extension> extension) {
+            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            return this;
+        }
+
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
             b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
@@ -271,7 +289,7 @@ public class PaymentNotice extends FhirResource {
             return this;
         }
 
-        public Builder paymentDate(final java.time.Instant paymentDate) {
+        public Builder paymentDate(final java.time.LocalDate paymentDate) {
             b.add(PROPERTY_PAYMENT_DATE, paymentDate.toString());
             return this;
         }

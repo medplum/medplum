@@ -18,6 +18,7 @@ public class SubstanceSourceMaterial extends FhirResource {
     public static final String PROPERTY_LANGUAGE = "language";
     public static final String PROPERTY_TEXT = "text";
     public static final String PROPERTY_CONTAINED = "contained";
+    public static final String PROPERTY_EXTENSION = "extension";
     public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
     public static final String PROPERTY_SOURCE_MATERIAL_CLASS = "sourceMaterialClass";
     public static final String PROPERTY_SOURCE_MATERIAL_TYPE = "sourceMaterialType";
@@ -81,6 +82,18 @@ public class SubstanceSourceMaterial extends FhirResource {
      */
     public java.util.List<FhirResource> contained() {
         return getList(FhirResource.class, PROPERTY_CONTAINED);
+    }
+
+    /**
+     * May be used to represent additional information that is not part of
+     * the basic definition of the resource. To make the use of extensions
+     * safe and manageable, there is a strict set of governance  applied to
+     * the definition and use of extensions. Though any implementer can
+     * define an extension, there is a set of requirements that SHALL be met
+     * as part of the definition of the extension.
+     */
+    public java.util.List<Extension> extension() {
+        return getList(Extension.class, PROPERTY_EXTENSION);
     }
 
     /**
@@ -264,6 +277,11 @@ public class SubstanceSourceMaterial extends FhirResource {
             return this;
         }
 
+        public Builder extension(final java.util.List<Extension> extension) {
+            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            return this;
+        }
+
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
             b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
@@ -342,6 +360,7 @@ public class SubstanceSourceMaterial extends FhirResource {
     public static class SubstanceSourceMaterialAuthor extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialAuthor";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_AUTHOR_TYPE = "authorType";
         public static final String PROPERTY_AUTHOR_DESCRIPTION = "authorDescription";
@@ -364,6 +383,18 @@ public class SubstanceSourceMaterial extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -424,6 +455,11 @@ public class SubstanceSourceMaterial extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -448,6 +484,7 @@ public class SubstanceSourceMaterial extends FhirResource {
     public static class SubstanceSourceMaterialFractionDescription extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialFractionDescription";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_FRACTION = "fraction";
         public static final String PROPERTY_MATERIAL_TYPE = "materialType";
@@ -470,6 +507,18 @@ public class SubstanceSourceMaterial extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -526,6 +575,11 @@ public class SubstanceSourceMaterial extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -550,6 +604,7 @@ public class SubstanceSourceMaterial extends FhirResource {
     public static class SubstanceSourceMaterialHybrid extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialHybrid";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_MATERNAL_ORGANISM_ID = "maternalOrganismId";
         public static final String PROPERTY_MATERNAL_ORGANISM_NAME = "maternalOrganismName";
@@ -575,6 +630,18 @@ public class SubstanceSourceMaterial extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -657,6 +724,11 @@ public class SubstanceSourceMaterial extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -696,6 +768,7 @@ public class SubstanceSourceMaterial extends FhirResource {
     public static class SubstanceSourceMaterialOrganism extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialOrganism";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_FAMILY = "family";
         public static final String PROPERTY_GENUS = "genus";
@@ -724,6 +797,18 @@ public class SubstanceSourceMaterial extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -826,6 +911,11 @@ public class SubstanceSourceMaterial extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -880,6 +970,7 @@ public class SubstanceSourceMaterial extends FhirResource {
     public static class SubstanceSourceMaterialOrganismGeneral extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialOrganismGeneral";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_KINGDOM = "kingdom";
         public static final String PROPERTY_PHYLUM = "phylum";
@@ -904,6 +995,18 @@ public class SubstanceSourceMaterial extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -971,6 +1074,11 @@ public class SubstanceSourceMaterial extends FhirResource {
                 return this;
             }
 
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                return this;
+            }
+
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
                 b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
@@ -1005,6 +1113,7 @@ public class SubstanceSourceMaterial extends FhirResource {
     public static class SubstanceSourceMaterialPartDescription extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialPartDescription";
         public static final String PROPERTY_ID = "id";
+        public static final String PROPERTY_EXTENSION = "extension";
         public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
         public static final String PROPERTY_PART = "part";
         public static final String PROPERTY_PART_LOCATION = "partLocation";
@@ -1027,6 +1136,18 @@ public class SubstanceSourceMaterial extends FhirResource {
          */
         public String id() {
             return getString(PROPERTY_ID);
+        }
+
+        /**
+         * May be used to represent additional information that is not part of
+         * the basic definition of the element. To make the use of extensions
+         * safe and manageable, there is a strict set of governance  applied to
+         * the definition and use of extensions. Though any implementer can
+         * define an extension, there is a set of requirements that SHALL be met
+         * as part of the definition of the extension.
+         */
+        public java.util.List<Extension> extension() {
+            return getList(Extension.class, PROPERTY_EXTENSION);
         }
 
         /**
@@ -1079,6 +1200,11 @@ public class SubstanceSourceMaterial extends FhirResource {
 
             public Builder id(final String id) {
                 b.add(PROPERTY_ID, id);
+                return this;
+            }
+
+            public Builder extension(final java.util.List<Extension> extension) {
+                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 

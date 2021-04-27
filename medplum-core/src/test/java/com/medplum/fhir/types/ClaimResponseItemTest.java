@@ -29,6 +29,12 @@ public class ClaimResponseItemTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ClaimResponse.ClaimResponseItem.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ClaimResponse.ClaimResponseItem.create().modifierExtension(value).build().modifierExtension());

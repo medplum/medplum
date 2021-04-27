@@ -62,6 +62,12 @@ public class ResearchElementDefinitionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ResearchElementDefinition.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ResearchElementDefinition.create().modifierExtension(value).build().modifierExtension());
@@ -182,13 +188,13 @@ public class ResearchElementDefinitionTest {
 
     @Test
     public void testApprovalDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, ResearchElementDefinition.create().approvalDate(value).build().approvalDate());
     }
 
     @Test
     public void testLastReviewDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, ResearchElementDefinition.create().lastReviewDate(value).build().lastReviewDate());
     }
 

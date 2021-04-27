@@ -29,6 +29,12 @@ public class MedicationBatchTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Medication.MedicationBatch.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Medication.MedicationBatch.create().modifierExtension(value).build().modifierExtension());

@@ -29,6 +29,12 @@ public class MetaTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Meta.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testVersionId() {
         assertEquals("x", Meta.create().versionId("x").build().versionId());
     }

@@ -29,6 +29,12 @@ public class InsurancePlanCoverageTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, InsurancePlan.InsurancePlanCoverage.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, InsurancePlan.InsurancePlanCoverage.create().modifierExtension(value).build().modifierExtension());

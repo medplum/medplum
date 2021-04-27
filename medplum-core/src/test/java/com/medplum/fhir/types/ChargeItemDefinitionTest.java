@@ -62,6 +62,12 @@ public class ChargeItemDefinitionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ChargeItemDefinition.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ChargeItemDefinition.create().modifierExtension(value).build().modifierExtension());
@@ -157,13 +163,13 @@ public class ChargeItemDefinitionTest {
 
     @Test
     public void testApprovalDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, ChargeItemDefinition.create().approvalDate(value).build().approvalDate());
     }
 
     @Test
     public void testLastReviewDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, ChargeItemDefinition.create().lastReviewDate(value).build().lastReviewDate());
     }
 

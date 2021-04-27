@@ -29,6 +29,12 @@ public class AddressTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Address.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testUse() {
         assertEquals("x", Address.create().use("x").build().use());
     }

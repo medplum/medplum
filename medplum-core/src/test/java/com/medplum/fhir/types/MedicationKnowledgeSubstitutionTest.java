@@ -29,6 +29,12 @@ public class MedicationKnowledgeSubstitutionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, MedicationKnowledge.MedicationKnowledgeSubstitution.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, MedicationKnowledge.MedicationKnowledgeSubstitution.create().modifierExtension(value).build().modifierExtension());

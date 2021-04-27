@@ -62,6 +62,12 @@ public class VerificationResultTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, VerificationResult.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, VerificationResult.create().modifierExtension(value).build().modifierExtension());
@@ -122,7 +128,7 @@ public class VerificationResultTest {
 
     @Test
     public void testNextScheduled() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, VerificationResult.create().nextScheduled(value).build().nextScheduled());
     }
 

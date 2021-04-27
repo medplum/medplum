@@ -29,6 +29,12 @@ public class SpecimenDefinitionHandlingTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, SpecimenDefinition.SpecimenDefinitionHandling.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, SpecimenDefinition.SpecimenDefinitionHandling.create().modifierExtension(value).build().modifierExtension());

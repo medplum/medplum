@@ -29,6 +29,12 @@ public class AnnotationTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Annotation.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testAuthorReference() {
         final Reference value = Reference.create().build();
         assertEquals(value, Annotation.create().authorReference(value).build().authorReference());

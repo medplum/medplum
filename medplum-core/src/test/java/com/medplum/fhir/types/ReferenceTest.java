@@ -29,6 +29,12 @@ public class ReferenceTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Reference.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testReference() {
         assertEquals("x", Reference.create().reference("x").build().reference());
     }

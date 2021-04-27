@@ -107,7 +107,7 @@ public class Generator {
 
         for (final Entry<String, JsonValue> propertyDefinition : propertyDefinitions.entrySet()) {
             final String inputName = propertyDefinition.getKey();
-            if (inputName.startsWith("_") || inputName.equals("extension")) {
+            if (inputName.startsWith("_")) {
                 continue;
             }
 
@@ -247,6 +247,10 @@ public class Generator {
                     b.append("return java.time.Instant.parse(data.getString(" + property.getConstantName() + "));");
                     break;
 
+                case "java.time.LocalDate":
+                    b.append("return java.time.LocalDate.parse(data.getString(" + property.getConstantName() + "));");
+                    break;
+
                 default:
                     if (javaType.startsWith("java.util.List<")) {
                         final String className = javaType.substring("java.util.List<".length(), javaType.length() - 1);
@@ -297,7 +301,7 @@ public class Generator {
 
             b.newLine();
             b.append("    public Builder " + propertyName + "(final " + javaType + " " + propertyName + ") {");
-            if (javaType.equals("java.time.Instant")) {
+            if (javaType.equals("java.time.Instant") || javaType.equals("java.time.LocalDate")) {
                 b.append("        b.add(" + property.getConstantName() + ", " + propertyName + ".toString());");
             } else if (javaType.equals("java.util.List<String>")) {
                 b.append("        b.add(" + property.getConstantName() + ", FhirObject.toStringArray(" + propertyName + "));");
@@ -406,6 +410,11 @@ public class Generator {
                     valueStr = "value";
                     break;
 
+                case "java.time.LocalDate":
+                    valueDecl = "final java.time.LocalDate value = java.time.LocalDate.now();";
+                    valueStr = "value";
+                    break;
+
                 default:
                     if (javaType.startsWith("java.util.List<")) {
                         final String className = javaType.substring("java.util.List<".length(), javaType.length() - 1);
@@ -505,6 +514,8 @@ public class Generator {
             return "String";
 
         case "date":
+            return "java.time.LocalDate";
+
         case "dateTime":
         case "instant":
         case "time":

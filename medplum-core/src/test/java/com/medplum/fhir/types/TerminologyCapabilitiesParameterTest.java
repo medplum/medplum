@@ -29,6 +29,12 @@ public class TerminologyCapabilitiesParameterTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, TerminologyCapabilities.TerminologyCapabilitiesParameter.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, TerminologyCapabilities.TerminologyCapabilitiesParameter.create().modifierExtension(value).build().modifierExtension());

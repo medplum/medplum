@@ -29,6 +29,12 @@ public class DosageDoseAndRateTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Dosage.DosageDoseAndRate.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Dosage.DosageDoseAndRate.create().modifierExtension(value).build().modifierExtension());

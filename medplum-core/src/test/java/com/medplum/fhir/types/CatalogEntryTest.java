@@ -62,6 +62,12 @@ public class CatalogEntryTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, CatalogEntry.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, CatalogEntry.create().modifierExtension(value).build().modifierExtension());

@@ -29,6 +29,12 @@ public class TriggerDefinitionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, TriggerDefinition.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testType() {
         assertEquals("x", TriggerDefinition.create().type("x").build().type());
     }

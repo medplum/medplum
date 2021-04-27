@@ -29,6 +29,12 @@ public class PlanDefinitionGoalTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, PlanDefinition.PlanDefinitionGoal.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, PlanDefinition.PlanDefinitionGoal.create().modifierExtension(value).build().modifierExtension());

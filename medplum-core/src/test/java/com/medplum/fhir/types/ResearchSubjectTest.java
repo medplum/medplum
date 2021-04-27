@@ -62,6 +62,12 @@ public class ResearchSubjectTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ResearchSubject.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ResearchSubject.create().modifierExtension(value).build().modifierExtension());

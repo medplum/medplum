@@ -29,6 +29,12 @@ public class SearchParameterComponentTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, SearchParameter.SearchParameterComponent.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, SearchParameter.SearchParameterComponent.create().modifierExtension(value).build().modifierExtension());

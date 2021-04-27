@@ -62,6 +62,12 @@ public class PatientTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Patient.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Patient.create().modifierExtension(value).build().modifierExtension());
@@ -97,7 +103,7 @@ public class PatientTest {
 
     @Test
     public void testBirthDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, Patient.create().birthDate(value).build().birthDate());
     }
 

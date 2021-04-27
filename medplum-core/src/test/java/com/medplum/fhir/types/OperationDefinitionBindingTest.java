@@ -29,6 +29,12 @@ public class OperationDefinitionBindingTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, OperationDefinition.OperationDefinitionBinding.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, OperationDefinition.OperationDefinitionBinding.create().modifierExtension(value).build().modifierExtension());

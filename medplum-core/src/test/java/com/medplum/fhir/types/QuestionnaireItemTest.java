@@ -29,6 +29,12 @@ public class QuestionnaireItemTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Questionnaire.QuestionnaireItem.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Questionnaire.QuestionnaireItem.create().modifierExtension(value).build().modifierExtension());

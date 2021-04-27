@@ -29,6 +29,12 @@ public class DistanceTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Distance.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testValue() {
         assertEquals(1.0, Distance.create().value(1.0).build().value());
     }

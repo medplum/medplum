@@ -29,6 +29,12 @@ public class ExplanationOfBenefitSubDetailTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ExplanationOfBenefit.ExplanationOfBenefitSubDetail.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ExplanationOfBenefit.ExplanationOfBenefitSubDetail.create().modifierExtension(value).build().modifierExtension());

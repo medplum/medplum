@@ -29,6 +29,12 @@ public class ExampleScenarioVersionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ExampleScenario.ExampleScenarioVersion.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ExampleScenario.ExampleScenarioVersion.create().modifierExtension(value).build().modifierExtension());

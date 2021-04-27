@@ -27,4 +27,10 @@ public class ElementTest {
     public void testId() {
         assertEquals("x", Element.create().id("x").build().id());
     }
+
+    @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Element.create().extension(value).build().extension());
+    }
 }

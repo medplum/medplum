@@ -29,6 +29,12 @@ public class DocumentManifestRelatedTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, DocumentManifest.DocumentManifestRelated.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, DocumentManifest.DocumentManifestRelated.create().modifierExtension(value).build().modifierExtension());

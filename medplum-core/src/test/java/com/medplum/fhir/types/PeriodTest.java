@@ -29,6 +29,12 @@ public class PeriodTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Period.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testStart() {
         final java.time.Instant value = java.time.Instant.now();
         assertEquals(value, Period.create().start(value).build().start());

@@ -29,6 +29,12 @@ public class ValueSetComposeTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ValueSet.ValueSetCompose.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ValueSet.ValueSetCompose.create().modifierExtension(value).build().modifierExtension());
@@ -36,7 +42,7 @@ public class ValueSetComposeTest {
 
     @Test
     public void testLockedDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, ValueSet.ValueSetCompose.create().lockedDate(value).build().lockedDate());
     }
 

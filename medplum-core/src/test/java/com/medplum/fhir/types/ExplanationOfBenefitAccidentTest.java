@@ -29,6 +29,12 @@ public class ExplanationOfBenefitAccidentTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ExplanationOfBenefit.ExplanationOfBenefitAccident.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ExplanationOfBenefit.ExplanationOfBenefitAccident.create().modifierExtension(value).build().modifierExtension());
@@ -36,7 +42,7 @@ public class ExplanationOfBenefitAccidentTest {
 
     @Test
     public void testDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, ExplanationOfBenefit.ExplanationOfBenefitAccident.create().date(value).build().date());
     }
 

@@ -62,6 +62,12 @@ public class LibraryTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Library.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Library.create().modifierExtension(value).build().modifierExtension());
@@ -177,13 +183,13 @@ public class LibraryTest {
 
     @Test
     public void testApprovalDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, Library.create().approvalDate(value).build().approvalDate());
     }
 
     @Test
     public void testLastReviewDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, Library.create().lastReviewDate(value).build().lastReviewDate());
     }
 

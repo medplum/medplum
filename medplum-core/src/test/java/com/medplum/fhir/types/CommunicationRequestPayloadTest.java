@@ -29,6 +29,12 @@ public class CommunicationRequestPayloadTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, CommunicationRequest.CommunicationRequestPayload.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, CommunicationRequest.CommunicationRequestPayload.create().modifierExtension(value).build().modifierExtension());

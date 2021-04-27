@@ -29,6 +29,12 @@ public class RatioTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Ratio.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testNumerator() {
         final Quantity value = Quantity.create().build();
         assertEquals(value, Ratio.create().numerator(value).build().numerator());

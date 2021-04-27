@@ -29,6 +29,12 @@ public class DocumentReferenceRelatesToTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, DocumentReference.DocumentReferenceRelatesTo.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, DocumentReference.DocumentReferenceRelatesTo.create().modifierExtension(value).build().modifierExtension());

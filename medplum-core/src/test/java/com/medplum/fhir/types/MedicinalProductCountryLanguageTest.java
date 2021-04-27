@@ -29,6 +29,12 @@ public class MedicinalProductCountryLanguageTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, MedicinalProduct.MedicinalProductCountryLanguage.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, MedicinalProduct.MedicinalProductCountryLanguage.create().modifierExtension(value).build().modifierExtension());

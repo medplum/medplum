@@ -29,6 +29,12 @@ public class GraphDefinitionCompartmentTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, GraphDefinition.GraphDefinitionCompartment.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, GraphDefinition.GraphDefinitionCompartment.create().modifierExtension(value).build().modifierExtension());

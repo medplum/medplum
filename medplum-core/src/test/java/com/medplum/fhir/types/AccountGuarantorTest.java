@@ -29,6 +29,12 @@ public class AccountGuarantorTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Account.AccountGuarantor.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Account.AccountGuarantor.create().modifierExtension(value).build().modifierExtension());

@@ -29,6 +29,12 @@ public class ValueSetContainsTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ValueSet.ValueSetContains.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ValueSet.ValueSetContains.create().modifierExtension(value).build().modifierExtension());

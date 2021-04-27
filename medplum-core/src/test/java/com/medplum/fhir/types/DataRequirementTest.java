@@ -29,6 +29,12 @@ public class DataRequirementTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, DataRequirement.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testType() {
         assertEquals("x", DataRequirement.create().type("x").build().type());
     }

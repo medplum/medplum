@@ -29,6 +29,12 @@ public class MedicinalProductNamePartTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, MedicinalProduct.MedicinalProductNamePart.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, MedicinalProduct.MedicinalProductNamePart.create().modifierExtension(value).build().modifierExtension());

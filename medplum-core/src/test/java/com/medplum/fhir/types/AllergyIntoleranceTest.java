@@ -62,6 +62,12 @@ public class AllergyIntoleranceTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, AllergyIntolerance.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, AllergyIntolerance.create().modifierExtension(value).build().modifierExtension());

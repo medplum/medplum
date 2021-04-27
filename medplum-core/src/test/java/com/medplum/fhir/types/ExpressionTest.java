@@ -29,6 +29,12 @@ public class ExpressionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Expression.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testDescription() {
         assertEquals("x", Expression.create().description("x").build().description());
     }

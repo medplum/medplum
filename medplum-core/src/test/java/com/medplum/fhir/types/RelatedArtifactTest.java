@@ -29,6 +29,12 @@ public class RelatedArtifactTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, RelatedArtifact.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testType() {
         assertEquals("x", RelatedArtifact.create().type("x").build().type());
     }

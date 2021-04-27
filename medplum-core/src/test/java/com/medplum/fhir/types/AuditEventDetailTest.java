@@ -29,6 +29,12 @@ public class AuditEventDetailTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, AuditEvent.AuditEventDetail.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, AuditEvent.AuditEventDetail.create().modifierExtension(value).build().modifierExtension());

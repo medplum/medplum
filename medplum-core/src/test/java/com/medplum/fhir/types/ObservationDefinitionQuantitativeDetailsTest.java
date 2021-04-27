@@ -29,6 +29,12 @@ public class ObservationDefinitionQuantitativeDetailsTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ObservationDefinition.ObservationDefinitionQuantitativeDetails.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, ObservationDefinition.ObservationDefinitionQuantitativeDetails.create().modifierExtension(value).build().modifierExtension());

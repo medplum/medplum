@@ -29,6 +29,12 @@ public class CodeableConceptTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, CodeableConcept.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testCoding() {
         final java.util.List<Coding> value = java.util.Collections.emptyList();
         assertEquals(value, CodeableConcept.create().coding(value).build().coding());

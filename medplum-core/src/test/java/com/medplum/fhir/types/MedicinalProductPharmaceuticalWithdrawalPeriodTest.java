@@ -29,6 +29,12 @@ public class MedicinalProductPharmaceuticalWithdrawalPeriodTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod.create().modifierExtension(value).build().modifierExtension());

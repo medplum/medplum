@@ -29,6 +29,12 @@ public class RiskAssessmentPredictionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, RiskAssessment.RiskAssessmentPrediction.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, RiskAssessment.RiskAssessmentPrediction.create().modifierExtension(value).build().modifierExtension());

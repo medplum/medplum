@@ -62,6 +62,12 @@ public class EffectEvidenceSynthesisTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, EffectEvidenceSynthesis.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, EffectEvidenceSynthesis.create().modifierExtension(value).build().modifierExtension());
@@ -145,13 +151,13 @@ public class EffectEvidenceSynthesisTest {
 
     @Test
     public void testApprovalDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, EffectEvidenceSynthesis.create().approvalDate(value).build().approvalDate());
     }
 
     @Test
     public void testLastReviewDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, EffectEvidenceSynthesis.create().lastReviewDate(value).build().lastReviewDate());
     }
 

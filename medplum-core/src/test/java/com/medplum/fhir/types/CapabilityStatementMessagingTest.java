@@ -29,6 +29,12 @@ public class CapabilityStatementMessagingTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, CapabilityStatement.CapabilityStatementMessaging.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, CapabilityStatement.CapabilityStatementMessaging.create().modifierExtension(value).build().modifierExtension());

@@ -62,6 +62,12 @@ public class BasicTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Basic.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, Basic.create().modifierExtension(value).build().modifierExtension());
@@ -87,7 +93,7 @@ public class BasicTest {
 
     @Test
     public void testCreated() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, Basic.create().created(value).build().created());
     }
 

@@ -29,6 +29,12 @@ public class CoverageEligibilityRequestDiagnosisTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, CoverageEligibilityRequest.CoverageEligibilityRequestDiagnosis.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, CoverageEligibilityRequest.CoverageEligibilityRequestDiagnosis.create().modifierExtension(value).build().modifierExtension());

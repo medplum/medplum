@@ -29,6 +29,12 @@ public class DeviceDefinitionDeviceNameTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, DeviceDefinition.DeviceDefinitionDeviceName.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, DeviceDefinition.DeviceDefinitionDeviceName.create().modifierExtension(value).build().modifierExtension());

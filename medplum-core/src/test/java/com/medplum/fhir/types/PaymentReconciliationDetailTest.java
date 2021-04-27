@@ -29,6 +29,12 @@ public class PaymentReconciliationDetailTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, PaymentReconciliation.PaymentReconciliationDetail.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
         assertEquals(value, PaymentReconciliation.PaymentReconciliationDetail.create().modifierExtension(value).build().modifierExtension());
@@ -72,7 +78,7 @@ public class PaymentReconciliationDetailTest {
 
     @Test
     public void testDate() {
-        final java.time.Instant value = java.time.Instant.now();
+        final java.time.LocalDate value = java.time.LocalDate.now();
         assertEquals(value, PaymentReconciliation.PaymentReconciliationDetail.create().date(value).build().date());
     }
 

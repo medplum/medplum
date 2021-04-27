@@ -29,6 +29,12 @@ public class RangeTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Range.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testLow() {
         final Quantity value = Quantity.create().build();
         assertEquals(value, Range.create().low(value).build().low());

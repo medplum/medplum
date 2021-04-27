@@ -29,6 +29,12 @@ public class ParameterDefinitionTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, ParameterDefinition.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testName() {
         assertEquals("x", ParameterDefinition.create().name("x").build().name());
     }

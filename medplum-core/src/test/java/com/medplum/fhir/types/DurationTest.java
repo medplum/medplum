@@ -29,6 +29,12 @@ public class DurationTest {
     }
 
     @Test
+    public void testExtension() {
+        final java.util.List<Extension> value = java.util.Collections.emptyList();
+        assertEquals(value, Duration.create().extension(value).build().extension());
+    }
+
+    @Test
     public void testValue() {
         assertEquals(1.0, Duration.create().value(1.0).build().value());
     }
