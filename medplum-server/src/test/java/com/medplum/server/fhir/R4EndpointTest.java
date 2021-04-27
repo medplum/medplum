@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.Response;
 import org.junit.Test;
 
 import com.medplum.fhir.FhirMediaType;
+import com.medplum.fhir.types.Patient;
 import com.medplum.server.BaseTest;
 
 public class R4EndpointTest extends BaseTest {
@@ -26,7 +27,7 @@ public class R4EndpointTest extends BaseTest {
 
     @Test
     public void testCreate() {
-        final Response response = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
+        final Response response = fhir().post("/Patient", Patient.create().build());
         assertEquals(201, response.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response.getHeaderString(HttpHeaders.LOCATION));
@@ -63,7 +64,7 @@ public class R4EndpointTest extends BaseTest {
 
     @Test
     public void testRead() {
-        final Response response1 = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
+        final Response response1 = fhir().post("/Patient", Patient.create().build());
         assertEquals(201, response1.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response1.getHeaderString(HttpHeaders.LOCATION));
@@ -84,7 +85,7 @@ public class R4EndpointTest extends BaseTest {
 
     @Test
     public void testReadUnauthorized() {
-        final Response response1 = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
+        final Response response1 = fhir().post("/Patient", Patient.create().build());
         assertEquals(201, response1.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response1.getHeaderString(HttpHeaders.LOCATION));
@@ -107,7 +108,7 @@ public class R4EndpointTest extends BaseTest {
 
     @Test
     public void testReadHistory() {
-        final Response response1 = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
+        final Response response1 = fhir().post("/Patient", Patient.create().build());
         assertEquals(201, response1.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response1.getHeaderString(HttpHeaders.LOCATION));
@@ -128,7 +129,7 @@ public class R4EndpointTest extends BaseTest {
 
     @Test
     public void testVersion() {
-        final Response response1 = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
+        final Response response1 = fhir().post("/Patient", Patient.create().build());
         assertEquals(201, response1.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response1.getHeaderString(HttpHeaders.LOCATION));
@@ -152,7 +153,7 @@ public class R4EndpointTest extends BaseTest {
     public void testSearch() {
         // Create 3 patients
         for (int i = 0; i < 3; i++) {
-            fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
+            fhir().post("/Patient", Patient.create().build());
         }
 
         // Ensure search returns at least 3 patients
@@ -173,7 +174,7 @@ public class R4EndpointTest extends BaseTest {
 
         // Create 3 patients
         for (int i = 0; i < 3; i++) {
-            final Response response = fhir().post("/Patient", Json.createObjectBuilder().add("resourceType", "Patient").build());
+            final Response response = fhir().post("/Patient", Patient.create().build());
             if (i == 0) {
                 final String[] path = URI.create(response.getHeaderString(HttpHeaders.LOCATION)).getPath().split("/");
                 id = path[4];
