@@ -14,6 +14,8 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
@@ -23,12 +25,16 @@ import org.glassfish.jersey.server.mvc.Viewable;
 
 import com.medplum.fhir.types.Login;
 import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.server.ConfigSettings;
 import com.medplum.server.security.OAuthService;
 
 @Path("/oauth2/login")
 @Produces(MediaType.TEXT_HTML)
 @PermitAll
 public class LoginEndpoint {
+
+    @Context
+    private Configuration config;
 
     @Inject
     private OAuthService oauth;
@@ -112,7 +118,8 @@ public class LoginEndpoint {
     }
 
     private URI getRegisterLink() {
-        return UriBuilder.fromUri(URI.create("/oauth2/register"))
+        final String registerUrl = config.getProperty(ConfigSettings.BASE_URL) + "/oauth2/register";
+        return UriBuilder.fromUri(URI.create(registerUrl))
                 .queryParam("response_type", responseType)
                 .queryParam("client_id", clientId)
                 .queryParam("redirect_uri", redirectUri)
@@ -122,8 +129,9 @@ public class LoginEndpoint {
     }
 
     private Response success(final Login login) {
+        final String roleUrl = config.getProperty(ConfigSettings.BASE_URL) + "/oauth2/role";
         return Response.status(Status.FOUND)
-                .location(UriBuilder.fromUri(URI.create("/oauth2/role"))
+                .location(UriBuilder.fromUri(URI.create(roleUrl))
                         .queryParam("code", login.id())
                         .queryParam("redirect_uri", redirectUri)
                         .queryParam("state", state)

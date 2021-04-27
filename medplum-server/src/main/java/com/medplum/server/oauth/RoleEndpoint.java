@@ -16,6 +16,8 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
@@ -27,6 +29,7 @@ import com.medplum.fhir.types.Login;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.fhir.types.Reference;
 import com.medplum.fhir.types.User;
+import com.medplum.server.ConfigSettings;
 import com.medplum.server.fhir.repo.Repository;
 import com.medplum.server.security.OAuthService;
 import com.medplum.server.security.SecurityUser;
@@ -35,6 +38,9 @@ import com.medplum.server.security.SecurityUser;
 @Produces(MediaType.TEXT_HTML)
 @PermitAll
 public class RoleEndpoint {
+
+    @Context
+    private Configuration config;
 
     @Inject
     private Repository repo;
@@ -125,8 +131,9 @@ public class RoleEndpoint {
             throw new BadRequestException(outcome.issue().get(0).details().text());
         }
 
+        final String scopesUrl = config.getProperty(ConfigSettings.BASE_URL) + "/oauth2/scopes";
         return Response.status(Status.FOUND)
-                .location(UriBuilder.fromUri(URI.create("/oauth2/scopes"))
+                .location(UriBuilder.fromUri(URI.create(scopesUrl))
                         .queryParam("code", login.id())
                         .queryParam("redirect_uri", redirectUri)
                         .queryParam("state", state)
