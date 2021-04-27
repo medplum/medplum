@@ -1,9 +1,10 @@
 package com.medplum.server.fhir;
 
+import static java.util.Collections.*;
+
 import java.util.Arrays;
 
 import jakarta.annotation.security.PermitAll;
-import jakarta.json.Json;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -17,6 +18,7 @@ import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementImplementat
 import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementRest;
 import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementSecurity;
 import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementSoftware;
+import com.medplum.fhir.types.Extension;
 import com.medplum.server.ConfigSettings;
 
 @Path("/fhir/R4/metadata")
@@ -40,13 +42,14 @@ public class R4CapabilityStatement {
         final CapabilityStatement baseStmt = new CapabilityStatement(JsonUtils.readJsonResourceFile("CapabilityStatement.json"));
         final CapabilityStatementRest baseRest = baseStmt.rest().get(0);
 
+        final String baseUrl = (String) config.getProperty(ConfigSettings.BASE_URL);
         final String tokenUrl = (String) config.getProperty(ConfigSettings.AUTH_TOKEN_URL);
         final String authorizeUrl = (String) config.getProperty(ConfigSettings.AUTH_AUTHORIZE_URL);
 
         final String name = "medplum";
         final String version = "0.0.1";
-        final String baseUrl = "http://host.docker.internal:5000/fhir/R4";
-        final String metadataUrl = baseUrl + "/metadata";
+        final String fhirBaseUrl = baseUrl + "/fhir/R4";
+        final String metadataUrl = fhirBaseUrl + "/metadata";
 
         return CapabilityStatement.create(baseStmt)
                 .url(metadataUrl)
@@ -56,26 +59,23 @@ public class R4CapabilityStatement {
                         .build())
                 .implementation(CapabilityStatementImplementation.create()
                         .description(name)
-                        .url(baseUrl)
+                        .url(fhirBaseUrl)
                         .build())
-                .rest(Arrays.asList(CapabilityStatementRest.create(baseRest)
-                        .security(new CapabilityStatementSecurity(Json.createObjectBuilder()
-                                .add("extension", Json.createArrayBuilder()
-                                        .add(Json.createObjectBuilder()
-                                                .add("url", "http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris")
-                                                .add("extension", Json.createArrayBuilder()
-                                                        .add(Json.createObjectBuilder()
-                                                                .add("url", "token")
-                                                                .add("valueUri", tokenUrl)
-                                                                .build())
-                                                        .add(Json.createObjectBuilder()
-                                                                .add("url", "authorize")
-                                                                .add("valueUri", authorizeUrl)
-                                                                .build())
-                                                        .build())
-                                                .build())
-                                        .build())
-                                .build()))
+                .rest(singletonList(CapabilityStatementRest.create(baseRest)
+                        .security(CapabilityStatementSecurity.create()
+                                .extension(singletonList(Extension.create()
+                                        .url("http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris")
+                                        .extension(Arrays.asList(
+                                                Extension.create()
+                                                        .url("token")
+                                                        .valueUri(tokenUrl)
+                                                        .build(),
+                                                Extension.create()
+                                                        .url("authorize")
+                                                        .valueUri(authorizeUrl)
+                                                        .build()))
+                                        .build()))
+                                .build())
                         .build()))
                 .build();
     }

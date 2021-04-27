@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.GetParametersByPathRequest;
 
 public class ConfigSettings {
+    public static final String BASE_URL = "medplum.baseUrl";
     public static final String JDBC_DRIVER_CLASS_NAME = "medplum.jdbc.driverClassName";
     public static final String JDBC_URL = "medplum.jdbc.url";
     public static final String JDBC_USERNAME = "medplum.jdbc.username";
