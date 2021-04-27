@@ -17,6 +17,8 @@ import jakarta.ws.rs.core.Response;
 
 import org.junit.Test;
 
+import com.medplum.fhir.FhirMediaType;
+import com.medplum.fhir.types.Patient;
 import com.medplum.server.BaseTest;
 import com.medplum.server.Utils;
 
@@ -204,5 +206,28 @@ public class TokenEndpointTest extends BaseTest {
                         .param("grant_type", "refresh_token")
                         .param("refresh_token", "INVALID_REFRESH_TOKEN")));
         assertEquals(400, r2.getStatus());
+    }
+
+    @Test
+    public void testClientCredentialsFlow() {
+        // Try to auth as a client application using the client credentials flow
+        final Response r1 = target("/oauth2/token")
+                .request()
+                .post(Entity.form(new Form()
+                        .param("grant_type", "client_credentials")
+                        .param("client_id", testClientApp.id())
+                        .param("client_secret", testClientApp.secret())));
+        assertEquals(200, r1.getStatus());
+
+        final JsonObject tokenResult = r1.readEntity(JsonObject.class);
+        assertNotNull(tokenResult);
+        assertTrue(tokenResult.containsKey("access_token"));
+
+        // Try to create a patient using the credentials
+        final Response r2 = target("/fhir/R4/Patient")
+                .request()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResult.getString("access_token"))
+                .post(Entity.entity(Patient.create().build(), FhirMediaType.APPLICATION_FHIR_JSON));
+        assertEquals(201, r2.getStatus());
     }
 }

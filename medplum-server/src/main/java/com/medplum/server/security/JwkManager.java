@@ -55,7 +55,7 @@ public class JwkManager {
             final String jwkStr = JsonUtil.toJson(jwkParams);
             final JsonObject jwkJsonObject = JsonUtils.readJsonString(jwkStr);
 
-            final OperationOutcome createOutcome = repo.create(null, JsonWebKey.RESOURCE_TYPE, JsonWebKey.create(jwkJsonObject).active(true).build());
+            final OperationOutcome createOutcome = repo.create(null, JsonWebKey.create(jwkJsonObject).active(true).build());
             if (!createOutcome.isOk()) {
                 throw new IllegalStateException("Error creating keys: " + searchOutcome.issue().get(0).details().text());
             }

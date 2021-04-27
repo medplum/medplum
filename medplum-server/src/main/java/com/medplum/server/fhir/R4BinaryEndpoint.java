@@ -55,7 +55,7 @@ public class R4BinaryEndpoint {
     public OperationOutcome create(final InputStream inputStream) throws IOException {
         final OperationOutcome outcome = repo.create(
                 getUser(),
-                Binary.RESOURCE_TYPE, Binary.create().contentType(contentType.toString()).build());
+                Binary.create().contentType(contentType.toString()).build());
         binaryStorage.writeBinary(outcome.resource(Binary.class), inputStream);
         return outcome;
     }
@@ -101,7 +101,6 @@ public class R4BinaryEndpoint {
     public OperationOutcome update(final InputStream inputStream) throws IOException {
         final OperationOutcome outcome = repo.update(
                 getUser(),
-                Binary.RESOURCE_TYPE,
                 id,
                 Binary.create().contentType(contentType.toString()).build());
         binaryStorage.writeBinary(outcome.resource(Binary.class), inputStream);

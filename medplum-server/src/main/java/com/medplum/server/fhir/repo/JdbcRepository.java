@@ -101,13 +101,13 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     @Override
-    public OperationOutcome create(final SecurityUser user, final String resourceType, final JsonObject data) {
+    public OperationOutcome create(final SecurityUser user, final JsonObject data) {
         final OperationOutcome validateOutcome = FhirSchema.validate(data);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
         }
 
-        return update(user, resourceType, generateId(), data);
+        return update(user, generateId(), data);
     }
 
     @Override
@@ -262,7 +262,7 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     @Override
-    public OperationOutcome update(final SecurityUser user, final String resourceType, final String id, final JsonObject data) {
+    public OperationOutcome update(final SecurityUser user, final String id, final JsonObject data) {
         final OperationOutcome validateOutcome = FhirSchema.validate(data);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
@@ -273,6 +273,7 @@ public class JdbcRepository implements Repository, Closeable {
             return StandardOperations.invalid("Invalid ID (not a UUID)");
         }
 
+        final String resourceType = data.getString("resourceType");
         final OperationOutcome existingOutcome = read(user, resourceType, id);
         final FhirResource existing = existingOutcome.resource();
         final UUID versionId = UUID.randomUUID();

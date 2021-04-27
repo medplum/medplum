@@ -17,7 +17,6 @@ public class JdbcRepositoryTest extends BaseTest {
         try (final JdbcRepository repo = app.getRepo()) {
             final OperationOutcome createOutcome = repo.create(
                     SecurityUser.SYSTEM_USER,
-                    Observation.RESOURCE_TYPE,
                     Observation.create()
                             .code(CodeableConcept.create().build())
                             .valueString("test")

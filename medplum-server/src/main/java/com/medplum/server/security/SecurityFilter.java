@@ -51,7 +51,7 @@ public class SecurityFilter implements ContainerRequestFilter {
 
         final String authorization = request.getHeaderString(HttpHeaders.AUTHORIZATION);
         if (authorization == null) {
-            throw unauthorized("Missing authorization header: " + authorization);
+            throw unauthorized("Missing authorization header");
         }
 
         if (!authorization.startsWith(BEARER_PREFIX)) {

@@ -112,7 +112,7 @@ public class OAuthService {
                 .user(user.createReference())
                 .build();
 
-        return repo.create(SecurityUser.SYSTEM_USER, Login.RESOURCE_TYPE, loginResource);
+        return repo.create(SecurityUser.SYSTEM_USER, loginResource);
     }
 
     public OperationOutcome getLoginProfile(final Login login) {
@@ -163,12 +163,12 @@ public class OAuthService {
 
     public OperationOutcome setScopes(final Login login, final String scope) {
         final Login updated = Login.create(login).scope(scope).build();
-        return repo.update(SecurityUser.SYSTEM_USER, Login.RESOURCE_TYPE, updated.id(), updated);
+        return repo.update(SecurityUser.SYSTEM_USER, updated.id(), updated);
     }
 
     public OperationOutcome setRole(final Login login, final Reference role) {
         final Login updated = Login.create(login).profile(role).build();
-        return repo.update(SecurityUser.SYSTEM_USER, Login.RESOURCE_TYPE, updated.id(), updated);
+        return repo.update(SecurityUser.SYSTEM_USER, updated.id(), updated);
     }
 
     public RefreshToken validateRefreshToken(final String refreshToken) {
@@ -189,8 +189,8 @@ public class OAuthService {
 
     public JwtResult generateAccessToken(
             final ClientApplication client,
-            final String scope,
-            final FhirResource profile)
+            final FhirResource profile,
+            final String scope)
                     throws JoseException {
 
         return generateJwt(Map.of(
@@ -205,8 +205,8 @@ public class OAuthService {
 
     public JwtResult generateRefreshToken(
             final ClientApplication client,
-            final String scope,
-            final FhirResource profile)
+            final FhirResource profile,
+            final String scope)
                     throws JoseException {
 
         final JwtResult result = generateJwt(Map.of(
@@ -224,7 +224,6 @@ public class OAuthService {
         // Because we trust that JWT ID will be a unique UUID
         repo.update(
                 SecurityUser.SYSTEM_USER,
-                RefreshToken.RESOURCE_TYPE,
                 result.getJwtId(),
                 refreshToken);
 

@@ -87,7 +87,6 @@ public class VerifyEndpoint {
         // 3) Set the user's password
         repo.update(
                 SecurityUser.SYSTEM_USER,
-                User.RESOURCE_TYPE,
                 user.id(),
                 User.create(user)
                         .passwordHash(BCrypt.hashpw(newPassword, BCrypt.gensalt()))

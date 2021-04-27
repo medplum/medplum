@@ -68,7 +68,7 @@ public class RegisterEndpoint {
         // 1) Create an empty patient
         final OperationOutcome patientOutcome = repo.create(
                 SecurityUser.SYSTEM_USER,
-                Patient.RESOURCE_TYPE, Patient.create().build());
+                Patient.create().build());
 
         if (!patientOutcome.isOk()) {
             return buildPageResponse(Status.BAD_REQUEST, patientOutcome.issue().get(0).details().text());
@@ -79,7 +79,6 @@ public class RegisterEndpoint {
         // 2) Create the user
         final OperationOutcome userOutcome = repo.create(
                 SecurityUser.SYSTEM_USER,
-                User.RESOURCE_TYPE,
                 User.create()
                         .email(email)
                         .patient(patient.createReference())
@@ -95,7 +94,6 @@ public class RegisterEndpoint {
         // 3) Create a password change request
         final OperationOutcome pcrOutcome = repo.create(
                 SecurityUser.SYSTEM_USER,
-                PasswordChangeRequest.RESOURCE_TYPE,
                 PasswordChangeRequest.create()
                         .user(user.createReference())
                         .redirectUri(redirectUri)

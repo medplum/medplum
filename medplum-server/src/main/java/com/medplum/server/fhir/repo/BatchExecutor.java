@@ -60,8 +60,8 @@ public class BatchExecutor {
             final String resourceType = resource.resourceType();
             final String providedId = resource.id();
             final OperationOutcome entryOutcome = providedId == null || providedId.isBlank() ?
-                    repo.create(user, resourceType, resource) :
-                    repo.update(user, resourceType, providedId, resource);
+                    repo.create(user, resource) :
+                    repo.update(user, providedId, resource);
             result.add(BundleEntry.create()
                     .response(BundleResponse.create()
                             .status(Status.fromStatusCode(entryOutcome.status()).toString())

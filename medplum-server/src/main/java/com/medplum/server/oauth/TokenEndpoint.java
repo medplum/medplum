@@ -13,6 +13,8 @@ import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -25,6 +27,7 @@ import com.medplum.fhir.types.Login;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.fhir.types.Patient;
 import com.medplum.fhir.types.RefreshToken;
+import com.medplum.server.ConfigSettings;
 import com.medplum.server.Utils;
 import com.medplum.server.Utils.KeyValue;
 import com.medplum.server.fhir.repo.Repository;
@@ -40,6 +43,9 @@ import com.medplum.server.security.SmartScopeSet;
 @PermitAll
 public class TokenEndpoint {
 
+    @Context
+    private Configuration config;
+
     @Inject
     private Repository repo;
 
@@ -54,6 +60,9 @@ public class TokenEndpoint {
 
     @FormParam("client_id")
     private String clientId;
+
+    @FormParam("client_secret")
+    private String clientSecret;
 
     @FormParam("redirect_uri")
     private String redirectUri;
@@ -85,6 +94,9 @@ public class TokenEndpoint {
         switch (grantType) {
         case "authorization_code":
             return handleAuthorizationCode();
+
+        case "client_credentials":
+            return handleClientCredentials();
 
         case "refresh_token":
             return handleRefreshToken();
@@ -119,7 +131,7 @@ public class TokenEndpoint {
 
         final ClientApplication client = validateClient();
 
-        final JwtResult accessToken = oauth.generateAccessToken(client, login.scope(), profile);
+        final JwtResult accessToken = oauth.generateAccessToken(client, profile, login.scope());
 
         final JsonObjectBuilder jsonBuilder = Json.createObjectBuilder()
                 .add("token_type", "Bearer")
@@ -137,18 +149,50 @@ public class TokenEndpoint {
         }
 
         if (smartScopes.hasOnlineAccess() || smartScopes.hasOfflineAccess()) {
-            final JwtResult refreshToken = oauth.generateRefreshToken(client, login.scope(), profile);
+            final JwtResult refreshToken = oauth.generateRefreshToken(client, profile, login.scope());
             jsonBuilder.add("refresh_token", refreshToken.getJws().getCompactSerialization());
         }
 
         if (smartScopes.hasLaunchAccess()) {
             jsonBuilder.add("need_patient_banner", true);
-            jsonBuilder.add("smart_style_url", "http://host.docker.internal:5000/fhir/R4/.well-known/smart-style");
+            jsonBuilder.add("smart_style_url", config.getProperty(ConfigSettings.BASE_URL) + "/fhir/R4/.well-known/smart-style");
         }
 
         return Response.ok()
                 .type(MediaType.APPLICATION_JSON)
                 .entity(jsonBuilder.build())
+                .build();
+    }
+
+    private Response handleClientCredentials() throws JoseException {
+        if (clientId == null || clientId.isBlank()) {
+            throw new BadRequestException("Missing client_id");
+        }
+
+        if (clientSecret == null || clientSecret.isBlank()) {
+            throw new BadRequestException("Missing client_secret");
+        }
+
+        final ClientApplication client = validateClient();
+        if (client.secret() == null || client.secret().isBlank()) {
+            throw new BadRequestException("Client not configured for client credentials");
+        }
+
+        if (!clientSecret.equals(client.secret())) {
+            throw new BadRequestException("Invalid secret");
+        }
+
+        final String scope = "";
+        final JwtResult accessToken = oauth.generateAccessToken(client, client, scope);
+
+        return Response.ok()
+                .type(MediaType.APPLICATION_JSON)
+                .entity(Json.createObjectBuilder()
+                        .add("access_token", accessToken.getJws().getCompactSerialization())
+                        .add("scope", scope)
+                        .add("token_type", "Bearer")
+                        .add("expires_in", 3600)
+                        .build())
                 .build();
     }
 
@@ -175,9 +219,9 @@ public class TokenEndpoint {
 
         final ClientApplication client = validateClient();
 
-        final JwtResult accessToken = oauth.generateAccessToken(client, scope, profile);
+        final JwtResult accessToken = oauth.generateAccessToken(client, profile, scope);
 
-        final JwtResult newRefreshToken = oauth.generateRefreshToken(client, scope, profile);
+        final JwtResult newRefreshToken = oauth.generateRefreshToken(client, profile, scope);
 
         return Response.ok()
                 .type(MediaType.APPLICATION_JSON)

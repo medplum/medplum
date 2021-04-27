@@ -1,6 +1,5 @@
 package com.medplum.server.search;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -14,10 +13,7 @@ import com.medplum.fhir.types.SearchParameter;
  */
 public class SearchRequestParser {
     private final String resourceType;
-    private final List<Filter> filters;
-    private final List<SortRule> sortRules;
-    private int page;
-    private int count;
+    private final SearchRequest.Builder builder;
 
     public static SearchRequest parse(final String resourceType, final MultivaluedMap<String, String> params) {
         final SearchRequestParser parser = new SearchRequestParser(resourceType);
@@ -38,17 +34,14 @@ public class SearchRequestParser {
 
     private SearchRequestParser(final String resourceType) {
         this.resourceType = resourceType;
-        this.filters = new ArrayList<>();
-        this.sortRules = new ArrayList<>();
-        this.page = 0;
-        this.count = 10;
+        this.builder = SearchRequest.create(resourceType);
     }
 
     private void parseKeyValue(final String key, final String value) {
         switch (key) {
         case "_id":
         case "id":
-            filters.add(new Filter(SearchParameters.getParameter("Resource", "_id"), Operation.EQUALS, value));
+            builder.filter(new Filter(SearchParameters.getParameter("Resource", "_id"), Operation.EQUALS, value));
             break;
 
         case "_sort":
@@ -56,11 +49,11 @@ public class SearchRequestParser {
             break;
 
         case "_page":
-            page = Integer.parseInt(value);
+            builder.page(Integer.parseInt(value));
             break;
 
         case "_count":
-            count = Integer.parseInt(value);
+            builder.count(Integer.parseInt(value));
             break;
 
         default:
@@ -81,7 +74,7 @@ public class SearchRequestParser {
             } else {
                 code = field;
             }
-            sortRules.add(new SortRule(code, descending));
+            builder.sortRule(new SortRule(code, descending));
         }
     }
 
@@ -130,7 +123,7 @@ public class SearchRequestParser {
             num = value.substring(2);
         }
 
-        filters.add(new Filter(param, op, num));
+        builder.filter(new Filter(param, op, num));
     }
 
     private void parseDate(final SearchParameter param, final String value) {
@@ -139,23 +132,23 @@ public class SearchRequestParser {
 
     private void parseString(final SearchParameter param, final String value) {
         Operation op = Operation.EQUALS;
-        String num = value;
+        String str = value;
 
         if (value.startsWith("eq")) {
             op = Operation.EQUALS;
-            num = value.substring(2);
+            str = value.substring(2);
 
         } else if (value.startsWith("ne")) {
             op = Operation.NOT_EQUALS;
-            num = value.substring(2);
+            str = value.substring(2);
         }
 
-        filters.add(new Filter(param, op, num));
+        builder.filter(new Filter(param, op, str));
 
     }
 
     private void parseToken(final SearchParameter param, final String value) {
-        filters.add(new Filter(param, Operation.EQUALS, value));
+        builder.filter(new Filter(param, Operation.EQUALS, value));
     }
 
     private void parseReference(final SearchParameter param, final String value) {
@@ -179,6 +172,6 @@ public class SearchRequestParser {
     }
 
     private SearchRequest build() {
-        return new SearchRequest(resourceType, filters, sortRules, page, count);
+        return builder.build();
     }
 }

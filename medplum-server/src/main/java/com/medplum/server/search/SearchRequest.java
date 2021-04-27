@@ -1,6 +1,7 @@
 package com.medplum.server.search;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.ws.rs.core.UriBuilder;
@@ -13,12 +14,16 @@ public class SearchRequest {
     private final int page;
     private final int count;
 
-    public SearchRequest(final String resourceType, final List<Filter> filters, final List<SortRule> sortRules, final int page, final int count) {
-        this.resourceType = resourceType;
-        this.filters = filters;
-        this.sortRules = sortRules;
-        this.page = page;
-        this.count = count;
+    public static Builder create(final String resourceType) {
+        return new Builder(resourceType);
+    }
+
+    private SearchRequest(final Builder builder) {
+        this.resourceType = builder.resourceType;
+        this.filters = builder.filters;
+        this.sortRules = builder.sortRules;
+        this.page = builder.page;
+        this.count = builder.count;
     }
 
     public String getResourceType() {
@@ -81,5 +86,55 @@ public class SearchRequest {
         b.append("  count=" + count + ",\n");
         b.append("}");
         return b.toString();
+    }
+
+    public static class Builder {
+        private final String resourceType;
+        private List<Filter> filters;
+        private List<SortRule> sortRules;
+        private int page;
+        private int count;
+
+        private Builder(final String resourceType) {
+            this.resourceType = resourceType;
+            this.filters = new ArrayList<>();
+            this.sortRules = new ArrayList<>();
+            this.page = 0;
+            this.count = 10;
+        }
+
+        public Builder filters(final List<Filter> filters) {
+            this.filters = filters;
+            return this;
+        }
+
+        public Builder filter(final Filter filter) {
+            this.filters.add(filter);
+            return this;
+        }
+
+        public Builder sortRules(final List<SortRule> sortRules) {
+            this.sortRules = sortRules;
+            return this;
+        }
+
+        public Builder sortRule(final SortRule sortRule) {
+            this.sortRules.add(sortRule);
+            return this;
+        }
+
+        public Builder page(final int page) {
+            this.page = page;
+            return this;
+        }
+
+        public Builder count(final int count) {
+            this.count = count;
+            return this;
+        }
+
+        public SearchRequest build() {
+            return new SearchRequest(this);
+        }
     }
 }

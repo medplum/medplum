@@ -54,7 +54,7 @@ public class R4Endpoint {
     @Path("/{resourceType}")
     @Consumes(FhirMediaType.APPLICATION_FHIR_JSON)
     public OperationOutcome create(final JsonObject data) {
-        return repo.create(getUser(), resourceType, data);
+        return repo.create(getUser(), data);
     }
 
     @GET
@@ -85,7 +85,7 @@ public class R4Endpoint {
     @Path("/{resourceType}/{id}")
     @Consumes(FhirMediaType.APPLICATION_FHIR_JSON)
     public OperationOutcome update(final JsonObject data) {
-        return repo.update(getUser(), resourceType, id, data);
+        return repo.update(getUser(), id, data);
     }
 
     @PATCH

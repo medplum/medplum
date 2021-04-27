@@ -14,11 +14,10 @@ public interface Repository {
      * Creates a new resource version from key value pairs.
      * Always creates a new resource with a new ID.
      * @param user The user performing the operation.
-     * @param resourceType The FHIR resource type.
      * @param data Initializer data.
      * @return Operation outcome.
      */
-    OperationOutcome create(SecurityUser user, String resourceType, JsonObject data);
+    OperationOutcome create(SecurityUser user, JsonObject data);
 
     /**
      * Returns a resource by ID.
@@ -60,12 +59,11 @@ public interface Repository {
      * Updates a resource from key value pairs.
      * If the resource does not exist, it will be created.
      * @param user The user performing the operation.
-     * @param resourceType The FHIR resource type.
      * @param id The FHIR resource ID.
      * @param data Updated data.
      * @return Operation outcome.
      */
-    OperationOutcome update(SecurityUser user, String resourceType, String id, JsonObject data);
+    OperationOutcome update(SecurityUser user, String id, JsonObject data);
 
     /**
      * Deletes a resource by ID.

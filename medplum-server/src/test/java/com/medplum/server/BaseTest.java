@@ -1,7 +1,5 @@
 package com.medplum.server;
 
-import static com.medplum.fhir.IdUtils.*;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,6 +8,7 @@ import java.util.Map;
 
 import jakarta.ws.rs.core.UriBuilder;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.test.JerseyTest;
@@ -37,7 +36,7 @@ public abstract class BaseTest extends JerseyTest {
     @BeforeClass
     public static void setUpBaseTest() throws Exception {
         final Map<String, Object> config = new HashMap<>();
-        config.put(ConfigSettings.JDBC_URL, "jdbc:h2:mem:test");
+        config.put(ConfigSettings.JDBC_URL, "jdbc:h2:mem:test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE");
         config.put(ConfigSettings.AUTH_ISSUER, "test-issuer");
         config.put(ConfigSettings.AUTH_AUDIENCE, "test-audience");
         config.put(ConfigSettings.AUTH_JWKS_URL, "https://www.example.com/.well-known/jwks.json");
@@ -55,7 +54,7 @@ public abstract class BaseTest extends JerseyTest {
             if (patientSearchOutcome.isOk() && !patientSearchOutcome.resource(Bundle.class).entry().isEmpty()) {
                 testPatient = patientSearchOutcome.resource(Bundle.class).entry().get(0).resource(Patient.class);
             } else {
-                testPatient = repo.create(SecurityUser.SYSTEM_USER, Patient.RESOURCE_TYPE, Patient.create()
+                testPatient = repo.create(SecurityUser.SYSTEM_USER, Patient.create()
                         .name(Collections.singletonList(HumanName.create()
                                 .given(Arrays.asList("Alice", "P"))
                                 .family("Smith")
@@ -71,7 +70,7 @@ public abstract class BaseTest extends JerseyTest {
             if (userSearchOutcome.isOk() && !userSearchOutcome.resource(Bundle.class).entry().isEmpty()) {
                 testUser = userSearchOutcome.resource(Bundle.class).entry().get(0).resource(User.class);
             } else {
-                testUser = repo.create(SecurityUser.SYSTEM_USER, User.RESOURCE_TYPE, User.create()
+                testUser = repo.create(SecurityUser.SYSTEM_USER, User.create()
                         .email("admin@example.com")
                         .passwordHash(BCrypt.hashpw("admin", BCrypt.gensalt()))
                         .patient(testPatient.createReference())
@@ -79,16 +78,16 @@ public abstract class BaseTest extends JerseyTest {
                         .resource(User.class);
             }
 
-            testClientApp = repo.create(SecurityUser.SYSTEM_USER, ClientApplication.RESOURCE_TYPE, ClientApplication.create()
-                    .secret(generateId())
+            testClientApp = repo.create(SecurityUser.SYSTEM_USER, ClientApplication.create()
+                    .secret(RandomStringUtils.randomAlphanumeric(64))
                     .redirectUri("https://www.example.com/redirect")
                     .build())
                     .resource(ClientApplication.class);
 
             testAccessToken = app.getOAuth().generateAccessToken(
                     testClientApp,
-                    "openid user/*.*",
-                    testUser).getJws().getCompactSerialization();
+                    testUser,
+                    "openid user/*.*").getJws().getCompactSerialization();
         }
     }
 
