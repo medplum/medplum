@@ -86,7 +86,7 @@ public class MedPlumBackEnd extends Construct {
                         .build())
                 .build());
 
-        rdsCluster.getConnections().allowDefaultPortInternally();
+        rdsCluster.getConnections().allowDefaultPortFromAnyIpv4();
 
         // ECS
         final var cluster = new Cluster(this, "Cluster", ClusterProps.builder()
