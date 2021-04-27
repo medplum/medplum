@@ -14,6 +14,8 @@ import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
+import com.medplum.fhir.types.FhirResource;
+
 public class FhirClient {
     private final URI baseUri;
     private final Client client;
@@ -24,8 +26,10 @@ public class FhirClient {
         this.client = Objects.requireNonNull(client);
         this.bearerToken = bearerToken;
 
-        client.property("jersey.config.client.followRedirects", false);
-        client.register(FhirObjectReader.class);
+        if (client.getClass().getName().equals("org.glassfish.jersey.client.JerseyClient")) {
+            client.property("jersey.config.client.followRedirects", false);
+            client.register(FhirObjectReader.class);
+        }
     }
 
     public FhirClient(final URI baseUri, final String auth) {
@@ -34,6 +38,18 @@ public class FhirClient {
 
     public FhirClient(final URI baseUri) {
         this(baseUri, null);
+    }
+
+    public Response create(final FhirResource resource) {
+        return post("/" + resource.resourceType(), resource);
+    }
+
+    public Response read(final String resourceType, final String id) {
+        return get("/" + resourceType + "/" + id);
+    }
+
+    public Response update(final FhirResource resource) {
+        return post("/" + resource.resourceType() + "/" + resource.id(), resource);
     }
 
     public WebTarget target(final String str) {
