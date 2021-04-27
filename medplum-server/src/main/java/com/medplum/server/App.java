@@ -6,6 +6,8 @@ import java.util.TimeZone;
 
 import javax.sql.DataSource;
 
+import jakarta.ws.rs.core.Configuration;
+
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.jsonb.JsonBindingFeature;
 import org.glassfish.jersey.jsonp.JsonProcessingFeature;
@@ -39,6 +41,7 @@ public class App extends ResourceConfig {
     private final DataSource dataSource;
     private final JsonWebKeySet jwks;
     private final JwksVerificationKeyResolver keyResolver;
+    private final Configuration config;
 
     public App(final Map<String, Object> properties) throws Exception {
         // Prefer IPv4
@@ -60,25 +63,11 @@ public class App extends ResourceConfig {
         // Pass all config properties to Jersey
         addProperties(properties);
 
-        final HikariConfig config = new HikariConfig();
+        // Init Hikari and the JDBC DataSource
+        dataSource = initDataSource(properties);
 
-        final String driverClassName = (String) properties.get(ConfigSettings.JDBC_DRIVER_CLASS_NAME);
-        if (driverClassName != null && !driverClassName.isBlank()) {
-            LOG.info("Force database driver class: {}", driverClassName);
-            Class.forName(driverClassName);
-            config.setDriverClassName(driverClassName);
-        }
-
-        config.setJdbcUrl((String) properties.get(ConfigSettings.JDBC_URL));
-        config.setUsername((String) properties.get(ConfigSettings.JDBC_USERNAME));
-        config.setPassword((String) properties.get(ConfigSettings.JDBC_PASSWORD));
-        config.setMaximumPoolSize(10);
-        config.setAutoCommit(true);
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        dataSource = new HikariDataSource(config);
-
+        // Initialize the database
+        // Initialize JWKS while we have the database open
         try (final JdbcRepository repo = getRepo()) {
             repo.createTables();
             jwks = JwkManager.initKeys(repo);
@@ -100,9 +89,33 @@ public class App extends ResourceConfig {
         });
 
         packages("com.medplum.server");
+
+        config = getConfiguration();
     }
 
-    public JdbcRepository getRepo() {
+    DataSource initDataSource(final Map<String, Object> properties) throws ReflectiveOperationException {
+        final HikariConfig config = new HikariConfig();
+
+        final String driverClassName = (String) properties.get(ConfigSettings.JDBC_DRIVER_CLASS_NAME);
+        if (driverClassName != null && !driverClassName.isBlank()) {
+            LOG.info("Force database driver class: {}", driverClassName);
+            Class.forName(driverClassName);
+            config.setDriverClassName(driverClassName);
+        }
+
+        config.setJdbcUrl((String) properties.get(ConfigSettings.JDBC_URL));
+        config.setUsername((String) properties.get(ConfigSettings.JDBC_USERNAME));
+        config.setPassword((String) properties.get(ConfigSettings.JDBC_PASSWORD));
+        config.setMaximumPoolSize(10);
+        config.setAutoCommit(true);
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+
+        return new HikariDataSource(config);
+    }
+
+    JdbcRepository getRepo() {
         try {
             return new JdbcRepository(dataSource.getConnection());
         } catch (final SQLException e) {
@@ -110,7 +123,7 @@ public class App extends ResourceConfig {
         }
     }
 
-    public OAuthService getOAuth() {
-        return new OAuthService(getRepo(), jwks, keyResolver);
+    OAuthService getOAuth() {
+        return new OAuthService(config, getRepo(), jwks, keyResolver);
     }
 }

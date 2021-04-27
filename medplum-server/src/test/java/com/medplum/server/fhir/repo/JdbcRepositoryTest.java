@@ -14,7 +14,7 @@ public class JdbcRepositoryTest extends BaseTest {
 
     @Test
     public void testReadWrite() {
-        try (final JdbcRepository repo = app.getRepo()) {
+        try (final JdbcRepository repo = getRepo()) {
             final OperationOutcome createOutcome = repo.create(
                     SecurityUser.SYSTEM_USER,
                     Observation.create()

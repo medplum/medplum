@@ -107,4 +107,8 @@ public abstract class BaseTest extends JerseyTest {
         final URI uri = UriBuilder.fromUri(getBaseUri()).path("/fhir/R4").build();
         return new FhirClient(uri, testAccessToken, client());
     }
+
+    protected JdbcRepository getRepo() {
+        return app.getRepo();
+    }
 }

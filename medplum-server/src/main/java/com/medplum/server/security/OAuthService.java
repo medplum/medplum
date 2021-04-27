@@ -5,6 +5,8 @@ import java.util.Map.Entry;
 import java.util.UUID;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.Context;
 
 import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
 import org.jose4j.jwk.JsonWebKeySet;
@@ -31,6 +33,7 @@ import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.fhir.types.Reference;
 import com.medplum.fhir.types.RefreshToken;
 import com.medplum.fhir.types.User;
+import com.medplum.server.ConfigSettings;
 import com.medplum.server.fhir.repo.Repository;
 import com.medplum.server.search.SearchRequest;
 import com.medplum.server.search.SearchRequestParser;
@@ -39,18 +42,36 @@ public class OAuthService {
     private static final Logger LOG = LoggerFactory.getLogger(OAuthService.class);
     private static final int ONE_HOUR = 1;
     private static final int TWO_WEEKS = 14 * 24;
-    private final Repository repo;
-    private final JsonWebKeySet jwks;
-    private final VerificationKeyResolver keyResolver;
+
+    @Context
+    private Configuration config;
 
     @Inject
+    private Repository repo;
+
+    @Inject
+    private JsonWebKeySet jwks;
+
+    @Inject
+    private VerificationKeyResolver keyResolver;
+
+    public OAuthService() {
+        // No-arg constructor for DI
+    }
+
     public OAuthService(
+            final Configuration config,
             final Repository repo,
             final JsonWebKeySet jwks,
             final VerificationKeyResolver keyResolver) {
+        this.config = config;
         this.repo = repo;
         this.jwks = jwks;
         this.keyResolver = keyResolver;
+    }
+
+    public String getIssuer() {
+        return (String) config.getProperty(ConfigSettings.AUTH_ISSUER);
     }
 
     public JsonWebKeySet getJwks() {
@@ -59,10 +80,6 @@ public class OAuthService {
 
     public RsaJsonWebKey getJwk() {
         return (RsaJsonWebKey) jwks.getJsonWebKeys().get(0);
-    }
-
-    public String getIssuer() {
-        return "http://host.docker.internal:5000/";
     }
 
     public VerificationKeyResolver getKeyResolver() {
