@@ -63,7 +63,7 @@ public class MedPlumBackEnd extends Construct {
     public MedPlumBackEnd(final Construct scope, final String id) {
         super(scope, id);
 
-        final String medplumName = "www";
+        final String medplumName = "prod";
         final String domainName = "medplum.com";
         final String apiDomainName = "api." + domainName;
 
@@ -117,6 +117,7 @@ public class MedPlumBackEnd extends Construct {
                 .memoryLimitMiB(512)
                 .cpu(256)
                 .taskRole(taskRole)
+
                 .build());
 
         // Log Group
@@ -134,12 +135,13 @@ public class MedPlumBackEnd extends Construct {
         final var serviceRepo = Repository.fromRepositoryName(this, "MedPlumRepo", "medplum-server");
 
         // Task Container
-        final var serviceContainer = taskDefinition.addContainer("MedPlumTaskDefinition", ContainerDefinitionOptions.builder()
+        final var containerDefinition = taskDefinition.addContainer("MedPlumTaskDefinition", ContainerDefinitionOptions.builder()
                 .image(ContainerImage.fromEcrRepository(serviceRepo, "latest"))
+                .command(singletonList(medplumName))
                 .logging(logDriver)
                 .build());
 
-        serviceContainer.addPortMappings(PortMapping.builder()
+        containerDefinition.addPortMappings(PortMapping.builder()
                 .containerPort(5000)
                 .hostPort(5000)
                 .build());
@@ -156,7 +158,7 @@ public class MedPlumBackEnd extends Construct {
                 .cluster(cluster)
                 .taskDefinition(taskDefinition)
                 .assignPublicIp(false)
-                .desiredCount(2)
+                .desiredCount(1)
                 .securityGroups(singletonList(securityGroup))
                 .build());
 

@@ -54,7 +54,7 @@ public class JdbcRepository implements Repository, Closeable {
     private static final String COLUMN_VERSION_ID = "VERSIONID";
     private static final String COLUMN_LAST_UPDATED = "LASTUPDATED";
     private static final String COLUMN_CONTENT = "CONTENT";
-    private static final String COLUMN_TYPE_UUID = "BINARY(16) NOT NULL";
+    private static final String COLUMN_TYPE_UUID = "UUID NOT NULL";
     private static final String COLUMN_TYPE_DATETIME = "DATETIME NOT NULL";
     private static final String COLUMN_TYPE_TEXT = "TEXT NOT NULL";
     private static final String COLUMN_TYPE_VARCHAR128 = "VARCHAR(128)";

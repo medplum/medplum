@@ -14,7 +14,8 @@ public class Main {
     private static final URI BASE_URI = URI.create("http://localhost:5000/");
 
     public static void main(final String[] args) throws IOException, JoseException {
-        final Map<String, Object> config = ConfigSettings.loadConfig();
+        LOG.info("App starting with args: {}", (Object[]) args);
+        final Map<String, Object> config = ConfigSettings.loadConfig(args);
 
         NettyHttpContainerProvider.createServer(BASE_URI, new App(config), false);
         LOG.info("App started at: {}", BASE_URI);

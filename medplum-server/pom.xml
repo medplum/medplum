@@ -159,6 +159,11 @@
             <artifactId>ssm</artifactId>
             <version>${aws.version}</version>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>secretsmanager</artifactId>
+            <version>${aws.version}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
