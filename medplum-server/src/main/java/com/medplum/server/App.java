@@ -59,11 +59,17 @@ public class App extends ResourceConfig {
         addProperties(properties);
 
         final HikariConfig config = new HikariConfig();
+
+        final String driverClassName = (String) properties.get(ConfigSettings.JDBC_DRIVER_CLASS_NAME);
+        if (driverClassName != null && !driverClassName.isBlank()) {
+            config.setDriverClassName(driverClassName);
+        }
+
         config.setJdbcUrl((String) properties.get(ConfigSettings.JDBC_URL));
         config.setUsername((String) properties.get(ConfigSettings.JDBC_USERNAME));
         config.setPassword((String) properties.get(ConfigSettings.JDBC_PASSWORD));
         config.setMaximumPoolSize(10);
-        config.setAutoCommit(false);
+        config.setAutoCommit(true);
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");
         config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");

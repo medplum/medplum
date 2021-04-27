@@ -65,7 +65,7 @@ aws ecr get-login-password --profile medplum --region us-east-1 | docker login -
 Build the Docker image
 
 ```
-mvn -B -P fargate -DskipTests=true package
+mvn -B -P fargate -DskipTests=true clean package
 ```
 
 Tag and deploy the new Docker image
@@ -80,9 +80,9 @@ docker push $REPO:latest
 For example:
 
 ```
-docker tag medplum-server:0.0.2 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.0.2
-docker tag medplum-server:0.0.2 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest
-docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.0.2
+docker tag medplum-server:0.0.3-SNAPSHOT 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.0.3-SNAPSHOT
+docker tag medplum-server:0.0.3-SNAPSHOT 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest
+docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.0.3-SNAPSHOT
 docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest
 ```
 

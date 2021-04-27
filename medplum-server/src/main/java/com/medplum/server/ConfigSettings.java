@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.GetParametersByPathRequest;
 
 public class ConfigSettings {
+    public static final String JDBC_DRIVER_CLASS_NAME = "medplum.jdbc.driverClassName";
     public static final String JDBC_URL = "medplum.jdbc.url";
     public static final String JDBC_USERNAME = "medplum.jdbc.username";
     public static final String JDBC_PASSWORD = "medplum.jdbc.password";
@@ -119,9 +120,12 @@ public class ConfigSettings {
 
         final var secret = JsonUtils.readJsonString(response.secretString());
         final var engine = secret.getString(AWS_DATABASE_ENGINE);
+        final String driverClassName;
         final String url;
+
         switch (engine) {
         case "postgres":
+            driverClassName = "org.postgresql.Driver";
             url = String.format(
                     "jdbc:postgresql://%s:%d/%s",
                     secret.getString(AWS_DATABASE_HOST),
@@ -133,6 +137,7 @@ public class ConfigSettings {
             throw new IllegalStateException("Unrecognized database engine: " + engine);
         }
 
+        props.put(JDBC_DRIVER_CLASS_NAME, driverClassName);
         props.put(JDBC_URL, url);
         props.put(JDBC_USERNAME, secret.getString(AWS_DATABASE_USERNAME));
         props.put(JDBC_PASSWORD, secret.getString(AWS_DATABASE_PASSWORD));

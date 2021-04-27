@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class JdbcRepository implements Repository, Closeable {
     private static final String COLUMN_LAST_UPDATED = "LASTUPDATED";
     private static final String COLUMN_CONTENT = "CONTENT";
     private static final String COLUMN_TYPE_UUID = "UUID NOT NULL";
-    private static final String COLUMN_TYPE_DATETIME = "DATETIME NOT NULL";
+    private static final String COLUMN_TYPE_TIMESTAMP = "TIMESTAMP NOT NULL";
     private static final String COLUMN_TYPE_TEXT = "TEXT NOT NULL";
     private static final String COLUMN_TYPE_VARCHAR128 = "VARCHAR(128)";
     private static final String PRIMARY_KEY = " PRIMARY KEY";
@@ -80,7 +81,7 @@ public class JdbcRepository implements Repository, Closeable {
     private void createResourceTable(final String resourceType) throws SQLException {
         final CreateTableQuery.Builder builder = new CreateTableQuery.Builder(getTableName(resourceType))
                 .column(COLUMN_ID, COLUMN_TYPE_UUID + PRIMARY_KEY)
-                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_DATETIME)
+                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_TIMESTAMP)
                 .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT);
 
         for (final SearchParameter searchParam : SearchParameters.getParameters(resourceType)) {
@@ -94,7 +95,7 @@ public class JdbcRepository implements Repository, Closeable {
         executeCreateTable(new CreateTableQuery.Builder(getHistoryTableName(resourceType))
                 .column(COLUMN_VERSION_ID, COLUMN_TYPE_UUID + PRIMARY_KEY)
                 .column(COLUMN_ID, COLUMN_TYPE_UUID)
-                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_DATETIME)
+                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_TIMESTAMP)
                 .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT)
                 .build());
     }
@@ -123,9 +124,13 @@ public class JdbcRepository implements Repository, Closeable {
 
         try (final Statement formatter = conn.createStatement()) {
             final StringBuilder sql = new StringBuilder();
-            sql.append("SELECT " + COLUMN_CONTENT + " FROM ");
+            sql.append("SELECT ");
+            sql.append(formatter.enquoteIdentifier(COLUMN_CONTENT, true));
+            sql.append(" FROM ");
             sql.append(formatter.enquoteIdentifier(getTableName(resourceType), true));
-            sql.append(" WHERE " + COLUMN_ID + "=?");
+            sql.append(" WHERE ");
+            sql.append(formatter.enquoteIdentifier(COLUMN_ID, true));
+            sql.append("=?");
 
             LOG.debug("{}", sql);
 
@@ -171,9 +176,13 @@ public class JdbcRepository implements Repository, Closeable {
 
         try (final Statement formatter = conn.createStatement()) {
             final StringBuilder sql = new StringBuilder();
-            sql.append("SELECT " + COLUMN_CONTENT + " FROM ");
+            sql.append("SELECT ");
+            sql.append(formatter.enquoteIdentifier(COLUMN_CONTENT, true));
+            sql.append(" FROM ");
             sql.append(formatter.enquoteIdentifier(getHistoryTableName(resourceType), true));
-            sql.append(" WHERE " + COLUMN_ID + "=?");
+            sql.append(" WHERE ");
+            sql.append(formatter.enquoteIdentifier(COLUMN_ID, true));
+            sql.append("=?");
 
             LOG.debug("{}", sql);
 
@@ -218,10 +227,16 @@ public class JdbcRepository implements Repository, Closeable {
 
         try (final Statement formatter = conn.createStatement()) {
             final StringBuilder sql = new StringBuilder();
-            sql.append("SELECT " + COLUMN_CONTENT + " FROM ");
+            sql.append("SELECT ");
+            sql.append(formatter.enquoteIdentifier(COLUMN_CONTENT, true));
+            sql.append(" FROM ");
             sql.append(formatter.enquoteIdentifier(getHistoryTableName(resourceType), true));
-            sql.append(" WHERE " + COLUMN_ID + "=?");
-            sql.append(" AND " + COLUMN_VERSION_ID + "=?");
+            sql.append(" WHERE ");
+            sql.append(formatter.enquoteIdentifier(COLUMN_ID, true));
+            sql.append("=?");
+            sql.append(" AND ");
+            sql.append(formatter.enquoteIdentifier(COLUMN_VERSION_ID, true));
+            sql.append("=?");
 
             LOG.debug("{}", sql);
 
@@ -303,7 +318,7 @@ public class JdbcRepository implements Repository, Closeable {
 
         final InsertQuery.Builder builder = new InsertQuery.Builder(getTableName(resourceType))
                 .value(COLUMN_ID, id, Types.BINARY)
-                .value(COLUMN_LAST_UPDATED, lastUpdated, Types.TIMESTAMP)
+                .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
                 .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
         for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
@@ -329,7 +344,7 @@ public class JdbcRepository implements Repository, Closeable {
             final JsonObject resource) {
 
         final UpdateQuery.Builder builder = new UpdateQuery.Builder(getTableName(resourceType))
-                .value(COLUMN_LAST_UPDATED, lastUpdated, Types.TIMESTAMP)
+                .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
                 .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
         for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
@@ -360,7 +375,7 @@ public class JdbcRepository implements Repository, Closeable {
         executeInsert(new InsertQuery.Builder(getHistoryTableName(resourceType))
                 .value(COLUMN_VERSION_ID, versionId, Types.BINARY)
                 .value(COLUMN_ID, id, Types.BINARY)
-                .value(COLUMN_LAST_UPDATED, lastUpdated, Types.TIMESTAMP)
+                .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
                 .value(COLUMN_CONTENT, resource.toString(), Types.VARCHAR)
                 .build());
     }
@@ -383,7 +398,9 @@ public class JdbcRepository implements Repository, Closeable {
 
         try (final Statement formatter = conn.createStatement()) {
             final StringBuilder sql = new StringBuilder();
-            sql.append("SELECT " + COLUMN_CONTENT + " FROM ");
+            sql.append("SELECT ");
+            sql.append(formatter.enquoteIdentifier(COLUMN_CONTENT, true));
+            sql.append(" FROM ");
             sql.append(formatter.enquoteIdentifier(getTableName(searchRequest.getResourceType()), true));
 
             boolean first = true;
@@ -573,9 +590,7 @@ public class JdbcRepository implements Repository, Closeable {
                 for (final Parameter value : values) {
                     stmt.setObject(i++, value.getValue(), value.getValueType());
                 }
-                final int result = stmt.executeUpdate();
-                conn.commit();
-                return result;
+                return stmt.executeUpdate();
             }
         }
     }
@@ -621,9 +636,7 @@ public class JdbcRepository implements Repository, Closeable {
                 for (final Parameter condition : conditions) {
                     stmt.setObject(i++, condition.getValue(), condition.getValueType());
                 }
-                final int result = stmt.executeUpdate();
-                conn.commit();
-                return result;
+                return stmt.executeUpdate();
             }
         }
     }
