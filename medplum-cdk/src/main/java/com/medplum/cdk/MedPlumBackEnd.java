@@ -34,6 +34,7 @@ import software.amazon.awscdk.services.elasticloadbalancingv2.HealthCheck;
 import software.amazon.awscdk.services.elasticloadbalancingv2.ListenerAction;
 import software.amazon.awscdk.services.elasticloadbalancingv2.ListenerCertificate;
 import software.amazon.awscdk.services.elasticloadbalancingv2.RedirectOptions;
+import software.amazon.awscdk.services.elasticloadbalancingv2.SslPolicy;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.RoleProps;
@@ -191,6 +192,7 @@ public class MedPlumBackEnd extends Construct {
         loadBalancer.addListener("HttpsListener", BaseApplicationListenerProps.builder()
                 .port(443)
                 .certificates(singletonList(ListenerCertificate.fromArn(API_CERTIFICATE_ARN)))
+                .sslPolicy(SslPolicy.FORWARD_SECRECY_TLS12_RES_GCM)
                 .defaultAction(ListenerAction.forward(singletonList(targetGroup)))
                 .build());
 
