@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.Objects;
 
 import jakarta.json.JsonObject;
+import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
@@ -49,10 +50,38 @@ public class FhirClient {
     }
 
     public Response update(final FhirResource resource) {
-        return post("/" + resource.resourceType() + "/" + resource.id(), resource);
+        return put("/" + resource.resourceType() + "/" + resource.id(), resource);
     }
 
-    public WebTarget target(final String str) {
+    public Response get(final String uri) {
+        return method(uri, HttpMethod.GET, null);
+    }
+
+    public Response post(final String uri, final Entity<?> entity) {
+        return method(uri, HttpMethod.POST, entity);
+    }
+
+    public Response post(final String uri, final JsonObject data) {
+        return method(uri, HttpMethod.POST, Entity.entity(data, APPLICATION_FHIR_JSON));
+    }
+
+    public Response put(final String uri, final Entity<?> entity) {
+        return method(uri, HttpMethod.PUT, entity);
+    }
+
+    public Response put(final String uri, final JsonObject data) {
+        return method(uri, HttpMethod.PUT, Entity.entity(data, APPLICATION_FHIR_JSON));
+    }
+
+    private Response method(final String uri, final String method, final Entity<?> entity) {
+        final Builder builder = target(uri).request().accept(APPLICATION_FHIR_JSON);
+        if (bearerToken != null) {
+            builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
+        }
+        return builder.method(method, entity);
+    }
+
+    private WebTarget target(final String str) {
         final URI uri;
         if (str.startsWith("http")) {
             if (!str.startsWith(baseUri.toString())) {
@@ -64,29 +93,5 @@ public class FhirClient {
         }
 
         return client.target(uri);
-    }
-
-    public Response get(final String uri) {
-        final Builder builder = target(uri).request().accept(APPLICATION_FHIR_JSON);
-        if (bearerToken != null) {
-            builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
-        }
-        return builder.get();
-    }
-
-    public Response post(final String uri, final Entity<?> entity) {
-        final Builder builder = target(uri).request().accept(APPLICATION_FHIR_JSON);
-        addAuth(builder);
-        return builder.post(entity);
-    }
-
-    public Response post(final String uri, final JsonObject data) {
-        return post(uri, Entity.entity(data, APPLICATION_FHIR_JSON));
-    }
-
-    private void addAuth(final Builder builder) {
-        if (bearerToken != null) {
-            builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
-        }
     }
 }
