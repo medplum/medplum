@@ -16,7 +16,8 @@ import org.glassfish.jersey.server.mvc.mustache.MustacheMvcFeature;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
-import org.jose4j.lang.JoseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.medplum.server.fhir.repo.BinaryStorage;
 import com.medplum.server.fhir.repo.FileSystemBinaryStorage;
@@ -34,11 +35,12 @@ import com.zaxxer.hikari.HikariDataSource;
  * The App class represents the JAX-RS Application configuration.
  */
 public class App extends ResourceConfig {
+    private static final Logger LOG = LoggerFactory.getLogger(App.class);
     private final DataSource dataSource;
     private final JsonWebKeySet jwks;
     private final JwksVerificationKeyResolver keyResolver;
 
-    public App(final Map<String, Object> properties) throws JoseException {
+    public App(final Map<String, Object> properties) throws Exception {
         // Prefer IPv4
         System.setProperty("java.net.preferIPv4Stack", "true");
 
@@ -62,6 +64,8 @@ public class App extends ResourceConfig {
 
         final String driverClassName = (String) properties.get(ConfigSettings.JDBC_DRIVER_CLASS_NAME);
         if (driverClassName != null && !driverClassName.isBlank()) {
+            LOG.info("Force database driver class: {}", driverClassName);
+            Class.forName(driverClassName);
             config.setDriverClassName(driverClassName);
         }
 

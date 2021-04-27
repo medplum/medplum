@@ -13,7 +13,6 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.test.JerseyTest;
-import org.jose4j.lang.JoseException;
 import org.junit.BeforeClass;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -36,7 +35,7 @@ public abstract class BaseTest extends JerseyTest {
     protected static String testAccessToken;
 
     @BeforeClass
-    public static void setUpBaseTest() throws JoseException {
+    public static void setUpBaseTest() throws Exception {
         final Map<String, Object> config = new HashMap<>();
         config.put(ConfigSettings.JDBC_URL, "jdbc:h2:mem:test");
         config.put(ConfigSettings.AUTH_ISSUER, "test-issuer");
