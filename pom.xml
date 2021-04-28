@@ -88,6 +88,7 @@
         <httpcomponents-client.version>4.5.13</httpcomponents-client.version>
         <httpcomponents-core.version>4.4.14</httpcomponents-core.version>
         <jacoco.version>0.8.6</jacoco.version>
+        <jakarta-activation.version>2.0.1</jakarta-activation.version>
         <jakarta-json.version>2.0.0</jakarta-json.version>
         <jakarta-rs.version>3.0.0</jakarta-rs.version>
         <jakarta.ws.rs.version>3.0.0</jakarta.ws.rs.version>

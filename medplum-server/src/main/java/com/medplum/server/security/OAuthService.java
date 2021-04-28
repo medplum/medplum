@@ -260,8 +260,6 @@ public class OAuthService {
     }
 
     private JwtResult generateJwt(final Map<String, Object> payload, final int expirationHours) throws JoseException {
-        LOG.info("Generate JWT issuer: {}", getIssuer());
-
         // Based on: https://bitbucket.org/b_c/jose4j/wiki/JWT%20Examples
         final String jwtId = UUID.randomUUID().toString();
         final RsaJsonWebKey jwk = getJwk();
