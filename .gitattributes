@@ -19,3 +19,6 @@
 *.xcf    binary
 *.zip    binary
 
+package-lock.json -diff
+package-lock.json linguist-generated=true
+
