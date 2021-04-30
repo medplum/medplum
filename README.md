@@ -26,7 +26,6 @@ These instructions will get you a copy of the project up and running on your loc
 * Java 11+
 * Maven
 * Node/npm
-* Lerna
 * Postgres
 
 ### Installing
@@ -40,8 +39,8 @@ mvn clean install
 Install and build the Node projects:
 
 ```
-lerna bootstrap
-lerna run build
+npm install --legacy-peer-deps
+npm run build --workspaces
 ```
 
 Run the FHIR server:

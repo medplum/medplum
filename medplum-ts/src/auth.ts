@@ -1,20 +1,15 @@
-import { KEYUTIL, KJUR, RSAKey } from 'jsrsasign';
-
 // Based on:
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
-// Uses jsrsasign:
-// https://kjur.github.io/jsrsasign/
-// https://github.com/kjur/jsrsasign/wiki/Tutorial-for-JWT-verification
+import { encryptSHA256, getRandomString } from './crypto';
+import { arrayBufferToBase64 } from './utils';
 
 // const CLIENT_ID = process.env['CLIENT_ID'] as string;
-// const JWKS_URL = process.env['JWKS_URL'] as string;
 // const AUTHORIZE_URL = process.env['AUTHORIZE_URL'] as string;
 // const TOKEN_URL = process.env['TOKEN_URL'] as string;
 // const SIGN_OUT_URL = process.env['SIGN_OUT_URL'] as string;
 
-const CLIENT_ID = '0b38b44f-44bf-4803-b514-05249ecb7a81';
-const JWKS_URL = 'http://host.docker.internal:5000/.well-known/jwks.json';
+const CLIENT_ID = '98c75be8-7eac-40a7-af74-6b9de359c12a';
 const AUTHORIZE_URL = 'http://host.docker.internal:5000/oauth2/authorize';
 const TOKEN_URL = 'http://host.docker.internal:5000/oauth2/token';
 const SIGN_OUT_URL = 'http://host.docker.internal:5000/oauth2/logout';
@@ -119,8 +114,8 @@ class Auth {
     const codeVerifier = getRandomString();
     sessionStorage.setItem('codeVerifier', codeVerifier);
 
-    const arrayHash = await encryptStringWithSHA256(codeVerifier);
-    const codeChallenge = hashToBase64url(arrayHash);
+    const arrayHash = await encryptSHA256(codeVerifier);
+    const codeChallenge = arrayBufferToBase64(arrayHash);
     sessionStorage.setItem('codeChallenge', codeChallenge);
 
     //const scope = 'launch/patient openid fhirUser offline_access patient/Medication.read patient/AllergyIntolerance.read patient/CarePlan.read patient/CareTeam.read patient/Condition.read patient/Device.read patient/DiagnosticReport.read patient/DocumentReference.read patient/Encounter.read patient/Goal.read patient/Immunization.read patient/Location.read patient/MedicationRequest.read patient/Observation.read patient/Organization.read patient/Patient.read patient/Practitioner.read patient/Procedure.read patient/Provenance.read';
@@ -209,36 +204,6 @@ class Auth {
 
     const token = tokens.access_token;
 
-    // Get Cognito keys
-    const keys = await fetch(JWKS_URL)
-      .then(response => response.json())
-      .then(data => data['keys']);
-
-    // Get the kid (key id)
-    const tokenHeader = parseJWTHeader(token);
-    const keyId = tokenHeader.kid;
-
-    // Search for the kid key id in the Cognito Keys
-    const key = keys.find((key: any) => key.kid === keyId)
-    if (key === undefined) {
-      this.clear();
-      throw new Error('Public key not found in jwks.json');
-    }
-
-    // Verify JWT Signature
-    const keyObj = KEYUTIL.getKey(key);
-    const isValid = KJUR.jws.JWS.verifyJWT(
-      token,
-      keyObj as RSAKey,
-      {
-        alg: ['RS256'],
-        gracePeriod: 3600
-      });
-    if (!isValid) {
-      this.clear();
-      throw new Error('Signature verification failed');
-    }
-
     // Verify token has not expired
     const tokenPayload = parseJWTPayload(token);
     if (Date.now() >= tokenPayload.exp * 1000) {
@@ -310,49 +275,6 @@ function parseJWTPayload(token: string) {
   const [header, payload, signature] = token.split('.');
   const jsonPayload = decodePayload(payload);
   return jsonPayload;
-}
-
-/**
- * Parses the JWT header.
- * @param token JWT token
- */
-function parseJWTHeader(token: string) {
-  const [header, payload, signature] = token.split('.');
-  const jsonHeader = decodePayload(header);
-  return jsonHeader;
-}
-
-/**
- * Returns a cryptographically secure random string.
- */
-function getRandomString() {
-  const randomItems = new Uint32Array(28);
-  crypto.getRandomValues(randomItems);
-  const binaryStringItems = Array.from(randomItems).map(dec => `0${dec.toString(16).substr(-2)}`);
-  return binaryStringItems.reduce((acc, item) => `${acc}${item}`, '');
-}
-
-/**
- * Encrypts a string with SHA256 encryption.
- * @param str
- */
-async function encryptStringWithSHA256(str: string) {
-  const PROTOCOL = 'SHA-256'
-  const textEncoder = new TextEncoder();
-  const encodedData = textEncoder.encode(str);
-  return crypto.subtle.digest(PROTOCOL, encodedData);
-}
-
-/**
- * Returns a base-64 URL from the array buffer.
- * @param arrayBuffer
- */
-function hashToBase64url(arrayBuffer: ArrayBuffer) {
-  const items = new Uint8Array(arrayBuffer)
-  const stringifiedArrayHash = items.reduce((acc, i) => `${acc}${String.fromCharCode(i)}`, '')
-  const decodedHash = btoa(stringifiedArrayHash)
-  const base64URL = decodedHash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  return base64URL
 }
 
 /**

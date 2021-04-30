@@ -10,6 +10,6 @@ export default {
 
 export const Basic = (args: AutocompleteProps) => (
   <AuthProvider>
-    <Autocomplete name="foo" resourceType="Patient" />
+    <Autocomplete id="foo" resourceType="Patient" />
   </AuthProvider>
 );

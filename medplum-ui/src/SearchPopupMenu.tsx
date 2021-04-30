@@ -1,6 +1,5 @@
 import React from 'react';
-import { SearchDefinition } from '../model/Search';
-import { schema } from '../schema';
+import { SearchDefinition, schema } from 'medplum';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
 import { PopupMenu } from './PopupMenu';
@@ -171,7 +170,7 @@ export class SearchPopupMenu extends React.Component<SearchPopupMenuProps, {}> {
   private prompt_(op: string) {
     this.setState({ visible: false });
 
-    var caption = getFieldString(this.props.field) + ' ' + getOpString(op) + '...';
+    var caption = getFieldString(this.props.search.resourceType, this.props.field) + ' ' + getOpString(op) + '...';
 
     var retVal = prompt(caption, '');
     if (retVal !== null) {

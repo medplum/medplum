@@ -7,16 +7,14 @@
   "scripts": {
     "dev": "start-storybook -p 6006",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "devDependencies": {
-    "@types/jsrsasign": "^8.0.10",
-    "@types/node": "^14.14.37",
-    "jsrsasign": "^10.2.0",
+    "@types/jest": "^26.0.23",
+    "@types/node": "^15.0.1",
+    "jest": "^26.6.3",
+    "ts-jest": "^26.5.5",
     "typescript": "^4.2.4"
-  },
-  "peerDependencies": {
-    "jsrsasign": "^10.2.0"
   },
   "files": [
     "lib"

@@ -1,0 +1,6 @@
+
+.medplum-menu-separator {
+  border-top: 1px solid var(--medplum-gray-400);
+  margin: 4px 0;
+  padding: 0;
+}

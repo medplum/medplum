@@ -18,6 +18,7 @@ export class AuthProvider extends React.Component {
   }
 
   componentDidMount() {
+    console.log('sign in ...');
     auth.signIn();
   }
 }

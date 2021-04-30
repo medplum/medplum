@@ -102,13 +102,15 @@ class FilterRow extends React.Component<FilterRowProps, FilterRowState> {
   }
 
   private renderField() {
+    const resourceType = this.props.resourceType;
+    const typeSchema = schema[resourceType];
     return (
       <select defaultValue={this.state.field} onChange={e => this.setState({ field: e.target.value })}>
         <option value=""></option>
-        {Object.values(schema)
+        {Object.values(typeSchema.properties)
           .sort((a, b) => (a.display > b.display) ? 1 : -1)
           .map(field => (
-            <option key={field.key} value={field.key}>{SearchControl.buildFieldNameString(field.key)}</option>
+            <option key={field.key} value={field.key}>{SearchControl.buildFieldNameString(resourceType, field.key)}</option>
           ))}
       </select>
     );
@@ -132,7 +134,12 @@ class FilterRow extends React.Component<FilterRowProps, FilterRowState> {
       return null;
     }
 
-    const fieldDefinition = schema[fieldKey];
+    const typeSchema = schema[this.props.resourceType];
+    if (!typeSchema) {
+      return null;
+    }
+
+    const fieldDefinition = typeSchema.properties[fieldKey];
     if (!fieldDefinition) {
       return null;
     }
@@ -203,7 +210,12 @@ class FilterRow extends React.Component<FilterRowProps, FilterRowState> {
       return null;
     }
 
-    const fieldDefinition = schema[fieldKey];
+    const typeSchema = schema[this.props.resourceType];
+    if (!typeSchema) {
+      return null;
+    }
+
+    const fieldDefinition = typeSchema.properties[fieldKey];
     if (!fieldDefinition) {
       return null;
     }
@@ -236,7 +248,7 @@ class FilterRow extends React.Component<FilterRowProps, FilterRowState> {
       case 'organization':
       case 'site':
         return (
-          <Autocomplete name="dataEntryUser" resourceType="Practitioner" />
+          <Autocomplete id="dataEntryUser" resourceType="Practitioner" />
         );
 
       case 'bool':
@@ -383,6 +395,7 @@ export class SearchFilterEditor extends React.Component<SearchFilterEditorProps,
             <tbody>
               {filters.map((filter: SearchFilterDefinition) => (
                 <FilterRow
+                  resourceType={this.props.definition.resourceType}
                   key={JSON.stringify(filter)}
                   definition={filter}
                   onAdd={f => this.onAddFilter(f)}
@@ -390,6 +403,7 @@ export class SearchFilterEditor extends React.Component<SearchFilterEditorProps,
                 />
               ))}
               <FilterRow
+                resourceType={this.props.definition.resourceType}
                 definition={{ key: '', op: '' }}
                 onAdd={f => this.onAddFilter(f)}
                 onDelete={f => this.onDeleteFilter(f)}

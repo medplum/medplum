@@ -1,6 +1,4 @@
-import { schema } from '../schema';
-import { SearchDefinition, SearchFilterDefinition } from '../model/Search';
-import { PropertyDefinition } from '../model/Resource';
+import { PropertyDefinition, schema, SearchDefinition, SearchFilterDefinition } from 'medplum';
 
 /**
  * Sets the array of filters.
@@ -59,12 +57,17 @@ export function addFilter(
  * @param {string} field The field key name.
  */
 export function addField(definition: SearchDefinition, field: string) {
-  if (definition.fields.includes(field)) {
+  if (definition.fields && definition.fields.includes(field)) {
     return definition;
   }
+  const newFields = [];
+  if (definition.fields) {
+    newFields.push(...definition.fields);
+  }
+  newFields.push(field);
   return {
     ...definition,
-    fields: [...definition.fields, field],
+    fields: newFields,
     name: undefined
   };
 }
@@ -434,8 +437,16 @@ export function getDefaultSearch(): SearchDefinition {
  * @param {string} key The field key.
  * @return {?Object} The field descriptor object.
  */
-export function getField(key: string) {
-  return schema[key] || { key: key, display: key, type: 'string' };
+export function getField(resourceType: string, key: string) {
+  const typeSchema = schema[resourceType];
+  if (typeSchema) {
+    const result = typeSchema.properties[key];
+    if (result) {
+      return result;
+    }
+  }
+  // Otherwise, return surrogat field.
+  return { key: key, display: key, type: 'string' };
 }
 
 /**
@@ -444,9 +455,9 @@ export function getField(key: string) {
  * @param {!Object|!string} field The field object or key.
  * @return {string} A display string for the operation.
  */
-export function getFieldString(field: string | PropertyDefinition): string {
+export function getFieldString(resourceType: string, field: string | PropertyDefinition): string {
   if (typeof field === 'string') {
-    field = getField(field);
+    field = getField(resourceType, field);
   }
 
   return field['display'];
