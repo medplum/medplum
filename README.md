@@ -1,10 +1,10 @@
-# MedPlum
+# Medplum
 
-MedPlum is a healthcare platform that helps you quickly develop high-quality compliant applications.  MedPlum includes a FHIR server, React component library, and developer console.
+Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.  Medplum includes a FHIR server, React component library, and developer console.
 
 ## Projects
 
-MedPlum uses a [monorepo](https://en.wikipedia.org/wiki/Monorepo) structure.
+Medplum uses a [monorepo](https://en.wikipedia.org/wiki/Monorepo) structure.
 Here is a quick summary of the subprojects:
 
 | Folder               | Language     | Type     | Port  | Description                            |
