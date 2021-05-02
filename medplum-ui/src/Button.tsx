@@ -2,24 +2,24 @@ import React from 'react';
 import './Button.css';
 
 export interface ButtonProps {
+  type?: 'button' | 'submit';
   primary?: boolean;
   danger?: boolean;
   size?: 'small' | 'medium' | 'large';
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   children: React.ReactNode;
 }
 
 export const Button = (props: ButtonProps) => {
   const className = 'btn' +
-    (props.primary ? ' btn-primary' : '') +
+    ((props.primary || props.type === 'submit') ? ' btn-primary' : '') +
     (props.danger ? ' btn-danger' : '') +
     (props.size ? ' btn-' + props.size : '');
   return (
     <button
-      type="button"
+      type={props.type || 'button'}
       className={className}
-    >
-      {props.children}
-    </button>
+      onClick={props.onClick}
+    >{props.children}</button>
   );
 };

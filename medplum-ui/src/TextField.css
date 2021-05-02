@@ -1,5 +1,6 @@
 input[type=email],
 input[type=number],
+input[type=password],
 input[type=tel],
 input[type=text],
 input[type=datetime-local],
@@ -15,6 +16,7 @@ select {
 
 input[type=email],
 input[type=number],
+input[type=password],
 input[type=tel],
 input[type=text],
 input[type=datetime-local] {
@@ -24,6 +26,7 @@ input[type=datetime-local] {
 
 input[type=email]:focus,
 input[type=number]:focus,
+input[type=password]:focus,
 input[type=tel]:focus,
 input[type=text]:focus,
 input[type=datetime-local]:focus,
@@ -36,6 +39,7 @@ select:focus {
 
 input[type=email]:disabled,
 input[type=number]:disabled,
+input[type=password]:disabled,
 input[type=tel]:disabled,
 input[type=text]:disabled,
 input[type=datetime-local]:disabled,

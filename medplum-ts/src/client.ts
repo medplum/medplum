@@ -108,6 +108,14 @@ export class MedPlumClient {
     this.profile = undefined;
   }
 
+  get(url: string, blob?: boolean): Promise<any> {
+    return this.fetch('GET', url, undefined, undefined, blob);
+  }
+
+  post(url: string, body: any, contentType?: string): Promise<any> {
+    return this.fetch('POST', url, contentType, body);
+  }
+
   signInWithEmailAndPassword(
     email: string,
     password: string,
@@ -127,6 +135,7 @@ export class MedPlumClient {
     return this.fetch('POST', url, undefined, body)
       .then((response: LoginResponse) => {
         this.setAccessToken(response.accessToken);
+        this.setRefreshToken(response.refreshToken);
         this.setUser(response.user);
         this.setProfile(response.profile);
         return response.user;
@@ -309,14 +318,6 @@ export class MedPlumClient {
           reject(error);
         })
     });
-  }
-
-  private get(url: string, blob?: boolean): Promise<any> {
-    return this.fetch('GET', url, undefined, undefined, blob);
-  }
-
-  private post(url: string, body: any, contentType?: string): Promise<any> {
-    return this.fetch('POST', url, contentType, body);
   }
 
   /**
