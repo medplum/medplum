@@ -23,6 +23,7 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.glassfish.jersey.server.mvc.Viewable;
 
+import com.medplum.fhir.types.ClientApplication;
 import com.medplum.fhir.types.Login;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.server.ConfigSettings;
@@ -68,7 +69,12 @@ public class LoginEndpoint {
 
         validate();
 
-        final OperationOutcome outcome = oauth.login(email, password);
+        final ClientApplication client = oauth.getClient(clientId);
+        if (client == null) {
+            throw new BadRequestException("Invalid client_id");
+        }
+
+        final OperationOutcome outcome = oauth.login(client, email, password);
         if (!outcome.isOk()) {
             return Response.status(Status.BAD_REQUEST)
                     .type(MediaType.TEXT_HTML)

@@ -104,7 +104,7 @@ public class OAuthService {
      * @param password The user's plain text password.
      * @return the user details.
      */
-    public OperationOutcome login(final String email, final String password) {
+    public OperationOutcome login(final ClientApplication client, final String email, final String password) {
         final OperationOutcome outcome = getUserByEmail(email);
         if (!outcome.isOk()) {
             return outcome;
@@ -126,6 +126,7 @@ public class OAuthService {
         }
 
         final Login loginResource = Login.create()
+                .client(client.createReference())
                 .user(user.createReference())
                 .build();
 
