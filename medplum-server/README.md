@@ -65,7 +65,7 @@ aws ecr get-login-password --profile medplum --region us-east-1 | docker login -
 Build the Docker image
 
 ```
-mvn -B -P fargate -DskipTests=true clean package
+mvn -B -P docker -DskipTests=true clean package
 ```
 
 Tag and deploy the new Docker image

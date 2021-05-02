@@ -223,7 +223,7 @@
     </build>
     <profiles>
         <profile>
-            <id>fargate</id>
+            <id>docker</id>
             <build>
                 <plugins>
                     <plugin>
