@@ -1,11 +1,12 @@
 // PKCE auth ased on:
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
-import { encryptSHA256, getRandomString } from "./crypto";
-import { parseJWTPayload } from "./jwt";
-import { Bundle, SearchDefinition } from "./types";
-import { arrayBufferToBase64 } from "./utils";
+import { encryptSHA256, getRandomString } from './crypto';
+import { parseJWTPayload } from './jwt';
+import { Bundle, SearchDefinition } from './types';
+import { arrayBufferToBase64 } from './utils';
 import { Storage } from './storage';
+import { EventTarget } from './eventtarget';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 
@@ -45,6 +46,10 @@ export interface MedPlumClientOptions {
   logoutUrl?: string;
 }
 
+interface User {
+  email: string;
+}
+
 interface LoginRequest {
   clientId: string;
   email: string;
@@ -54,7 +59,7 @@ interface LoginRequest {
 }
 
 interface LoginResponse {
-  user: any;
+  user: User;
   profile: any;
   accessToken: string;
   refreshToken: string;
@@ -70,17 +75,19 @@ interface TokenResponse {
 
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 
-export class MedPlumClient {
+export class MedPlumClient extends EventTarget {
   private readonly storage: Storage;
   private readonly baseUrl: string;
   private readonly clientId: string;
-  private authorizeUrl?: string;
-  private tokenUrl?: string;
-  private logoutUrl?: string;
-  private user?: any;
+  private readonly authorizeUrl: string;
+  private readonly tokenUrl: string;
+  private readonly logoutUrl: string;
+  private user?: User;
   private profile?: any;
 
   constructor(options: MedPlumClientOptions) {
+    super();
+
     if (options.baseUrl && !options.baseUrl.startsWith('http')) {
       throw new Error('Base URL must start with http or https');
     }
@@ -96,6 +103,9 @@ export class MedPlumClient {
     this.storage = new Storage();
     this.baseUrl = options.baseUrl || DEFAULT_BASE_URL;
     this.clientId = options.clientId;
+    this.authorizeUrl = options.authorizeUrl || this.baseUrl + 'oauth2/authorize';
+    this.tokenUrl = options.tokenUrl || this.baseUrl + 'oauth2/token';
+    this.logoutUrl = options.logoutUrl || this.baseUrl + 'oauth2/logout';
   }
 
   /**
@@ -106,6 +116,7 @@ export class MedPlumClient {
     this.storage.clear();
     this.user = undefined;
     this.profile = undefined;
+    this.dispatchEvent(new Event('change'));
   }
 
   get(url: string, blob?: boolean): Promise<any> {
@@ -116,11 +127,19 @@ export class MedPlumClient {
     return this.fetch('POST', url, contentType, body);
   }
 
-  signInWithEmailAndPassword(
+  /**
+   * Tries to sign in with email and password.
+   * @param email
+   * @param password
+   * @param role
+   * @param scope
+   * @returns
+   */
+  signIn(
     email: string,
     password: string,
     role: string,
-    scope: string): Promise<any> {
+    scope: string): Promise<User> {
 
     const url = this.baseUrl + 'auth/login';
 
@@ -132,14 +151,24 @@ export class MedPlumClient {
       scope
     };
 
-    return this.fetch('POST', url, undefined, body)
+    return this.post(url, body)
       .then((response: LoginResponse) => {
         this.setAccessToken(response.accessToken);
         this.setRefreshToken(response.refreshToken);
         this.setUser(response.user);
         this.setProfile(response.profile);
+        this.dispatchEvent(new Event('change'));
         return response.user;
-      })
+      });
+  }
+
+  /**
+   * Signs out locally.
+   * Does not invalidate tokens with the server.
+   */
+  signOut(): Promise<void> {
+    this.clear();
+    return Promise.resolve();
   }
 
   /**
@@ -147,23 +176,22 @@ export class MedPlumClient {
    * Returns true if the user is signed in.
    * This may result in navigating away to the sign in page.
    */
-  signInWithOAuthRedirect(): boolean {
+  signInWithOAuthRedirect(): Promise<User> | undefined {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
       this.requestAuthorization();
+      return undefined;
     } else {
-      this.processCode(code);
+      return this.processCode(code);
     }
-
-    return false;
   }
 
   /**
    * Tries to sign out the user.
    * See: https://docs.aws.amazon.com/cognito/latest/developerguide/logout-endpoint.html
    */
-  signOutWithOAuthRedirect() {
+  signOutWithOAuthRedirect(): void {
     if (!this.logoutUrl) {
       throw new Error('Missing logout URL');
     }
@@ -193,75 +221,75 @@ export class MedPlumClient {
     return this.get(url) as Promise<Bundle>;
   }
 
-  read(resourceType: string, id: string) {
+  read(resourceType: string, id: string): Promise<any> {
     return this.get(this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id));
   }
 
-  readHistory(resourceType: string, id: string) {
+  readHistory(resourceType: string, id: string): Promise<Bundle> {
     return this.get(this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id) + '/_history');
   }
 
-  readPatientEverything(id: string) {
+  readPatientEverything(id: string): Promise<Bundle> {
     return this.get(this.baseUrl + 'fhir/R4/' + 'Patient/' + encodeURIComponent(id) + '/$everything');
   }
 
-  readBlob(url: string) {
+  readBlob(url: string): Promise<Blob> {
     return this.get(url, true);
   }
 
-  readBinary(resourceType: string, id: string) {
+  readBinary(resourceType: string, id: string): Promise<Blob> {
     return this.readBlob(this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id));
   }
 
-  create(resourceType: string, resource: any, contentType?: string) {
+  create(resourceType: string, resource: any, contentType?: string): Promise<any> {
     return this.post(this.baseUrl + 'fhir/R4/' + resourceType, resource, contentType);
   }
 
-  update(resourceType: string, id: string, resource: any) {
+  update(resourceType: string, id: string, resource: any): Promise<any> {
     return this.fetch('PUT', this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id), 'application/fhir+json', resource);
   }
 
-  patch(resourceType: string, id: string, operations: any) {
+  patch(resourceType: string, id: string, operations: any): Promise<any> {
     return this.fetch('PATCH', this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id), 'application/json-patch+json', operations);
   }
 
-  getUser() {
+  getUser(): User | undefined {
     if (!this.user) {
       this.user = this.storage.getObject('user');
     }
     return this.user;
   }
 
-  private setUser(user: any) {
+  private setUser(user: User | undefined): void {
     this.storage.setObject('user', user);
     this.user = user;
   }
 
-  getProfile() {
+  getProfile(): any {
     if (!this.profile) {
       this.profile = this.storage.getObject('profile');
     }
     return this.profile;
   }
 
-  private setProfile(profile: any) {
+  private setProfile(profile: any): void {
     this.storage.setObject('profile', profile);
     this.profile = profile;
   }
 
-  private getAccessToken() {
+  private getAccessToken(): string | undefined {
     return this.storage.getString('accessToken');
   }
 
-  private setAccessToken(accessToken: string) {
+  private setAccessToken(accessToken: string | undefined): void {
     this.storage.setString('accessToken', accessToken);
   }
 
-  private getRefreshToken() {
+  private getRefreshToken(): string | undefined {
     return this.storage.getString('refreshToken');
   }
 
-  private setRefreshToken(refreshToken: string) {
+  private setRefreshToken(refreshToken: string | undefined): void {
     this.storage.setString('refreshToken', refreshToken);
   }
 
@@ -363,7 +391,7 @@ export class MedPlumClient {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
    * @param code The authorization code received by URL parameter.
    */
-  private async processCode(code: string) {
+  private processCode(code: string): Promise<User> {
     console.log('Processing authorization code...');
 
     const pkceState = sessionStorage.getItem('pkceState');
@@ -378,7 +406,7 @@ export class MedPlumClient {
       throw new Error('Invalid PCKE code verifier');
     }
 
-    await this.fetchTokens(
+    return this.fetchTokens(
       'grant_type=authorization_code' +
       '&client_id=' + encodeURIComponent(this.clientId) +
       '&code_verifier=' + encodeURIComponent(codeVerifier) +
@@ -408,7 +436,7 @@ export class MedPlumClient {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
    * @param formBody Token parameters in URL encoded format.
    */
-  private async fetchTokens(formBody: string) {
+  private async fetchTokens(formBody: string): Promise<User> {
     if (!this.tokenUrl) {
       throw new Error('Missing token URL');
     }
@@ -421,7 +449,8 @@ export class MedPlumClient {
         body: formBody
       })
       .then(response => response.json())
-      .then(tokens => this.verifyTokens(tokens));
+      .then(tokens => this.verifyTokens(tokens))
+      .then(() => this.getUser() as User);
   }
 
   /**
@@ -450,14 +479,6 @@ export class MedPlumClient {
 
     this.setAccessToken(token);
     this.setRefreshToken(tokens.refresh_token);
-    this.fetchUser();
-  }
-
-  /**
-   * Fetches the user data from the API server.
-   */
-  private fetchUser() {
-    console.log('Requesting user details...');
   }
 }
 

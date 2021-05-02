@@ -1,6 +1,7 @@
 import { Meta } from '@storybook/react';
-import { MedPlumClient } from 'medplum';
 import React from 'react';
+import { Button } from '../Button';
+import { useAuth } from '../MedPlumProvider';
 import { SignInForm, SignInFormProps } from '../SignInForm';
 
 export default {
@@ -8,11 +9,16 @@ export default {
   component: SignInForm,
 } as Meta;
 
-const medplum = (window as any).medplum as MedPlumClient;
-
-export const Basic = (args: SignInFormProps) => (
-  <>
-  <pre>User: {JSON.stringify(medplum.getUser())}</pre>
-  <SignInForm onSuccess={() => alert('Success!')} />
-  </>
-);
+export function Basic(args: SignInFormProps) {
+  const auth = useAuth();
+  return (auth.user ? (
+    <div>
+      <pre>User: {JSON.stringify(auth.user)}</pre>
+      <Button onClick={() => auth.medplum.signOut().then(() => alert('Signed out!'))}>
+        Sign out
+      </Button>
+    </div>
+  ) : (
+    <SignInForm onSuccess={() => alert('Signed in!')} />
+  ));
+}

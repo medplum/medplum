@@ -1,5 +1,5 @@
 import { MedPlumClient } from 'medplum';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 /*
  * Based on:
@@ -10,47 +10,10 @@ interface User {
   email: string;
 }
 
-interface SignInFormData {
-  email: string;
-  password: string;
-}
-
-interface RegisterFormData {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-}
-
-interface ForgotPasswordFormData {
-  email: string;
-}
-
-interface ResetPasswordFormData {
-  id: string;
-  code: string;
-  password: string;
-}
-
-interface ChangePasswordFormData {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
-
 interface Auth {
   medplum: MedPlumClient;
   user?: User;
   loading: boolean;
-  setUser: (user: User) => void;
-  signin: (formData: SignInFormData) => Promise<User>;
-  register: (formData: RegisterFormData) => Promise<User>;
-  signout: () => Promise<void>;
-  forgotPassword: (formData: ForgotPasswordFormData) => Promise<void>;
-  resetPassword: (formData: ResetPasswordFormData) => Promise<User>;
-  changePassword: (formData: ChangePasswordFormData) => Promise<User>;
 }
 
 const context = createContext(undefined as Auth | undefined);
@@ -89,64 +52,15 @@ export function useMedPlum(): MedPlumClient {
  */
 function createAuth(medplum: MedPlumClient): Auth {
   const [state, setState] = useState({
-    user: undefined as User | undefined,
-    loading: true
+    user: medplum.getUser(),
+    loading: false
   });
 
-  const setUser = (user: User | undefined) => {
-    setState({ user, loading: false });
-  }
+  useEffect(() => {
+    const eventListener = () => setState({ ...state, user: medplum.getUser() });
+    medplum.addEventListener('change', eventListener);
+    return () => medplum.removeEventListeneer('change', eventListener);
+  }, []);
 
-  const signin = (formData: SignInFormData) => {
-    setState({ user: undefined, loading: true });
-    return medplum.post('auth/signin', formData)
-      .then((result: any) => {
-        setUser(result.user);
-        return result.user;
-      });
-  };
-
-  const register = (formData: RegisterFormData) => {
-    setState({ user: undefined, loading: true });
-    return medplum.post('auth/register', formData)
-      .then((result: any) => {
-        setUser(result.user);
-        return result.user;
-      });
-  };
-
-  const signout = () => {
-    setUser(undefined);
-    localStorage.clear();
-    return medplum.post('auth/signout', {});
-  };
-
-  const forgotPassword = (formData: ForgotPasswordFormData) => {
-    return medplum.post('auth/forgotpassword', formData);
-  };
-
-  const resetPassword = (formData: ResetPasswordFormData) => {
-    setState({ user: undefined, loading: true });
-    return medplum.post('auth/resetpassword', formData)
-      .then((result: any) => {
-        setUser(result.user);
-        return result.user;
-      });
-  };
-
-  const changePassword = (formData: ChangePasswordFormData) => {
-    return medplum.post('auth/changepassword', formData);
-  };
-
-  return {
-    ...state,
-    medplum,
-    setUser,
-    signin,
-    register,
-    signout,
-    forgotPassword,
-    resetPassword,
-    changePassword,
-  };
+  return { ...state, medplum };
 }

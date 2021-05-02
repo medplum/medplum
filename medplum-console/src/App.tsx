@@ -1,5 +1,6 @@
+import { MedPlumClient } from 'medplum';
 import {
-  AuthProvider,
+  MedPlumProvider,
   Autocomplete,
   Button,
   CssBaseline,
@@ -13,9 +14,14 @@ import React from 'react';
 import { Router } from 'react-router-dom';
 import { history } from './history';
 
+const medplum = new MedPlumClient({
+  baseUrl: 'http://localhost:5000/',
+  clientId: 'f051b8ed-105d-4e81-8ddc-c5c2af12f9d3',
+});
+
 export default function App() {
   return (
-    <AuthProvider>
+    <MedPlumProvider medplum={medplum}>
       <Router history={history}>
         <CssBaseline />
         <DefaultTheme />
@@ -34,6 +40,6 @@ export default function App() {
           <Button>Submit</Button>
         </Document>
       </Router>
-    </AuthProvider>
+    </MedPlumProvider>
   );
 }

@@ -1,8 +1,8 @@
-import { MedPlumClient } from 'medplum';
 import React from 'react';
 import { Button } from './Button';
 import { FormSection } from "./FormSection";
 import { parseForm } from './FormUtils';
+import { useMedPlum } from './MedPlumProvider';
 import { TextField } from './TextField';
 
 export interface SignInFormProps {
@@ -12,6 +12,7 @@ export interface SignInFormProps {
 }
 
 export function SignInForm(props: SignInFormProps) {
+  const medplum = useMedPlum();
   const role = props.role || 'practitioner';
   const scope = props.scope || 'launch/patient openid fhirUser offline_access user/*.*';
 
@@ -20,8 +21,7 @@ export function SignInForm(props: SignInFormProps) {
       e.preventDefault();
 
       const formData = parseForm(e.target as HTMLFormElement);
-      const medplum = (window as any).medplum as MedPlumClient;
-      medplum.signInWithEmailAndPassword(formData['email'], formData['password'], role, scope)
+      medplum.signIn(formData.email, formData.password, role, scope)
         .then(() => {
           if (props.onSuccess) {
             props.onSuccess();
