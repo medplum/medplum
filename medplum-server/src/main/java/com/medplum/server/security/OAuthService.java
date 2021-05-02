@@ -118,11 +118,11 @@ public class OAuthService {
         final User user = bundle.entry().get(0).resource(User.class);
         final String passwordHash = user.passwordHash();
         if (passwordHash == null || passwordHash.isBlank()) {
-            return StandardOperations.security("User does not have a password");
+            return StandardOperations.invalid("User does not have a password");
         }
 
         if (!BCrypt.checkpw(password, passwordHash)) {
-            return StandardOperations.security("Bad password");
+            return StandardOperations.invalid("Bad password");
         }
 
         final Login loginResource = Login.create()
