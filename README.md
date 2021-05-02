@@ -39,7 +39,7 @@ mvn clean install
 Install and build the Node projects:
 
 ```
-npm install --legacy-peer-deps
+npm ci
 npm run build --workspaces
 ```
 
