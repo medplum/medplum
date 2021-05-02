@@ -8,7 +8,8 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "webpack serve --mode development",
-    "build": "webpack --mode production",
+    "build": "cross-env NODE_ENV=production webpack --mode production",
+    "debug": "webpack --mode development",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
@@ -22,6 +23,7 @@
     "@types/react-dom": "^17.0.3",
     "@types/react-router-dom": "^5.1.7",
     "babel-loader": "^8.2.2",
+    "cross-env": "^7.0.3",
     "css-loader": "^5.2.4",
     "html-webpack-plugin": "^5.3.1",
     "medplum": "^0.0.1",

@@ -40,5 +40,10 @@ module.exports = {
     historyApiFallback: {
       index: 'index.html'
     }
+  },
+  optimization: {
+    usedExports: true,
+    innerGraph: true,
+    sideEffects: true,
   }
 };

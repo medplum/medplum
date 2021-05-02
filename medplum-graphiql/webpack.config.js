@@ -49,4 +49,9 @@ module.exports = {
     // these to 127.0.0.1 in /etc/hosts
     allowedHosts: ['local.test.com', 'graphiql.com'],
   },
+  optimization: {
+    usedExports: true,
+    innerGraph: true,
+    sideEffects: true,
+  }
 };
