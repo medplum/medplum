@@ -1,4 +1,3 @@
-export * from './auth';
-export * from './fhirclient';
+export * from './client';
 export * from './schema';
 export * from './types';
