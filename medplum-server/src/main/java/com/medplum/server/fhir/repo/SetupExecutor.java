@@ -39,7 +39,7 @@ public class SetupExecutor {
         }
 
         final Organization organization = repo.create(SecurityUser.SYSTEM_USER, Organization.create()
-                .name("MedPlum")
+                .name("Medplum")
                 .build())
                 .resource(Organization.class);
 

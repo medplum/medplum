@@ -1,4 +1,4 @@
-# MedPlum Server
+# Medplum Server
 
 ## Configuration
 
@@ -16,14 +16,14 @@ A repository is responsible for storing and retrieving data.  It must be able to
 
 A repository can be separated into "Storage" and "Search".
 
-MedPlum currently has two implementations:
+Medplum currently has two implementations:
 
 * "memory" - In-memory storage.  Fast and good for testing.  All data is lost when the server stops.
 * "mongodb" - MongoDB storage.  Compatible with AWS DocumentDB, Azure Cosmos, and Google Cloud MongoDB Atlas.
 
 ### Security
 
-MedPlum current has two implementations:
+Medplum current has two implementations:
 
 * "embedded" - Use the FHIR repository for storage.  Use the server itself for OAuth2 and SMART-on-FHIR.
 * "remote" - Use a remote OAuth2 server.  Compatible with AWS Cognito and Auth0.

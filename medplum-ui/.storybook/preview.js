@@ -1,5 +1,5 @@
-import { MedPlumClient } from 'medplum';
-import { MedPlumProvider } from '../src/MedPlumProvider';
+import { MedplumClient } from 'medplum';
+import { MedplumProvider } from '../src/MedplumProvider';
 import '../src/CssBaseline.css';
 import '../src/DefaultTheme.css';
 
@@ -13,15 +13,15 @@ export const parameters = {
   },
 }
 
-const medplum = new MedPlumClient({
+const medplum = new MedplumClient({
   baseUrl: 'http://localhost:5000/',
   clientId: 'f051b8ed-105d-4e81-8ddc-c5c2af12f9d3'
 });
 
 export const decorators = [
   (Story) => (
-    <MedPlumProvider medplum={medplum}>
+    <MedplumProvider medplum={medplum}>
       <Story />
-    </MedPlumProvider>
+    </MedplumProvider>
   ),
 ];

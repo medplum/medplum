@@ -1,4 +1,4 @@
-# MedPlum CDK
+# Medplum CDK
 
 This project contains the [AWS CDK](https://aws.amazon.com/cdk/) configuration for AWS deployments.
 

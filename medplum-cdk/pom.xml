@@ -87,7 +87,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <mainClass>com.medplum.cdk.MedPlumApp</mainClass>
+                    <mainClass>com.medplum.cdk.MedplumApp</mainClass>
                 </configuration>
             </plugin>
         </plugins>

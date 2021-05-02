@@ -1,6 +1,6 @@
 import React from 'react';
 import { Logo } from './Logo';
-import { useAuth } from './MedPlumProvider';
+import { useAuth } from './MedplumProvider';
 import './Header.css';
 
 export interface HeaderProps {
@@ -14,7 +14,7 @@ export function Header(props: HeaderProps) {
   return (
     <header>
       <div>
-        <a href="#"><Logo width={24} height={24} />MedPlum</a>
+        <a href="#"><Logo width={24} height={24} />Medplum</a>
       </div>
       <div>
         {auth.user ? (

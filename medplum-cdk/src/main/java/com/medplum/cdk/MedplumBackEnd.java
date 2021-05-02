@@ -58,10 +58,10 @@ import software.amazon.awscdk.services.ssm.ParameterTier;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.amazon.awscdk.services.ssm.StringParameterProps;
 
-public class MedPlumBackEnd extends Construct {
+public class MedplumBackEnd extends Construct {
     private static final String API_CERTIFICATE_ARN = "arn:aws:acm:us-east-1:647991932601:certificate/08bf1daf-3a2b-4cbe-91a0-739b4364a1ec";
 
-    public MedPlumBackEnd(final Construct scope, final String id) {
+    public MedplumBackEnd(final Construct scope, final String id) {
         super(scope, id);
 
         final String medplumName = "prod";
@@ -129,14 +129,14 @@ public class MedPlumBackEnd extends Construct {
 
         final var logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
                 .logGroup(logGroup)
-                .streamPrefix("MedPlum")
+                .streamPrefix("Medplum")
                 .build());
 
         // ECR
-        final var serviceRepo = Repository.fromRepositoryName(this, "MedPlumRepo", "medplum-server");
+        final var serviceRepo = Repository.fromRepositoryName(this, "MedplumRepo", "medplum-server");
 
         // Task Container
-        final var containerDefinition = taskDefinition.addContainer("MedPlumTaskDefinition", ContainerDefinitionOptions.builder()
+        final var containerDefinition = taskDefinition.addContainer("MedplumTaskDefinition", ContainerDefinitionOptions.builder()
                 .image(ContainerImage.fromEcrRepository(serviceRepo, "latest"))
                 .command(singletonList(medplumName))
                 .logging(logDriver)
@@ -150,7 +150,7 @@ public class MedPlumBackEnd extends Construct {
         // Security Groups
         final var securityGroup = new SecurityGroup(this, "ServiceSecurityGroup", SecurityGroupProps.builder()
                 .allowAllOutbound(true)
-                .securityGroupName("MedPlumSecurityGroup")
+                .securityGroupName("MedplumSecurityGroup")
                 .vpc(vpc)
                 .build());
 

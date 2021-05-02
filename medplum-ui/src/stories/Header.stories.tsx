@@ -3,7 +3,7 @@ import React from 'react';
 import { Header, HeaderProps } from '../Header';
 
 export default {
-  title: 'MedPlum/Header',
+  title: 'Medplum/Header',
   component: Header,
 } as Meta;
 

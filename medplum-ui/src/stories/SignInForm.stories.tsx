@@ -1,11 +1,11 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Button } from '../Button';
-import { useAuth } from '../MedPlumProvider';
+import { useAuth } from '../MedplumProvider';
 import { SignInForm, SignInFormProps } from '../SignInForm';
 
 export default {
-  title: 'MedPlum/SignInForm',
+  title: 'Medplum/SignInForm',
   component: SignInForm,
 } as Meta;
 

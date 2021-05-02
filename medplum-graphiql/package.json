@@ -1,8 +1,8 @@
 {
   "name": "medplum-graphiql",
   "version": "0.0.1",
-  "description": "MedPlum GraphiQL",
-  "author": "MedPlum <hello@medplum.com>",
+  "description": "Medplum GraphiQL",
+  "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "webpack serve --mode development",

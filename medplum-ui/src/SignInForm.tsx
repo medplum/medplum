@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from './Button';
 import { FormSection } from "./FormSection";
 import { parseForm } from './FormUtils';
-import { useMedPlum } from './MedPlumProvider';
+import { useMedplum } from './MedplumProvider';
 import { TextField } from './TextField';
 
 export interface SignInFormProps {
@@ -12,7 +12,7 @@ export interface SignInFormProps {
 }
 
 export function SignInForm(props: SignInFormProps) {
-  const medplum = useMedPlum();
+  const medplum = useMedplum();
   const role = props.role || 'practitioner';
   const scope = props.scope || 'launch/patient openid fhirUser offline_access user/*.*';
 

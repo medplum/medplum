@@ -1,8 +1,8 @@
 {
   "name": "medplum",
   "version": "0.0.1",
-  "description": "MedPlum TS/JS Library",
-  "author": "MedPlum <hello@medplum.com>",
+  "description": "Medplum TS/JS Library",
+  "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "start-storybook -p 6006",

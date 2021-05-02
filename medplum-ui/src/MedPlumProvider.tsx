@@ -1,4 +1,4 @@
-import { MedPlumClient } from 'medplum';
+import { MedplumClient } from 'medplum';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 /*
@@ -11,15 +11,15 @@ interface User {
 }
 
 interface Auth {
-  medplum: MedPlumClient;
+  medplum: MedplumClient;
   user?: User;
   loading: boolean;
 }
 
 const context = createContext(undefined as Auth | undefined);
 
-export interface MedPlumProviderProps {
-  medplum: MedPlumClient;
+export interface MedplumProviderProps {
+  medplum: MedplumClient;
   children: React.ReactNode;
 }
 
@@ -27,7 +27,7 @@ export interface MedPlumProviderProps {
  * The ProvideAuth component wraps the app,
  * providing auth context.
  */
-export function MedPlumProvider(props: MedPlumProviderProps) {
+export function MedplumProvider(props: MedplumProviderProps) {
   const auth = createAuth(props.medplum);
   return <context.Provider value={auth}>{props.children}</context.Provider>;
 }
@@ -40,17 +40,17 @@ export function useAuth(): Auth {
 }
 
 /**
- * Returns the MedPlumClient instance.
+ * Returns the MedplumClient instance.
  * This is just a shortcut for useAuth().medplum.
  */
-export function useMedPlum(): MedPlumClient {
+export function useMedplum(): MedplumClient {
   return useAuth().medplum;
 }
 
 /**
  * Creates the auth object that handles user state.
  */
-function createAuth(medplum: MedPlumClient): Auth {
+function createAuth(medplum: MedplumClient): Auth {
   const [state, setState] = useState({
     user: medplum.getUser(),
     loading: false

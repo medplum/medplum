@@ -3,7 +3,7 @@ import React from 'react';
 import { TextField, TextFieldProps } from '../TextField';
 
 export default {
-  title: 'MedPlum/TextField',
+  title: 'Medplum/TextField',
   component: TextField,
 } as Meta;
 

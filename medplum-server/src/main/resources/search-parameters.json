@@ -65419,7 +65419,7 @@
       "status" : "draft",
       "experimental" : false,
       "date" : "2019-11-01T09:29:23+11:00",
-      "publisher" : "MedPlum",
+      "publisher" : "Medplum",
       "contact" : [{
         "telecom" : [{
           "system" : "url",
@@ -65455,7 +65455,7 @@
       "status" : "draft",
       "experimental" : false,
       "date" : "2019-11-01T09:29:23+11:00",
-      "publisher" : "MedPlum",
+      "publisher" : "Medplum",
       "contact" : [{
         "telecom" : [{
           "system" : "url",

@@ -10,7 +10,7 @@ import { EventTarget } from './eventtarget';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 
-export interface MedPlumClientOptions {
+export interface MedplumClientOptions {
   /**
    * The client ID.
    * Required.
@@ -20,7 +20,7 @@ export interface MedPlumClientOptions {
   /**
    * Base server URL.
    * Optional.  Default value is "https://api.medplum.com/".
-   * Use this to point to a custom MedPlum deployment.
+   * Use this to point to a custom Medplum deployment.
    */
   baseUrl: string;
 
@@ -75,7 +75,7 @@ interface TokenResponse {
 
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 
-export class MedPlumClient extends EventTarget {
+export class MedplumClient extends EventTarget {
   private readonly storage: Storage;
   private readonly baseUrl: string;
   private readonly clientId: string;
@@ -85,7 +85,7 @@ export class MedPlumClient extends EventTarget {
   private user?: User;
   private profile?: any;
 
-  constructor(options: MedPlumClientOptions) {
+  constructor(options: MedplumClientOptions) {
     super();
 
     if (options.baseUrl && !options.baseUrl.startsWith('http')) {

@@ -1,8 +1,8 @@
 {
   "name": "medplum-ui",
   "version": "0.0.1",
-  "description": "MedPlum React Component Library",
-  "author": "MedPlum <hello@medplum.com>",
+  "description": "Medplum React Component Library",
+  "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "start-storybook -p 6006",

@@ -9,7 +9,7 @@
     <artifactId>medplum-generator</artifactId>
     <packaging>jar</packaging>
     <name>medplum-generator</name>
-    <description>MedPlum code generator</description>
+    <description>Medplum code generator</description>
     <dependencies>
         <dependency>
             <groupId>org.apache.commons</groupId>

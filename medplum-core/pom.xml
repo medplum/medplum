@@ -9,7 +9,7 @@
     <artifactId>medplum-core</artifactId>
     <packaging>jar</packaging>
     <name>medplum-core</name>
-    <description>MedPlum core types and utilities</description>
+    <description>Medplum core types and utilities</description>
     <dependencies>
         <dependency>
             <groupId>jakarta.json</groupId>

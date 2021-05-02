@@ -4,7 +4,7 @@ import { FormSection, FormSectionProps } from '../FormSection';
 import { TextField } from '../TextField';
 
 export default {
-  title: 'MedPlum/FormSection',
+  title: 'Medplum/FormSection',
   component: FormSection,
 } as Meta;
 

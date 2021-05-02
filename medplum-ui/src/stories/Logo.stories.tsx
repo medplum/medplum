@@ -3,7 +3,7 @@ import React from 'react';
 import { Logo } from '../Logo';
 
 export default {
-  title: 'MedPlum/Logo',
+  title: 'Medplum/Logo',
   component: Logo,
 } as Meta;
 

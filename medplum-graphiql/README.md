@@ -1,1 +1,1 @@
-## MedPlum GraphiQL
+## Medplum GraphiQL

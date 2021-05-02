@@ -3,7 +3,7 @@ import React from 'react';
 import { Button, ButtonProps } from '../Button';
 
 export default {
-  title: 'MedPlum/Button',
+  title: 'Medplum/Button',
   component: Button,
 } as Meta;
 

@@ -107,7 +107,7 @@ public class RegisterEndpoint {
 
         // 4) Email the user with next step instructions
         final StringBuilder body = new StringBuilder();
-        body.append("Welcome to MedPlum!\n");
+        body.append("Welcome to Medplum!\n");
         body.append("\n");
         body.append("Click this link to confirm your email address:\n");
         body.append("\n");

@@ -1,7 +1,7 @@
-import { Bundle, MedPlumClient } from 'medplum';
+import { Bundle, MedplumClient } from 'medplum';
 import React, { useEffect, useRef, useState } from 'react';
 import './Autocomplete.css';
-import { useMedPlum } from './MedPlumProvider';
+import { useMedplum } from './MedplumProvider';
 
 interface AutocompleteResource {
   id: string,
@@ -28,7 +28,7 @@ interface AutocompleteState {
 }
 
 export function Autocomplete(props: AutocompleteProps) {
-  const medplum = useMedPlum();
+  const medplum = useMedplum();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [state, setState] = useState({

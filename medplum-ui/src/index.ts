@@ -6,7 +6,7 @@ export * from './Document';
 export * from './FormSection';
 export * from './Header';
 export * from './Logo';
-export * from './MedPlumProvider';
+export * from './MedplumProvider';
 export * from './MenuItem';
 export * from './Page';
 export * from './PopupMenu';

@@ -9,7 +9,7 @@
     <artifactId>medplum-server</artifactId>
     <packaging>jar</packaging>
     <name>medplum-server</name>
-    <description>MedPlum server</description>
+    <description>Medplum server</description>
     <dependencies>
         <dependency>
             <groupId>ch.qos.logback</groupId>

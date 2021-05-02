@@ -1,4 +1,4 @@
-import { MedPlumClient, schema, SearchDefinition, SearchFilterDefinition, SearchResponse } from 'medplum';
+import { MedplumClient, schema, SearchDefinition, SearchFilterDefinition, SearchResponse } from 'medplum';
 import React from 'react';
 import { SearchChangeEvent, SearchClickEvent, SearchLoadEvent } from './SearchControlEvent';
 import { SearchPopupMenu } from './SearchPopupMenu';
@@ -154,7 +154,7 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
   }
 
   private requestResources() {
-    const medplum = (window as any).medplum as MedPlumClient;
+    const medplum = (window as any).medplum as MedplumClient;
     medplum.search(this.props.search)
       .then(response => {
         this.setState({ searchResponse: response as SearchResponse });

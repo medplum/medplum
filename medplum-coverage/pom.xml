@@ -9,7 +9,7 @@
     <artifactId>medplum-coverage</artifactId>
     <packaging>pom</packaging>
     <name>medplum-coverage</name>
-    <description>MedPlum coverage</description>
+    <description>Medplum coverage</description>
     <dependencies>
         <dependency>
             <groupId>com.medplum</groupId>

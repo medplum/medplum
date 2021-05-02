@@ -7,12 +7,12 @@
   },
   "url": "http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server",
   "version": "0.0.1",
-  "name": "MedPlumCapabilityStatement",
-  "title": "MedPlum CapabilityStatement",
+  "name": "MedplumCapabilityStatement",
+  "title": "Medplum CapabilityStatement",
   "status": "active",
   "experimental": false,
   "date": "2021-01-12",
-  "publisher": "MedPlum",
+  "publisher": "Medplum",
   "contact": [
     {
       "telecom": [
@@ -23,7 +23,7 @@
       ]
     }
   ],
-  "description": "The MedPlum FHIR Capability Statement",
+  "description": "The Medplum FHIR Capability Statement",
   "jurisdiction": [
     {
       "coding": [

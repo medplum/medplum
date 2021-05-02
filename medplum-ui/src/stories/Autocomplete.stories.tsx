@@ -3,7 +3,7 @@ import React from 'react';
 import { Autocomplete, AutocompleteProps } from '../Autocomplete';
 
 export default {
-  title: 'MedPlum/Autocomplete',
+  title: 'Medplum/Autocomplete',
   component: Autocomplete,
 } as Meta;
 

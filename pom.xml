@@ -6,10 +6,10 @@
     <version>0.0.4-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>medplum</name>
-    <description>MedPlum</description>
+    <description>Medplum</description>
     <url>https://medplum.com/maven/${project.version}</url>
     <organization>
-        <name>MedPlum</name>
+        <name>Medplum</name>
         <url>https://medplum.com</url>
     </organization>
     <licenses>
@@ -24,7 +24,7 @@
             <name>Cody Ebberson</name>
             <email>cody@ebberson.com</email>
             <url>https://cody.ebberson.com</url>
-            <organization>MedPlum</organization>
+            <organization>Medplum</organization>
             <organizationUrl>https://www.medplum.com</organizationUrl>
             <timezone>America/Los_Angeles</timezone>
         </developer>
@@ -33,7 +33,7 @@
             <name>Reshma Khilnani</name>
             <email>reshma.khilnani@gmail.com</email>
             <url>https://reshmakhilnani.com</url>
-            <organization>MedPlum</organization>
+            <organization>Medplum</organization>
             <organizationUrl>https://www.medplum.com</organizationUrl>
             <timezone>America/Los_Angeles</timezone>
         </developer>

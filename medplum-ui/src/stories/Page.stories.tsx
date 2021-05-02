@@ -4,7 +4,7 @@ import { Page, PageProps } from '../Page';
 import * as HeaderStories from './Header.stories';
 
 export default {
-  title: 'MedPlum/Page',
+  title: 'Medplum/Page',
   component: Page,
 } as Meta;
 
