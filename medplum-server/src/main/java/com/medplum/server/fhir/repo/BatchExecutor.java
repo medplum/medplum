@@ -17,7 +17,7 @@ import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import jakarta.ws.rs.core.Response.Status;
 
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 import com.medplum.fhir.types.Bundle;
 import com.medplum.fhir.types.Bundle.BundleEntry;
 import com.medplum.fhir.types.Bundle.BundleResponse;
@@ -37,21 +37,21 @@ public class BatchExecutor {
 
         final String bundleType = bundle.type();
         if (bundleType == null || bundleType.isBlank()) {
-            return StandardOperations.invalid("Missing bundle type");
+            return StandardOutcomes.invalid("Missing bundle type");
         }
 
         if (!bundleType.equals("batch") && !bundleType.equals("transaction")) {
-            return StandardOperations.invalid("Unrecognized bundle type '" + bundleType + "'");
+            return StandardOutcomes.invalid("Unrecognized bundle type '" + bundleType + "'");
         }
 
         final List<BundleEntry> entries = bundle.entry();
         if (entries == null) {
-            return StandardOperations.invalid("Missing bundle entry");
+            return StandardOutcomes.invalid("Missing bundle entry");
         }
 
         final Map<String, String> ids = findIds(entries);
         if (!ids.isEmpty() && !bundleType.equals("transaction")) {
-            return StandardOperations.invalid("Can only use local IDs ('urn:uuid:') in transaction");
+            return StandardOutcomes.invalid("Can only use local IDs ('urn:uuid:') in transaction");
         }
 
         final List<BundleEntry> result = new ArrayList<>();
@@ -70,7 +70,7 @@ public class BatchExecutor {
                     .build());
         }
 
-        return StandardOperations.ok(Bundle.create().type(bundleType + "-response").entry(result).build());
+        return StandardOutcomes.ok(Bundle.create().type(bundleType + "-response").entry(result).build());
     }
 
     private static Map<String, String> findIds(final List<BundleEntry> entries) {

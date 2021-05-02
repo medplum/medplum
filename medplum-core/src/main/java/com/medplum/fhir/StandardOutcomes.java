@@ -12,7 +12,7 @@ import com.medplum.fhir.types.CodeableConcept;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.fhir.types.OperationOutcome.OperationOutcomeIssue;
 
-public class StandardOperations {
+public class StandardOutcomes {
     public static final String ALL_OK_ID = "allok";
     public static final String ALL_OK_MSG = "All OK";
     public static final String CREATED_ID = "created";

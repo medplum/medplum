@@ -24,7 +24,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 import com.medplum.fhir.types.Bundle;
 import com.medplum.fhir.types.ClientApplication;
 import com.medplum.fhir.types.FhirResource;
@@ -112,17 +112,17 @@ public class OAuthService {
 
         final Bundle bundle = outcome.resource(Bundle.class);
         if (bundle.entry().isEmpty()) {
-            return StandardOperations.notFound();
+            return StandardOutcomes.notFound();
         }
 
         final User user = bundle.entry().get(0).resource(User.class);
         final String passwordHash = user.passwordHash();
         if (passwordHash == null || passwordHash.isBlank()) {
-            return StandardOperations.invalid("User does not have a password");
+            return StandardOutcomes.invalid("User does not have a password");
         }
 
         if (!BCrypt.checkpw(password, passwordHash)) {
-            return StandardOperations.invalid("Bad password");
+            return StandardOutcomes.invalid("Bad password");
         }
 
         final Login loginResource = Login.create()
@@ -136,7 +136,7 @@ public class OAuthService {
     public OperationOutcome getLoginProfile(final Login login) {
         final Reference reference = login.user();
         if (reference == null || reference.reference() == null || !reference.reference().startsWith(User.RESOURCE_TYPE)) {
-            return StandardOperations.invalid("Missing login user");
+            return StandardOutcomes.invalid("Missing login user");
         }
 
         final OperationOutcome outcome = repo.readReference(SecurityUser.SYSTEM_USER, reference);
@@ -146,13 +146,13 @@ public class OAuthService {
 
         final Reference profileReference = login.profile();
         if (profileReference == null) {
-            return StandardOperations.invalid("Missing login profile");
+            return StandardOutcomes.invalid("Missing login profile");
         }
 
         final User user = outcome.resource(User.class);
         if (!profileReference.reference().equals(user.patient().reference()) &&
                 !profileReference.reference().equals(user.practitioner().reference())) {
-            return StandardOperations.invalid("Invalid login profile");
+            return StandardOutcomes.invalid("Invalid login profile");
         }
 
         return repo.readReference(SecurityUser.SYSTEM_USER, profileReference);

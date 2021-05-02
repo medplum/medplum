@@ -9,7 +9,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 
 public class OperationOutcome extends FhirResource {
     public static final String RESOURCE_TYPE = "OperationOutcome";
@@ -40,7 +40,7 @@ public class OperationOutcome extends FhirResource {
 
     public boolean isOk() {
         final String id = id();
-        return id.equals(StandardOperations.ALL_OK_ID) || id.equals(StandardOperations.CREATED_ID);
+        return id.equals(StandardOutcomes.ALL_OK_ID) || id.equals(StandardOutcomes.CREATED_ID);
     }
 
     /**

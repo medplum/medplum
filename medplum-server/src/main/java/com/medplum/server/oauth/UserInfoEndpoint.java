@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 import com.medplum.fhir.types.ContactPoint;
 import com.medplum.fhir.types.FhirResource;
 import com.medplum.fhir.types.HumanName;
@@ -62,7 +62,7 @@ public class UserInfoEndpoint {
             throw new NotAuthorizedException(
                     Response.status(Status.UNAUTHORIZED)
                         .type(FhirMediaType.APPLICATION_FHIR_JSON)
-                        .entity(StandardOperations.security("Access denied"))
+                        .entity(StandardOutcomes.security("Access denied"))
                         .build());
         }
     }

@@ -15,14 +15,14 @@ public class FhirSchemaTest {
     public void testNullResourceType() {
         final OperationOutcome outcome = FhirSchema.validate((String) null);
         assertFalse(outcome.isOk());
-        assertEquals(StandardOperations.CODE_INVALID, outcome.issue().get(0).code());
+        assertEquals(StandardOutcomes.CODE_INVALID, outcome.issue().get(0).code());
     }
 
     @Test
     public void testNullResource() {
         final OperationOutcome outcome = FhirSchema.validate((JsonObject) null);
         assertFalse(outcome.isOk());
-        assertEquals(StandardOperations.CODE_INVALID, outcome.issue().get(0).code());
+        assertEquals(StandardOutcomes.CODE_INVALID, outcome.issue().get(0).code());
     }
 
     @Test
@@ -30,7 +30,7 @@ public class FhirSchemaTest {
         final JsonObject resource = Json.createObjectBuilder().build();
         final OperationOutcome outcome = FhirSchema.validate(resource);
         assertFalse(outcome.isOk());
-        assertEquals(StandardOperations.CODE_INVALID, outcome.issue().get(0).code());
+        assertEquals(StandardOutcomes.CODE_INVALID, outcome.issue().get(0).code());
     }
 
     @Test
@@ -38,7 +38,7 @@ public class FhirSchemaTest {
         final JsonObject resource = Json.createObjectBuilder().add("resourceType", "").build();
         final OperationOutcome outcome = FhirSchema.validate(resource);
         assertFalse(outcome.isOk());
-        assertEquals(StandardOperations.CODE_INVALID, outcome.issue().get(0).code());
+        assertEquals(StandardOutcomes.CODE_INVALID, outcome.issue().get(0).code());
     }
 
     @Test
@@ -46,7 +46,7 @@ public class FhirSchemaTest {
         final JsonObject resource = Json.createObjectBuilder().add("resourceType", "foo").build();
         final OperationOutcome outcome = FhirSchema.validate(resource);
         assertFalse(outcome.isOk());
-        assertEquals(StandardOperations.CODE_INVALID, outcome.issue().get(0).code());
+        assertEquals(StandardOutcomes.CODE_INVALID, outcome.issue().get(0).code());
     }
 
     @Test

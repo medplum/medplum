@@ -142,7 +142,7 @@ public class Generator {
 
         if (fhirType.getOutputName().equals("OperationOutcome")) {
             b.newLine();
-            b.append("import com.medplum.fhir.StandardOperations;");
+            b.append("import com.medplum.fhir.StandardOutcomes;");
         }
 
         writeJsonClass(b, fhirType, true);
@@ -185,7 +185,7 @@ public class Generator {
             b.newLine();
             b.append("public boolean isOk() {");
             b.append("    final String id = id();");
-            b.append("    return id.equals(StandardOperations.ALL_OK_ID) || id.equals(StandardOperations.CREATED_ID);");
+            b.append("    return id.equals(StandardOutcomes.ALL_OK_ID) || id.equals(StandardOutcomes.CREATED_ID);");
             b.append("}");
         }
 

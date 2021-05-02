@@ -7,7 +7,7 @@ import java.util.Arrays;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.mindrot.jbcrypt.BCrypt;
 
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 import com.medplum.fhir.types.Bundle;
 import com.medplum.fhir.types.Bundle.BundleEntry;
 import com.medplum.fhir.types.ClientApplication;
@@ -35,7 +35,7 @@ public class SetupExecutor {
 
         final Bundle existingBundle = searchOutcome.resource(Bundle.class);
         if (!existingBundle.entry().isEmpty()) {
-            return StandardOperations.invalid("Already setup");
+            return StandardOutcomes.invalid("Already setup");
         }
 
         final Organization organization = repo.create(SecurityUser.SYSTEM_USER, Organization.create()
@@ -64,7 +64,7 @@ public class SetupExecutor {
                 .build())
                 .resource(ClientApplication.class);
 
-        return StandardOperations.ok(Bundle.create().entry(Arrays.asList(
+        return StandardOutcomes.ok(Bundle.create().entry(Arrays.asList(
                 BundleEntry.create().resource(organization).build(),
                 BundleEntry.create().resource(practitioner).build(),
                 BundleEntry.create().resource(user).build(),

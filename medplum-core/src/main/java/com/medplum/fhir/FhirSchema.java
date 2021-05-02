@@ -51,7 +51,7 @@ public class FhirSchema {
             return error("Unknown resource type '" + resourceType + "'");
         }
 
-        return StandardOperations.ok();
+        return StandardOutcomes.ok();
     }
 
     public static OperationOutcome validate(final JsonObject resource) {
@@ -104,7 +104,7 @@ public class FhirSchema {
             }
         }
 
-        return issues.isEmpty() ? StandardOperations.ok() : error(issues);
+        return issues.isEmpty() ? StandardOutcomes.ok() : error(issues);
     }
 
     private static OperationOutcomeIssue validateProperty(final JsonObject resource, final String propertyName, final JsonObject propertyDetails) {
@@ -113,17 +113,17 @@ public class FhirSchema {
 
     private static OperationOutcomeIssue issue(final String msg) {
         return OperationOutcomeIssue.create()
-                .severity(StandardOperations.SEVERITY_ERROR)
-                .code(StandardOperations.CODE_INVALID)
+                .severity(StandardOutcomes.SEVERITY_ERROR)
+                .code(StandardOutcomes.CODE_INVALID)
                 .details(CodeableConcept.create().text(msg).build())
                 .build();
     }
 
     private static OperationOutcome error(final String msg) {
-        return StandardOperations.invalid(msg);
+        return StandardOutcomes.invalid(msg);
     }
 
     private static OperationOutcome error(final List<OperationOutcomeIssue> issues) {
-        return StandardOperations.error(StandardOperations.CODE_INVALID, issues);
+        return StandardOutcomes.error(StandardOutcomes.CODE_INVALID, issues);
     }
 }

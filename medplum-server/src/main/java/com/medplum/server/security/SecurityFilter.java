@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 
 @Provider
 @Priority(Priorities.AUTHENTICATION)
@@ -88,7 +88,7 @@ public class SecurityFilter implements ContainerRequestFilter {
                 message,
                 Response.status(Status.UNAUTHORIZED)
                     .type(FhirMediaType.APPLICATION_FHIR_JSON)
-                    .entity(StandardOperations.security(message))
+                    .entity(StandardOutcomes.security(message))
                     .build());
     }
 }

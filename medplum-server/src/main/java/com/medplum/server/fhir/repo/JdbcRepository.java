@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.medplum.fhir.FhirPath;
 import com.medplum.fhir.FhirSchema;
 import com.medplum.fhir.JsonUtils;
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 import com.medplum.fhir.types.Bundle;
 import com.medplum.fhir.types.Bundle.BundleEntry;
 import com.medplum.fhir.types.FhirResource;
@@ -119,7 +119,7 @@ public class JdbcRepository implements Repository, Closeable {
 
         final UUID uuid = tryParseId(id);
         if (uuid == null) {
-            return StandardOperations.notFound();
+            return StandardOutcomes.notFound();
         }
 
         try (final Statement formatter = conn.createStatement()) {
@@ -141,16 +141,16 @@ public class JdbcRepository implements Repository, Closeable {
                     if (rs.next()) {
                         final String content = rs.getString(1);
                         final JsonObject data = JsonUtils.readJsonString(content);
-                        return StandardOperations.ok(data);
+                        return StandardOutcomes.ok(data);
                     } else {
-                        return StandardOperations.notFound();
+                        return StandardOutcomes.notFound();
                     }
                 }
             }
 
         } catch (final SQLException ex) {
             LOG.error("Error reading resource: {}", ex.getMessage(), ex);
-            return StandardOperations.invalid(ex.getMessage());
+            return StandardOutcomes.invalid(ex.getMessage());
         }
     }
 
@@ -171,7 +171,7 @@ public class JdbcRepository implements Repository, Closeable {
 
         final UUID uuid = tryParseId(id);
         if (uuid == null) {
-            return StandardOperations.notFound();
+            return StandardOutcomes.notFound();
         }
 
         try (final Statement formatter = conn.createStatement()) {
@@ -200,11 +200,11 @@ public class JdbcRepository implements Repository, Closeable {
                 }
             }
 
-            return StandardOperations.ok(Bundle.create().type("history").entry(results).build());
+            return StandardOutcomes.ok(Bundle.create().type("history").entry(results).build());
 
         } catch (final SQLException ex) {
             LOG.error("Error reading history: {}", ex.getMessage(), ex);
-            return StandardOperations.invalid(ex.getMessage());
+            return StandardOutcomes.invalid(ex.getMessage());
         }
     }
 
@@ -217,12 +217,12 @@ public class JdbcRepository implements Repository, Closeable {
 
         final UUID uuid = tryParseId(id);
         if (uuid == null) {
-            return StandardOperations.notFound();
+            return StandardOutcomes.notFound();
         }
 
         final UUID versionUuid = tryParseId(vid);
         if (versionUuid == null) {
-            return StandardOperations.notFound();
+            return StandardOutcomes.notFound();
         }
 
         try (final Statement formatter = conn.createStatement()) {
@@ -248,16 +248,16 @@ public class JdbcRepository implements Repository, Closeable {
                     if (rs.next()) {
                         final String content = rs.getString(1);
                         final JsonObject data = JsonUtils.readJsonString(content);
-                        return StandardOperations.ok(data);
+                        return StandardOutcomes.ok(data);
                     } else {
-                        return StandardOperations.notFound();
+                        return StandardOutcomes.notFound();
                     }
                 }
             }
 
         } catch (final SQLException ex) {
             LOG.error("Error reading resource: {}", ex.getMessage(), ex);
-            return StandardOperations.invalid(ex.getMessage());
+            return StandardOutcomes.invalid(ex.getMessage());
         }
     }
 
@@ -270,7 +270,7 @@ public class JdbcRepository implements Repository, Closeable {
 
         final UUID uuid = tryParseId(id);
         if (uuid == null) {
-            return StandardOperations.invalid("Invalid ID (not a UUID)");
+            return StandardOutcomes.invalid("Invalid ID (not a UUID)");
         }
 
         final String resourceType = data.getString("resourceType");
@@ -329,11 +329,11 @@ public class JdbcRepository implements Repository, Closeable {
         try {
             executeInsert(builder.build());
             writeVersion(resourceType, id, versionId, lastUpdated, resource);
-            return StandardOperations.created(resource);
+            return StandardOutcomes.created(resource);
 
         } catch (final SQLException ex) {
             LOG.error("Error creating resource: {}", ex.getMessage(), ex);
-            return StandardOperations.invalid(ex.getMessage());
+            return StandardOutcomes.invalid(ex.getMessage());
         }
     }
 
@@ -357,11 +357,11 @@ public class JdbcRepository implements Repository, Closeable {
         try {
             executeUpdate(builder.build());
             writeVersion(resourceType, id, versionId, lastUpdated, resource);
-            return StandardOperations.ok(resource);
+            return StandardOutcomes.ok(resource);
 
         } catch (final SQLException ex) {
             LOG.error("Error creating resource: {}", ex.getMessage(), ex);
-            return StandardOperations.invalid(ex.getMessage());
+            return StandardOutcomes.invalid(ex.getMessage());
         }
     }
 
@@ -394,7 +394,7 @@ public class JdbcRepository implements Repository, Closeable {
         }
 
         if (!user.getSmartScopes().canRead(searchRequest.getResourceType())) {
-            return StandardOperations.security("Cannot read resource type");
+            return StandardOutcomes.security("Cannot read resource type");
         }
 
         try (final Statement formatter = conn.createStatement()) {
@@ -455,11 +455,11 @@ public class JdbcRepository implements Repository, Closeable {
                 }
             }
 
-            return StandardOperations.ok(Bundle.create().type("searchset").entry(results).build());
+            return StandardOutcomes.ok(Bundle.create().type("searchset").entry(results).build());
 
         } catch (final SQLException ex) {
             LOG.error("Error searching: {}", ex.getMessage(), ex);
-            return StandardOperations.invalid(ex.getMessage());
+            return StandardOutcomes.invalid(ex.getMessage());
         }
     }
 

@@ -13,7 +13,7 @@ import jakarta.ws.rs.core.MediaType;
 import org.jose4j.lang.JoseException;
 
 import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 import com.medplum.fhir.types.ClientApplication;
 import com.medplum.fhir.types.FhirResource;
 import com.medplum.fhir.types.Login;
@@ -41,32 +41,32 @@ public class LoginEndpoint {
     public OperationOutcome submit(final JsonObject loginRequest) throws JoseException {
         final String clientId = loginRequest.getString("clientId", null);
         if (clientId == null || clientId.isBlank()) {
-            return StandardOperations.invalid("Missing clientId");
+            return StandardOutcomes.invalid("Missing clientId");
         }
 
         final String email = loginRequest.getString("email", null);
         if (email == null || email.isBlank()) {
-            return StandardOperations.invalid("Missing email");
+            return StandardOutcomes.invalid("Missing email");
         }
 
         final String password = loginRequest.getString("password", null);
         if (password == null || password.isBlank()) {
-            return StandardOperations.invalid("Missing password");
+            return StandardOutcomes.invalid("Missing password");
         }
 
         final String scope = loginRequest.getString("scope", null);
         if (scope == null || scope.isBlank()) {
-            return StandardOperations.invalid("Missing scope");
+            return StandardOutcomes.invalid("Missing scope");
         }
 
         final String role = loginRequest.getString("role", null);
         if (role == null || role.isBlank()) {
-            return StandardOperations.invalid("Missing role");
+            return StandardOutcomes.invalid("Missing role");
         }
 
         final ClientApplication client = oauth.getClient(clientId);
         if (client == null) {
-            return StandardOperations.invalid("Invalid clientId");
+            return StandardOutcomes.invalid("Invalid clientId");
         }
 
         final OperationOutcome loginOutcome = oauth.login(client, email, password);
@@ -94,11 +94,11 @@ public class LoginEndpoint {
             break;
 
         default:
-            return StandardOperations.invalid("Unrecognized role: " + role);
+            return StandardOutcomes.invalid("Unrecognized role: " + role);
         }
 
         if (roleReference == null) {
-            return StandardOperations.invalid("User does not have role: " + role);
+            return StandardOutcomes.invalid("User does not have role: " + role);
         }
 
         final OperationOutcome profileOutcome = repo.readReference(SecurityUser.SYSTEM_USER, roleReference);
@@ -114,7 +114,7 @@ public class LoginEndpoint {
         final JwtResult accessToken = oauth.generateAccessToken(client, profile, scope);
         final JwtResult newRefreshToken = oauth.generateRefreshToken(client, profile, scope);
 
-        return StandardOperations.ok(Json.createObjectBuilder()
+        return StandardOutcomes.ok(Json.createObjectBuilder()
                 .add("user", user)
                 .add("profile", profile)
                 .add("accessToken", accessToken.getJws().getCompactSerialization())

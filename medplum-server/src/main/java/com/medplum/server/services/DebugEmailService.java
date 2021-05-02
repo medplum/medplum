@@ -5,7 +5,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 import com.medplum.fhir.types.OperationOutcome;
 
 public class DebugEmailService implements EmailService {
@@ -18,6 +18,6 @@ public class DebugEmailService implements EmailService {
         LOG.debug("  Cc: {}", cc);
         LOG.debug("  Subject: {}", subject);
         LOG.debug("  Body: {}", body);
-        return StandardOperations.ok();
+        return StandardOutcomes.ok();
     }
 }

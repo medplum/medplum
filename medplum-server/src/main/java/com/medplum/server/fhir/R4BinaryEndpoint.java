@@ -22,7 +22,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 
 import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.StandardOperations;
+import com.medplum.fhir.StandardOutcomes;
 import com.medplum.fhir.types.Binary;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.server.fhir.repo.BinaryStorage;
@@ -110,12 +110,12 @@ public class R4BinaryEndpoint {
     @PATCH
     @Path("/{id}")
     public OperationOutcome patch(final JsonPatch patch) {
-        return StandardOperations.notFound();
+        return StandardOutcomes.notFound();
     }
 
     @GET
     public OperationOutcome search() {
-        return StandardOperations.notFound();
+        return StandardOutcomes.notFound();
     }
 
     private SecurityUser getUser() {
