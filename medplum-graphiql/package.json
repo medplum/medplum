@@ -5,6 +5,7 @@
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
   "scripts": {
+    "clean": "rimraf dist",
     "dev": "webpack serve --mode development",
     "build": "webpack --mode production"
   },
@@ -25,6 +26,7 @@
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "regenerator-runtime": "^0.13.7",
+    "rimraf": "^3.0.2",
     "style-loader": "^2.0.0",
     "typescript": "^4.2.4",
     "webpack": "^5.36.1",
