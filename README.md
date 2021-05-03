@@ -10,11 +10,11 @@ Here is a quick summary of the subprojects:
 | Folder               | Language     | Type     | Port  | Description                            |
 | -------------------- | ------------ | -------- | ----- | -------------------------------------- |
 | `medplum-console`    | TypeScript   | App      | 3000  | Developer console application          |
-| `medplum-core`       | Java         | Library  |       | Core FHIR library, Java SDK, etc       |
-| `medplum-generator`  | Java         | App      |       | Code generator from the FHIR spec      |
+| `medplum-core`       | Java         | Library  |       | Java client library                    |
+| `medplum-generator`  | Java         | App      |       | Code generator                         |
 | `medplum-graphiql`   | TypeScript   | App      | 8080  | GraphQL debug tool                     |
-| `medplum-server`     | Java         | App      | 5000  | Main FHIR server                       |
-| `medplum-ts`         | TypeScript   | Library  |       | TypeScript FHIR client library         |
+| `medplum-server`     | Java         | App      | 5000  | Main server application                |
+| `medplum-ts`         | TypeScript   | Library  |       | TypeScript client library              |
 | `medplum-ui`         | TypeScript   | Library  | 6006  | React component library and Storybook  |
 
 ## Getting Started
@@ -63,10 +63,16 @@ npm run dev
 | ----------------------------- | -------------------------------------------------------- |
 | Clean                         | `mvn clean`                                              |
 | Build                         | `mvn build`                                              |
-| Replicate Jenkins build       | `mvn clean install site`                                 |
 | Show all dependencies         | `mvn dependency:tree`                                    |
 | Analyze unused dependencies   | `mvn dependency:analyze`                                 |
 | Check for dependency updates  | `mvn versions:display-dependency-updates`                |
 | Check for plugin updates      | `mvn versions:display-plugin-updates`                    |
 | Sort pom.xml files            | `mvn com.github.ekryd.sortpom:sortpom-maven-plugin:sort` |
 
+## NPM Cheatsheet
+
+| Task                          | Command                                                  |
+| ----------------------------- | -------------------------------------------------------- |
+| Install                       | `npm ci`                                                 |
+| Clean                         | `npm run clean --workspaces`                             |
+| Build                         | `npm run build --workspaces`                             |

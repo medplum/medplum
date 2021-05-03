@@ -9,6 +9,8 @@ import { Storage } from './storage';
 import { EventTarget } from './eventtarget';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
+const FHIR_CONTENT_TYPE = 'application/fhir+json';
+const JSON_CONTENT_TYPE = 'application/json';
 
 export interface MedplumClientOptions {
   /**
@@ -72,8 +74,6 @@ interface TokenResponse {
   refresh_token: string;
   expires_in: number;
 }
-
-const FHIR_CONTENT_TYPE = 'application/fhir+json';
 
 export class MedplumClient extends EventTarget {
   private readonly storage: Storage;
@@ -251,6 +251,10 @@ export class MedplumClient extends EventTarget {
 
   patch(resourceType: string, id: string, operations: any): Promise<any> {
     return this.fetch('PATCH', this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id), 'application/json-patch+json', operations);
+  }
+
+  graphql(gql: any): Promise<any> {
+    return this.post(this.baseUrl + 'fhir/R4/$graphql', gql, JSON_CONTENT_TYPE);
   }
 
   getUser(): User | undefined {

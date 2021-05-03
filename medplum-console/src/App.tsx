@@ -15,8 +15,8 @@ import { Router } from 'react-router-dom';
 import { history } from './history';
 
 const medplum = new MedplumClient({
-  baseUrl: 'http://localhost:5000/',
-  clientId: 'f051b8ed-105d-4e81-8ddc-c5c2af12f9d3',
+  baseUrl: process.env.MEDPLUM_BASE_URL,
+  clientId: process.env.MEDPLUM_CLIENT_ID,
 });
 
 export default function App() {

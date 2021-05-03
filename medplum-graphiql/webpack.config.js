@@ -1,8 +1,9 @@
+const DotenvPlugin = require('dotenv-webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = (env, argv) => ({
   entry: './src/index.tsx',
-  devtool: argv.mode === 'development' ? 'eval-source-map' : 'source-map',
+  devtool: argv.mode === 'production' ? 'source-map' : 'eval-source-map',
   module: {
     rules: [
       {
@@ -38,6 +39,10 @@ module.exports = (env, argv) => ({
     extensions: ['.js', '.json', '.jsx', '.css', '.mjs', '.ts', '.tsx'],
   },
   plugins: [
+    new DotenvPlugin({
+      path: argv.mode === 'production' ? '.env.production' : '.env',
+      defaults: true
+    }),
     new HtmlWebpackPlugin({
       template: 'src/index.html.ejs'
     })

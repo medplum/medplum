@@ -1,10 +1,11 @@
 const path = require('path');
+const DotenvPlugin = require('dotenv-webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = (env, argv) => ({
   entry: './src/index.tsx',
-  devtool: argv.mode === 'development' ? 'eval-source-map' : 'source-map',
+  devtool: argv.mode === 'production' ? 'source-map' : 'eval-source-map',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'js/[name].[contenthash].js',
@@ -14,6 +15,10 @@ module.exports = (env, argv) => ({
     extensions: ['.ts', '.tsx', '.js']
   },
   plugins: [
+    new DotenvPlugin({
+      path: argv.mode === 'production' ? '.env.production' : '.env',
+      defaults: true
+    }),
     new HtmlWebpackPlugin({
       template: 'index.html',
       favicon: 'favicon.ico'
