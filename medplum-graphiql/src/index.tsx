@@ -12,10 +12,7 @@ const medplum = new MedplumClient({
 
 const App = () => (
   <GraphiQL
-    fetcher={async graphQLParams => {
-      const data = await medplum.graphql(graphQLParams);
-      return data.json().catch(() => data.text());
-    }}
+    fetcher={async graphQLParams => medplum.graphql(graphQLParams)}
   />
 );
 
