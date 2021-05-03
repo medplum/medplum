@@ -1,9 +1,8 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-module.exports = {
+module.exports = (env, argv) => ({
   entry: './src/index.tsx',
-  mode: 'development',
-  devtool: 'inline-source-map',
+  devtool: argv.mode === 'development' ? 'eval-source-map' : 'source-map',
   module: {
     rules: [
       {
@@ -54,4 +53,4 @@ module.exports = {
     innerGraph: true,
     sideEffects: true,
   }
-};
+});

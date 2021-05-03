@@ -2,8 +2,9 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-module.exports = {
+module.exports = (env, argv) => ({
   entry: './src/index.tsx',
+  devtool: argv.mode === 'development' ? 'eval-source-map' : 'source-map',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'js/[name].[contenthash].js',
@@ -46,4 +47,4 @@ module.exports = {
     innerGraph: true,
     sideEffects: true,
   }
-};
+});
