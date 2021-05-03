@@ -40,8 +40,9 @@ binary/
 # Node/npm
 node_modules/
 
-# Components output
-medplum-components/lib/
+# Dotenv
+.env
+.env.production
 
 # Webpack output
 dist/
