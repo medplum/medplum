@@ -57,7 +57,6 @@ public class BatchExecutor {
         final List<BundleEntry> result = new ArrayList<>();
         for (final BundleEntry entry : new Bundle(rewriteIdsInObject(data, ids)).entry()) {
             final FhirResource resource = entry.resource(FhirResource.class);
-            final String resourceType = resource.resourceType();
             final String providedId = resource.id();
             final OperationOutcome entryOutcome = providedId == null || providedId.isBlank() ?
                     repo.create(user, resource) :
