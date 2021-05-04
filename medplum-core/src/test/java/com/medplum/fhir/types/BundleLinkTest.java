@@ -47,6 +47,7 @@ public class BundleLinkTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", Bundle.BundleLink.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Bundle.BundleLink.create().url(value).build().url());
     }
 }

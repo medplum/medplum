@@ -68,8 +68,8 @@ public class Immunization extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -194,7 +194,7 @@ public class Immunization extends FhirResource {
      * record - potentially significantly after the occurrence of the event.
      */
     public java.time.Instant recorded() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RECORDED));
+        return getInstant(PROPERTY_RECORDED);
     }
 
     /**
@@ -240,7 +240,7 @@ public class Immunization extends FhirResource {
      * Date vaccine batch expires.
      */
     public java.time.LocalDate expirationDate() {
-        return java.time.LocalDate.parse(data.getString(PROPERTY_EXPIRATION_DATE));
+        return getLocalDate(PROPERTY_EXPIRATION_DATE);
     }
 
     /**
@@ -376,8 +376,8 @@ public class Immunization extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -630,22 +630,22 @@ public class Immunization extends FhirResource {
          * Reference pointer to the educational material given to the patient if
          * the information was on line.
          */
-        public String reference() {
-            return getString(PROPERTY_REFERENCE);
+        public java.net.URI reference() {
+            return getUri(PROPERTY_REFERENCE);
         }
 
         /**
          * Date the educational material was published.
          */
         public java.time.Instant publicationDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_PUBLICATION_DATE));
+            return getInstant(PROPERTY_PUBLICATION_DATE);
         }
 
         /**
          * Date the educational material was given to the patient.
          */
         public java.time.Instant presentationDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_PRESENTATION_DATE));
+            return getInstant(PROPERTY_PRESENTATION_DATE);
         }
 
         public static class Builder {
@@ -679,8 +679,8 @@ public class Immunization extends FhirResource {
                 return this;
             }
 
-            public Builder reference(final String reference) {
-                b.add(PROPERTY_REFERENCE, reference);
+            public Builder reference(final java.net.URI reference) {
+                b.add(PROPERTY_REFERENCE, reference.toString());
                 return this;
             }
 
@@ -1069,7 +1069,7 @@ public class Immunization extends FhirResource {
          * Date of reaction to the immunization.
          */
         public java.time.Instant date() {
-            return java.time.Instant.parse(data.getString(PROPERTY_DATE));
+            return getInstant(PROPERTY_DATE);
         }
 
         /**

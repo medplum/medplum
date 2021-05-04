@@ -51,8 +51,8 @@ public class TestReport extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -172,7 +172,7 @@ public class TestReport extends FhirResource {
      * When the TestScript was executed and this TestReport was generated.
      */
     public java.time.Instant issued() {
-        return java.time.Instant.parse(data.getString(PROPERTY_ISSUED));
+        return getInstant(PROPERTY_ISSUED);
     }
 
     /**
@@ -231,8 +231,8 @@ public class TestReport extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -873,8 +873,8 @@ public class TestReport extends FhirResource {
         /**
          * A link to further details on the result.
          */
-        public String detail() {
-            return getString(PROPERTY_DETAIL);
+        public java.net.URI detail() {
+            return getUri(PROPERTY_DETAIL);
         }
 
         public static class Builder {
@@ -913,8 +913,8 @@ public class TestReport extends FhirResource {
                 return this;
             }
 
-            public Builder detail(final String detail) {
-                b.add(PROPERTY_DETAIL, detail);
+            public Builder detail(final java.net.URI detail) {
+                b.add(PROPERTY_DETAIL, detail.toString());
                 return this;
             }
 
@@ -996,8 +996,8 @@ public class TestReport extends FhirResource {
         /**
          * The uri of the participant. An absolute URL is preferred.
          */
-        public String uri() {
-            return getString(PROPERTY_URI);
+        public java.net.URI uri() {
+            return getUri(PROPERTY_URI);
         }
 
         /**
@@ -1038,8 +1038,8 @@ public class TestReport extends FhirResource {
                 return this;
             }
 
-            public Builder uri(final String uri) {
-                b.add(PROPERTY_URI, uri);
+            public Builder uri(final java.net.URI uri) {
+                b.add(PROPERTY_URI, uri.toString());
                 return this;
             }
 

@@ -65,7 +65,7 @@ public class Meta extends FhirResource {
      * When the resource last changed - e.g. when the version changed.
      */
     public java.time.Instant lastUpdated() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LAST_UPDATED));
+        return getInstant(PROPERTY_LAST_UPDATED);
     }
 
     /**
@@ -75,8 +75,8 @@ public class Meta extends FhirResource {
      * source may identify another FHIR server, document, message, database,
      * etc.
      */
-    public String source() {
-        return getString(PROPERTY_SOURCE);
+    public java.net.URI source() {
+        return getUri(PROPERTY_SOURCE);
     }
 
     /**
@@ -137,8 +137,8 @@ public class Meta extends FhirResource {
             return this;
         }
 
-        public Builder source(final String source) {
-            b.add(PROPERTY_SOURCE, source);
+        public Builder source(final java.net.URI source) {
+            b.add(PROPERTY_SOURCE, source.toString());
             return this;
         }
 

@@ -42,8 +42,8 @@ public class Bundle extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -73,7 +73,7 @@ public class Bundle extends FhirResource {
      * were placed in the bundle.
      */
     public java.time.Instant timestamp() {
-        return java.time.Instant.parse(data.getString(PROPERTY_TIMESTAMP));
+        return getInstant(PROPERTY_TIMESTAMP);
     }
 
     /**
@@ -133,8 +133,8 @@ public class Bundle extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -266,8 +266,8 @@ public class Bundle extends FhirResource {
          * * Results from operations might involve resources that are not
          * identified.
          */
-        public String fullUrl() {
-            return getString(PROPERTY_FULL_URL);
+        public java.net.URI fullUrl() {
+            return getUri(PROPERTY_FULL_URL);
         }
 
         /**
@@ -339,8 +339,8 @@ public class Bundle extends FhirResource {
                 return this;
             }
 
-            public Builder fullUrl(final String fullUrl) {
-                b.add(PROPERTY_FULL_URL, fullUrl);
+            public Builder fullUrl(final java.net.URI fullUrl) {
+                b.add(PROPERTY_FULL_URL, fullUrl.toString());
                 return this;
             }
 
@@ -442,8 +442,8 @@ public class Bundle extends FhirResource {
         /**
          * The reference details for the link.
          */
-        public String url() {
-            return getString(PROPERTY_URL);
+        public java.net.URI url() {
+            return getUri(PROPERTY_URL);
         }
 
         public static class Builder {
@@ -477,8 +477,8 @@ public class Bundle extends FhirResource {
                 return this;
             }
 
-            public Builder url(final String url) {
-                b.add(PROPERTY_URL, url);
+            public Builder url(final java.net.URI url) {
+                b.add(PROPERTY_URL, url.toString());
                 return this;
             }
 
@@ -566,8 +566,8 @@ public class Bundle extends FhirResource {
          * The URL for this entry, relative to the root (the address to which the
          * request is posted).
          */
-        public String url() {
-            return getString(PROPERTY_URL);
+        public java.net.URI url() {
+            return getUri(PROPERTY_URL);
         }
 
         /**
@@ -583,7 +583,7 @@ public class Bundle extends FhirResource {
          * API documentation for [&quot;Conditional Read&quot;](http.html#cread).
          */
         public java.time.Instant ifModifiedSince() {
-            return java.time.Instant.parse(data.getString(PROPERTY_IF_MODIFIED_SINCE));
+            return getInstant(PROPERTY_IF_MODIFIED_SINCE);
         }
 
         /**
@@ -636,8 +636,8 @@ public class Bundle extends FhirResource {
                 return this;
             }
 
-            public Builder url(final String url) {
-                b.add(PROPERTY_URL, url);
+            public Builder url(final java.net.URI url) {
+                b.add(PROPERTY_URL, url.toString());
                 return this;
             }
 
@@ -744,8 +744,8 @@ public class Bundle extends FhirResource {
          * The location header created by processing this operation, populated if
          * the operation returns a location.
          */
-        public String location() {
-            return getString(PROPERTY_LOCATION);
+        public java.net.URI location() {
+            return getUri(PROPERTY_LOCATION);
         }
 
         /**
@@ -762,7 +762,7 @@ public class Bundle extends FhirResource {
          * The date/time that the resource was modified on the server.
          */
         public java.time.Instant lastModified() {
-            return java.time.Instant.parse(data.getString(PROPERTY_LAST_MODIFIED));
+            return getInstant(PROPERTY_LAST_MODIFIED);
         }
 
         /**
@@ -808,8 +808,8 @@ public class Bundle extends FhirResource {
                 return this;
             }
 
-            public Builder location(final String location) {
-                b.add(PROPERTY_LOCATION, location);
+            public Builder location(final java.net.URI location) {
+                b.add(PROPERTY_LOCATION, location.toString());
                 return this;
             }
 

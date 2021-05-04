@@ -50,8 +50,8 @@ public class QuestionnaireResponse extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -178,7 +178,7 @@ public class QuestionnaireResponse extends FhirResource {
      * The date and/or time that this set of answers were last changed.
      */
     public java.time.Instant authored() {
-        return java.time.Instant.parse(data.getString(PROPERTY_AUTHORED));
+        return getInstant(PROPERTY_AUTHORED);
     }
 
     /**
@@ -229,8 +229,8 @@ public class QuestionnaireResponse extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -667,8 +667,8 @@ public class QuestionnaireResponse extends FhirResource {
          * A reference to an [[[ElementDefinition]]] that provides the details
          * for the item.
          */
-        public String definition() {
-            return getString(PROPERTY_DEFINITION);
+        public java.net.URI definition() {
+            return getUri(PROPERTY_DEFINITION);
         }
 
         /**
@@ -724,8 +724,8 @@ public class QuestionnaireResponse extends FhirResource {
                 return this;
             }
 
-            public Builder definition(final String definition) {
-                b.add(PROPERTY_DEFINITION, definition);
+            public Builder definition(final java.net.URI definition) {
+                b.add(PROPERTY_DEFINITION, definition.toString());
                 return this;
             }
 

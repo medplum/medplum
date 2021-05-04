@@ -47,7 +47,8 @@ public class QuestionnaireItemTest {
 
     @Test
     public void testDefinition() {
-        assertEquals("x", Questionnaire.QuestionnaireItem.create().definition("x").build().definition());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Questionnaire.QuestionnaireItem.create().definition(value).build().definition());
     }
 
     @Test

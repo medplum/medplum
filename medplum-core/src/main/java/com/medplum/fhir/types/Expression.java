@@ -84,8 +84,8 @@ public class Expression extends FhirResource {
     /**
      * A URI that defines where the expression is found.
      */
-    public String reference() {
-        return getString(PROPERTY_REFERENCE);
+    public java.net.URI reference() {
+        return getUri(PROPERTY_REFERENCE);
     }
 
     public static class Builder {
@@ -129,8 +129,8 @@ public class Expression extends FhirResource {
             return this;
         }
 
-        public Builder reference(final String reference) {
-            b.add(PROPERTY_REFERENCE, reference);
+        public Builder reference(final java.net.URI reference) {
+            b.add(PROPERTY_REFERENCE, reference.toString());
             return this;
         }
 

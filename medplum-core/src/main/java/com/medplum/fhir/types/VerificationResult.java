@@ -53,8 +53,8 @@ public class VerificationResult extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -151,7 +151,7 @@ public class VerificationResult extends FhirResource {
      * When the validation status was updated.
      */
     public java.time.Instant statusDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_STATUS_DATE));
+        return getInstant(PROPERTY_STATUS_DATE);
     }
 
     /**
@@ -182,14 +182,14 @@ public class VerificationResult extends FhirResource {
      * validations).
      */
     public java.time.Instant lastPerformed() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LAST_PERFORMED));
+        return getInstant(PROPERTY_LAST_PERFORMED);
     }
 
     /**
      * The date when target is next validated, if appropriate.
      */
     public java.time.LocalDate nextScheduled() {
-        return java.time.LocalDate.parse(data.getString(PROPERTY_NEXT_SCHEDULED));
+        return getLocalDate(PROPERTY_NEXT_SCHEDULED);
     }
 
     /**
@@ -245,8 +245,8 @@ public class VerificationResult extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -444,7 +444,7 @@ public class VerificationResult extends FhirResource {
          * The date the information was attested to.
          */
         public java.time.LocalDate date() {
-            return java.time.LocalDate.parse(data.getString(PROPERTY_DATE));
+            return getLocalDate(PROPERTY_DATE);
         }
 
         /**
@@ -652,7 +652,7 @@ public class VerificationResult extends FhirResource {
          * When the target was validated against the primary source.
          */
         public java.time.Instant validationDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_VALIDATION_DATE));
+            return getInstant(PROPERTY_VALIDATION_DATE);
         }
 
         /**

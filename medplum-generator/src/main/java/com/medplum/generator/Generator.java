@@ -243,12 +243,16 @@ public class Generator {
                     b.append("return data.getJsonNumber(" + property.getConstantName() + ").doubleValue();");
                     break;
 
+                case "java.net.URI":
+                    b.append("return getUri(" + property.getConstantName() + ");");
+                    break;
+
                 case "java.time.Instant":
-                    b.append("return java.time.Instant.parse(data.getString(" + property.getConstantName() + "));");
+                    b.append("return getInstant(" + property.getConstantName() + ");");
                     break;
 
                 case "java.time.LocalDate":
-                    b.append("return java.time.LocalDate.parse(data.getString(" + property.getConstantName() + "));");
+                    b.append("return getLocalDate(" + property.getConstantName() + ");");
                     break;
 
                 default:
@@ -301,7 +305,9 @@ public class Generator {
 
             b.newLine();
             b.append("    public Builder " + propertyName + "(final " + javaType + " " + propertyName + ") {");
-            if (javaType.equals("java.time.Instant") || javaType.equals("java.time.LocalDate")) {
+            if (javaType.equals("java.net.URI") ||
+                    javaType.equals("java.time.Instant") ||
+                    javaType.equals("java.time.LocalDate")) {
                 b.append("        b.add(" + property.getConstantName() + ", " + propertyName + ".toString());");
             } else if (javaType.equals("java.util.List<String>")) {
                 b.append("        b.add(" + property.getConstantName() + ", FhirObject.toStringArray(" + propertyName + "));");
@@ -309,6 +315,8 @@ public class Generator {
                 b.append("        b.add(" + property.getConstantName() + ", FhirObject.toIntegerArray(" + propertyName + "));");
             } else if (javaType.equals("java.util.List<Double>")) {
                 b.append("        b.add(" + property.getConstantName() + ", FhirObject.toDoubleArray(" + propertyName + "));");
+            } else if (javaType.equals("java.util.List<java.net.URI>")) {
+                b.append("        b.add(" + property.getConstantName() + ", FhirObject.toUriArray(" + propertyName + "));");
             } else if (javaType.equals("java.util.List<java.time.Instant>")) {
                 b.append("        b.add(" + property.getConstantName() + ", FhirObject.toInstantArray(" + propertyName + "));");
             } else if (javaType.equals("java.util.List<JsonObject>")) {
@@ -405,6 +413,11 @@ public class Generator {
                     valueStr = "1.0";
                     break;
 
+                case "java.net.URI":
+                    valueDecl = "final java.net.URI value = java.net.URI.create(\"https://www.example.com\");";
+                    valueStr = "value";
+                    break;
+
                 case "java.time.Instant":
                     valueDecl = "final java.time.Instant value = java.time.Instant.now();";
                     valueStr = "value";
@@ -461,6 +474,10 @@ public class Generator {
             return "FhirResource";
         }
 
+        if (resourceType.equals("Extension") && (propertyName.equals("valueUri") || propertyName.equals("valueUrl"))) {
+            return "java.net.URI";
+        }
+
         final String typeValue = fhirPropertyDefinition.getString("type", null);
         if (typeValue != null) {
             if (typeValue.equals("array")) {
@@ -508,10 +525,12 @@ public class Generator {
         case "id":
         case "markdown":
         case "string":
-        case "uri":
-        case "url":
         case "xhtml":
             return "String";
+
+        case "uri":
+        case "url":
+            return "java.net.URI";
 
         case "date":
             return "java.time.LocalDate";

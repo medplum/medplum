@@ -58,6 +58,7 @@ public class ImplementationGuideResource1Test {
 
     @Test
     public void testRelativePath() {
-        assertEquals("x", ImplementationGuide.ImplementationGuideResource1.create().relativePath("x").build().relativePath());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ImplementationGuide.ImplementationGuideResource1.create().relativePath(value).build().relativePath());
     }
 }

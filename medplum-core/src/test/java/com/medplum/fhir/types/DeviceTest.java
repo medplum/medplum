@@ -41,7 +41,8 @@ public class DeviceTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Device.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Device.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -200,7 +201,8 @@ public class DeviceTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", Device.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Device.create().url(value).build().url());
     }
 
     @Test

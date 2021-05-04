@@ -41,7 +41,8 @@ public class SpecimenDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", SpecimenDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, SpecimenDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

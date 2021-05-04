@@ -47,7 +47,8 @@ public class BundleResponseTest {
 
     @Test
     public void testLocation() {
-        assertEquals("x", Bundle.BundleResponse.create().location("x").build().location());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Bundle.BundleResponse.create().location(value).build().location());
     }
 
     @Test

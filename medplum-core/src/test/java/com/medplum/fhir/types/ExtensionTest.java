@@ -36,7 +36,8 @@ public class ExtensionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", Extension.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Extension.create().url(value).build().url());
     }
 
     @Test
@@ -121,12 +122,14 @@ public class ExtensionTest {
 
     @Test
     public void testValueUri() {
-        assertEquals("x", Extension.create().valueUri("x").build().valueUri());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Extension.create().valueUri(value).build().valueUri());
     }
 
     @Test
     public void testValueUrl() {
-        assertEquals("x", Extension.create().valueUrl("x").build().valueUrl());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Extension.create().valueUrl(value).build().valueUrl());
     }
 
     @Test

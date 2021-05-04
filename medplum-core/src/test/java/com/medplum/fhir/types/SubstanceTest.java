@@ -41,7 +41,8 @@ public class SubstanceTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Substance.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Substance.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

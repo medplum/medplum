@@ -41,7 +41,8 @@ public class SearchParameterTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", SearchParameter.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, SearchParameter.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class SearchParameterTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", SearchParameter.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, SearchParameter.create().url(value).build().url());
     }
 
     @Test

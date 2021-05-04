@@ -45,8 +45,8 @@ public class AppointmentResponse extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -131,7 +131,7 @@ public class AppointmentResponse extends FhirResource {
      * start time.
      */
     public java.time.Instant start() {
-        return java.time.Instant.parse(data.getString(PROPERTY_START));
+        return getInstant(PROPERTY_START);
     }
 
     /**
@@ -140,7 +140,7 @@ public class AppointmentResponse extends FhirResource {
      * re-negotiation of the end time.
      */
     public java.time.Instant end() {
-        return java.time.Instant.parse(data.getString(PROPERTY_END));
+        return getInstant(PROPERTY_END);
     }
 
     /**
@@ -201,8 +201,8 @@ public class AppointmentResponse extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 

@@ -47,8 +47,8 @@ public class VisionPrescription extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -129,7 +129,7 @@ public class VisionPrescription extends FhirResource {
      * The date this resource was created.
      */
     public java.time.Instant created() {
-        return java.time.Instant.parse(data.getString(PROPERTY_CREATED));
+        return getInstant(PROPERTY_CREATED);
     }
 
     /**
@@ -153,7 +153,7 @@ public class VisionPrescription extends FhirResource {
      * The date (and perhaps time) when the prescription was written.
      */
     public java.time.Instant dateWritten() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE_WRITTEN));
+        return getInstant(PROPERTY_DATE_WRITTEN);
     }
 
     /**
@@ -197,8 +197,8 @@ public class VisionPrescription extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 

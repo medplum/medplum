@@ -41,7 +41,8 @@ public class EffectEvidenceSynthesisTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", EffectEvidenceSynthesis.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, EffectEvidenceSynthesis.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class EffectEvidenceSynthesisTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", EffectEvidenceSynthesis.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, EffectEvidenceSynthesis.create().url(value).build().url());
     }
 
     @Test

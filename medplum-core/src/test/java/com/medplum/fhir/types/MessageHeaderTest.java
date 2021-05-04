@@ -41,7 +41,8 @@ public class MessageHeaderTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", MessageHeader.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, MessageHeader.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

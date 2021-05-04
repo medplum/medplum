@@ -41,7 +41,8 @@ public class GroupTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Group.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Group.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

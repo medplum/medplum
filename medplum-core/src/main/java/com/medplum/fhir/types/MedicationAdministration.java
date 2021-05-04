@@ -60,8 +60,8 @@ public class MedicationAdministration extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -140,8 +140,8 @@ public class MedicationAdministration extends FhirResource {
      * A protocol, guideline, orderset, or other definition that was adhered
      * to in whole or in part by this event.
      */
-    public java.util.List<String> instantiates() {
-        return getList(String.class, PROPERTY_INSTANTIATES);
+    public java.util.List<java.net.URI> instantiates() {
+        return getList(java.net.URI.class, PROPERTY_INSTANTIATES);
     }
 
     /**
@@ -327,8 +327,8 @@ public class MedicationAdministration extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -362,8 +362,8 @@ public class MedicationAdministration extends FhirResource {
             return this;
         }
 
-        public Builder instantiates(final java.util.List<String> instantiates) {
-            b.add(PROPERTY_INSTANTIATES, FhirObject.toStringArray(instantiates));
+        public Builder instantiates(final java.util.List<java.net.URI> instantiates) {
+            b.add(PROPERTY_INSTANTIATES, FhirObject.toUriArray(instantiates));
             return this;
         }
 

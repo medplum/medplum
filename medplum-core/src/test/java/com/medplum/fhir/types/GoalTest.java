@@ -41,7 +41,8 @@ public class GoalTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Goal.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Goal.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

@@ -41,7 +41,8 @@ public class SupplyRequestTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", SupplyRequest.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, SupplyRequest.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

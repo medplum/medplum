@@ -68,7 +68,7 @@ public class TestScriptCapabilityTest {
 
     @Test
     public void testLink() {
-        final java.util.List<String> value = java.util.Collections.emptyList();
+        final java.util.List<java.net.URI> value = java.util.Collections.emptyList();
         assertEquals(value, TestScript.TestScriptCapability.create().link(value).build().link());
     }
 

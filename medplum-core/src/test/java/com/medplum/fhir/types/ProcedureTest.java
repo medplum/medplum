@@ -41,7 +41,8 @@ public class ProcedureTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Procedure.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Procedure.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -87,7 +88,7 @@ public class ProcedureTest {
 
     @Test
     public void testInstantiatesUri() {
-        final java.util.List<String> value = java.util.Collections.emptyList();
+        final java.util.List<java.net.URI> value = java.util.Collections.emptyList();
         assertEquals(value, Procedure.create().instantiatesUri(value).build().instantiatesUri());
     }
 

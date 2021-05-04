@@ -417,8 +417,8 @@ public class ElementDefinition extends FhirResource {
      * ElementDefinition for the element, including definitions, cardinality
      * constraints, bindings, invariants etc.
      */
-    public String contentReference() {
-        return getString(PROPERTY_CONTENT_REFERENCE);
+    public java.net.URI contentReference() {
+        return getUri(PROPERTY_CONTENT_REFERENCE);
     }
 
     /**
@@ -2998,8 +2998,8 @@ public class ElementDefinition extends FhirResource {
             return this;
         }
 
-        public Builder contentReference(final String contentReference) {
-            b.add(PROPERTY_CONTENT_REFERENCE, contentReference);
+        public Builder contentReference(final java.net.URI contentReference) {
+            b.add(PROPERTY_CONTENT_REFERENCE, contentReference.toString());
             return this;
         }
 
@@ -5659,8 +5659,8 @@ public class ElementDefinition extends FhirResource {
          * to http://hl7.org/fhir/StructureDefinition/string. Absolute URLs are
          * only allowed in logical models.
          */
-        public String code() {
-            return getString(PROPERTY_CODE);
+        public java.net.URI code() {
+            return getUri(PROPERTY_CODE);
         }
 
         /**
@@ -5734,8 +5734,8 @@ public class ElementDefinition extends FhirResource {
                 return this;
             }
 
-            public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+            public Builder code(final java.net.URI code) {
+                b.add(PROPERTY_CODE, code.toString());
                 return this;
             }
 

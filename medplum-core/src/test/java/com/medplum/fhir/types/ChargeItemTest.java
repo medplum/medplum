@@ -41,7 +41,8 @@ public class ChargeItemTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ChargeItem.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ChargeItem.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -81,7 +82,7 @@ public class ChargeItemTest {
 
     @Test
     public void testDefinitionUri() {
-        final java.util.List<String> value = java.util.Collections.emptyList();
+        final java.util.List<java.net.URI> value = java.util.Collections.emptyList();
         assertEquals(value, ChargeItem.create().definitionUri(value).build().definitionUri());
     }
 

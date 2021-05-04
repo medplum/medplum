@@ -67,7 +67,7 @@ public class Signature extends FhirResource {
      * When the digital signature was signed.
      */
     public java.time.Instant when() {
-        return java.time.Instant.parse(data.getString(PROPERTY_WHEN));
+        return getInstant(PROPERTY_WHEN);
     }
 
     /**

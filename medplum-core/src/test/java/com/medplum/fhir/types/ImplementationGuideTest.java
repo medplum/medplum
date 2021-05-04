@@ -41,7 +41,8 @@ public class ImplementationGuideTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ImplementationGuide.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ImplementationGuide.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class ImplementationGuideTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", ImplementationGuide.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ImplementationGuide.create().url(value).build().url());
     }
 
     @Test

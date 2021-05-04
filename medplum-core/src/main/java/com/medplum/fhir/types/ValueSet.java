@@ -57,8 +57,8 @@ public class ValueSet extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -130,8 +130,8 @@ public class ValueSet extends FhirResource {
      * the target of a canonical reference. It SHALL remain the same when the
      * value set is stored on different servers.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -196,7 +196,7 @@ public class ValueSet extends FhirResource {
      * revised (e.g. the 'content logical definition').
      */
     public java.time.Instant date() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE));
+        return getInstant(PROPERTY_DATE);
     }
 
     /**
@@ -314,8 +314,8 @@ public class ValueSet extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -344,8 +344,8 @@ public class ValueSet extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 
@@ -509,7 +509,7 @@ public class ValueSet extends FhirResource {
          * version.
          */
         public java.time.LocalDate lockedDate() {
-            return java.time.LocalDate.parse(data.getString(PROPERTY_LOCKED_DATE));
+            return getLocalDate(PROPERTY_LOCKED_DATE);
         }
 
         /**
@@ -797,8 +797,8 @@ public class ValueSet extends FhirResource {
          * An absolute URI which is the code system in which the code for this
          * item in the expansion is defined.
          */
-        public String system() {
-            return getString(PROPERTY_SYSTEM);
+        public java.net.URI system() {
+            return getUri(PROPERTY_SYSTEM);
         }
 
         /**
@@ -891,8 +891,8 @@ public class ValueSet extends FhirResource {
                 return this;
             }
 
-            public Builder system(final String system) {
-                b.add(PROPERTY_SYSTEM, system);
+            public Builder system(final java.net.URI system) {
+                b.add(PROPERTY_SYSTEM, system.toString());
                 return this;
             }
 
@@ -1140,15 +1140,15 @@ public class ValueSet extends FhirResource {
          * remain the same, and the expansion is the same, but are not required
          * to do so. This is a business identifier.
          */
-        public String identifier() {
-            return getString(PROPERTY_IDENTIFIER);
+        public java.net.URI identifier() {
+            return getUri(PROPERTY_IDENTIFIER);
         }
 
         /**
          * The time at which the expansion was produced by the expanding system.
          */
         public java.time.Instant timestamp() {
-            return java.time.Instant.parse(data.getString(PROPERTY_TIMESTAMP));
+            return getInstant(PROPERTY_TIMESTAMP);
         }
 
         /**
@@ -1212,8 +1212,8 @@ public class ValueSet extends FhirResource {
                 return this;
             }
 
-            public Builder identifier(final String identifier) {
-                b.add(PROPERTY_IDENTIFIER, identifier);
+            public Builder identifier(final java.net.URI identifier) {
+                b.add(PROPERTY_IDENTIFIER, identifier.toString());
                 return this;
             }
 
@@ -1452,8 +1452,8 @@ public class ValueSet extends FhirResource {
          * An absolute URI which is the code system from which the selected codes
          * come from.
          */
-        public String system() {
-            return getString(PROPERTY_SYSTEM);
+        public java.net.URI system() {
+            return getUri(PROPERTY_SYSTEM);
         }
 
         /**
@@ -1517,8 +1517,8 @@ public class ValueSet extends FhirResource {
                 return this;
             }
 
-            public Builder system(final String system) {
-                b.add(PROPERTY_SYSTEM, system);
+            public Builder system(final java.net.URI system) {
+                b.add(PROPERTY_SYSTEM, system.toString());
                 return this;
             }
 

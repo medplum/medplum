@@ -47,7 +47,8 @@ public class ImmunizationEducationTest {
 
     @Test
     public void testReference() {
-        assertEquals("x", Immunization.ImmunizationEducation.create().reference("x").build().reference());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Immunization.ImmunizationEducation.create().reference(value).build().reference());
     }
 
     @Test

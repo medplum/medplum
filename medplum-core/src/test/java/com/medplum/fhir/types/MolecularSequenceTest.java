@@ -41,7 +41,8 @@ public class MolecularSequenceTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", MolecularSequence.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, MolecularSequence.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

@@ -41,7 +41,8 @@ public class ResearchElementDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ResearchElementDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ResearchElementDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class ResearchElementDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", ResearchElementDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ResearchElementDefinition.create().url(value).build().url());
     }
 
     @Test

@@ -68,8 +68,8 @@ public class ChargeItem extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -143,8 +143,8 @@ public class ChargeItem extends FhirResource {
      * References the (external) source of pricing information, rules of
      * application for the code this ChargeItem uses.
      */
-    public java.util.List<String> definitionUri() {
-        return getList(String.class, PROPERTY_DEFINITION_URI);
+    public java.util.List<java.net.URI> definitionUri() {
+        return getList(java.net.URI.class, PROPERTY_DEFINITION_URI);
     }
 
     /**
@@ -293,7 +293,7 @@ public class ChargeItem extends FhirResource {
      * Date the charge item was entered.
      */
     public java.time.Instant enteredDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_ENTERED_DATE));
+        return getInstant(PROPERTY_ENTERED_DATE);
     }
 
     /**
@@ -373,8 +373,8 @@ public class ChargeItem extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -408,8 +408,8 @@ public class ChargeItem extends FhirResource {
             return this;
         }
 
-        public Builder definitionUri(final java.util.List<String> definitionUri) {
-            b.add(PROPERTY_DEFINITION_URI, FhirObject.toStringArray(definitionUri));
+        public Builder definitionUri(final java.util.List<java.net.URI> definitionUri) {
+            b.add(PROPERTY_DEFINITION_URI, FhirObject.toUriArray(definitionUri));
             return this;
         }
 

@@ -41,7 +41,8 @@ public class PlanDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", PlanDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, PlanDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class PlanDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", PlanDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, PlanDefinition.create().url(value).build().url());
     }
 
     @Test

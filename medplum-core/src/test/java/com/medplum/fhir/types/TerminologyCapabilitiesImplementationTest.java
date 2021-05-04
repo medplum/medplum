@@ -47,6 +47,7 @@ public class TerminologyCapabilitiesImplementationTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", TerminologyCapabilities.TerminologyCapabilitiesImplementation.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, TerminologyCapabilities.TerminologyCapabilitiesImplementation.create().url(value).build().url());
     }
 }

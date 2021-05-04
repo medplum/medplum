@@ -41,7 +41,8 @@ public class ImmunizationRecommendationTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ImmunizationRecommendation.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ImmunizationRecommendation.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

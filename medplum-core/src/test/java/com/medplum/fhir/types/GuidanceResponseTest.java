@@ -41,7 +41,8 @@ public class GuidanceResponseTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", GuidanceResponse.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, GuidanceResponse.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

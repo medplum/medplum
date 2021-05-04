@@ -48,8 +48,8 @@ public class Endpoint extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -188,8 +188,8 @@ public class Endpoint extends FhirResource {
     /**
      * The uri that describes the actual end-point to connect to.
      */
-    public String address() {
-        return getString(PROPERTY_ADDRESS);
+    public java.net.URI address() {
+        return getUri(PROPERTY_ADDRESS);
     }
 
     /**
@@ -224,8 +224,8 @@ public class Endpoint extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -299,8 +299,8 @@ public class Endpoint extends FhirResource {
             return this;
         }
 
-        public Builder address(final String address) {
-            b.add(PROPERTY_ADDRESS, address);
+        public Builder address(final java.net.URI address) {
+            b.add(PROPERTY_ADDRESS, address.toString());
             return this;
         }
 

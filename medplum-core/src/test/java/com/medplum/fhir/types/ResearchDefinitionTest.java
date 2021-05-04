@@ -41,7 +41,8 @@ public class ResearchDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ResearchDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ResearchDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class ResearchDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", ResearchDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ResearchDefinition.create().url(value).build().url());
     }
 
     @Test

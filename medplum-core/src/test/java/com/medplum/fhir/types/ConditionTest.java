@@ -41,7 +41,8 @@ public class ConditionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Condition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Condition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

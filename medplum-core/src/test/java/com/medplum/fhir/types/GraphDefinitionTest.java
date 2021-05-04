@@ -41,7 +41,8 @@ public class GraphDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", GraphDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, GraphDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class GraphDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", GraphDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, GraphDefinition.create().url(value).build().url());
     }
 
     @Test

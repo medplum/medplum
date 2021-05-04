@@ -52,6 +52,7 @@ public class TestReportOperationTest {
 
     @Test
     public void testDetail() {
-        assertEquals("x", TestReport.TestReportOperation.create().detail("x").build().detail());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, TestReport.TestReportOperation.create().detail(value).build().detail());
     }
 }

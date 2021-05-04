@@ -41,7 +41,8 @@ public class InsurancePlanTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", InsurancePlan.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, InsurancePlan.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

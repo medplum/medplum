@@ -42,11 +42,13 @@ public class ConsentPolicyTest {
 
     @Test
     public void testAuthority() {
-        assertEquals("x", Consent.ConsentPolicy.create().authority("x").build().authority());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Consent.ConsentPolicy.create().authority(value).build().authority());
     }
 
     @Test
     public void testUri() {
-        assertEquals("x", Consent.ConsentPolicy.create().uri("x").build().uri());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Consent.ConsentPolicy.create().uri(value).build().uri());
     }
 }

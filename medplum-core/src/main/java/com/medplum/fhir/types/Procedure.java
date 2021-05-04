@@ -71,8 +71,8 @@ public class Procedure extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -158,8 +158,8 @@ public class Procedure extends FhirResource {
      * order set or other definition that is adhered to in whole or in part
      * by this Procedure.
      */
-    public java.util.List<String> instantiatesUri() {
-        return getList(String.class, PROPERTY_INSTANTIATES_URI);
+    public java.util.List<java.net.URI> instantiatesUri() {
+        return getList(java.net.URI.class, PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -427,8 +427,8 @@ public class Procedure extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -467,8 +467,8 @@ public class Procedure extends FhirResource {
             return this;
         }
 
-        public Builder instantiatesUri(final java.util.List<String> instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATES_URI, FhirObject.toStringArray(instantiatesUri));
+        public Builder instantiatesUri(final java.util.List<java.net.URI> instantiatesUri) {
+            b.add(PROPERTY_INSTANTIATES_URI, FhirObject.toUriArray(instantiatesUri));
             return this;
         }
 

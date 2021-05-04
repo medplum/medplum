@@ -68,7 +68,7 @@ public class Annotation extends FhirResource {
      * Indicates when this particular annotation was made.
      */
     public java.time.Instant time() {
-        return java.time.Instant.parse(data.getString(PROPERTY_TIME));
+        return getInstant(PROPERTY_TIME);
     }
 
     /**

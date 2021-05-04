@@ -41,7 +41,8 @@ public class ResearchSubjectTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ResearchSubject.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ResearchSubject.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

@@ -47,7 +47,8 @@ public class CapabilityStatementImplementationTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", CapabilityStatement.CapabilityStatementImplementation.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, CapabilityStatement.CapabilityStatementImplementation.create().url(value).build().url());
     }
 
     @Test

@@ -42,7 +42,8 @@ public class ValueSetContainsTest {
 
     @Test
     public void testSystem() {
-        assertEquals("x", ValueSet.ValueSetContains.create().system("x").build().system());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ValueSet.ValueSetContains.create().system(value).build().system());
     }
 
     @Test

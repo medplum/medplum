@@ -41,7 +41,8 @@ public class SubstanceNucleicAcidTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", SubstanceNucleicAcid.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, SubstanceNucleicAcid.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

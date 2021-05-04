@@ -56,8 +56,8 @@ public class Location extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -280,8 +280,8 @@ public class Location extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -482,14 +482,14 @@ public class Location extends FhirResource {
          * Time that the Location opens.
          */
         public java.time.Instant openingTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_OPENING_TIME));
+            return getInstant(PROPERTY_OPENING_TIME);
         }
 
         /**
          * Time that the Location closes.
          */
         public java.time.Instant closingTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_CLOSING_TIME));
+            return getInstant(PROPERTY_CLOSING_TIME);
         }
 
         public static class Builder {

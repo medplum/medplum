@@ -80,8 +80,8 @@ public class Age extends FhirResource {
      * The identification of the system that provides the coded form of the
      * unit.
      */
-    public String system() {
-        return getString(PROPERTY_SYSTEM);
+    public java.net.URI system() {
+        return getUri(PROPERTY_SYSTEM);
     }
 
     /**
@@ -128,8 +128,8 @@ public class Age extends FhirResource {
             return this;
         }
 
-        public Builder system(final String system) {
-            b.add(PROPERTY_SYSTEM, system);
+        public Builder system(final java.net.URI system) {
+            b.add(PROPERTY_SYSTEM, system.toString());
             return this;
         }
 

@@ -71,8 +71,8 @@ public class Identifier extends FhirResource {
      * Establishes the namespace for the value - that is, a URL that
      * describes a set values that are unique.
      */
-    public String system() {
-        return getString(PROPERTY_SYSTEM);
+    public java.net.URI system() {
+        return getUri(PROPERTY_SYSTEM);
     }
 
     /**
@@ -128,8 +128,8 @@ public class Identifier extends FhirResource {
             return this;
         }
 
-        public Builder system(final String system) {
-            b.add(PROPERTY_SYSTEM, system);
+        public Builder system(final java.net.URI system) {
+            b.add(PROPERTY_SYSTEM, system.toString());
             return this;
         }
 

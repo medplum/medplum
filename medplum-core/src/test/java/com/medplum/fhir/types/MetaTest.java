@@ -47,7 +47,8 @@ public class MetaTest {
 
     @Test
     public void testSource() {
-        assertEquals("x", Meta.create().source("x").build().source());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Meta.create().source(value).build().source());
     }
 
     @Test

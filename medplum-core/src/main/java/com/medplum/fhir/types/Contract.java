@@ -74,8 +74,8 @@ public class Contract extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -150,8 +150,8 @@ public class Contract extends FhirResource {
      * Canonical identifier for this contract, represented as a URI (globally
      * unique).
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -192,8 +192,8 @@ public class Contract extends FhirResource {
      * The URL pointing to an externally maintained definition that is
      * adhered to in whole or in part by this Contract.
      */
-    public String instantiatesUri() {
-        return getString(PROPERTY_INSTANTIATES_URI);
+    public java.net.URI instantiatesUri() {
+        return getUri(PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -208,7 +208,7 @@ public class Contract extends FhirResource {
      * When this  Contract was issued.
      */
     public java.time.Instant issued() {
-        return java.time.Instant.parse(data.getString(PROPERTY_ISSUED));
+        return getInstant(PROPERTY_ISSUED);
     }
 
     /**
@@ -471,8 +471,8 @@ public class Contract extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -506,8 +506,8 @@ public class Contract extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 
@@ -531,8 +531,8 @@ public class Contract extends FhirResource {
             return this;
         }
 
-        public Builder instantiatesUri(final String instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATES_URI, instantiatesUri);
+        public Builder instantiatesUri(final java.net.URI instantiatesUri) {
+            b.add(PROPERTY_INSTANTIATES_URI, instantiatesUri.toString());
             return this;
         }
 
@@ -1762,7 +1762,7 @@ public class Contract extends FhirResource {
          * substantive content of the contract changes.
          */
         public java.time.Instant publicationDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_PUBLICATION_DATE));
+            return getInstant(PROPERTY_PUBLICATION_DATE);
         }
 
         /**
@@ -3156,7 +3156,7 @@ public class Contract extends FhirResource {
          * When this Contract Provision was issued.
          */
         public java.time.Instant issued() {
-            return java.time.Instant.parse(data.getString(PROPERTY_ISSUED));
+            return getInstant(PROPERTY_ISSUED);
         }
 
         /**
@@ -3441,7 +3441,7 @@ public class Contract extends FhirResource {
          * is effective.
          */
         public java.time.Instant effectiveTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_EFFECTIVE_TIME));
+            return getInstant(PROPERTY_EFFECTIVE_TIME);
         }
 
         /**
@@ -3502,7 +3502,7 @@ public class Contract extends FhirResource {
          * When payment is due.
          */
         public java.time.Instant paymentDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_PAYMENT_DATE));
+            return getInstant(PROPERTY_PAYMENT_DATE);
         }
 
         /**

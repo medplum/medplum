@@ -51,7 +51,8 @@ public class DistanceTest {
 
     @Test
     public void testSystem() {
-        assertEquals("x", Distance.create().system("x").build().system());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Distance.create().system(value).build().system());
     }
 
     @Test

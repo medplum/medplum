@@ -61,8 +61,8 @@ public class Questionnaire extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -134,8 +134,8 @@ public class Questionnaire extends FhirResource {
      * be the target of a canonical reference. It SHALL remain the same when
      * the questionnaire is stored on different servers.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -215,7 +215,7 @@ public class Questionnaire extends FhirResource {
      * the substantive content of the questionnaire changes.
      */
     public java.time.Instant date() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE));
+        return getInstant(PROPERTY_DATE);
     }
 
     /**
@@ -284,7 +284,7 @@ public class Questionnaire extends FhirResource {
      * usage.
      */
     public java.time.LocalDate approvalDate() {
-        return java.time.LocalDate.parse(data.getString(PROPERTY_APPROVAL_DATE));
+        return getLocalDate(PROPERTY_APPROVAL_DATE);
     }
 
     /**
@@ -293,7 +293,7 @@ public class Questionnaire extends FhirResource {
      * approval date.
      */
     public java.time.LocalDate lastReviewDate() {
-        return java.time.LocalDate.parse(data.getString(PROPERTY_LAST_REVIEW_DATE));
+        return getLocalDate(PROPERTY_LAST_REVIEW_DATE);
     }
 
     /**
@@ -345,8 +345,8 @@ public class Questionnaire extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -375,8 +375,8 @@ public class Questionnaire extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 
@@ -1278,8 +1278,8 @@ public class Questionnaire extends FhirResource {
          * * answerValueSet (ElementDefinition.binding)
          * * options (ElementDefinition.binding).
          */
-        public String definition() {
-            return getString(PROPERTY_DEFINITION);
+        public java.net.URI definition() {
+            return getUri(PROPERTY_DEFINITION);
         }
 
         /**
@@ -1429,8 +1429,8 @@ public class Questionnaire extends FhirResource {
                 return this;
             }
 
-            public Builder definition(final String definition) {
-                b.add(PROPERTY_DEFINITION, definition);
+            public Builder definition(final java.net.URI definition) {
+                b.add(PROPERTY_DEFINITION, definition.toString());
                 return this;
             }
 

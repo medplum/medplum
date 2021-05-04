@@ -52,7 +52,7 @@ public class Period extends FhirResource {
      * The start of the period. The boundary is inclusive.
      */
     public java.time.Instant start() {
-        return java.time.Instant.parse(data.getString(PROPERTY_START));
+        return getInstant(PROPERTY_START);
     }
 
     /**
@@ -62,7 +62,7 @@ public class Period extends FhirResource {
      * that period is expected/planned to end at that time.
      */
     public java.time.Instant end() {
-        return java.time.Instant.parse(data.getString(PROPERTY_END));
+        return getInstant(PROPERTY_END);
     }
 
     public static class Builder {

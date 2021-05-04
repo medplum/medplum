@@ -41,7 +41,8 @@ public class AuditEventTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", AuditEvent.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, AuditEvent.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

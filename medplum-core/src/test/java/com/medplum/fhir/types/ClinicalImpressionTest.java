@@ -41,7 +41,8 @@ public class ClinicalImpressionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ClinicalImpression.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ClinicalImpression.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -156,7 +157,7 @@ public class ClinicalImpressionTest {
 
     @Test
     public void testProtocol() {
-        final java.util.List<String> value = java.util.Collections.emptyList();
+        final java.util.List<java.net.URI> value = java.util.Collections.emptyList();
         assertEquals(value, ClinicalImpression.create().protocol(value).build().protocol());
     }
 

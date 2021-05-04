@@ -41,7 +41,8 @@ public class OperationDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", OperationDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, OperationDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class OperationDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", OperationDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, OperationDefinition.create().url(value).build().url());
     }
 
     @Test

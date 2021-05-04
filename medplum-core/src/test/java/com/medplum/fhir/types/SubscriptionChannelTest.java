@@ -47,7 +47,8 @@ public class SubscriptionChannelTest {
 
     @Test
     public void testEndpoint() {
-        assertEquals("x", Subscription.SubscriptionChannel.create().endpoint("x").build().endpoint());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Subscription.SubscriptionChannel.create().endpoint(value).build().endpoint());
     }
 
     @Test

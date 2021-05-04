@@ -82,8 +82,8 @@ public class Attachment extends FhirResource {
     /**
      * A location where the data can be accessed.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -112,7 +112,7 @@ public class Attachment extends FhirResource {
      * The date that the attachment was first created.
      */
     public java.time.Instant creation() {
-        return java.time.Instant.parse(data.getString(PROPERTY_CREATION));
+        return getInstant(PROPERTY_CREATION);
     }
 
     public static class Builder {
@@ -151,8 +151,8 @@ public class Attachment extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 

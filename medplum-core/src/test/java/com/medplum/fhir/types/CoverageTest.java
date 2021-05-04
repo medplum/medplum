@@ -41,7 +41,8 @@ public class CoverageTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Coverage.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Coverage.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

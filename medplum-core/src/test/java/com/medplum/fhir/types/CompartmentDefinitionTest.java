@@ -41,7 +41,8 @@ public class CompartmentDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", CompartmentDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, CompartmentDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class CompartmentDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", CompartmentDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, CompartmentDefinition.create().url(value).build().url());
     }
 
     @Test

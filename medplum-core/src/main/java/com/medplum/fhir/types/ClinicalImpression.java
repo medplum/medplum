@@ -60,8 +60,8 @@ public class ClinicalImpression extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -195,7 +195,7 @@ public class ClinicalImpression extends FhirResource {
      * Indicates when the documentation of the assessment was complete.
      */
     public java.time.Instant date() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE));
+        return getInstant(PROPERTY_DATE);
     }
 
     /**
@@ -238,8 +238,8 @@ public class ClinicalImpression extends FhirResource {
      * during this assessment, and/or that provides evidence in support of
      * the diagnosis.
      */
-    public java.util.List<String> protocol() {
-        return getList(String.class, PROPERTY_PROTOCOL);
+    public java.util.List<java.net.URI> protocol() {
+        return getList(java.net.URI.class, PROPERTY_PROTOCOL);
     }
 
     /**
@@ -312,8 +312,8 @@ public class ClinicalImpression extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -412,8 +412,8 @@ public class ClinicalImpression extends FhirResource {
             return this;
         }
 
-        public Builder protocol(final java.util.List<String> protocol) {
-            b.add(PROPERTY_PROTOCOL, FhirObject.toStringArray(protocol));
+        public Builder protocol(final java.util.List<java.net.URI> protocol) {
+            b.add(PROPERTY_PROTOCOL, FhirObject.toUriArray(protocol));
             return this;
         }
 

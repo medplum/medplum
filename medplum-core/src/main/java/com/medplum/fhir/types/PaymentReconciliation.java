@@ -54,8 +54,8 @@ public class PaymentReconciliation extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -144,7 +144,7 @@ public class PaymentReconciliation extends FhirResource {
      * The date when the resource was created.
      */
     public java.time.Instant created() {
-        return java.time.Instant.parse(data.getString(PROPERTY_CREATED));
+        return getInstant(PROPERTY_CREATED);
     }
 
     /**
@@ -188,7 +188,7 @@ public class PaymentReconciliation extends FhirResource {
      * The date of payment as indicated on the financial instrument.
      */
     public java.time.LocalDate paymentDate() {
-        return java.time.LocalDate.parse(data.getString(PROPERTY_PAYMENT_DATE));
+        return getLocalDate(PROPERTY_PAYMENT_DATE);
     }
 
     /**
@@ -253,8 +253,8 @@ public class PaymentReconciliation extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -482,7 +482,7 @@ public class PaymentReconciliation extends FhirResource {
          * The date from the response resource containing a commitment to pay.
          */
         public java.time.LocalDate date() {
-            return java.time.LocalDate.parse(data.getString(PROPERTY_DATE));
+            return getLocalDate(PROPERTY_DATE);
         }
 
         /**

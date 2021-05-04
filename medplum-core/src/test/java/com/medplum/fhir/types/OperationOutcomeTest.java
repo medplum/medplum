@@ -41,7 +41,8 @@ public class OperationOutcomeTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", OperationOutcome.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, OperationOutcome.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

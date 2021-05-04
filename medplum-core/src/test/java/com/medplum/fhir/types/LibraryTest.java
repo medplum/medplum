@@ -41,7 +41,8 @@ public class LibraryTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Library.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Library.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class LibraryTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", Library.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Library.create().url(value).build().url());
     }
 
     @Test

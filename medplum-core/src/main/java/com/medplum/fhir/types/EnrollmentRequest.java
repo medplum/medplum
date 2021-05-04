@@ -44,8 +44,8 @@ public class EnrollmentRequest extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -126,7 +126,7 @@ public class EnrollmentRequest extends FhirResource {
      * The date when this resource was created.
      */
     public java.time.Instant created() {
-        return java.time.Instant.parse(data.getString(PROPERTY_CREATED));
+        return getInstant(PROPERTY_CREATED);
     }
 
     /**
@@ -183,8 +183,8 @@ public class EnrollmentRequest extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 

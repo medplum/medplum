@@ -88,8 +88,8 @@ public class RelatedArtifact extends FhirResource {
      * A url for the artifact that can be followed to access the actual
      * content.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -149,8 +149,8 @@ public class RelatedArtifact extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 

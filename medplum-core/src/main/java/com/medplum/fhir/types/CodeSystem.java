@@ -65,8 +65,8 @@ public class CodeSystem extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -139,8 +139,8 @@ public class CodeSystem extends FhirResource {
      * the code system is stored on different servers. This is used in
      * [Coding](datatypes.html#Coding).system.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -206,7 +206,7 @@ public class CodeSystem extends FhirResource {
      * the substantive content of the code system changes.
      */
     public java.time.Instant date() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE));
+        return getInstant(PROPERTY_DATE);
     }
 
     /**
@@ -384,8 +384,8 @@ public class CodeSystem extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -414,8 +414,8 @@ public class CodeSystem extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 
@@ -1077,8 +1077,8 @@ public class CodeSystem extends FhirResource {
          * of meaning is the [Concept
          * Properties](codesystem-concept-properties.html) code system.
          */
-        public String uri() {
-            return getString(PROPERTY_URI);
+        public java.net.URI uri() {
+            return getUri(PROPERTY_URI);
         }
 
         /**
@@ -1129,8 +1129,8 @@ public class CodeSystem extends FhirResource {
                 return this;
             }
 
-            public Builder uri(final String uri) {
-                b.add(PROPERTY_URI, uri);
+            public Builder uri(final java.net.URI uri) {
+                b.add(PROPERTY_URI, uri.toString());
                 return this;
             }
 

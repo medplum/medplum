@@ -48,6 +48,7 @@ public class CapabilityStatementEndpointTest {
 
     @Test
     public void testAddress() {
-        assertEquals("x", CapabilityStatement.CapabilityStatementEndpoint.create().address("x").build().address());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, CapabilityStatement.CapabilityStatementEndpoint.create().address(value).build().address());
     }
 }

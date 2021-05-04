@@ -41,7 +41,8 @@ public class ObservationTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Observation.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Observation.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

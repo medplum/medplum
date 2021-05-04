@@ -41,7 +41,8 @@ public class AllergyIntoleranceTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", AllergyIntolerance.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, AllergyIntolerance.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

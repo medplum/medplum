@@ -42,7 +42,8 @@ public class ValueSetExpansionTest {
 
     @Test
     public void testIdentifier() {
-        assertEquals("x", ValueSet.ValueSetExpansion.create().identifier("x").build().identifier());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ValueSet.ValueSetExpansion.create().identifier(value).build().identifier());
     }
 
     @Test

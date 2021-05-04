@@ -41,7 +41,8 @@ public class PractitionerTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Practitioner.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Practitioner.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

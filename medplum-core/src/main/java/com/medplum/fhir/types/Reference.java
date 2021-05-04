@@ -76,8 +76,8 @@ public class Reference extends FhirResource {
      * only allowed for logical models (and can only be used in references in
      * logical models, not resources).
      */
-    public String type() {
-        return getString(PROPERTY_TYPE);
+    public java.net.URI type() {
+        return getUri(PROPERTY_TYPE);
     }
 
     /**
@@ -140,8 +140,8 @@ public class Reference extends FhirResource {
             return this;
         }
 
-        public Builder type(final String type) {
-            b.add(PROPERTY_TYPE, type);
+        public Builder type(final java.net.URI type) {
+            b.add(PROPERTY_TYPE, type.toString());
             return this;
         }
 

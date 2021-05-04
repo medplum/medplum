@@ -41,7 +41,8 @@ public class LinkageTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Linkage.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Linkage.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

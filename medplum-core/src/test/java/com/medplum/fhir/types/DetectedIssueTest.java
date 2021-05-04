@@ -41,7 +41,8 @@ public class DetectedIssueTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", DetectedIssue.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, DetectedIssue.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -137,7 +138,8 @@ public class DetectedIssueTest {
 
     @Test
     public void testReference() {
-        assertEquals("x", DetectedIssue.create().reference("x").build().reference());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, DetectedIssue.create().reference(value).build().reference());
     }
 
     @Test

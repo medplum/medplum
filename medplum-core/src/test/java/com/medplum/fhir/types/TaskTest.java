@@ -41,7 +41,8 @@ public class TaskTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Task.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Task.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -86,7 +87,8 @@ public class TaskTest {
 
     @Test
     public void testInstantiatesUri() {
-        assertEquals("x", Task.create().instantiatesUri("x").build().instantiatesUri());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Task.create().instantiatesUri(value).build().instantiatesUri());
     }
 
     @Test

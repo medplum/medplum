@@ -48,7 +48,8 @@ public class BundleEntryTest {
 
     @Test
     public void testFullUrl() {
-        assertEquals("x", Bundle.BundleEntry.create().fullUrl("x").build().fullUrl());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Bundle.BundleEntry.create().fullUrl(value).build().fullUrl());
     }
 
     @Test

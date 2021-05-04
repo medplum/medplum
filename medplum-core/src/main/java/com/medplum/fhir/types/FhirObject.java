@@ -1,6 +1,8 @@
 package com.medplum.fhir.types;
 
+import java.net.URI;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Objects;
@@ -60,6 +62,14 @@ public abstract class FhirObject extends AbstractMap<String, JsonValue> implemen
         return b.build();
     }
 
+    public static JsonArray toUriArray(final java.util.List<URI> list) {
+        final JsonArrayBuilder b = Json.createArrayBuilder();
+        for (final URI element : list) {
+            b.add(element.toString());
+        }
+        return b.build();
+    }
+
     public static JsonArray toInstantArray(final java.util.List<Instant> list) {
         final JsonArrayBuilder b = Json.createArrayBuilder();
         for (final Instant element : list) {
@@ -88,6 +98,29 @@ public abstract class FhirObject extends AbstractMap<String, JsonValue> implemen
     public <T> java.util.List<T> getList(final Class<T> c, final String name) {
         final JsonValue value = data.get(name);
         return value == null || value.getValueType() != ValueType.ARRAY ? null : new FhirList<>(c, (JsonArray) value);
+    }
+
+    @Override
+    public String getString(final String name) {
+        // Note that this changes the default behavior
+        // By default, getString(name) throws an exception on property not found.
+        // We change it to return null instaed.
+        return data.getString(name, null);
+    }
+
+    public URI getUri(final String name) {
+        final String str = data.getString(name, null);
+        return str == null ? null : URI.create(str);
+    }
+
+    public Instant getInstant(final String name) {
+        final String str = data.getString(name, null);
+        return str == null ? null : Instant.parse(str);
+    }
+
+    public LocalDate getLocalDate(final String name) {
+        final String str = data.getString(name, null);
+        return str == null ? null : LocalDate.parse(str);
     }
 
     /*
@@ -137,11 +170,6 @@ public abstract class FhirObject extends AbstractMap<String, JsonValue> implemen
     @Override
     public JsonString getJsonString(final String name) {
         return data.getJsonString(name);
-    }
-
-    @Override
-    public String getString(final String name) {
-        return data.getString(name, null);
     }
 
     @Override

@@ -125,7 +125,7 @@ public class MarketingStatus extends FhirResource {
      * chain.
      */
     public java.time.Instant restoreDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RESTORE_DATE));
+        return getInstant(PROPERTY_RESTORE_DATE);
     }
 
     public static class Builder {

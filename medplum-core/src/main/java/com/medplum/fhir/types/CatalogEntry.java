@@ -52,8 +52,8 @@ public class CatalogEntry extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -178,7 +178,7 @@ public class CatalogEntry extends FhirResource {
      * The date until which this catalog entry is expected to be active.
      */
     public java.time.Instant validTo() {
-        return java.time.Instant.parse(data.getString(PROPERTY_VALID_TO));
+        return getInstant(PROPERTY_VALID_TO);
     }
 
     /**
@@ -186,7 +186,7 @@ public class CatalogEntry extends FhirResource {
      * validity. This can be used to see when an item was last updated.
      */
     public java.time.Instant lastUpdated() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LAST_UPDATED));
+        return getInstant(PROPERTY_LAST_UPDATED);
     }
 
     /**
@@ -236,8 +236,8 @@ public class CatalogEntry extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 

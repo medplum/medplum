@@ -41,7 +41,8 @@ public class DeviceUseStatementTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", DeviceUseStatement.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, DeviceUseStatement.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

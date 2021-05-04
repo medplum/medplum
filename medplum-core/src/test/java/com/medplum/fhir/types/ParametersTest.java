@@ -41,7 +41,8 @@ public class ParametersTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Parameters.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Parameters.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

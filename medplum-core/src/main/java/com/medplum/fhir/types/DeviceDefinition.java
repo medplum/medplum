@@ -62,8 +62,8 @@ public class DeviceDefinition extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -258,15 +258,15 @@ public class DeviceDefinition extends FhirResource {
     /**
      * A network address on which the device may be contacted directly.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
      * Access to on-line information about the device.
      */
-    public String onlineInformation() {
-        return getString(PROPERTY_ONLINE_INFORMATION);
+    public java.net.URI onlineInformation() {
+        return getUri(PROPERTY_ONLINE_INFORMATION);
     }
 
     /**
@@ -326,8 +326,8 @@ public class DeviceDefinition extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -441,13 +441,13 @@ public class DeviceDefinition extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 
-        public Builder onlineInformation(final String onlineInformation) {
-            b.add(PROPERTY_ONLINE_INFORMATION, onlineInformation);
+        public Builder onlineInformation(final java.net.URI onlineInformation) {
+            b.add(PROPERTY_ONLINE_INFORMATION, onlineInformation.toString());
             return this;
         }
 
@@ -1164,15 +1164,15 @@ public class DeviceDefinition extends FhirResource {
         /**
          * The organization that assigns the identifier algorithm.
          */
-        public String issuer() {
-            return getString(PROPERTY_ISSUER);
+        public java.net.URI issuer() {
+            return getUri(PROPERTY_ISSUER);
         }
 
         /**
          * The jurisdiction to which the deviceIdentifier applies.
          */
-        public String jurisdiction() {
-            return getString(PROPERTY_JURISDICTION);
+        public java.net.URI jurisdiction() {
+            return getUri(PROPERTY_JURISDICTION);
         }
 
         public static class Builder {
@@ -1206,13 +1206,13 @@ public class DeviceDefinition extends FhirResource {
                 return this;
             }
 
-            public Builder issuer(final String issuer) {
-                b.add(PROPERTY_ISSUER, issuer);
+            public Builder issuer(final java.net.URI issuer) {
+                b.add(PROPERTY_ISSUER, issuer.toString());
                 return this;
             }
 
-            public Builder jurisdiction(final String jurisdiction) {
-                b.add(PROPERTY_JURISDICTION, jurisdiction);
+            public Builder jurisdiction(final java.net.URI jurisdiction) {
+                b.add(PROPERTY_JURISDICTION, jurisdiction.toString());
                 return this;
             }
 

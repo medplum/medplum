@@ -59,8 +59,8 @@ public class ImplementationGuide extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -133,8 +133,8 @@ public class ImplementationGuide extends FhirResource {
      * SHALL remain the same when the implementation guide is stored on
      * different servers.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -192,7 +192,7 @@ public class ImplementationGuide extends FhirResource {
      * changes.
      */
     public java.time.Instant date() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE));
+        return getInstant(PROPERTY_DATE);
     }
 
     /**
@@ -333,8 +333,8 @@ public class ImplementationGuide extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -363,8 +363,8 @@ public class ImplementationGuide extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 
@@ -1064,8 +1064,8 @@ public class ImplementationGuide extends FhirResource {
          * A pointer to official web page, PDF or other rendering of the
          * implementation guide.
          */
-        public String rendering() {
-            return getString(PROPERTY_RENDERING);
+        public java.net.URI rendering() {
+            return getUri(PROPERTY_RENDERING);
         }
 
         /**
@@ -1127,8 +1127,8 @@ public class ImplementationGuide extends FhirResource {
                 return this;
             }
 
-            public Builder rendering(final String rendering) {
-                b.add(PROPERTY_RENDERING, rendering);
+            public Builder rendering(final java.net.URI rendering) {
+                b.add(PROPERTY_RENDERING, rendering.toString());
                 return this;
             }
 
@@ -1846,8 +1846,8 @@ public class ImplementationGuide extends FhirResource {
         /**
          * The relative path for primary page for this resource within the IG.
          */
-        public String relativePath() {
-            return getString(PROPERTY_RELATIVE_PATH);
+        public java.net.URI relativePath() {
+            return getUri(PROPERTY_RELATIVE_PATH);
         }
 
         public static class Builder {
@@ -1891,8 +1891,8 @@ public class ImplementationGuide extends FhirResource {
                 return this;
             }
 
-            public Builder relativePath(final String relativePath) {
-                b.add(PROPERTY_RELATIVE_PATH, relativePath);
+            public Builder relativePath(final java.net.URI relativePath) {
+                b.add(PROPERTY_RELATIVE_PATH, relativePath.toString());
                 return this;
             }
 

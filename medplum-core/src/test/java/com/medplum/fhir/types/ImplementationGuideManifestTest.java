@@ -42,7 +42,8 @@ public class ImplementationGuideManifestTest {
 
     @Test
     public void testRendering() {
-        assertEquals("x", ImplementationGuide.ImplementationGuideManifest.create().rendering("x").build().rendering());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ImplementationGuide.ImplementationGuideManifest.create().rendering(value).build().rendering());
     }
 
     @Test

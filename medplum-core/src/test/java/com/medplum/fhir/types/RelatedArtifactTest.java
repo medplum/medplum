@@ -56,7 +56,8 @@ public class RelatedArtifactTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", RelatedArtifact.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, RelatedArtifact.create().url(value).build().url());
     }
 
     @Test

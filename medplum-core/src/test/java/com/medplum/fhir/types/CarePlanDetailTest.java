@@ -53,7 +53,7 @@ public class CarePlanDetailTest {
 
     @Test
     public void testInstantiatesUri() {
-        final java.util.List<String> value = java.util.Collections.emptyList();
+        final java.util.List<java.net.URI> value = java.util.Collections.emptyList();
         assertEquals(value, CarePlan.CarePlanDetail.create().instantiatesUri(value).build().instantiatesUri());
     }
 

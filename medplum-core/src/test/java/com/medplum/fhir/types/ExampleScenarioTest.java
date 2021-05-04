@@ -41,7 +41,8 @@ public class ExampleScenarioTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ExampleScenario.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ExampleScenario.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class ExampleScenarioTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", ExampleScenario.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ExampleScenario.create().url(value).build().url());
     }
 
     @Test

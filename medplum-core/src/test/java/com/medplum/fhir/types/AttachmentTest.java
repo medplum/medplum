@@ -51,7 +51,8 @@ public class AttachmentTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", Attachment.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Attachment.create().url(value).build().url());
     }
 
     @Test

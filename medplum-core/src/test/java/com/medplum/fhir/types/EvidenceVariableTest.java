@@ -41,7 +41,8 @@ public class EvidenceVariableTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", EvidenceVariable.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, EvidenceVariable.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class EvidenceVariableTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", EvidenceVariable.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, EvidenceVariable.create().url(value).build().url());
     }
 
     @Test

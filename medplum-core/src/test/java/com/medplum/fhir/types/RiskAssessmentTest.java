@@ -41,7 +41,8 @@ public class RiskAssessmentTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", RiskAssessment.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, RiskAssessment.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

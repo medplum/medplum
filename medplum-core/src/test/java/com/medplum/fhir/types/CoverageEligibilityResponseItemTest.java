@@ -116,6 +116,7 @@ public class CoverageEligibilityResponseItemTest {
 
     @Test
     public void testAuthorizationUrl() {
-        assertEquals("x", CoverageEligibilityResponse.CoverageEligibilityResponseItem.create().authorizationUrl("x").build().authorizationUrl());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, CoverageEligibilityResponse.CoverageEligibilityResponseItem.create().authorizationUrl(value).build().authorizationUrl());
     }
 }

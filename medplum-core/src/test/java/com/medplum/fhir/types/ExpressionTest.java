@@ -56,6 +56,7 @@ public class ExpressionTest {
 
     @Test
     public void testReference() {
-        assertEquals("x", Expression.create().reference("x").build().reference());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Expression.create().reference(value).build().reference());
     }
 }

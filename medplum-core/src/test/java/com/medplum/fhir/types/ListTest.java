@@ -41,7 +41,8 @@ public class ListTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", List.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, List.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

@@ -41,7 +41,8 @@ public class MedicinalProductInteractionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", MedicinalProductInteraction.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, MedicinalProductInteraction.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

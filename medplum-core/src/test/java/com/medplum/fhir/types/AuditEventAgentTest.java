@@ -81,7 +81,7 @@ public class AuditEventAgentTest {
 
     @Test
     public void testPolicy() {
-        final java.util.List<String> value = java.util.Collections.emptyList();
+        final java.util.List<java.net.URI> value = java.util.Collections.emptyList();
         assertEquals(value, AuditEvent.AuditEventAgent.create().policy(value).build().policy());
     }
 

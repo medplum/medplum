@@ -41,7 +41,8 @@ public class ContractTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Contract.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Contract.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -81,7 +82,8 @@ public class ContractTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", Contract.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Contract.create().url(value).build().url());
     }
 
     @Test
@@ -108,7 +110,8 @@ public class ContractTest {
 
     @Test
     public void testInstantiatesUri() {
-        assertEquals("x", Contract.create().instantiatesUri("x").build().instantiatesUri());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Contract.create().instantiatesUri(value).build().instantiatesUri());
     }
 
     @Test

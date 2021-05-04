@@ -41,7 +41,8 @@ public class MedicationAdministrationTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", MedicationAdministration.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, MedicationAdministration.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -81,7 +82,7 @@ public class MedicationAdministrationTest {
 
     @Test
     public void testInstantiates() {
-        final java.util.List<String> value = java.util.Collections.emptyList();
+        final java.util.List<java.net.URI> value = java.util.Collections.emptyList();
         assertEquals(value, MedicationAdministration.create().instantiates(value).build().instantiates());
     }
 

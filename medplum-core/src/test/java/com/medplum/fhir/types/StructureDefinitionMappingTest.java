@@ -47,7 +47,8 @@ public class StructureDefinitionMappingTest {
 
     @Test
     public void testUri() {
-        assertEquals("x", StructureDefinition.StructureDefinitionMapping.create().uri("x").build().uri());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, StructureDefinition.StructureDefinitionMapping.create().uri(value).build().uri());
     }
 
     @Test

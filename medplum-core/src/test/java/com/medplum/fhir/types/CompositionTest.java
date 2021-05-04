@@ -41,7 +41,8 @@ public class CompositionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Composition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Composition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

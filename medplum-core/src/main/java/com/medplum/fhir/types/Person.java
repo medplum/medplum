@@ -49,8 +49,8 @@ public class Person extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -146,7 +146,7 @@ public class Person extends FhirResource {
      * The birth date for the person.
      */
     public java.time.LocalDate birthDate() {
-        return java.time.LocalDate.parse(data.getString(PROPERTY_BIRTH_DATE));
+        return getLocalDate(PROPERTY_BIRTH_DATE);
     }
 
     /**
@@ -210,8 +210,8 @@ public class Person extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 

@@ -50,8 +50,8 @@ public class AuditEvent extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -149,7 +149,7 @@ public class AuditEvent extends FhirResource {
      * The time when the event was recorded.
      */
     public java.time.Instant recorded() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RECORDED));
+        return getInstant(PROPERTY_RECORDED);
     }
 
     /**
@@ -221,8 +221,8 @@ public class AuditEvent extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -443,8 +443,8 @@ public class AuditEvent extends FhirResource {
          * such as patient consent, guarantor funding, etc. The policy would also
          * indicate the security token used.
          */
-        public java.util.List<String> policy() {
-            return getList(String.class, PROPERTY_POLICY);
+        public java.util.List<java.net.URI> policy() {
+            return getList(java.net.URI.class, PROPERTY_POLICY);
         }
 
         /**
@@ -532,8 +532,8 @@ public class AuditEvent extends FhirResource {
                 return this;
             }
 
-            public Builder policy(final java.util.List<String> policy) {
-                b.add(PROPERTY_POLICY, FhirObject.toStringArray(policy));
+            public Builder policy(final java.util.List<java.net.URI> policy) {
+                b.add(PROPERTY_POLICY, FhirObject.toUriArray(policy));
                 return this;
             }
 

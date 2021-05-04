@@ -47,11 +47,13 @@ public class DeviceDefinitionUdiDeviceIdentifierTest {
 
     @Test
     public void testIssuer() {
-        assertEquals("x", DeviceDefinition.DeviceDefinitionUdiDeviceIdentifier.create().issuer("x").build().issuer());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, DeviceDefinition.DeviceDefinitionUdiDeviceIdentifier.create().issuer(value).build().issuer());
     }
 
     @Test
     public void testJurisdiction() {
-        assertEquals("x", DeviceDefinition.DeviceDefinitionUdiDeviceIdentifier.create().jurisdiction("x").build().jurisdiction());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, DeviceDefinition.DeviceDefinitionUdiDeviceIdentifier.create().jurisdiction(value).build().jurisdiction());
     }
 }

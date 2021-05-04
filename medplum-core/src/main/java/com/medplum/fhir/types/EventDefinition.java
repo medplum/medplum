@@ -66,8 +66,8 @@ public class EventDefinition extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -139,8 +139,8 @@ public class EventDefinition extends FhirResource {
      * can be the target of a canonical reference. It SHALL remain the same
      * when the event definition is stored on different servers.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -229,7 +229,7 @@ public class EventDefinition extends FhirResource {
      * change when the substantive content of the event definition changes.
      */
     public java.time.Instant date() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE));
+        return getInstant(PROPERTY_DATE);
     }
 
     /**
@@ -306,7 +306,7 @@ public class EventDefinition extends FhirResource {
      * usage.
      */
     public java.time.LocalDate approvalDate() {
-        return java.time.LocalDate.parse(data.getString(PROPERTY_APPROVAL_DATE));
+        return getLocalDate(PROPERTY_APPROVAL_DATE);
     }
 
     /**
@@ -315,7 +315,7 @@ public class EventDefinition extends FhirResource {
      * approval date.
      */
     public java.time.LocalDate lastReviewDate() {
-        return java.time.LocalDate.parse(data.getString(PROPERTY_LAST_REVIEW_DATE));
+        return getLocalDate(PROPERTY_LAST_REVIEW_DATE);
     }
 
     /**
@@ -409,8 +409,8 @@ public class EventDefinition extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -439,8 +439,8 @@ public class EventDefinition extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 

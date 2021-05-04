@@ -41,7 +41,8 @@ public class StructureDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", StructureDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, StructureDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class StructureDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", StructureDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, StructureDefinition.create().url(value).build().url());
     }
 
     @Test
@@ -194,7 +196,8 @@ public class StructureDefinitionTest {
 
     @Test
     public void testType() {
-        assertEquals("x", StructureDefinition.create().type("x").build().type());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, StructureDefinition.create().type(value).build().type());
     }
 
     @Test

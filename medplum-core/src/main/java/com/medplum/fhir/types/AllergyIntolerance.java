@@ -59,8 +59,8 @@ public class AllergyIntolerance extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -254,7 +254,7 @@ public class AllergyIntolerance extends FhirResource {
      * date.
      */
     public java.time.Instant recordedDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RECORDED_DATE));
+        return getInstant(PROPERTY_RECORDED_DATE);
     }
 
     /**
@@ -277,7 +277,7 @@ public class AllergyIntolerance extends FhirResource {
      * reaction event.
      */
     public java.time.Instant lastOccurrence() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LAST_OCCURRENCE));
+        return getInstant(PROPERTY_LAST_OCCURRENCE);
     }
 
     /**
@@ -321,8 +321,8 @@ public class AllergyIntolerance extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -559,7 +559,7 @@ public class AllergyIntolerance extends FhirResource {
          * Record of the date and/or time of the onset of the Reaction.
          */
         public java.time.Instant onset() {
-            return java.time.Instant.parse(data.getString(PROPERTY_ONSET));
+            return getInstant(PROPERTY_ONSET);
         }
 
         /**

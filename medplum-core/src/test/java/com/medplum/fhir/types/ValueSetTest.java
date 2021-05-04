@@ -41,7 +41,8 @@ public class ValueSetTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ValueSet.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ValueSet.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class ValueSetTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", ValueSet.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ValueSet.create().url(value).build().url());
     }
 
     @Test

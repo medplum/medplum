@@ -41,7 +41,8 @@ public class MessageDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", MessageDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, MessageDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class MessageDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", MessageDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, MessageDefinition.create().url(value).build().url());
     }
 
     @Test

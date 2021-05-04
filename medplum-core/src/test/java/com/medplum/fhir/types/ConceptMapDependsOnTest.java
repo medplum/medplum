@@ -42,7 +42,8 @@ public class ConceptMapDependsOnTest {
 
     @Test
     public void testProperty() {
-        assertEquals("x", ConceptMap.ConceptMapDependsOn.create().property("x").build().property());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ConceptMap.ConceptMapDependsOn.create().property(value).build().property());
     }
 
     @Test

@@ -51,8 +51,8 @@ public class MessageHeader extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -243,8 +243,8 @@ public class MessageHeader extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -419,8 +419,8 @@ public class MessageHeader extends FhirResource {
         /**
          * Indicates where the message should be routed to.
          */
-        public String endpoint() {
-            return getString(PROPERTY_ENDPOINT);
+        public java.net.URI endpoint() {
+            return getUri(PROPERTY_ENDPOINT);
         }
 
         /**
@@ -468,8 +468,8 @@ public class MessageHeader extends FhirResource {
                 return this;
             }
 
-            public Builder endpoint(final String endpoint) {
-                b.add(PROPERTY_ENDPOINT, endpoint);
+            public Builder endpoint(final java.net.URI endpoint) {
+                b.add(PROPERTY_ENDPOINT, endpoint.toString());
                 return this;
             }
 
@@ -713,8 +713,8 @@ public class MessageHeader extends FhirResource {
         /**
          * Identifies the routing target to send acknowledgements to.
          */
-        public String endpoint() {
-            return getString(PROPERTY_ENDPOINT);
+        public java.net.URI endpoint() {
+            return getUri(PROPERTY_ENDPOINT);
         }
 
         public static class Builder {
@@ -763,8 +763,8 @@ public class MessageHeader extends FhirResource {
                 return this;
             }
 
-            public Builder endpoint(final String endpoint) {
-                b.add(PROPERTY_ENDPOINT, endpoint);
+            public Builder endpoint(final java.net.URI endpoint) {
+                b.add(PROPERTY_ENDPOINT, endpoint.toString());
                 return this;
             }
 

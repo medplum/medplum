@@ -41,7 +41,8 @@ public class ConsentTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Consent.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Consent.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

@@ -41,7 +41,8 @@ public class TerminologyCapabilitiesTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", TerminologyCapabilities.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, TerminologyCapabilities.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class TerminologyCapabilitiesTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", TerminologyCapabilities.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, TerminologyCapabilities.create().url(value).build().url());
     }
 
     @Test

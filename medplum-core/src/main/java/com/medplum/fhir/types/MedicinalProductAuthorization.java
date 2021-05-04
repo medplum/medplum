@@ -55,8 +55,8 @@ public class MedicinalProductAuthorization extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -159,7 +159,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * The date at which the given status has become applicable.
      */
     public java.time.Instant statusDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_STATUS_DATE));
+        return getInstant(PROPERTY_STATUS_DATE);
     }
 
     /**
@@ -167,7 +167,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * of the product is anticipated to be restored.
      */
     public java.time.Instant restoreDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_RESTORE_DATE));
+        return getInstant(PROPERTY_RESTORE_DATE);
     }
 
     /**
@@ -193,7 +193,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * Regulatory Agency.
      */
     public java.time.Instant dateOfFirstAuthorization() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE_OF_FIRST_AUTHORIZATION));
+        return getInstant(PROPERTY_DATE_OF_FIRST_AUTHORIZATION);
     }
 
     /**
@@ -201,7 +201,7 @@ public class MedicinalProductAuthorization extends FhirResource {
      * product in any country in the World.
      */
     public java.time.Instant internationalBirthDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_INTERNATIONAL_BIRTH_DATE));
+        return getInstant(PROPERTY_INTERNATIONAL_BIRTH_DATE);
     }
 
     /**
@@ -265,8 +265,8 @@ public class MedicinalProductAuthorization extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 

@@ -41,7 +41,8 @@ public class TestScriptTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", TestScript.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, TestScript.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class TestScriptTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", TestScript.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, TestScript.create().url(value).build().url());
     }
 
     @Test

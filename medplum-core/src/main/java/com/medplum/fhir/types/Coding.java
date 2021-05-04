@@ -55,8 +55,8 @@ public class Coding extends FhirResource {
      * The identification of the code system that defines the meaning of the
      * symbol in the code.
      */
-    public String system() {
-        return getString(PROPERTY_SYSTEM);
+    public java.net.URI system() {
+        return getUri(PROPERTY_SYSTEM);
     }
 
     /**
@@ -116,8 +116,8 @@ public class Coding extends FhirResource {
             return this;
         }
 
-        public Builder system(final String system) {
-            b.add(PROPERTY_SYSTEM, system);
+        public Builder system(final java.net.URI system) {
+            b.add(PROPERTY_SYSTEM, system.toString());
             return this;
         }
 

@@ -63,6 +63,7 @@ public class MessageHeaderSourceTest {
 
     @Test
     public void testEndpoint() {
-        assertEquals("x", MessageHeader.MessageHeaderSource.create().endpoint("x").build().endpoint());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, MessageHeader.MessageHeaderSource.create().endpoint(value).build().endpoint());
     }
 }

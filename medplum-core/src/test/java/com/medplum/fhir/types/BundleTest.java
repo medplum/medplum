@@ -41,7 +41,8 @@ public class BundleTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Bundle.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Bundle.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

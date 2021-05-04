@@ -41,7 +41,8 @@ public class InvoiceTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Invoice.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Invoice.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

@@ -41,7 +41,8 @@ public class BinaryTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Binary.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Binary.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

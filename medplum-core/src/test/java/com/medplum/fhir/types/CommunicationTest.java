@@ -41,7 +41,8 @@ public class CommunicationTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Communication.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Communication.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -87,7 +88,7 @@ public class CommunicationTest {
 
     @Test
     public void testInstantiatesUri() {
-        final java.util.List<String> value = java.util.Collections.emptyList();
+        final java.util.List<java.net.URI> value = java.util.Collections.emptyList();
         assertEquals(value, Communication.create().instantiatesUri(value).build().instantiatesUri());
     }
 

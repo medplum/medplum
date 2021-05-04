@@ -41,7 +41,8 @@ public class MedicinalProductUndesirableEffectTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", MedicinalProductUndesirableEffect.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, MedicinalProductUndesirableEffect.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

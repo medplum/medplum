@@ -41,7 +41,8 @@ public class MeasureTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Measure.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Measure.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class MeasureTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", Measure.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Measure.create().url(value).build().url());
     }
 
     @Test

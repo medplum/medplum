@@ -41,7 +41,8 @@ public class VerificationResultTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", VerificationResult.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, VerificationResult.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

@@ -58,8 +58,8 @@ public class DiagnosticReport extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -202,7 +202,7 @@ public class DiagnosticReport extends FhirResource {
      * to providers, typically after the report was reviewed and verified.
      */
     public java.time.Instant issued() {
-        return java.time.Instant.parse(data.getString(PROPERTY_ISSUED));
+        return getInstant(PROPERTY_ISSUED);
     }
 
     /**
@@ -305,8 +305,8 @@ public class DiagnosticReport extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 

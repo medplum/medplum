@@ -65,8 +65,8 @@ public class Device extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -187,7 +187,7 @@ public class Device extends FhirResource {
      * The date and time when the device was manufactured.
      */
     public java.time.Instant manufactureDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_MANUFACTURE_DATE));
+        return getInstant(PROPERTY_MANUFACTURE_DATE);
     }
 
     /**
@@ -195,7 +195,7 @@ public class Device extends FhirResource {
      * should not be used (if applicable).
      */
     public java.time.Instant expirationDate() {
-        return java.time.Instant.parse(data.getString(PROPERTY_EXPIRATION_DATE));
+        return getInstant(PROPERTY_EXPIRATION_DATE);
     }
 
     /**
@@ -303,8 +303,8 @@ public class Device extends FhirResource {
     /**
      * A network address on which the device may be contacted directly.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -355,8 +355,8 @@ public class Device extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -495,8 +495,8 @@ public class Device extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 
@@ -972,8 +972,8 @@ public class Device extends FhirResource {
          * 4) ICCBA for other devices:
          * http://hl7.org/fhir/NamingSystem/iccbba-other-di.
          */
-        public String issuer() {
-            return getString(PROPERTY_ISSUER);
+        public java.net.URI issuer() {
+            return getUri(PROPERTY_ISSUER);
         }
 
         /**
@@ -983,8 +983,8 @@ public class Device extends FhirResource {
          * of devices managed in the U.S. by the FDA, the value is 
          * http://hl7.org/fhir/NamingSystem/fda-udi.
          */
-        public String jurisdiction() {
-            return getString(PROPERTY_JURISDICTION);
+        public java.net.URI jurisdiction() {
+            return getUri(PROPERTY_JURISDICTION);
         }
 
         /**
@@ -1044,13 +1044,13 @@ public class Device extends FhirResource {
                 return this;
             }
 
-            public Builder issuer(final String issuer) {
-                b.add(PROPERTY_ISSUER, issuer);
+            public Builder issuer(final java.net.URI issuer) {
+                b.add(PROPERTY_ISSUER, issuer.toString());
                 return this;
             }
 
-            public Builder jurisdiction(final String jurisdiction) {
-                b.add(PROPERTY_JURISDICTION, jurisdiction);
+            public Builder jurisdiction(final java.net.URI jurisdiction) {
+                b.add(PROPERTY_JURISDICTION, jurisdiction.toString());
                 return this;
             }
 

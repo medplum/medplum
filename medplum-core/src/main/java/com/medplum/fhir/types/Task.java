@@ -70,8 +70,8 @@ public class Task extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -154,8 +154,8 @@ public class Task extends FhirResource {
      * orderset or other definition that is adhered to in whole or in part by
      * this Task.
      */
-    public String instantiatesUri() {
-        return getString(PROPERTY_INSTANTIATES_URI);
+    public java.net.URI instantiatesUri() {
+        return getUri(PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -275,14 +275,14 @@ public class Task extends FhirResource {
      * The date and time this task was created.
      */
     public java.time.Instant authoredOn() {
-        return java.time.Instant.parse(data.getString(PROPERTY_AUTHORED_ON));
+        return getInstant(PROPERTY_AUTHORED_ON);
     }
 
     /**
      * The date and time of last modification to this task.
      */
     public java.time.Instant lastModified() {
-        return java.time.Instant.parse(data.getString(PROPERTY_LAST_MODIFIED));
+        return getInstant(PROPERTY_LAST_MODIFIED);
     }
 
     /**
@@ -402,8 +402,8 @@ public class Task extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -442,8 +442,8 @@ public class Task extends FhirResource {
             return this;
         }
 
-        public Builder instantiatesUri(final String instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATES_URI, instantiatesUri);
+        public Builder instantiatesUri(final java.net.URI instantiatesUri) {
+            b.add(PROPERTY_INSTANTIATES_URI, instantiatesUri.toString());
             return this;
         }
 

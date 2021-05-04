@@ -41,7 +41,8 @@ public class CatalogEntryTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", CatalogEntry.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, CatalogEntry.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

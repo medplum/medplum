@@ -101,8 +101,8 @@ public class Extension extends FhirResource {
      * Source of the definition for the extension code - a logical name or a
      * URL.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -237,16 +237,16 @@ public class Extension extends FhirResource {
      * Value of extension - must be one of a constrained set of the data
      * types (see [Extensibility](extensibility.html) for a list).
      */
-    public String valueUri() {
-        return getString(PROPERTY_VALUE_URI);
+    public java.net.URI valueUri() {
+        return getUri(PROPERTY_VALUE_URI);
     }
 
     /**
      * Value of extension - must be one of a constrained set of the data
      * types (see [Extensibility](extensibility.html) for a list).
      */
-    public String valueUrl() {
-        return getString(PROPERTY_VALUE_URL);
+    public java.net.URI valueUrl() {
+        return getUri(PROPERTY_VALUE_URL);
     }
 
     /**
@@ -526,8 +526,8 @@ public class Extension extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 
@@ -611,13 +611,13 @@ public class Extension extends FhirResource {
             return this;
         }
 
-        public Builder valueUri(final String valueUri) {
-            b.add(PROPERTY_VALUE_URI, valueUri);
+        public Builder valueUri(final java.net.URI valueUri) {
+            b.add(PROPERTY_VALUE_URI, valueUri.toString());
             return this;
         }
 
-        public Builder valueUrl(final String valueUrl) {
-            b.add(PROPERTY_VALUE_URL, valueUrl);
+        public Builder valueUrl(final java.net.URI valueUrl) {
+            b.add(PROPERTY_VALUE_URL, valueUrl.toString());
             return this;
         }
 

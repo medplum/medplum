@@ -41,7 +41,8 @@ public class ConceptMapTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ConceptMap.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ConceptMap.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class ConceptMapTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", ConceptMap.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ConceptMap.create().url(value).build().url());
     }
 
     @Test

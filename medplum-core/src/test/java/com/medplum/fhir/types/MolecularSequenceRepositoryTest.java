@@ -47,7 +47,8 @@ public class MolecularSequenceRepositoryTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", MolecularSequence.MolecularSequenceRepository.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, MolecularSequence.MolecularSequenceRepository.create().url(value).build().url());
     }
 
     @Test

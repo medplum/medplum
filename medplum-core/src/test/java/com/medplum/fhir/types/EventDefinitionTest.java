@@ -41,7 +41,8 @@ public class EventDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", EventDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, EventDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class EventDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", EventDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, EventDefinition.create().url(value).build().url());
     }
 
     @Test

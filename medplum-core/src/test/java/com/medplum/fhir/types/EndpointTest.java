@@ -41,7 +41,8 @@ public class EndpointTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Endpoint.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Endpoint.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -127,7 +128,8 @@ public class EndpointTest {
 
     @Test
     public void testAddress() {
-        assertEquals("x", Endpoint.create().address("x").build().address());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Endpoint.create().address(value).build().address());
     }
 
     @Test

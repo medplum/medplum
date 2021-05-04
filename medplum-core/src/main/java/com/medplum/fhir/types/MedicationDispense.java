@@ -65,8 +65,8 @@ public class MedicationDispense extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -270,7 +270,7 @@ public class MedicationDispense extends FhirResource {
      * The time when the dispensed product was packaged and reviewed.
      */
     public java.time.Instant whenPrepared() {
-        return java.time.Instant.parse(data.getString(PROPERTY_WHEN_PREPARED));
+        return getInstant(PROPERTY_WHEN_PREPARED);
     }
 
     /**
@@ -278,7 +278,7 @@ public class MedicationDispense extends FhirResource {
      * representative.
      */
     public java.time.Instant whenHandedOver() {
-        return java.time.Instant.parse(data.getString(PROPERTY_WHEN_HANDED_OVER));
+        return getInstant(PROPERTY_WHEN_HANDED_OVER);
     }
 
     /**
@@ -366,8 +366,8 @@ public class MedicationDispense extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 

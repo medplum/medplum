@@ -41,7 +41,8 @@ public class ActivityDefinitionTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", ActivityDefinition.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ActivityDefinition.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -75,7 +76,8 @@ public class ActivityDefinitionTest {
 
     @Test
     public void testUrl() {
-        assertEquals("x", ActivityDefinition.create().url("x").build().url());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ActivityDefinition.create().url(value).build().url());
     }
 
     @Test

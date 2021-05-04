@@ -41,7 +41,8 @@ public class ReferenceTest {
 
     @Test
     public void testType() {
-        assertEquals("x", Reference.create().type("x").build().type());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Reference.create().type(value).build().type());
     }
 
     @Test

@@ -47,7 +47,8 @@ public class TestReportParticipantTest {
 
     @Test
     public void testUri() {
-        assertEquals("x", TestReport.TestReportParticipant.create().uri("x").build().uri());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, TestReport.TestReportParticipant.create().uri(value).build().uri());
     }
 
     @Test

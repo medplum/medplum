@@ -41,7 +41,8 @@ public class DocumentManifestTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", DocumentManifest.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, DocumentManifest.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -122,7 +123,8 @@ public class DocumentManifestTest {
 
     @Test
     public void testSource() {
-        assertEquals("x", DocumentManifest.create().source("x").build().source());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, DocumentManifest.create().source(value).build().source());
     }
 
     @Test

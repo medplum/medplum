@@ -41,7 +41,8 @@ public class EncounterTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Encounter.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Encounter.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

@@ -59,8 +59,8 @@ public class ConceptMap extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -132,8 +132,8 @@ public class ConceptMap extends FhirResource {
      * be the target of a canonical reference. It SHALL remain the same when
      * the concept map is stored on different servers.
      */
-    public String url() {
-        return getString(PROPERTY_URL);
+    public java.net.URI url() {
+        return getUri(PROPERTY_URL);
     }
 
     /**
@@ -198,7 +198,7 @@ public class ConceptMap extends FhirResource {
      * the substantive content of the concept map changes.
      */
     public java.time.Instant date() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE));
+        return getInstant(PROPERTY_DATE);
     }
 
     /**
@@ -329,8 +329,8 @@ public class ConceptMap extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -359,8 +359,8 @@ public class ConceptMap extends FhirResource {
             return this;
         }
 
-        public Builder url(final String url) {
-            b.add(PROPERTY_URL, url);
+        public Builder url(final java.net.URI url) {
+            b.add(PROPERTY_URL, url.toString());
             return this;
         }
 
@@ -533,8 +533,8 @@ public class ConceptMap extends FhirResource {
          * an element somewhere that is labeled to correspond with a code system
          * property.
          */
-        public String property() {
-            return getString(PROPERTY_PROPERTY);
+        public java.net.URI property() {
+            return getUri(PROPERTY_PROPERTY);
         }
 
         /**
@@ -587,8 +587,8 @@ public class ConceptMap extends FhirResource {
                 return this;
             }
 
-            public Builder property(final String property) {
-                b.add(PROPERTY_PROPERTY, property);
+            public Builder property(final java.net.URI property) {
+                b.add(PROPERTY_PROPERTY, property.toString());
                 return this;
             }
 
@@ -813,8 +813,8 @@ public class ConceptMap extends FhirResource {
          * An absolute URI that identifies the source system where the concepts
          * to be mapped are defined.
          */
-        public String source() {
-            return getString(PROPERTY_SOURCE);
+        public java.net.URI source() {
+            return getUri(PROPERTY_SOURCE);
         }
 
         /**
@@ -829,8 +829,8 @@ public class ConceptMap extends FhirResource {
          * An absolute URI that identifies the target system that the concepts
          * will be mapped to.
          */
-        public String target() {
-            return getString(PROPERTY_TARGET);
+        public java.net.URI target() {
+            return getUri(PROPERTY_TARGET);
         }
 
         /**
@@ -884,8 +884,8 @@ public class ConceptMap extends FhirResource {
                 return this;
             }
 
-            public Builder source(final String source) {
-                b.add(PROPERTY_SOURCE, source);
+            public Builder source(final java.net.URI source) {
+                b.add(PROPERTY_SOURCE, source.toString());
                 return this;
             }
 
@@ -894,8 +894,8 @@ public class ConceptMap extends FhirResource {
                 return this;
             }
 
-            public Builder target(final String target) {
-                b.add(PROPERTY_TARGET, target);
+            public Builder target(final java.net.URI target) {
+                b.add(PROPERTY_TARGET, target.toString());
                 return this;
             }
 

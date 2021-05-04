@@ -51,7 +51,8 @@ public class CountTest {
 
     @Test
     public void testSystem() {
-        assertEquals("x", Count.create().system("x").build().system());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Count.create().system(value).build().system());
     }
 
     @Test

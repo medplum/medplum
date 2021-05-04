@@ -41,7 +41,8 @@ public class SubstanceReferenceInformationTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", SubstanceReferenceInformation.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, SubstanceReferenceInformation.create().implicitRules(value).build().implicitRules());
     }
 
     @Test

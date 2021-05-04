@@ -122,7 +122,8 @@ public class ElementDefinitionTest {
 
     @Test
     public void testContentReference() {
-        assertEquals("x", ElementDefinition.create().contentReference("x").build().contentReference());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ElementDefinition.create().contentReference(value).build().contentReference());
     }
 
     @Test

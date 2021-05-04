@@ -53,8 +53,8 @@ public class PractitionerRole extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -250,8 +250,8 @@ public class PractitionerRole extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -439,7 +439,7 @@ public class PractitionerRole extends FhirResource {
          * time is ignored.
          */
         public java.time.Instant availableStartTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLE_START_TIME));
+            return getInstant(PROPERTY_AVAILABLE_START_TIME);
         }
 
         /**
@@ -447,7 +447,7 @@ public class PractitionerRole extends FhirResource {
          * time is ignored.
          */
         public java.time.Instant availableEndTime() {
-            return java.time.Instant.parse(data.getString(PROPERTY_AVAILABLE_END_TIME));
+            return getInstant(PROPERTY_AVAILABLE_END_TIME);
         }
 
         public static class Builder {

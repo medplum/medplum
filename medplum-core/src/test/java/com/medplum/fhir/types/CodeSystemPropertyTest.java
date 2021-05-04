@@ -47,7 +47,8 @@ public class CodeSystemPropertyTest {
 
     @Test
     public void testUri() {
-        assertEquals("x", CodeSystem.CodeSystemProperty.create().uri("x").build().uri());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, CodeSystem.CodeSystemProperty.create().uri(value).build().uri());
     }
 
     @Test

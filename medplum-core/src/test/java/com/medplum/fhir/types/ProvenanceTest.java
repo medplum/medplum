@@ -41,7 +41,8 @@ public class ProvenanceTest {
 
     @Test
     public void testImplicitRules() {
-        assertEquals("x", Provenance.create().implicitRules("x").build().implicitRules());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Provenance.create().implicitRules(value).build().implicitRules());
     }
 
     @Test
@@ -98,7 +99,7 @@ public class ProvenanceTest {
 
     @Test
     public void testPolicy() {
-        final java.util.List<String> value = java.util.Collections.emptyList();
+        final java.util.List<java.net.URI> value = java.util.Collections.emptyList();
         assertEquals(value, Provenance.create().policy(value).build().policy());
     }
 

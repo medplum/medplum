@@ -51,7 +51,8 @@ public class AgeTest {
 
     @Test
     public void testSystem() {
-        assertEquals("x", Age.create().system("x").build().system());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Age.create().system(value).build().system());
     }
 
     @Test

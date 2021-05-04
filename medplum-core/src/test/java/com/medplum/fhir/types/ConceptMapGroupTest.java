@@ -42,7 +42,8 @@ public class ConceptMapGroupTest {
 
     @Test
     public void testSource() {
-        assertEquals("x", ConceptMap.ConceptMapGroup.create().source("x").build().source());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ConceptMap.ConceptMapGroup.create().source(value).build().source());
     }
 
     @Test
@@ -52,7 +53,8 @@ public class ConceptMapGroupTest {
 
     @Test
     public void testTarget() {
-        assertEquals("x", ConceptMap.ConceptMapGroup.create().target("x").build().target());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ConceptMap.ConceptMapGroup.create().target(value).build().target());
     }
 
     @Test

@@ -42,7 +42,8 @@ public class ElementDefinitionTypeTest {
 
     @Test
     public void testCode() {
-        assertEquals("x", ElementDefinition.ElementDefinitionType.create().code("x").build().code());
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ElementDefinition.ElementDefinitionType.create().code(value).build().code());
     }
 
     @Test

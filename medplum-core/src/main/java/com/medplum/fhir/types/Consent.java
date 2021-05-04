@@ -53,8 +53,8 @@ public class Consent extends FhirResource {
      * Often, this is a reference to an implementation guide that defines the
      * special rules along with other profiles etc.
      */
-    public String implicitRules() {
-        return getString(PROPERTY_IMPLICIT_RULES);
+    public java.net.URI implicitRules() {
+        return getUri(PROPERTY_IMPLICIT_RULES);
     }
 
     /**
@@ -158,7 +158,7 @@ public class Consent extends FhirResource {
      * When this  Consent was issued / created / indexed.
      */
     public java.time.Instant dateTime() {
-        return java.time.Instant.parse(data.getString(PROPERTY_DATE_TIME));
+        return getInstant(PROPERTY_DATE_TIME);
     }
 
     /**
@@ -258,8 +258,8 @@ public class Consent extends FhirResource {
             return this;
         }
 
-        public Builder implicitRules(final String implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules);
+        public Builder implicitRules(final java.net.URI implicitRules) {
+            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
@@ -668,8 +668,8 @@ public class Consent extends FhirResource {
          * accountability for  enforcing policies pertaining to Consent
          * Directives.
          */
-        public String authority() {
-            return getString(PROPERTY_AUTHORITY);
+        public java.net.URI authority() {
+            return getUri(PROPERTY_AUTHORITY);
         }
 
         /**
@@ -677,8 +677,8 @@ public class Consent extends FhirResource {
          * scope. Policies may be organizational, but are often defined
          * jurisdictionally, or in law.
          */
-        public String uri() {
-            return getString(PROPERTY_URI);
+        public java.net.URI uri() {
+            return getUri(PROPERTY_URI);
         }
 
         public static class Builder {
@@ -707,13 +707,13 @@ public class Consent extends FhirResource {
                 return this;
             }
 
-            public Builder authority(final String authority) {
-                b.add(PROPERTY_AUTHORITY, authority);
+            public Builder authority(final java.net.URI authority) {
+                b.add(PROPERTY_AUTHORITY, authority.toString());
                 return this;
             }
 
-            public Builder uri(final String uri) {
-                b.add(PROPERTY_URI, uri);
+            public Builder uri(final java.net.URI uri) {
+                b.add(PROPERTY_URI, uri.toString());
                 return this;
             }
 
@@ -1046,7 +1046,7 @@ public class Consent extends FhirResource {
          * Date verification was collected.
          */
         public java.time.Instant verificationDate() {
-            return java.time.Instant.parse(data.getString(PROPERTY_VERIFICATION_DATE));
+            return getInstant(PROPERTY_VERIFICATION_DATE);
         }
 
         public static class Builder {
