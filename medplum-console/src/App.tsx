@@ -1,22 +1,19 @@
 import { MedplumClient } from 'medplum';
 import {
-  MedplumProvider,
-  Autocomplete,
-  Button,
   CssBaseline,
   DefaultTheme,
-  Document,
-  FormSection,
   Header,
-  TextField
+  MedplumProvider
 } from 'medplum-ui';
 import React from 'react';
-import { Router } from 'react-router-dom';
+import { Route, Router, Switch } from 'react-router-dom';
 import { history } from './history';
+import { TestPage } from './TestPage';
+import { SignInPage } from './SignInPage';
 
 const medplum = new MedplumClient({
-  baseUrl: process.env.MEDPLUM_BASE_URL,
-  clientId: process.env.MEDPLUM_CLIENT_ID,
+  baseUrl: process.env.MEDPLUM_BASE_URL as string,
+  clientId: process.env.MEDPLUM_CLIENT_ID as string,
 });
 
 export default function App() {
@@ -26,19 +23,13 @@ export default function App() {
         <CssBaseline />
         <DefaultTheme />
         <Header
-          onLogin={() => console.log('onLogin')}
-          onLogout={() => console.log('onLogout')}
-          onCreateAccount={() => console.log('onCreateAccount')}
+          onSignIn={() => console.log('onLogin')}
+          onRegister={() => console.log('onCreateAccount')}
         />
-        <Document>
-          <FormSection title="Name" description="Official name or nickname of the person">
-            <TextField id="name" />
-          </FormSection>
-          <FormSection title="Patient" description="Autocomplete test">
-            <Autocomplete id="patient" resourceType="Patient" />
-          </FormSection>
-          <Button>Submit</Button>
-        </Document>
+        <Switch>
+          <Route path="/test"><TestPage /></Route>
+          <Route path="/signin"><SignInPage /></Route>
+        </Switch>
       </Router>
     </MedplumProvider>
   );

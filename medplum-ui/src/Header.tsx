@@ -4,9 +4,10 @@ import { useAuth } from './MedplumProvider';
 import './Header.css';
 
 export interface HeaderProps {
-  onLogin: () => void;
-  onLogout: () => void;
-  onCreateAccount: () => void;
+  onLogo?: () => void;
+  onProfile?: () => void;
+  onSignIn?: () => void;
+  onRegister?: () => void;
 }
 
 export function Header(props: HeaderProps) {
@@ -14,15 +15,15 @@ export function Header(props: HeaderProps) {
   return (
     <header>
       <div>
-        <a href="#"><Logo width={24} height={24} />Medplum</a>
+        <a href="#" onClick={props.onLogo}><Logo width={24} height={24} />Medplum</a>
       </div>
       <div>
         {auth.user ? (
-          <a href="#">Profile</a>
+          <a href="#" onClick={props.onProfile}>Profile</a>
         ) : (
           <>
-            <a href="#">Login</a>
-            <a href="#">Register</a>
+            <a href="#" onClick={props.onSignIn}>Sign in</a>
+            <a href="#" onClick={props.onRegister}>Register</a>
           </>
         )}
       </div>

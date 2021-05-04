@@ -4,14 +4,13 @@ import { Header } from './Header';
 import './Page.css';
 
 export interface PageProps {
-  onLogin: () => void;
-  onLogout: () => void;
-  onCreateAccount: () => void;
+  onSignIn: () => void;
+  onRegister: () => void;
 }
 
-export const Page: React.FC<PageProps> = ({ onLogin, onLogout, onCreateAccount }) => (
+export const Page: React.FC<PageProps> = ({ onSignIn, onRegister }) => (
   <>
-    <Header onLogin={onLogin} onLogout={onLogout} onCreateAccount={onCreateAccount} />
+    <Header onSignIn={onSignIn} onRegister={onRegister} />
 
     <Document>
       <h2>Hello World</h2>

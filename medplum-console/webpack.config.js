@@ -43,6 +43,7 @@ module.exports = (env, argv) => ({
   devServer: {
     contentBase: './dist',
     port: 3000,
+    writeToDisk: true,
     historyApiFallback: {
       index: 'index.html'
     }

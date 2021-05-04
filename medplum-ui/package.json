@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "rimraf lib storybook-static",
     "dev": "start-storybook -p 6006",
-    "build": "tsc && npm run copyfiles && build-storybook",
+    "build": "tsc && npm run copyfiles",
     "test": "echo \"Error: no test specified\" && exit 1",
     "copyfiles": "copyfiles -u 1 \"./src/**/*.css\" lib"
   },

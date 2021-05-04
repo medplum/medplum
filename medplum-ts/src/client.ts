@@ -88,12 +88,13 @@ export class MedplumClient extends EventTarget {
   constructor(options: MedplumClientOptions) {
     super();
 
-    if (options.baseUrl && !options.baseUrl.startsWith('http')) {
-      throw new Error('Base URL must start with http or https');
-    }
-
-    if (!options.baseUrl.endsWith('/')) {
-      throw new Error('Base URL must end with a trailing slash');
+    if (options.baseUrl) {
+      if (!options.baseUrl.startsWith('http')) {
+        throw new Error('Base URL must start with http or https');
+      }
+      if (!options.baseUrl.endsWith('/')) {
+        throw new Error('Base URL must end with a trailing slash');
+      }
     }
 
     if (!options.clientId) {

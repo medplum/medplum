@@ -11,3 +11,4 @@ export * from './MenuItem';
 export * from './Page';
 export * from './PopupMenu';
 export * from './TextField';
+export * from './SignInForm';
