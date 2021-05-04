@@ -1,4 +1,4 @@
-import { Bundle, MedplumClient } from 'medplum';
+import { Bundle, Resource } from 'medplum';
 import React, { useEffect, useRef, useState } from 'react';
 import './Autocomplete.css';
 import { useMedplum } from './MedplumProvider';
@@ -323,7 +323,7 @@ export function Autocomplete(props: AutocompleteProps) {
     response.entry.map(entry => {
       resources.push({
         id: entry.resource.id,
-        name: JSON.stringify(entry.resource.name),
+        name: resourceToString(entry.resource),
         url: '',
       });
     });
@@ -334,6 +334,27 @@ export function Autocomplete(props: AutocompleteProps) {
       dropDownVisible: resources.length > 0,
       options: resources
     });
+  }
+
+  function resourceToString(resource: Resource) {
+    const names = resource.name;
+    if (names) {
+      const name = names[0];
+      const builder: string[] = [];
+      if (name.prefix) {
+        builder.push(...name.prefix);
+      }
+      if (name.given) {
+        builder.push(...name.given);
+      }
+      if (name.family) {
+        builder.push(name.family);
+      }
+      return builder.join(' ').trim();
+    }
+
+    // Otherwise?
+    return JSON.stringify(resource);
   }
 
   /**
@@ -402,6 +423,8 @@ export function Autocomplete(props: AutocompleteProps) {
       return;
     }
 
+    e.preventDefault();
+    e.stopPropagation();
     addResource(state.options[index]);
   }
 
@@ -409,8 +432,10 @@ export function Autocomplete(props: AutocompleteProps) {
    * Dismisses the drop down menu after a slight delay.
    */
   function dismissOnDelay_() {
-    const state = stateRef.current;
-    window.setTimeout(() => setState({ ...state, dropDownVisible: false }), 200);
+    window.setTimeout(() => {
+      const state = stateRef.current;
+      setState({ ...state, dropDownVisible: false });
+    }, 200);
   }
 
   return (

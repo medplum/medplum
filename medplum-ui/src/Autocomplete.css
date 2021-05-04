@@ -4,7 +4,6 @@
   background: var(--medplum-surface);
   outline: 2px var(--medplum-surface);
   position: relative;
-  /* max-width: 420px; */
   margin: 0;
   cursor: text;
   height: 28px;
@@ -12,10 +11,6 @@
 }
 
 .medplum-autocomplete-container.focused {
-  /* background: var(--medplum-surface);
-  color: var(--medplum-gray-900);
-  border: 1px solid var(--medplum-blue-200);
-  box-shadow: 0 0 4px #bfdeff; */
   background: var(--medplum-surface);
   color: var(--medplum-gray-900);
   border: 1px solid var(--medplum-blue-300);
@@ -25,7 +20,6 @@
 .medplum-autocomplete-container>ul {
   position: relative;
   margin: 0;
-  padding: 1px 0 0 0;
   list-style-type: none;
   overflow: auto;
   cursor: text;
@@ -43,10 +37,10 @@
 
 .medplum-autocomplete-container>ul>li.choice {
   position: relative;
-  padding: 1px 6px 2px;
+  padding: 1px 6px;
   margin: 1px 0 1px 4px;
   border: 1px solid var(--medplum-orange-200);
-  border-radius: 3px;
+  border-radius: 4px;
   background-color: var(--medplum-gray-50);
   cursor: move;
   font-size: 13px;
