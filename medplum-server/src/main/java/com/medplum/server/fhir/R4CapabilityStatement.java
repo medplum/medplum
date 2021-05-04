@@ -2,6 +2,7 @@ package com.medplum.server.fhir;
 
 import static java.util.Collections.*;
 
+import java.net.URI;
 import java.util.Arrays;
 
 import jakarta.annotation.security.PermitAll;
@@ -10,6 +11,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriBuilder;
 
 import com.medplum.fhir.FhirMediaType;
 import com.medplum.fhir.JsonUtils;
@@ -25,6 +27,9 @@ import com.medplum.server.ConfigSettings;
 @Produces(FhirMediaType.APPLICATION_FHIR_JSON)
 @PermitAll
 public class R4CapabilityStatement {
+    private static final URI OAUTH_EXTENSION_URL = URI.create("http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris");
+    private static final URI TOKEN_EXTENSION_URL = URI.create("token");
+    private static final URI AUTHORIZE_EXTENSION_URL = URI.create("authorize");
     private static CapabilityStatement stmt;
 
     @Context
@@ -42,14 +47,14 @@ public class R4CapabilityStatement {
         final CapabilityStatement baseStmt = new CapabilityStatement(JsonUtils.readJsonResourceFile("CapabilityStatement.json"));
         final CapabilityStatementRest baseRest = baseStmt.rest().get(0);
 
-        final String baseUrl = (String) config.getProperty(ConfigSettings.BASE_URL);
-        final String tokenUrl = (String) config.getProperty(ConfigSettings.AUTH_TOKEN_URL);
-        final String authorizeUrl = (String) config.getProperty(ConfigSettings.AUTH_AUTHORIZE_URL);
-
         final String name = "medplum";
         final String version = "0.0.1";
-        final String fhirBaseUrl = baseUrl + "/fhir/R4";
-        final String metadataUrl = fhirBaseUrl + "/metadata";
+
+        final URI baseUrl = URI.create((String) config.getProperty(ConfigSettings.BASE_URL));
+        final URI tokenUrl = URI.create((String) config.getProperty(ConfigSettings.AUTH_TOKEN_URL));
+        final URI authorizeUrl = URI.create((String) config.getProperty(ConfigSettings.AUTH_AUTHORIZE_URL));
+        final URI fhirBaseUrl = UriBuilder.fromUri(baseUrl).path("fhir/R4/").build();
+        final URI metadataUrl = UriBuilder.fromUri(fhirBaseUrl).path("metadata").build();
 
         return CapabilityStatement.create(baseStmt)
                 .url(metadataUrl)
@@ -64,14 +69,14 @@ public class R4CapabilityStatement {
                 .rest(singletonList(CapabilityStatementRest.create(baseRest)
                         .security(CapabilityStatementSecurity.create()
                                 .extension(singletonList(Extension.create()
-                                        .url("http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris")
+                                        .url(OAUTH_EXTENSION_URL)
                                         .extension(Arrays.asList(
                                                 Extension.create()
-                                                        .url("token")
+                                                        .url(TOKEN_EXTENSION_URL)
                                                         .valueUri(tokenUrl)
                                                         .build(),
                                                 Extension.create()
-                                                        .url("authorize")
+                                                        .url(AUTHORIZE_EXTENSION_URL)
                                                         .valueUri(authorizeUrl)
                                                         .build()))
                                         .build()))

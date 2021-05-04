@@ -36,7 +36,7 @@ public abstract class BaseTest extends JerseyTest {
     @BeforeClass
     public static void setUpBaseTest() throws Exception {
         final Map<String, Object> config = new HashMap<>();
-        config.put(ConfigSettings.BASE_URL, "");
+        config.put(ConfigSettings.BASE_URL, "/");
         config.put(ConfigSettings.JDBC_URL, "jdbc:h2:mem:test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE");
         config.put(ConfigSettings.AUTH_ISSUER, "test-issuer");
         config.put(ConfigSettings.AUTH_AUDIENCE, "test-audience");

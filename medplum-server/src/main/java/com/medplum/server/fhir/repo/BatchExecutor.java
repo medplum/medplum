@@ -2,6 +2,7 @@ package com.medplum.server.fhir.repo;
 
 import static com.medplum.fhir.IdUtils.*;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,7 +65,7 @@ public class BatchExecutor {
             result.add(BundleEntry.create()
                     .response(BundleResponse.create()
                             .status(Status.fromStatusCode(entryOutcome.status()).toString())
-                            .location(entryOutcome.resource().createReference().reference())
+                            .location(URI.create(entryOutcome.resource().createReference().reference()))
                             .build())
                     .build());
         }
@@ -76,8 +77,12 @@ public class BatchExecutor {
         final Map<String, String> result = new HashMap<>();
 
         for (final BundleEntry entry : entries) {
-            final String fullUrl = entry.fullUrl();
-            if (fullUrl == null || !fullUrl.startsWith("urn:uuid:")) {
+            if (entry.fullUrl() == null) {
+                continue;
+            }
+
+            final String fullUrl = entry.fullUrl().toString();
+            if (!fullUrl.startsWith("urn:uuid:")) {
                 continue;
             }
 

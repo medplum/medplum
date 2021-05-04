@@ -79,12 +79,11 @@ public class AuthorizeEndpoint {
             throw new BadRequestException("Missing scope");
         }
 
-        final String loginUrl = config.getProperty(ConfigSettings.BASE_URL) + "/oauth2/login";
-
         return Response
                 .status(Status.FOUND)
                 .type(MediaType.APPLICATION_JSON)
-                .location(UriBuilder.fromUri(URI.create(loginUrl))
+                .location(UriBuilder.fromUri(URI.create((String) config.getProperty(ConfigSettings.BASE_URL)))
+                        .path("oauth2/login")
                         .queryParam("response_type", responseType)
                         .queryParam("client_id", clientId)
                         .queryParam("redirect_uri", redirectUri)

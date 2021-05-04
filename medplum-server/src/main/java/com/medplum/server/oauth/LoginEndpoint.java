@@ -124,8 +124,8 @@ public class LoginEndpoint {
     }
 
     private URI getRegisterLink() {
-        final String registerUrl = config.getProperty(ConfigSettings.BASE_URL) + "/oauth2/register";
-        return UriBuilder.fromUri(URI.create(registerUrl))
+        return UriBuilder.fromUri(URI.create((String) config.getProperty(ConfigSettings.BASE_URL)))
+                .path("oauth2/register")
                 .queryParam("response_type", responseType)
                 .queryParam("client_id", clientId)
                 .queryParam("redirect_uri", redirectUri)
@@ -135,9 +135,9 @@ public class LoginEndpoint {
     }
 
     private Response success(final Login login) {
-        final String roleUrl = config.getProperty(ConfigSettings.BASE_URL) + "/oauth2/role";
         return Response.status(Status.FOUND)
-                .location(UriBuilder.fromUri(URI.create(roleUrl))
+                .location(UriBuilder.fromUri(URI.create((String) config.getProperty(ConfigSettings.BASE_URL)))
+                        .path("oauth2/role")
                         .queryParam("code", login.id())
                         .queryParam("redirect_uri", redirectUri)
                         .queryParam("state", state)

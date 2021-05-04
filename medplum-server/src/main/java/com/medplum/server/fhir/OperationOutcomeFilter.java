@@ -1,20 +1,28 @@
 package com.medplum.server.fhir;
 
 import java.io.IOException;
+import java.net.URI;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.Provider;
 
 import com.medplum.fhir.types.FhirResource;
 import com.medplum.fhir.types.Meta;
 import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.server.ConfigSettings;
 
 @Provider
 public class OperationOutcomeFilter implements ContainerResponseFilter {
+
+    @Context
+    private Configuration config;
 
     @Override
     public void filter(
@@ -46,9 +54,11 @@ public class OperationOutcomeFilter implements ContainerResponseFilter {
                 responseContext.getHeaders().add(HttpHeaders.ETAG, versionId);
 
                 if (status == Status.CREATED.getStatusCode()) {
-                    // TODO: Read base url from config settings
-                    final String reference = resource.createReference().reference();
-                    final String fullUrl = "http://host.docker.internal:5000/fhir/R4/" + reference + "/_history/" + versionId;
+                    final URI baseUrl = URI.create((String) config.getProperty(ConfigSettings.BASE_URL));
+                    final URI fullUrl = UriBuilder.fromUri(baseUrl)
+                            .path("fhir/R4/{resourceType}/{id}/_history/{versionId}")
+                            .build(resource.resourceType(), resource.id(), resource.meta().versionId());
+
                     responseContext.getHeaders().add(HttpHeaders.LOCATION, fullUrl);
                 }
             }

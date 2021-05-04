@@ -1,5 +1,6 @@
 package com.medplum.server.oauth;
 
+import java.net.URI;
 import java.util.Objects;
 
 import jakarta.annotation.security.PermitAll;
@@ -18,6 +19,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.jose4j.lang.JoseException;
 
@@ -154,8 +156,10 @@ public class TokenEndpoint {
         }
 
         if (smartScopes.hasLaunchAccess()) {
+            final URI baseUrl = URI.create((String) config.getProperty(ConfigSettings.BASE_URL));
+            final URI smartStyleUrl = UriBuilder.fromUri(baseUrl).path("fhir/R4/.well-known/smart-style").build();
             jsonBuilder.add("need_patient_banner", true);
-            jsonBuilder.add("smart_style_url", config.getProperty(ConfigSettings.BASE_URL) + "/fhir/R4/.well-known/smart-style");
+            jsonBuilder.add("smart_style_url", smartStyleUrl.toString());
         }
 
         return Response.ok()

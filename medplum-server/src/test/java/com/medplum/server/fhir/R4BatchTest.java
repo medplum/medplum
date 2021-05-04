@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import static com.medplum.fhir.IdUtils.*;
 
+import java.net.URI;
 import java.util.Collections;
 
 import jakarta.json.Json;
@@ -99,7 +100,7 @@ public class R4BatchTest extends BaseTest {
     @Test
     public void testCreateTransactionWithReferences() {
         final String id = generateId();
-        final String fullUrl = "urn:uuid:" + id;
+        final URI fullUrl = URI.create("urn:uuid:" + id);
         final Response response = fhir().post("/", Bundle.create()
                 .type("transaction")
                 .entry(Collections.singletonList(BundleEntry.create()

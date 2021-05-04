@@ -131,9 +131,9 @@ public class RoleEndpoint {
             throw new BadRequestException(outcome.issue().get(0).details().text());
         }
 
-        final String scopesUrl = config.getProperty(ConfigSettings.BASE_URL) + "/oauth2/scopes";
         return Response.status(Status.FOUND)
-                .location(UriBuilder.fromUri(URI.create(scopesUrl))
+                .location(UriBuilder.fromUri(URI.create((String) config.getProperty(ConfigSettings.BASE_URL)))
+                        .path("oauth2/scopes")
                         .queryParam("code", login.id())
                         .queryParam("redirect_uri", redirectUri)
                         .queryParam("state", state)
