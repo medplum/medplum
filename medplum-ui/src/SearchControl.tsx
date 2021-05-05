@@ -1,8 +1,8 @@
-import { schema, SearchDefinition, SearchFilterDefinition, SearchResponse } from 'medplum';
+import { Resource, schema, SearchDefinition, SearchFilterDefinition, SearchResponse } from 'medplum';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
-import { SearchChangeEvent, SearchClickEvent, SearchLoadEvent } from './SearchControlEvent';
 import { SearchPopupMenu } from './SearchPopupMenu';
+import { buildFieldNameString } from './SearchUtils';
 import './SearchControl.css';
 
 /**
@@ -18,6 +18,36 @@ const MSG_NO_ORDERS = 'No orders to show.';
  */
 // const MSG_NO_FILTERS = getMsg('no filters');
 const MSG_NO_FILTERS = 'no filters';
+
+export class SearchChangeEvent extends Event {
+  readonly definition: SearchDefinition;
+
+  constructor(definition: SearchDefinition) {
+    super('change');
+    this.definition = definition;
+  }
+}
+
+export class SearchLoadEvent extends Event {
+  readonly response: SearchResponse;
+
+  constructor(response: SearchResponse) {
+    super('load');
+    this.response = response;
+  }
+}
+
+export class SearchClickEvent extends Event {
+  readonly resource: Resource;
+  readonly browserEvent: React.MouseEvent;
+
+  constructor(resource: Resource, browserEvent: React.MouseEvent) {
+    super('click');
+    this.resource = resource;
+    this.browserEvent = browserEvent;
+  }
+}
+
 
 export interface SearchControlProps {
   search: SearchDefinition;
@@ -62,22 +92,10 @@ export function SearchControl(props: SearchControlProps) {
       .then(response => {
         const state = stateRef.current;
         setState({ ...state, searchResponse: response as SearchResponse });
-        fireLoadEvent_(response as SearchResponse);
+        if (props.onLoad) {
+          props.onLoad(new SearchLoadEvent(response));
+        }
       });
-  }
-
-  function buildFieldNameString(resourceType: string, key: string): string {
-    const typeDef = schema[resourceType];
-    if (!typeDef) {
-      return key;
-    }
-
-    const field = typeDef.properties[key];
-    if (!field) {
-      return key;
-    }
-
-    return field.display;
   }
 
   /**
@@ -191,11 +209,6 @@ export function SearchControl(props: SearchControlProps) {
     return JSON.stringify(value);
   }
 
-  function killEvent(e: React.SyntheticEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
   function handleSingleCheckboxClick(e: React.MouseEvent) {
     // killEvent(e);
     e.stopPropagation();
@@ -258,7 +271,6 @@ export function SearchControl(props: SearchControlProps) {
    *
    * @param {MouseEvent} e The click event.
    * @param {Element} el The click target element.
-   * @return {boolean} True to allow default behavior; false to cancel.
    */
   function handleRowClick_(e: React.MouseEvent) {
     killEvent(e);
@@ -266,49 +278,12 @@ export function SearchControl(props: SearchControlProps) {
     const el = e.currentTarget as HTMLElement;
     const id = el.dataset['id'];
     if (id) {
-      fireClickEvent_(id, e);
-    }
-
-    return false;
-  }
-
-  /**
-   * Handles a "context menu" event, which is the defualt right click event.
-   *
-   * @param {Event} e The click event.
-   * @return {boolean} True to allow default behavior; false to cancel.
-   */
-  function handleContextMenu_(e: React.MouseEvent) {
-    killEvent(e);
-  }
-
-  /**
-   * Fires a 'change' event.
-   */
-  function fireChangeEvent_(definition: SearchDefinition) {
-    if (props.onChange) {
-      props.onChange(new SearchChangeEvent(definition));
-    }
-  }
-
-  /**
-   * Fires a 'load' event.
-   */
-  function fireLoadEvent_(response: SearchResponse) {
-    if (props.onLoad) {
-      props.onLoad(new SearchLoadEvent(response));
-    }
-  }
-
-  /**
-   * Fires a 'click' event.
-   *
-   * @param {string} entityId The order ID.
-   * @param {Event} browserEvent Browser event.
-   */
-  function fireClickEvent_(entityId: string, browserEvent: React.MouseEvent) {
-    if (props.onClick) {
-      props.onClick(new SearchClickEvent(entityId, browserEvent));
+      if (props.onClick) {
+        const entries = state.searchResponse?.entry || [];
+        const resources = entries.map(e => e.resource);
+        const resource = resources.find(r => r.id === id);
+        props.onClick(new SearchClickEvent(resource, e));
+      }
     }
   }
 
@@ -321,7 +296,7 @@ export function SearchControl(props: SearchControlProps) {
   const resources = entries.map(e => e.resource);
 
   return (
-    <div className="medplum-search-control" onContextMenu={e => handleContextMenu_(e)}>
+    <div className="medplum-search-control" onContextMenu={e => killEvent(e)}>
       <table id="medplum-search-table">
         <thead>
           <tr>
@@ -388,7 +363,9 @@ export function SearchControl(props: SearchControlProps) {
         y={state.popupY}
         field={state.popupField}
         onChange={definition => {
-          fireChangeEvent_(definition);
+          if (props.onChange) {
+            props.onChange(new SearchChangeEvent(definition));
+          }
           const state = stateRef.current;
           setState({
             ...state,
@@ -407,4 +384,9 @@ export function SearchControl(props: SearchControlProps) {
       />
     </div>
   );
+}
+
+function killEvent(e: React.SyntheticEvent) {
+  e.preventDefault();
+  e.stopPropagation();
 }

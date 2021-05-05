@@ -11,7 +11,7 @@ export function FormSection(props: FormSectionProps) {
   return (
     <fieldset>
       <legend>{props.title}</legend>
-      <small>{props.description}</small>
+      {props.description && <small>{props.description}</small>}
       {props.children}
     </fieldset>
   );

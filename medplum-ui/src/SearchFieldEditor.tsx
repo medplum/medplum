@@ -1,7 +1,7 @@
 import { schema, SearchDefinition } from 'medplum';
 import React from 'react';
 import { Dialog } from './Dialog';
-import { SearchControl } from './SearchControl';
+import { buildFieldNameString } from './SearchUtils';
 
 interface SearchFieldEditorProps {
   visible: boolean;
@@ -64,7 +64,7 @@ export class SearchFieldEditor extends React.Component<SearchFieldEditorProps, S
                     onKeyDown={e => this.handleAvailableKeyDown_(e)}
                     onDoubleClick={() => this.handleAvailableDoubleClick_()}
                   >
-                    {available.map(key => <option key={key} value={key}>{SearchControl.buildFieldNameString(resourceType, key)}</option>)}
+                    {available.map(key => <option key={key} value={key}>{buildFieldNameString(resourceType, key)}</option>)}
                   </select>
                 </td>
                 <td colSpan={2} align="center">
@@ -76,7 +76,7 @@ export class SearchFieldEditor extends React.Component<SearchFieldEditorProps, S
                     onKeyDown={e => this.handleSelectedKeyDown_(e)}
                     onDoubleClick={() => this.handleSelectedDoubleClick_()}
                   >
-                    {selected.map(key => <option key={key} value={key}>{SearchControl.buildFieldNameString(resourceType, key)}</option>)}
+                    {selected.map(key => <option key={key} value={key}>{buildFieldNameString(resourceType, key)}</option>)}
                   </select>
                 </td>
               </tr>

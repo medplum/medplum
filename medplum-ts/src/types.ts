@@ -50,7 +50,7 @@ export interface SearchDefinition {
   id?: string;
   name?: string;
   fields?: string[];
-  filters: SearchFilterDefinition[];
+  filters?: SearchFilterDefinition[];
   sort?: string;
   countField?: string;
   page?: number;

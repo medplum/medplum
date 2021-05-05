@@ -4,6 +4,7 @@ import '../src/CssBaseline.css';
 import '../src/DefaultTheme.css';
 
 export const parameters = {
+  layout: 'fullscreen',
   actions: { argTypesRegex: "^on[A-Z].*" },
   controls: {
     matchers: {

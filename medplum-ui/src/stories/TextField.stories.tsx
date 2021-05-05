@@ -1,5 +1,6 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
+import { Document } from '../Document';
 import { TextField, TextFieldProps } from '../TextField';
 
 export default {
@@ -8,9 +9,13 @@ export default {
 } as Meta;
 
 export const Basic = (args: TextFieldProps) => (
-  <TextField />
+  <Document>
+    <TextField />
+  </Document>
 );
 
 export const DefaultValue = (args: TextFieldProps) => (
-  <TextField value="Hello world" />
+  <Document>
+    <TextField value="Hello world" />
+  </Document>
 );

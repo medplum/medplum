@@ -26,7 +26,7 @@ export function clearFilters(definition: SearchDefinition) {
  * @param {string} fieldKey The field key name to clear filters.
  */
 export function clearFiltersOnField(definition: SearchDefinition, fieldKey: string) {
-  return setFilters(definition, definition.filters.filter(f => f.key !== fieldKey));
+  return setFilters(definition, (definition.filters || []).filter(f => f.key !== fieldKey));
 }
 
 /**
@@ -48,7 +48,13 @@ export function addFilter(
     definition = clearFiltersOnField(definition, field);
   }
 
-  return setFilters(definition, [...definition.filters, { key: field, op: op, value: value }]);
+  const nextFilters = [];
+  if (definition.filters) {
+    nextFilters.push(...definition.filters);
+  }
+  nextFilters.push({ key: field, op: op, value: value });
+
+  return setFilters(definition, nextFilters);
 }
 
 /**
@@ -108,6 +114,9 @@ export function removeCountField(definition: SearchDefinition) {
  * @param {number} index The filter index.
  */
 export function deleteFilter(definition: SearchDefinition, index: number) {
+  if (!definition.filters) {
+    return definition;
+  }
   const newFilters = [...definition.filters];
   newFilters.splice(index, 1);
   return {
@@ -327,6 +336,9 @@ export function addUserFilter(definition: SearchDefinition, field: string, op: s
  * @param {string} field The field key name.
  */
 export function hasFilterOnField(definition: SearchDefinition, field: string) {
+  if (!definition.filters) {
+    return false;
+  }
   return definition.filters.find(f => f.key === field) !== undefined;
 }
 
@@ -506,4 +518,18 @@ export function getOpString(op: string) {
   }
 
   return op;
+}
+
+export function buildFieldNameString(resourceType: string, key: string): string {
+  const typeDef = schema[resourceType];
+  if (!typeDef) {
+    return key;
+  }
+
+  const field = typeDef.properties[key];
+  if (!field) {
+    return key;
+  }
+
+  return field.display;
 }

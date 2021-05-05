@@ -2,8 +2,7 @@ import { schema, SearchDefinition, SearchFilterDefinition } from 'medplum';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
 import { Dialog } from './Dialog';
-import { SearchControl } from './SearchControl';
-import { addFilter, deleteFilter, getOpString } from './SearchUtils';
+import { addFilter, buildFieldNameString, deleteFilter, getOpString } from './SearchUtils';
 
 /**
  * @desc Filter editor dialog title.
@@ -59,7 +58,7 @@ class FilterRow extends React.Component<FilterRowProps, FilterRowState> {
       const filter = this.props.definition;
       return (
         <tr>
-          <td>{SearchControl.buildFieldNameString(resourceType, filter.key)}</td>
+          <td>{buildFieldNameString(resourceType, filter.key)}</td>
           <td>{getOpString(filter.op)}</td>
           <td>{filter.value}</td>
           <td>
@@ -110,7 +109,7 @@ class FilterRow extends React.Component<FilterRowProps, FilterRowState> {
         {Object.values(typeSchema.properties)
           .sort((a, b) => (a.display > b.display) ? 1 : -1)
           .map(field => (
-            <option key={field.key} value={field.key}>{SearchControl.buildFieldNameString(resourceType, field.key)}</option>
+            <option key={field.key} value={field.key}>{buildFieldNameString(resourceType, field.key)}</option>
           ))}
       </select>
     );
@@ -374,7 +373,7 @@ export class SearchFilterEditor extends React.Component<SearchFilterEditorProps,
     //   return null;
     // }
 
-    const filters = this.state.definition.filters;
+    const filters = this.state.definition.filters || [];
     // console.log('filters', filters);
 
     return (
@@ -428,6 +427,9 @@ export class SearchFilterEditor extends React.Component<SearchFilterEditorProps,
   }
 
   private onDeleteFilter(filter: SearchFilterDefinition) {
+    if (!this.state.definition.filters) {
+      return;
+    }
     const index = this.state.definition.filters.findIndex(f => Object.is(f, filter));
     this.setState({ definition: deleteFilter(this.state.definition, index) });
   }

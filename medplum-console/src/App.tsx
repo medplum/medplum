@@ -8,8 +8,11 @@ import {
 import React from 'react';
 import { Route, Router, Switch } from 'react-router-dom';
 import { history } from './history';
-import { TestPage } from './TestPage';
+import { HomePage } from './HomePage';
+import { ProfilePage } from './ProfilePage';
+import { ResourcePage } from './ResourcePage';
 import { SignInPage } from './SignInPage';
+import { TestPage } from './TestPage';
 
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL as string,
@@ -23,12 +26,17 @@ export default function App() {
         <CssBaseline />
         <DefaultTheme />
         <Header
-          onSignIn={() => console.log('onLogin')}
+          onLogo={() => history.push('/')}
+          onProfile={() => history.push('/profile')}
+          onSignIn={() => history.push('/signin')}
           onRegister={() => console.log('onCreateAccount')}
         />
         <Switch>
-          <Route path="/test"><TestPage /></Route>
-          <Route path="/signin"><SignInPage /></Route>
+          <Route exact path="/"><HomePage /></Route>
+          <Route exact path="/test"><TestPage /></Route>
+          <Route exact path="/signin"><SignInPage /></Route>
+          <Route exact path="/profile"><ProfilePage /></Route>
+          <Route exact path="/:resourceType/:id"><ResourcePage /></Route>
         </Switch>
       </Router>
     </MedplumProvider>

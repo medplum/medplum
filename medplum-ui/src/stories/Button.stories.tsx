@@ -1,6 +1,7 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Button, ButtonProps } from '../Button';
+import { Document } from '../Document';
 
 export default {
   title: 'Medplum/Button',
@@ -8,21 +9,31 @@ export default {
 } as Meta;
 
 export const Primary = (args: ButtonProps) => (
-  <Button primary={true}>Button</Button>
+  <Document>
+    <Button primary={true}>Button</Button>
+  </Document>
 );
 
 export const Secondary = (args: ButtonProps) => (
-  <Button>Button</Button>
+  <Document>
+    <Button>Button</Button>
+  </Document>
 );
 
 export const Danger = (args: ButtonProps) => (
-  <Button danger={true}>Button</Button>
+  <Document>
+    <Button danger={true}>Button</Button>
+  </Document>
 );
 
 export const Large = (args: ButtonProps) => (
-  <Button size="large">Button</Button>
+  <Document>
+    <Button size="large">Button</Button>
+  </Document>
 );
 
 export const Small = (args: ButtonProps) => (
-  <Button size="small">Button</Button>
+  <Document>
+    <Button size="small">Button</Button>
+  </Document>
 );

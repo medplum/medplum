@@ -1,6 +1,7 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Autocomplete, AutocompleteProps } from '../Autocomplete';
+import { Document } from '../Document';
 
 export default {
   title: 'Medplum/Autocomplete',
@@ -8,5 +9,7 @@ export default {
 } as Meta;
 
 export const Basic = (args: AutocompleteProps) => (
-  <Autocomplete id="foo" resourceType="Patient" />
+  <Document>
+    <Autocomplete id="foo" resourceType="Patient" />
+  </Document>
 );
