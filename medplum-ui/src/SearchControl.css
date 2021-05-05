@@ -1,51 +1,9 @@
 
-/*
- * Toolbar styles
- */
-
-#medplum-search-toolbar {
-    padding:6px;
-}
-
-#medplum-search-toolbar button {
-    font-size: 11px;
-}
-
-#medplum-search-left-toolbar {
-    float:left;
-}
-
-#medplum-search-right-toolbar {
-    float:right;
-}
-
-#medplum-quick-search {
-    width:150px;
-    font-size:11px;
-    margin:0;
-}
-
-@media (max-width: 700px) {
-    #medplum-quick-search {
-        width:50px;
-    }
-}
-
-#medplum-search-description {
-    padding:0 8px;
-    font-size:11px;
-    line-height:28px;
-    color:var(--medplum-gray-800);
-}
-
-.medplum-search {
-    max-width: 100%;
-}
-
 .medplum-search-control {
     max-width: 100%;
     overflow: auto;
     text-align:left;
+    font-size: 14px;
 }
 
 /*

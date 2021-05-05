@@ -1,3 +1,4 @@
+import React from 'react';
 import { PropertyDefinition, schema, SearchDefinition, SearchFilterDefinition } from 'medplum';
 
 /**
@@ -532,4 +533,90 @@ export function buildFieldNameString(resourceType: string, key: string): string 
   }
 
   return field.display;
+}
+
+/**
+ * Returns a HTML fragment to be displayed in the filter table for the value.
+ *
+ * @param {!Object|!string} field The field object or key.
+ * @param {?string} op The filter operation (e.g., "equals").
+ * @param {*} value The filter value
+ * @param {boolean=} opt_quotes Optional flag to put quotes around strings.
+ * @return {string} An HTML fragment that represents the value.
+ */
+export function getFilterValueString(filter: SearchFilterDefinition) {
+  let value = filter.value;
+  if (!value) {
+    return <span className="muted">none</span>;
+  }
+
+  var chunks = value.split(';');
+  return chunks.map((c: string) => '"' + c + '"').join(' or ');
+}
+
+/**
+ * Returns one of the meta fields.
+ *
+ * @param {!string} key The field key.
+ * @return {*} The value.
+ */
+export function getValue(resource: any, key: string) {
+  try {
+    return key.split('.').reduce((o, i) => o[i], resource);
+  } catch (ex) {
+    return undefined;
+  }
+}
+
+/**
+ * Returns a HTML fragment to be displayed in the search table for the value.
+ *
+ * @param {!string} key The field key name.
+ * @param {*} value The filter value
+ * @return {string} An HTML fragment that represents the value.
+ */
+export function renderValue(resourceType: string, key: string, value: any): string | JSX.Element {
+  if (!value) {
+    return <span className="muted">none</span>;
+  }
+
+  if (key === 'id' || key === 'meta.lastUpdated' || key === 'meta.versionId') {
+    return value;
+  }
+
+  const typeDef = schema[resourceType];
+  if (!typeDef) {
+    return JSON.stringify(value);
+  }
+
+  const field = typeDef.properties[key];
+  if (!field) {
+    return JSON.stringify(value);
+  }
+
+  if (field.type === 'HumanName') {
+    let result = '';
+    if (value && value.length > 0) {
+      const name = value[0];
+      if (name.prefix) {
+        result = name.prefix;
+      }
+      if (name.given) {
+        result += ' ' + name.given.join(' ');
+      }
+      if (name.family) {
+        result += ' ' + name.family;
+      }
+      if (name.suffix) {
+        result += ' ' + name.suffix;
+      }
+    }
+    return result;
+  }
+
+  if (field['type'] === 'map') {
+    return JSON.stringify(value);
+  }
+
+  return JSON.stringify(value);
 }

@@ -2,7 +2,7 @@ import { Resource, schema, SearchDefinition, SearchFilterDefinition, SearchRespo
 import React, { useEffect, useRef, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 import { SearchPopupMenu } from './SearchPopupMenu';
-import { buildFieldNameString } from './SearchUtils';
+import { buildFieldNameString, getFilterValueString, getValue, renderValue } from './SearchUtils';
 import './SearchControl.css';
 
 /**
@@ -58,6 +58,7 @@ export interface SearchControlProps {
 }
 
 interface SearchControlState {
+  search: SearchDefinition;
   searchResponse?: SearchResponse;
   allSelected: boolean;
   selected: { [id: string]: boolean };
@@ -76,6 +77,7 @@ export function SearchControl(props: SearchControlProps) {
   const medplum = useMedplum();
 
   const [state, setState] = useState<SearchControlState>({
+    search: props.search,
     allSelected: false,
     selected: {},
     popupVisible: false,
@@ -88,9 +90,9 @@ export function SearchControl(props: SearchControlProps) {
   stateRef.current = state;
 
   function requestResources() {
-    medplum.search(props.search)
+    const state = stateRef.current;
+    medplum.search(state.search)
       .then(response => {
-        const state = stateRef.current;
         setState({ ...state, searchResponse: response as SearchResponse });
         if (props.onLoad) {
           props.onLoad(new SearchLoadEvent(response));
@@ -105,108 +107,12 @@ export function SearchControl(props: SearchControlProps) {
    * @return {string} The HTML snippet for a "filters" cell.
    */
   function buildFilterString_(key: string) {
-    const filters = (props.search.filters ?? []).filter(f => f.key === key);
+    const filters = (state.search.filters ?? []).filter(f => f.key === key);
     if (filters.length === 0) {
       return <span className="muted">no filters</span>;
     }
 
     return filters.map(f => getFilterValueString(f)).join('<br>');
-  }
-
-  /**
-   * Returns a HTML fragment to be displayed in the filter table for the value.
-   *
-   * @param {!Object|!string} field The field object or key.
-   * @param {?string} op The filter operation (e.g., "equals").
-   * @param {*} value The filter value
-   * @param {boolean=} opt_quotes Optional flag to put quotes around strings.
-   * @return {string} An HTML fragment that represents the value.
-   */
-  function getFilterValueString(filter: SearchFilterDefinition) {
-    let value = filter.value;
-    if (!value) {
-      return <span className="muted">none</span>;
-    }
-
-    var chunks = value.split(';');
-    return chunks.map((c: string) => '"' + c + '"').join(' or ');
-  }
-
-  /**
-   * Returns one of the meta fields.
-   *
-   * @param {!string} key The field key.
-   * @return {*} The value.
-   */
-  function getValue(resource: any, key: string) {
-    try {
-      return key.split('.').reduce((o, i) => o[i], resource);
-    } catch (ex) {
-      return undefined;
-    }
-  }
-
-  /**
-   * Returns a HTML fragment to be displayed in the search table for the value.
-   *
-   * @param {!string} key The field key name.
-   * @param {*} value The filter value
-   * @return {string} An HTML fragment that represents the value.
-   */
-  function renderValue(key: string, value: any): string | JSX.Element {
-    if (!value) {
-      return <span className="muted">none</span>;
-    }
-
-    if (key === 'id' || key === 'meta.lastUpdated' || key === 'meta.versionId') {
-      return value;
-    }
-
-    const typeDef = schema[props.search.resourceType];
-    if (!typeDef) {
-      return JSON.stringify(value);
-    }
-
-    const field = typeDef.properties[key];
-    if (!field) {
-      return JSON.stringify(value);
-    }
-
-    if (field.type === 'HumanName') {
-      let result = '';
-      if (value && value.length > 0) {
-        const name = value[0];
-        if (name.prefix) {
-          result = name.prefix;
-        }
-        if (name.given) {
-          result += ' ' + name.given.join(' ');
-        }
-        if (name.family) {
-          result += ' ' + name.family;
-        }
-        if (name.suffix) {
-          result += ' ' + name.suffix;
-        }
-      }
-      return result;
-    }
-
-    // if (field['type'] === 'name') {
-    //   var pn = new PersonName(/** @type {!string} */(value));
-    //   return pn.getDisplayString();
-    // }
-
-    // if (field['type'] === 'user') {
-    //   var pn = new PersonName(/** @type {!string} */(value['name']));
-    //   return pn.getDisplayString();
-    // }
-
-    if (field['type'] === 'map') {
-      return JSON.stringify(value);
-    }
-
-    return JSON.stringify(value);
   }
 
   function handleSingleCheckboxClick(e: React.MouseEvent) {
@@ -253,7 +159,6 @@ export function SearchControl(props: SearchControlProps) {
   function handleSortClick_(e: React.MouseEvent) {
     const el = e.currentTarget as HTMLElement;
     const key = el.dataset['key'];
-    console.log('cody handle sort click', el, key);
     if (key) {
       const state = stateRef.current;
       setState({
@@ -287,11 +192,11 @@ export function SearchControl(props: SearchControlProps) {
     }
   }
 
-  useEffect(() => requestResources(), [props.search]);
+  useEffect(() => requestResources(), [state.search]);
 
   const checkboxColumn = props.checkboxesEnabled;
-  const fields = props.search.fields || ['id', 'meta.lastUpdated', 'name'];
-  const resourceType = props.search.resourceType;
+  const fields = state.search.fields || ['id', 'meta.lastUpdated', 'name'];
+  const resourceType = state.search.resourceType;
   const entries = state.searchResponse?.entry || [];
   const resources = entries.map(e => e.resource);
 
@@ -348,7 +253,7 @@ export function SearchControl(props: SearchControlProps) {
                 </td>
               }
               {fields.map(field =>
-                <td key={field}>{renderValue(field, getValue(resource, field))}</td>
+                <td key={field}>{renderValue(state.search.resourceType, field, getValue(resource, field))}</td>
               )}
             </tr>
           )}
@@ -357,7 +262,7 @@ export function SearchControl(props: SearchControlProps) {
       {resources.length === 0 &&
         <div className="medplum-empty-search">{MSG_NO_ORDERS}</div>}
       <SearchPopupMenu
-        search={props.search}
+        search={state.search}
         visible={state.popupVisible}
         x={state.popupX}
         y={state.popupY}
@@ -369,6 +274,7 @@ export function SearchControl(props: SearchControlProps) {
           const state = stateRef.current;
           setState({
             ...state,
+            search: definition,
             popupVisible: false,
             popupField: ''
           });
