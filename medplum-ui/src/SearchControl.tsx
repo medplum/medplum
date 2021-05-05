@@ -1,5 +1,6 @@
-import { MedplumClient, schema, SearchDefinition, SearchFilterDefinition, SearchResponse } from 'medplum';
-import React from 'react';
+import { schema, SearchDefinition, SearchFilterDefinition, SearchResponse } from 'medplum';
+import React, { useEffect, useRef, useState } from 'react';
+import { useMedplum } from './MedplumProvider';
 import { SearchChangeEvent, SearchClickEvent, SearchLoadEvent } from './SearchControlEvent';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import './SearchControl.css';
@@ -18,12 +19,12 @@ const MSG_NO_ORDERS = 'No orders to show.';
 // const MSG_NO_FILTERS = getMsg('no filters');
 const MSG_NO_FILTERS = 'no filters';
 
-interface SearchControlProps {
+export interface SearchControlProps {
   search: SearchDefinition;
-  checkboxColumnVisible?: boolean;
-  onLoad: (e: SearchLoadEvent) => void;
-  onChange: (e: SearchChangeEvent) => void;
-  onClick: (e: SearchClickEvent) => void;
+  checkboxesEnabled?: boolean;
+  onLoad?: (e: SearchLoadEvent) => void;
+  onChange?: (e: SearchChangeEvent) => void;
+  onClick?: (e: SearchClickEvent) => void;
 }
 
 interface SearchControlState {
@@ -41,128 +42,31 @@ interface SearchControlState {
  * It includes the table, rows, headers, sorting, etc.
  * It DOES NOT include the field editor, filter editor, pagination buttons.
  */
-export class SearchControl extends React.Component<SearchControlProps, SearchControlState> {
-  static defaultProps = {
-    checkboxColumnVisible: true
-  }
+export function SearchControl(props: SearchControlProps) {
+  const medplum = useMedplum();
 
-  constructor(props: SearchControlProps) {
-    super(props);
+  const [state, setState] = useState<SearchControlState>({
+    allSelected: false,
+    selected: {},
+    popupVisible: false,
+    popupX: 0,
+    popupY: 0,
+    popupField: ''
+  });
 
-    this.state = {
-      allSelected: false,
-      selected: {},
-      popupVisible: false,
-      popupX: 0,
-      popupY: 0,
-      popupField: ''
-    };
-  }
+  const stateRef = useRef<SearchControlState>(state);
+  stateRef.current = state;
 
-  render() {
-    const checkboxColumn = this.props.checkboxColumnVisible;
-    const fields = this.props.search.fields || [];
-    const resourceType = this.props.search.resourceType;
-    const entries = this.state.searchResponse?.entry || [];
-    const resources = entries.map(e => e.resource);
-
-    return (
-      <div className="medplum-search-control" onContextMenu={e => this.handleContextMenu_(e)}>
-        <table id="medplum-search-table">
-          <thead>
-            <tr>
-              {checkboxColumn &&
-                <th className="medplum-search-icon-cell">
-                  <input
-                    type="checkbox"
-                    value="checked"
-                    checked={this.state.allSelected}
-                    onClick={e => this.handleAllCheckboxClick(e)}
-                    onChange={() => { }}
-                  />
-                </th>
-              }
-              {fields.map(field =>
-                <th
-                  key={field}
-                  data-key={field}
-                  onClick={e => this.handleSortClick_(e)}
-                >{SearchControl.buildFieldNameString(resourceType, field)}</th>
-              )}
-            </tr>
-            <tr>
-              {checkboxColumn &&
-                <th className="filters medplum-search-icon-cell" />
-              }
-              {fields.map(field =>
-                <th key={field} data-key={field} className="filters">{this.buildFilterString_(field)}</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {resources.map(resource =>
-              <tr
-                key={resource.id}
-                data-id={resource.id}
-                className={resource.priority === 'High' ? "high-priority" : resource.status === 'Duplicate' ? "duplicate" : ""}
-                onClick={e => this.handleRowClick_(e)}>
-                {checkboxColumn &&
-                  <td className="medplum-search-icon-cell">
-                    <input
-                      type="checkbox"
-                      value="checked"
-                      data-id={resource.id}
-                      checked={!!this.state.selected[resource.id]}
-                      onClick={e => this.handleSingleCheckboxClick(e)}
-                      onChange={() => { }}
-                    />
-                  </td>
-                }
-                {this.props.search.fields?.map(field =>
-                  <td key={field}>{this.renderValue(field, this.getValue(resource, field))}</td>
-                )}
-              </tr>
-            )}
-          </tbody>
-        </table>
-        {resources.length === 0 &&
-          <div className="medplum-empty-search">{MSG_NO_ORDERS}</div>}
-        <SearchPopupMenu
-          search={this.props.search}
-          visible={this.state.popupVisible}
-          x={this.state.popupX}
-          y={this.state.popupY}
-          field={this.state.popupField}
-          onChange={definition => {
-            this.fireChangeEvent_(definition);
-            this.setState({ popupVisible: false, popupField: '' });
-          }}
-          onClose={() => this.setState({ popupVisible: false, popupField: '' })}
-        />
-      </div>
-    );
-  }
-
-  componentDidMount() {
-    this.requestResources();
-  }
-
-  componentDidUpdate(prevProps: SearchControlProps) {
-    if (JSON.stringify(prevProps.search) !== JSON.stringify(this.props.search)) {
-      this.requestResources();
-    }
-  }
-
-  private requestResources() {
-    const medplum = (window as any).medplum as MedplumClient;
-    medplum.search(this.props.search)
+  function requestResources() {
+    medplum.search(props.search)
       .then(response => {
-        this.setState({ searchResponse: response as SearchResponse });
-        this.fireLoadEvent_(response as SearchResponse);
+        const state = stateRef.current;
+        setState({ ...state, searchResponse: response as SearchResponse });
+        fireLoadEvent_(response as SearchResponse);
       });
   }
 
-  static buildFieldNameString(resourceType: string, key: string): string {
+  function buildFieldNameString(resourceType: string, key: string): string {
     const typeDef = schema[resourceType];
     if (!typeDef) {
       return key;
@@ -182,13 +86,13 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
    * @param {string} key The key for the current field/column.
    * @return {string} The HTML snippet for a "filters" cell.
    */
-  private buildFilterString_(key: string) {
-    const filters = this.props.search.filters.filter(f => f.key === key);
+  function buildFilterString_(key: string) {
+    const filters = (props.search.filters ?? []).filter(f => f.key === key);
     if (filters.length === 0) {
       return <span className="muted">no filters</span>;
     }
 
-    return filters.map(f => this.getFilterValueString(f)).join('<br>');
+    return filters.map(f => getFilterValueString(f)).join('<br>');
   }
 
   /**
@@ -200,7 +104,7 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
    * @param {boolean=} opt_quotes Optional flag to put quotes around strings.
    * @return {string} An HTML fragment that represents the value.
    */
-  getFilterValueString(filter: SearchFilterDefinition) {
+  function getFilterValueString(filter: SearchFilterDefinition) {
     let value = filter.value;
     if (!value) {
       return <span className="muted">none</span>;
@@ -216,7 +120,7 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
    * @param {!string} key The field key.
    * @return {*} The value.
    */
-  getValue(resource: any, key: string) {
+  function getValue(resource: any, key: string) {
     try {
       return key.split('.').reduce((o, i) => o[i], resource);
     } catch (ex) {
@@ -231,7 +135,7 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
    * @param {*} value The filter value
    * @return {string} An HTML fragment that represents the value.
    */
-  renderValue(key: string, value: any): string | JSX.Element {
+  function renderValue(key: string, value: any): string | JSX.Element {
     if (!value) {
       return <span className="muted">none</span>;
     }
@@ -240,7 +144,7 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
       return value;
     }
 
-    const typeDef = schema[this.props.search.resourceType];
+    const typeDef = schema[props.search.resourceType];
     if (!typeDef) {
       return JSON.stringify(value);
     }
@@ -287,42 +191,44 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
     return JSON.stringify(value);
   }
 
-  private killEvent(e: React.SyntheticEvent) {
+  function killEvent(e: React.SyntheticEvent) {
     e.preventDefault();
     e.stopPropagation();
   }
 
-  private handleSingleCheckboxClick(e: React.MouseEvent) {
-    // this.killEvent(e);
+  function handleSingleCheckboxClick(e: React.MouseEvent) {
+    // killEvent(e);
     e.stopPropagation();
 
     const el = e.currentTarget as HTMLInputElement;
     const checked = el.checked;
     const id = el.dataset['id'];
     if (id) {
-      const newSelected = { ...this.state.selected };
+      const state = stateRef.current;
+      const newSelected = { ...state.selected };
       if (checked) {
         newSelected[id] = true;
       } else {
         delete newSelected[id];
       }
-      this.setState({ selected: newSelected })
+      setState({ ...state, selected: newSelected })
     }
   }
 
-  private handleAllCheckboxClick(e: React.MouseEvent) {
-    // this.killEvent(e);
+  function handleAllCheckboxClick(e: React.MouseEvent) {
+    // killEvent(e);
     e.stopPropagation();
 
     const el = e.currentTarget as HTMLInputElement;
     const checked = el.checked;
     const newSelected = {} as { [id: string]: boolean };
+    const state = stateRef.current;
     if (checked) {
-      const entries = this.state.searchResponse?.entry || [];
+      const entries = state.searchResponse?.entry || [];
       const resources = entries.map(e => e.resource);
       resources.forEach(r => newSelected[r.id] = checked);
     }
-    this.setState({ allSelected: checked, selected: newSelected });
+    setState({ ...state, allSelected: checked, selected: newSelected });
     return true;
   }
 
@@ -331,11 +237,19 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
    *
    * @param {MouseEvent} e The click event.
    */
-  handleSortClick_(e: React.MouseEvent) {
+  function handleSortClick_(e: React.MouseEvent) {
     const el = e.currentTarget as HTMLElement;
     const key = el.dataset['key'];
+    console.log('cody handle sort click', el, key);
     if (key) {
-      this.setState({ popupVisible: true, popupX: e.clientX, popupY: e.clientY, popupField: key });
+      const state = stateRef.current;
+      setState({
+        ...state,
+        popupVisible: true,
+        popupX: e.clientX,
+        popupY: e.clientY,
+        popupField: key
+      });
     }
   }
 
@@ -346,13 +260,13 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
    * @param {Element} el The click target element.
    * @return {boolean} True to allow default behavior; false to cancel.
    */
-  private handleRowClick_(e: React.MouseEvent) {
-    this.killEvent(e);
+  function handleRowClick_(e: React.MouseEvent) {
+    killEvent(e);
 
     const el = e.currentTarget as HTMLElement;
     const id = el.dataset['id'];
     if (id) {
-      this.fireClickEvent_(id, e);
+      fireClickEvent_(id, e);
     }
 
     return false;
@@ -364,29 +278,25 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
    * @param {Event} e The click event.
    * @return {boolean} True to allow default behavior; false to cancel.
    */
-  private handleContextMenu_(e: React.MouseEvent) {
-    this.killEvent(e);
-
-    // Return false to disable context menu
-    // http://stackoverflow.com/questions/381795/how-to-disable-right-click-context-menu-in-javascript
-    return false;
+  function handleContextMenu_(e: React.MouseEvent) {
+    killEvent(e);
   }
 
   /**
    * Fires a 'change' event.
    */
-  private fireChangeEvent_(definition: SearchDefinition) {
-    if (this.props.onChange) {
-      this.props.onChange(new SearchChangeEvent(definition));
+  function fireChangeEvent_(definition: SearchDefinition) {
+    if (props.onChange) {
+      props.onChange(new SearchChangeEvent(definition));
     }
   }
 
   /**
    * Fires a 'load' event.
    */
-  private fireLoadEvent_(response: SearchResponse) {
-    if (this.props.onLoad) {
-      this.props.onLoad(new SearchLoadEvent(response));
+  function fireLoadEvent_(response: SearchResponse) {
+    if (props.onLoad) {
+      props.onLoad(new SearchLoadEvent(response));
     }
   }
 
@@ -396,22 +306,105 @@ export class SearchControl extends React.Component<SearchControlProps, SearchCon
    * @param {string} entityId The order ID.
    * @param {Event} browserEvent Browser event.
    */
-  fireClickEvent_(entityId: string, browserEvent: React.MouseEvent) {
-    if (this.props.onClick) {
-      this.props.onClick(new SearchClickEvent(entityId, browserEvent));
+  function fireClickEvent_(entityId: string, browserEvent: React.MouseEvent) {
+    if (props.onClick) {
+      props.onClick(new SearchClickEvent(entityId, browserEvent));
     }
   }
 
-  /**
-   * Returns the selected text.
-   *
-   * @return {string} The selected text.
-   */
-  getSelectedText_() {
-    const selection = window.getSelection();
-    if (!selection) {
-      return '';
-    }
-    return selection.toString();
-  }
+  useEffect(() => requestResources(), [props.search]);
+
+  const checkboxColumn = props.checkboxesEnabled;
+  const fields = props.search.fields || ['id', 'meta.lastUpdated', 'name'];
+  const resourceType = props.search.resourceType;
+  const entries = state.searchResponse?.entry || [];
+  const resources = entries.map(e => e.resource);
+
+  return (
+    <div className="medplum-search-control" onContextMenu={e => handleContextMenu_(e)}>
+      <table id="medplum-search-table">
+        <thead>
+          <tr>
+            {checkboxColumn &&
+              <th className="medplum-search-icon-cell">
+                <input
+                  type="checkbox"
+                  value="checked"
+                  checked={state.allSelected}
+                  onClick={e => handleAllCheckboxClick(e)}
+                  onChange={() => { }}
+                />
+              </th>
+            }
+            {fields.map(field =>
+              <th
+                key={field}
+                data-key={field}
+                onClick={e => handleSortClick_(e)}
+              >{buildFieldNameString(resourceType, field)}</th>
+            )}
+          </tr>
+          <tr>
+            {checkboxColumn &&
+              <th className="filters medplum-search-icon-cell" />
+            }
+            {fields.map(field =>
+              <th key={field} data-key={field} className="filters">{buildFilterString_(field)}</th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {resources.map(resource =>
+            <tr
+              key={resource.id}
+              data-id={resource.id}
+              className={resource.priority === 'High' ? "high-priority" : resource.status === 'Duplicate' ? "duplicate" : ""}
+              onClick={e => handleRowClick_(e)}>
+              {checkboxColumn &&
+                <td className="medplum-search-icon-cell">
+                  <input
+                    type="checkbox"
+                    value="checked"
+                    data-id={resource.id}
+                    checked={!!state.selected[resource.id]}
+                    onClick={e => handleSingleCheckboxClick(e)}
+                    onChange={() => { }}
+                  />
+                </td>
+              }
+              {fields.map(field =>
+                <td key={field}>{renderValue(field, getValue(resource, field))}</td>
+              )}
+            </tr>
+          )}
+        </tbody>
+      </table>
+      {resources.length === 0 &&
+        <div className="medplum-empty-search">{MSG_NO_ORDERS}</div>}
+      <SearchPopupMenu
+        search={props.search}
+        visible={state.popupVisible}
+        x={state.popupX}
+        y={state.popupY}
+        field={state.popupField}
+        onChange={definition => {
+          fireChangeEvent_(definition);
+          const state = stateRef.current;
+          setState({
+            ...state,
+            popupVisible: false,
+            popupField: ''
+          });
+        }}
+        onClose={() => {
+          const state = stateRef.current;
+          setState({
+            ...state,
+            popupVisible: false,
+            popupField: ''
+          });
+        }}
+      />
+    </div>
+  );
 }
