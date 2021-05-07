@@ -1,16 +1,19 @@
 import React from 'react';
 
-const COLOR_WHITE = '#fff';
-const COLOR_BROWN = '#741';
-const COLOR_GREEN = '#7d5';
-const COLOR_PURPLE = '#639';
+export interface LogoProps {
+  width: number;
+  height: number;
+  fill?: string;
+}
 
-export function Logo(props: any) {
+export function Logo(props: LogoProps) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width={props.width} height={props.height}>
-      <path fill={props.fill || COLOR_BROWN} d="m154.1 81.2c-0.2 0-0.4 0.1-0.6 0.1-0.9 0.1-2.2 0.3-2.4 0.3-0.2 0-1.6-0.1-2.4-0.3-1-0.2-2.5-0.6-4.5-1.4-0.5-39.4 11.5-63.2 11.6-72.1 0-9.7 7-5.8 7-5.8l10 3.2c0 0 11.9 1.9 3.8 11.5-19.8 23.4-22.3 52-22.4 64.5" />
-      <path fill={props.fill || COLOR_PURPLE} d="m124.5 69.6c14.7 8.2 21.4 11.1 24.6 11.7 0.9 0.1 2.2 0.3 2.4 0.3 0.3 0 1.6-0.1 2.4-0.3 3.1-0.5 9.9-3.5 24.5-11.7 41.7-23.2 107.1 16.1 95.8 106.9-11.2 90.8-62.8 132.7-100.5 121.1-14.1-4.3-19.7-5.4-21.7-5.4-0.4 0-0.6 0-0.7 0-0.1 0-0.3 0-0.7 0-1.9 0-7.6 1.1-21.7 5.4C91.4 309.2 39.8 267.3 28.6 176.5 17.4 85.7 82.7 46.4 124.5 69.6" />
-      <path fill={props.fill || COLOR_GREEN} d="m140.3 69.5c0 0 3.2-73.2-74.2-58.3 0 0 5.6-1.3 14.5 34.2 10.4 41.5 59.7 24.1 59.7 24.1" />
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 491 491" style={{ width: props.width, height: props.height }}>
+      <path fill={props.fill || "#ad7136"} d="M282 67c6-16 16-29 29-40L289 0c-22 17-37 41-43 68l17 23 19-24z" />
+      <path fill={props.fill || "#654b87"} d="M311 63c-17 0-33 4-48 11-16-7-32-11-49-11-87 0-158 96-158 214s71 214 158 214c17 0 33-4 49-11 15 7 31 11 48 11 87 0 158-96 158-214S398 63 311 63z" />
+      <path fill={props.fill || "#463068"} d="M231 489l-17 2c-87 0-158-96-158-214S127 63 214 63l17 1c-39 12-70 102-70 213s31 201 70 212z" />
+      <path fill={props.fill || "#70d65b"} d="M207 220a176 176 0 01-177 43A176 176 0 01251 43l1 5c17 59 2 125-45 172z" />
+      <path fill={props.fill || "#58b741"} d="M252 48A421 421 0 0057 270l-27-7A176 176 0 01251 43l1 5z" />
     </svg>
   );
 }
