@@ -7,6 +7,11 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * A resource that represents the data of a single raw artifact as
+ * digital content accessible in its native format.  A Binary resource
+ * can contain any content, whether text, image, pdf, zip archive, etc.
+ */
 public class Binary extends FhirResource {
     public static final String RESOURCE_TYPE = "Binary";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

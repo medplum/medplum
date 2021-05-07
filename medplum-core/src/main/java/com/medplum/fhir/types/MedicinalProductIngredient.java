@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An ingredient of a manufactured item or pharmaceutical product.
+ */
 public class MedicinalProductIngredient extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductIngredient";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -243,6 +246,9 @@ public class MedicinalProductIngredient extends FhirResource {
         }
     }
 
+    /**
+     * An ingredient of a manufactured item or pharmaceutical product.
+     */
     public static class MedicinalProductIngredientReferenceStrength extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIngredientReferenceStrength";
         public static final String PROPERTY_ID = "id";
@@ -399,6 +405,9 @@ public class MedicinalProductIngredient extends FhirResource {
         }
     }
 
+    /**
+     * An ingredient of a manufactured item or pharmaceutical product.
+     */
     public static class MedicinalProductIngredientSpecifiedSubstance extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIngredientSpecifiedSubstance";
         public static final String PROPERTY_ID = "id";
@@ -543,6 +552,9 @@ public class MedicinalProductIngredient extends FhirResource {
         }
     }
 
+    /**
+     * An ingredient of a manufactured item or pharmaceutical product.
+     */
     public static class MedicinalProductIngredientStrength extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIngredientStrength";
         public static final String PROPERTY_ID = "id";
@@ -731,6 +743,9 @@ public class MedicinalProductIngredient extends FhirResource {
         }
     }
 
+    /**
+     * An ingredient of a manufactured item or pharmaceutical product.
+     */
     public static class MedicinalProductIngredientSubstance extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIngredientSubstance";
         public static final String PROPERTY_ID = "id";

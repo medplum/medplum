@@ -9,6 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The subscription resource is used to define a push-based subscription
+ * from a server to another system. Once a subscription is registered
+ * with the server, the server checks every resource that is created or
+ * updated, and if the resource matches the given criteria, it sends a
+ * message on the defined &quot;channel&quot; so that another system can take an
+ * appropriate action.
+ */
 public class Subscription extends FhirResource {
     public static final String RESOURCE_TYPE = "Subscription";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -259,6 +267,14 @@ public class Subscription extends FhirResource {
         }
     }
 
+    /**
+     * The subscription resource is used to define a push-based subscription
+     * from a server to another system. Once a subscription is registered
+     * with the server, the server checks every resource that is created or
+     * updated, and if the resource matches the given criteria, it sends a
+     * message on the defined &quot;channel&quot; so that another system can take an
+     * appropriate action.
+     */
     public static class SubscriptionChannel extends FhirObject {
         public static final String RESOURCE_TYPE = "SubscriptionChannel";
         public static final String PROPERTY_ID = "id";

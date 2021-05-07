@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Significant health conditions for a person related to the patient
+ * relevant in the context of care for the patient.
+ */
 public class FamilyMemberHistory extends FhirResource {
     public static final String RESOURCE_TYPE = "FamilyMemberHistory";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -526,6 +530,10 @@ public class FamilyMemberHistory extends FhirResource {
         }
     }
 
+    /**
+     * Significant health conditions for a person related to the patient
+     * relevant in the context of care for the patient.
+     */
     public static class FamilyMemberHistoryCondition extends FhirObject {
         public static final String RESOURCE_TYPE = "FamilyMemberHistoryCondition";
         public static final String PROPERTY_ID = "id";

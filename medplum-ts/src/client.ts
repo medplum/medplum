@@ -3,10 +3,11 @@
 
 import { encryptSHA256, getRandomString } from './crypto';
 import { parseJWTPayload } from './jwt';
-import { Bundle, SearchDefinition } from './types';
+import { SearchDefinition } from './types';
 import { arrayBufferToBase64 } from './utils';
 import { Storage } from './storage';
 import { EventTarget } from './eventtarget';
+import { Bundle } from './fhir/Bundle';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';

@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A structured set of tests against a FHIR server or client
+ * implementation to determine compliance against the FHIR specification.
+ */
 public class TestScript extends FhirResource {
     public static final String RESOURCE_TYPE = "TestScript";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -514,6 +518,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptAction extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptAction";
         public static final String PROPERTY_ID = "id";
@@ -632,6 +640,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptAction1 extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptAction1";
         public static final String PROPERTY_ID = "id";
@@ -750,6 +762,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptAction2 extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptAction2";
         public static final String PROPERTY_ID = "id";
@@ -854,6 +870,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptAssert extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptAssert";
         public static final String PROPERTY_ID = "id";
@@ -1078,7 +1098,7 @@ public class TestScript extends FhirResource {
         }
 
         /**
-         * Fixture to evaluate the XPath/JSONPath expression or the headerField 
+         * Fixture to evaluate the XPath/JSONPath expression or the headerField
          * against.
          */
         public String sourceId() {
@@ -1249,6 +1269,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptCapability extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptCapability";
         public static final String PROPERTY_ID = "id";
@@ -1437,6 +1461,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptDestination extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptDestination";
         public static final String PROPERTY_ID = "id";
@@ -1555,6 +1583,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptFixture extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptFixture";
         public static final String PROPERTY_ID = "id";
@@ -1692,6 +1724,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptLink extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptLink";
         public static final String PROPERTY_ID = "id";
@@ -1810,6 +1846,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptMetadata extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptMetadata";
         public static final String PROPERTY_ID = "id";
@@ -1928,6 +1968,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptOperation";
         public static final String PROPERTY_ID = "id";
@@ -2251,6 +2295,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptOrigin extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptOrigin";
         public static final String PROPERTY_ID = "id";
@@ -2369,6 +2417,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptRequestHeader extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptRequestHeader";
         public static final String PROPERTY_ID = "id";
@@ -2486,6 +2538,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptSetup extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptSetup";
         public static final String PROPERTY_ID = "id";
@@ -2590,6 +2646,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptTeardown extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptTeardown";
         public static final String PROPERTY_ID = "id";
@@ -2694,6 +2754,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptTest extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptTest";
         public static final String PROPERTY_ID = "id";
@@ -2826,6 +2890,10 @@ public class TestScript extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of tests against a FHIR server or client
+     * implementation to determine compliance against the FHIR specification.
+     */
     public static class TestScriptVariable extends FhirObject {
         public static final String RESOURCE_TYPE = "TestScriptVariable";
         public static final String PROPERTY_ID = "id";
@@ -2950,7 +3018,7 @@ public class TestScript extends FhirResource {
         }
 
         /**
-         * Fixture to evaluate the XPath/JSONPath expression or the headerField 
+         * Fixture to evaluate the XPath/JSONPath expression or the headerField
          * against within this variable.
          */
         public String sourceId() {

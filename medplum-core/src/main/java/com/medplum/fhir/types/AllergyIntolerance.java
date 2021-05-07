@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Risk of harmful or undesirable, physiological response which is unique
+ * to an individual and associated with exposure to a substance.
+ */
 public class AllergyIntolerance extends FhirResource {
     public static final String RESOURCE_TYPE = "AllergyIntolerance";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -456,6 +460,10 @@ public class AllergyIntolerance extends FhirResource {
         }
     }
 
+    /**
+     * Risk of harmful or undesirable, physiological response which is unique
+     * to an individual and associated with exposure to a substance.
+     */
     public static class AllergyIntoleranceReaction extends FhirObject {
         public static final String RESOURCE_TYPE = "AllergyIntoleranceReaction";
         public static final String PROPERTY_ID = "id";

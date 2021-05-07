@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A description of a triggering event. Triggering events can be named
+ * events, data events, or periodic, as determined by the type element.
+ */
 public class TriggerDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "TriggerDefinition";
     public static final String PROPERTY_ID = "id";

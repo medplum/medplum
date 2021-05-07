@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Todo.
+ */
 public class SubstancePolymer extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstancePolymer";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -241,6 +244,9 @@ public class SubstancePolymer extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstancePolymerDegreeOfPolymerisation extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerDegreeOfPolymerisation";
         public static final String PROPERTY_ID = "id";
@@ -358,6 +364,9 @@ public class SubstancePolymer extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstancePolymerMonomerSet extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerMonomerSet";
         public static final String PROPERTY_ID = "id";
@@ -475,6 +484,9 @@ public class SubstancePolymer extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstancePolymerRepeat extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerRepeat";
         public static final String PROPERTY_ID = "id";
@@ -618,6 +630,9 @@ public class SubstancePolymer extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstancePolymerRepeatUnit extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerRepeatUnit";
         public static final String PROPERTY_ID = "id";
@@ -774,6 +789,9 @@ public class SubstancePolymer extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstancePolymerStartingMaterial extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerStartingMaterial";
         public static final String PROPERTY_ID = "id";
@@ -917,6 +935,9 @@ public class SubstancePolymer extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstancePolymerStructuralRepresentation extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstancePolymerStructuralRepresentation";
         public static final String PROPERTY_ID = "id";

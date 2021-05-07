@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An occurrence of information being transmitted; e.g. an alert that was
+ * sent to a responsible provider, a public health agency that was
+ * notified about a reportable condition.
+ */
 public class Communication extends FhirResource {
     public static final String RESOURCE_TYPE = "Communication";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -484,6 +489,11 @@ public class Communication extends FhirResource {
         }
     }
 
+    /**
+     * An occurrence of information being transmitted; e.g. an alert that was
+     * sent to a responsible provider, a public health agency that was
+     * notified about a reportable condition.
+     */
     public static class CommunicationPayload extends FhirObject {
         public static final String RESOURCE_TYPE = "CommunicationPayload";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A ValueSet resource instance specifies a set of codes drawn from one
+ * or more code systems, intended for use in a particular context. Value
+ * sets link between [[[CodeSystem]]] definitions and their use in [coded
+ * elements](terminologies.html).
+ */
 public class ValueSet extends FhirResource {
     public static final String RESOURCE_TYPE = "ValueSet";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -439,6 +445,12 @@ public class ValueSet extends FhirResource {
         }
     }
 
+    /**
+     * A ValueSet resource instance specifies a set of codes drawn from one
+     * or more code systems, intended for use in a particular context. Value
+     * sets link between [[[CodeSystem]]] definitions and their use in [coded
+     * elements](terminologies.html).
+     */
     public static class ValueSetCompose extends FhirObject {
         public static final String RESOURCE_TYPE = "ValueSetCompose";
         public static final String PROPERTY_ID = "id";
@@ -592,6 +604,12 @@ public class ValueSet extends FhirResource {
         }
     }
 
+    /**
+     * A ValueSet resource instance specifies a set of codes drawn from one
+     * or more code systems, intended for use in a particular context. Value
+     * sets link between [[[CodeSystem]]] definitions and their use in [coded
+     * elements](terminologies.html).
+     */
     public static class ValueSetConcept extends FhirObject {
         public static final String RESOURCE_TYPE = "ValueSetConcept";
         public static final String PROPERTY_ID = "id";
@@ -726,6 +744,12 @@ public class ValueSet extends FhirResource {
         }
     }
 
+    /**
+     * A ValueSet resource instance specifies a set of codes drawn from one
+     * or more code systems, intended for use in a particular context. Value
+     * sets link between [[[CodeSystem]]] definitions and their use in [coded
+     * elements](terminologies.html).
+     */
     public static class ValueSetContains extends FhirObject {
         public static final String RESOURCE_TYPE = "ValueSetContains";
         public static final String PROPERTY_ID = "id";
@@ -937,6 +961,12 @@ public class ValueSet extends FhirResource {
         }
     }
 
+    /**
+     * A ValueSet resource instance specifies a set of codes drawn from one
+     * or more code systems, intended for use in a particular context. Value
+     * sets link between [[[CodeSystem]]] definitions and their use in [coded
+     * elements](terminologies.html).
+     */
     public static class ValueSetDesignation extends FhirObject {
         public static final String RESOURCE_TYPE = "ValueSetDesignation";
         public static final String PROPERTY_ID = "id";
@@ -1067,6 +1097,12 @@ public class ValueSet extends FhirResource {
         }
     }
 
+    /**
+     * A ValueSet resource instance specifies a set of codes drawn from one
+     * or more code systems, intended for use in a particular context. Value
+     * sets link between [[[CodeSystem]]] definitions and their use in [coded
+     * elements](terminologies.html).
+     */
     public static class ValueSetExpansion extends FhirObject {
         public static final String RESOURCE_TYPE = "ValueSetExpansion";
         public static final String PROPERTY_ID = "id";
@@ -1161,7 +1197,7 @@ public class ValueSet extends FhirResource {
         }
 
         /**
-         * If paging is being used, the offset at which this resource starts. 
+         * If paging is being used, the offset at which this resource starts.
          * I.e. this resource is a partial view into the expansion. If paging is
          * not being used, this element SHALL NOT be present.
          */
@@ -1248,6 +1284,12 @@ public class ValueSet extends FhirResource {
         }
     }
 
+    /**
+     * A ValueSet resource instance specifies a set of codes drawn from one
+     * or more code systems, intended for use in a particular context. Value
+     * sets link between [[[CodeSystem]]] definitions and their use in [coded
+     * elements](terminologies.html).
+     */
     public static class ValueSetFilter extends FhirObject {
         public static final String RESOURCE_TYPE = "ValueSetFilter";
         public static final String PROPERTY_ID = "id";
@@ -1384,6 +1426,12 @@ public class ValueSet extends FhirResource {
         }
     }
 
+    /**
+     * A ValueSet resource instance specifies a set of codes drawn from one
+     * or more code systems, intended for use in a particular context. Value
+     * sets link between [[[CodeSystem]]] definitions and their use in [coded
+     * elements](terminologies.html).
+     */
     public static class ValueSetInclude extends FhirObject {
         public static final String RESOURCE_TYPE = "ValueSetInclude";
         public static final String PROPERTY_ID = "id";
@@ -1548,6 +1596,12 @@ public class ValueSet extends FhirResource {
         }
     }
 
+    /**
+     * A ValueSet resource instance specifies a set of codes drawn from one
+     * or more code systems, intended for use in a particular context. Value
+     * sets link between [[[CodeSystem]]] definitions and their use in [coded
+     * elements](terminologies.html).
+     */
     public static class ValueSetParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "ValueSetParameter";
         public static final String PROPERTY_ID = "id";

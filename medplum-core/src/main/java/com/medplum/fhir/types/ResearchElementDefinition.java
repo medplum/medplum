@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The ResearchElementDefinition resource describes a &quot;PICO&quot; element that
+ * knowledge (evidence, assertion, recommendation) is about.
+ */
 public class ResearchElementDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ResearchElementDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -673,6 +677,10 @@ public class ResearchElementDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The ResearchElementDefinition resource describes a &quot;PICO&quot; element that
+     * knowledge (evidence, assertion, recommendation) is about.
+     */
     public static class ResearchElementDefinitionCharacteristic extends FhirObject {
         public static final String RESOURCE_TYPE = "ResearchElementDefinitionCharacteristic";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A set of ordered Quantities defined by a low and high limit.
+ */
 public class Range extends FhirResource {
     public static final String RESOURCE_TYPE = "Range";
     public static final String PROPERTY_ID = "id";

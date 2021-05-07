@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A duration of time during which an organism (or a process) has
+ * existed.
+ */
 public class Age extends FhirResource {
     public static final String RESOURCE_TYPE = "Age";
     public static final String PROPERTY_ID = "id";

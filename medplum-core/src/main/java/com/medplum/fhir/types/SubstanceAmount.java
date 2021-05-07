@@ -9,6 +9,15 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Chemical substances are a single substance type whose primary defining
+ * element is the molecular structure. Chemical substances shall be
+ * defined on the basis of their complete covalent molecular structure;
+ * the presence of a salt (counter-ion) and/or solvates (water, alcohols)
+ * is also captured. Purity, grade, physical form or particle size are
+ * not taken into account in the definition of a chemical substance or in
+ * the assignment of a Substance ID.
+ */
 public class SubstanceAmount extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceAmount";
     public static final String PROPERTY_ID = "id";
@@ -193,6 +202,15 @@ public class SubstanceAmount extends FhirResource {
         }
     }
 
+    /**
+     * Chemical substances are a single substance type whose primary defining
+     * element is the molecular structure. Chemical substances shall be
+     * defined on the basis of their complete covalent molecular structure;
+     * the presence of a salt (counter-ion) and/or solvates (water, alcohols)
+     * is also captured. Purity, grade, physical form or particle size are
+     * not taken into account in the definition of a chemical substance or in
+     * the assignment of a Substance ID.
+     */
     public static class SubstanceAmountReferenceRange extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceAmountReferenceRange";
         public static final String PROPERTY_ID = "id";

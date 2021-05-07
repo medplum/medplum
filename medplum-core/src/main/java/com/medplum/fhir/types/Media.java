@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * A photo, video, or audio recording acquired or used in healthcare. The
+ * actual content may be inline or provided by direct reference.
+ */
 public class Media extends FhirResource {
     public static final String RESOURCE_TYPE = "Media";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

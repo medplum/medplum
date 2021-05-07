@@ -9,6 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * This resource allows for the definition of various types of plans as a
+ * sharable, consumable, and executable artifact. The resource is general
+ * enough to support the description of a broad range of clinical
+ * artifacts such as clinical decision support rules, order sets and
+ * protocols.
+ */
 public class PlanDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "PlanDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -637,6 +644,13 @@ public class PlanDefinition extends FhirResource {
         }
     }
 
+    /**
+     * This resource allows for the definition of various types of plans as a
+     * sharable, consumable, and executable artifact. The resource is general
+     * enough to support the description of a broad range of clinical
+     * artifacts such as clinical decision support rules, order sets and
+     * protocols.
+     */
     public static class PlanDefinitionAction extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionAction";
         public static final String PROPERTY_ID = "id";
@@ -1197,6 +1211,13 @@ public class PlanDefinition extends FhirResource {
         }
     }
 
+    /**
+     * This resource allows for the definition of various types of plans as a
+     * sharable, consumable, and executable artifact. The resource is general
+     * enough to support the description of a broad range of clinical
+     * artifacts such as clinical decision support rules, order sets and
+     * protocols.
+     */
     public static class PlanDefinitionCondition extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionCondition";
         public static final String PROPERTY_ID = "id";
@@ -1315,6 +1336,13 @@ public class PlanDefinition extends FhirResource {
         }
     }
 
+    /**
+     * This resource allows for the definition of various types of plans as a
+     * sharable, consumable, and executable artifact. The resource is general
+     * enough to support the description of a broad range of clinical
+     * artifacts such as clinical decision support rules, order sets and
+     * protocols.
+     */
     public static class PlanDefinitionDynamicValue extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionDynamicValue";
         public static final String PROPERTY_ID = "id";
@@ -1440,6 +1468,13 @@ public class PlanDefinition extends FhirResource {
         }
     }
 
+    /**
+     * This resource allows for the definition of various types of plans as a
+     * sharable, consumable, and executable artifact. The resource is general
+     * enough to support the description of a broad range of clinical
+     * artifacts such as clinical decision support rules, order sets and
+     * protocols.
+     */
     public static class PlanDefinitionGoal extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionGoal";
         public static final String PROPERTY_ID = "id";
@@ -1629,6 +1664,13 @@ public class PlanDefinition extends FhirResource {
         }
     }
 
+    /**
+     * This resource allows for the definition of various types of plans as a
+     * sharable, consumable, and executable artifact. The resource is general
+     * enough to support the description of a broad range of clinical
+     * artifacts such as clinical decision support rules, order sets and
+     * protocols.
+     */
     public static class PlanDefinitionParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionParticipant";
         public static final String PROPERTY_ID = "id";
@@ -1747,6 +1789,13 @@ public class PlanDefinition extends FhirResource {
         }
     }
 
+    /**
+     * This resource allows for the definition of various types of plans as a
+     * sharable, consumable, and executable artifact. The resource is general
+     * enough to support the description of a broad range of clinical
+     * artifacts such as clinical decision support rules, order sets and
+     * protocols.
+     */
     public static class PlanDefinitionRelatedAction extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionRelatedAction";
         public static final String PROPERTY_ID = "id";
@@ -1892,6 +1941,13 @@ public class PlanDefinition extends FhirResource {
         }
     }
 
+    /**
+     * This resource allows for the definition of various types of plans as a
+     * sharable, consumable, and executable artifact. The resource is general
+     * enough to support the description of a broad range of clinical
+     * artifacts such as clinical decision support rules, order sets and
+     * protocols.
+     */
     public static class PlanDefinitionTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "PlanDefinitionTarget";
         public static final String PROPERTY_ID = "id";

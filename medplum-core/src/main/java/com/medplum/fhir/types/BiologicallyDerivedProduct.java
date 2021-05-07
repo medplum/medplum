@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A material substance originating from a biological entity intended to
+ * be transplanted or infused
+ * into another (possibly the same) biological entity.
+ */
 public class BiologicallyDerivedProduct extends FhirResource {
     public static final String RESOURCE_TYPE = "BiologicallyDerivedProduct";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -315,6 +320,11 @@ public class BiologicallyDerivedProduct extends FhirResource {
         }
     }
 
+    /**
+     * A material substance originating from a biological entity intended to
+     * be transplanted or infused
+     * into another (possibly the same) biological entity.
+     */
     public static class BiologicallyDerivedProductCollection extends FhirObject {
         public static final String RESOURCE_TYPE = "BiologicallyDerivedProductCollection";
         public static final String PROPERTY_ID = "id";
@@ -459,6 +469,11 @@ public class BiologicallyDerivedProduct extends FhirResource {
         }
     }
 
+    /**
+     * A material substance originating from a biological entity intended to
+     * be transplanted or infused
+     * into another (possibly the same) biological entity.
+     */
     public static class BiologicallyDerivedProductManipulation extends FhirObject {
         public static final String RESOURCE_TYPE = "BiologicallyDerivedProductManipulation";
         public static final String PROPERTY_ID = "id";
@@ -589,6 +604,11 @@ public class BiologicallyDerivedProduct extends FhirResource {
         }
     }
 
+    /**
+     * A material substance originating from a biological entity intended to
+     * be transplanted or infused
+     * into another (possibly the same) biological entity.
+     */
     public static class BiologicallyDerivedProductProcessing extends FhirObject {
         public static final String RESOURCE_TYPE = "BiologicallyDerivedProductProcessing";
         public static final String PROPERTY_ID = "id";
@@ -745,6 +765,11 @@ public class BiologicallyDerivedProduct extends FhirResource {
         }
     }
 
+    /**
+     * A material substance originating from a biological entity intended to
+     * be transplanted or infused
+     * into another (possibly the same) biological entity.
+     */
     public static class BiologicallyDerivedProductStorage extends FhirObject {
         public static final String RESOURCE_TYPE = "BiologicallyDerivedProductStorage";
         public static final String PROPERTY_ID = "id";

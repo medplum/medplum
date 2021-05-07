@@ -9,6 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A signature along with supporting context. The signature may be a
+ * digital signature that is cryptographic in nature, or some other
+ * signature acceptable to the domain. This other signature may be as
+ * simple as a graphical image representing a hand-written signature, or
+ * a signature ceremony Different signature approaches have different
+ * utilities.
+ */
 public class Signature extends FhirResource {
     public static final String RESOURCE_TYPE = "Signature";
     public static final String PROPERTY_ID = "id";

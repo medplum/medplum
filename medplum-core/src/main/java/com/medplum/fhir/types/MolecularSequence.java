@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Raw data describing a biological sequence.
+ */
 public class MolecularSequence extends FhirResource {
     public static final String RESOURCE_TYPE = "MolecularSequence";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -385,6 +388,9 @@ public class MolecularSequence extends FhirResource {
         }
     }
 
+    /**
+     * Raw data describing a biological sequence.
+     */
     public static class MolecularSequenceInner extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceInner";
         public static final String PROPERTY_ID = "id";
@@ -506,6 +512,9 @@ public class MolecularSequence extends FhirResource {
         }
     }
 
+    /**
+     * Raw data describing a biological sequence.
+     */
     public static class MolecularSequenceOuter extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceOuter";
         public static final String PROPERTY_ID = "id";
@@ -627,6 +636,9 @@ public class MolecularSequence extends FhirResource {
         }
     }
 
+    /**
+     * Raw data describing a biological sequence.
+     */
     public static class MolecularSequenceQuality extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceQuality";
         public static final String PROPERTY_ID = "id";
@@ -937,6 +949,9 @@ public class MolecularSequence extends FhirResource {
         }
     }
 
+    /**
+     * Raw data describing a biological sequence.
+     */
     public static class MolecularSequenceReferenceSeq extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceReferenceSeq";
         public static final String PROPERTY_ID = "id";
@@ -1163,6 +1178,9 @@ public class MolecularSequence extends FhirResource {
         }
     }
 
+    /**
+     * Raw data describing a biological sequence.
+     */
     public static class MolecularSequenceRepository extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceRepository";
         public static final String PROPERTY_ID = "id";
@@ -1339,6 +1357,9 @@ public class MolecularSequence extends FhirResource {
         }
     }
 
+    /**
+     * Raw data describing a biological sequence.
+     */
     public static class MolecularSequenceRoc extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceRoc";
         public static final String PROPERTY_ID = "id";
@@ -1528,6 +1549,9 @@ public class MolecularSequence extends FhirResource {
         }
     }
 
+    /**
+     * Raw data describing a biological sequence.
+     */
     public static class MolecularSequenceStructureVariant extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceStructureVariant";
         public static final String PROPERTY_ID = "id";
@@ -1685,6 +1709,9 @@ public class MolecularSequence extends FhirResource {
         }
     }
 
+    /**
+     * Raw data describing a biological sequence.
+     */
     public static class MolecularSequenceVariant extends FhirObject {
         public static final String RESOURCE_TYPE = "MolecularSequenceVariant";
         public static final String PROPERTY_ID = "id";
@@ -1773,7 +1800,7 @@ public class MolecularSequence extends FhirResource {
          * An allele is one of a set of coexisting sequence variants of a gene
          * ([SO:0001023](http://www.sequenceontology.org/browser/current_svn/term/SO:0001023)).
          * Nucleotide(s)/amino acids from start position of sequence to stop
-         * position of sequence on the positive (+) strand of the observed 
+         * position of sequence on the positive (+) strand of the observed
          * sequence. When the sequence  type is DNA, it should be the sequence on
          * the positive (+) strand. This will lay in the range between
          * variant.start and variant.end.

@@ -7,6 +7,11 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * Defines an affiliation/assotiation/relationship between 2 distinct
+ * oganizations, that is not a part-of relationship/sub-division
+ * relationship.
+ */
 public class OrganizationAffiliation extends FhirResource {
     public static final String RESOURCE_TYPE = "OrganizationAffiliation";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

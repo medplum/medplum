@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A formal computable definition of an operation (on the RESTful
+ * interface) or a named query (using the search interaction).
+ */
 public class OperationDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "OperationDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -546,6 +550,10 @@ public class OperationDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A formal computable definition of an operation (on the RESTful
+     * interface) or a named query (using the search interaction).
+     */
     public static class OperationDefinitionBinding extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationDefinitionBinding";
         public static final String PROPERTY_ID = "id";
@@ -666,6 +674,10 @@ public class OperationDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A formal computable definition of an operation (on the RESTful
+     * interface) or a named query (using the search interaction).
+     */
     public static class OperationDefinitionOverload extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationDefinitionOverload";
         public static final String PROPERTY_ID = "id";
@@ -783,6 +795,10 @@ public class OperationDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A formal computable definition of an operation (on the RESTful
+     * interface) or a named query (using the search interaction).
+     */
     public static class OperationDefinitionParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationDefinitionParameter";
         public static final String PROPERTY_ID = "id";
@@ -1030,6 +1046,10 @@ public class OperationDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A formal computable definition of an operation (on the RESTful
+     * interface) or a named query (using the search interaction).
+     */
     public static class OperationDefinitionReferencedFrom extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationDefinitionReferencedFrom";
         public static final String PROPERTY_ID = "id";

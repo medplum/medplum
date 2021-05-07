@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Demographics and other administrative information about an individual
+ * or animal receiving care or other health-related services.
+ */
 public class Patient extends FhirResource {
     public static final String RESOURCE_TYPE = "Patient";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -129,7 +133,7 @@ public class Patient extends FhirResource {
     }
 
     /**
-     * Whether this patient record is in active use. 
+     * Whether this patient record is in active use.
      * Many systems use this property to mark as non-current patients, such
      * as those that have not been seen for a period of time based on an
      * organization's business rules.
@@ -411,6 +415,10 @@ public class Patient extends FhirResource {
         }
     }
 
+    /**
+     * Demographics and other administrative information about an individual
+     * or animal receiving care or other health-related services.
+     */
     public static class PatientCommunication extends FhirObject {
         public static final String RESOURCE_TYPE = "PatientCommunication";
         public static final String PROPERTY_ID = "id";
@@ -532,6 +540,10 @@ public class Patient extends FhirResource {
         }
     }
 
+    /**
+     * Demographics and other administrative information about an individual
+     * or animal receiving care or other health-related services.
+     */
     public static class PatientContact extends FhirObject {
         public static final String RESOURCE_TYPE = "PatientContact";
         public static final String PROPERTY_ID = "id";
@@ -719,6 +731,10 @@ public class Patient extends FhirResource {
         }
     }
 
+    /**
+     * Demographics and other administrative information about an individual
+     * or animal receiving care or other health-related services.
+     */
     public static class PatientLink extends FhirObject {
         public static final String RESOURCE_TYPE = "PatientLink";
         public static final String PROPERTY_ID = "id";

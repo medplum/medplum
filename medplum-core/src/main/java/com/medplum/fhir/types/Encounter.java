@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An interaction between a patient and healthcare provider(s) for the
+ * purpose of providing healthcare service(s) or assessing the health
+ * status of a patient.
+ */
 public class Encounter extends FhirResource {
     public static final String RESOURCE_TYPE = "Encounter";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -493,6 +498,11 @@ public class Encounter extends FhirResource {
         }
     }
 
+    /**
+     * An interaction between a patient and healthcare provider(s) for the
+     * purpose of providing healthcare service(s) or assessing the health
+     * status of a patient.
+     */
     public static class EncounterClassHistory extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterClassHistory";
         public static final String PROPERTY_ID = "id";
@@ -610,6 +620,11 @@ public class Encounter extends FhirResource {
         }
     }
 
+    /**
+     * An interaction between a patient and healthcare provider(s) for the
+     * purpose of providing healthcare service(s) or assessing the health
+     * status of a patient.
+     */
     public static class EncounterDiagnosis extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterDiagnosis";
         public static final String PROPERTY_ID = "id";
@@ -744,6 +759,11 @@ public class Encounter extends FhirResource {
         }
     }
 
+    /**
+     * An interaction between a patient and healthcare provider(s) for the
+     * purpose of providing healthcare service(s) or assessing the health
+     * status of a patient.
+     */
     public static class EncounterHospitalization extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterHospitalization";
         public static final String PROPERTY_ID = "id";
@@ -955,6 +975,11 @@ public class Encounter extends FhirResource {
         }
     }
 
+    /**
+     * An interaction between a patient and healthcare provider(s) for the
+     * purpose of providing healthcare service(s) or assessing the health
+     * status of a patient.
+     */
     public static class EncounterLocation extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterLocation";
         public static final String PROPERTY_ID = "id";
@@ -1101,6 +1126,11 @@ public class Encounter extends FhirResource {
         }
     }
 
+    /**
+     * An interaction between a patient and healthcare provider(s) for the
+     * purpose of providing healthcare service(s) or assessing the health
+     * status of a patient.
+     */
     public static class EncounterParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterParticipant";
         public static final String PROPERTY_ID = "id";
@@ -1233,6 +1263,11 @@ public class Encounter extends FhirResource {
         }
     }
 
+    /**
+     * An interaction between a patient and healthcare provider(s) for the
+     * purpose of providing healthcare service(s) or assessing the health
+     * status of a patient.
+     */
     public static class EncounterStatusHistory extends FhirObject {
         public static final String RESOURCE_TYPE = "EncounterStatusHistory";
         public static final String PROPERTY_ID = "id";

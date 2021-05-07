@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Set of definitional characteristics for a kind of observation or
+ * measurement produced or consumed by an orderable health care service.
+ */
 public class ObservationDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ObservationDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -342,6 +346,10 @@ public class ObservationDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Set of definitional characteristics for a kind of observation or
+     * measurement produced or consumed by an orderable health care service.
+     */
     public static class ObservationDefinitionQualifiedInterval extends FhirObject {
         public static final String RESOURCE_TYPE = "ObservationDefinitionQualifiedInterval";
         public static final String PROPERTY_ID = "id";
@@ -543,6 +551,10 @@ public class ObservationDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Set of definitional characteristics for a kind of observation or
+     * measurement produced or consumed by an orderable health care service.
+     */
     public static class ObservationDefinitionQuantitativeDetails extends FhirObject {
         public static final String RESOURCE_TYPE = "ObservationDefinitionQuantitativeDetails";
         public static final String PROPERTY_ID = "id";

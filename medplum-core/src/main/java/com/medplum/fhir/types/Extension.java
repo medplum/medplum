@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Optional Extension Element - found in all resources.
+ */
 public class Extension extends FhirResource {
     public static final String RESOURCE_TYPE = "Extension";
     public static final String PROPERTY_ID = "id";

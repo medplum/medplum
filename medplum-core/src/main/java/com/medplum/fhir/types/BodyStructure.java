@@ -7,6 +7,11 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * Record details about an anatomical structure.  This resource may be
+ * used when a coded concept does not provide the necessary detail needed
+ * for the use case.
+ */
 public class BodyStructure extends FhirResource {
     public static final String RESOURCE_TYPE = "BodyStructure";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

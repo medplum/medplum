@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The EvidenceVariable resource describes a &quot;PICO&quot; element that
+ * knowledge (evidence, assertion, recommendation) is about.
+ */
 public class EvidenceVariable extends FhirResource {
     public static final String RESOURCE_TYPE = "EvidenceVariable";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -565,6 +569,10 @@ public class EvidenceVariable extends FhirResource {
         }
     }
 
+    /**
+     * The EvidenceVariable resource describes a &quot;PICO&quot; element that
+     * knowledge (evidence, assertion, recommendation) is about.
+     */
     public static class EvidenceVariableCharacteristic extends FhirObject {
         public static final String RESOURCE_TYPE = "EvidenceVariableCharacteristic";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A statement of relationships from one set of concepts to one or more
+ * other concepts - either concepts in code systems, or data element/data
+ * element concepts, or classes in class models.
+ */
 public class ConceptMap extends FhirResource {
     public static final String RESOURCE_TYPE = "ConceptMap";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -464,6 +469,11 @@ public class ConceptMap extends FhirResource {
         }
     }
 
+    /**
+     * A statement of relationships from one set of concepts to one or more
+     * other concepts - either concepts in code systems, or data element/data
+     * element concepts, or classes in class models.
+     */
     public static class ConceptMapDependsOn extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapDependsOn";
         public static final String PROPERTY_ID = "id";
@@ -613,6 +623,11 @@ public class ConceptMap extends FhirResource {
         }
     }
 
+    /**
+     * A statement of relationships from one set of concepts to one or more
+     * other concepts - either concepts in code systems, or data element/data
+     * element concepts, or classes in class models.
+     */
     public static class ConceptMapElement extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapElement";
         public static final String PROPERTY_ID = "id";
@@ -744,6 +759,11 @@ public class ConceptMap extends FhirResource {
         }
     }
 
+    /**
+     * A statement of relationships from one set of concepts to one or more
+     * other concepts - either concepts in code systems, or data element/data
+     * element concepts, or classes in class models.
+     */
     public static class ConceptMapGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapGroup";
         public static final String PROPERTY_ID = "id";
@@ -920,6 +940,11 @@ public class ConceptMap extends FhirResource {
         }
     }
 
+    /**
+     * A statement of relationships from one set of concepts to one or more
+     * other concepts - either concepts in code systems, or data element/data
+     * element concepts, or classes in class models.
+     */
     public static class ConceptMapTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapTarget";
         public static final String PROPERTY_ID = "id";
@@ -1099,6 +1124,11 @@ public class ConceptMap extends FhirResource {
         }
     }
 
+    /**
+     * A statement of relationships from one set of concepts to one or more
+     * other concepts - either concepts in code systems, or data element/data
+     * element concepts, or classes in class models.
+     */
     public static class ConceptMapUnmapped extends FhirObject {
         public static final String RESOURCE_TYPE = "ConceptMapUnmapped";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A contributor to the content of a knowledge asset, including authors,
+ * editors, reviewers, and endorsers.
+ */
 public class Contributor extends FhirResource {
     public static final String RESOURCE_TYPE = "Contributor";
     public static final String PROPERTY_ID = "id";

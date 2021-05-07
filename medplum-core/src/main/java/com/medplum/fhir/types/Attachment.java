@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * For referring to data content defined in other formats.
+ */
 public class Attachment extends FhirResource {
     public static final String RESOURCE_TYPE = "Attachment";
     public static final String PROPERTY_ID = "id";

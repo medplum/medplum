@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A list is a curated collection of resources.
+ */
 public class List extends FhirResource {
     public static final String RESOURCE_TYPE = "List";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -339,6 +342,9 @@ public class List extends FhirResource {
         }
     }
 
+    /**
+     * A list is a curated collection of resources.
+     */
     public static class ListEntry extends FhirObject {
         public static final String RESOURCE_TYPE = "ListEntry";
         public static final String PROPERTY_ID = "id";

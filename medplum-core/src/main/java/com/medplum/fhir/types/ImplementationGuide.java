@@ -9,6 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A set of rules of how a particular interoperability or standards
+ * problem is solved - typically through the use of FHIR resources. This
+ * resource is used to gather all the parts of an implementation guide
+ * into a logical whole and to publish a computable definition of all the
+ * parts.
+ */
 public class ImplementationGuide extends FhirResource {
     public static final String RESOURCE_TYPE = "ImplementationGuide";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -468,6 +475,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuideDefinition extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideDefinition";
         public static final String PROPERTY_ID = "id";
@@ -629,6 +643,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuideDependsOn extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideDependsOn";
         public static final String PROPERTY_ID = "id";
@@ -761,6 +782,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuideGlobal extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideGlobal";
         public static final String PROPERTY_ID = "id";
@@ -878,6 +906,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuideGrouping extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideGrouping";
         public static final String PROPERTY_ID = "id";
@@ -996,6 +1031,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuideManifest extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideManifest";
         public static final String PROPERTY_ID = "id";
@@ -1158,6 +1200,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuidePage extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuidePage";
         public static final String PROPERTY_ID = "id";
@@ -1315,6 +1364,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuidePage1 extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuidePage1";
         public static final String PROPERTY_ID = "id";
@@ -1445,6 +1501,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuideParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideParameter";
         public static final String PROPERTY_ID = "id";
@@ -1564,6 +1627,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuideResource extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideResource";
         public static final String PROPERTY_ID = "id";
@@ -1755,6 +1825,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuideResource1 extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideResource1";
         public static final String PROPERTY_ID = "id";
@@ -1902,6 +1979,13 @@ public class ImplementationGuide extends FhirResource {
         }
     }
 
+    /**
+     * A set of rules of how a particular interoperability or standards
+     * problem is solved - typically through the use of FHIR resources. This
+     * resource is used to gather all the parts of an implementation guide
+     * into a logical whole and to publish a computable definition of all the
+     * parts.
+     */
     public static class ImplementationGuideTemplate extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideTemplate";
         public static final String PROPERTY_ID = "id";

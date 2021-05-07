@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Nucleic acids are defined by three distinct elements: the base, sugar
+ * and linkage. Individual substance/moiety IDs will be created for each
+ * of these elements. The nucleotide sequence will be always entered in
+ * the 5&rsquo;-3&rsquo; direction.
+ */
 public class SubstanceNucleicAcid extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceNucleicAcid";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -239,6 +245,12 @@ public class SubstanceNucleicAcid extends FhirResource {
         }
     }
 
+    /**
+     * Nucleic acids are defined by three distinct elements: the base, sugar
+     * and linkage. Individual substance/moiety IDs will be created for each
+     * of these elements. The nucleotide sequence will be always entered in
+     * the 5&rsquo;-3&rsquo; direction.
+     */
     public static class SubstanceNucleicAcidLinkage extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceNucleicAcidLinkage";
         public static final String PROPERTY_ID = "id";
@@ -388,6 +400,12 @@ public class SubstanceNucleicAcid extends FhirResource {
         }
     }
 
+    /**
+     * Nucleic acids are defined by three distinct elements: the base, sugar
+     * and linkage. Individual substance/moiety IDs will be created for each
+     * of these elements. The nucleotide sequence will be always entered in
+     * the 5&rsquo;-3&rsquo; direction.
+     */
     public static class SubstanceNucleicAcidSubunit extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceNucleicAcidSubunit";
         public static final String PROPERTY_ID = "id";
@@ -596,6 +614,12 @@ public class SubstanceNucleicAcid extends FhirResource {
         }
     }
 
+    /**
+     * Nucleic acids are defined by three distinct elements: the base, sugar
+     * and linkage. Individual substance/moiety IDs will be created for each
+     * of these elements. The nucleotide sequence will be always entered in
+     * the 5&rsquo;-3&rsquo; direction.
+     */
     public static class SubstanceNucleicAcidSugar extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceNucleicAcidSugar";
         public static final String PROPERTY_ID = "id";

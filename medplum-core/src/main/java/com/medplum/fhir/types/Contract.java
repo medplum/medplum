@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Legally enforceable, formally recorded unilateral or bilateral
+ * directive i.e., a policy or agreement.
+ */
 public class Contract extends FhirResource {
     public static final String RESOURCE_TYPE = "Contract";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -333,7 +337,7 @@ public class Contract extends FhirResource {
 
     /**
      * A high-level category for the legal instrument, whether constructed as
-     * a Contract definition, derivative, or instance in any legal state. 
+     * a Contract definition, derivative, or instance in any legal state.
      * Provides additional information about its content within the context
      * of the Contract's scope to distinguish the kinds of systems that would
      * be interested in the contract.
@@ -681,6 +685,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractAction extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractAction";
         public static final String PROPERTY_ID = "id";
@@ -1091,6 +1099,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractAnswer extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractAnswer";
         public static final String PROPERTY_ID = "id";
@@ -1374,6 +1386,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractAsset extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractAsset";
         public static final String PROPERTY_ID = "id";
@@ -1666,6 +1682,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractContentDefinition extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractContentDefinition";
         public static final String PROPERTY_ID = "id";
@@ -1845,6 +1865,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractContext extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractContext";
         public static final String PROPERTY_ID = "id";
@@ -1978,6 +2002,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractFriendly extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractFriendly";
         public static final String PROPERTY_ID = "id";
@@ -2099,6 +2127,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractLegal extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractLegal";
         public static final String PROPERTY_ID = "id";
@@ -2216,6 +2248,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractOffer extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractOffer";
         public static final String PROPERTY_ID = "id";
@@ -2443,6 +2479,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractParty extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractParty";
         public static final String PROPERTY_ID = "id";
@@ -2560,6 +2600,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractRule extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractRule";
         public static final String PROPERTY_ID = "id";
@@ -2679,6 +2723,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractSecurityLabel extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractSecurityLabel";
         public static final String PROPERTY_ID = "id";
@@ -2826,6 +2874,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractSigner extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractSigner";
         public static final String PROPERTY_ID = "id";
@@ -2956,6 +3008,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractSubject extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractSubject";
         public static final String PROPERTY_ID = "id";
@@ -3073,6 +3129,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractTerm extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractTerm";
         public static final String PROPERTY_ID = "id";
@@ -3341,6 +3401,10 @@ public class Contract extends FhirResource {
         }
     }
 
+    /**
+     * Legally enforceable, formally recorded unilateral or bilateral
+     * directive i.e., a policy or agreement.
+     */
     public static class ContractValuedItem extends FhirObject {
         public static final String RESOURCE_TYPE = "ContractValuedItem";
         public static final String PROPERTY_ID = "id";

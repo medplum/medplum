@@ -7,6 +7,12 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * The Evidence resource describes the conditional state (population and
+ * any exposures being compared within the population) and outcome (if
+ * specified) that the knowledge (evidence, assertion, recommendation) is
+ * about.
+ */
 public class Evidence extends FhirResource {
     public static final String RESOURCE_TYPE = "Evidence";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

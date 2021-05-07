@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Financial instrument which may be used to reimburse or pay for health
+ * care products and services. Includes both insurance and self-payment.
+ */
 public class Coverage extends FhirResource {
     public static final String RESOURCE_TYPE = "Coverage";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -402,6 +406,10 @@ public class Coverage extends FhirResource {
         }
     }
 
+    /**
+     * Financial instrument which may be used to reimburse or pay for health
+     * care products and services. Includes both insurance and self-payment.
+     */
     public static class CoverageClass extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageClass";
         public static final String PROPERTY_ID = "id";
@@ -535,6 +543,10 @@ public class Coverage extends FhirResource {
         }
     }
 
+    /**
+     * Financial instrument which may be used to reimburse or pay for health
+     * care products and services. Includes both insurance and self-payment.
+     */
     public static class CoverageCostToBeneficiary extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageCostToBeneficiary";
         public static final String PROPERTY_ID = "id";
@@ -679,6 +691,10 @@ public class Coverage extends FhirResource {
         }
     }
 
+    /**
+     * Financial instrument which may be used to reimburse or pay for health
+     * care products and services. Includes both insurance and self-payment.
+     */
     public static class CoverageException extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageException";
         public static final String PROPERTY_ID = "id";

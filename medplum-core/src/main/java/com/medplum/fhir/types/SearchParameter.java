@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A search parameter that defines a named search item that can be used
+ * to search/filter on a resource.
+ */
 public class SearchParameter extends FhirResource {
     public static final String RESOURCE_TYPE = "SearchParameter";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -548,6 +552,10 @@ public class SearchParameter extends FhirResource {
         }
     }
 
+    /**
+     * A search parameter that defines a named search item that can be used
+     * to search/filter on a resource.
+     */
     public static class SearchParameterComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "SearchParameterComponent";
         public static final String PROPERTY_ID = "id";

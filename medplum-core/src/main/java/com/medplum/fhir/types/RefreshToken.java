@@ -7,6 +7,9 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * OAuth refresh token
+ */
 public class RefreshToken extends FhirResource {
     public static final String RESOURCE_TYPE = "RefreshToken";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

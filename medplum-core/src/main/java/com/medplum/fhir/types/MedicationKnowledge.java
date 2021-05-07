@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Information about a medication that is used to support knowledge.
+ */
 public class MedicationKnowledge extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicationKnowledge";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -146,7 +149,7 @@ public class MedicationKnowledge extends FhirResource {
     }
 
     /**
-     * Describes the details of the manufacturer of the medication product. 
+     * Describes the details of the manufacturer of the medication product.
      * This is not intended to represent the distributor of a medication
      * product.
      */
@@ -472,6 +475,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeAdministrationGuidelines extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeAdministrationGuidelines";
         public static final String PROPERTY_ID = "id";
@@ -618,6 +624,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeCost extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeCost";
         public static final String PROPERTY_ID = "id";
@@ -749,6 +758,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeDosage extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeDosage";
         public static final String PROPERTY_ID = "id";
@@ -867,6 +879,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeDrugCharacteristic extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeDrugCharacteristic";
         public static final String PROPERTY_ID = "id";
@@ -1024,6 +1039,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeIngredient extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeIngredient";
         public static final String PROPERTY_ID = "id";
@@ -1172,6 +1190,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeKinetics extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeKinetics";
         public static final String PROPERTY_ID = "id";
@@ -1303,6 +1324,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeMaxDispense extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeMaxDispense";
         public static final String PROPERTY_ID = "id";
@@ -1420,6 +1444,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeMedicineClassification extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeMedicineClassification";
         public static final String PROPERTY_ID = "id";
@@ -1539,6 +1566,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeMonitoringProgram extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeMonitoringProgram";
         public static final String PROPERTY_ID = "id";
@@ -1656,6 +1686,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeMonograph extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeMonograph";
         public static final String PROPERTY_ID = "id";
@@ -1774,6 +1807,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgePackaging extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgePackaging";
         public static final String PROPERTY_ID = "id";
@@ -1892,6 +1928,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgePatientCharacteristics extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgePatientCharacteristics";
         public static final String PROPERTY_ID = "id";
@@ -2024,6 +2063,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeRegulatory extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeRegulatory";
         public static final String PROPERTY_ID = "id";
@@ -2169,6 +2211,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeRelatedMedicationKnowledge extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeRelatedMedicationKnowledge";
         public static final String PROPERTY_ID = "id";
@@ -2286,6 +2331,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeSchedule extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeSchedule";
         public static final String PROPERTY_ID = "id";
@@ -2390,6 +2438,9 @@ public class MedicationKnowledge extends FhirResource {
         }
     }
 
+    /**
+     * Information about a medication that is used to support knowledge.
+     */
     public static class MedicationKnowledgeSubstitution extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationKnowledgeSubstitution";
         public static final String PROPERTY_ID = "id";

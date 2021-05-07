@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The details of a healthcare service available at a location.
+ */
 public class HealthcareService extends FhirResource {
     public static final String RESOURCE_TYPE = "HealthcareService";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -499,6 +502,9 @@ public class HealthcareService extends FhirResource {
         }
     }
 
+    /**
+     * The details of a healthcare service available at a location.
+     */
     public static class HealthcareServiceAvailableTime extends FhirObject {
         public static final String RESOURCE_TYPE = "HealthcareServiceAvailableTime";
         public static final String PROPERTY_ID = "id";
@@ -646,6 +652,9 @@ public class HealthcareService extends FhirResource {
         }
     }
 
+    /**
+     * The details of a healthcare service available at a location.
+     */
     public static class HealthcareServiceEligibility extends FhirObject {
         public static final String RESOURCE_TYPE = "HealthcareServiceEligibility";
         public static final String PROPERTY_ID = "id";
@@ -763,6 +772,9 @@ public class HealthcareService extends FhirResource {
         }
     }
 
+    /**
+     * The details of a healthcare service available at a location.
+     */
     public static class HealthcareServiceNotAvailable extends FhirObject {
         public static final String RESOURCE_TYPE = "HealthcareServiceNotAvailable";
         public static final String PROPERTY_ID = "id";

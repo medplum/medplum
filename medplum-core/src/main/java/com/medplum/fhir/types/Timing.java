@@ -9,6 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Specifies an event that may occur multiple times. Timing schedules are
+ * used to record when things are planned, expected or requested to
+ * occur. The most common usage is in dosage instructions for
+ * medications. They are also used when planning care of various kinds,
+ * and may be used for reporting the schedule to which past regular
+ * activities were carried out.
+ */
 public class Timing extends FhirResource {
     public static final String RESOURCE_TYPE = "Timing";
     public static final String PROPERTY_ID = "id";
@@ -144,6 +152,14 @@ public class Timing extends FhirResource {
         }
     }
 
+    /**
+     * Specifies an event that may occur multiple times. Timing schedules are
+     * used to record when things are planned, expected or requested to
+     * occur. The most common usage is in dosage instructions for
+     * medications. They are also used when planning care of various kinds,
+     * and may be used for reporting the schedule to which past regular
+     * activities were carried out.
+     */
     public static class TimingRepeat extends FhirObject {
         public static final String RESOURCE_TYPE = "TimingRepeat";
         public static final String PROPERTY_ID = "id";

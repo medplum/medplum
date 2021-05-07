@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Details and position information for a physical place where services
+ * are provided and resources and participants may be stored, found,
+ * contained, or accommodated.
+ */
 public class Location extends FhirResource {
     public static final String RESOURCE_TYPE = "Location";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -400,6 +405,11 @@ public class Location extends FhirResource {
         }
     }
 
+    /**
+     * Details and position information for a physical place where services
+     * are provided and resources and participants may be stored, found,
+     * contained, or accommodated.
+     */
     public static class LocationHoursOfOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "LocationHoursOfOperation";
         public static final String PROPERTY_ID = "id";
@@ -544,6 +554,11 @@ public class Location extends FhirResource {
         }
     }
 
+    /**
+     * Details and position information for a physical place where services
+     * are provided and resources and participants may be stored, found,
+     * contained, or accommodated.
+     */
     public static class LocationPosition extends FhirObject {
         public static final String RESOURCE_TYPE = "LocationPosition";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Describes the intended objective(s) for a patient, group or
+ * organization care, for example, weight loss, restoring an activity of
+ * daily living, obtaining herd immunity via immunization, meeting a
+ * process improvement objective, etc.
+ */
 public class Goal extends FhirResource {
     public static final String RESOURCE_TYPE = "Goal";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -394,6 +400,12 @@ public class Goal extends FhirResource {
         }
     }
 
+    /**
+     * Describes the intended objective(s) for a patient, group or
+     * organization care, for example, weight loss, restoring an activity of
+     * daily living, obtaining herd immunity via immunization, meeting a
+     * process improvement objective, etc.
+     */
     public static class GoalTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "GoalTarget";
         public static final String PROPERTY_ID = "id";

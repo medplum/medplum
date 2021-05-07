@@ -9,6 +9,16 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A record of a clinical assessment performed to determine what
+ * problem(s) may affect the patient and before planning the treatments
+ * or management strategies that are best to manage a patient's
+ * condition. Assessments are often 1:1 with a clinical consultation /
+ * encounter,  but this varies greatly depending on the clinical
+ * workflow. This resource is called &quot;ClinicalImpression&quot; rather than
+ * &quot;ClinicalAssessment&quot; to avoid confusion with the recording of
+ * assessment tools such as Apgar score.
+ */
 public class ClinicalImpression extends FhirResource {
     public static final String RESOURCE_TYPE = "ClinicalImpression";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -452,6 +462,16 @@ public class ClinicalImpression extends FhirResource {
         }
     }
 
+    /**
+     * A record of a clinical assessment performed to determine what
+     * problem(s) may affect the patient and before planning the treatments
+     * or management strategies that are best to manage a patient's
+     * condition. Assessments are often 1:1 with a clinical consultation /
+     * encounter,  but this varies greatly depending on the clinical
+     * workflow. This resource is called &quot;ClinicalImpression&quot; rather than
+     * &quot;ClinicalAssessment&quot; to avoid confusion with the recording of
+     * assessment tools such as Apgar score.
+     */
     public static class ClinicalImpressionFinding extends FhirObject {
         public static final String RESOURCE_TYPE = "ClinicalImpressionFinding";
         public static final String PROPERTY_ID = "id";
@@ -584,6 +604,16 @@ public class ClinicalImpression extends FhirResource {
         }
     }
 
+    /**
+     * A record of a clinical assessment performed to determine what
+     * problem(s) may affect the patient and before planning the treatments
+     * or management strategies that are best to manage a patient's
+     * condition. Assessments are often 1:1 with a clinical consultation /
+     * encounter,  but this varies greatly depending on the clinical
+     * workflow. This resource is called &quot;ClinicalImpression&quot; rather than
+     * &quot;ClinicalAssessment&quot; to avoid confusion with the recording of
+     * assessment tools such as Apgar score.
+     */
     public static class ClinicalImpressionInvestigation extends FhirObject {
         public static final String RESOURCE_TYPE = "ClinicalImpressionInvestigation";
         public static final String PROPERTY_ID = "id";

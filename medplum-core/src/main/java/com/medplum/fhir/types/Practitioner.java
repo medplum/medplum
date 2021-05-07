@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A person who is directly or indirectly involved in the provisioning of
+ * healthcare.
+ */
 public class Practitioner extends FhirResource {
     public static final String RESOURCE_TYPE = "Practitioner";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -300,6 +304,10 @@ public class Practitioner extends FhirResource {
         }
     }
 
+    /**
+     * A person who is directly or indirectly involved in the provisioning of
+     * healthcare.
+     */
     public static class PractitionerQualification extends FhirObject {
         public static final String RESOURCE_TYPE = "PractitionerQualification";
         public static final String PROPERTY_ID = "id";

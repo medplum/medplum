@@ -9,6 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The header for a message exchange that is either requesting or
+ * responding to an action.  The reference(s) that are the subject of the
+ * action as well as other information related to the action are
+ * typically transmitted in a bundle in which the MessageHeader resource
+ * instance is the first resource in the bundle.
+ */
 public class MessageHeader extends FhirResource {
     public static final String RESOURCE_TYPE = "MessageHeader";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -196,7 +203,7 @@ public class MessageHeader extends FhirResource {
     }
 
     /**
-     * Information about the message that this message is a response to. 
+     * Information about the message that this message is a response to.
      * Only present if this message is a response.
      */
     public MessageHeaderResponse response() {
@@ -338,6 +345,13 @@ public class MessageHeader extends FhirResource {
         }
     }
 
+    /**
+     * The header for a message exchange that is either requesting or
+     * responding to an action.  The reference(s) that are the subject of the
+     * action as well as other information related to the action are
+     * typically transmitted in a bundle in which the MessageHeader resource
+     * instance is the first resource in the bundle.
+     */
     public static class MessageHeaderDestination extends FhirObject {
         public static final String RESOURCE_TYPE = "MessageHeaderDestination";
         public static final String PROPERTY_ID = "id";
@@ -484,6 +498,13 @@ public class MessageHeader extends FhirResource {
         }
     }
 
+    /**
+     * The header for a message exchange that is either requesting or
+     * responding to an action.  The reference(s) that are the subject of the
+     * action as well as other information related to the action are
+     * typically transmitted in a bundle in which the MessageHeader resource
+     * instance is the first resource in the bundle.
+     */
     public static class MessageHeaderResponse extends FhirObject {
         public static final String RESOURCE_TYPE = "MessageHeaderResponse";
         public static final String PROPERTY_ID = "id";
@@ -616,6 +637,13 @@ public class MessageHeader extends FhirResource {
         }
     }
 
+    /**
+     * The header for a message exchange that is either requesting or
+     * responding to an action.  The reference(s) that are the subject of the
+     * action as well as other information related to the action are
+     * typically transmitted in a bundle in which the MessageHeader resource
+     * instance is the first resource in the bundle.
+     */
     public static class MessageHeaderSource extends FhirObject {
         public static final String RESOURCE_TYPE = "MessageHeaderSource";
         public static final String PROPERTY_ID = "id";

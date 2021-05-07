@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A Map of relationships between 2 structures that can be used to
+ * transform data.
+ */
 public class StructureMap extends FhirResource {
     public static final String RESOURCE_TYPE = "StructureMap";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -433,6 +437,10 @@ public class StructureMap extends FhirResource {
         }
     }
 
+    /**
+     * A Map of relationships between 2 structures that can be used to
+     * transform data.
+     */
     public static class StructureMapDependent extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapDependent";
         public static final String PROPERTY_ID = "id";
@@ -550,6 +558,10 @@ public class StructureMap extends FhirResource {
         }
     }
 
+    /**
+     * A Map of relationships between 2 structures that can be used to
+     * transform data.
+     */
     public static class StructureMapGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapGroup";
         public static final String PROPERTY_ID = "id";
@@ -722,6 +734,10 @@ public class StructureMap extends FhirResource {
         }
     }
 
+    /**
+     * A Map of relationships between 2 structures that can be used to
+     * transform data.
+     */
     public static class StructureMapInput extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapInput";
         public static final String PROPERTY_ID = "id";
@@ -865,6 +881,10 @@ public class StructureMap extends FhirResource {
         }
     }
 
+    /**
+     * A Map of relationships between 2 structures that can be used to
+     * transform data.
+     */
     public static class StructureMapParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapParameter";
         public static final String PROPERTY_ID = "id";
@@ -1021,6 +1041,10 @@ public class StructureMap extends FhirResource {
         }
     }
 
+    /**
+     * A Map of relationships between 2 structures that can be used to
+     * transform data.
+     */
     public static class StructureMapRule extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapRule";
         public static final String PROPERTY_ID = "id";
@@ -1190,6 +1214,10 @@ public class StructureMap extends FhirResource {
         }
     }
 
+    /**
+     * A Map of relationships between 2 structures that can be used to
+     * transform data.
+     */
     public static class StructureMapSource extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapSource";
         public static final String PROPERTY_ID = "id";
@@ -2067,6 +2095,10 @@ public class StructureMap extends FhirResource {
         }
     }
 
+    /**
+     * A Map of relationships between 2 structures that can be used to
+     * transform data.
+     */
     public static class StructureMapStructure extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapStructure";
         public static final String PROPERTY_ID = "id";
@@ -2210,6 +2242,10 @@ public class StructureMap extends FhirResource {
         }
     }
 
+    /**
+     * A Map of relationships between 2 structures that can be used to
+     * transform data.
+     */
     public static class StructureMapTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapTarget";
         public static final String PROPERTY_ID = "id";

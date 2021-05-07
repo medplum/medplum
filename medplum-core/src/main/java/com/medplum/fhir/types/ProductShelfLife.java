@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The shelf-life and storage information for a medicinal product item or
+ * container can be described using this class.
+ */
 public class ProductShelfLife extends FhirResource {
     public static final String RESOURCE_TYPE = "ProductShelfLife";
     public static final String PROPERTY_ID = "id";

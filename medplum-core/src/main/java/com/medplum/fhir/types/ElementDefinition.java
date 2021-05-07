@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Captures constraints on each element within the resource, profile, or
+ * extension.
+ */
 public class ElementDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ElementDefinition";
     public static final String PROPERTY_ID = "id";
@@ -1350,7 +1354,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1376,7 +1380,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1402,7 +1406,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1428,7 +1432,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1454,7 +1458,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1480,7 +1484,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1506,7 +1510,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1532,7 +1536,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1558,7 +1562,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1584,7 +1588,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1610,7 +1614,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1636,7 +1640,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1662,7 +1666,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1688,7 +1692,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1714,7 +1718,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1740,7 +1744,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1766,7 +1770,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1792,7 +1796,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1818,7 +1822,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1844,7 +1848,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1870,7 +1874,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1896,7 +1900,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1922,7 +1926,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1948,7 +1952,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -1974,7 +1978,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2000,7 +2004,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2026,7 +2030,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2052,7 +2056,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2078,7 +2082,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2104,7 +2108,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2130,7 +2134,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2156,7 +2160,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2182,7 +2186,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2208,7 +2212,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2234,7 +2238,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2260,7 +2264,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2286,7 +2290,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2312,7 +2316,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2338,7 +2342,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2364,7 +2368,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2390,7 +2394,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2416,7 +2420,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2442,7 +2446,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2468,7 +2472,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2494,7 +2498,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2520,7 +2524,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2546,7 +2550,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2572,7 +2576,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2598,7 +2602,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -2624,7 +2628,7 @@ public class ElementDefinition extends FhirResource {
      * Specifies a value that the value in the instance SHALL follow - that
      * is, any value in the pattern must be found in the instance. Other
      * additional values may be found too. This is effectively constraint by
-     * example.  
+     * example.
      *
      * When pattern[x] is used to constrain a primitive, it means that the
      * value provided in the pattern[x] must match the instance value
@@ -3913,6 +3917,10 @@ public class ElementDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Captures constraints on each element within the resource, profile, or
+     * extension.
+     */
     public static class ElementDefinitionBase extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionBase";
         public static final String PROPERTY_ID = "id";
@@ -4046,6 +4054,10 @@ public class ElementDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Captures constraints on each element within the resource, profile, or
+     * extension.
+     */
     public static class ElementDefinitionBinding extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionBinding";
         public static final String PROPERTY_ID = "id";
@@ -4179,6 +4191,10 @@ public class ElementDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Captures constraints on each element within the resource, profile, or
+     * extension.
+     */
     public static class ElementDefinitionConstraint extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionConstraint";
         public static final String PROPERTY_ID = "id";
@@ -4368,6 +4384,10 @@ public class ElementDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Captures constraints on each element within the resource, profile, or
+     * extension.
+     */
     public static class ElementDefinitionDiscriminator extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionDiscriminator";
         public static final String PROPERTY_ID = "id";
@@ -4487,6 +4507,10 @@ public class ElementDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Captures constraints on each element within the resource, profile, or
+     * extension.
+     */
     public static class ElementDefinitionExample extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionExample";
         public static final String PROPERTY_ID = "id";
@@ -5291,6 +5315,10 @@ public class ElementDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Captures constraints on each element within the resource, profile, or
+     * extension.
+     */
     public static class ElementDefinitionMapping extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionMapping";
         public static final String PROPERTY_ID = "id";
@@ -5435,6 +5463,10 @@ public class ElementDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Captures constraints on each element within the resource, profile, or
+     * extension.
+     */
     public static class ElementDefinitionSlicing extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionSlicing";
         public static final String PROPERTY_ID = "id";
@@ -5588,6 +5620,10 @@ public class ElementDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Captures constraints on each element within the resource, profile, or
+     * extension.
+     */
     public static class ElementDefinitionType extends FhirObject {
         public static final String RESOURCE_TYPE = "ElementDefinitionType";
         public static final String PROPERTY_ID = "id";

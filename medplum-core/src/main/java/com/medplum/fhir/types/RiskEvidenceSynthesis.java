@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The RiskEvidenceSynthesis resource describes the likelihood of an
+ * outcome in a population plus exposure state where the risk estimate is
+ * derived from a combination of research studies.
+ */
 public class RiskEvidenceSynthesis extends FhirResource {
     public static final String RESOURCE_TYPE = "RiskEvidenceSynthesis";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -617,6 +622,11 @@ public class RiskEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The RiskEvidenceSynthesis resource describes the likelihood of an
+     * outcome in a population plus exposure state where the risk estimate is
+     * derived from a combination of research studies.
+     */
     public static class RiskEvidenceSynthesisCertainty extends FhirObject {
         public static final String RESOURCE_TYPE = "RiskEvidenceSynthesisCertainty";
         public static final String PROPERTY_ID = "id";
@@ -748,6 +758,11 @@ public class RiskEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The RiskEvidenceSynthesis resource describes the likelihood of an
+     * outcome in a population plus exposure state where the risk estimate is
+     * derived from a combination of research studies.
+     */
     public static class RiskEvidenceSynthesisCertaintySubcomponent extends FhirObject {
         public static final String RESOURCE_TYPE = "RiskEvidenceSynthesisCertaintySubcomponent";
         public static final String PROPERTY_ID = "id";
@@ -879,6 +894,11 @@ public class RiskEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The RiskEvidenceSynthesis resource describes the likelihood of an
+     * outcome in a population plus exposure state where the risk estimate is
+     * derived from a combination of research studies.
+     */
     public static class RiskEvidenceSynthesisPrecisionEstimate extends FhirObject {
         public static final String RESOURCE_TYPE = "RiskEvidenceSynthesisPrecisionEstimate";
         public static final String PROPERTY_ID = "id";
@@ -1022,6 +1042,11 @@ public class RiskEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The RiskEvidenceSynthesis resource describes the likelihood of an
+     * outcome in a population plus exposure state where the risk estimate is
+     * derived from a combination of research studies.
+     */
     public static class RiskEvidenceSynthesisRiskEstimate extends FhirObject {
         public static final String RESOURCE_TYPE = "RiskEvidenceSynthesisRiskEstimate";
         public static final String PROPERTY_ID = "id";
@@ -1205,6 +1230,11 @@ public class RiskEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The RiskEvidenceSynthesis resource describes the likelihood of an
+     * outcome in a population plus exposure state where the risk estimate is
+     * derived from a combination of research studies.
+     */
     public static class RiskEvidenceSynthesisSampleSize extends FhirObject {
         public static final String RESOURCE_TYPE = "RiskEvidenceSynthesisSampleSize";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The findings and interpretation of diagnostic  tests performed on
+ * patients, groups of patients, devices, and locations, and/or specimens
+ * derived from these. The report includes clinical context such as
+ * requesting and provider information, and some mix of atomic results,
+ * images, textual and coded interpretations, and formatted
+ * representation of diagnostic reports.
+ */
 public class DiagnosticReport extends FhirResource {
     public static final String RESOURCE_TYPE = "DiagnosticReport";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -435,6 +443,14 @@ public class DiagnosticReport extends FhirResource {
         }
     }
 
+    /**
+     * The findings and interpretation of diagnostic  tests performed on
+     * patients, groups of patients, devices, and locations, and/or specimens
+     * derived from these. The report includes clinical context such as
+     * requesting and provider information, and some mix of atomic results,
+     * images, textual and coded interpretations, and formatted
+     * representation of diagnostic reports.
+     */
     public static class DiagnosticReportMedia extends FhirObject {
         public static final String RESOURCE_TYPE = "DiagnosticReportMedia";
         public static final String PROPERTY_ID = "id";

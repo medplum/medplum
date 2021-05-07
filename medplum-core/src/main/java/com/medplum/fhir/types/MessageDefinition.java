@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Defines the characteristics of a message that can be shared between
+ * systems, including the type of event that initiates the message, the
+ * content to be transmitted and what response(s), if any, are permitted.
+ */
 public class MessageDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "MessageDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -527,6 +532,11 @@ public class MessageDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Defines the characteristics of a message that can be shared between
+     * systems, including the type of event that initiates the message, the
+     * content to be transmitted and what response(s), if any, are permitted.
+     */
     public static class MessageDefinitionAllowedResponse extends FhirObject {
         public static final String RESOURCE_TYPE = "MessageDefinitionAllowedResponse";
         public static final String PROPERTY_ID = "id";
@@ -646,6 +656,11 @@ public class MessageDefinition extends FhirResource {
         }
     }
 
+    /**
+     * Defines the characteristics of a message that can be shared between
+     * systems, including the type of event that initiates the message, the
+     * content to be transmitted and what response(s), if any, are permitted.
+     */
     public static class MessageDefinitionFocus extends FhirObject {
         public static final String RESOURCE_TYPE = "MessageDefinitionFocus";
         public static final String PROPERTY_ID = "id";

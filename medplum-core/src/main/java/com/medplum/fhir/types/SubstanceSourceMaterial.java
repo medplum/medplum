@@ -9,6 +9,23 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Source material shall capture information on the taxonomic and
+ * anatomical origins as well as the fraction of a material that can
+ * result in or can be modified to form a substance. This set of data
+ * elements shall be used to define polymer substances isolated from
+ * biological matrices. Taxonomic and anatomical origins shall be
+ * described using a controlled vocabulary as required. This information
+ * is captured for naturally derived polymers ( . starch) and
+ * structurally diverse substances. For Organisms belonging to the
+ * Kingdom Plantae the Substance level defines the fresh material of a
+ * single species or infraspecies, the Herbal Drug and the Herbal
+ * preparation. For Herbal preparations, the fraction information will be
+ * captured at the Substance information level and additional information
+ * for herbal extracts will be captured at the Specified Substance Group
+ * 1 information level. See for further explanation the Substance Class:
+ * Structurally Diverse and the herbal annex.
+ */
 public class SubstanceSourceMaterial extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceSourceMaterial";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -357,6 +374,23 @@ public class SubstanceSourceMaterial extends FhirResource {
         }
     }
 
+    /**
+     * Source material shall capture information on the taxonomic and
+     * anatomical origins as well as the fraction of a material that can
+     * result in or can be modified to form a substance. This set of data
+     * elements shall be used to define polymer substances isolated from
+     * biological matrices. Taxonomic and anatomical origins shall be
+     * described using a controlled vocabulary as required. This information
+     * is captured for naturally derived polymers ( . starch) and
+     * structurally diverse substances. For Organisms belonging to the
+     * Kingdom Plantae the Substance level defines the fresh material of a
+     * single species or infraspecies, the Herbal Drug and the Herbal
+     * preparation. For Herbal preparations, the fraction information will be
+     * captured at the Substance information level and additional information
+     * for herbal extracts will be captured at the Specified Substance Group
+     * 1 information level. See for further explanation the Substance Class:
+     * Structurally Diverse and the herbal annex.
+     */
     public static class SubstanceSourceMaterialAuthor extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialAuthor";
         public static final String PROPERTY_ID = "id";
@@ -481,6 +515,23 @@ public class SubstanceSourceMaterial extends FhirResource {
         }
     }
 
+    /**
+     * Source material shall capture information on the taxonomic and
+     * anatomical origins as well as the fraction of a material that can
+     * result in or can be modified to form a substance. This set of data
+     * elements shall be used to define polymer substances isolated from
+     * biological matrices. Taxonomic and anatomical origins shall be
+     * described using a controlled vocabulary as required. This information
+     * is captured for naturally derived polymers ( . starch) and
+     * structurally diverse substances. For Organisms belonging to the
+     * Kingdom Plantae the Substance level defines the fresh material of a
+     * single species or infraspecies, the Herbal Drug and the Herbal
+     * preparation. For Herbal preparations, the fraction information will be
+     * captured at the Substance information level and additional information
+     * for herbal extracts will be captured at the Specified Substance Group
+     * 1 information level. See for further explanation the Substance Class:
+     * Structurally Diverse and the herbal annex.
+     */
     public static class SubstanceSourceMaterialFractionDescription extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialFractionDescription";
         public static final String PROPERTY_ID = "id";
@@ -601,6 +652,23 @@ public class SubstanceSourceMaterial extends FhirResource {
         }
     }
 
+    /**
+     * Source material shall capture information on the taxonomic and
+     * anatomical origins as well as the fraction of a material that can
+     * result in or can be modified to form a substance. This set of data
+     * elements shall be used to define polymer substances isolated from
+     * biological matrices. Taxonomic and anatomical origins shall be
+     * described using a controlled vocabulary as required. This information
+     * is captured for naturally derived polymers ( . starch) and
+     * structurally diverse substances. For Organisms belonging to the
+     * Kingdom Plantae the Substance level defines the fresh material of a
+     * single species or infraspecies, the Herbal Drug and the Herbal
+     * preparation. For Herbal preparations, the fraction information will be
+     * captured at the Substance information level and additional information
+     * for herbal extracts will be captured at the Specified Substance Group
+     * 1 information level. See for further explanation the Substance Class:
+     * Structurally Diverse and the herbal annex.
+     */
     public static class SubstanceSourceMaterialHybrid extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialHybrid";
         public static final String PROPERTY_ID = "id";
@@ -765,6 +833,23 @@ public class SubstanceSourceMaterial extends FhirResource {
         }
     }
 
+    /**
+     * Source material shall capture information on the taxonomic and
+     * anatomical origins as well as the fraction of a material that can
+     * result in or can be modified to form a substance. This set of data
+     * elements shall be used to define polymer substances isolated from
+     * biological matrices. Taxonomic and anatomical origins shall be
+     * described using a controlled vocabulary as required. This information
+     * is captured for naturally derived polymers ( . starch) and
+     * structurally diverse substances. For Organisms belonging to the
+     * Kingdom Plantae the Substance level defines the fresh material of a
+     * single species or infraspecies, the Herbal Drug and the Herbal
+     * preparation. For Herbal preparations, the fraction information will be
+     * captured at the Substance information level and additional information
+     * for herbal extracts will be captured at the Specified Substance Group
+     * 1 information level. See for further explanation the Substance Class:
+     * Structurally Diverse and the herbal annex.
+     */
     public static class SubstanceSourceMaterialOrganism extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialOrganism";
         public static final String PROPERTY_ID = "id";
@@ -967,6 +1052,23 @@ public class SubstanceSourceMaterial extends FhirResource {
         }
     }
 
+    /**
+     * Source material shall capture information on the taxonomic and
+     * anatomical origins as well as the fraction of a material that can
+     * result in or can be modified to form a substance. This set of data
+     * elements shall be used to define polymer substances isolated from
+     * biological matrices. Taxonomic and anatomical origins shall be
+     * described using a controlled vocabulary as required. This information
+     * is captured for naturally derived polymers ( . starch) and
+     * structurally diverse substances. For Organisms belonging to the
+     * Kingdom Plantae the Substance level defines the fresh material of a
+     * single species or infraspecies, the Herbal Drug and the Herbal
+     * preparation. For Herbal preparations, the fraction information will be
+     * captured at the Substance information level and additional information
+     * for herbal extracts will be captured at the Specified Substance Group
+     * 1 information level. See for further explanation the Substance Class:
+     * Structurally Diverse and the herbal annex.
+     */
     public static class SubstanceSourceMaterialOrganismGeneral extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialOrganismGeneral";
         public static final String PROPERTY_ID = "id";
@@ -1110,6 +1212,23 @@ public class SubstanceSourceMaterial extends FhirResource {
         }
     }
 
+    /**
+     * Source material shall capture information on the taxonomic and
+     * anatomical origins as well as the fraction of a material that can
+     * result in or can be modified to form a substance. This set of data
+     * elements shall be used to define polymer substances isolated from
+     * biological matrices. Taxonomic and anatomical origins shall be
+     * described using a controlled vocabulary as required. This information
+     * is captured for naturally derived polymers ( . starch) and
+     * structurally diverse substances. For Organisms belonging to the
+     * Kingdom Plantae the Substance level defines the fresh material of a
+     * single species or infraspecies, the Herbal Drug and the Herbal
+     * preparation. For Herbal preparations, the fraction information will be
+     * captured at the Substance information level and additional information
+     * for herbal extracts will be captured at the Specified Substance Group
+     * 1 information level. See for further explanation the Substance Class:
+     * Structurally Diverse and the herbal annex.
+     */
     public static class SubstanceSourceMaterialPartDescription extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialPartDescription";
         public static final String PROPERTY_ID = "id";

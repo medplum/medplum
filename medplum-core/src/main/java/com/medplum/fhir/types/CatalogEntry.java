@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Catalog entries are wrappers that contextualize items included in a
+ * catalog.
+ */
 public class CatalogEntry extends FhirResource {
     public static final String RESOURCE_TYPE = "CatalogEntry";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -336,6 +340,10 @@ public class CatalogEntry extends FhirResource {
         }
     }
 
+    /**
+     * Catalog entries are wrappers that contextualize items included in a
+     * catalog.
+     */
     public static class CatalogEntryRelatedEntry extends FhirObject {
         public static final String RESOURCE_TYPE = "CatalogEntryRelatedEntry";
         public static final String PROPERTY_ID = "id";

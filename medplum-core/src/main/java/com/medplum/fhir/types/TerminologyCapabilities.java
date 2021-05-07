@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A TerminologyCapabilities resource documents a set of capabilities
+ * (behaviors) of a FHIR Terminology Server that may be used as a
+ * statement of actual server functionality or a statement of required or
+ * desired server implementation.
+ */
 public class TerminologyCapabilities extends FhirResource {
     public static final String RESOURCE_TYPE = "TerminologyCapabilities";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -528,6 +534,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesClosure extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesClosure";
         public static final String PROPERTY_ID = "id";
@@ -632,6 +644,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesCodeSystem extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesCodeSystem";
         public static final String PROPERTY_ID = "id";
@@ -763,6 +781,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesExpansion extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesExpansion";
         public static final String PROPERTY_ID = "id";
@@ -919,6 +943,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesFilter extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesFilter";
         public static final String PROPERTY_ID = "id";
@@ -1036,6 +1066,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesImplementation extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesImplementation";
         public static final String PROPERTY_ID = "id";
@@ -1154,6 +1190,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesParameter";
         public static final String PROPERTY_ID = "id";
@@ -1271,6 +1313,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesSoftware extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesSoftware";
         public static final String PROPERTY_ID = "id";
@@ -1388,6 +1436,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesTranslation extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesTranslation";
         public static final String PROPERTY_ID = "id";
@@ -1492,6 +1546,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesValidateCode extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesValidateCode";
         public static final String PROPERTY_ID = "id";
@@ -1596,6 +1656,12 @@ public class TerminologyCapabilities extends FhirResource {
         }
     }
 
+    /**
+     * A TerminologyCapabilities resource documents a set of capabilities
+     * (behaviors) of a FHIR Terminology Server that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class TerminologyCapabilitiesVersion extends FhirObject {
         public static final String RESOURCE_TYPE = "TerminologyCapabilitiesVersion";
         public static final String PROPERTY_ID = "id";

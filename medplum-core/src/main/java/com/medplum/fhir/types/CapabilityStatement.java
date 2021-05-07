@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A Capability Statement documents a set of capabilities (behaviors) of
+ * a FHIR Server for a particular version of FHIR that may be used as a
+ * statement of actual server functionality or a statement of required or
+ * desired server implementation.
+ */
 public class CapabilityStatement extends FhirResource {
     public static final String RESOURCE_TYPE = "CapabilityStatement";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -559,6 +565,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementDocument extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementDocument";
         public static final String PROPERTY_ID = "id";
@@ -693,6 +705,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementEndpoint extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementEndpoint";
         public static final String PROPERTY_ID = "id";
@@ -812,6 +830,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementImplementation extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementImplementation";
         public static final String PROPERTY_ID = "id";
@@ -945,6 +969,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementInteraction extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementInteraction";
         public static final String PROPERTY_ID = "id";
@@ -1064,6 +1094,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementInteraction1 extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementInteraction1";
         public static final String PROPERTY_ID = "id";
@@ -1183,6 +1219,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementMessaging extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementMessaging";
         public static final String PROPERTY_ID = "id";
@@ -1333,6 +1375,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementOperation";
         public static final String PROPERTY_ID = "id";
@@ -1475,6 +1523,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementResource extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementResource";
         public static final String PROPERTY_ID = "id";
@@ -1813,6 +1867,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementRest extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementRest";
         public static final String PROPERTY_ID = "id";
@@ -2018,6 +2078,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementSearchParam extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementSearchParam";
         public static final String PROPERTY_ID = "id";
@@ -2168,6 +2234,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementSecurity extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementSecurity";
         public static final String PROPERTY_ID = "id";
@@ -2299,6 +2371,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementSoftware extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementSoftware";
         public static final String PROPERTY_ID = "id";
@@ -2429,6 +2507,12 @@ public class CapabilityStatement extends FhirResource {
         }
     }
 
+    /**
+     * A Capability Statement documents a set of capabilities (behaviors) of
+     * a FHIR Server for a particular version of FHIR that may be used as a
+     * statement of actual server functionality or a statement of required or
+     * desired server implementation.
+     */
     public static class CapabilityStatementSupportedMessage extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementSupportedMessage";
         public static final String PROPERTY_ID = "id";

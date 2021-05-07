@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A formal computable definition of a graph of resources - that is, a
+ * coherent set of resources that form a graph by following references.
+ * The Graph Definition resource defines a set and makes rules about the
+ * set.
+ */
 public class GraphDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "GraphDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -387,6 +393,12 @@ public class GraphDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A formal computable definition of a graph of resources - that is, a
+     * coherent set of resources that form a graph by following references.
+     * The Graph Definition resource defines a set and makes rules about the
+     * set.
+     */
     public static class GraphDefinitionCompartment extends FhirObject {
         public static final String RESOURCE_TYPE = "GraphDefinitionCompartment";
         public static final String PROPERTY_ID = "id";
@@ -545,6 +557,12 @@ public class GraphDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A formal computable definition of a graph of resources - that is, a
+     * coherent set of resources that form a graph by following references.
+     * The Graph Definition resource defines a set and makes rules about the
+     * set.
+     */
     public static class GraphDefinitionLink extends FhirObject {
         public static final String RESOURCE_TYPE = "GraphDefinitionLink";
         public static final String PROPERTY_ID = "id";
@@ -716,6 +734,12 @@ public class GraphDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A formal computable definition of a graph of resources - that is, a
+     * coherent set of resources that form a graph by following references.
+     * The Graph Definition resource defines a set and makes rules about the
+     * set.
+     */
     public static class GraphDefinitionTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "GraphDefinitionTarget";
         public static final String PROPERTY_ID = "id";

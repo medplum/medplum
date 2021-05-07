@@ -7,6 +7,11 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * A guidance response is the formal response to a guidance request,
+ * including any output parameters returned by the evaluation, as well as
+ * the description of any proposed actions to be taken.
+ */
 public class GuidanceResponse extends FhirResource {
     public static final String RESOURCE_TYPE = "GuidanceResponse";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Describes the intention of how one or more practitioners intend to
+ * deliver care for a particular patient, group or community for a period
+ * of time, possibly limited to care for a specific condition or set of
+ * conditions.
+ */
 public class CarePlan extends FhirResource {
     public static final String RESOURCE_TYPE = "CarePlan";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -487,6 +493,12 @@ public class CarePlan extends FhirResource {
         }
     }
 
+    /**
+     * Describes the intention of how one or more practitioners intend to
+     * deliver care for a particular patient, group or community for a period
+     * of time, possibly limited to care for a specific condition or set of
+     * conditions.
+     */
     public static class CarePlanActivity extends FhirObject {
         public static final String RESOURCE_TYPE = "CarePlanActivity";
         public static final String PROPERTY_ID = "id";
@@ -652,6 +664,12 @@ public class CarePlan extends FhirResource {
         }
     }
 
+    /**
+     * Describes the intention of how one or more practitioners intend to
+     * deliver care for a particular patient, group or community for a period
+     * of time, possibly limited to care for a specific condition or set of
+     * conditions.
+     */
     public static class CarePlanDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "CarePlanDetail";
         public static final String PROPERTY_ID = "id";

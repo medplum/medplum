@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The parameters to the module. This collection specifies both the input
+ * and output parameters. Input parameters are provided by the caller as
+ * part of the $evaluate operation. Output parameters are included in the
+ * GuidanceResponse.
+ */
 public class ParameterDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ParameterDefinition";
     public static final String PROPERTY_ID = "id";

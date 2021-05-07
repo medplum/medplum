@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * A container for slots of time that may be available for booking
+ * appointments.
+ */
 public class Schedule extends FhirResource {
     public static final String RESOURCE_TYPE = "Schedule";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

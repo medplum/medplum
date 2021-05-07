@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * This resource provides the insurance enrollment details to the insurer
+ * regarding a specified coverage.
+ */
 public class EnrollmentRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "EnrollmentRequest";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

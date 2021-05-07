@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A provider issued list of professional services and products which
+ * have been provided, or are to be provided, to a patient which is sent
+ * to an insurer for reimbursement.
+ */
 public class Claim extends FhirResource {
     public static final String RESOURCE_TYPE = "Claim";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -537,6 +542,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimAccident extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimAccident";
         public static final String PROPERTY_ID = "id";
@@ -683,6 +693,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimCareTeam extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimCareTeam";
         public static final String PROPERTY_ID = "id";
@@ -842,6 +857,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimDetail";
         public static final String PROPERTY_ID = "id";
@@ -1101,6 +1121,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimDiagnosis extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimDiagnosis";
         public static final String PROPERTY_ID = "id";
@@ -1275,6 +1300,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimInsurance extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimInsurance";
         public static final String PROPERTY_ID = "id";
@@ -1467,6 +1497,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimItem extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimItem";
         public static final String PROPERTY_ID = "id";
@@ -1887,6 +1922,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimPayee extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimPayee";
         public static final String PROPERTY_ID = "id";
@@ -2005,6 +2045,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimProcedure extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimProcedure";
         public static final String PROPERTY_ID = "id";
@@ -2176,6 +2221,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimRelated extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimRelated";
         public static final String PROPERTY_ID = "id";
@@ -2307,6 +2357,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimSubDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimSubDetail";
         public static final String PROPERTY_ID = "id";
@@ -2552,6 +2607,11 @@ public class Claim extends FhirResource {
         }
     }
 
+    /**
+     * A provider issued list of professional services and products which
+     * have been provided, or are to be provided, to a patient which is sent
+     * to an insurer for reimbursement.
+     */
     public static class ClaimSupportingInfo extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimSupportingInfo";
         public static final String PROPERTY_ID = "id";

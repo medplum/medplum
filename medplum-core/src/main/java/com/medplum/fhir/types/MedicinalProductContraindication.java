@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The clinical particulars - indications, contraindications etc. of a
+ * medicinal product, including for regulatory purposes.
+ */
 public class MedicinalProductContraindication extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductContraindication";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -256,6 +260,10 @@ public class MedicinalProductContraindication extends FhirResource {
         }
     }
 
+    /**
+     * The clinical particulars - indications, contraindications etc. of a
+     * medicinal product, including for regulatory purposes.
+     */
     public static class MedicinalProductContraindicationOtherTherapy extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductContraindicationOtherTherapy";
         public static final String PROPERTY_ID = "id";

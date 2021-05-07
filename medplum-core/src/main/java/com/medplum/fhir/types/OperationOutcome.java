@@ -11,6 +11,10 @@ import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.StandardOutcomes;
 
+/**
+ * A collection of error, warning, or information messages that result
+ * from a system action.
+ */
 public class OperationOutcome extends FhirResource {
     public static final String RESOURCE_TYPE = "OperationOutcome";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -214,6 +218,10 @@ public class OperationOutcome extends FhirResource {
         }
     }
 
+    /**
+     * A collection of error, warning, or information messages that result
+     * from a system action.
+     */
     public static class OperationOutcomeIssue extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationOutcomeIssue";
         public static final String PROPERTY_ID = "id";
@@ -315,7 +323,7 @@ public class OperationOutcome extends FhirResource {
         /**
          * This element is deprecated because it is XML specific. It is replaced
          * by issue.expression, which is format independent, and simpler to
-         * parse. 
+         * parse.
          *
          * For resource issues, this will be a simple XPath limited to element
          * names, repetition indicators and the default child accessor that

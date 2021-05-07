@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A specific set of Roles/Locations/specialties/services that a
+ * practitioner may perform at an organization for a period of time.
+ */
 public class PractitionerRole extends FhirResource {
     public static final String RESOURCE_TYPE = "PractitionerRole";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -355,6 +359,10 @@ public class PractitionerRole extends FhirResource {
         }
     }
 
+    /**
+     * A specific set of Roles/Locations/specialties/services that a
+     * practitioner may perform at an organization for a period of time.
+     */
     public static class PractitionerRoleAvailableTime extends FhirObject {
         public static final String RESOURCE_TYPE = "PractitionerRoleAvailableTime";
         public static final String PROPERTY_ID = "id";
@@ -502,6 +510,10 @@ public class PractitionerRole extends FhirResource {
         }
     }
 
+    /**
+     * A specific set of Roles/Locations/specialties/services that a
+     * practitioner may perform at an organization for a period of time.
+     */
     public static class PractitionerRoleNotAvailable extends FhirObject {
         public static final String RESOURCE_TYPE = "PractitionerRoleNotAvailable";
         public static final String PROPERTY_ID = "id";

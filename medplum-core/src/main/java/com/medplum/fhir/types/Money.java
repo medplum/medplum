@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An amount of economic utility in some recognized currency.
+ */
 public class Money extends FhirResource {
     public static final String RESOURCE_TYPE = "Money";
     public static final String PROPERTY_ID = "id";

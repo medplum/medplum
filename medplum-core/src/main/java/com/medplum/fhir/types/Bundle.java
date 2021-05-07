@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A container for a collection of resources.
+ */
 public class Bundle extends FhirResource {
     public static final String RESOURCE_TYPE = "Bundle";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -183,6 +186,9 @@ public class Bundle extends FhirResource {
         }
     }
 
+    /**
+     * A container for a collection of resources.
+     */
     public static class BundleEntry extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleEntry";
         public static final String PROPERTY_ID = "id";
@@ -260,7 +266,7 @@ public class Bundle extends FhirResource {
          * with the id in the resource - i.e. if the fullUrl is not a urn:uuid,
          * the URL shall be version-independent URL consistent with the
          * Resource.id. The fullUrl is a version independent reference to the
-         * resource. The fullUrl element SHALL have a value except that: 
+         * resource. The fullUrl element SHALL have a value except that:
          * * fullUrl can be empty on a POST (although it does not need to when
          * specifying a temporary id for reference in the bundle)
          * * Results from operations might involve resources that are not
@@ -370,6 +376,9 @@ public class Bundle extends FhirResource {
         }
     }
 
+    /**
+     * A container for a collection of resources.
+     */
     public static class BundleLink extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleLink";
         public static final String PROPERTY_ID = "id";
@@ -488,6 +497,9 @@ public class Bundle extends FhirResource {
         }
     }
 
+    /**
+     * A container for a collection of resources.
+     */
     public static class BundleRequest extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleRequest";
         public static final String PROPERTY_ID = "id";
@@ -667,6 +679,9 @@ public class Bundle extends FhirResource {
         }
     }
 
+    /**
+     * A container for a collection of resources.
+     */
     public static class BundleResponse extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleResponse";
         public static final String PROPERTY_ID = "id";
@@ -834,6 +849,9 @@ public class Bundle extends FhirResource {
         }
     }
 
+    /**
+     * A container for a collection of resources.
+     */
     public static class BundleSearch extends FhirObject {
         public static final String RESOURCE_TYPE = "BundleSearch";
         public static final String PROPERTY_ID = "id";

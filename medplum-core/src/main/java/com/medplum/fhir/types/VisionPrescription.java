@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An authorization for the provision of glasses and/or contact lenses to
+ * a patient.
+ */
 public class VisionPrescription extends FhirResource {
     public static final String RESOURCE_TYPE = "VisionPrescription";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -272,6 +276,10 @@ public class VisionPrescription extends FhirResource {
         }
     }
 
+    /**
+     * An authorization for the provision of glasses and/or contact lenses to
+     * a patient.
+     */
     public static class VisionPrescriptionLensSpecification extends FhirObject {
         public static final String RESOURCE_TYPE = "VisionPrescriptionLensSpecification";
         public static final String PROPERTY_ID = "id";
@@ -547,6 +555,10 @@ public class VisionPrescription extends FhirResource {
         }
     }
 
+    /**
+     * An authorization for the provision of glasses and/or contact lenses to
+     * a patient.
+     */
     public static class VisionPrescriptionPrism extends FhirObject {
         public static final String RESOURCE_TYPE = "VisionPrescriptionPrism";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The EffectEvidenceSynthesis resource describes the difference in an
+ * outcome between exposures states in a population where the effect
+ * estimate is derived from a combination of research studies.
+ */
 public class EffectEvidenceSynthesis extends FhirResource {
     public static final String RESOURCE_TYPE = "EffectEvidenceSynthesis";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -645,6 +650,11 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The EffectEvidenceSynthesis resource describes the difference in an
+     * outcome between exposures states in a population where the effect
+     * estimate is derived from a combination of research studies.
+     */
     public static class EffectEvidenceSynthesisCertainty extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisCertainty";
         public static final String PROPERTY_ID = "id";
@@ -776,6 +786,11 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The EffectEvidenceSynthesis resource describes the difference in an
+     * outcome between exposures states in a population where the effect
+     * estimate is derived from a combination of research studies.
+     */
     public static class EffectEvidenceSynthesisCertaintySubcomponent extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisCertaintySubcomponent";
         public static final String PROPERTY_ID = "id";
@@ -907,6 +922,11 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The EffectEvidenceSynthesis resource describes the difference in an
+     * outcome between exposures states in a population where the effect
+     * estimate is derived from a combination of research studies.
+     */
     public static class EffectEvidenceSynthesisEffectEstimate extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisEffectEstimate";
         public static final String PROPERTY_ID = "id";
@@ -1076,6 +1096,11 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The EffectEvidenceSynthesis resource describes the difference in an
+     * outcome between exposures states in a population where the effect
+     * estimate is derived from a combination of research studies.
+     */
     public static class EffectEvidenceSynthesisPrecisionEstimate extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisPrecisionEstimate";
         public static final String PROPERTY_ID = "id";
@@ -1219,6 +1244,11 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The EffectEvidenceSynthesis resource describes the difference in an
+     * outcome between exposures states in a population where the effect
+     * estimate is derived from a combination of research studies.
+     */
     public static class EffectEvidenceSynthesisResultsByExposure extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisResultsByExposure";
         public static final String PROPERTY_ID = "id";
@@ -1363,6 +1393,11 @@ public class EffectEvidenceSynthesis extends FhirResource {
         }
     }
 
+    /**
+     * The EffectEvidenceSynthesis resource describes the difference in an
+     * outcome between exposures states in a population where the effect
+     * estimate is derived from a combination of research studies.
+     */
     public static class EffectEvidenceSynthesisSampleSize extends FhirObject {
         public static final String RESOURCE_TYPE = "EffectEvidenceSynthesisSampleSize";
         public static final String PROPERTY_ID = "id";

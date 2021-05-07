@@ -9,6 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A formally or informally recognized grouping of people or
+ * organizations formed for the purpose of achieving some form of
+ * collective action.  Includes companies, institutions, corporations,
+ * departments, community groups, healthcare practice groups,
+ * payer/insurer, etc.
+ */
 public class Organization extends FhirResource {
     public static final String RESOURCE_TYPE = "Organization";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -296,6 +303,13 @@ public class Organization extends FhirResource {
         }
     }
 
+    /**
+     * A formally or informally recognized grouping of people or
+     * organizations formed for the purpose of achieving some form of
+     * collective action.  Includes companies, institutions, corporations,
+     * departments, community groups, healthcare practice groups,
+     * payer/insurer, etc.
+     */
     public static class OrganizationContact extends FhirObject {
         public static final String RESOURCE_TYPE = "OrganizationContact";
         public static final String PROPERTY_ID = "id";

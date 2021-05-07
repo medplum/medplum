@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A pharmaceutical product described in terms of its composition and
+ * dose form.
+ */
 public class MedicinalProductPharmaceutical extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductPharmaceutical";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -255,6 +259,10 @@ public class MedicinalProductPharmaceutical extends FhirResource {
         }
     }
 
+    /**
+     * A pharmaceutical product described in terms of its composition and
+     * dose form.
+     */
     public static class MedicinalProductPharmaceuticalCharacteristics extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductPharmaceuticalCharacteristics";
         public static final String PROPERTY_ID = "id";
@@ -372,6 +380,10 @@ public class MedicinalProductPharmaceutical extends FhirResource {
         }
     }
 
+    /**
+     * A pharmaceutical product described in terms of its composition and
+     * dose form.
+     */
     public static class MedicinalProductPharmaceuticalRouteOfAdministration extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductPharmaceuticalRouteOfAdministration";
         public static final String PROPERTY_ID = "id";
@@ -563,6 +575,10 @@ public class MedicinalProductPharmaceutical extends FhirResource {
         }
     }
 
+    /**
+     * A pharmaceutical product described in terms of its composition and
+     * dose form.
+     */
     public static class MedicinalProductPharmaceuticalTargetSpecies extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductPharmaceuticalTargetSpecies";
         public static final String PROPERTY_ID = "id";
@@ -681,6 +697,10 @@ public class MedicinalProductPharmaceutical extends FhirResource {
         }
     }
 
+    /**
+     * A pharmaceutical product described in terms of its composition and
+     * dose form.
+     */
     public static class MedicinalProductPharmaceuticalWithdrawalPeriod extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductPharmaceuticalWithdrawalPeriod";
         public static final String PROPERTY_ID = "id";

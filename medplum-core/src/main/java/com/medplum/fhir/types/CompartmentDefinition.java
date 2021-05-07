@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A compartment definition that defines how resources are accessed on a
+ * server.
+ */
 public class CompartmentDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "CompartmentDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -376,6 +380,10 @@ public class CompartmentDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A compartment definition that defines how resources are accessed on a
+     * server.
+     */
     public static class CompartmentDefinitionResource extends FhirObject {
         public static final String RESOURCE_TYPE = "CompartmentDefinitionResource";
         public static final String PROPERTY_ID = "id";

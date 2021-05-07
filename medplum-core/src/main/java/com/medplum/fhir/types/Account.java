@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A financial tool for tracking value accrued for a particular purpose.
+ * In the healthcare field, used to track charges for a patient, cost
+ * centers, etc.
+ */
 public class Account extends FhirResource {
     public static final String RESOURCE_TYPE = "Account";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -315,6 +320,11 @@ public class Account extends FhirResource {
         }
     }
 
+    /**
+     * A financial tool for tracking value accrued for a particular purpose.
+     * In the healthcare field, used to track charges for a patient, cost
+     * centers, etc.
+     */
     public static class AccountCoverage extends FhirObject {
         public static final String RESOURCE_TYPE = "AccountCoverage";
         public static final String PROPERTY_ID = "id";
@@ -437,6 +447,11 @@ public class Account extends FhirResource {
         }
     }
 
+    /**
+     * A financial tool for tracking value accrued for a particular purpose.
+     * In the healthcare field, used to track charges for a patient, cost
+     * centers, etc.
+     */
     public static class AccountGuarantor extends FhirObject {
         public static final String RESOURCE_TYPE = "AccountGuarantor";
         public static final String PROPERTY_ID = "id";

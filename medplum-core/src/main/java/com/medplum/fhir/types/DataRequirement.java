@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Describes a required data item for evaluation in terms of the type of
+ * data, and optional code or date-based filters of the data.
+ */
 public class DataRequirement extends FhirResource {
     public static final String RESOURCE_TYPE = "DataRequirement";
     public static final String PROPERTY_ID = "id";
@@ -94,7 +98,7 @@ public class DataRequirement extends FhirResource {
      * obtain an effective evaluation. This does not mean that a value is
      * required for this element, only that the consuming system must
      * understand the element and be able to provide values for it if they
-     * are available. 
+     * are available.
      *
      * The value of mustSupport SHALL be a FHIRPath resolveable on the type
      * of the DataRequirement. The path SHALL consist only of identifiers,
@@ -211,6 +215,10 @@ public class DataRequirement extends FhirResource {
         }
     }
 
+    /**
+     * Describes a required data item for evaluation in terms of the type of
+     * data, and optional code or date-based filters of the data.
+     */
     public static class DataRequirementCodeFilter extends FhirObject {
         public static final String RESOURCE_TYPE = "DataRequirementCodeFilter";
         public static final String PROPERTY_ID = "id";
@@ -371,6 +379,10 @@ public class DataRequirement extends FhirResource {
         }
     }
 
+    /**
+     * Describes a required data item for evaluation in terms of the type of
+     * data, and optional code or date-based filters of the data.
+     */
     public static class DataRequirementDateFilter extends FhirObject {
         public static final String RESOURCE_TYPE = "DataRequirementDateFilter";
         public static final String PROPERTY_ID = "id";
@@ -552,6 +564,10 @@ public class DataRequirement extends FhirResource {
         }
     }
 
+    /**
+     * Describes a required data item for evaluation in terms of the type of
+     * data, and optional code or date-based filters of the data.
+     */
     public static class DataRequirementSort extends FhirObject {
         public static final String RESOURCE_TYPE = "DataRequirementSort";
         public static final String PROPERTY_ID = "id";

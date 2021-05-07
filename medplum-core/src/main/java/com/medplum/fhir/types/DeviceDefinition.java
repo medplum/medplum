@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The characteristics, operational status and capabilities of a
+ * medical-related component of a medical device.
+ */
 public class DeviceDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "DeviceDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -135,7 +139,7 @@ public class DeviceDefinition extends FhirResource {
     }
 
     /**
-     * Unique device identifier (UDI) assigned to device label or package. 
+     * Unique device identifier (UDI) assigned to device label or package.
      * Note that the Device may include multiple udiCarriers as it either may
      * include just the udiCarrier for the jurisdiction it is sold, or for
      * multiple jurisdictions it could have been sold.
@@ -476,6 +480,10 @@ public class DeviceDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The characteristics, operational status and capabilities of a
+     * medical-related component of a medical device.
+     */
     public static class DeviceDefinitionCapability extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceDefinitionCapability";
         public static final String PROPERTY_ID = "id";
@@ -593,6 +601,10 @@ public class DeviceDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The characteristics, operational status and capabilities of a
+     * medical-related component of a medical device.
+     */
     public static class DeviceDefinitionDeviceName extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceDefinitionDeviceName";
         public static final String PROPERTY_ID = "id";
@@ -712,6 +724,10 @@ public class DeviceDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The characteristics, operational status and capabilities of a
+     * medical-related component of a medical device.
+     */
     public static class DeviceDefinitionMaterial extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceDefinitionMaterial";
         public static final String PROPERTY_ID = "id";
@@ -842,6 +858,10 @@ public class DeviceDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The characteristics, operational status and capabilities of a
+     * medical-related component of a medical device.
+     */
     public static class DeviceDefinitionProperty extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceDefinitionProperty";
         public static final String PROPERTY_ID = "id";
@@ -973,6 +993,10 @@ public class DeviceDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The characteristics, operational status and capabilities of a
+     * medical-related component of a medical device.
+     */
     public static class DeviceDefinitionSpecialization extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceDefinitionSpecialization";
         public static final String PROPERTY_ID = "id";
@@ -1090,6 +1114,10 @@ public class DeviceDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The characteristics, operational status and capabilities of a
+     * medical-related component of a medical device.
+     */
     public static class DeviceDefinitionUdiDeviceIdentifier extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceDefinitionUdiDeviceIdentifier";
         public static final String PROPERTY_ID = "id";

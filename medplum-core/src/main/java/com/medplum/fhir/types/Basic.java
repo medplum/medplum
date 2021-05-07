@@ -7,6 +7,12 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * Basic is used for handling concepts not yet defined in FHIR,
+ * narrative-only resources that don't map to an existing resource, and
+ * custom resources not appropriate for inclusion in the FHIR
+ * specification.
+ */
 public class Basic extends FhirResource {
     public static final String RESOURCE_TYPE = "Basic";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

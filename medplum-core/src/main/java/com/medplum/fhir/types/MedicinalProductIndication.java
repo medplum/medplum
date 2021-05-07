@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Indication for the Medicinal Product.
+ */
 public class MedicinalProductIndication extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductIndication";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -283,6 +286,9 @@ public class MedicinalProductIndication extends FhirResource {
         }
     }
 
+    /**
+     * Indication for the Medicinal Product.
+     */
     public static class MedicinalProductIndicationOtherTherapy extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIndicationOtherTherapy";
         public static final String PROPERTY_ID = "id";

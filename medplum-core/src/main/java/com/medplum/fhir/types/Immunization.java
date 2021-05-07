@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Describes the event of a patient being administered a vaccine or a
+ * record of an immunization as reported by a patient, a clinician or
+ * another party.
+ */
 public class Immunization extends FhirResource {
     public static final String RESOURCE_TYPE = "Immunization";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -556,6 +561,11 @@ public class Immunization extends FhirResource {
         }
     }
 
+    /**
+     * Describes the event of a patient being administered a vaccine or a
+     * record of an immunization as reported by a patient, a clinician or
+     * another party.
+     */
     public static class ImmunizationEducation extends FhirObject {
         public static final String RESOURCE_TYPE = "ImmunizationEducation";
         public static final String PROPERTY_ID = "id";
@@ -700,6 +710,11 @@ public class Immunization extends FhirResource {
         }
     }
 
+    /**
+     * Describes the event of a patient being administered a vaccine or a
+     * record of an immunization as reported by a patient, a clinician or
+     * another party.
+     */
     public static class ImmunizationPerformer extends FhirObject {
         public static final String RESOURCE_TYPE = "ImmunizationPerformer";
         public static final String PROPERTY_ID = "id";
@@ -818,6 +833,11 @@ public class Immunization extends FhirResource {
         }
     }
 
+    /**
+     * Describes the event of a patient being administered a vaccine or a
+     * record of an immunization as reported by a patient, a clinician or
+     * another party.
+     */
     public static class ImmunizationProtocolApplied extends FhirObject {
         public static final String RESOURCE_TYPE = "ImmunizationProtocolApplied";
         public static final String PROPERTY_ID = "id";
@@ -1003,6 +1023,11 @@ public class Immunization extends FhirResource {
         }
     }
 
+    /**
+     * Describes the event of a patient being administered a vaccine or a
+     * record of an immunization as reported by a patient, a clinician or
+     * another party.
+     */
     public static class ImmunizationReaction extends FhirObject {
         public static final String RESOURCE_TYPE = "ImmunizationReaction";
         public static final String PROPERTY_ID = "id";

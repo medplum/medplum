@@ -9,6 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Indicates that a medication product is to be or has been dispensed for
+ * a named person/patient.  This includes a description of the medication
+ * product (supply) provided and the instructions for administering the
+ * medication.  The medication dispense is the result of a pharmacy
+ * system responding to a medication order.
+ */
 public class MedicationDispense extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicationDispense";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -316,8 +323,8 @@ public class MedicationDispense extends FhirResource {
     /**
      * Indicates whether or not substitution was made as part of the
      * dispense.  In some cases, substitution will be expected but does not
-     * happen, in other cases substitution is not expected but does happen. 
-     * This block explains what substitution did or did not happen and why. 
+     * happen, in other cases substitution is not expected but does happen.
+     * This block explains what substitution did or did not happen and why.
      * If nothing is specified, substitution was not done.
      */
     public MedicationDispenseSubstitution substitution() {
@@ -531,6 +538,13 @@ public class MedicationDispense extends FhirResource {
         }
     }
 
+    /**
+     * Indicates that a medication product is to be or has been dispensed for
+     * a named person/patient.  This includes a description of the medication
+     * product (supply) provided and the instructions for administering the
+     * medication.  The medication dispense is the result of a pharmacy
+     * system responding to a medication order.
+     */
     public static class MedicationDispensePerformer extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationDispensePerformer";
         public static final String PROPERTY_ID = "id";
@@ -650,6 +664,13 @@ public class MedicationDispense extends FhirResource {
         }
     }
 
+    /**
+     * Indicates that a medication product is to be or has been dispensed for
+     * a named person/patient.  This includes a description of the medication
+     * product (supply) provided and the instructions for administering the
+     * medication.  The medication dispense is the result of a pharmacy
+     * system responding to a medication order.
+     */
     public static class MedicationDispenseSubstitution extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationDispenseSubstitution";
         public static final String PROPERTY_ID = "id";

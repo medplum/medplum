@@ -7,6 +7,12 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * The technical details of an endpoint that can be used for electronic
+ * services, such as for web services providing XDS.b or a REST endpoint
+ * for another FHIR server. This may include any security context
+ * information.
+ */
 public class Endpoint extends FhirResource {
     public static final String RESOURCE_TYPE = "Endpoint";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

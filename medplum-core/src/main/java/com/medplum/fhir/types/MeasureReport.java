@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The MeasureReport resource contains the results of the calculation of
+ * a measure; and optionally a reference to the resources involved in
+ * that calculation.
+ */
 public class MeasureReport extends FhirResource {
     public static final String RESOURCE_TYPE = "MeasureReport";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -319,6 +324,11 @@ public class MeasureReport extends FhirResource {
         }
     }
 
+    /**
+     * The MeasureReport resource contains the results of the calculation of
+     * a measure; and optionally a reference to the resources involved in
+     * that calculation.
+     */
     public static class MeasureReportComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportComponent";
         public static final String PROPERTY_ID = "id";
@@ -436,6 +446,11 @@ public class MeasureReport extends FhirResource {
         }
     }
 
+    /**
+     * The MeasureReport resource contains the results of the calculation of
+     * a measure; and optionally a reference to the resources involved in
+     * that calculation.
+     */
     public static class MeasureReportGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportGroup";
         public static final String PROPERTY_ID = "id";
@@ -584,6 +599,11 @@ public class MeasureReport extends FhirResource {
         }
     }
 
+    /**
+     * The MeasureReport resource contains the results of the calculation of
+     * a measure; and optionally a reference to the resources involved in
+     * that calculation.
+     */
     public static class MeasureReportPopulation extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportPopulation";
         public static final String PROPERTY_ID = "id";
@@ -715,6 +735,11 @@ public class MeasureReport extends FhirResource {
         }
     }
 
+    /**
+     * The MeasureReport resource contains the results of the calculation of
+     * a measure; and optionally a reference to the resources involved in
+     * that calculation.
+     */
     public static class MeasureReportPopulation1 extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportPopulation1";
         public static final String PROPERTY_ID = "id";
@@ -846,6 +871,11 @@ public class MeasureReport extends FhirResource {
         }
     }
 
+    /**
+     * The MeasureReport resource contains the results of the calculation of
+     * a measure; and optionally a reference to the resources involved in
+     * that calculation.
+     */
     public static class MeasureReportStratifier extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportStratifier";
         public static final String PROPERTY_ID = "id";
@@ -965,6 +995,11 @@ public class MeasureReport extends FhirResource {
         }
     }
 
+    /**
+     * The MeasureReport resource contains the results of the calculation of
+     * a measure; and optionally a reference to the resources involved in
+     * that calculation.
+     */
     public static class MeasureReportStratum extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportStratum";
         public static final String PROPERTY_ID = "id";

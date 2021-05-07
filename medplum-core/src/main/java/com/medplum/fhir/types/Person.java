@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Demographics and administrative information about a person independent
+ * of a specific health-related context.
+ */
 public class Person extends FhirResource {
     public static final String RESOURCE_TYPE = "Person";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -295,6 +299,10 @@ public class Person extends FhirResource {
         }
     }
 
+    /**
+     * Demographics and administrative information about a person independent
+     * of a specific health-related context.
+     */
     public static class PersonLink extends FhirObject {
         public static final String RESOURCE_TYPE = "PersonLink";
         public static final String PROPERTY_ID = "id";

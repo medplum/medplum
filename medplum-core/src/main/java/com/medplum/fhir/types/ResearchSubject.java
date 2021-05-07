@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * A physical entity which is the primary unit of operational and/or
+ * administrative interest in a study.
+ */
 public class ResearchSubject extends FhirResource {
     public static final String RESOURCE_TYPE = "ResearchSubject";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

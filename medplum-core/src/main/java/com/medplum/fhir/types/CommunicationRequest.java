@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A request to convey information; e.g. the CDS system proposes that an
+ * alert be sent to a responsible provider, the CDS system proposes that
+ * the public health agency be notified about a reportable condition.
+ */
 public class CommunicationRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "CommunicationRequest";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -480,6 +485,11 @@ public class CommunicationRequest extends FhirResource {
         }
     }
 
+    /**
+     * A request to convey information; e.g. the CDS system proposes that an
+     * alert be sent to a responsible provider, the CDS system proposes that
+     * the public health agency be notified about a reportable condition.
+     */
     public static class CommunicationRequestPayload extends FhirObject {
         public static final String RESOURCE_TYPE = "CommunicationRequestPayload";
         public static final String PROPERTY_ID = "id";

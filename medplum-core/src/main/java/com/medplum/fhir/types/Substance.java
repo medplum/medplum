@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A homogeneous material with a definite composition.
+ */
 public class Substance extends FhirResource {
     public static final String RESOURCE_TYPE = "Substance";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -125,7 +128,7 @@ public class Substance extends FhirResource {
     }
 
     /**
-     * A code that classifies the general type of substance.  This is used 
+     * A code that classifies the general type of substance.  This is used
      * for searching, sorting and display purposes.
      */
     public java.util.List<CodeableConcept> category() {
@@ -257,6 +260,9 @@ public class Substance extends FhirResource {
         }
     }
 
+    /**
+     * A homogeneous material with a definite composition.
+     */
     public static class SubstanceIngredient extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceIngredient";
         public static final String PROPERTY_ID = "id";
@@ -387,6 +393,9 @@ public class Substance extends FhirResource {
         }
     }
 
+    /**
+     * A homogeneous material with a definite composition.
+     */
     public static class SubstanceInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceInstance";
         public static final String PROPERTY_ID = "id";

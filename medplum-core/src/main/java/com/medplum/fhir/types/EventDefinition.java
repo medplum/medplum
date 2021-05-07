@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * The EventDefinition resource provides a reusable description of when a
+ * particular event can occur.
+ */
 public class EventDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "EventDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

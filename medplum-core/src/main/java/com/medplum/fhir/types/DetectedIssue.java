@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Indicates an actual or potential clinical issue with or between one or
+ * more active or proposed clinical actions for a patient; e.g. Drug-drug
+ * interaction, Ineffective treatment frequency, Procedure-condition
+ * conflict, etc.
+ */
 public class DetectedIssue extends FhirResource {
     public static final String RESOURCE_TYPE = "DetectedIssue";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -343,6 +349,12 @@ public class DetectedIssue extends FhirResource {
         }
     }
 
+    /**
+     * Indicates an actual or potential clinical issue with or between one or
+     * more active or proposed clinical actions for a patient; e.g. Drug-drug
+     * interaction, Ineffective treatment frequency, Procedure-condition
+     * conflict, etc.
+     */
     public static class DetectedIssueEvidence extends FhirObject {
         public static final String RESOURCE_TYPE = "DetectedIssueEvidence";
         public static final String PROPERTY_ID = "id";
@@ -461,6 +473,12 @@ public class DetectedIssue extends FhirResource {
         }
     }
 
+    /**
+     * Indicates an actual or potential clinical issue with or between one or
+     * more active or proposed clinical actions for a patient; e.g. Drug-drug
+     * interaction, Ineffective treatment frequency, Procedure-condition
+     * conflict, etc.
+     */
     public static class DetectedIssueMitigation extends FhirObject {
         public static final String RESOURCE_TYPE = "DetectedIssueMitigation";
         public static final String PROPERTY_ID = "id";

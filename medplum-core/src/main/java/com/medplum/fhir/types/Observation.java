@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Measurements and simple assertions made about a patient, device or
+ * other subject.
+ */
 public class Observation extends FhirResource {
     public static final String RESOURCE_TYPE = "Observation";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -202,7 +206,7 @@ public class Observation extends FhirResource {
      * record representing something or someone associated with the patient
      * such as a spouse, parent, fetus, or donor. For example, fetus
      * observations in a mother's record.  The focus of an observation could
-     * also be an existing condition,  an intervention, the subject's diet, 
+     * also be an existing condition,  an intervention, the subject's diet,
      * another observation of the subject,  or a body structure such as tumor
      * or implanted device.   An example use case would be using the
      * Observation resource to capture whether the mother is trained to
@@ -705,6 +709,10 @@ public class Observation extends FhirResource {
         }
     }
 
+    /**
+     * Measurements and simple assertions made about a patient, device or
+     * other subject.
+     */
     public static class ObservationComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "ObservationComponent";
         public static final String PROPERTY_ID = "id";
@@ -1006,6 +1014,10 @@ public class Observation extends FhirResource {
         }
     }
 
+    /**
+     * Measurements and simple assertions made about a patient, device or
+     * other subject.
+     */
     public static class ObservationReferenceRange extends FhirObject {
         public static final String RESOURCE_TYPE = "ObservationReferenceRange";
         public static final String PROPERTY_ID = "id";
@@ -1073,7 +1085,7 @@ public class Observation extends FhirResource {
 
         /**
          * The value of the low bound of the reference range.  The low bound of
-         * the reference range endpoint is inclusive of the value (e.g. 
+         * the reference range endpoint is inclusive of the value (e.g.
          * reference range is &gt;=5 - &lt;=9). If the low bound is omitted,  it is
          * assumed to be meaningless (e.g. reference range is &lt;=2.3).
          */
@@ -1083,7 +1095,7 @@ public class Observation extends FhirResource {
 
         /**
          * The value of the high bound of the reference range.  The high bound of
-         * the reference range endpoint is inclusive of the value (e.g. 
+         * the reference range endpoint is inclusive of the value (e.g.
          * reference range is &gt;=5 - &lt;=9). If the high bound is omitted,  it is
          * assumed to be meaningless (e.g. reference range is &gt;= 2.3).
          */

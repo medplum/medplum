@@ -7,6 +7,12 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * The ResearchDefinition resource describes the conditional state
+ * (population and any exposures being compared within the population)
+ * and outcome (if specified) that the knowledge (evidence, assertion,
+ * recommendation) is about.
+ */
 public class ResearchDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ResearchDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

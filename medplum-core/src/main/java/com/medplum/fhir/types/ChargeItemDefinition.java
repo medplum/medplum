@@ -9,6 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The ChargeItemDefinition resource provides the properties that apply
+ * to the (billing) codes necessary to calculate costs and prices. The
+ * properties may differ largely depending on type and realm, therefore
+ * this resource gives only a rough structure and requires profiling for
+ * each type of billing code system.
+ */
 public class ChargeItemDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ChargeItemDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -511,6 +518,13 @@ public class ChargeItemDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The ChargeItemDefinition resource provides the properties that apply
+     * to the (billing) codes necessary to calculate costs and prices. The
+     * properties may differ largely depending on type and realm, therefore
+     * this resource gives only a rough structure and requires profiling for
+     * each type of billing code system.
+     */
     public static class ChargeItemDefinitionApplicability extends FhirObject {
         public static final String RESOURCE_TYPE = "ChargeItemDefinitionApplicability";
         public static final String PROPERTY_ID = "id";
@@ -647,6 +661,13 @@ public class ChargeItemDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The ChargeItemDefinition resource provides the properties that apply
+     * to the (billing) codes necessary to calculate costs and prices. The
+     * properties may differ largely depending on type and realm, therefore
+     * this resource gives only a rough structure and requires profiling for
+     * each type of billing code system.
+     */
     public static class ChargeItemDefinitionPriceComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "ChargeItemDefinitionPriceComponent";
         public static final String PROPERTY_ID = "id";
@@ -792,6 +813,13 @@ public class ChargeItemDefinition extends FhirResource {
         }
     }
 
+    /**
+     * The ChargeItemDefinition resource provides the properties that apply
+     * to the (billing) codes necessary to calculate costs and prices. The
+     * properties may differ largely depending on type and realm, therefore
+     * this resource gives only a rough structure and requires profiling for
+     * each type of billing code system.
+     */
     public static class ChargeItemDefinitionPropertyGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "ChargeItemDefinitionPropertyGroup";
         public static final String PROPERTY_ID = "id";

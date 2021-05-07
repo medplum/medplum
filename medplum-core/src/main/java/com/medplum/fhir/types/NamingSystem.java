@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A curated namespace that issues unique symbols within that namespace
+ * for the identification of concepts, people, devices, etc.  Represents
+ * a &quot;System&quot; used within the Identifier and Coding data types.
+ */
 public class NamingSystem extends FhirResource {
     public static final String RESOURCE_TYPE = "NamingSystem";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -353,6 +358,11 @@ public class NamingSystem extends FhirResource {
         }
     }
 
+    /**
+     * A curated namespace that issues unique symbols within that namespace
+     * for the identification of concepts, people, devices, etc.  Represents
+     * a &quot;System&quot; used within the Identifier and Coding data types.
+     */
     public static class NamingSystemUniqueId extends FhirObject {
         public static final String RESOURCE_TYPE = "NamingSystemUniqueId";
         public static final String PROPERTY_ID = "id";

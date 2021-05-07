@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The interactions of the medicinal product with other medicinal
+ * products, or other forms of interactions.
+ */
 public class MedicinalProductInteraction extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductInteraction";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -256,6 +260,10 @@ public class MedicinalProductInteraction extends FhirResource {
         }
     }
 
+    /**
+     * The interactions of the medicinal product with other medicinal
+     * products, or other forms of interactions.
+     */
     public static class MedicinalProductInteractionInteractant extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductInteractionInteractant";
         public static final String PROPERTY_ID = "id";

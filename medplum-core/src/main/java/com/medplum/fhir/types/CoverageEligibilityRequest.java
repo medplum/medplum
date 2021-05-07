@@ -9,6 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The CoverageEligibilityRequest provides patient and insurance coverage
+ * information to an insurer for them to respond, in the form of an
+ * CoverageEligibilityResponse, with information regarding whether the
+ * stated coverage is valid and in-force and optionally to provide the
+ * insurance details of the policy.
+ */
 public class CoverageEligibilityRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "CoverageEligibilityRequest";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -370,6 +377,13 @@ public class CoverageEligibilityRequest extends FhirResource {
         }
     }
 
+    /**
+     * The CoverageEligibilityRequest provides patient and insurance coverage
+     * information to an insurer for them to respond, in the form of an
+     * CoverageEligibilityResponse, with information regarding whether the
+     * stated coverage is valid and in-force and optionally to provide the
+     * insurance details of the policy.
+     */
     public static class CoverageEligibilityRequestDiagnosis extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageEligibilityRequestDiagnosis";
         public static final String PROPERTY_ID = "id";
@@ -489,6 +503,13 @@ public class CoverageEligibilityRequest extends FhirResource {
         }
     }
 
+    /**
+     * The CoverageEligibilityRequest provides patient and insurance coverage
+     * information to an insurer for them to respond, in the form of an
+     * CoverageEligibilityResponse, with information regarding whether the
+     * stated coverage is valid and in-force and optionally to provide the
+     * insurance details of the policy.
+     */
     public static class CoverageEligibilityRequestInsurance extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageEligibilityRequestInsurance";
         public static final String PROPERTY_ID = "id";
@@ -624,6 +645,13 @@ public class CoverageEligibilityRequest extends FhirResource {
         }
     }
 
+    /**
+     * The CoverageEligibilityRequest provides patient and insurance coverage
+     * information to an insurer for them to respond, in the form of an
+     * CoverageEligibilityResponse, with information regarding whether the
+     * stated coverage is valid and in-force and optionally to provide the
+     * insurance details of the policy.
+     */
     public static class CoverageEligibilityRequestItem extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageEligibilityRequestItem";
         public static final String PROPERTY_ID = "id";
@@ -850,6 +878,13 @@ public class CoverageEligibilityRequest extends FhirResource {
         }
     }
 
+    /**
+     * The CoverageEligibilityRequest provides patient and insurance coverage
+     * information to an insurer for them to respond, in the form of an
+     * CoverageEligibilityResponse, with information regarding whether the
+     * stated coverage is valid and in-force and optionally to provide the
+     * insurance details of the policy.
+     */
     public static class CoverageEligibilityRequestSupportingInfo extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageEligibilityRequestSupportingInfo";
         public static final String PROPERTY_ID = "id";

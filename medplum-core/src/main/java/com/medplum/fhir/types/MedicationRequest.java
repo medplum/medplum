@@ -9,6 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An order or request for both supply of the medication and the
+ * instructions for administration of the medication to a patient. The
+ * resource is called &quot;MedicationRequest&quot; rather than
+ * &quot;MedicationPrescription&quot; or &quot;MedicationOrder&quot; to generalize the use
+ * across inpatient and outpatient settings, including care plans, etc.,
+ * and to harmonize with workflow patterns.
+ */
 public class MedicationRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicationRequest";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -659,6 +667,14 @@ public class MedicationRequest extends FhirResource {
         }
     }
 
+    /**
+     * An order or request for both supply of the medication and the
+     * instructions for administration of the medication to a patient. The
+     * resource is called &quot;MedicationRequest&quot; rather than
+     * &quot;MedicationPrescription&quot; or &quot;MedicationOrder&quot; to generalize the use
+     * across inpatient and outpatient settings, including care plans, etc.,
+     * and to harmonize with workflow patterns.
+     */
     public static class MedicationRequestDispenseRequest extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationRequestDispenseRequest";
         public static final String PROPERTY_ID = "id";
@@ -853,6 +869,14 @@ public class MedicationRequest extends FhirResource {
         }
     }
 
+    /**
+     * An order or request for both supply of the medication and the
+     * instructions for administration of the medication to a patient. The
+     * resource is called &quot;MedicationRequest&quot; rather than
+     * &quot;MedicationPrescription&quot; or &quot;MedicationOrder&quot; to generalize the use
+     * across inpatient and outpatient settings, including care plans, etc.,
+     * and to harmonize with workflow patterns.
+     */
     public static class MedicationRequestInitialFill extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationRequestInitialFill";
         public static final String PROPERTY_ID = "id";
@@ -970,6 +994,14 @@ public class MedicationRequest extends FhirResource {
         }
     }
 
+    /**
+     * An order or request for both supply of the medication and the
+     * instructions for administration of the medication to a patient. The
+     * resource is called &quot;MedicationRequest&quot; rather than
+     * &quot;MedicationPrescription&quot; or &quot;MedicationOrder&quot; to generalize the use
+     * across inpatient and outpatient settings, including care plans, etc.,
+     * and to harmonize with workflow patterns.
+     */
     public static class MedicationRequestSubstitution extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationRequestSubstitution";
         public static final String PROPERTY_ID = "id";

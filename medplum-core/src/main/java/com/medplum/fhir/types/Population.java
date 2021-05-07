@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A populatioof people with some set of grouping criteria.
+ */
 public class Population extends FhirResource {
     public static final String RESOURCE_TYPE = "Population";
     public static final String PROPERTY_ID = "id";

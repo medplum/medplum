@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Describes a measurement, calculation or setting capability of a
+ * medical device.
+ */
 public class DeviceMetric extends FhirResource {
     public static final String RESOURCE_TYPE = "DeviceMetric";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -320,6 +324,10 @@ public class DeviceMetric extends FhirResource {
         }
     }
 
+    /**
+     * Describes a measurement, calculation or setting capability of a
+     * medical device.
+     */
     public static class DeviceMetricCalibration extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceMetricCalibration";
         public static final String PROPERTY_ID = "id";

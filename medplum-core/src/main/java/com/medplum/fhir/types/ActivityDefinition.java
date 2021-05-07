@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * This resource allows for the definition of some activity to be
+ * performed, independent of a particular patient, practitioner, or other
+ * performance context.
+ */
 public class ActivityDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ActivityDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -939,6 +944,11 @@ public class ActivityDefinition extends FhirResource {
         }
     }
 
+    /**
+     * This resource allows for the definition of some activity to be
+     * performed, independent of a particular patient, practitioner, or other
+     * performance context.
+     */
     public static class ActivityDefinitionDynamicValue extends FhirObject {
         public static final String RESOURCE_TYPE = "ActivityDefinitionDynamicValue";
         public static final String PROPERTY_ID = "id";
@@ -1064,6 +1074,11 @@ public class ActivityDefinition extends FhirResource {
         }
     }
 
+    /**
+     * This resource allows for the definition of some activity to be
+     * performed, independent of a particular patient, practitioner, or other
+     * performance context.
+     */
     public static class ActivityDefinitionParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "ActivityDefinitionParticipant";
         public static final String PROPERTY_ID = "id";

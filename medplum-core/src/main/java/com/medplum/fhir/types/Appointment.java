@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A booking of a healthcare event among patient(s), practitioner(s),
+ * related person(s) and/or device(s) for a specific date/time. This may
+ * result in one or more Encounter(s).
+ */
 public class Appointment extends FhirResource {
     public static final String RESOURCE_TYPE = "Appointment";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -489,6 +494,11 @@ public class Appointment extends FhirResource {
         }
     }
 
+    /**
+     * A booking of a healthcare event among patient(s), practitioner(s),
+     * related person(s) and/or device(s) for a specific date/time. This may
+     * result in one or more Encounter(s).
+     */
     public static class AppointmentParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "AppointmentParticipant";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * This resource is a non-persisted resource used to pass information
+ * into and back from an [operation](operations.html). It has no other
+ * use, and there is no RESTful endpoint associated with it.
+ */
 public class Parameters extends FhirResource {
     public static final String RESOURCE_TYPE = "Parameters";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -99,6 +104,11 @@ public class Parameters extends FhirResource {
         }
     }
 
+    /**
+     * This resource is a non-persisted resource used to pass information
+     * into and back from an [operation](operations.html). It has no other
+     * use, and there is no RESTful endpoint associated with it.
+     */
     public static class ParametersParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "ParametersParameter";
         public static final String PROPERTY_ID = "id";

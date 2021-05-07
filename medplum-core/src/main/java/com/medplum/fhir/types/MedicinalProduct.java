@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Detailed definition of a medicinal product, typically for uses other
+ * than direct patient care (e.g. regulatory use).
+ */
 public class MedicinalProduct extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProduct";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -432,6 +436,10 @@ public class MedicinalProduct extends FhirResource {
         }
     }
 
+    /**
+     * Detailed definition of a medicinal product, typically for uses other
+     * than direct patient care (e.g. regulatory use).
+     */
     public static class MedicinalProductCountryLanguage extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductCountryLanguage";
         public static final String PROPERTY_ID = "id";
@@ -562,6 +570,10 @@ public class MedicinalProduct extends FhirResource {
         }
     }
 
+    /**
+     * Detailed definition of a medicinal product, typically for uses other
+     * than direct patient care (e.g. regulatory use).
+     */
     public static class MedicinalProductManufacturingBusinessOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductManufacturingBusinessOperation";
         public static final String PROPERTY_ID = "id";
@@ -731,6 +743,10 @@ public class MedicinalProduct extends FhirResource {
         }
     }
 
+    /**
+     * Detailed definition of a medicinal product, typically for uses other
+     * than direct patient care (e.g. regulatory use).
+     */
     public static class MedicinalProductName extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductName";
         public static final String PROPERTY_ID = "id";
@@ -861,6 +877,10 @@ public class MedicinalProduct extends FhirResource {
         }
     }
 
+    /**
+     * Detailed definition of a medicinal product, typically for uses other
+     * than direct patient care (e.g. regulatory use).
+     */
     public static class MedicinalProductNamePart extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductNamePart";
         public static final String PROPERTY_ID = "id";
@@ -978,6 +998,10 @@ public class MedicinalProduct extends FhirResource {
         }
     }
 
+    /**
+     * Detailed definition of a medicinal product, typically for uses other
+     * than direct patient care (e.g. regulatory use).
+     */
     public static class MedicinalProductSpecialDesignation extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductSpecialDesignation";
         public static final String PROPERTY_ID = "id";

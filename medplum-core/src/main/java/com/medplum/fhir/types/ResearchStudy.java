@@ -9,6 +9,15 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A process where a researcher or organization plans and then executes a
+ * series of steps intended to increase the field of healthcare-related
+ * knowledge.  This includes studies of safety, efficacy, comparative
+ * effectiveness and other information about medications, devices,
+ * therapies and other interventional and investigative techniques.  A
+ * ResearchStudy involves the gathering of information about human or
+ * animal subjects.
+ */
 public class ResearchStudy extends FhirResource {
     public static final String RESOURCE_TYPE = "ResearchStudy";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -502,6 +511,15 @@ public class ResearchStudy extends FhirResource {
         }
     }
 
+    /**
+     * A process where a researcher or organization plans and then executes a
+     * series of steps intended to increase the field of healthcare-related
+     * knowledge.  This includes studies of safety, efficacy, comparative
+     * effectiveness and other information about medications, devices,
+     * therapies and other interventional and investigative techniques.  A
+     * ResearchStudy involves the gathering of information about human or
+     * animal subjects.
+     */
     public static class ResearchStudyArm extends FhirObject {
         public static final String RESOURCE_TYPE = "ResearchStudyArm";
         public static final String PROPERTY_ID = "id";
@@ -634,6 +652,15 @@ public class ResearchStudy extends FhirResource {
         }
     }
 
+    /**
+     * A process where a researcher or organization plans and then executes a
+     * series of steps intended to increase the field of healthcare-related
+     * knowledge.  This includes studies of safety, efficacy, comparative
+     * effectiveness and other information about medications, devices,
+     * therapies and other interventional and investigative techniques.  A
+     * ResearchStudy involves the gathering of information about human or
+     * animal subjects.
+     */
     public static class ResearchStudyObjective extends FhirObject {
         public static final String RESOURCE_TYPE = "ResearchStudyObjective";
         public static final String PROPERTY_ID = "id";

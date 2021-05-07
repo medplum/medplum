@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A human-readable summary of the resource conveying the essential
+ * clinical and business information for the resource.
+ */
 public class Narrative extends FhirResource {
     public static final String RESOURCE_TYPE = "Narrative";
     public static final String PROPERTY_ID = "id";

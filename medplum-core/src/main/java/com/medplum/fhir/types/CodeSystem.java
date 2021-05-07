@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The CodeSystem resource is used to declare the existence of and
+ * describe a code system or code system supplement and its key
+ * properties, and optionally define a part or all of its content.
+ */
 public class CodeSystem extends FhirResource {
     public static final String RESOURCE_TYPE = "CodeSystem";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -549,6 +554,11 @@ public class CodeSystem extends FhirResource {
         }
     }
 
+    /**
+     * The CodeSystem resource is used to declare the existence of and
+     * describe a code system or code system supplement and its key
+     * properties, and optionally define a part or all of its content.
+     */
     public static class CodeSystemConcept extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemConcept";
         public static final String PROPERTY_ID = "id";
@@ -726,6 +736,11 @@ public class CodeSystem extends FhirResource {
         }
     }
 
+    /**
+     * The CodeSystem resource is used to declare the existence of and
+     * describe a code system or code system supplement and its key
+     * properties, and optionally define a part or all of its content.
+     */
     public static class CodeSystemDesignation extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemDesignation";
         public static final String PROPERTY_ID = "id";
@@ -856,6 +871,11 @@ public class CodeSystem extends FhirResource {
         }
     }
 
+    /**
+     * The CodeSystem resource is used to declare the existence of and
+     * describe a code system or code system supplement and its key
+     * properties, and optionally define a part or all of its content.
+     */
     public static class CodeSystemFilter extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemFilter";
         public static final String PROPERTY_ID = "id";
@@ -1000,6 +1020,11 @@ public class CodeSystem extends FhirResource {
         }
     }
 
+    /**
+     * The CodeSystem resource is used to declare the existence of and
+     * describe a code system or code system supplement and its key
+     * properties, and optionally define a part or all of its content.
+     */
     public static class CodeSystemProperty extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemProperty";
         public static final String PROPERTY_ID = "id";
@@ -1150,6 +1175,11 @@ public class CodeSystem extends FhirResource {
         }
     }
 
+    /**
+     * The CodeSystem resource is used to declare the existence of and
+     * describe a code system or code system supplement and its key
+     * properties, and optionally define a part or all of its content.
+     */
     public static class CodeSystemProperty1 extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemProperty1";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A reference to a document of any kind for any purpose. Provides
+ * metadata about the document so that the document can be discovered and
+ * managed. The scope of a document is any seralized object with a
+ * mime-type, so includes formal patient centric documents (CDA), cliical
+ * notes, scanned paper, and non-patient specific documents like policy
+ * text.
+ */
 public class DocumentReference extends FhirResource {
     public static final String RESOURCE_TYPE = "DocumentReference";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -391,6 +399,14 @@ public class DocumentReference extends FhirResource {
         }
     }
 
+    /**
+     * A reference to a document of any kind for any purpose. Provides
+     * metadata about the document so that the document can be discovered and
+     * managed. The scope of a document is any seralized object with a
+     * mime-type, so includes formal patient centric documents (CDA), cliical
+     * notes, scanned paper, and non-patient specific documents like policy
+     * text.
+     */
     public static class DocumentReferenceContent extends FhirObject {
         public static final String RESOURCE_TYPE = "DocumentReferenceContent";
         public static final String PROPERTY_ID = "id";
@@ -511,6 +527,14 @@ public class DocumentReference extends FhirResource {
         }
     }
 
+    /**
+     * A reference to a document of any kind for any purpose. Provides
+     * metadata about the document so that the document can be discovered and
+     * managed. The scope of a document is any seralized object with a
+     * mime-type, so includes formal patient centric documents (CDA), cliical
+     * notes, scanned paper, and non-patient specific documents like policy
+     * text.
+     */
     public static class DocumentReferenceContext extends FhirObject {
         public static final String RESOURCE_TYPE = "DocumentReferenceContext";
         public static final String PROPERTY_ID = "id";
@@ -702,6 +726,14 @@ public class DocumentReference extends FhirResource {
         }
     }
 
+    /**
+     * A reference to a document of any kind for any purpose. Provides
+     * metadata about the document so that the document can be discovered and
+     * managed. The scope of a document is any seralized object with a
+     * mime-type, so includes formal patient centric documents (CDA), cliical
+     * notes, scanned paper, and non-patient specific documents like policy
+     * text.
+     */
     public static class DocumentReferenceRelatesTo extends FhirObject {
         public static final String RESOURCE_TYPE = "DocumentReferenceRelatesTo";
         public static final String PROPERTY_ID = "id";

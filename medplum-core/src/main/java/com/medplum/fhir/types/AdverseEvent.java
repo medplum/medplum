@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Actual or  potential/avoided event causing unintended physical injury
+ * resulting from or contributed to by medical care, a research study or
+ * other healthcare setting factors that requires additional monitoring,
+ * treatment, or hospitalization, or that results in death.
+ */
 public class AdverseEvent extends FhirResource {
     public static final String RESOURCE_TYPE = "AdverseEvent";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -242,7 +248,7 @@ public class AdverseEvent extends FhirResource {
 
     /**
      * Parties that may or should contribute or have contributed information
-     * to the adverse event, which can consist of one or more activities. 
+     * to the adverse event, which can consist of one or more activities.
      * Such information includes information leading to the decision to
      * perform the activity and how to perform the activity (e.g.
      * consultant), information that the activity itself seeks to reveal
@@ -442,6 +448,12 @@ public class AdverseEvent extends FhirResource {
         }
     }
 
+    /**
+     * Actual or  potential/avoided event causing unintended physical injury
+     * resulting from or contributed to by medical care, a research study or
+     * other healthcare setting factors that requires additional monitoring,
+     * treatment, or hospitalization, or that results in death.
+     */
     public static class AdverseEventCausality extends FhirObject {
         public static final String RESOURCE_TYPE = "AdverseEventCausality";
         public static final String PROPERTY_ID = "id";
@@ -585,6 +597,12 @@ public class AdverseEvent extends FhirResource {
         }
     }
 
+    /**
+     * Actual or  potential/avoided event causing unintended physical injury
+     * resulting from or contributed to by medical care, a research study or
+     * other healthcare setting factors that requires additional monitoring,
+     * treatment, or hospitalization, or that results in death.
+     */
     public static class AdverseEventSuspectEntity extends FhirObject {
         public static final String RESOURCE_TYPE = "AdverseEventSuspectEntity";
         public static final String PROPERTY_ID = "id";

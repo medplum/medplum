@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An identifier - identifies some entity uniquely and unambiguously.
+ * Typically this is used for business identifiers.
+ */
 public class Identifier extends FhirResource {
     public static final String RESOURCE_TYPE = "Identifier";
     public static final String PROPERTY_ID = "id";

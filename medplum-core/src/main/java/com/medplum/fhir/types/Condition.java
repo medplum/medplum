@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A clinical condition, problem, diagnosis, or other event, situation,
+ * issue, or clinical concept that has risen to a level of concern.
+ */
 public class Condition extends FhirResource {
     public static final String RESOURCE_TYPE = "Condition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -521,6 +525,10 @@ public class Condition extends FhirResource {
         }
     }
 
+    /**
+     * A clinical condition, problem, diagnosis, or other event, situation,
+     * issue, or clinical concept that has risen to a level of concern.
+     */
     public static class ConditionEvidence extends FhirObject {
         public static final String RESOURCE_TYPE = "ConditionEvidence";
         public static final String PROPERTY_ID = "id";
@@ -639,6 +647,10 @@ public class Condition extends FhirResource {
         }
     }
 
+    /**
+     * A clinical condition, problem, diagnosis, or other event, situation,
+     * issue, or clinical concept that has risen to a level of concern.
+     */
     public static class ConditionStage extends FhirObject {
         public static final String RESOURCE_TYPE = "ConditionStage";
         public static final String PROPERTY_ID = "id";

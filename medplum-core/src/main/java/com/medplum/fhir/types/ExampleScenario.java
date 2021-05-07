@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Example of workflow instance.
+ */
 public class ExampleScenario extends FhirResource {
     public static final String RESOURCE_TYPE = "ExampleScenario";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -418,6 +421,9 @@ public class ExampleScenario extends FhirResource {
         }
     }
 
+    /**
+     * Example of workflow instance.
+     */
     public static class ExampleScenarioActor extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioActor";
         public static final String PROPERTY_ID = "id";
@@ -561,6 +567,9 @@ public class ExampleScenario extends FhirResource {
         }
     }
 
+    /**
+     * Example of workflow instance.
+     */
     public static class ExampleScenarioAlternative extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioAlternative";
         public static final String PROPERTY_ID = "id";
@@ -693,6 +702,9 @@ public class ExampleScenario extends FhirResource {
         }
     }
 
+    /**
+     * Example of workflow instance.
+     */
     public static class ExampleScenarioContainedInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioContainedInstance";
         public static final String PROPERTY_ID = "id";
@@ -810,6 +822,9 @@ public class ExampleScenario extends FhirResource {
         }
     }
 
+    /**
+     * Example of workflow instance.
+     */
     public static class ExampleScenarioInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioInstance";
         public static final String PROPERTY_ID = "id";
@@ -979,6 +994,9 @@ public class ExampleScenario extends FhirResource {
         }
     }
 
+    /**
+     * Example of workflow instance.
+     */
     public static class ExampleScenarioOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioOperation";
         public static final String PROPERTY_ID = "id";
@@ -1200,6 +1218,9 @@ public class ExampleScenario extends FhirResource {
         }
     }
 
+    /**
+     * Example of workflow instance.
+     */
     public static class ExampleScenarioProcess extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioProcess";
         public static final String PROPERTY_ID = "id";
@@ -1356,6 +1377,9 @@ public class ExampleScenario extends FhirResource {
         }
     }
 
+    /**
+     * Example of workflow instance.
+     */
     public static class ExampleScenarioStep extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioStep";
         public static final String PROPERTY_ID = "id";
@@ -1500,6 +1524,9 @@ public class ExampleScenario extends FhirResource {
         }
     }
 
+    /**
+     * Example of workflow instance.
+     */
     public static class ExampleScenarioVersion extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioVersion";
         public static final String PROPERTY_ID = "id";

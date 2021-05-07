@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * A JSON object that represents a cryptographic key. The members of the
+ * object represent properties of the key, including its value.
+ */
 public class JsonWebKey extends FhirResource {
     public static final String RESOURCE_TYPE = "JsonWebKey";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

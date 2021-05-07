@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The Measure resource provides the definition of a quality measure.
+ */
 public class Measure extends FhirResource {
     public static final String RESOURCE_TYPE = "Measure";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -783,6 +786,9 @@ public class Measure extends FhirResource {
         }
     }
 
+    /**
+     * The Measure resource provides the definition of a quality measure.
+     */
     public static class MeasureComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureComponent";
         public static final String PROPERTY_ID = "id";
@@ -919,6 +925,9 @@ public class Measure extends FhirResource {
         }
     }
 
+    /**
+     * The Measure resource provides the definition of a quality measure.
+     */
     public static class MeasureGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureGroup";
         public static final String PROPERTY_ID = "id";
@@ -1067,6 +1076,9 @@ public class Measure extends FhirResource {
         }
     }
 
+    /**
+     * The Measure resource provides the definition of a quality measure.
+     */
     public static class MeasurePopulation extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasurePopulation";
         public static final String PROPERTY_ID = "id";
@@ -1198,6 +1210,9 @@ public class Measure extends FhirResource {
         }
     }
 
+    /**
+     * The Measure resource provides the definition of a quality measure.
+     */
     public static class MeasureStratifier extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureStratifier";
         public static final String PROPERTY_ID = "id";
@@ -1348,6 +1363,9 @@ public class Measure extends FhirResource {
         }
     }
 
+    /**
+     * The Measure resource provides the definition of a quality measure.
+     */
     public static class MeasureSupplementalData extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureSupplementalData";
         public static final String PROPERTY_ID = "id";

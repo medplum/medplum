@@ -9,6 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Representation of the content produced in a DICOM imaging study. A
+ * study comprises a set of series, each of which includes a set of
+ * Service-Object Pair Instances (SOP Instances - images or other data)
+ * acquired or produced in a common context.  A series is of only one
+ * modality (e.g. X-ray, CT, MR, ultrasound), but a study may have
+ * multiple series of different modalities.
+ */
 public class ImagingStudy extends FhirResource {
     public static final String RESOURCE_TYPE = "ImagingStudy";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -443,6 +451,14 @@ public class ImagingStudy extends FhirResource {
         }
     }
 
+    /**
+     * Representation of the content produced in a DICOM imaging study. A
+     * study comprises a set of series, each of which includes a set of
+     * Service-Object Pair Instances (SOP Instances - images or other data)
+     * acquired or produced in a common context.  A series is of only one
+     * modality (e.g. X-ray, CT, MR, ultrasound), but a study may have
+     * multiple series of different modalities.
+     */
     public static class ImagingStudyInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "ImagingStudyInstance";
         public static final String PROPERTY_ID = "id";
@@ -586,6 +602,14 @@ public class ImagingStudy extends FhirResource {
         }
     }
 
+    /**
+     * Representation of the content produced in a DICOM imaging study. A
+     * study comprises a set of series, each of which includes a set of
+     * Service-Object Pair Instances (SOP Instances - images or other data)
+     * acquired or produced in a common context.  A series is of only one
+     * modality (e.g. X-ray, CT, MR, ultrasound), but a study may have
+     * multiple series of different modalities.
+     */
     public static class ImagingStudyPerformer extends FhirObject {
         public static final String RESOURCE_TYPE = "ImagingStudyPerformer";
         public static final String PROPERTY_ID = "id";
@@ -703,6 +727,14 @@ public class ImagingStudy extends FhirResource {
         }
     }
 
+    /**
+     * Representation of the content produced in a DICOM imaging study. A
+     * study comprises a set of series, each of which includes a set of
+     * Service-Object Pair Instances (SOP Instances - images or other data)
+     * acquired or produced in a common context.  A series is of only one
+     * modality (e.g. X-ray, CT, MR, ultrasound), but a study may have
+     * multiple series of different modalities.
+     */
     public static class ImagingStudySeries extends FhirObject {
         public static final String RESOURCE_TYPE = "ImagingStudySeries";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Represents a request for a patient to employ a medical device. The
+ * device may be an implantable device, or an external assistive device,
+ * such as a walker.
+ */
 public class DeviceRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "DeviceRequest";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -540,6 +545,11 @@ public class DeviceRequest extends FhirResource {
         }
     }
 
+    /**
+     * Represents a request for a patient to employ a medical device. The
+     * device may be an implantable device, or an external assistive device,
+     * such as a walker.
+     */
     public static class DeviceRequestParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceRequestParameter";
         public static final String PROPERTY_ID = "id";

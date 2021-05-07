@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Base definition for all elements in a resource.
+ */
 public class Element extends FhirResource {
     public static final String RESOURCE_TYPE = "Element";
     public static final String PROPERTY_ID = "id";

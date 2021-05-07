@@ -9,6 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Specifies clinical/business/etc. metadata that can be used to
+ * retrieve, index and/or categorize an artifact. This metadata can
+ * either be specific to the applicable population (e.g., age category,
+ * DRG) or the specific context of care (e.g., venue, care setting,
+ * provider of care).
+ */
 public class UsageContext extends FhirResource {
     public static final String RESOURCE_TYPE = "UsageContext";
     public static final String PROPERTY_ID = "id";

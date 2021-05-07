@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An assessment of the likely outcome(s) for a patient or other subject
+ * as well as the likelihood of each outcome.
+ */
 public class RiskAssessment extends FhirResource {
     public static final String RESOURCE_TYPE = "RiskAssessment";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -402,6 +406,10 @@ public class RiskAssessment extends FhirResource {
         }
     }
 
+    /**
+     * An assessment of the likely outcome(s) for a patient or other subject
+     * as well as the likelihood of each outcome.
+     */
     public static class RiskAssessmentPrediction extends FhirObject {
         public static final String RESOURCE_TYPE = "RiskAssessmentPrediction";
         public static final String PROPERTY_ID = "id";
@@ -470,7 +478,7 @@ public class RiskAssessment extends FhirResource {
         }
 
         /**
-         * One of the potential outcomes for the patient (e.g. remission, death, 
+         * One of the potential outcomes for the patient (e.g. remission, death,
          * a particular condition).
          */
         public CodeableConcept outcome() {
@@ -501,7 +509,7 @@ public class RiskAssessment extends FhirResource {
 
         /**
          * Indicates the risk for this particular subject (with their specific
-         * characteristics) divided by the risk of the population in general. 
+         * characteristics) divided by the risk of the population in general.
          * (Numbers greater than 1 = higher risk than the population, numbers
          * less than 1 = lower risk.).
          */

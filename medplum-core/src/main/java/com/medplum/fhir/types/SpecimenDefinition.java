@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A kind of specimen with associated set of requirements.
+ */
 public class SpecimenDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "SpecimenDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -242,6 +245,9 @@ public class SpecimenDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A kind of specimen with associated set of requirements.
+     */
     public static class SpecimenDefinitionAdditive extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenDefinitionAdditive";
         public static final String PROPERTY_ID = "id";
@@ -361,6 +367,9 @@ public class SpecimenDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A kind of specimen with associated set of requirements.
+     */
     public static class SpecimenDefinitionContainer extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenDefinitionContainer";
         public static final String PROPERTY_ID = "id";
@@ -571,6 +580,9 @@ public class SpecimenDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A kind of specimen with associated set of requirements.
+     */
     public static class SpecimenDefinitionHandling extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenDefinitionHandling";
         public static final String PROPERTY_ID = "id";
@@ -718,6 +730,9 @@ public class SpecimenDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A kind of specimen with associated set of requirements.
+     */
     public static class SpecimenDefinitionTypeTested extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenDefinitionTypeTested";
         public static final String PROPERTY_ID = "id";

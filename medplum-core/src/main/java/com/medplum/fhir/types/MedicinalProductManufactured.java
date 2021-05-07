@@ -7,6 +7,9 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * The manufactured item as contained in the packaged medicinal product.
+ */
 public class MedicinalProductManufactured extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductManufactured";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

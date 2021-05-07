@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * A record of a request for service such as diagnostic investigations,
+ * treatments, or operations to be performed.
+ */
 public class ServiceRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "ServiceRequest";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

@@ -9,6 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The resource ChargeItem describes the provision of healthcare provider
+ * products for a certain patient, therefore referring not only to the
+ * product, but containing in addition details of the provision, like
+ * date, time, amounts and participating organizations and persons. Main
+ * Usage of the ChargeItem is to enable the billing process and internal
+ * cost allocation.
+ */
 public class ChargeItem extends FhirResource {
     public static final String RESOURCE_TYPE = "ChargeItem";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -553,6 +561,14 @@ public class ChargeItem extends FhirResource {
         }
     }
 
+    /**
+     * The resource ChargeItem describes the provision of healthcare provider
+     * products for a certain patient, therefore referring not only to the
+     * product, but containing in addition details of the provision, like
+     * date, time, amounts and participating organizations and persons. Main
+     * Usage of the ChargeItem is to enable the billing process and internal
+     * cost allocation.
+     */
     public static class ChargeItemPerformer extends FhirObject {
         public static final String RESOURCE_TYPE = "ChargeItemPerformer";
         public static final String PROPERTY_ID = "id";

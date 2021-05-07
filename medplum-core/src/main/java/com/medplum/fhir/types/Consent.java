@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
+ * identified recipient(s) or recipient role(s) to perform one or more
+ * actions within a given policy context, for specific purposes and
+ * periods of time.
+ */
 public class Consent extends FhirResource {
     public static final String RESOURCE_TYPE = "Consent";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -363,6 +369,12 @@ public class Consent extends FhirResource {
         }
     }
 
+    /**
+     * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
+     * identified recipient(s) or recipient role(s) to perform one or more
+     * actions within a given policy context, for specific purposes and
+     * periods of time.
+     */
     public static class ConsentActor extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentActor";
         public static final String PROPERTY_ID = "id";
@@ -483,6 +495,12 @@ public class Consent extends FhirResource {
         }
     }
 
+    /**
+     * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
+     * identified recipient(s) or recipient role(s) to perform one or more
+     * actions within a given policy context, for specific purposes and
+     * periods of time.
+     */
     public static class ConsentData extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentData";
         public static final String PROPERTY_ID = "id";
@@ -602,6 +620,12 @@ public class Consent extends FhirResource {
         }
     }
 
+    /**
+     * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
+     * identified recipient(s) or recipient role(s) to perform one or more
+     * actions within a given policy context, for specific purposes and
+     * periods of time.
+     */
     public static class ConsentPolicy extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentPolicy";
         public static final String PROPERTY_ID = "id";
@@ -723,6 +747,12 @@ public class Consent extends FhirResource {
         }
     }
 
+    /**
+     * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
+     * identified recipient(s) or recipient role(s) to perform one or more
+     * actions within a given policy context, for specific purposes and
+     * periods of time.
+     */
     public static class ConsentProvision extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentProvision";
         public static final String PROPERTY_ID = "id";
@@ -794,7 +824,7 @@ public class Consent extends FhirResource {
         }
 
         /**
-         * Action  to take - permit or deny - when the rule conditions are met. 
+         * Action  to take - permit or deny - when the rule conditions are met.
          * Not permitted in root rule, required in all nested rules.
          */
         public String type() {
@@ -965,6 +995,12 @@ public class Consent extends FhirResource {
         }
     }
 
+    /**
+     * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
+     * identified recipient(s) or recipient role(s) to perform one or more
+     * actions within a given policy context, for specific purposes and
+     * periods of time.
+     */
     public static class ConsentVerification extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentVerification";
         public static final String PROPERTY_ID = "id";

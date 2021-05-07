@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Related artifacts such as additional documentation, justification, or
+ * bibliographic references.
+ */
 public class RelatedArtifact extends FhirResource {
     public static final String RESOURCE_TYPE = "RelatedArtifact";
     public static final String PROPERTY_ID = "id";

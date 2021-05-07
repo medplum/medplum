@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * This resource provides the adjudication details from the processing of
+ * a Claim resource.
+ */
 public class ClaimResponse extends FhirResource {
     public static final String RESOURCE_TYPE = "ClaimResponse";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -535,6 +539,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseAddItem extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseAddItem";
         public static final String PROPERTY_ID = "id";
@@ -915,6 +923,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseAdjudication extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseAdjudication";
         public static final String PROPERTY_ID = "id";
@@ -1065,6 +1077,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseDetail";
         public static final String PROPERTY_ID = "id";
@@ -1209,6 +1225,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseDetail1 extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseDetail1";
         public static final String PROPERTY_ID = "id";
@@ -1427,6 +1447,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseError extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseError";
         public static final String PROPERTY_ID = "id";
@@ -1577,6 +1601,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseInsurance extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseInsurance";
         public static final String PROPERTY_ID = "id";
@@ -1740,6 +1768,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseItem extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseItem";
         public static final String PROPERTY_ID = "id";
@@ -1887,6 +1919,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponsePayment extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponsePayment";
         public static final String PROPERTY_ID = "id";
@@ -2059,6 +2095,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseProcessNote extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseProcessNote";
         public static final String PROPERTY_ID = "id";
@@ -2202,6 +2242,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseSubDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseSubDetail";
         public static final String PROPERTY_ID = "id";
@@ -2333,6 +2377,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseSubDetail1 extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseSubDetail1";
         public static final String PROPERTY_ID = "id";
@@ -2538,6 +2586,10 @@ public class ClaimResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the adjudication details from the processing of
+     * a Claim resource.
+     */
     public static class ClaimResponseTotal extends FhirObject {
         public static final String RESOURCE_TYPE = "ClaimResponseTotal";
         public static final String PROPERTY_ID = "id";

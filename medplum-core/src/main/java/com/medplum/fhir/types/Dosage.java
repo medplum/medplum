@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Indicates how the medication is/was taken or should be taken by the
+ * patient.
+ */
 public class Dosage extends FhirResource {
     public static final String RESOURCE_TYPE = "Dosage";
     public static final String PROPERTY_ID = "id";
@@ -289,6 +293,10 @@ public class Dosage extends FhirResource {
         }
     }
 
+    /**
+     * Indicates how the medication is/was taken or should be taken by the
+     * patient.
+     */
     public static class DosageDoseAndRate extends FhirObject {
         public static final String RESOURCE_TYPE = "DosageDoseAndRate";
         public static final String PROPERTY_ID = "id";

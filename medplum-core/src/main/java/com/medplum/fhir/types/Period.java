@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A time period defined by a start and end date and optionally time.
+ */
 public class Period extends FhirResource {
     public static final String RESOURCE_TYPE = "Period";
     public static final String PROPERTY_ID = "id";

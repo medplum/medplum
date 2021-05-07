@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The detailed description of a substance, typically at a level beyond
+ * what is used for prescribing.
+ */
 public class SubstanceSpecification extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceSpecification";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -413,6 +417,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationCode extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationCode";
         public static final String PROPERTY_ID = "id";
@@ -570,6 +578,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationIsotope extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationIsotope";
         public static final String PROPERTY_ID = "id";
@@ -727,6 +739,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationMoiety extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationMoiety";
         public static final String PROPERTY_ID = "id";
@@ -922,6 +938,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationMolecularWeight extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationMolecularWeight";
         public static final String PROPERTY_ID = "id";
@@ -1056,6 +1076,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationName extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationName";
         public static final String PROPERTY_ID = "id";
@@ -1291,6 +1315,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationOfficial extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationOfficial";
         public static final String PROPERTY_ID = "id";
@@ -1421,6 +1449,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationProperty extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationProperty";
         public static final String PROPERTY_ID = "id";
@@ -1606,6 +1638,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationRelationship extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationRelationship";
         public static final String PROPERTY_ID = "id";
@@ -1853,6 +1889,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationRepresentation extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationRepresentation";
         public static final String PROPERTY_ID = "id";
@@ -1984,6 +2024,10 @@ public class SubstanceSpecification extends FhirResource {
         }
     }
 
+    /**
+     * The detailed description of a substance, typically at a level beyond
+     * what is used for prescribing.
+     */
     public static class SubstanceSpecificationStructure extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSpecificationStructure";
         public static final String PROPERTY_ID = "id";

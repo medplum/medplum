@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A type of a manufactured item that is used in the provision of
+ * healthcare without being substantially changed through that activity.
+ * The device may be a medical or non-medical device.
+ */
 public class Device extends FhirResource {
     public static final String RESOURCE_TYPE = "Device";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -145,7 +150,7 @@ public class Device extends FhirResource {
     }
 
     /**
-     * Unique device identifier (UDI) assigned to device label or package. 
+     * Unique device identifier (UDI) assigned to device label or package.
      * Note that the Device may include multiple udiCarriers as it either may
      * include just the udiCarrier for the jurisdiction it is sold, or for
      * multiple jurisdictions it could have been sold.
@@ -215,7 +220,7 @@ public class Device extends FhirResource {
 
     /**
      * This represents the manufacturer's name of the device as provided by
-     * the device, from a UDI label, or by a person describing the Device. 
+     * the device, from a UDI label, or by a person describing the Device.
      * This typically would be used when a person provides the name(s) or
      * when the device represents one of the names available from
      * DeviceDefinition.
@@ -316,7 +321,7 @@ public class Device extends FhirResource {
     }
 
     /**
-     * Provides additional safety characteristics about a medical device. 
+     * Provides additional safety characteristics about a medical device.
      * For example devices containing latex.
      */
     public java.util.List<CodeableConcept> safety() {
@@ -520,6 +525,11 @@ public class Device extends FhirResource {
         }
     }
 
+    /**
+     * A type of a manufactured item that is used in the provision of
+     * healthcare without being substantially changed through that activity.
+     * The device may be a medical or non-medical device.
+     */
     public static class DeviceDeviceName extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceDeviceName";
         public static final String PROPERTY_ID = "id";
@@ -639,6 +649,11 @@ public class Device extends FhirResource {
         }
     }
 
+    /**
+     * A type of a manufactured item that is used in the provision of
+     * healthcare without being substantially changed through that activity.
+     * The device may be a medical or non-medical device.
+     */
     public static class DeviceProperty extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceProperty";
         public static final String PROPERTY_ID = "id";
@@ -770,6 +785,11 @@ public class Device extends FhirResource {
         }
     }
 
+    /**
+     * A type of a manufactured item that is used in the provision of
+     * healthcare without being substantially changed through that activity.
+     * The device may be a medical or non-medical device.
+     */
     public static class DeviceSpecialization extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceSpecialization";
         public static final String PROPERTY_ID = "id";
@@ -887,6 +907,11 @@ public class Device extends FhirResource {
         }
     }
 
+    /**
+     * A type of a manufactured item that is used in the provision of
+     * healthcare without being substantially changed through that activity.
+     * The device may be a medical or non-medical device.
+     */
     public static class DeviceUdiCarrier extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceUdiCarrier";
         public static final String PROPERTY_ID = "id";
@@ -963,12 +988,12 @@ public class Device extends FhirResource {
         /**
          * Organization that is charged with issuing UDIs for devices.  For
          * example, the US FDA issuers include :
-         * 1) GS1: 
-         * http://hl7.org/fhir/NamingSystem/gs1-di, 
+         * 1) GS1:
+         * http://hl7.org/fhir/NamingSystem/gs1-di,
          * 2) HIBCC:
-         * http://hl7.org/fhir/NamingSystem/hibcc-dI, 
+         * http://hl7.org/fhir/NamingSystem/hibcc-dI,
          * 3) ICCBBA for blood containers:
-         * http://hl7.org/fhir/NamingSystem/iccbba-blood-di, 
+         * http://hl7.org/fhir/NamingSystem/iccbba-blood-di,
          * 4) ICCBA for other devices:
          * http://hl7.org/fhir/NamingSystem/iccbba-other-di.
          */
@@ -977,10 +1002,10 @@ public class Device extends FhirResource {
         }
 
         /**
-         * The identity of the authoritative source for UDI generation within a 
+         * The identity of the authoritative source for UDI generation within a
          * jurisdiction.  All UDIs are globally unique within a single namespace
          * with the appropriate repository uri as the system.  For example,  UDIs
-         * of devices managed in the U.S. by the FDA, the value is 
+         * of devices managed in the U.S. by the FDA, the value is
          * http://hl7.org/fhir/NamingSystem/fda-udi.
          */
         public java.net.URI jurisdiction() {
@@ -1075,6 +1100,11 @@ public class Device extends FhirResource {
         }
     }
 
+    /**
+     * A type of a manufactured item that is used in the provision of
+     * healthcare without being substantially changed through that activity.
+     * The device may be a medical or non-medical device.
+     */
     public static class DeviceVersion extends FhirObject {
         public static final String RESOURCE_TYPE = "DeviceVersion";
         public static final String PROPERTY_ID = "id";

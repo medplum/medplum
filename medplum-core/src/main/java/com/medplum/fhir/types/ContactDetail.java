@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Specifies contact information for a person or organization.
+ */
 public class ContactDetail extends FhirResource {
     public static final String RESOURCE_TYPE = "ContactDetail";
     public static final String PROPERTY_ID = "id";

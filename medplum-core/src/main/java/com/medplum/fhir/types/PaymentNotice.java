@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * This resource provides the status of the payment for goods and
+ * services rendered, and the request and response resource references.
+ */
 public class PaymentNotice extends FhirResource {
     public static final String RESOURCE_TYPE = "PaymentNotice";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

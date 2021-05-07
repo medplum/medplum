@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The metadata about a resource. This is content in the resource that is
+ * maintained by the infrastructure. Changes to the content might not
+ * always be associated with version changes to the resource.
+ */
 public class Meta extends FhirResource {
     public static final String RESOURCE_TYPE = "Meta";
     public static final String PROPERTY_ID = "id";

@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An association between a patient and an organization / healthcare
+ * provider(s) during which time encounters may occur. The managing
+ * organization assumes a level of responsibility for the patient during
+ * this time.
+ */
 public class EpisodeOfCare extends FhirResource {
     public static final String RESOURCE_TYPE = "EpisodeOfCare";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -329,6 +335,12 @@ public class EpisodeOfCare extends FhirResource {
         }
     }
 
+    /**
+     * An association between a patient and an organization / healthcare
+     * provider(s) during which time encounters may occur. The managing
+     * organization assumes a level of responsibility for the patient during
+     * this time.
+     */
     public static class EpisodeOfCareDiagnosis extends FhirObject {
         public static final String RESOURCE_TYPE = "EpisodeOfCareDiagnosis";
         public static final String PROPERTY_ID = "id";
@@ -461,6 +473,12 @@ public class EpisodeOfCare extends FhirResource {
         }
     }
 
+    /**
+     * An association between a patient and an organization / healthcare
+     * provider(s) during which time encounters may occur. The managing
+     * organization assumes a level of responsibility for the patient during
+     * this time.
+     */
     public static class EpisodeOfCareStatusHistory extends FhirObject {
         public static final String RESOURCE_TYPE = "EpisodeOfCareStatusHistory";
         public static final String PROPERTY_ID = "id";

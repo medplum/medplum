@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * A record of a device being used by a patient where the record is the
+ * result of a report from the patient or another clinician.
+ */
 public class DeviceUseStatement extends FhirResource {
     public static final String RESOURCE_TYPE = "DeviceUseStatement";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

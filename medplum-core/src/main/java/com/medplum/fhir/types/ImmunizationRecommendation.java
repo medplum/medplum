@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A patient's point-in-time set of recommendations (i.e. forecasting)
+ * according to a published schedule with optional supporting
+ * justification.
+ */
 public class ImmunizationRecommendation extends FhirResource {
     public static final String RESOURCE_TYPE = "ImmunizationRecommendation";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -228,6 +233,11 @@ public class ImmunizationRecommendation extends FhirResource {
         }
     }
 
+    /**
+     * A patient's point-in-time set of recommendations (i.e. forecasting)
+     * according to a published schedule with optional supporting
+     * justification.
+     */
     public static class ImmunizationRecommendationDateCriterion extends FhirObject {
         public static final String RESOURCE_TYPE = "ImmunizationRecommendationDateCriterion";
         public static final String PROPERTY_ID = "id";
@@ -346,6 +356,11 @@ public class ImmunizationRecommendation extends FhirResource {
         }
     }
 
+    /**
+     * A patient's point-in-time set of recommendations (i.e. forecasting)
+     * according to a published schedule with optional supporting
+     * justification.
+     */
     public static class ImmunizationRecommendationRecommendation extends FhirObject {
         public static final String RESOURCE_TYPE = "ImmunizationRecommendationRecommendation";
         public static final String PROPERTY_ID = "id";

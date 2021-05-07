@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Record of delivery of what is supplied.
+ */
 public class SupplyDelivery extends FhirResource {
     public static final String RESOURCE_TYPE = "SupplyDelivery";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -339,6 +342,9 @@ public class SupplyDelivery extends FhirResource {
         }
     }
 
+    /**
+     * Record of delivery of what is supplied.
+     */
     public static class SupplyDeliverySuppliedItem extends FhirObject {
         public static final String RESOURCE_TYPE = "SupplyDeliverySuppliedItem";
         public static final String PROPERTY_ID = "id";

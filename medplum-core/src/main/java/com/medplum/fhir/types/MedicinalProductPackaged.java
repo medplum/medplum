@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A medicinal product in a container or package.
+ */
 public class MedicinalProductPackaged extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductPackaged";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -282,6 +285,9 @@ public class MedicinalProductPackaged extends FhirResource {
         }
     }
 
+    /**
+     * A medicinal product in a container or package.
+     */
     public static class MedicinalProductPackagedBatchIdentifier extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductPackagedBatchIdentifier";
         public static final String PROPERTY_ID = "id";
@@ -400,6 +406,9 @@ public class MedicinalProductPackaged extends FhirResource {
         }
     }
 
+    /**
+     * A medicinal product in a container or package.
+     */
     public static class MedicinalProductPackagedPackageItem extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductPackagedPackageItem";
         public static final String PROPERTY_ID = "id";

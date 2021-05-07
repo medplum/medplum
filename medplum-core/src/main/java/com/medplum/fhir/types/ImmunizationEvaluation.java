@@ -7,6 +7,11 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * Describes a comparison of an immunization event against published
+ * recommendations to determine if the administration is &quot;valid&quot; in
+ * relation to those  recommendations.
+ */
 public class ImmunizationEvaluation extends FhirResource {
     public static final String RESOURCE_TYPE = "ImmunizationEvaluation";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

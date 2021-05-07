@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A human's name with the ability to identify parts and usage.
+ */
 public class HumanName extends FhirResource {
     public static final String RESOURCE_TYPE = "HumanName";
     public static final String PROPERTY_ID = "id";

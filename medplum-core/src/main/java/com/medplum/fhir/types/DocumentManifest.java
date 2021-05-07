@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A collection of documents compiled for a purpose together with
+ * metadata that applies to the collection.
+ */
 public class DocumentManifest extends FhirResource {
     public static final String RESOURCE_TYPE = "DocumentManifest";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -333,6 +337,10 @@ public class DocumentManifest extends FhirResource {
         }
     }
 
+    /**
+     * A collection of documents compiled for a purpose together with
+     * metadata that applies to the collection.
+     */
     public static class DocumentManifestRelated extends FhirObject {
         public static final String RESOURCE_TYPE = "DocumentManifestRelated";
         public static final String PROPERTY_ID = "id";

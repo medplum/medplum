@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Details of a Health Insurance product/plan provided by an
+ * organization.
+ */
 public class InsurancePlan extends FhirResource {
     public static final String RESOURCE_TYPE = "InsurancePlan";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -356,6 +360,10 @@ public class InsurancePlan extends FhirResource {
         }
     }
 
+    /**
+     * Details of a Health Insurance product/plan provided by an
+     * organization.
+     */
     public static class InsurancePlanBenefit extends FhirObject {
         public static final String RESOURCE_TYPE = "InsurancePlanBenefit";
         public static final String PROPERTY_ID = "id";
@@ -487,6 +495,10 @@ public class InsurancePlan extends FhirResource {
         }
     }
 
+    /**
+     * Details of a Health Insurance product/plan provided by an
+     * organization.
+     */
     public static class InsurancePlanBenefit1 extends FhirObject {
         public static final String RESOURCE_TYPE = "InsurancePlanBenefit1";
         public static final String PROPERTY_ID = "id";
@@ -606,6 +618,10 @@ public class InsurancePlan extends FhirResource {
         }
     }
 
+    /**
+     * Details of a Health Insurance product/plan provided by an
+     * organization.
+     */
     public static class InsurancePlanContact extends FhirObject {
         public static final String RESOURCE_TYPE = "InsurancePlanContact";
         public static final String PROPERTY_ID = "id";
@@ -750,6 +766,10 @@ public class InsurancePlan extends FhirResource {
         }
     }
 
+    /**
+     * Details of a Health Insurance product/plan provided by an
+     * organization.
+     */
     public static class InsurancePlanCost extends FhirObject {
         public static final String RESOURCE_TYPE = "InsurancePlanCost";
         public static final String PROPERTY_ID = "id";
@@ -897,6 +917,10 @@ public class InsurancePlan extends FhirResource {
         }
     }
 
+    /**
+     * Details of a Health Insurance product/plan provided by an
+     * organization.
+     */
     public static class InsurancePlanCoverage extends FhirObject {
         public static final String RESOURCE_TYPE = "InsurancePlanCoverage";
         public static final String PROPERTY_ID = "id";
@@ -1028,6 +1052,10 @@ public class InsurancePlan extends FhirResource {
         }
     }
 
+    /**
+     * Details of a Health Insurance product/plan provided by an
+     * organization.
+     */
     public static class InsurancePlanGeneralCost extends FhirObject {
         public static final String RESOURCE_TYPE = "InsurancePlanGeneralCost";
         public static final String PROPERTY_ID = "id";
@@ -1172,6 +1200,10 @@ public class InsurancePlan extends FhirResource {
         }
     }
 
+    /**
+     * Details of a Health Insurance product/plan provided by an
+     * organization.
+     */
     public static class InsurancePlanLimit extends FhirObject {
         public static final String RESOURCE_TYPE = "InsurancePlanLimit";
         public static final String PROPERTY_ID = "id";
@@ -1290,6 +1322,10 @@ public class InsurancePlan extends FhirResource {
         }
     }
 
+    /**
+     * Details of a Health Insurance product/plan provided by an
+     * organization.
+     */
     public static class InsurancePlanPlan extends FhirObject {
         public static final String RESOURCE_TYPE = "InsurancePlanPlan";
         public static final String PROPERTY_ID = "id";
@@ -1462,6 +1498,10 @@ public class InsurancePlan extends FhirResource {
         }
     }
 
+    /**
+     * Details of a Health Insurance product/plan provided by an
+     * organization.
+     */
     public static class InsurancePlanSpecificCost extends FhirObject {
         public static final String RESOURCE_TYPE = "InsurancePlanSpecificCost";
         public static final String PROPERTY_ID = "id";

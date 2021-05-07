@@ -1,4 +1,4 @@
-import { Resource, schema, SearchDefinition, SearchFilterDefinition, SearchResponse } from 'medplum';
+import { Bundle, Resource, SearchDefinition } from 'medplum';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 import { SearchPopupMenu } from './SearchPopupMenu';
@@ -29,9 +29,9 @@ export class SearchChangeEvent extends Event {
 }
 
 export class SearchLoadEvent extends Event {
-  readonly response: SearchResponse;
+  readonly response: Bundle;
 
-  constructor(response: SearchResponse) {
+  constructor(response: Bundle) {
     super('load');
     this.response = response;
   }
@@ -59,7 +59,7 @@ export interface SearchControlProps {
 
 interface SearchControlState {
   search: SearchDefinition;
-  searchResponse?: SearchResponse;
+  searchResponse?: Bundle;
   allSelected: boolean;
   selected: { [id: string]: boolean };
   popupVisible: boolean;
@@ -93,7 +93,7 @@ export function SearchControl(props: SearchControlProps) {
     const state = stateRef.current;
     medplum.search(state.search)
       .then(response => {
-        setState({ ...state, searchResponse: response as SearchResponse });
+        setState({ ...state, searchResponse: response as Bundle });
         if (props.onLoad) {
           props.onLoad(new SearchLoadEvent(response));
         }
@@ -142,10 +142,12 @@ export function SearchControl(props: SearchControlProps) {
     const checked = el.checked;
     const newSelected = {} as { [id: string]: boolean };
     const state = stateRef.current;
-    if (checked) {
-      const entries = state.searchResponse?.entry || [];
-      const resources = entries.map(e => e.resource);
-      resources.forEach(r => newSelected[r.id] = checked);
+    if (checked && state.searchResponse?.entry) {
+      state.searchResponse.entry.forEach(e => {
+        if (e.resource?.id) {
+          newSelected[e.resource.id] = true;
+        }
+      });
     }
     setState({ ...state, allSelected: checked, selected: newSelected });
     return true;
@@ -182,12 +184,10 @@ export function SearchControl(props: SearchControlProps) {
 
     const el = e.currentTarget as HTMLElement;
     const id = el.dataset['id'];
-    if (id) {
-      if (props.onClick) {
-        const entries = state.searchResponse?.entry || [];
-        const resources = entries.map(e => e.resource);
-        const resource = resources.find(r => r.id === id);
-        props.onClick(new SearchClickEvent(resource, e));
+    if (id && props.onClick && state.searchResponse?.entry) {
+      const entry = state.searchResponse.entry.find(e => e.resource?.id === id);
+      if (entry?.resource) {
+        props.onClick(new SearchClickEvent(entry.resource, e));
       }
     }
   }
@@ -234,11 +234,10 @@ export function SearchControl(props: SearchControlProps) {
           </tr>
         </thead>
         <tbody>
-          {resources.map(resource =>
+          {resources.map(resource => (resource &&
             <tr
               key={resource.id}
               data-id={resource.id}
-              className={resource.priority === 'High' ? "high-priority" : resource.status === 'Duplicate' ? "duplicate" : ""}
               onClick={e => handleRowClick_(e)}>
               {checkboxColumn &&
                 <td className="medplum-search-icon-cell">
@@ -246,7 +245,7 @@ export function SearchControl(props: SearchControlProps) {
                     type="checkbox"
                     value="checked"
                     data-id={resource.id}
-                    checked={!!state.selected[resource.id]}
+                    checked={!!(resource.id && state.selected[resource.id])}
                     onClick={e => handleSingleCheckboxClick(e)}
                     onChange={() => { }}
                   />
@@ -256,7 +255,7 @@ export function SearchControl(props: SearchControlProps) {
                 <td key={field}>{renderValue(state.search.resourceType, field, getValue(resource, field))}</td>
               )}
             </tr>
-          )}
+          ))}
         </tbody>
       </table>
       {resources.length === 0 &&

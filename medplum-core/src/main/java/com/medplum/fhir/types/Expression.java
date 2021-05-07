@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A expression that is evaluated in a specified context and returns a
+ * value. The context of use of the expression must specify the context
+ * in which the expression is evaluated, and how the result of the
+ * expression is used.
+ */
 public class Expression extends FhirResource {
     public static final String RESOURCE_TYPE = "Expression";
     public static final String PROPERTY_ID = "id";

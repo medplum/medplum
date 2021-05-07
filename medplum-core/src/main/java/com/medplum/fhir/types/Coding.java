@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A reference to a code defined by a terminology system.
+ */
 public class Coding extends FhirResource {
     public static final String RESOURCE_TYPE = "Coding";
     public static final String PROPERTY_ID = "id";

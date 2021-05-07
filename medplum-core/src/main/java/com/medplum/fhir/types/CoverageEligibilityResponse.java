@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * This resource provides eligibility and plan details from the
+ * processing of an CoverageEligibilityRequest resource.
+ */
 public class CoverageEligibilityResponse extends FhirResource {
     public static final String RESOURCE_TYPE = "CoverageEligibilityResponse";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -381,6 +385,10 @@ public class CoverageEligibilityResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides eligibility and plan details from the
+     * processing of an CoverageEligibilityRequest resource.
+     */
     public static class CoverageEligibilityResponseBenefit extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageEligibilityResponseBenefit";
         public static final String PROPERTY_ID = "id";
@@ -563,6 +571,10 @@ public class CoverageEligibilityResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides eligibility and plan details from the
+     * processing of an CoverageEligibilityRequest resource.
+     */
     public static class CoverageEligibilityResponseError extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageEligibilityResponseError";
         public static final String PROPERTY_ID = "id";
@@ -668,6 +680,10 @@ public class CoverageEligibilityResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides eligibility and plan details from the
+     * processing of an CoverageEligibilityRequest resource.
+     */
     public static class CoverageEligibilityResponseInsurance extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageEligibilityResponseInsurance";
         public static final String PROPERTY_ID = "id";
@@ -817,6 +833,10 @@ public class CoverageEligibilityResponse extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides eligibility and plan details from the
+     * processing of an CoverageEligibilityRequest resource.
+     */
     public static class CoverageEligibilityResponseItem extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageEligibilityResponseItem";
         public static final String PROPERTY_ID = "id";

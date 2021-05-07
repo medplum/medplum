@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A summary of information based on the results of executing a
+ * TestScript.
+ */
 public class TestReport extends FhirResource {
     public static final String RESOURCE_TYPE = "TestReport";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -326,6 +330,10 @@ public class TestReport extends FhirResource {
         }
     }
 
+    /**
+     * A summary of information based on the results of executing a
+     * TestScript.
+     */
     public static class TestReportAction extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportAction";
         public static final String PROPERTY_ID = "id";
@@ -443,6 +451,10 @@ public class TestReport extends FhirResource {
         }
     }
 
+    /**
+     * A summary of information based on the results of executing a
+     * TestScript.
+     */
     public static class TestReportAction1 extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportAction1";
         public static final String PROPERTY_ID = "id";
@@ -560,6 +572,10 @@ public class TestReport extends FhirResource {
         }
     }
 
+    /**
+     * A summary of information based on the results of executing a
+     * TestScript.
+     */
     public static class TestReportAction2 extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportAction2";
         public static final String PROPERTY_ID = "id";
@@ -664,6 +680,10 @@ public class TestReport extends FhirResource {
         }
     }
 
+    /**
+     * A summary of information based on the results of executing a
+     * TestScript.
+     */
     public static class TestReportAssert extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportAssert";
         public static final String PROPERTY_ID = "id";
@@ -794,6 +814,10 @@ public class TestReport extends FhirResource {
         }
     }
 
+    /**
+     * A summary of information based on the results of executing a
+     * TestScript.
+     */
     public static class TestReportOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportOperation";
         public static final String PROPERTY_ID = "id";
@@ -924,6 +948,10 @@ public class TestReport extends FhirResource {
         }
     }
 
+    /**
+     * A summary of information based on the results of executing a
+     * TestScript.
+     */
     public static class TestReportParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportParticipant";
         public static final String PROPERTY_ID = "id";
@@ -1054,6 +1082,10 @@ public class TestReport extends FhirResource {
         }
     }
 
+    /**
+     * A summary of information based on the results of executing a
+     * TestScript.
+     */
     public static class TestReportSetup extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportSetup";
         public static final String PROPERTY_ID = "id";
@@ -1158,6 +1190,10 @@ public class TestReport extends FhirResource {
         }
     }
 
+    /**
+     * A summary of information based on the results of executing a
+     * TestScript.
+     */
     public static class TestReportTeardown extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportTeardown";
         public static final String PROPERTY_ID = "id";
@@ -1262,6 +1298,10 @@ public class TestReport extends FhirResource {
         }
     }
 
+    /**
+     * A summary of information based on the results of executing a
+     * TestScript.
+     */
     public static class TestReportTest extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportTest";
         public static final String PROPERTY_ID = "id";

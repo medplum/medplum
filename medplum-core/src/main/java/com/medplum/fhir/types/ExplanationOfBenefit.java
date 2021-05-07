@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * This resource provides: the claim details; adjudication details from
+ * the processing of a Claim; and optionally account balance information,
+ * for informing the subscriber of the benefits provided.
+ */
 public class ExplanationOfBenefit extends FhirResource {
     public static final String RESOURCE_TYPE = "ExplanationOfBenefit";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -757,6 +762,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitAccident extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitAccident";
         public static final String PROPERTY_ID = "id";
@@ -903,6 +913,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitAddItem extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitAddItem";
         public static final String PROPERTY_ID = "id";
@@ -1283,6 +1298,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitAdjudication extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitAdjudication";
         public static final String PROPERTY_ID = "id";
@@ -1433,6 +1453,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitBenefitBalance extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitBenefitBalance";
         public static final String PROPERTY_ID = "id";
@@ -1633,6 +1658,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitCareTeam extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitCareTeam";
         public static final String PROPERTY_ID = "id";
@@ -1792,6 +1822,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitDetail";
         public static final String PROPERTY_ID = "id";
@@ -2078,6 +2113,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitDetail1 extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitDetail1";
         public static final String PROPERTY_ID = "id";
@@ -2296,6 +2336,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitDiagnosis extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitDiagnosis";
         public static final String PROPERTY_ID = "id";
@@ -2470,6 +2515,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitFinancial extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitFinancial";
         public static final String PROPERTY_ID = "id";
@@ -2639,6 +2689,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitInsurance extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitInsurance";
         public static final String PROPERTY_ID = "id";
@@ -2775,6 +2830,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitItem extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitItem";
         public static final String PROPERTY_ID = "id";
@@ -3223,6 +3283,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitPayee extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitPayee";
         public static final String PROPERTY_ID = "id";
@@ -3341,6 +3406,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitPayment extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitPayment";
         public static final String PROPERTY_ID = "id";
@@ -3513,6 +3583,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitProcedure extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitProcedure";
         public static final String PROPERTY_ID = "id";
@@ -3684,6 +3759,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitProcessNote extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitProcessNote";
         public static final String PROPERTY_ID = "id";
@@ -3827,6 +3907,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitRelated extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitRelated";
         public static final String PROPERTY_ID = "id";
@@ -3958,6 +4043,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitSubDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitSubDetail";
         public static final String PROPERTY_ID = "id";
@@ -4231,6 +4321,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitSubDetail1 extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitSubDetail1";
         public static final String PROPERTY_ID = "id";
@@ -4436,6 +4531,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitSupportingInfo extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitSupportingInfo";
         public static final String PROPERTY_ID = "id";
@@ -4684,6 +4784,11 @@ public class ExplanationOfBenefit extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides: the claim details; adjudication details from
+     * the processing of a Claim; and optionally account balance information,
+     * for informing the subscriber of the benefits provided.
+     */
     public static class ExplanationOfBenefitTotal extends FhirObject {
         public static final String RESOURCE_TYPE = "ExplanationOfBenefitTotal";
         public static final String PROPERTY_ID = "id";

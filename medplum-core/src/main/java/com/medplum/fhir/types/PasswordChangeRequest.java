@@ -7,6 +7,9 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * Password change request for the 'forgot password' flow
+ */
 public class PasswordChangeRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "PasswordChangeRequest";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

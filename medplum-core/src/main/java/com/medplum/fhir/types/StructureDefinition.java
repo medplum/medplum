@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A definition of a FHIR structure. This resource is used to describe
+ * the underlying resources, data types defined in FHIR, and also for
+ * describing extensions and constraints on resources and data types.
+ */
 public class StructureDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "StructureDefinition";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -307,7 +312,7 @@ public class StructureDefinition extends FhirResource {
     /**
      * Whether structure this definition describes is abstract or not  - that
      * is, whether the structure is not intended to be instantiated. For
-     * Resources and Data types, abstract types will never be exchanged 
+     * Resources and Data types, abstract types will never be exchanged
      * between systems.
      */
     public Boolean abstractValue() {
@@ -572,6 +577,11 @@ public class StructureDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A definition of a FHIR structure. This resource is used to describe
+     * the underlying resources, data types defined in FHIR, and also for
+     * describing extensions and constraints on resources and data types.
+     */
     public static class StructureDefinitionContext extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureDefinitionContext";
         public static final String PROPERTY_ID = "id";
@@ -691,6 +701,11 @@ public class StructureDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A definition of a FHIR structure. This resource is used to describe
+     * the underlying resources, data types defined in FHIR, and also for
+     * describing extensions and constraints on resources and data types.
+     */
     public static class StructureDefinitionDifferential extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureDefinitionDifferential";
         public static final String PROPERTY_ID = "id";
@@ -795,6 +810,11 @@ public class StructureDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A definition of a FHIR structure. This resource is used to describe
+     * the underlying resources, data types defined in FHIR, and also for
+     * describing extensions and constraints on resources and data types.
+     */
     public static class StructureDefinitionMapping extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureDefinitionMapping";
         public static final String PROPERTY_ID = "id";
@@ -941,6 +961,11 @@ public class StructureDefinition extends FhirResource {
         }
     }
 
+    /**
+     * A definition of a FHIR structure. This resource is used to describe
+     * the underlying resources, data types defined in FHIR, and also for
+     * describing extensions and constraints on resources and data types.
+     */
     public static class StructureDefinitionSnapshot extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureDefinitionSnapshot";
         public static final String PROPERTY_ID = "id";

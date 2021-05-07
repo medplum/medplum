@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A record of an event made for purposes of maintaining a security log.
+ * Typical uses include detection of intrusion attempts and monitoring
+ * for inappropriate usage.
+ */
 public class AuditEvent extends FhirResource {
     public static final String RESOURCE_TYPE = "AuditEvent";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -311,6 +316,11 @@ public class AuditEvent extends FhirResource {
         }
     }
 
+    /**
+     * A record of an event made for purposes of maintaining a security log.
+     * Typical uses include detection of intrusion attempts and monitoring
+     * for inappropriate usage.
+     */
     public static class AuditEventAgent extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventAgent";
         public static final String PROPERTY_ID = "id";
@@ -558,6 +568,11 @@ public class AuditEvent extends FhirResource {
         }
     }
 
+    /**
+     * A record of an event made for purposes of maintaining a security log.
+     * Typical uses include detection of intrusion attempts and monitoring
+     * for inappropriate usage.
+     */
     public static class AuditEventDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventDetail";
         public static final String PROPERTY_ID = "id";
@@ -688,6 +703,11 @@ public class AuditEvent extends FhirResource {
         }
     }
 
+    /**
+     * A record of an event made for purposes of maintaining a security log.
+     * Typical uses include detection of intrusion attempts and monitoring
+     * for inappropriate usage.
+     */
     public static class AuditEventEntity extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventEntity";
         public static final String PROPERTY_ID = "id";
@@ -899,6 +919,11 @@ public class AuditEvent extends FhirResource {
         }
     }
 
+    /**
+     * A record of an event made for purposes of maintaining a security log.
+     * Typical uses include detection of intrusion attempts and monitoring
+     * for inappropriate usage.
+     */
     public static class AuditEventNetwork extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventNetwork";
         public static final String PROPERTY_ID = "id";
@@ -1018,6 +1043,11 @@ public class AuditEvent extends FhirResource {
         }
     }
 
+    /**
+     * A record of an event made for purposes of maintaining a security log.
+     * Typical uses include detection of intrusion attempts and monitoring
+     * for inappropriate usage.
+     */
     public static class AuditEventSource extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventSource";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A record of a request for a medication, substance or device used in
+ * the healthcare setting.
+ */
 public class SupplyRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "SupplyRequest";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -406,6 +410,10 @@ public class SupplyRequest extends FhirResource {
         }
     }
 
+    /**
+     * A record of a request for a medication, substance or device used in
+     * the healthcare setting.
+     */
     public static class SupplyRequestParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "SupplyRequestParameter";
         public static final String PROPERTY_ID = "id";

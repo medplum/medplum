@@ -9,6 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Describes the event of a patient consuming or otherwise being
+ * administered a medication.  This may be as simple as swallowing a
+ * tablet or it may be a long running infusion.  Related resources tie
+ * this event to the authorizing prescription, and the specific encounter
+ * between patient and health care practitioner.
+ */
 public class MedicationAdministration extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicationAdministration";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -467,6 +474,13 @@ public class MedicationAdministration extends FhirResource {
         }
     }
 
+    /**
+     * Describes the event of a patient consuming or otherwise being
+     * administered a medication.  This may be as simple as swallowing a
+     * tablet or it may be a long running infusion.  Related resources tie
+     * this event to the authorizing prescription, and the specific encounter
+     * between patient and health care practitioner.
+     */
     public static class MedicationAdministrationDosage extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationAdministrationDosage";
         public static final String PROPERTY_ID = "id";
@@ -669,6 +683,13 @@ public class MedicationAdministration extends FhirResource {
         }
     }
 
+    /**
+     * Describes the event of a patient consuming or otherwise being
+     * administered a medication.  This may be as simple as swallowing a
+     * tablet or it may be a long running infusion.  Related resources tie
+     * this event to the authorizing prescription, and the specific encounter
+     * between patient and health care practitioner.
+     */
     public static class MedicationAdministrationPerformer extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationAdministrationPerformer";
         public static final String PROPERTY_ID = "id";

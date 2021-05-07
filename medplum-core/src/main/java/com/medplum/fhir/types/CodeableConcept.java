@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A concept that may be defined by a formal reference to a terminology
+ * or ontology or may be provided by text.
+ */
 public class CodeableConcept extends FhirResource {
     public static final String RESOURCE_TYPE = "CodeableConcept";
     public static final String PROPERTY_ID = "id";

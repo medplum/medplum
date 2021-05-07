@@ -7,6 +7,12 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * The Library resource is a general-purpose container for knowledge
+ * asset definitions. It can be used to describe and expose existing
+ * knowledge assets such as logic libraries and information model
+ * descriptions, as well as to describe a collection of knowledge assets.
+ */
 public class Library extends FhirResource {
     public static final String RESOURCE_TYPE = "Library";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

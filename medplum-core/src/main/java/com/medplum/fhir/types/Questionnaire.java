@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A structured set of questions intended to guide the collection of
+ * answers from end-users. Questionnaires provide detailed control over
+ * order, presentation, phraseology and grouping to allow coherent,
+ * consistent data collection.
+ */
 public class Questionnaire extends FhirResource {
     public static final String RESOURCE_TYPE = "Questionnaire";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -490,6 +496,12 @@ public class Questionnaire extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of questions intended to guide the collection of
+     * answers from end-users. Questionnaires provide detailed control over
+     * order, presentation, phraseology and grouping to allow coherent,
+     * consistent data collection.
+     */
     public static class QuestionnaireAnswerOption extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireAnswerOption";
         public static final String PROPERTY_ID = "id";
@@ -673,6 +685,12 @@ public class Questionnaire extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of questions intended to guide the collection of
+     * answers from end-users. Questionnaires provide detailed control over
+     * order, presentation, phraseology and grouping to allow coherent,
+     * consistent data collection.
+     */
     public static class QuestionnaireEnableWhen extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireEnableWhen";
         public static final String PROPERTY_ID = "id";
@@ -931,6 +949,12 @@ public class Questionnaire extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of questions intended to guide the collection of
+     * answers from end-users. Questionnaires provide detailed control over
+     * order, presentation, phraseology and grouping to allow coherent,
+     * consistent data collection.
+     */
     public static class QuestionnaireInitial extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireInitial";
         public static final String PROPERTY_ID = "id";
@@ -1178,6 +1202,12 @@ public class Questionnaire extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of questions intended to guide the collection of
+     * answers from end-users. Questionnaires provide detailed control over
+     * order, presentation, phraseology and grouping to allow coherent,
+     * consistent data collection.
+     */
     public static class QuestionnaireItem extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireItem";
         public static final String PROPERTY_ID = "id";
@@ -1270,11 +1300,11 @@ public class Questionnaire extends FhirResource {
          * values MAY be derived from the Element Definition if the corresponding
          * elements of this Questionnaire resource instance have no value:
          *
-         * * code (ElementDefinition.code) 
-         * * type (ElementDefinition.type) 
-         * * required (ElementDefinition.min) 
-         * * repeats (ElementDefinition.max) 
-         * * maxLength (ElementDefinition.maxLength) 
+         * * code (ElementDefinition.code)
+         * * type (ElementDefinition.type)
+         * * required (ElementDefinition.min)
+         * * repeats (ElementDefinition.max)
+         * * maxLength (ElementDefinition.maxLength)
          * * answerValueSet (ElementDefinition.binding)
          * * options (ElementDefinition.binding).
          */

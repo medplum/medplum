@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A group of related requests that can be used to capture intended
+ * activities that have inter-dependencies such as &quot;give this medication
+ * after that one&quot;.
+ */
 public class RequestGroup extends FhirResource {
     public static final String RESOURCE_TYPE = "RequestGroup";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -411,6 +416,11 @@ public class RequestGroup extends FhirResource {
         }
     }
 
+    /**
+     * A group of related requests that can be used to capture intended
+     * activities that have inter-dependencies such as &quot;give this medication
+     * after that one&quot;.
+     */
     public static class RequestGroupAction extends FhirObject {
         public static final String RESOURCE_TYPE = "RequestGroupAction";
         public static final String PROPERTY_ID = "id";
@@ -826,6 +836,11 @@ public class RequestGroup extends FhirResource {
         }
     }
 
+    /**
+     * A group of related requests that can be used to capture intended
+     * activities that have inter-dependencies such as &quot;give this medication
+     * after that one&quot;.
+     */
     public static class RequestGroupCondition extends FhirObject {
         public static final String RESOURCE_TYPE = "RequestGroupCondition";
         public static final String PROPERTY_ID = "id";
@@ -944,6 +959,11 @@ public class RequestGroup extends FhirResource {
         }
     }
 
+    /**
+     * A group of related requests that can be used to capture intended
+     * activities that have inter-dependencies such as &quot;give this medication
+     * after that one&quot;.
+     */
     public static class RequestGroupRelatedAction extends FhirObject {
         public static final String RESOURCE_TYPE = "RequestGroupRelatedAction";
         public static final String PROPERTY_ID = "id";

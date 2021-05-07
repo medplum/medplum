@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Represents a defined collection of entities that may be discussed or
+ * acted upon collectively but which are not expected to act
+ * collectively, and are not formally or legally recognized; i.e. a
+ * collection of entities that isn't an Organization.
+ */
 public class Group extends FhirResource {
     public static final String RESOURCE_TYPE = "Group";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -302,6 +308,12 @@ public class Group extends FhirResource {
         }
     }
 
+    /**
+     * Represents a defined collection of entities that may be discussed or
+     * acted upon collectively but which are not expected to act
+     * collectively, and are not formally or legally recognized; i.e. a
+     * collection of entities that isn't an Organization.
+     */
     public static class GroupCharacteristic extends FhirObject {
         public static final String RESOURCE_TYPE = "GroupCharacteristic";
         public static final String PROPERTY_ID = "id";
@@ -504,6 +516,12 @@ public class Group extends FhirResource {
         }
     }
 
+    /**
+     * Represents a defined collection of entities that may be discussed or
+     * acted upon collectively but which are not expected to act
+     * collectively, and are not formally or legally recognized; i.e. a
+     * collection of entities that isn't an Organization.
+     */
     public static class GroupMember extends FhirObject {
         public static final String RESOURCE_TYPE = "GroupMember";
         public static final String PROPERTY_ID = "id";

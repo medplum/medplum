@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Describes validation requirements, source(s), status and dates for one
+ * or more elements.
+ */
 public class VerificationResult extends FhirResource {
     public static final String RESOURCE_TYPE = "VerificationResult";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -350,6 +354,10 @@ public class VerificationResult extends FhirResource {
         }
     }
 
+    /**
+     * Describes validation requirements, source(s), status and dates for one
+     * or more elements.
+     */
     public static class VerificationResultAttestation extends FhirObject {
         public static final String RESOURCE_TYPE = "VerificationResultAttestation";
         public static final String PROPERTY_ID = "id";
@@ -551,6 +559,10 @@ public class VerificationResult extends FhirResource {
         }
     }
 
+    /**
+     * Describes validation requirements, source(s), status and dates for one
+     * or more elements.
+     */
     public static class VerificationResultPrimarySource extends FhirObject {
         public static final String RESOURCE_TYPE = "VerificationResultPrimarySource";
         public static final String PROPERTY_ID = "id";
@@ -738,6 +750,10 @@ public class VerificationResult extends FhirResource {
         }
     }
 
+    /**
+     * Describes validation requirements, source(s), status and dates for one
+     * or more elements.
+     */
     public static class VerificationResultValidator extends FhirObject {
         public static final String RESOURCE_TYPE = "VerificationResultValidator";
         public static final String PROPERTY_ID = "id";

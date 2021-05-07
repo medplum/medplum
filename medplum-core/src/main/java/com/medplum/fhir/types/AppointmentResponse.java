@@ -7,6 +7,10 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * A reply to an appointment request for a patient and/or
+ * practitioner(s), such as a confirmation or rejection.
+ */
 public class AppointmentResponse extends FhirResource {
     public static final String RESOURCE_TYPE = "AppointmentResponse";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

@@ -9,6 +9,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * This resource is primarily used for the identification and definition
+ * of a medication for the purposes of prescribing, dispensing, and
+ * administering a medication as well as for making statements about
+ * medication use.
+ */
 public class Medication extends FhirResource {
     public static final String RESOURCE_TYPE = "Medication";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -137,7 +143,7 @@ public class Medication extends FhirResource {
     }
 
     /**
-     * Describes the details of the manufacturer of the medication product. 
+     * Describes the details of the manufacturer of the medication product.
      * This is not intended to represent the distributor of a medication
      * product.
      */
@@ -277,6 +283,12 @@ public class Medication extends FhirResource {
         }
     }
 
+    /**
+     * This resource is primarily used for the identification and definition
+     * of a medication for the purposes of prescribing, dispensing, and
+     * administering a medication as well as for making statements about
+     * medication use.
+     */
     public static class MedicationBatch extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationBatch";
         public static final String PROPERTY_ID = "id";
@@ -394,6 +406,12 @@ public class Medication extends FhirResource {
         }
     }
 
+    /**
+     * This resource is primarily used for the identification and definition
+     * of a medication for the purposes of prescribing, dispensing, and
+     * administering a medication as well as for making statements about
+     * medication use.
+     */
     public static class MedicationIngredient extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicationIngredient";
         public static final String PROPERTY_ID = "id";

@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Information about a person that is involved in the care for a patient,
+ * but who is not the target of healthcare, nor has a formal
+ * responsibility in the care process.
+ */
 public class RelatedPerson extends FhirResource {
     public static final String RESOURCE_TYPE = "RelatedPerson";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -324,6 +329,11 @@ public class RelatedPerson extends FhirResource {
         }
     }
 
+    /**
+     * Information about a person that is involved in the care for a patient,
+     * but who is not the target of healthcare, nor has a formal
+     * responsibility in the care process.
+     */
     public static class RelatedPersonCommunication extends FhirObject {
         public static final String RESOURCE_TYPE = "RelatedPersonCommunication";
         public static final String PROPERTY_ID = "id";

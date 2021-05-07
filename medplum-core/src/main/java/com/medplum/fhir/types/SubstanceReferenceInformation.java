@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Todo.
+ */
 public class SubstanceReferenceInformation extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceReferenceInformation";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -228,6 +231,9 @@ public class SubstanceReferenceInformation extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstanceReferenceInformationClassification extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationClassification";
         public static final String PROPERTY_ID = "id";
@@ -371,6 +377,9 @@ public class SubstanceReferenceInformation extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstanceReferenceInformationGene extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationGene";
         public static final String PROPERTY_ID = "id";
@@ -501,6 +510,9 @@ public class SubstanceReferenceInformation extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstanceReferenceInformationGeneElement extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationGeneElement";
         public static final String PROPERTY_ID = "id";
@@ -631,6 +643,9 @@ public class SubstanceReferenceInformation extends FhirResource {
         }
     }
 
+    /**
+     * Todo.
+     */
     public static class SubstanceReferenceInformationTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationTarget";
         public static final String PROPERTY_ID = "id";

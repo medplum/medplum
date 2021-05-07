@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The marketing status describes the date when a medicinal product is
+ * actually put on the market or the date as of which it is no longer
+ * available.
+ */
 public class ProdCharacteristic extends FhirResource {
     public static final String RESOURCE_TYPE = "ProdCharacteristic";
     public static final String PROPERTY_ID = "id";

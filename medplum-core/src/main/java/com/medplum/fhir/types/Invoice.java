@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Invoice containing collected ChargeItems from an Account with
+ * calculated individual and total price for Billing purpose.
+ */
 public class Invoice extends FhirResource {
     public static final String RESOURCE_TYPE = "Invoice";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -385,6 +389,10 @@ public class Invoice extends FhirResource {
         }
     }
 
+    /**
+     * Invoice containing collected ChargeItems from an Account with
+     * calculated individual and total price for Billing purpose.
+     */
     public static class InvoiceLineItem extends FhirObject {
         public static final String RESOURCE_TYPE = "InvoiceLineItem";
         public static final String PROPERTY_ID = "id";
@@ -540,6 +548,10 @@ public class Invoice extends FhirResource {
         }
     }
 
+    /**
+     * Invoice containing collected ChargeItems from an Account with
+     * calculated individual and total price for Billing purpose.
+     */
     public static class InvoiceParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "InvoiceParticipant";
         public static final String PROPERTY_ID = "id";
@@ -660,6 +672,10 @@ public class Invoice extends FhirResource {
         }
     }
 
+    /**
+     * Invoice containing collected ChargeItems from an Account with
+     * calculated individual and total price for Billing purpose.
+     */
     public static class InvoicePriceComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "InvoicePriceComponent";
         public static final String PROPERTY_ID = "id";

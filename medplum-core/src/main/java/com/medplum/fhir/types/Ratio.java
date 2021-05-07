@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A relationship of two Quantity values - expressed as a numerator and a
+ * denominator.
+ */
 public class Ratio extends FhirResource {
     public static final String RESOURCE_TYPE = "Ratio";
     public static final String PROPERTY_ID = "id";

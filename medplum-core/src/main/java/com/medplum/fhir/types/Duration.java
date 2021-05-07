@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A length of time.
+ */
 public class Duration extends FhirResource {
     public static final String RESOURCE_TYPE = "Duration";
     public static final String PROPERTY_ID = "id";

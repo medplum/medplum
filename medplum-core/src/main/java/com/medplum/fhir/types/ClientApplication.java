@@ -7,6 +7,9 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * OAuth client application
+ */
 public class ClientApplication extends FhirResource {
     public static final String RESOURCE_TYPE = "ClientApplication";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A structured set of questions and their answers. The questions are
+ * ordered and grouped into coherent subsets, corresponding to the
+ * structure of the grouping of the questionnaire being responded to.
+ */
 public class QuestionnaireResponse extends FhirResource {
     public static final String RESOURCE_TYPE = "QuestionnaireResponse";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -319,6 +324,11 @@ public class QuestionnaireResponse extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of questions and their answers. The questions are
+     * ordered and grouped into coherent subsets, corresponding to the
+     * structure of the grouping of the questionnaire being responded to.
+     */
     public static class QuestionnaireResponseAnswer extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireResponseAnswer";
         public static final String PROPERTY_ID = "id";
@@ -591,6 +601,11 @@ public class QuestionnaireResponse extends FhirResource {
         }
     }
 
+    /**
+     * A structured set of questions and their answers. The questions are
+     * ordered and grouped into coherent subsets, corresponding to the
+     * structure of the grouping of the questionnaire being responded to.
+     */
     public static class QuestionnaireResponseItem extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireResponseItem";
         public static final String PROPERTY_ID = "id";

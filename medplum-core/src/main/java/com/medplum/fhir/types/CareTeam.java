@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The Care Team includes all the people and organizations who plan to
+ * participate in the coordination and delivery of care for a patient.
+ */
 public class CareTeam extends FhirResource {
     public static final String RESOURCE_TYPE = "CareTeam";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -342,6 +346,10 @@ public class CareTeam extends FhirResource {
         }
     }
 
+    /**
+     * The Care Team includes all the people and organizations who plan to
+     * participate in the coordination and delivery of care for a patient.
+     */
     public static class CareTeamParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "CareTeamParticipant";
         public static final String PROPERTY_ID = "id";

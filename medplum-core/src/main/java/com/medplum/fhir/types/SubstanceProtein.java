@@ -9,6 +9,16 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A SubstanceProtein is defined as a single unit of a linear amino acid
+ * sequence, or a combination of subunits that are either covalently
+ * linked or have a defined invariant stoichiometric relationship. This
+ * includes all synthetic, recombinant and purified SubstanceProteins of
+ * defined sequence, whether the use is therapeutic or prophylactic. This
+ * set of elements will be used to describe albumins, coagulation
+ * factors, cytokines, growth factors, peptide/SubstanceProtein hormones,
+ * enzymes, toxins, toxoids, recombinant vaccines, and immunomodulators.
+ */
 public class SubstanceProtein extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceProtein";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -234,6 +244,16 @@ public class SubstanceProtein extends FhirResource {
         }
     }
 
+    /**
+     * A SubstanceProtein is defined as a single unit of a linear amino acid
+     * sequence, or a combination of subunits that are either covalently
+     * linked or have a defined invariant stoichiometric relationship. This
+     * includes all synthetic, recombinant and purified SubstanceProteins of
+     * defined sequence, whether the use is therapeutic or prophylactic. This
+     * set of elements will be used to describe albumins, coagulation
+     * factors, cytokines, growth factors, peptide/SubstanceProtein hormones,
+     * enzymes, toxins, toxoids, recombinant vaccines, and immunomodulators.
+     */
     public static class SubstanceProteinSubunit extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceProteinSubunit";
         public static final String PROPERTY_ID = "id";

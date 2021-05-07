@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A sample to be used for analysis.
+ */
 public class Specimen extends FhirResource {
     public static final String RESOURCE_TYPE = "Specimen";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -341,6 +344,9 @@ public class Specimen extends FhirResource {
         }
     }
 
+    /**
+     * A sample to be used for analysis.
+     */
     public static class SpecimenCollection extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenCollection";
         public static final String PROPERTY_ID = "id";
@@ -557,6 +563,9 @@ public class Specimen extends FhirResource {
         }
     }
 
+    /**
+     * A sample to be used for analysis.
+     */
     public static class SpecimenContainer extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenContainer";
         public static final String PROPERTY_ID = "id";
@@ -745,6 +754,9 @@ public class Specimen extends FhirResource {
         }
     }
 
+    /**
+     * A sample to be used for analysis.
+     */
     public static class SpecimenProcessing extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenProcessing";
         public static final String PROPERTY_ID = "id";
@@ -831,7 +843,7 @@ public class Specimen extends FhirResource {
         }
 
         /**
-         * A record of the time or period when the specimen processing occurred. 
+         * A record of the time or period when the specimen processing occurred.
          * For example the time of sample fixation or the period of time the
          * sample was in formalin.
          */
@@ -840,7 +852,7 @@ public class Specimen extends FhirResource {
         }
 
         /**
-         * A record of the time or period when the specimen processing occurred. 
+         * A record of the time or period when the specimen processing occurred.
          * For example the time of sample fixation or the period of time the
          * sample was in formalin.
          */

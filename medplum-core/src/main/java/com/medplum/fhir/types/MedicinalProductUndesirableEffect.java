@@ -7,6 +7,9 @@ package com.medplum.fhir.types;
 
 import jakarta.json.JsonObject;
 
+/**
+ * Describe the undesirable effects of the medicinal product.
+ */
 public class MedicinalProductUndesirableEffect extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductUndesirableEffect";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";

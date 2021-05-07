@@ -9,6 +9,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * An action that is or was performed on or for a patient. This can be a
+ * physical intervention like an operation, or less invasive like long
+ * term services, counseling, or hypnotherapy.
+ */
 public class Procedure extends FhirResource {
     public static final String RESOURCE_TYPE = "Procedure";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -622,6 +627,11 @@ public class Procedure extends FhirResource {
         }
     }
 
+    /**
+     * An action that is or was performed on or for a patient. This can be a
+     * physical intervention like an operation, or less invasive like long
+     * term services, counseling, or hypnotherapy.
+     */
     public static class ProcedureFocalDevice extends FhirObject {
         public static final String RESOURCE_TYPE = "ProcedureFocalDevice";
         public static final String PROPERTY_ID = "id";
@@ -739,6 +749,11 @@ public class Procedure extends FhirResource {
         }
     }
 
+    /**
+     * An action that is or was performed on or for a patient. This can be a
+     * physical intervention like an operation, or less invasive like long
+     * term services, counseling, or hypnotherapy.
+     */
     public static class ProcedurePerformer extends FhirObject {
         public static final String RESOURCE_TYPE = "ProcedurePerformer";
         public static final String PROPERTY_ID = "id";

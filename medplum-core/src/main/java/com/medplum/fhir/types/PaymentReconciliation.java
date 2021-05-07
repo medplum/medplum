@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * This resource provides the details including amount of a payment and
+ * allocates the payment items being paid.
+ */
 public class PaymentReconciliation extends FhirResource {
     public static final String RESOURCE_TYPE = "PaymentReconciliation";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -363,6 +367,10 @@ public class PaymentReconciliation extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the details including amount of a payment and
+     * allocates the payment items being paid.
+     */
     public static class PaymentReconciliationDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "PaymentReconciliationDetail";
         public static final String PROPERTY_ID = "id";
@@ -589,6 +597,10 @@ public class PaymentReconciliation extends FhirResource {
         }
     }
 
+    /**
+     * This resource provides the details including amount of a payment and
+     * allocates the payment items being paid.
+     */
     public static class PaymentReconciliationProcessNote extends FhirObject {
         public static final String RESOURCE_TYPE = "PaymentReconciliationProcessNote";
         public static final String PROPERTY_ID = "id";

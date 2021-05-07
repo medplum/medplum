@@ -1,7 +1,7 @@
 import { Bundle, Resource } from 'medplum';
 import React, { useEffect, useRef, useState } from 'react';
-import './Autocomplete.css';
 import { useMedplum } from './MedplumProvider';
+import './Autocomplete.css';
 
 interface AutocompleteResource {
   id: string,
@@ -320,13 +320,17 @@ export function Autocomplete(props: AutocompleteProps) {
       });
     }
 
-    response.entry.map(entry => {
-      resources.push({
-        id: entry.resource.id,
-        name: resourceToString(entry.resource),
-        url: '',
+    if (response.entry) {
+      response.entry.forEach(entry => {
+        if (entry.resource) {
+          resources.push({
+            id: entry.resource.id,
+            name: resourceToString(entry.resource),
+            url: '',
+          });
+        }
       });
-    });
+    }
 
     const state = stateRef.current;
     setState({
@@ -337,20 +341,23 @@ export function Autocomplete(props: AutocompleteProps) {
   }
 
   function resourceToString(resource: Resource) {
-    const names = resource.name;
-    if (names) {
-      const name = names[0];
-      const builder: string[] = [];
-      if (name.prefix) {
-        builder.push(...name.prefix);
+    if (resource.resourceType === 'Patient' ||
+      resource.resourceType === 'Practitioner') {
+      const names = resource.name;
+      if (names) {
+        const name = names[0];
+        const builder: string[] = [];
+        if (name.prefix) {
+          builder.push(...name.prefix);
+        }
+        if (name.given) {
+          builder.push(...name.given);
+        }
+        if (name.family) {
+          builder.push(name.family);
+        }
+        return builder.join(' ').trim();
       }
-      if (name.given) {
-        builder.push(...name.given);
-      }
-      if (name.family) {
-        builder.push(name.family);
-      }
-      return builder.join(' ').trim();
     }
 
     // Otherwise?

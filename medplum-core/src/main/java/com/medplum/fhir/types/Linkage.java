@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Identifies two or more records (resource instances) that refer to the
+ * same real-world &quot;occurrence&quot;.
+ */
 public class Linkage extends FhirResource {
     public static final String RESOURCE_TYPE = "Linkage";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -207,6 +211,10 @@ public class Linkage extends FhirResource {
         }
     }
 
+    /**
+     * Identifies two or more records (resource instances) that refer to the
+     * same real-world &quot;occurrence&quot;.
+     */
     public static class LinkageItem extends FhirObject {
         public static final String RESOURCE_TYPE = "LinkageItem";
         public static final String PROPERTY_ID = "id";

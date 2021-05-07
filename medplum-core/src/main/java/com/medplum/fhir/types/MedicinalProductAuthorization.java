@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * The regulatory authorization of a medicinal product.
+ */
 public class MedicinalProductAuthorization extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductAuthorization";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -380,6 +383,9 @@ public class MedicinalProductAuthorization extends FhirResource {
         }
     }
 
+    /**
+     * The regulatory authorization of a medicinal product.
+     */
     public static class MedicinalProductAuthorizationJurisdictionalAuthorization extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductAuthorizationJurisdictionalAuthorization";
         public static final String PROPERTY_ID = "id";
@@ -536,6 +542,9 @@ public class MedicinalProductAuthorization extends FhirResource {
         }
     }
 
+    /**
+     * The regulatory authorization of a medicinal product.
+     */
     public static class MedicinalProductAuthorizationProcedure extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductAuthorizationProcedure";
         public static final String PROPERTY_ID = "id";

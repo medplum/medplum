@@ -9,6 +9,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A task to be performed.
+ */
 public class Task extends FhirResource {
     public static final String RESOURCE_TYPE = "Task";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -592,6 +595,9 @@ public class Task extends FhirResource {
         }
     }
 
+    /**
+     * A task to be performed.
+     */
     public static class TaskInput extends FhirObject {
         public static final String RESOURCE_TYPE = "TaskInput";
         public static final String PROPERTY_ID = "id";
@@ -1347,6 +1353,9 @@ public class Task extends FhirResource {
         }
     }
 
+    /**
+     * A task to be performed.
+     */
     public static class TaskOutput extends FhirObject {
         public static final String RESOURCE_TYPE = "TaskOutput";
         public static final String PROPERTY_ID = "id";
@@ -2101,6 +2110,9 @@ public class Task extends FhirResource {
         }
     }
 
+    /**
+     * A task to be performed.
+     */
     public static class TaskRestriction extends FhirObject {
         public static final String RESOURCE_TYPE = "TaskRestriction";
         public static final String PROPERTY_ID = "id";

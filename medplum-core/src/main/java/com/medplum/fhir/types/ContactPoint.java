@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * Details for all kinds of technology mediated contact points for a
+ * person or organization, including telephone, email, etc.
+ */
 public class ContactPoint extends FhirResource {
     public static final String RESOURCE_TYPE = "ContactPoint";
     public static final String PROPERTY_ID = "id";

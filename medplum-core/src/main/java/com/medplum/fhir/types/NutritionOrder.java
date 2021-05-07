@@ -9,6 +9,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+/**
+ * A request to supply a diet, formula feeding (enteral) or oral
+ * nutritional supplement to a patient/resident.
+ */
 public class NutritionOrder extends FhirResource {
     public static final String RESOURCE_TYPE = "NutritionOrder";
     public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
@@ -414,6 +418,10 @@ public class NutritionOrder extends FhirResource {
         }
     }
 
+    /**
+     * A request to supply a diet, formula feeding (enteral) or oral
+     * nutritional supplement to a patient/resident.
+     */
     public static class NutritionOrderAdministration extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderAdministration";
         public static final String PROPERTY_ID = "id";
@@ -561,6 +569,10 @@ public class NutritionOrder extends FhirResource {
         }
     }
 
+    /**
+     * A request to supply a diet, formula feeding (enteral) or oral
+     * nutritional supplement to a patient/resident.
+     */
     public static class NutritionOrderEnteralFormula extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderEnteralFormula";
         public static final String PROPERTY_ID = "id";
@@ -786,6 +798,10 @@ public class NutritionOrder extends FhirResource {
         }
     }
 
+    /**
+     * A request to supply a diet, formula feeding (enteral) or oral
+     * nutritional supplement to a patient/resident.
+     */
     public static class NutritionOrderNutrient extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderNutrient";
         public static final String PROPERTY_ID = "id";
@@ -903,6 +919,10 @@ public class NutritionOrder extends FhirResource {
         }
     }
 
+    /**
+     * A request to supply a diet, formula feeding (enteral) or oral
+     * nutritional supplement to a patient/resident.
+     */
     public static class NutritionOrderOralDiet extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderOralDiet";
         public static final String PROPERTY_ID = "id";
@@ -1080,6 +1100,10 @@ public class NutritionOrder extends FhirResource {
         }
     }
 
+    /**
+     * A request to supply a diet, formula feeding (enteral) or oral
+     * nutritional supplement to a patient/resident.
+     */
     public static class NutritionOrderSupplement extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderSupplement";
         public static final String PROPERTY_ID = "id";
@@ -1241,6 +1265,10 @@ public class NutritionOrder extends FhirResource {
         }
     }
 
+    /**
+     * A request to supply a diet, formula feeding (enteral) or oral
+     * nutritional supplement to a patient/resident.
+     */
     public static class NutritionOrderTexture extends FhirObject {
         public static final String RESOURCE_TYPE = "NutritionOrderTexture";
         public static final String PROPERTY_ID = "id";
