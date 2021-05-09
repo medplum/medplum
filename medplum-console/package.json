@@ -8,7 +8,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "webpack serve --mode development",
-    "build": "cross-env NODE_ENV=production webpack --mode production",
+    "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production",
     "debug": "webpack --mode development",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

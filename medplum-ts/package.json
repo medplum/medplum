@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "rimraf lib",
     "dev": "start-storybook -p 6006",
-    "build": "tsc",
+    "build": "npm run clean && tsc",
     "test": "jest"
   },
   "devDependencies": {
