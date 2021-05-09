@@ -60974,7 +60974,7 @@
       "additionalProperties": false
     },
     "ClientApplication": {
-      "description": "OAuth client application",
+      "description": "OAuth client application.",
       "properties": {
         "resourceType": {
           "description": "This is a ClientApplication resource",
@@ -61000,7 +61000,7 @@
       ]
     },
     "User": {
-      "description": "OAuth user",
+      "description": "OAuth user.",
       "properties": {
         "resourceType": {
           "description": "This is a User resource",
@@ -61033,7 +61033,7 @@
       ]
     },
     "Login": {
-      "description": "OAuth login",
+      "description": "OAuth login.",
       "properties": {
         "resourceType": {
           "description": "This is a Login resource",
@@ -61062,7 +61062,7 @@
       }
     },
     "RefreshToken": {
-      "description": "OAuth refresh token",
+      "description": "OAuth refresh token.",
       "properties": {
         "resourceType": {
           "description": "This is a RefreshToken resource",
@@ -61087,7 +61087,7 @@
       }
     },
     "PasswordChangeRequest": {
-      "description": "Password change request for the 'forgot password' flow",
+      "description": "Password change request for the 'forgot password' flow.",
       "properties": {
         "resourceType": {
           "description": "This is a PasswordChangeRequest resource",

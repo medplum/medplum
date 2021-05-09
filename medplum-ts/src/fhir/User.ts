@@ -6,7 +6,7 @@
 import { Reference } from './Reference';
 
 /**
- * OAuth user
+ * OAuth user.
  */
 export interface User {
 

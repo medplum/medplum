@@ -4,7 +4,7 @@
  */
 
 /**
- * OAuth client application
+ * OAuth client application.
  */
 export interface ClientApplication {
 

@@ -6,7 +6,7 @@
 import { Reference } from './Reference';
 
 /**
- * OAuth login
+ * OAuth login.
  */
 export interface Login {
 

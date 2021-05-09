@@ -8,7 +8,7 @@ package com.medplum.fhir.types;
 import jakarta.json.JsonObject;
 
 /**
- * OAuth login
+ * OAuth login.
  */
 public class Login extends FhirResource {
     public static final String RESOURCE_TYPE = "Login";

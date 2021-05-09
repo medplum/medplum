@@ -6,7 +6,7 @@
 import { Reference } from './Reference';
 
 /**
- * Password change request for the 'forgot password' flow
+ * Password change request for the 'forgot password' flow.
  */
 export interface PasswordChangeRequest {
 

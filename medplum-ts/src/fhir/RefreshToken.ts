@@ -6,7 +6,7 @@
 import { Reference } from './Reference';
 
 /**
- * OAuth refresh token
+ * OAuth refresh token.
  */
 export interface RefreshToken {
 
