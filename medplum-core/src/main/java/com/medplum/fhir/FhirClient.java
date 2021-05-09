@@ -11,10 +11,12 @@ import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation.Builder;
-import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
+import com.medplum.fhir.types.Binary;
+import com.medplum.fhir.types.Bundle;
 import com.medplum.fhir.types.FhirResource;
 
 public class FhirClient {
@@ -41,57 +43,71 @@ public class FhirClient {
         this(baseUri, null);
     }
 
+    public URI getBaseUri() {
+        return baseUri;
+    }
+
+    public Response createBatch(final Bundle bundle) {
+        return post(baseUri, bundle);
+    }
+
+    public Response createBinary(final Entity<?> entity) {
+        return post(UriBuilder.fromUri(baseUri).path(Binary.RESOURCE_TYPE).build(), entity);
+    }
+
     public Response create(final FhirResource resource) {
-        return post("/" + resource.resourceType(), resource);
+        return post(UriBuilder.fromUri(baseUri).path(resource.resourceType()).build(), resource);
+    }
+
+    public Response readMetadata() {
+        return get(UriBuilder.fromUri(baseUri).path("metadata").build());
     }
 
     public Response read(final String resourceType, final String id) {
-        return get("/" + resourceType + "/" + id);
+        return get(UriBuilder.fromUri(baseUri).path(resourceType).path(id).build());
+    }
+
+    public Response readHistory(final String resourceType, final String id) {
+        return get(UriBuilder.fromUri(baseUri).path(resourceType).path(id).path("_history").build());
+    }
+
+    public Response readVersion(final String resourceType, final String id, final String versionId) {
+        return get(UriBuilder.fromUri(baseUri).path(resourceType).path(id).path("_history").path(versionId).build());
     }
 
     public Response update(final FhirResource resource) {
-        return put("/" + resource.resourceType() + "/" + resource.id(), resource);
+        return put(UriBuilder.fromUri(baseUri).path(resource.resourceType()).path(resource.id()).build(), resource);
     }
 
-    public Response get(final String uri) {
+    public Response search(final String resourceType, final String query) {
+        return get(UriBuilder.fromUri(baseUri).path(resourceType).replaceQuery(query).build());
+    }
+
+    public Response get(final URI uri) {
         return method(uri, HttpMethod.GET, null);
     }
 
-    public Response post(final String uri, final Entity<?> entity) {
+    public Response post(final URI uri, final Entity<?> entity) {
         return method(uri, HttpMethod.POST, entity);
     }
 
-    public Response post(final String uri, final JsonObject data) {
+    public Response post(final URI uri, final JsonObject data) {
         return method(uri, HttpMethod.POST, Entity.entity(data, APPLICATION_FHIR_JSON));
     }
 
-    public Response put(final String uri, final Entity<?> entity) {
+    public Response put(final URI uri, final Entity<?> entity) {
         return method(uri, HttpMethod.PUT, entity);
     }
 
-    public Response put(final String uri, final JsonObject data) {
+    public Response put(final URI uri, final JsonObject data) {
         return method(uri, HttpMethod.PUT, Entity.entity(data, APPLICATION_FHIR_JSON));
     }
 
-    private Response method(final String uri, final String method, final Entity<?> entity) {
-        final Builder builder = target(uri).request().accept(APPLICATION_FHIR_JSON);
+    private Response method(final URI uri, final String method, final Entity<?> entity) {
+        final Builder builder = client.target(uri).request().accept(APPLICATION_FHIR_JSON);
         if (bearerToken != null) {
             builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
         }
         return builder.method(method, entity);
-    }
-
-    private WebTarget target(final String str) {
-        final URI uri;
-        if (str.startsWith("http")) {
-            if (!str.startsWith(baseUri.toString())) {
-                throw new RuntimeException("Absolute URL does not begin with baseUri");
-            }
-            uri = URI.create(str);
-        } else {
-            uri = URI.create(baseUri.toString() + str);
-        }
-
-        return client.target(uri);
     }
 }

@@ -16,7 +16,7 @@ public class R4BinaryTest extends BaseTest {
 
     @Test
     public void testCreateBinary() {
-        final Response response = fhir().post("/Binary", Entity.entity("Hello world", MediaType.TEXT_PLAIN_TYPE));
+        final Response response = fhir().createBinary(Entity.entity("Hello world", MediaType.TEXT_PLAIN_TYPE));
         assertEquals(201, response.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response.getHeaderString(HttpHeaders.LOCATION));

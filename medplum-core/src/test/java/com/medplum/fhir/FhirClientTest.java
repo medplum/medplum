@@ -32,7 +32,7 @@ public class FhirClientTest {
         when(innerClient.target(any(URI.class))).thenReturn(target);
 
         final FhirClient client = new FhirClient(URI.create("http://example.com"), "token", innerClient);
-        final Response result = client.get("foo");
+        final Response result = client.get(URI.create("foo"));
         assertNotNull(result);
         assertSame(response, result);
     }

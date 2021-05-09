@@ -23,7 +23,7 @@ public class R4BatchTest extends BaseTest {
 
     @Test
     public void testCreateBatchMissingType() {
-        final Response response = fhir().post("/", Json.createObjectBuilder().add("resourceType", "Bundle").build());
+        final Response response = fhir().createBatch(Bundle.create().build());
         assertEquals(400, response.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertTrue(response.readEntity(String.class).contains("Missing bundle type"));
@@ -31,7 +31,7 @@ public class R4BatchTest extends BaseTest {
 
     @Test
     public void testCreateBatchInvalidType() {
-        final Response response = fhir().post("/", Json.createObjectBuilder().add("resourceType", "Bundle").add("type", "foo").build());
+        final Response response = fhir().createBatch(Bundle.create().type("foo").build());
         assertEquals(400, response.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertTrue(response.readEntity(String.class).contains("Unrecognized bundle type 'foo'"));
@@ -39,7 +39,7 @@ public class R4BatchTest extends BaseTest {
 
     @Test
     public void testCreateBatchMissingEntry() {
-        final Response response = fhir().post("/", Json.createObjectBuilder().add("resourceType", "Bundle").add("type", "batch").build());
+        final Response response = fhir().createBatch(Bundle.create().type("batch").build());
         assertEquals(400, response.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -50,7 +50,7 @@ public class R4BatchTest extends BaseTest {
 
     @Test
     public void testCreateBatchInvalidEntry() {
-        final Response response = fhir().post("/", Json.createObjectBuilder().add("resourceType", "Bundle").add("type", "batch").add("entry", 123).build());
+        final Response response = fhir().createBatch(Bundle.create(Json.createObjectBuilder().add("type", "batch").add("entry", 123).build()).build());
         assertEquals(400, response.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
 
@@ -61,21 +61,21 @@ public class R4BatchTest extends BaseTest {
 
     @Test
     public void testCreateEmptyBatch() {
-        final Response response = fhir().post("/", Bundle.create().type("batch").entry(Collections.emptyList()).build());
+        final Response response = fhir().createBatch(Bundle.create().type("batch").entry(Collections.emptyList()).build());
         assertEquals(200, response.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testCreateEmptyTransaction() {
-        final Response response = fhir().post("/", Bundle.create().type("transaction").entry(Collections.emptyList()).build());
+        final Response response = fhir().createBatch(Bundle.create().type("transaction").entry(Collections.emptyList()).build());
         assertEquals(200, response.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 
     @Test
     public void testCreateBatch() {
-        final Response response = fhir().post("/", Bundle.create()
+        final Response response = fhir().createBatch(Bundle.create()
                 .type("batch")
                 .entry(Collections.singletonList(BundleEntry.create()
                         .resource(Json.createObjectBuilder().add("resourceType", "Patient").build())
@@ -87,7 +87,7 @@ public class R4BatchTest extends BaseTest {
 
     @Test
     public void testCreateTransaction() {
-        final Response response = fhir().post("/", Bundle.create()
+        final Response response = fhir().createBatch(Bundle.create()
                 .type("transaction")
                 .entry(Collections.singletonList(BundleEntry.create()
                         .resource(Json.createObjectBuilder().add("resourceType", "Patient").build())
@@ -101,7 +101,7 @@ public class R4BatchTest extends BaseTest {
     public void testCreateTransactionWithReferences() {
         final String id = generateId();
         final URI fullUrl = URI.create("urn:uuid:" + id);
-        final Response response = fhir().post("/", Bundle.create()
+        final Response response = fhir().createBatch(Bundle.create()
                 .type("transaction")
                 .entry(Collections.singletonList(BundleEntry.create()
                         .fullUrl(fullUrl)
