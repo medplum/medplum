@@ -1,5 +1,6 @@
 import { Resource, schema } from 'medplum';
 import React, { useEffect, useState } from 'react';
+import { Button } from './Button';
 import { FormSection } from './FormSection';
 import { useMedplum } from './MedplumProvider';
 import { ResourceField } from './ResourceField';
@@ -42,13 +43,7 @@ export function ResourceForm(props: any) {
           </FormSection>
         );
       })}
-      <hr />
-      <input
-        type="submit"
-        className="btn btn-large btn-primary"
-        value="OK"
-        readOnly={true}
-      />
+      <Button type="submit" size="large">OK</Button>
     </form>
   );
 }

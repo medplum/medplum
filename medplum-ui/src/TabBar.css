@@ -1,4 +1,5 @@
 .medplum-tabbar {
+  background-color: var(--medplum-surface);
   position: relative;
   min-height: 50px;
 }

@@ -1,13 +1,14 @@
 header {
   min-height: 50px;
   line-height: 24px;
-  margin: 0 0 8px 0;
+  margin: 0 0 2px 0;
   padding: 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 2px 0 rgba(64, 64, 64, 0.25);
-  color: #444;
+  background-color: var(--medplum-surface);
+  box-shadow: 0 1px 2px 0 var(--medplum-gray-200);
+  color: var(--medplum-gray-800);
 }
 
 header div {
@@ -24,7 +25,7 @@ header svg {
 header a {
   text-decoration: none;
   padding: 0 8px 0 4px;
-  color: #444;
+  color: var(--medplum-gray-800);
   font-weight: bold;
 }
 

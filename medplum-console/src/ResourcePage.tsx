@@ -8,6 +8,15 @@ export function ResourcePage() {
   const { resourceType, id, tab } = useParams() as any;
   return (
     <>
+      <div style={{
+        backgroundColor: 'white',
+        borderBottom: '2px solid #eee',
+        color: '#444',
+        fontWeight: 'bold',
+        padding: '15px 30px',
+      }}>
+        {resourceType} {id}
+      </div>
       <TabBar
         value={tab || 'details'}
         onChange={(name: string) => history.push(`/${resourceType}/${id}/${name}`)}>

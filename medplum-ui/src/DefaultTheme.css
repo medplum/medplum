@@ -1,7 +1,7 @@
 :root {
-  --medplum-background: #FFFFFF;
+  --medplum-background: #FAFAFA;
   --medplum-surface: #FFFFFF;
-  --medplum-foreground: #000000;
+  --medplum-foreground: #424242;
   --medplum-navbar: #292961;
   --medplum-navbar-textbox: #4b4b7e;
   --medplum-navbar-hover: #5d5d85;

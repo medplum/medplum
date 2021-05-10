@@ -15,6 +15,7 @@ body {
   margin: 0 0 40px 0;
   font-size: var(--medplum-font-normal);
   font-style: normal;
+  color: var(--medplum-foreground);
   background: var(--medplum-background);
 }
 
@@ -59,12 +60,6 @@ svg {
 .medplum-collapse {
   visibility: collapse;
   width: 0px;
-}
-
-@media (max-width: 700px) {
-  .search-query {
-    width: 100px !important;
-  }
 }
 
 .muted {

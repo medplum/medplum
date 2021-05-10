@@ -14,17 +14,19 @@ export default {
 export const Basic = (args: TabBarProps) => {
   const [value, setValue] = useState('item1');
   return (
-    <Document>
+    <>
       <TabBar value={value} onChange={setValue}>
         <Tab name="item1" label="Item 1" />
         <Tab name="item2" label="Item 2" />
         <Tab name="item3" label="Item 3" />
       </TabBar>
-      <TabSwitch value={value}>
-        <TabPanel name="item1">This is item #1!</TabPanel>
-        <TabPanel name="item2"><strong>Panel number two</strong></TabPanel>
-        <TabPanel name="item3">Three</TabPanel>
-      </TabSwitch>
-    </Document>
+      <Document>
+        <TabSwitch value={value}>
+          <TabPanel name="item1">This is item #1!</TabPanel>
+          <TabPanel name="item2"><strong>Panel number two</strong></TabPanel>
+          <TabPanel name="item3">Three</TabPanel>
+        </TabSwitch>
+      </Document>
+    </>
   );
 };

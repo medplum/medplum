@@ -5,9 +5,10 @@ input[type=tel],
 input[type=text],
 input[type=datetime-local],
 select {
-  border: 1px solid var(--medplum-gray-400);
+  border: 1px solid var(--medplum-gray-300);
   border-radius: 3px;
   background: var(--medplum-surface);
+  box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
   outline: 2px var(--medplum-surface);
   color: var(--medplum-gray-800);
   line-height: 28px;
@@ -50,10 +51,10 @@ select:disabled {
 select {
   padding: 4px 8px;
   margin: 1px;
-  border: 1px solid var(--medplum-gray-400);
+  line-height: 28px;
   border-radius: 3px;
 }
 
 select:not([size]) {
-  height: 28px;
+  height: 32px;
 }

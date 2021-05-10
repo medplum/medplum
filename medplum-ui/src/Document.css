@@ -1,5 +1,5 @@
 main {
-  margin: 32px auto 6px auto;
+  margin: 20px auto 6px auto;
   padding: 10px;
   clear: both;
   text-align: center;
@@ -10,8 +10,10 @@ article {
   position: relative;
   max-width: 900px;
   margin: auto;
-  padding: 20px 10px;
+  padding: 20px;
   text-align: left;
+  border: 1px solid var(--medplum-gray-200);
+  border-radius: 8px;
 }
 
 article h1, article h2, article h3 {
@@ -21,4 +23,15 @@ article h1, article h2, article h3 {
 article p, article li {
   line-height: 175%;
   margin: 8px 0 16px 0;
+}
+
+@media (max-width: 700px) {
+  main {
+    margin: 10px auto 6px auto;
+    padding: 6px;
+  }
+
+  article {
+    padding: 6px 12px;
+  }
 }

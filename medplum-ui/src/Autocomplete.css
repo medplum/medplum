@@ -23,6 +23,7 @@
   list-style-type: none;
   overflow: auto;
   cursor: text;
+  height: 32px;
 }
 
 .medplum-autocomplete-container>ul>li {
@@ -32,13 +33,14 @@
   display: inline;
   list-style: none;
   white-space: nowrap;
-  line-height: 24px;
+  line-height: 28px;
 }
 
 .medplum-autocomplete-container>ul>li.choice {
   position: relative;
-  padding: 1px 6px;
-  margin: 1px 0 1px 4px;
+  top: 1px;
+  left: 4px;
+  padding: 2px 6px;
   border: 1px solid var(--medplum-orange-200);
   border-radius: 4px;
   background-color: var(--medplum-gray-50);

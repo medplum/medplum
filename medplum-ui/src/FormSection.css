@@ -13,6 +13,10 @@ fieldset.bordered {
   padding: 2px 8px 8px 8px;
 }
 
+fieldset legend {
+  margin: 2px 0 4px 0;
+}
+
 fieldset small {
   display: block;
   margin: 2px 0 4px 0;
