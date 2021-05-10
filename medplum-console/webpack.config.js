@@ -52,5 +52,15 @@ module.exports = (env, argv) => ({
     usedExports: true,
     innerGraph: true,
     sideEffects: true,
+    runtimeChunk: 'single',
+    splitChunks: {
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+        },
+      },
+    },
   }
 });
