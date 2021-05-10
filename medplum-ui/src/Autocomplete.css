@@ -6,8 +6,8 @@
   position: relative;
   margin: 0;
   cursor: text;
-  height: 28px;
-  line-height: 24px;
+  height: 32px;
+  line-height: 28px;
 }
 
 .medplum-autocomplete-container.focused {
@@ -43,7 +43,6 @@
   border-radius: 4px;
   background-color: var(--medplum-gray-50);
   cursor: move;
-  font-size: 13px;
 }
 
 .medplum-autocomplete-container>ul>li.unstructured {
@@ -53,8 +52,8 @@
 .medplum-autocomplete-container>ul>li>input {
   display: inline-block;
   width: 80px;
-  line-height: 24px;
-  padding: 0 2px;
+  line-height: 28px;
+  padding: 0 0 0 6px;
   margin: 0 2px;
   outline: none;
   border: none;

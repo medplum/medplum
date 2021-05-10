@@ -1,13 +1,41 @@
-import { Document, ResourceForm } from 'medplum-ui';
+import { Document, ResourceForm, Tab, TabBar, TabPanel, TabSwitch } from 'medplum-ui';
 import React from 'react';
 import { useParams } from 'react-router-dom';
+import { history } from './history';
 import './ResourcePage.css';
 
 export function ResourcePage() {
-  const { resourceType, id } = useParams() as any;
+  const { resourceType, id, tab } = useParams() as any;
   return (
-    <Document>
-      <ResourceForm resourceType={resourceType} id={id} />
-    </Document>
+    <>
+      <TabBar
+        value={tab || 'details'}
+        onChange={(name: string) => history.push(`/${resourceType}/${id}/${name}`)}>
+        <Tab name="details" label="Details" />
+        <Tab name="raw" label="Raw" />
+        <Tab name="history" label="History" />
+        <Tab name="blame" label="Blame" />
+        <Tab name="edit" label="Edit" />
+      </TabBar>
+      <Document>
+        <TabSwitch value={tab || 'details'}>
+          <TabPanel name="details">
+            <ResourceForm resourceType={resourceType} id={id} />
+          </TabPanel>
+          <TabPanel name="raw">
+            <div>Raw</div>
+          </TabPanel>
+          <TabPanel name="history">
+            <div>History</div>
+          </TabPanel>
+          <TabPanel name="blame">
+            <div>Blame</div>
+          </TabPanel>
+          <TabPanel name="edit">
+            <div>Edit</div>
+          </TabPanel>
+        </TabSwitch>
+      </Document>
+    </>
   );
 }

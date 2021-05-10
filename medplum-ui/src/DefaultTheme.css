@@ -6,6 +6,10 @@
   --medplum-navbar-textbox: #4b4b7e;
   --medplum-navbar-hover: #5d5d85;
   --medplum-shadow: rgba(0, 0, 0, 0.2);
+  /* font sizes */
+  --medplum-font-small: 12px;
+  --medplum-font-normal: 14px;
+  --medplum-font-big: 18px;
   /* gray */
   --medplum-gray-50: #FAFAFA;
   --medplum-gray-100: #F5F5F5;

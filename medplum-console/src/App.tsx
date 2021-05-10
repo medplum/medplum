@@ -36,7 +36,7 @@ export default function App() {
           <Route exact path="/test"><TestPage /></Route>
           <Route exact path="/signin"><SignInPage /></Route>
           <Route exact path="/profile"><ProfilePage /></Route>
-          <Route exact path="/:resourceType/:id"><ResourcePage /></Route>
+          <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
         </Switch>
       </Router>
     </MedplumProvider>

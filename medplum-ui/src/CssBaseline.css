@@ -13,7 +13,7 @@ html {
 
 body {
   margin: 0 0 40px 0;
-  font-size: 16px;
+  font-size: var(--medplum-font-normal);
   font-style: normal;
   background: var(--medplum-background);
 }

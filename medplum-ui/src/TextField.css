@@ -10,8 +10,8 @@ select {
   background: var(--medplum-surface);
   outline: 2px var(--medplum-surface);
   color: var(--medplum-gray-800);
-  line-height: 24px;
-  font-size: 13px;
+  line-height: 28px;
+  font-size: var(--medplum-font-normal);
 }
 
 input[type=email],

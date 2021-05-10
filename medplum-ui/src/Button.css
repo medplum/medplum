@@ -3,7 +3,7 @@
   border-radius: 3px;
   background: var(--medplum-gray-50);
   outline: none;
-  font-size: 14px;
+  font-size: var(--medplum-font-normal);
   line-height: 24px;
   color: var(--medplum-gray-800);
   margin: 1px 2px;
@@ -24,13 +24,13 @@
 }
 
 .btn.btn-large {
-  font-size: 16px;
+  font-size: var(--medplum-font-big);
   line-height: 32px;
   padding: 4px 32px;
 }
 
 .btn.btn-small {
-  font-size: 12px;
+  font-size: var(--medplum-font-small);
   line-height: 24px;
   padding: 1px 6px;
 }

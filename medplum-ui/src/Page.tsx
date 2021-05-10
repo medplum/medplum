@@ -1,7 +1,6 @@
 import React from 'react';
 import { Document } from './Document';
 import { Header } from './Header';
-import './Page.css';
 
 export interface PageProps {
   onSignIn: () => void;
