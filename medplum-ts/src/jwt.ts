@@ -19,7 +19,7 @@ function decodePayload(payload: string) {
  * @param token JWT token
  */
 export function parseJWTPayload(token: string) {
-  const [header, payload, signature] = token.split('.');
+  const [_header, payload, _signature] = token.split('.');
   const jsonPayload = decodePayload(payload);
   return jsonPayload;
 }

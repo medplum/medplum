@@ -23,11 +23,9 @@ export function arrayBufferToHex(arrayBuffer: ArrayBuffer) {
 
 export function arrayBufferToBase64(arrayBuffer: ArrayBuffer) {
   const bytes = new Uint8Array(arrayBuffer);
-  const result: string[] = new Array()
+  const result: string[] = [];
   for (let i = 0; i < bytes.length; i++) {
       result[i] = String.fromCharCode(bytes[i]);
   }
   return window.btoa(result.join(''));
-
-  // return bytes.reduce((acc, i) => `${acc}${String.fromCharCode(i)}`, '')
 }

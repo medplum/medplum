@@ -1,7 +1,6 @@
 import { encryptSHA256, getRandomString } from './crypto';
-
-const nodeCrypto = require('crypto');
-const { TextEncoder } = require('util');
+import * as nodeCrypto from 'crypto';
+import { TextEncoder } from 'util';
 
 global.crypto = {
   subtle: {

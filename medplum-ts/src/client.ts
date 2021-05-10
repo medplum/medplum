@@ -197,7 +197,7 @@ export class MedplumClient extends EventTarget {
     if (!this.logoutUrl) {
       throw new Error('Missing logout URL');
     }
-    this.requestAuthorization(this.logoutUrl);
+    window.location.href = this.logoutUrl;
   }
 
   search(search: SearchDefinition): Promise<Bundle> {
@@ -358,9 +358,8 @@ export class MedplumClient extends EventTarget {
    * Redirects the user to the login screen for authorization.
    * Clears all auth state including local storage and session storage.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
-   * @param baseUrl Optional base URL.  Uses authorize URL by default.
    */
-  private async requestAuthorization(baseUrl?: string) {
+  private async requestAuthorization() {
     if (!this.authorizeUrl) {
       throw new Error('Missing authorize URL');
     }
