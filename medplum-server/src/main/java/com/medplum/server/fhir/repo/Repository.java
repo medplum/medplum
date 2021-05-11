@@ -1,8 +1,9 @@
 package com.medplum.server.fhir.repo;
 
-import jakarta.json.JsonObject;
 import jakarta.json.JsonPatch;
 
+import com.medplum.fhir.types.Bundle;
+import com.medplum.fhir.types.FhirResource;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.fhir.types.Reference;
 import com.medplum.server.search.SearchRequest;
@@ -17,7 +18,7 @@ public interface Repository {
      * @param data Initializer data.
      * @return Operation outcome.
      */
-    OperationOutcome create(SecurityUser user, JsonObject data);
+    OperationOutcome create(SecurityUser user, FhirResource data);
 
     /**
      * Returns a resource by ID.
@@ -63,7 +64,7 @@ public interface Repository {
      * @param data Updated data.
      * @return Operation outcome.
      */
-    OperationOutcome update(SecurityUser user, String id, JsonObject data);
+    OperationOutcome update(SecurityUser user, String id, FhirResource data);
 
     /**
      * Deletes a resource by ID.
@@ -89,7 +90,7 @@ public interface Repository {
      * @param bundle The FHIR bundle data.
      * @return Operation outcome.
      */
-    OperationOutcome createBatch(SecurityUser user, JsonObject bundle);
+    OperationOutcome createBatch(SecurityUser user, Bundle bundle);
 
     /**
      * Processes a FHIR message bundle.
@@ -98,7 +99,7 @@ public interface Repository {
      * @param bundle The FHIR bundle data.
      * @return Operation outcome.
      */
-    OperationOutcome processMessage(SecurityUser user, JsonObject bundle);
+    OperationOutcome processMessage(SecurityUser user, Bundle bundle);
 
     /**
      * Updates a resource by patch edit operations.

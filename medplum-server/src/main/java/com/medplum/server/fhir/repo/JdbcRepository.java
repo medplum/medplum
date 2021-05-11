@@ -13,6 +13,7 @@ import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import jakarta.inject.Inject;
@@ -48,6 +49,7 @@ import com.medplum.server.sql.InsertQuery;
 import com.medplum.server.sql.Parameter;
 import com.medplum.server.sql.SqlBuilder;
 import com.medplum.server.sql.UpdateQuery;
+import com.medplum.server.sse.SseService;
 
 public class JdbcRepository implements Repository, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(JdbcRepository.class);
@@ -61,10 +63,12 @@ public class JdbcRepository implements Repository, Closeable {
     private static final String COLUMN_TYPE_VARCHAR128 = "VARCHAR(128)";
     private static final String PRIMARY_KEY = " PRIMARY KEY";
     private final Connection conn;
+    private final SseService sseService;
 
     @Inject
-    public JdbcRepository(final Connection conn) {
-        this.conn = conn;
+    public JdbcRepository(final Connection conn, final SseService sseService) {
+        this.conn = Objects.requireNonNull(conn);
+        this.sseService = Objects.requireNonNull(sseService);
     }
 
     public void createTables() {
@@ -101,7 +105,7 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     @Override
-    public OperationOutcome create(final SecurityUser user, final JsonObject data) {
+    public OperationOutcome create(final SecurityUser user, final FhirResource data) {
         final OperationOutcome validateOutcome = FhirSchema.validate(data);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
@@ -262,7 +266,7 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     @Override
-    public OperationOutcome update(final SecurityUser user, final String id, final JsonObject data) {
+    public OperationOutcome update(final SecurityUser user, final String id, final FhirResource data) {
         final OperationOutcome validateOutcome = FhirSchema.validate(data);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
@@ -304,7 +308,7 @@ public class JdbcRepository implements Repository, Closeable {
         builder.add("id", id);
         builder.add("meta", metaBuilder.build());
 
-        final JsonObject resource = builder.build();
+        final FhirResource resource = new FhirResource(builder.build());
         return existing == null ?
                 createImpl(resourceType, uuid, versionId, lastUpdated, resource) :
                 updateImpl(resourceType, uuid, versionId, lastUpdated, resource);
@@ -315,7 +319,7 @@ public class JdbcRepository implements Repository, Closeable {
             final UUID id,
             final UUID versionId,
             final Instant lastUpdated,
-            final JsonObject resource) {
+            final FhirResource resource) {
 
         final InsertQuery.Builder builder = new InsertQuery.Builder(getTableName(resourceType))
                 .value(COLUMN_ID, id, Types.BINARY)
@@ -329,6 +333,7 @@ public class JdbcRepository implements Repository, Closeable {
         try {
             executeInsert(builder.build());
             writeVersion(resourceType, id, versionId, lastUpdated, resource);
+            sseService.handleUp(resource);
             return StandardOutcomes.created(resource);
 
         } catch (final SQLException ex) {
@@ -342,7 +347,7 @@ public class JdbcRepository implements Repository, Closeable {
             final UUID id,
             final UUID versionId,
             final Instant lastUpdated,
-            final JsonObject resource) {
+            final FhirResource resource) {
 
         final UpdateQuery.Builder builder = new UpdateQuery.Builder(getTableName(resourceType))
                 .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
@@ -357,6 +362,7 @@ public class JdbcRepository implements Repository, Closeable {
         try {
             executeUpdate(builder.build());
             writeVersion(resourceType, id, versionId, lastUpdated, resource);
+            sseService.handleUp(resource);
             return StandardOutcomes.ok(resource);
 
         } catch (final SQLException ex) {
@@ -464,12 +470,12 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     @Override
-    public OperationOutcome createBatch(final SecurityUser user, final JsonObject data) {
+    public OperationOutcome createBatch(final SecurityUser user, final Bundle data) {
         return new BatchExecutor(this).createBatch(user, data);
     }
 
     @Override
-    public OperationOutcome processMessage(final SecurityUser user, final JsonObject bundle) {
+    public OperationOutcome processMessage(final SecurityUser user, final Bundle bundle) {
         throw new UnsupportedOperationException();
     }
 

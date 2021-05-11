@@ -21,6 +21,7 @@ import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.medplum.fhir.FhirObjectReader;
 import com.medplum.server.fhir.repo.BinaryStorage;
 import com.medplum.server.fhir.repo.FileSystemBinaryStorage;
 import com.medplum.server.fhir.repo.JdbcRepository;
@@ -30,6 +31,8 @@ import com.medplum.server.security.JwkManager;
 import com.medplum.server.security.OAuthService;
 import com.medplum.server.services.DebugEmailService;
 import com.medplum.server.services.EmailService;
+import com.medplum.server.sse.LocalSseTransport;
+import com.medplum.server.sse.SseService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -38,6 +41,7 @@ import com.zaxxer.hikari.HikariDataSource;
  */
 public class App extends ResourceConfig {
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
+    private final SseService sseService;
     private final DataSource dataSource;
     private final JsonWebKeySet jwks;
     private final JwksVerificationKeyResolver keyResolver;
@@ -59,9 +63,12 @@ public class App extends ResourceConfig {
         register(MustacheMvcFeature.class);
         register(JsonProcessingFeature.class);
         register(JsonBindingFeature.class);
+        register(FhirObjectReader.class);
 
         // Pass all config properties to Jersey
         addProperties(properties);
+
+        sseService = new SseService(new LocalSseTransport());
 
         // Init Hikari and the JDBC DataSource
         dataSource = initDataSource(properties);
@@ -78,6 +85,7 @@ public class App extends ResourceConfig {
         register(new AbstractBinder() {
             @Override
             protected void configure() {
+                bind(sseService).to(SseService.class);
                 bind(dataSource).to(DataSource.class);
                 bind(jwks).to(JsonWebKeySet.class);
                 bind(keyResolver).to(VerificationKeyResolver.class);
@@ -117,7 +125,7 @@ public class App extends ResourceConfig {
 
     JdbcRepository getRepo() {
         try {
-            return new JdbcRepository(dataSource.getConnection());
+            return new JdbcRepository(dataSource.getConnection(), sseService);
         } catch (final SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
         }

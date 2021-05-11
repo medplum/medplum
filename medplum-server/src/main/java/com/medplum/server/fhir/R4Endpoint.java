@@ -1,7 +1,6 @@
 package com.medplum.server.fhir;
 
 import jakarta.inject.Inject;
-import jakarta.json.JsonObject;
 import jakarta.json.JsonPatch;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -17,6 +16,8 @@ import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.core.UriInfo;
 
 import com.medplum.fhir.FhirMediaType;
+import com.medplum.fhir.types.Bundle;
+import com.medplum.fhir.types.FhirResource;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.server.fhir.repo.Repository;
 import com.medplum.server.search.SearchRequestParser;
@@ -46,14 +47,14 @@ public class R4Endpoint {
 
     @POST
     @Consumes(FhirMediaType.APPLICATION_FHIR_JSON)
-    public OperationOutcome createBatch(final JsonObject data) {
+    public OperationOutcome createBatch(final Bundle data) {
         return repo.createBatch(getUser(), data);
     }
 
     @POST
     @Path("/{resourceType}")
     @Consumes(FhirMediaType.APPLICATION_FHIR_JSON)
-    public OperationOutcome create(final JsonObject data) {
+    public OperationOutcome create(final FhirResource data) {
         return repo.create(getUser(), data);
     }
 
@@ -84,7 +85,7 @@ public class R4Endpoint {
     @PUT
     @Path("/{resourceType}/{id}")
     @Consumes(FhirMediaType.APPLICATION_FHIR_JSON)
-    public OperationOutcome update(final JsonObject data) {
+    public OperationOutcome update(final FhirResource data) {
         return repo.update(getUser(), id, data);
     }
 

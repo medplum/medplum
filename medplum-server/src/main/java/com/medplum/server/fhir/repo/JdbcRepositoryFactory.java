@@ -9,6 +9,8 @@ import jakarta.inject.Inject;
 import org.glassfish.hk2.api.Factory;
 import org.glassfish.jersey.server.CloseableService;
 
+import com.medplum.server.sse.SseService;
+
 /**
  * JdbcRepositoryFactory creates JdbcRepository instances.
  * There should be one instance per request.
@@ -17,18 +19,23 @@ import org.glassfish.jersey.server.CloseableService;
  */
 public class JdbcRepositoryFactory implements Factory<JdbcRepository> {
     private final DataSource dataSource;
+    private final SseService sseService;
     private final CloseableService closeableService;
 
     @Inject
-    public JdbcRepositoryFactory(final DataSource dataSource, final CloseableService closeableService) {
+    public JdbcRepositoryFactory(
+            final DataSource dataSource,
+            final SseService sseService,
+            final CloseableService closeableService) {
         this.dataSource = dataSource;
+        this.sseService = sseService;
         this.closeableService = closeableService;
     }
 
     @Override
     public JdbcRepository provide() {
         try {
-            final JdbcRepository repo = new JdbcRepository(dataSource.getConnection());
+            final JdbcRepository repo = new JdbcRepository(dataSource.getConnection(), sseService);
             closeableService.add(repo);
             return repo;
         } catch (final SQLException e) {

@@ -89,6 +89,11 @@
             <artifactId>jersey-media-json-processing</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-sse</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.glassfish.jersey.test-framework</groupId>
             <artifactId>jersey-test-framework-core</artifactId>
             <scope>test</scope>
