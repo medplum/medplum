@@ -1,9 +1,7 @@
 package com.medplum.server.search;
 
-import java.util.List;
-import java.util.Map.Entry;
-
-import jakarta.ws.rs.core.MultivaluedMap;
+import java.net.URI;
+import java.util.Objects;
 
 import com.medplum.fhir.types.SearchParameter;
 
@@ -15,29 +13,49 @@ public class SearchRequestParser {
     private final String resourceType;
     private final SearchRequest.Builder builder;
 
-    public static SearchRequest parse(final String resourceType, final MultivaluedMap<String, String> params) {
+    public static SearchRequest parse(final String uri) {
+        return parse(URI.create(uri));
+    }
+
+    public static SearchRequest parse(final URI uri) {
+        if (uri == null) {
+            throw new NullPointerException("URI is null");
+        }
+
+        final String path = uri.getPath();
+        if (path == null || path.isBlank()) {
+            throw new IllegalArgumentException("Path is missing");
+        }
+
+        final String[] pathComponents = path.split("/");
+        final String resourceType = pathComponents[pathComponents.length - 1];
+        if (resourceType == null || resourceType.isBlank()) {
+            throw new IllegalArgumentException("Resource type is missing");
+        }
+
         final SearchRequestParser parser = new SearchRequestParser(resourceType);
-        for (final Entry<String, List<String>> entry : params.entrySet()) {
-            final String key = entry.getKey();
-            for (final String value : entry.getValue()) {
-                parser.parseKeyValue(key, value);
+
+        final String query = uri.getQuery();
+        if (query != null && !query.isBlank()) {
+            for (final String pair : query.split("&")) {
+                final int equalsIndex = pair.indexOf('=');
+                if (equalsIndex < 0) {
+                    parser.parseKeyValue(pair, "");
+                } else {
+                    parser.parseKeyValue(pair.substring(0, equalsIndex), pair.substring(equalsIndex + 1));
+                }
             }
         }
+
         return parser.build();
     }
 
-    public static SearchRequest parse(final String resourceType, final String key, final String value) {
-        final SearchRequestParser parser = new SearchRequestParser(resourceType);
-        parser.parseKeyValue(key, value);
-        return parser.build();
-    }
-
-    private SearchRequestParser(final String resourceType) {
-        this.resourceType = resourceType;
+    public SearchRequestParser(final String resourceType) {
+        this.resourceType = Objects.requireNonNull(resourceType);
         this.builder = SearchRequest.create(resourceType);
     }
 
-    private void parseKeyValue(final String key, final String value) {
+    public void parseKeyValue(final String key, final String value) {
         switch (key) {
         case "_id":
         case "id":
@@ -171,7 +189,7 @@ public class SearchRequestParser {
 
     }
 
-    private SearchRequest build() {
+    public SearchRequest build() {
         return builder.build();
     }
 }

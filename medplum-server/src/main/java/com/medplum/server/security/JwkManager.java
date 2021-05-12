@@ -22,14 +22,17 @@ import com.medplum.fhir.types.Bundle.BundleEntry;
 import com.medplum.fhir.types.JsonWebKey;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.server.fhir.repo.Repository;
+import com.medplum.server.search.Operation;
 import com.medplum.server.search.SearchRequest;
-import com.medplum.server.search.SearchRequestParser;
 
 public class JwkManager {
     private static final Logger LOG = LoggerFactory.getLogger(JwkManager.class);
 
     public static JsonWebKeySet initKeys(final Repository repo) throws JoseException {
-        final SearchRequest searchRequest = SearchRequestParser.parse(JsonWebKey.RESOURCE_TYPE, "active", "true");
+        final SearchRequest searchRequest = SearchRequest.create(JsonWebKey.RESOURCE_TYPE)
+                .filter("active", Operation.EQUALS, "true")
+                .build();
+
         final OperationOutcome searchOutcome = repo.search(SecurityUser.SYSTEM_USER, searchRequest);
         if (!searchOutcome.isOk()) {
             throw new IllegalStateException("Error reading keys: " + searchOutcome.issue().get(0).details().text());

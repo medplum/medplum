@@ -21,14 +21,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonPatch;
-import jakarta.json.JsonString;
-import jakarta.json.JsonValue;
-import jakarta.json.JsonValue.ValueType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.FhirPath;
 import com.medplum.fhir.FhirSchema;
 import com.medplum.fhir.JsonUtils;
 import com.medplum.fhir.StandardOutcomes;
@@ -41,6 +37,7 @@ import com.medplum.fhir.types.SearchParameter;
 import com.medplum.server.search.Filter;
 import com.medplum.server.search.SearchParameters;
 import com.medplum.server.search.SearchRequest;
+import com.medplum.server.search.SearchUtils;
 import com.medplum.server.search.SortRule;
 import com.medplum.server.security.SecurityUser;
 import com.medplum.server.sql.CreateTableQuery;
@@ -327,7 +324,7 @@ public class JdbcRepository implements Repository, Closeable {
                 .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
         for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
-            builder.value(getColumnName(param.code()), evalAsString(param.expression(), resource), Types.VARCHAR);
+            builder.value(getColumnName(param.code()), getColumnValue(param.expression(), resource), Types.VARCHAR);
         }
 
         try {
@@ -354,7 +351,7 @@ public class JdbcRepository implements Repository, Closeable {
                 .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
         for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
-            builder.value(getColumnName(param.code()), evalAsString(param.expression(), resource), Types.VARCHAR);
+            builder.value(getColumnName(param.code()), getColumnValue(param.expression(), resource), Types.VARCHAR);
         }
 
         builder.condition(COLUMN_ID, id, Types.BINARY);
@@ -516,24 +513,15 @@ public class JdbcRepository implements Repository, Closeable {
         return searchParam.replaceAll("-", "").toUpperCase();
     }
 
-    private static String evalAsString(final String expression, final JsonObject obj) {
-        final JsonValue value = new FhirPath(expression).evalFirst(obj);
-        if (value == null || value.getValueType() == ValueType.NULL) {
+    private static String getColumnValue(final String expression, final JsonObject obj) {
+        final String result = SearchUtils.evalAsString(expression, obj);
+        if (result == null) {
             return null;
         }
-
-        final String result;
-        switch (value.getValueType()) {
-        case STRING:
-            result = ((JsonString) value).getString();
-            break;
-
-        default:
-            result = value.toString();
-            break;
+        if (result.length() > 127) {
+            return result.substring(0, 127);
         }
-
-        return result.length() > 127 ? result.substring(0, 127) : result;
+        return result;
     }
 
     private void executeCreateTable(final CreateTableQuery createTableQuery) throws SQLException {

@@ -35,8 +35,8 @@ import com.medplum.fhir.types.RefreshToken;
 import com.medplum.fhir.types.User;
 import com.medplum.server.ConfigSettings;
 import com.medplum.server.fhir.repo.Repository;
+import com.medplum.server.search.Operation;
 import com.medplum.server.search.SearchRequest;
-import com.medplum.server.search.SearchRequestParser;
 
 public class OAuthService {
     private static final Logger LOG = LoggerFactory.getLogger(OAuthService.class);
@@ -92,8 +92,9 @@ public class OAuthService {
      * @return
      */
     public OperationOutcome getUserByEmail(final String email) {
-        final SearchRequest searchRequest = SearchRequestParser.parse(User.RESOURCE_TYPE, User.PROPERTY_EMAIL, email);
-        return repo.search(SecurityUser.SYSTEM_USER, searchRequest);
+        return repo.search(SecurityUser.SYSTEM_USER, SearchRequest.create(User.RESOURCE_TYPE)
+                .filter("email", Operation.EQUALS, email)
+                .build());
     }
 
     /**

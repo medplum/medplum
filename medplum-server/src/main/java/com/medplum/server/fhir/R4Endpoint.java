@@ -61,7 +61,7 @@ public class R4Endpoint {
     @GET
     @Path("/{resourceType}")
     public OperationOutcome search() {
-        return repo.search(getUser(), SearchRequestParser.parse(resourceType, uriInfo.getQueryParameters()));
+        return repo.search(getUser(), SearchRequestParser.parse(uriInfo.getRequestUri()));
     }
 
     @GET

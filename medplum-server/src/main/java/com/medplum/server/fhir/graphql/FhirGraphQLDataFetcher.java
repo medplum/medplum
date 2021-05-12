@@ -12,8 +12,6 @@ import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
 
 import com.medplum.fhir.types.Bundle;
 import com.medplum.fhir.types.Bundle.BundleEntry;
@@ -79,7 +77,7 @@ public class FhirGraphQLDataFetcher<T> implements DataFetcher<T> {
         final String fieldName = field.getName();
         final String resourceType = fieldName.endsWith("List") ? fieldName.substring(0, fieldName.length() - 4) : fieldName;
         final List<Argument> arguments = field.getArguments();
-        final MultivaluedMap<String, String> result = new MultivaluedHashMap<>();
+        final SearchRequestParser parser = new SearchRequestParser(resourceType);
 
         for (final Argument arg : arguments) {
             final String key = arg.getName();
@@ -90,10 +88,10 @@ public class FhirGraphQLDataFetcher<T> implements DataFetcher<T> {
             } else {
                 valueStr = value.toString();
             }
-            result.add(key, valueStr);
+            parser.parseKeyValue(key, valueStr);
         }
 
-        return SearchRequestParser.parse(resourceType, result);
+        return parser.build();
     }
 
     private Object convertJsonValue(final JsonValue jsonValue) {

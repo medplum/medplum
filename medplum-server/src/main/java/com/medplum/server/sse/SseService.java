@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.medplum.fhir.FhirMediaType;
 import com.medplum.fhir.types.FhirResource;
+import com.medplum.server.search.SearchUtils;
 
 /**
  * The SseService manages server-side events.
@@ -69,15 +70,19 @@ public class SseService {
             while (iter.hasNext()) {
                 final SseConnection conn = iter.next();
                 final SseEventSink eventSink = conn.getEventSink();
-
                 if (eventSink.isClosed()) {
                     iter.remove();
-                } else {
-                    eventSink.send(conn.getSse().newEventBuilder()
-                            .mediaType(FhirMediaType.APPLICATION_FHIR_JSON_TYPE)
-                            .data(resource)
-                            .build());
+                    continue;
                 }
+
+                if (!SearchUtils.matches(conn.getCriteria(), resource)) {
+                    continue;
+                }
+
+                eventSink.send(conn.getSse().newEventBuilder()
+                        .mediaType(FhirMediaType.APPLICATION_FHIR_JSON_TYPE)
+                        .data(resource)
+                        .build());
             }
         }
     }

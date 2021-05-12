@@ -6,6 +6,8 @@ import java.util.List;
 
 import jakarta.ws.rs.core.UriBuilder;
 
+import com.medplum.fhir.types.SearchParameter;
+
 public class SearchRequest {
     public static final int MAX_PAGE_SIZE = 1000;
     private final String resourceType;
@@ -110,6 +112,15 @@ public class SearchRequest {
 
         public Builder filter(final Filter filter) {
             this.filters.add(filter);
+            return this;
+        }
+
+        public Builder filter(final String paramName, final Operation op, final String value) {
+            final SearchParameter param = SearchParameters.getParameter(resourceType, paramName);
+            if (param == null) {
+                throw new IllegalArgumentException("Unrecognized search parameter");
+            }
+            this.filters.add(new Filter(param, op, value));
             return this;
         }
 

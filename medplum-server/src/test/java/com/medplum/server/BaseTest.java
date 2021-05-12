@@ -50,7 +50,7 @@ public abstract class BaseTest extends JerseyTest {
         try (final JdbcRepository repo = app.getRepo()) {
             final OperationOutcome patientSearchOutcome = repo.search(
                     SecurityUser.SYSTEM_USER,
-                    SearchRequestParser.parse(Patient.RESOURCE_TYPE, Patient.PROPERTY_BIRTH_DATE, "1982-06-05"));
+                    SearchRequestParser.parse("Patient?birthDate=1982-06-05"));
 
             if (patientSearchOutcome.isOk() && !patientSearchOutcome.resource(Bundle.class).entry().isEmpty()) {
                 testPatient = patientSearchOutcome.resource(Bundle.class).entry().get(0).resource(Patient.class);
@@ -66,7 +66,7 @@ public abstract class BaseTest extends JerseyTest {
 
             final OperationOutcome userSearchOutcome = repo.search(
                     SecurityUser.SYSTEM_USER,
-                    SearchRequestParser.parse(User.RESOURCE_TYPE, User.PROPERTY_EMAIL, "admin@example.com"));
+                    SearchRequestParser.parse("User?email=admin@example.com"));
 
             if (userSearchOutcome.isOk() && !userSearchOutcome.resource(Bundle.class).entry().isEmpty()) {
                 testUser = userSearchOutcome.resource(Bundle.class).entry().get(0).resource(User.class);
