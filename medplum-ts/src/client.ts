@@ -8,7 +8,7 @@ import { arrayBufferToBase64 } from './utils';
 import { Storage } from './storage';
 import { EventTarget } from './eventtarget';
 import { Bundle } from './fhir/Bundle';
-import { Resource, Subscription } from './fhir';
+import { Reference, Resource, Subscription } from './fhir';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const JSON_CONTENT_TYPE = 'application/json';
@@ -86,7 +86,7 @@ export class MedplumClient extends EventTarget {
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
   private user?: User;
-  private profile?: any;
+  private profile?: Resource;
 
   constructor(options: MedplumClientOptions) {
     super();
@@ -121,6 +121,40 @@ export class MedplumClient extends EventTarget {
     this.user = undefined;
     this.profile = undefined;
     this.dispatchEvent(new Event('change'));
+  }
+
+  /**
+   * Returns a display string for the resource.
+   * @param resource The input resource.
+   * @return Human friendly display string.
+   */
+  getDisplayString(resource: Resource): string {
+    if (resource.resourceType === 'Patient' ||
+      resource.resourceType === 'Practitioner') {
+      const names = resource.name;
+      if (names) {
+        const name = names[0];
+        const builder: string[] = [];
+        if (name.prefix) {
+          builder.push(...name.prefix);
+        }
+        if (name.given) {
+          builder.push(...name.given);
+        }
+        if (name.family) {
+          builder.push(name.family);
+        }
+        return builder.join(' ').trim();
+      }
+    }
+    return JSON.stringify(resource);
+  }
+
+  createReference(resource: Resource): Reference {
+    return {
+      reference: resource.resourceType + '/' + resource.id,
+      display: this.getDisplayString(resource)
+    };
   }
 
   get(url: string, blob?: boolean): Promise<any> {
@@ -319,14 +353,14 @@ export class MedplumClient extends EventTarget {
     this.user = user;
   }
 
-  getProfile(): any {
+  getProfile(): Resource | undefined {
     if (!this.profile) {
-      this.profile = this.storage.getObject('profile');
+      this.profile = this.storage.getObject('profile') as Resource | undefined;
     }
     return this.profile;
   }
 
-  private setProfile(profile: any): void {
+  private setProfile(profile: Resource): void {
     this.storage.setObject('profile', profile);
     this.profile = profile;
   }

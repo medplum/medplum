@@ -1,4 +1,4 @@
-import React, { MutableRefObject } from 'react';
+import React, { RefObject } from 'react';
 import './TextField.css';
 
 export interface TextFieldProps {
@@ -8,7 +8,7 @@ export interface TextFieldProps {
   value?: string;
   required?: boolean;
   autoFocus?: boolean;
-  inputRef?: MutableRefObject<null>;
+  inputRef?: RefObject<HTMLInputElement>;
 }
 
 export const TextField = (props: TextFieldProps) => {

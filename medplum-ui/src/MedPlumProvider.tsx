@@ -1,14 +1,10 @@
-import { MedplumClient } from 'medplum';
+import { MedplumClient, User } from 'medplum';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 /*
  * Based on:
  * https://usehooks.com/useAuth/
  */
-
-interface User {
-  email: string;
-}
 
 interface Auth {
   medplum: MedplumClient;

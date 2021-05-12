@@ -325,7 +325,7 @@ export function Autocomplete(props: AutocompleteProps) {
         if (entry.resource) {
           resources.push({
             id: entry.resource.id,
-            name: resourceToString(entry.resource),
+            name: medplum.getDisplayString(entry.resource),
             url: '',
           });
         }
@@ -338,30 +338,6 @@ export function Autocomplete(props: AutocompleteProps) {
       dropDownVisible: resources.length > 0,
       options: resources
     });
-  }
-
-  function resourceToString(resource: Resource) {
-    if (resource.resourceType === 'Patient' ||
-      resource.resourceType === 'Practitioner') {
-      const names = resource.name;
-      if (names) {
-        const name = names[0];
-        const builder: string[] = [];
-        if (name.prefix) {
-          builder.push(...name.prefix);
-        }
-        if (name.given) {
-          builder.push(...name.given);
-        }
-        if (name.family) {
-          builder.push(name.family);
-        }
-        return builder.join(' ').trim();
-      }
-    }
-
-    // Otherwise?
-    return JSON.stringify(resource);
   }
 
   /**
