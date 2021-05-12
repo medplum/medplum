@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PropertyDefinition } from 'medplum';
+import { Address, PropertyDefinition } from 'medplum';
 
 function getLine(address: any, index: number) {
   return address && address.line && address.line.length > index ? address.line[index] : '';
@@ -12,7 +12,7 @@ export interface AddressInputProps {
 }
 
 export function AddressInput(props: AddressInputProps) {
-  const [value, setValue] = useState(props.value || {});
+  const [value, setValue] = useState<Address>(props.value || {});
   const inputName = (props.propertyPrefix ?? '') + props.property.key;
   return (
     <table>

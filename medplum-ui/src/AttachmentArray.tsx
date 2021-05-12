@@ -26,9 +26,8 @@ export function AttachmentArray(props: AttachmentArrayProps) {
       return;
     }
 
-    for (var i = 0; i < files.length; i++) {
-      var file = files[i];
-      processFile(file);
+    for (let i = 0; i < files.length; i++) {
+      processFile(files[i]);
     }
   }
 
@@ -36,9 +35,8 @@ export function AttachmentArray(props: AttachmentArrayProps) {
    * Processes a single file.
    *
    * @param {File} file The file descriptor.
-   * @param {string=} optpath Optional string path.
    */
-  function processFile(file: File, optpath?: string) {
+  function processFile(file: File) {
     if (!file) {
       return;
     }
@@ -51,11 +49,12 @@ export function AttachmentArray(props: AttachmentArrayProps) {
     const contentType = file.type || 'application/octet-stream';
     medplum.createBinary(file, contentType)
       .then((obj: any) => {
+        console.log('binary response', obj);
         const copy = values.slice();
         copy.push({
           __key: generateKey(),
           contentType: obj.contentType,
-          url: 'http://localhost:5000/fhir/R4/Binary/' + obj.id
+          url: medplum.fhirUrl('Binary', obj.id)
         });
         setValues(copy);
       })

@@ -202,7 +202,7 @@ export function SearchControl(props: SearchControlProps) {
 
   return (
     <div className="medplum-search-control" onContextMenu={e => killEvent(e)}>
-      <table id="medplum-search-table">
+      <table>
         <thead>
           <tr>
             {checkboxColumn &&
@@ -212,7 +212,6 @@ export function SearchControl(props: SearchControlProps) {
                   value="checked"
                   checked={state.allSelected}
                   onClick={e => handleAllCheckboxClick(e)}
-                  onChange={() => { }}
                 />
               </th>
             }

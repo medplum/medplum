@@ -11,8 +11,9 @@ import { Bundle } from './fhir/Bundle';
 import { Resource, Subscription } from './fhir';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
-const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const JSON_CONTENT_TYPE = 'application/json';
+const FHIR_CONTENT_TYPE = 'application/fhir+json';
+const PATCH_CONTENT_TYPE = 'application/json-patch+json';
 
 export interface MedplumClientOptions {
   /**
@@ -130,6 +131,10 @@ export class MedplumClient extends EventTarget {
     return this.fetch('POST', url, contentType, body);
   }
 
+  put(url: string, body: any, contentType?: string): Promise<any> {
+    return this.fetch('PUT', url, contentType, body);
+  }
+
   /**
    * Tries to sign in with email and password.
    * @param email
@@ -201,8 +206,16 @@ export class MedplumClient extends EventTarget {
     window.location.href = this.logoutUrl;
   }
 
+  fhirUrl(...path: string[]): string {
+    const builder = [this.baseUrl, 'fhir/R4'];
+    for (let i = 0; i < path.length; i++) {
+      builder.push('/', encodeURIComponent(path[i]));
+    }
+    return builder.join('');
+  }
+
   search(search: SearchDefinition): Promise<Bundle> {
-    const path = this.baseUrl + 'fhir/R4/' + search.resourceType;
+    const path = this.fhirUrl(search.resourceType);
     const params = [];
     if (search.page) {
       params.push('_page=' + search.page);
@@ -225,15 +238,15 @@ export class MedplumClient extends EventTarget {
   }
 
   read(resourceType: string, id: string): Promise<any> {
-    return this.get(this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id));
+    return this.get(this.fhirUrl(resourceType, id));
   }
 
   readHistory(resourceType: string, id: string): Promise<Bundle> {
-    return this.get(this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id) + '/_history');
+    return this.get(this.fhirUrl(resourceType, id, '_history'));
   }
 
   readPatientEverything(id: string): Promise<Bundle> {
-    return this.get(this.baseUrl + 'fhir/R4/' + 'Patient/' + encodeURIComponent(id) + '/$everything');
+    return this.get(this.fhirUrl('Patient', id, '$everything'));
   }
 
   readBlob(url: string): Promise<Blob> {
@@ -241,18 +254,18 @@ export class MedplumClient extends EventTarget {
   }
 
   readBinary(resourceType: string, id: string): Promise<Blob> {
-    return this.readBlob(this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id));
+    return this.readBlob(this.fhirUrl(resourceType, id));
   }
 
   create<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
-    return this.post(this.baseUrl + 'fhir/R4/' + encodeURIComponent(resource.resourceType), resource);
+    return this.post(this.fhirUrl(resource.resourceType), resource);
   }
 
   createBinary(data: any, contentType: string): Promise<any> {
-    return this.post(this.baseUrl + 'fhir/R4/Binary', data, contentType);
+    return this.post(this.fhirUrl('Binary'), data, contentType);
   }
 
   update<T extends Resource>(resource: T): Promise<T> {
@@ -262,15 +275,15 @@ export class MedplumClient extends EventTarget {
     if (!resource.id) {
       throw new Error('Missing id');
     }
-    return this.fetch('PUT', this.baseUrl + 'fhir/R4/' + encodeURIComponent(resource.resourceType) + '/' + encodeURIComponent(resource.id), 'application/fhir+json', resource);
+    return this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
   }
 
   patch(resourceType: string, id: string, operations: any): Promise<any> {
-    return this.fetch('PATCH', this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id), 'application/json-patch+json', operations);
+    return this.fetch('PATCH', this.fhirUrl(resourceType, id), PATCH_CONTENT_TYPE, operations);
   }
 
   graphql(gql: any): Promise<any> {
-    return this.post(this.baseUrl + 'fhir/R4/$graphql', gql, JSON_CONTENT_TYPE);
+    return this.post(this.fhirUrl('$graphql'), gql, JSON_CONTENT_TYPE);
   }
 
   sse(criteria: string, handler: (e: Resource) => void): Promise<EventSource> {
