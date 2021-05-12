@@ -29,10 +29,10 @@ export function ResourceForm(props: any) {
   return (
     <form noValidate autoComplete="off" onSubmit={props.onSubmit}>
       <FormSection title="Resource Type">
-        <input name="id" type="text" defaultValue={props.resourceType} disabled={true} />
+        <input name="resourceType" type="text" defaultValue={props.resourceType} disabled={true} />
       </FormSection>
       <FormSection title="ID">
-        <input name="resourceType" type="text" defaultValue={value.id} disabled={true} />
+        <input name="id" type="text" defaultValue={value.id} disabled={true} />
       </FormSection>
       {Object.entries(typeSchema.properties).map(entry => {
         const key = entry[0];
