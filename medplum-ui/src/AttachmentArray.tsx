@@ -49,7 +49,7 @@ export function AttachmentArray(props: AttachmentArrayProps) {
     }
 
     const contentType = file.type || 'application/octet-stream';
-    medplum.create('Binary', file, contentType)
+    medplum.createBinary(file, contentType)
       .then((obj: any) => {
         const copy = values.slice();
         copy.push({

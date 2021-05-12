@@ -1,13 +1,13 @@
 .btn {
   border: 1px solid var(--medplum-gray-300);
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--medplum-gray-50);
   outline: none;
   font-size: var(--medplum-font-normal);
   line-height: 24px;
   color: var(--medplum-gray-800);
   margin: 1px 2px;
-  padding: 2px 10px;
+  padding: 3px 12px;
   cursor: pointer;
 }
 

@@ -1,6 +1,6 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { Autocomplete, AutocompleteProps } from '../Autocomplete';
+import { Autocomplete } from '../Autocomplete';
 import { Document } from '../Document';
 
 export default {
@@ -8,8 +8,14 @@ export default {
   component: Autocomplete,
 } as Meta;
 
-export const Basic = (args: AutocompleteProps) => (
+export const Single = () => (
   <Document>
     <Autocomplete id="foo" resourceType="Patient" />
+  </Document>
+);
+
+export const Multiple = () => (
+  <Document>
+    <Autocomplete id="foo" resourceType="Patient" multiple={true} />
   </Document>
 );

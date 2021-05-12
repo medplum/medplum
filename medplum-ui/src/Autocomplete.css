@@ -18,33 +18,29 @@
 }
 
 .medplum-autocomplete-container>ul {
-  position: relative;
   margin: 0;
   list-style-type: none;
-  overflow: auto;
+  overflow: hidden;
   cursor: text;
   height: 32px;
 }
 
 .medplum-autocomplete-container>ul>li {
-  position: relative;
   margin: 0;
   padding: 0;
-  display: inline;
+  display: inline-block;
   list-style: none;
   white-space: nowrap;
-  line-height: 28px;
 }
 
 .medplum-autocomplete-container>ul>li.choice {
-  position: relative;
-  top: 1px;
-  left: 4px;
-  padding: 2px 6px;
+  margin: 1px 0 1px 4px;
+  padding: 0 6px;
   border: 1px solid var(--medplum-orange-200);
   border-radius: 4px;
   background-color: var(--medplum-gray-50);
   cursor: move;
+  line-height: 22px;
 }
 
 .medplum-autocomplete-container>ul>li.unstructured {
@@ -54,23 +50,13 @@
 .medplum-autocomplete-container>ul>li>input {
   display: inline-block;
   width: 80px;
-  line-height: 28px;
+  line-height: 26px;
   padding: 0 0 0 6px;
-  margin: 0 2px;
+  margin: 2px 0 0 2px;
   outline: none;
   border: none;
-  border-color: var(--medplum-surface);
-  border-radius: 0;
   box-shadow: none;
-  background: transparent !important;
-  transition: border linear 0.2s, box-shadow linear 0.2s;
-  cursor: auto;
-  letter-spacing: normal;
-  word-spacing: normal;
-  text-transform: none;
-  text-indent: 0px;
-  text-shadow: none;
-  text-align: start;
+  background: transparent;
 }
 
 .medplum-autocomplete-container>ul>li>input::-moz-focus-inner {

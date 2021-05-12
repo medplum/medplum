@@ -8,6 +8,7 @@ import { arrayBufferToBase64 } from './utils';
 import { Storage } from './storage';
 import { EventTarget } from './eventtarget';
 import { Bundle } from './fhir/Bundle';
+import { Resource, Subscription } from './fhir';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
@@ -243,12 +244,25 @@ export class MedplumClient extends EventTarget {
     return this.readBlob(this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id));
   }
 
-  create(resourceType: string, resource: any, contentType?: string): Promise<any> {
-    return this.post(this.baseUrl + 'fhir/R4/' + resourceType, resource, contentType);
+  create<T extends Resource>(resource: T): Promise<T> {
+    if (!resource.resourceType) {
+      throw new Error('Missing resourceType');
+    }
+    return this.post(this.baseUrl + 'fhir/R4/' + encodeURIComponent(resource.resourceType), resource);
   }
 
-  update(resourceType: string, id: string, resource: any): Promise<any> {
-    return this.fetch('PUT', this.baseUrl + 'fhir/R4/' + resourceType + '/' + encodeURIComponent(id), 'application/fhir+json', resource);
+  createBinary(data: any, contentType: string): Promise<any> {
+    return this.post(this.baseUrl + 'fhir/R4/Binary', data, contentType);
+  }
+
+  update<T extends Resource>(resource: T): Promise<T> {
+    if (!resource.resourceType) {
+      throw new Error('Missing resourceType');
+    }
+    if (!resource.id) {
+      throw new Error('Missing id');
+    }
+    return this.fetch('PUT', this.baseUrl + 'fhir/R4/' + encodeURIComponent(resource.resourceType) + '/' + encodeURIComponent(resource.id), 'application/fhir+json', resource);
   }
 
   patch(resourceType: string, id: string, operations: any): Promise<any> {
@@ -257,6 +271,27 @@ export class MedplumClient extends EventTarget {
 
   graphql(gql: any): Promise<any> {
     return this.post(this.baseUrl + 'fhir/R4/$graphql', gql, JSON_CONTENT_TYPE);
+  }
+
+  sse(criteria: string, handler: (e: Resource) => void): Promise<EventSource> {
+    return this.create({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: criteria,
+      channel: {
+        type: 'sse'
+      }
+    }).then((sub: Subscription) => {
+      const eventSource = new EventSource(this.baseUrl + 'sse?subscription=' + encodeURIComponent(sub.id as string), {
+        withCredentials: true
+      });
+
+      eventSource.onmessage = (e: MessageEvent) => {
+        handler(JSON.parse(e.data) as Resource);
+      };
+
+      return eventSource;
+    });
   }
 
   getUser(): User | undefined {
