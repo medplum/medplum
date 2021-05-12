@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 
+import jakarta.json.JsonException;
 import jakarta.ws.rs.sse.SseEventSink;
 
 import org.slf4j.Logger;
@@ -79,10 +80,14 @@ public class SseService {
                     continue;
                 }
 
-                eventSink.send(conn.getSse().newEventBuilder()
-                        .mediaType(FhirMediaType.APPLICATION_FHIR_JSON_TYPE)
-                        .data(resource)
-                        .build());
+                try {
+                    eventSink.send(conn.getSse().newEventBuilder()
+                            .mediaType(FhirMediaType.APPLICATION_FHIR_JSON_TYPE)
+                            .data(resource)
+                            .build());
+                } catch (final JsonException ex) {
+                    iter.remove();
+                }
             }
         }
     }

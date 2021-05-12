@@ -53,6 +53,11 @@ public class SseEndpoint {
             return;
         }
 
+        if (subscription.criteria() == null || subscription.criteria().isBlank()) {
+            sendError(eventSink, sse, "Subscription criteria is missing");
+            return;
+        }
+
         sseService.add(new SseConnection(eventSink, sse, subscription));
     }
 

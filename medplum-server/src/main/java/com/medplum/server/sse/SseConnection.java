@@ -23,7 +23,7 @@ public class SseConnection {
         this.eventSink = Objects.requireNonNull(eventSink);
         this.sse = Objects.requireNonNull(sse);
         this.subscription = Objects.requireNonNull(subscription);
-        this.criteria = SearchRequestParser.parse(subscription.criteria());
+        this.criteria = SearchRequestParser.parse(Objects.requireNonNull(subscription.criteria()));
     }
 
     public SseEventSink getEventSink() {
