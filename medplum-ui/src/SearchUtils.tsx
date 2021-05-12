@@ -165,14 +165,14 @@ export function addTomorrowFilter(definition: SearchDefinition, field: string) {
  * @param {number} delta The number of days from this day.
  */
 function addDayFilter_(definition: SearchDefinition, field: string, delta: number) {
-  var startTime = new Date();
+  const startTime = new Date();
   startTime.setDate(startTime.getDate() + delta);
   startTime.setHours(0);
   startTime.setMinutes(0);
   startTime.setSeconds(0);
   startTime.setMilliseconds(0);
 
-  var endTime = new Date(startTime.getTime());
+  const endTime = new Date(startTime.getTime());
   endTime.setDate(endTime.getDate() + 1);
 
   return addDateFilterBetween(definition, field, startTime, endTime);
@@ -216,7 +216,7 @@ export function addNextMonthFilter(definition: SearchDefinition, field: string) 
  * @param {number} delta The number of months from this month.
  */
 function addMonthFilter_(definition: SearchDefinition, field: string, delta: number) {
-  var startTime = new Date();
+  const startTime = new Date();
   startTime.setMonth(startTime.getMonth() + delta);
   startTime.setDate(1);
   startTime.setHours(0);
@@ -224,7 +224,7 @@ function addMonthFilter_(definition: SearchDefinition, field: string, delta: num
   startTime.setSeconds(0);
   startTime.setMilliseconds(0);
 
-  var endTime = new Date(startTime.getTime());
+  const endTime = new Date(startTime.getTime());
   endTime.setTime(startTime.getTime());
   endTime.setMonth(endTime.getMonth() + 1);
 
@@ -237,7 +237,7 @@ function addMonthFilter_(definition: SearchDefinition, field: string, delta: num
  * @param {string} field The field key name.
  */
 export function addYearToDateFilter(definition: SearchDefinition, field: string) {
-  var startTime = new Date();
+  const startTime = new Date();
   startTime.setMonth(0);
   startTime.setDate(1);
   startTime.setHours(0);
@@ -306,7 +306,7 @@ export function addDateFilterBetween(definition: SearchDefinition, field: string
  * @param {Date} value The date.
  */
 function addDateFilterImpl_(definition: SearchDefinition, field: string, op: string, value: Date) {
-  var dateTime = new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  const dateTime = new Date(value.getFullYear(), value.getMonth(), value.getDate());
   dateTime.setHours(0);
   dateTime.setMinutes(0);
   dateTime.setSeconds(0);
@@ -545,12 +545,12 @@ export function buildFieldNameString(resourceType: string, key: string): string 
  * @return {string} An HTML fragment that represents the value.
  */
 export function getFilterValueString(filter: SearchFilterDefinition) {
-  let value = filter.value;
+  const value = filter.value;
   if (!value) {
     return <span className="muted">none</span>;
   }
 
-  var chunks = value.split(';');
+  const chunks = value.split(';');
   return chunks.map((c: string) => '"' + c + '"').join(' or ');
 }
 

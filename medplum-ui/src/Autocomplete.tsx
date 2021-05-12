@@ -1,4 +1,4 @@
-import { Bundle, Resource } from 'medplum';
+import { Bundle } from 'medplum';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 import './Autocomplete.css';
@@ -44,7 +44,8 @@ export function Autocomplete(props: AutocompleteProps) {
   stateRef.current = state;
 
   useEffect(() => {
-    window.setInterval(() => handleTimer_(), 150);
+    const interval = window.setInterval(() => handleTimer_(), 150);
+    return () => window.clearInterval(interval);
   }, []);
 
   /**
