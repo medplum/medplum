@@ -1,8 +1,11 @@
 import { Button, SearchControl } from 'medplum-ui';
 import React from 'react';
+import { useParams } from 'react-router';
 import { history } from './history';
 
 export function HomePage() {
+  const { resourceType } = useParams() as any;
+  console.log('resourceType', resourceType);
   return (
     <>
       <div style={{ padding: '0 0 4px 4px' }}>
@@ -13,7 +16,7 @@ export function HomePage() {
       <SearchControl
         checkboxesEnabled={true}
         search={{
-          resourceType: 'Patient'
+          resourceType: resourceType || 'Patient'
         }}
         onClick={e => history.push(`/${e.resource.resourceType}/${e.resource.id}`)}
       />

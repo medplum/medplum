@@ -5,29 +5,32 @@ import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 export interface ResourceTableProps {
-  resourceType: string;
-  id: string;
+  resource?: Resource;
+  resourceType?: string;
+  id?: string;
 }
 
 export function ResourceTable(props: any) {
   const medplum = useMedplum();
-  const [value, setValue] = useState<Resource | undefined>();
+  const [value, setValue] = useState<Resource | undefined>(props.resource);
 
   useEffect(() => {
-    medplum.read(props.resourceType, props.id)
-      .then(result => setValue(result));
+    if (!props.resource && props.resourceType && props.id) {
+      medplum.read(props.resourceType, props.id)
+        .then(result => setValue(result));
+    }
   }, [props.resourceType, props.id]);
 
   if (!value) {
     return <div>Loading...</div>
   }
 
-  const typeSchema = schema[props.resourceType];
+  const typeSchema = schema[value.resourceType];
 
   return (
     <DescriptionList>
-      <DescriptionListEntry term="Resource Type">{props.resourceType}</DescriptionListEntry>
-      <DescriptionListEntry term="ID">{props.id}</DescriptionListEntry>
+      <DescriptionListEntry term="Resource Type">{value.resourceType}</DescriptionListEntry>
+      <DescriptionListEntry term="ID">{value.id}</DescriptionListEntry>
       {Object.entries(typeSchema.properties).map(entry => {
         const key = entry[0];
         const property = entry[1];

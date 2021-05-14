@@ -1,11 +1,24 @@
-import { Document, ResourceForm, Tab, TabBar, TabPanel, TabSwitch } from 'medplum-ui';
-import React from 'react';
+import { Resource } from 'medplum';
+import { Document, ResourceForm, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from 'medplum-ui';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
 import './ResourcePage.css';
 
 export function ResourcePage() {
   const { resourceType, id, tab } = useParams() as any;
+  const medplum = useMedplum();
+  const [value, setValue] = useState<Resource | undefined>();
+
+  useEffect(() => {
+    medplum.read(resourceType, id)
+      .then(result => setValue(result));
+  }, [resourceType, id]);
+
+  if (!value) {
+    return <div>Loading...</div>
+  }
+
   return (
     <>
       <div style={{
@@ -21,18 +34,18 @@ export function ResourcePage() {
         value={tab || 'details'}
         onChange={(name: string) => history.push(`/${resourceType}/${id}/${name}`)}>
         <Tab name="details" label="Details" />
-        <Tab name="raw" label="Raw" />
+        <Tab name="edit" label="Edit" />
         <Tab name="history" label="History" />
         <Tab name="blame" label="Blame" />
-        <Tab name="edit" label="Edit" />
+        <Tab name="json" label="JSON" />
       </TabBar>
       <Document>
         <TabSwitch value={tab || 'details'}>
           <TabPanel name="details">
-            <ResourceForm resourceType={resourceType} id={id} />
+            <ResourceTable resource={value} />
           </TabPanel>
-          <TabPanel name="raw">
-            <div>Raw</div>
+          <TabPanel name="edit">
+            <ResourceForm resource={value} />
           </TabPanel>
           <TabPanel name="history">
             <div>History</div>
@@ -40,8 +53,16 @@ export function ResourcePage() {
           <TabPanel name="blame">
             <div>Blame</div>
           </TabPanel>
-          <TabPanel name="edit">
-            <div>Edit</div>
+          <TabPanel name="json">
+            <pre></pre>
+            <form onSubmit={e => {
+              e.preventDefault();
+            }}>
+              <textarea>{JSON.stringify(value, undefined, 2)}</textarea>
+            </form>
+          </TabPanel>
+          <TabPanel name="jsonedit">
+            <div>JSON Edit</div>
           </TabPanel>
         </TabSwitch>
       </Document>

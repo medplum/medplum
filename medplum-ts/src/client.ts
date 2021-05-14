@@ -2,13 +2,12 @@
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
 import { encryptSHA256, getRandomString } from './crypto';
+import { EventTarget } from './eventtarget';
+import { Bundle, Reference, Resource, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
+import { Storage } from './storage';
 import { SearchDefinition } from './types';
 import { arrayBufferToBase64 } from './utils';
-import { Storage } from './storage';
-import { EventTarget } from './eventtarget';
-import { Bundle } from './fhir/Bundle';
-import { Reference, Resource, Subscription } from './fhir';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const JSON_CONTENT_TYPE = 'application/json';
@@ -49,10 +48,6 @@ export interface MedplumClientOptions {
    * Use this if you want to use a separate OAuth server.
    */
   logoutUrl?: string;
-}
-
-interface User {
-  email: string;
 }
 
 interface LoginRequest {

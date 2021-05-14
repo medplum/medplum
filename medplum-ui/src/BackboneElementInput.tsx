@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PropertyDefinition, TypeDefinition } from 'medplum';
 import { FormSection } from './FormSection';
-import { ResourceField } from './ResourceField';
+import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
   propertyPrefix: string;
@@ -21,7 +21,7 @@ export function BackboneElementInput(props: BackboneElementInputProps) {
         const property = entry[1];
         return (
           <FormSection key={key} title={property.display} description={property.description}>
-            <ResourceField propertyPrefix={inputName} property={property} value={value[key]} />
+            <ResourcePropertyInput propertyPrefix={inputName} property={property} value={value[key]} />
           </FormSection>
         );
       })}

@@ -5,6 +5,7 @@
     "outDir": "lib",
     "lib": [ "esnext", "dom" ],
     "jsx": "react",
+    "moduleResolution": "node",
     "strict": true,
     "sourceMap": true,
     "declaration": true,

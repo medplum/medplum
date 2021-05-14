@@ -14,7 +14,7 @@ export function ChatControl(props: ChatControlProps) {
   const medplum = useMedplum();
 
   const sender = medplum.getProfile() as Patient | Practitioner | undefined;
-  const senderRef = medplum.createReference(sender);
+  const senderRef = sender ? medplum.createReference(sender) : undefined;
 
   const [comms, setComms] = useState<Communication[]>([]);
   const commsRef = useRef(comms);

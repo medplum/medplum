@@ -32,11 +32,11 @@ export default function App() {
           onRegister={() => console.log('onCreateAccount')}
         />
         <Switch>
-          <Route exact path="/"><HomePage /></Route>
           <Route exact path="/test"><TestPage /></Route>
           <Route exact path="/signin"><SignInPage /></Route>
           <Route exact path="/profile"><ProfilePage /></Route>
           <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
+          <Route exact path="/:resourceType?"><HomePage /></Route>
         </Switch>
       </Router>
     </MedplumProvider>

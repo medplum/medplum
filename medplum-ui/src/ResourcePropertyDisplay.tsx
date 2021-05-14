@@ -1,21 +1,16 @@
 import { PropertyDefinition, schema } from 'medplum';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
-import { AddressInput } from './AddressInput';
 import { AttachmentArray } from './AttachmentArray';
 import { AttachmentInput } from './AttachmentInput';
 import { BackboneElementInput } from './BackboneElementInput';
 import { CodeableConceptInput } from './CodeableConceptInput';
 import { ContactPointDisplay } from './ContactPointDisplay';
-import { ContactPointInput } from './ContactPointInput';
 import { DeviceNameInput } from './DeviceNameInput';
 import { HumanNameDisplay } from './HumanNameDisplay';
-import { HumanNameInput } from './HumanNameInput';
 import { IdentifierDisplay } from './IdentifierDisplay';
-import { IdentifierInput } from './IdentifierInput';
 import { PatientLinkInput } from './PatientLinkInput';
 import { ReferenceInput } from './ReferenceInput';
-import { ResourceArray } from './ResourceArray';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
@@ -36,6 +31,10 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
       return <AttachmentArray propertyPrefix={propertyPrefix} property={property} values={value} />
     }
     return <ResourceArrayDisplay propertyPrefix={propertyPrefix} property={property} values={value} />
+  }
+
+  if (!value) {
+    return null;
   }
 
   switch (property.type) {

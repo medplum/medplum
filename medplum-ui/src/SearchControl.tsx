@@ -210,7 +210,7 @@ export function SearchControl(props: SearchControlProps) {
                 <input
                   type="checkbox"
                   value="checked"
-                  checked={state.allSelected}
+                  defaultChecked={state.allSelected}
                   onClick={e => handleAllCheckboxClick(e)}
                 />
               </th>
@@ -244,9 +244,8 @@ export function SearchControl(props: SearchControlProps) {
                     type="checkbox"
                     value="checked"
                     data-id={resource.id}
-                    checked={!!(resource.id && state.selected[resource.id])}
+                    defaultChecked={!!(resource.id && state.selected[resource.id])}
                     onClick={e => handleSingleCheckboxClick(e)}
-                    onChange={() => { }}
                   />
                 </td>
               }

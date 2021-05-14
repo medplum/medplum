@@ -7,9 +7,9 @@ export interface DescriptionListProps {
 
 export function DescriptionList(props: DescriptionListProps) {
   return (
-    <dt className="medplum-description-list">
+    <dl className="medplum-description-list">
       {props.children}
-    </dt>
+    </dl>
   );
 }
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { PropertyDefinition } from 'medplum';
 import { FormSection } from './FormSection';
-import { ResourceField } from './ResourceField';
+import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 const generateKey = () => 'key' + Math.random();
 const ensureKeys = (array: any[]) => (array || []).map(obj => ({ ...obj, __key: generateKey() }));
@@ -40,7 +40,7 @@ export class ResourceArray extends React.Component<ResourceArrayProps, ResourceA
           {values.map((v, index) => (
             <tr key={v.__key}>
               <td>
-                <ResourceField
+                <ResourcePropertyInput
                   propertyPrefix={propertyPrefix}
                   arrayElement={true}
                   property={property}

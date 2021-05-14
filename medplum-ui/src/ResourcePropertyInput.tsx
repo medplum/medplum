@@ -14,14 +14,14 @@ import { PatientLinkInput } from './PatientLinkInput';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourceArray } from './ResourceArray';
 
-export interface ResourceFieldProps {
+export interface ResourcePropertyInputProps {
   propertyPrefix: string;
   property: PropertyDefinition;
   value: any;
   arrayElement?: boolean;
 }
 
-export function ResourceField(props: ResourceFieldProps) {
+export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
   const propertyPrefix = props.propertyPrefix;
   const property = props.property;
   const value = props.value;
@@ -90,15 +90,17 @@ export function ResourceField(props: ResourceFieldProps) {
     case 'Reference':
       return <ReferenceInput propertyPrefix={propertyPrefix} property={property} value={value} />;
     default:
-      const backboneType = schema[property.type];
-      if (backboneType) {
-        return (
-          <BackboneElementInput propertyPrefix={propertyPrefix} property={property} backboneType={backboneType} value={value} />
-        );
-      } else {
-        return (
-          <input type="text" defaultValue={value}></input>
-        );
+      {
+        const backboneType = schema[property.type];
+        if (backboneType) {
+          return (
+            <BackboneElementInput propertyPrefix={propertyPrefix} property={property} backboneType={backboneType} value={value} />
+          );
+        } else {
+          return (
+            <input type="text" defaultValue={value}></input>
+          );
+        }
       }
   }
 }
