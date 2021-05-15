@@ -7,7 +7,6 @@ main {
 
 article {
   background-color: var(--medplum-surface);
-  position: relative;
   max-width: 900px;
   margin: auto;
   padding: 20px;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import './Dialog.css';
 
 export const DialogEventType = {
@@ -20,8 +20,9 @@ export class DialogEvent extends Event {
   }
 }
 
-interface DialogProps {
+export interface DialogProps {
   visible: boolean;
+  children?: React.ReactNode;
   onOk: () => void;
   onCancel: () => void;
 }
@@ -34,80 +35,78 @@ interface DialogState {
   dragY: number;
 }
 
-export class Dialog extends React.Component<DialogProps, DialogState> {
-  mouseUpHandler: (this: Document, ev: React.MouseEvent) => any;
-  mouseMoveHandler: (this: Document, ev: React.MouseEvent) => any;
+export function Dialog(props: DialogProps) {
+  const [state, setState] = useState<DialogState>({
+    x: 100,
+    y: 100,
+    dragging: false,
+    dragX: 0,
+    dragY: 0
+  });
 
-  constructor(props: DialogProps) {
-    super(props);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-    this.state = {
-      x: 100,
-      y: 100,
-      dragging: false,
-      dragX: 0,
-      dragY: 0
-    };
-
-    this.mouseUpHandler = this.handleMouseUp.bind(this);
-    this.mouseMoveHandler = this.handleMouseMove.bind(this);
+  if (!props.visible) {
+    return null;
   }
 
-  render() {
-    if (!this.props.visible) {
-      return null;
-    }
-    return (
-      <>
-        <div className="modal-dialog-bg"></div>
-        <div className="modal-dialog" tabIndex={0} style={{ left: this.state.x + 'px', top: this.state.y + 'px' }}>
-          <div className="modal-dialog-title" onMouseDown={e => this.handleMouseDown(e)}>
-            <span className="modal-dialog-title-text">Dialog</span>
-            <span className="modal-dialog-title-close" tabIndex={0} onClick={this.props.onCancel}></span>
-          </div>
-          <div className="modal-dialog-content">
-            {this.props.children}
-          </div>
-          <div className="modal-dialog-buttons">
-            <button onClick={this.props.onOk}>OK</button>
-            <button onClick={this.props.onCancel}>Cancel</button>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  handleMouseDown(e: React.MouseEvent) {
+  function handleMouseDown(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    document.addEventListener('mouseup', this.mouseUpHandler as any, true);
-    document.addEventListener('mousemove', this.mouseMoveHandler as any, true);
-    this.setState({
+    document.addEventListener('mouseup', handleMouseUp, true);
+    document.addEventListener('mousemove', handleMouseMove as any, true);
+    setState({
+      ...stateRef.current,
       dragging: true,
-      dragX: e.clientX - this.state.x,
-      dragY: e.clientY - this.state.y
+      dragX: e.clientX - state.x,
+      dragY: e.clientY - state.y
     });
   }
 
-  handleMouseUp(e: React.MouseEvent) {
-    if (!this.state.dragging) {
+  function handleMouseUp(e: MouseEvent) {
+    if (!state.dragging) {
       return;
     }
     e.preventDefault();
     e.stopPropagation();
-    document.removeEventListener('mouseup', this.mouseUpHandler as any, true);
-    document.removeEventListener('mousemove', this.mouseMoveHandler as any, true);
+    document.removeEventListener('mouseup', handleMouseUp as any, true);
+    document.removeEventListener('mousemove', handleMouseMove as any, true);
   }
 
-  handleMouseMove(e: React.MouseEvent) {
-    if (!this.state.dragging) {
+  function handleMouseMove(e: MouseEvent) {
+    if (!state.dragging) {
       return;
     }
     e.preventDefault();
     e.stopPropagation();
-    this.setState({
-      x: e.clientX - this.state.dragX,
-      y: e.clientY - this.state.dragY
+    setState({
+      ...stateRef.current,
+      x: e.clientX - state.dragX,
+      y: e.clientY - state.dragY
     });
   }
+
+  return (
+    <>
+      <div className="modal-dialog-bg"></div>
+      <div className="modal-dialog" tabIndex={0} style={{ left: state.x + 'px', top: state.y + 'px' }}>
+        <div className="modal-dialog-title" onMouseDown={e => handleMouseDown(e)}>
+          <span className="modal-dialog-title-text">Dialog</span>
+          <span className="modal-dialog-title-close" tabIndex={0} onClick={props.onCancel}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </span>
+        </div>
+        <div className="modal-dialog-content">
+          {props.children}
+        </div>
+        <div className="modal-dialog-buttons">
+          <button onClick={props.onOk}>OK</button>
+          <button onClick={props.onCancel}>Cancel</button>
+        </div>
+      </div>
+    </>
+  );
 }

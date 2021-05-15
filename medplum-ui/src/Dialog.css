@@ -30,26 +30,23 @@
   background:var(--medplum-gray-800);
   color: var(--medplum-surface);
   cursor: pointer;
-
-  /* Add padding on the right to ensure the close button has room. */
-  padding: 6px 31px 6px 8px;
-
-  position: relative;
+  padding: 6px;
+  display: flex;
+  justify-content: space-between;
 }
 
 .modal-dialog-title-close {
-  background: url("https://static.medplum.com/img/gmail-icons.png") no-repeat 0 -373px;
   cursor: pointer;
-  position: absolute;
-  right: 1px;
-  top: 1px;
-  width: 24px;
-  height: 24px;
   vertical-align: middle;
 }
 
 .modal-dialog-title-close:hover {
     background-color:var(--medplum-gray-700);
+}
+
+.modal-dialog-title-close > svg {
+  width: 20px;
+  height: 20px;
 }
 
 .modal-dialog-content {
