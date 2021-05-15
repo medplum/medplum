@@ -2,10 +2,10 @@ package com.medplum.server.fhir.r4.repo;
 
 import jakarta.json.JsonPatch;
 
-import com.medplum.fhir.types.Bundle;
-import com.medplum.fhir.types.FhirResource;
-import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.fhir.types.Reference;
+import com.medplum.fhir.r4.types.Bundle;
+import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.Reference;
 import com.medplum.server.fhir.r4.search.SearchRequest;
 import com.medplum.server.security.SecurityUser;
 

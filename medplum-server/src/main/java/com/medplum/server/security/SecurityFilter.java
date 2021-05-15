@@ -21,8 +21,8 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.StandardOutcomes;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.StandardOutcomes;
 
 @Provider
 @Priority(Priorities.AUTHENTICATION)

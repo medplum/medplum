@@ -1,6 +1,6 @@
 package com.medplum.server.fhir.r4;
 
-import static com.medplum.fhir.FhirMediaType.*;
+import static com.medplum.fhir.r4.FhirMediaType.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,10 +21,10 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.StandardOutcomes;
-import com.medplum.fhir.types.Binary;
-import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.StandardOutcomes;
+import com.medplum.fhir.r4.types.Binary;
+import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.server.fhir.r4.repo.BinaryStorage;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.SecurityUser;

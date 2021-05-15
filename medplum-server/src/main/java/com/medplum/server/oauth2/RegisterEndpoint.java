@@ -19,11 +19,11 @@ import jakarta.ws.rs.core.Response.Status;
 
 import org.glassfish.jersey.server.mvc.Viewable;
 
-import com.medplum.fhir.types.Bundle;
-import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.fhir.types.PasswordChangeRequest;
-import com.medplum.fhir.types.Patient;
-import com.medplum.fhir.types.User;
+import com.medplum.fhir.r4.types.Bundle;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.PasswordChangeRequest;
+import com.medplum.fhir.r4.types.Patient;
+import com.medplum.fhir.r4.types.User;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.OAuthService;
 import com.medplum.server.security.SecurityUser;

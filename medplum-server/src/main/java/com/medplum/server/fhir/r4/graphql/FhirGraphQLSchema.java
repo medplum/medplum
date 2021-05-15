@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 
-import com.medplum.fhir.FhirSchema;
-import com.medplum.fhir.types.SearchParameter;
+import com.medplum.fhir.r4.FhirSchema;
+import com.medplum.fhir.r4.types.SearchParameter;
 import com.medplum.server.fhir.r4.search.SearchParameters;
 
 import graphql.Scalars;

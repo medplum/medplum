@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.Test;
 
-import com.medplum.fhir.types.CodeableConcept;
-import com.medplum.fhir.types.Observation;
-import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.fhir.r4.types.CodeableConcept;
+import com.medplum.fhir.r4.types.Observation;
+import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.server.BaseTest;
 import com.medplum.server.security.SecurityUser;
 

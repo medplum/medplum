@@ -11,8 +11,8 @@ import jakarta.ws.rs.sse.SseEventSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.types.FhirResource;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.types.FhirResource;
 import com.medplum.server.fhir.r4.search.SearchUtils;
 
 /**

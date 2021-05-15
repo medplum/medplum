@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.types.Binary;
+import com.medplum.fhir.r4.types.Binary;
 
 public class FileSystemBinaryStorage implements BinaryStorage {
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemBinaryStorage.class);

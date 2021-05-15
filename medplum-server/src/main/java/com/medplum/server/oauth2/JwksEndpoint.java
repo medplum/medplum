@@ -10,8 +10,8 @@ import jakarta.ws.rs.core.Response;
 
 import org.jose4j.jwk.JsonWebKey;
 
-import com.medplum.fhir.JsonUtils;
 import com.medplum.server.security.OAuthService;
+import com.medplum.util.JsonUtils;
 
 @Path("/.well-known/jwks.json")
 @PermitAll

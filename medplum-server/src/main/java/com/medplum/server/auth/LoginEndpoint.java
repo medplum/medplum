@@ -12,14 +12,14 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.jose4j.lang.JoseException;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.StandardOutcomes;
-import com.medplum.fhir.types.ClientApplication;
-import com.medplum.fhir.types.FhirResource;
-import com.medplum.fhir.types.Login;
-import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.fhir.types.Reference;
-import com.medplum.fhir.types.User;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.StandardOutcomes;
+import com.medplum.fhir.r4.types.ClientApplication;
+import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.Login;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.Reference;
+import com.medplum.fhir.r4.types.User;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.JwtResult;
 import com.medplum.server.security.OAuthService;

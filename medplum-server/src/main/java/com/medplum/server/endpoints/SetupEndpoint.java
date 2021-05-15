@@ -6,8 +6,8 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.fhir.r4.repo.SetupExecutor;
 

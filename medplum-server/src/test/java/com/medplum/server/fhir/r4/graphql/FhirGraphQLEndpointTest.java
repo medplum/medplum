@@ -7,7 +7,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.junit.Test;
 
-import com.medplum.fhir.types.Patient;
+import com.medplum.fhir.r4.types.Patient;
 import com.medplum.server.BaseTest;
 
 public class FhirGraphQLEndpointTest extends BaseTest {

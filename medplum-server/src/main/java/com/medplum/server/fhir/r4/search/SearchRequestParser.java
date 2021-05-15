@@ -3,7 +3,7 @@ package com.medplum.server.fhir.r4.search;
 import java.net.URI;
 import java.util.Objects;
 
-import com.medplum.fhir.types.SearchParameter;
+import com.medplum.fhir.r4.types.SearchParameter;
 
 /**
  * Parses a FHIR search query.

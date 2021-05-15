@@ -21,9 +21,9 @@ import jakarta.ws.rs.core.Response.Status;
 import org.glassfish.jersey.server.mvc.Viewable;
 import org.mindrot.jbcrypt.BCrypt;
 
-import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.fhir.types.PasswordChangeRequest;
-import com.medplum.fhir.types.User;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.PasswordChangeRequest;
+import com.medplum.fhir.r4.types.User;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.SecurityUser;
 

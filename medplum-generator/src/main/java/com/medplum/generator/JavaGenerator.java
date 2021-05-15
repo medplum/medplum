@@ -16,9 +16,9 @@ import org.apache.commons.text.WordUtils;
 
 public class JavaGenerator {
     private static final String INDENT = " ".repeat(4);
-    private static final String OUTPUT_PACKAGE = "com.medplum.fhir.types";
-    private static final String OUTPUT_PATH = "../medplum-core/src/main/java/com/medplum/fhir/types/";
-    private static final String TEST_PATH = "../medplum-core/src/test/java/com/medplum/fhir/types/";
+    private static final String OUTPUT_PACKAGE = "com.medplum.fhir.r4.types";
+    private static final String OUTPUT_PATH = "../medplum-core/src/main/java/com/medplum/fhir/r4/types/";
+    private static final String TEST_PATH = "../medplum-core/src/test/java/com/medplum/fhir/r4/types/";
     private static final List<String> RESERVED = Arrays.asList("abstract", "assert", "boolean", "break", "byte", "case",
             "catch", "char", "class", "const", "continue", "default", "do", "double", "else", "enum", "extends",
             "final", "finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int", "interface",
@@ -46,7 +46,7 @@ public class JavaGenerator {
 
         if (fhirType.getOutputName().equals("OperationOutcome")) {
             b.newLine();
-            b.append("import com.medplum.fhir.StandardOutcomes;");
+            b.append("import com.medplum.fhir.r4.StandardOutcomes;");
         }
 
         writeClass(b, fhirType, true);

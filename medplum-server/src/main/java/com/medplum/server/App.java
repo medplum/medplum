@@ -21,7 +21,7 @@ import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.FhirObjectReader;
+import com.medplum.fhir.r4.FhirObjectReader;
 import com.medplum.server.fhir.r4.repo.BinaryStorage;
 import com.medplum.server.fhir.r4.repo.FileSystemBinaryStorage;
 import com.medplum.server.fhir.r4.repo.JdbcRepository;

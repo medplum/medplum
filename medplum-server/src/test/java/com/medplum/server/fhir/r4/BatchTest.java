@@ -2,7 +2,7 @@ package com.medplum.server.fhir.r4;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static com.medplum.fhir.IdUtils.*;
+import static com.medplum.util.IdUtils.*;
 
 import java.net.URI;
 import java.util.Collections;
@@ -13,10 +13,10 @@ import jakarta.ws.rs.core.Response;
 
 import org.junit.Test;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.types.Bundle;
-import com.medplum.fhir.types.Bundle.BundleEntry;
-import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.types.Bundle;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.Bundle.BundleEntry;
 import com.medplum.server.BaseTest;
 
 public class BatchTest extends BaseTest {

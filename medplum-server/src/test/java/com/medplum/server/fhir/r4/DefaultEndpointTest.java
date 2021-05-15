@@ -13,8 +13,8 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.junit.Test;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.types.Patient;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.types.Patient;
 import com.medplum.server.BaseTest;
 
 public class DefaultEndpointTest extends BaseTest {

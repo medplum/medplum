@@ -13,15 +13,15 @@ import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.UriBuilder;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.JsonUtils;
-import com.medplum.fhir.types.CapabilityStatement;
-import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementImplementation;
-import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementRest;
-import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementSecurity;
-import com.medplum.fhir.types.CapabilityStatement.CapabilityStatementSoftware;
-import com.medplum.fhir.types.Extension;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.types.CapabilityStatement;
+import com.medplum.fhir.r4.types.Extension;
+import com.medplum.fhir.r4.types.CapabilityStatement.CapabilityStatementImplementation;
+import com.medplum.fhir.r4.types.CapabilityStatement.CapabilityStatementRest;
+import com.medplum.fhir.r4.types.CapabilityStatement.CapabilityStatementSecurity;
+import com.medplum.fhir.r4.types.CapabilityStatement.CapabilityStatementSoftware;
 import com.medplum.server.ConfigSettings;
+import com.medplum.util.JsonUtils;
 
 @Path("/fhir/R4/metadata")
 @Produces(FhirMediaType.APPLICATION_FHIR_JSON)

@@ -6,7 +6,7 @@ import java.util.List;
 
 import jakarta.ws.rs.core.UriBuilder;
 
-import com.medplum.fhir.types.SearchParameter;
+import com.medplum.fhir.r4.types.SearchParameter;
 
 public class SearchRequest {
     public static final int MAX_PAGE_SIZE = 1000;

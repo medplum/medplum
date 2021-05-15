@@ -23,9 +23,9 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.glassfish.jersey.server.mvc.Viewable;
 
-import com.medplum.fhir.types.ClientApplication;
-import com.medplum.fhir.types.Login;
-import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.fhir.r4.types.ClientApplication;
+import com.medplum.fhir.r4.types.Login;
+import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.server.ConfigSettings;
 import com.medplum.server.security.OAuthService;
 

@@ -5,7 +5,7 @@ import java.util.Objects;
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
 
-import com.medplum.fhir.types.Subscription;
+import com.medplum.fhir.r4.types.Subscription;
 import com.medplum.server.fhir.r4.search.SearchRequest;
 import com.medplum.server.fhir.r4.search.SearchRequestParser;
 

@@ -15,10 +15,10 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.core.UriInfo;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.types.Bundle;
-import com.medplum.fhir.types.FhirResource;
-import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.types.Bundle;
+import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.fhir.r4.search.SearchRequestParser;
 import com.medplum.server.security.SecurityUser;

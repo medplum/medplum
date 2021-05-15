@@ -1,6 +1,6 @@
 package com.medplum.server.fhir.r4.repo;
 
-import static com.medplum.fhir.IdUtils.*;
+import static com.medplum.util.IdUtils.*;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -18,12 +18,12 @@ import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import jakarta.ws.rs.core.Response.Status;
 
-import com.medplum.fhir.StandardOutcomes;
-import com.medplum.fhir.types.Bundle;
-import com.medplum.fhir.types.Bundle.BundleEntry;
-import com.medplum.fhir.types.Bundle.BundleResponse;
-import com.medplum.fhir.types.FhirResource;
-import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.fhir.r4.StandardOutcomes;
+import com.medplum.fhir.r4.types.Bundle;
+import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.Bundle.BundleEntry;
+import com.medplum.fhir.r4.types.Bundle.BundleResponse;
 import com.medplum.server.security.SecurityUser;
 
 public class BatchExecutor {

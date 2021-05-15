@@ -3,7 +3,7 @@ package com.medplum.server.fhir.r4.repo;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.medplum.fhir.types.Binary;
+import com.medplum.fhir.r4.types.Binary;
 
 public interface BinaryStorage {
 

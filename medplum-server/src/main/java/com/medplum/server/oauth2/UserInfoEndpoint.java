@@ -20,13 +20,13 @@ import org.jose4j.jwt.MalformedClaimException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.StandardOutcomes;
-import com.medplum.fhir.types.ContactPoint;
-import com.medplum.fhir.types.FhirResource;
-import com.medplum.fhir.types.HumanName;
-import com.medplum.fhir.types.Patient;
-import com.medplum.fhir.types.Reference;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.StandardOutcomes;
+import com.medplum.fhir.r4.types.ContactPoint;
+import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.HumanName;
+import com.medplum.fhir.r4.types.Patient;
+import com.medplum.fhir.r4.types.Reference;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.SecurityUser;
 

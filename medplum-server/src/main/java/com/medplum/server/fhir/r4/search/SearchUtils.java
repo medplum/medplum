@@ -7,9 +7,9 @@ import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import jakarta.json.JsonValue.ValueType;
 
-import com.medplum.fhir.FhirPath;
-import com.medplum.fhir.types.FhirResource;
-import com.medplum.fhir.types.SearchParameter;
+import com.medplum.fhir.r4.FhirPath;
+import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.SearchParameter;
 
 public class SearchUtils {
 

@@ -2,7 +2,7 @@ package com.medplum.server.services;
 
 import java.util.List;
 
-import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.fhir.r4.types.OperationOutcome;
 
 public interface EmailService {
 

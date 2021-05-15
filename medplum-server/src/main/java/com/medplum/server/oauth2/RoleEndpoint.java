@@ -25,10 +25,10 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.glassfish.jersey.server.mvc.Viewable;
 
-import com.medplum.fhir.types.Login;
-import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.fhir.types.Reference;
-import com.medplum.fhir.types.User;
+import com.medplum.fhir.r4.types.Login;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.Reference;
+import com.medplum.fhir.r4.types.User;
 import com.medplum.server.ConfigSettings;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.OAuthService;

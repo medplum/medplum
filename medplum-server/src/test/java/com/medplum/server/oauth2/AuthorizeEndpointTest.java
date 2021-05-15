@@ -2,7 +2,7 @@ package com.medplum.server.oauth2;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static com.medplum.fhir.IdUtils.*;
+import static com.medplum.util.IdUtils.*;
 
 import jakarta.ws.rs.core.Response;
 

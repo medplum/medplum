@@ -8,7 +8,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.junit.Test;
 
-import com.medplum.fhir.FhirMediaType;
+import com.medplum.fhir.r4.FhirMediaType;
 import com.medplum.server.BaseTest;
 
 public class CapabilityStatementEndpointTest extends BaseTest {

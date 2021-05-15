@@ -1,6 +1,6 @@
 package com.medplum.server.fhir.r4.repo;
 
-import static com.medplum.fhir.IdUtils.*;
+import static com.medplum.util.IdUtils.*;
 
 import java.io.Closeable;
 import java.sql.Connection;
@@ -25,15 +25,14 @@ import jakarta.json.JsonPatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.FhirSchema;
-import com.medplum.fhir.JsonUtils;
-import com.medplum.fhir.StandardOutcomes;
-import com.medplum.fhir.types.Bundle;
-import com.medplum.fhir.types.Bundle.BundleEntry;
-import com.medplum.fhir.types.FhirResource;
-import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.fhir.types.Reference;
-import com.medplum.fhir.types.SearchParameter;
+import com.medplum.fhir.r4.FhirSchema;
+import com.medplum.fhir.r4.StandardOutcomes;
+import com.medplum.fhir.r4.types.Bundle;
+import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.Reference;
+import com.medplum.fhir.r4.types.SearchParameter;
+import com.medplum.fhir.r4.types.Bundle.BundleEntry;
 import com.medplum.server.fhir.r4.search.Filter;
 import com.medplum.server.fhir.r4.search.SearchParameters;
 import com.medplum.server.fhir.r4.search.SearchRequest;
@@ -47,6 +46,7 @@ import com.medplum.server.sql.Parameter;
 import com.medplum.server.sql.SqlBuilder;
 import com.medplum.server.sql.UpdateQuery;
 import com.medplum.server.sse.SseService;
+import com.medplum.util.JsonUtils;
 
 public class JdbcRepository implements Repository, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(JdbcRepository.class);

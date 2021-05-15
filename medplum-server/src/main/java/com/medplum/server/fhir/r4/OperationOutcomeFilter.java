@@ -13,9 +13,9 @@ import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.Provider;
 
-import com.medplum.fhir.types.FhirResource;
-import com.medplum.fhir.types.Meta;
-import com.medplum.fhir.types.OperationOutcome;
+import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.Meta;
+import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.server.ConfigSettings;
 
 @Provider

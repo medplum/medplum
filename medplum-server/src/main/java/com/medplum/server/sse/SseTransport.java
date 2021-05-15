@@ -1,6 +1,6 @@
 package com.medplum.server.sse;
 
-import com.medplum.fhir.types.FhirResource;
+import com.medplum.fhir.r4.types.FhirResource;
 
 /**
  * A SseTransport provides message networking.

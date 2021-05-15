@@ -6,10 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.medplum.fhir.JsonUtils;
-import com.medplum.fhir.types.Bundle;
-import com.medplum.fhir.types.Bundle.BundleEntry;
-import com.medplum.fhir.types.SearchParameter;
+import com.medplum.fhir.r4.types.Bundle;
+import com.medplum.fhir.r4.types.SearchParameter;
+import com.medplum.fhir.r4.types.Bundle.BundleEntry;
+import com.medplum.util.JsonUtils;
 
 /**
  * The SearchParameterMapping class defines a URL search parameter.

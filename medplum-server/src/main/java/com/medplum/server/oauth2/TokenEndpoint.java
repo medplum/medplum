@@ -23,12 +23,12 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.jose4j.lang.JoseException;
 
-import com.medplum.fhir.types.ClientApplication;
-import com.medplum.fhir.types.FhirResource;
-import com.medplum.fhir.types.Login;
-import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.fhir.types.Patient;
-import com.medplum.fhir.types.RefreshToken;
+import com.medplum.fhir.r4.types.ClientApplication;
+import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.Login;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.Patient;
+import com.medplum.fhir.r4.types.RefreshToken;
 import com.medplum.server.ConfigSettings;
 import com.medplum.server.Utils;
 import com.medplum.server.Utils.KeyValue;

@@ -2,7 +2,7 @@ package com.medplum.server.oauth2;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static com.medplum.fhir.IdUtils.*;
+import static com.medplum.util.IdUtils.*;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -17,8 +17,8 @@ import jakarta.ws.rs.core.Response;
 
 import org.junit.Test;
 
-import com.medplum.fhir.FhirMediaType;
-import com.medplum.fhir.types.Patient;
+import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.types.Patient;
 import com.medplum.server.BaseTest;
 import com.medplum.server.Utils;
 

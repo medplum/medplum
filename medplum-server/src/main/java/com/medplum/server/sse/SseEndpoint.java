@@ -11,9 +11,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
 
-import com.medplum.fhir.StandardOutcomes;
-import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.fhir.types.Subscription;
+import com.medplum.fhir.r4.StandardOutcomes;
+import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.Subscription;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.SecurityUser;
 

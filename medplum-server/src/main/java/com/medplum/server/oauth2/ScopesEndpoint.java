@@ -24,7 +24,7 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.glassfish.jersey.server.mvc.Viewable;
 
-import com.medplum.fhir.types.Login;
+import com.medplum.fhir.r4.types.Login;
 import com.medplum.server.security.OAuthService;
 
 @Path("/oauth2/scopes")

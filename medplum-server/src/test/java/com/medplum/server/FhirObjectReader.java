@@ -11,7 +11,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 
-import com.medplum.fhir.types.FhirObject;
+import com.medplum.fhir.r4.types.FhirObject;
 
 public class FhirObjectReader<T extends FhirObject> implements MessageBodyReader<T> {
 
