@@ -1,18 +1,26 @@
 package com.medplum.generator;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonValue;
+import jakarta.json.JsonWriter;
+import jakarta.json.JsonWriterFactory;
+import jakarta.json.stream.JsonGenerator;
 
 public class TypeScriptGenerator {
     private static final String INDENT = " ".repeat(2);
@@ -85,6 +93,38 @@ public class TypeScriptGenerator {
 
         writeClass(b, fhirType, true);
         Files.writeString(Path.of(OUTPUT_PATH + fhirType.getOutputName() + ".ts"), b.toString());
+    }
+
+    public static void writeSchemaFile(final FhirType fhirType) throws IOException {
+        final JsonObjectBuilder propertyMap = Json.createObjectBuilder();
+
+        for (final Property property : fhirType.getProperties()) {
+            final String propertyName = property.getName();
+            final String typeName = getTypeScriptType(property);
+
+            propertyMap.add(propertyName, Json.createObjectBuilder()
+                    .add("key", propertyName)
+                    .add("display", getDisplayName(propertyName))
+                    .add("description", property.getDescription())
+                    .add("type", typeName)
+                    .build());
+        }
+
+        final JsonObjectBuilder builder = Json.createObjectBuilder();
+        builder.add("name", fhirType.getOutputName());
+        builder.add("description", fhirType.getTypeDef().getString("description"));
+        builder.add("properties", propertyMap.build());
+
+        final JsonObject json = builder.build();
+
+        final Map<String, Boolean> config = new HashMap<>();
+        config.put(JsonGenerator.PRETTY_PRINTING, true);
+
+        final JsonWriterFactory writerFactory = Json.createWriterFactory(config);
+
+        try (final JsonWriter writer = writerFactory.createWriter(new FileWriter(new File(OUTPUT_PATH + fhirType.getOutputName() + ".schema.json")))) {
+            writer.write(json);
+        }
     }
 
     private static void buildImports(final FhirType fhirType, final Set<String> includedTypes, final Set<String> referencedTypes) {
@@ -235,5 +275,23 @@ public class TypeScriptGenerator {
         }
 
         return ref.replaceAll("_", "");
+    }
+
+    private static String getDisplayName(final String inputName) {
+        final StringBuilder b = new StringBuilder();
+
+        for (int i = 0; i < inputName.length(); i++) {
+            final char c = inputName.charAt(i);
+            if (i == 0) {
+                b.append(Character.toUpperCase(c));
+            } else if (Character.isUpperCase(c)) {
+                b.append(' ');
+                b.append(c);
+            } else {
+                b.append(c);
+            }
+        }
+
+        return b.toString();
     }
 }
