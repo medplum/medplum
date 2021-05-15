@@ -21,9 +21,9 @@ import com.medplum.fhir.types.Bundle;
 import com.medplum.fhir.types.Bundle.BundleEntry;
 import com.medplum.fhir.types.JsonWebKey;
 import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.server.fhir.repo.Repository;
-import com.medplum.server.search.Operation;
-import com.medplum.server.search.SearchRequest;
+import com.medplum.server.fhir.r4.repo.Repository;
+import com.medplum.server.fhir.r4.search.Operation;
+import com.medplum.server.fhir.r4.search.SearchRequest;
 
 public class JwkManager {
     private static final Logger LOG = LoggerFactory.getLogger(JwkManager.class);

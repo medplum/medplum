@@ -8,8 +8,8 @@ import jakarta.ws.rs.Produces;
 
 import com.medplum.fhir.FhirMediaType;
 import com.medplum.fhir.types.OperationOutcome;
-import com.medplum.server.fhir.repo.Repository;
-import com.medplum.server.fhir.repo.SetupExecutor;
+import com.medplum.server.fhir.r4.repo.Repository;
+import com.medplum.server.fhir.r4.repo.SetupExecutor;
 
 @Path("/setup")
 @Produces(FhirMediaType.APPLICATION_FHIR_JSON)

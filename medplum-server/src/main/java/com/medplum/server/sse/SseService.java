@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.medplum.fhir.FhirMediaType;
 import com.medplum.fhir.types.FhirResource;
-import com.medplum.server.search.SearchUtils;
+import com.medplum.server.fhir.r4.search.SearchUtils;
 
 /**
  * The SseService manages server-side events.

@@ -34,9 +34,9 @@ import com.medplum.fhir.types.Reference;
 import com.medplum.fhir.types.RefreshToken;
 import com.medplum.fhir.types.User;
 import com.medplum.server.ConfigSettings;
-import com.medplum.server.fhir.repo.Repository;
-import com.medplum.server.search.Operation;
-import com.medplum.server.search.SearchRequest;
+import com.medplum.server.fhir.r4.repo.Repository;
+import com.medplum.server.fhir.r4.search.Operation;
+import com.medplum.server.fhir.r4.search.SearchRequest;
 
 public class OAuthService {
     private static final Logger LOG = LoggerFactory.getLogger(OAuthService.class);

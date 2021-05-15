@@ -14,7 +14,7 @@ import jakarta.ws.rs.sse.SseEventSink;
 import com.medplum.fhir.StandardOutcomes;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.fhir.types.Subscription;
-import com.medplum.server.fhir.repo.Repository;
+import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.SecurityUser;
 
 import graphql.com.google.common.base.Objects;

@@ -22,11 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.medplum.fhir.FhirObjectReader;
-import com.medplum.server.fhir.repo.BinaryStorage;
-import com.medplum.server.fhir.repo.FileSystemBinaryStorage;
-import com.medplum.server.fhir.repo.JdbcRepository;
-import com.medplum.server.fhir.repo.JdbcRepositoryFactory;
-import com.medplum.server.fhir.repo.Repository;
+import com.medplum.server.fhir.r4.repo.BinaryStorage;
+import com.medplum.server.fhir.r4.repo.FileSystemBinaryStorage;
+import com.medplum.server.fhir.r4.repo.JdbcRepository;
+import com.medplum.server.fhir.r4.repo.JdbcRepositoryFactory;
+import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.JwkManager;
 import com.medplum.server.security.OAuthService;
 import com.medplum.server.services.DebugEmailService;

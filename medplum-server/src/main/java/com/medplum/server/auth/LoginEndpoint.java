@@ -20,7 +20,7 @@ import com.medplum.fhir.types.Login;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.fhir.types.Reference;
 import com.medplum.fhir.types.User;
-import com.medplum.server.fhir.repo.Repository;
+import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.JwtResult;
 import com.medplum.server.security.OAuthService;
 import com.medplum.server.security.SecurityUser;

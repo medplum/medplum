@@ -22,8 +22,8 @@ import com.medplum.fhir.types.HumanName;
 import com.medplum.fhir.types.OperationOutcome;
 import com.medplum.fhir.types.Patient;
 import com.medplum.fhir.types.User;
-import com.medplum.server.fhir.repo.JdbcRepository;
-import com.medplum.server.search.SearchRequestParser;
+import com.medplum.server.fhir.r4.repo.JdbcRepository;
+import com.medplum.server.fhir.r4.search.SearchRequestParser;
 import com.medplum.server.security.SecurityUser;
 
 public abstract class BaseTest extends JerseyTest {
