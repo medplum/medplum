@@ -9,13 +9,13 @@ import org.mindrot.jbcrypt.BCrypt;
 
 import com.medplum.fhir.r4.StandardOutcomes;
 import com.medplum.fhir.r4.types.Bundle;
+import com.medplum.fhir.r4.types.Bundle.BundleEntry;
 import com.medplum.fhir.r4.types.ClientApplication;
 import com.medplum.fhir.r4.types.HumanName;
 import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.fhir.r4.types.Organization;
 import com.medplum.fhir.r4.types.Practitioner;
 import com.medplum.fhir.r4.types.User;
-import com.medplum.fhir.r4.types.Bundle.BundleEntry;
 import com.medplum.server.fhir.r4.search.SearchRequest;
 import com.medplum.server.security.SecurityUser;
 

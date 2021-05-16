@@ -15,11 +15,11 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import com.medplum.fhir.r4.FhirMediaType;
 import com.medplum.fhir.r4.types.CapabilityStatement;
-import com.medplum.fhir.r4.types.Extension;
 import com.medplum.fhir.r4.types.CapabilityStatement.CapabilityStatementImplementation;
 import com.medplum.fhir.r4.types.CapabilityStatement.CapabilityStatementRest;
 import com.medplum.fhir.r4.types.CapabilityStatement.CapabilityStatementSecurity;
 import com.medplum.fhir.r4.types.CapabilityStatement.CapabilityStatementSoftware;
+import com.medplum.fhir.r4.types.Extension;
 import com.medplum.server.ConfigSettings;
 import com.medplum.util.JsonUtils;
 
