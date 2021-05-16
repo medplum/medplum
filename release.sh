@@ -20,7 +20,6 @@ NEXT_SNAPSHOT_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}.$((BUILD_NUMBER + 1))-S
 
 echo "RELEASE=${RELEASE_VERSION}"
 echo "SNAPSHOT=${NEXT_SNAPSHOT_VERSION}"
-exit 1
 
 # Fail on error
 set -e
@@ -35,13 +34,13 @@ mvn versions:set -DnewVersion=${RELEASE_VERSION} -DgenerateBackupPoms=false
 mvn clean install
 
 # Deploy libraries to Maven Central
-#mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator,-medplum-server clean deploy -P release -e
+mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator,-medplum-server clean deploy -P release -e
 
 # Build site
-# mvn site:site site:stage
+mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator site:site site:stage
 
 # Deploy site
-# aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --profile medplum --region us-east-1 --recursive --acl public-read
+aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --profile medplum --region us-east-1 --recursive --acl public-read
 
 # Build docker image
 pushd medplum-server
@@ -60,6 +59,10 @@ aws ecs update-service \
   --service MedplumStack-BackEndFargateServiceD3B260C0-BAnXfRE5eGRD \
   --force-new-deployment
 
+# Configure git
+git config --global user.name 'Medplum'
+git config --global user.email 'medplum@users.noreply.github.com'
+
 # Commit release
 git commit -am "Version ${RELEASE_VERSION}"
 
@@ -73,4 +76,4 @@ mvn versions:set -DnewVersion=${NEXT_SNAPSHOT_VERSION} -DgenerateBackupPoms=fals
 git commit -am "Version ${NEXT_SNAPSHOT_VERSION}"
 
 # Push to GitHub:
-git push origin main
+git push
