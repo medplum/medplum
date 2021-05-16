@@ -36,7 +36,7 @@ public class SearchParameters {
     }
 
     private static Map<String, Map<String, SearchParameter>> buildMappings() {
-        final Bundle searchParams = new Bundle(JsonUtils.readJsonResourceFile("search-parameters.json"));
+        final Bundle searchParams = new Bundle(JsonUtils.readJsonResourceFile("fhir/r4/search-parameters.json"));
         final Map<String, Map<String, SearchParameter>> table = new HashMap<>();
 
         for (final BundleEntry entry : searchParams.entry()) {

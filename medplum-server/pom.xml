@@ -45,6 +45,10 @@
             <artifactId>medplum-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.medplum</groupId>
+            <artifactId>medplum-fhir-resources</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikaricp.version}</version>
@@ -247,6 +251,16 @@
                         <filter>
                             <artifact>*:*</artifact>
                             <excludes>
+                                <exclude>fhir/r4/conceptmaps.json</exclude>
+                                <exclude>fhir/r4/dataelements.json</exclude>
+                                <exclude>fhir/r4/extension-definitions.json</exclude>
+                                <exclude>fhir/r4/profiles-others.json</exclude>
+                                <exclude>fhir/r4/profiles-types.json</exclude>
+                                <exclude>fhir/r4/README.md</exclude>
+                                <exclude>fhir/r4/v2-tables.json</exclude>
+                                <exclude>fhir/r4/v3-codesystems.json</exclude>
+                                <exclude>fhir/r4/valuesets.json</exclude>
+                                <exclude>fhir/r4/version.info</exclude>
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>

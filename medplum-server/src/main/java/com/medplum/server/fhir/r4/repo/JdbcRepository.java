@@ -304,6 +304,7 @@ public class JdbcRepository implements Repository, Closeable {
         builder.add("resourceType", resourceType);
         builder.add("id", id);
         builder.add("meta", metaBuilder.build());
+        builder.remove("text");
 
         final FhirResource resource = new FhirResource(builder.build());
         return existing == null ?
