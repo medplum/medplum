@@ -47,10 +47,4 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
       - name: Build Docker image
         if: github.ref == 'refs/heads/main'
-        run: |
-          mvn -B versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
-          mvn -B -P docker -DskipTests=true clean deploy
-          docker tag medplum-server:$VERSION $REPO:$VERSION
-          docker tag medplum-server:$VERSION $REPO:latest
-          docker push $REPO:$VERSION
-          docker push $REPO:latest
+        run: release.sh ${{ github.run_number }}
