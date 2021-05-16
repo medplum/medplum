@@ -1,6 +1,5 @@
 package com.medplum.generator;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -19,7 +18,7 @@ public class Generator {
     public static final Map<String, FhirType> FHIR_TYPES = new HashMap<>();
 
     public static void main(final String[] args) throws IOException {
-        final JsonObject schema = readJson("src/main/resources/fhir/fhir.schema.json");
+        final JsonObject schema = readJson("fhir/r4/fhir.schema.json");
         final JsonObject definitions = schema.getJsonObject("definitions");
 
         JavaGenerator.mkdirs();
@@ -67,7 +66,7 @@ public class Generator {
     }
 
     private static JsonObject readJson(final String filename) {
-        try (final InputStream in = new FileInputStream(filename);
+        try (final InputStream in = Generator.class.getClassLoader().getResourceAsStream(filename);
                 final JsonParser parser = Json.createParser(in)) {
             parser.next();
             return parser.getObject();

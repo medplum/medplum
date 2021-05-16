@@ -12,6 +12,10 @@
     <description>Medplum core types and utilities</description>
     <dependencies>
         <dependency>
+            <groupId>com.medplum</groupId>
+            <artifactId>medplum-fhir-resources</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.json</groupId>
             <artifactId>jakarta.json-api</artifactId>
         </dependency>

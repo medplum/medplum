@@ -42,6 +42,7 @@
         <module>medplum-cdk</module>
         <module>medplum-core</module>
         <module>medplum-coverage</module>
+        <module>medplum-fhir-resources</module>
         <module>medplum-generator</module>
         <module>medplum-server</module>
     </modules>
@@ -133,6 +134,11 @@
             <dependency>
                 <groupId>com.medplum</groupId>
                 <artifactId>medplum-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.medplum</groupId>
+                <artifactId>medplum-fhir-resources</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

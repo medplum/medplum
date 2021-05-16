@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.types.OperationOutcome.OperationOutcomeIssue;
 import com.medplum.util.JsonUtils;
 
 public class FhirSchema {
-    private static final String FILENAME = "fhir.schema.json";
+    private static final String FILENAME = "fhir/r4/fhir.schema.json";
     private static final JsonObject schema;
     private static final JsonObject definitions;
     private static final List<String> resourceTypes;
