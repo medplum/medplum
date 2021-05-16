@@ -27,6 +27,13 @@ set -e
 # Echo commands
 set -x
 
+# Configure git
+git config --global user.name 'Medplum'
+git config --global user.email 'medplum@users.noreply.github.com'
+
+# Build list of files changed in last commit
+git diff --name-only HEAD HEAD~1
+
 # Set release version
 mvn versions:set -DnewVersion=${RELEASE_VERSION} -DgenerateBackupPoms=false
 
@@ -34,13 +41,13 @@ mvn versions:set -DnewVersion=${RELEASE_VERSION} -DgenerateBackupPoms=false
 mvn clean install
 
 # Deploy libraries to Maven Central
-mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator,-medplum-server clean deploy -P release -e
+#mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator,-medplum-server clean deploy -P release -e
 
 # Build site
-mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator site:site site:stage
+#mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator site:site site:stage
 
 # Deploy site
-aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --profile medplum --region us-east-1 --recursive --acl public-read
+#aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --profile medplum --region us-east-1 --recursive --acl public-read
 
 # Build docker image
 pushd medplum-server
@@ -58,10 +65,6 @@ aws ecs update-service \
   --cluster MedplumStack-BackEndCluster6B6DC4A8-eFbKEVFrgmMR \
   --service MedplumStack-BackEndFargateServiceD3B260C0-BAnXfRE5eGRD \
   --force-new-deployment
-
-# Configure git
-git config --global user.name 'Medplum'
-git config --global user.email 'medplum@users.noreply.github.com'
 
 # Commit release
 git commit -am "Version ${RELEASE_VERSION}"
