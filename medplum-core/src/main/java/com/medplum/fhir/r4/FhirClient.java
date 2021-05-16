@@ -59,6 +59,10 @@ public class FhirClient {
         return post(UriBuilder.fromUri(baseUri).path(resource.resourceType()).build(), resource);
     }
 
+    public Response validateCreate(final FhirResource resource) {
+        return post(UriBuilder.fromUri(baseUri).path(resource.resourceType()).path("$validate").build(), resource);
+    }
+
     public Response readMetadata() {
         return get(UriBuilder.fromUri(baseUri).path("metadata").build());
     }
@@ -77,6 +81,18 @@ public class FhirClient {
 
     public Response update(final FhirResource resource) {
         return put(UriBuilder.fromUri(baseUri).path(resource.resourceType()).path(resource.id()).build(), resource);
+    }
+
+    public Response validateUpdate(final FhirResource resource) {
+        return post(UriBuilder.fromUri(baseUri).path(resource.resourceType()).path(resource.id()).path("$validate").build(), resource);
+    }
+
+    public Response delete(final String resourceType, final String id) {
+        return delete(UriBuilder.fromUri(baseUri).path(resourceType).path(id).build());
+    }
+
+    public Response validateDelete(final String resourceType, final String id) {
+        return delete(UriBuilder.fromUri(baseUri).path(resourceType).path(id).path("$validate").build());
     }
 
     public Response search(final String resourceType, final String query) {
@@ -101,6 +117,10 @@ public class FhirClient {
 
     public Response put(final URI uri, final JsonObject data) {
         return method(uri, HttpMethod.PUT, Entity.entity(data, APPLICATION_FHIR_JSON));
+    }
+
+    public Response delete(final URI uri) {
+        return method(uri, HttpMethod.DELETE, null);
     }
 
     private Response method(final URI uri, final String method, final Entity<?> entity) {

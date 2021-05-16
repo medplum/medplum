@@ -12,6 +12,31 @@ import com.medplum.server.security.SecurityUser;
 public interface Repository {
 
     /**
+     * Validates the content against the schema.
+     * @param user The user performing the operation.
+     * @param resource The FHIR resource.
+     * @return Operation outcome.
+     */
+    OperationOutcome validateCreate(SecurityUser user, FhirResource resource);
+
+    /**
+     * Validates the content against the schema.
+     * @param user The user performing the operation.
+     * @param id The FHIR resource ID.
+     * @param resource The FHIR resource.
+     * @return Operation outcome.
+     */
+    OperationOutcome validateUpdate(SecurityUser user, String id, FhirResource resource);
+
+    /**
+     * Validates the content against the schema.
+     * @param user The user performing the operation.
+     * @param resource The FHIR resource.
+     * @return Operation outcome.
+     */
+    OperationOutcome validateDelete(SecurityUser user, String resourceType, String id);
+
+    /**
      * Creates a new resource version from key value pairs.
      * Always creates a new resource with a new ID.
      * @param user The user performing the operation.

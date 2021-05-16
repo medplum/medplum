@@ -16,6 +16,7 @@ import org.junit.Test;
 import com.medplum.fhir.r4.FhirMediaType;
 import com.medplum.fhir.r4.types.Patient;
 import com.medplum.server.BaseTest;
+import com.medplum.util.IdUtils;
 
 public class DefaultEndpointTest extends BaseTest {
 
@@ -23,6 +24,44 @@ public class DefaultEndpointTest extends BaseTest {
     public void testMetadata() {
         final Response response = fhir().readMetadata();
         assertEquals(200, response.getStatus());
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+    }
+
+    @Test
+    public void testValidateCreateSuccess() {
+        final Response response = fhir().validateCreate(Patient.create().build());
+        assertEquals(200, response.getStatus());
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertNull(response.getHeaderString(HttpHeaders.LOCATION));
+        assertNull(response.getHeaderString(HttpHeaders.ETAG));
+    }
+
+    @Test
+    public void testValidateCreateFailure() {
+        final Response response = fhir().post(
+                UriBuilder.fromUri(fhir().getBaseUri()).path("Patient").path("$validate").build(),
+                Json.createObjectBuilder().build());
+
+        assertEquals(400, response.getStatus());
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+    }
+
+    @Test
+    public void testValidateUpdateSuccess() {
+        final Response response = fhir().validateUpdate(Patient.create().id(IdUtils.generateId()).build());
+        assertEquals(200, response.getStatus());
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+        assertNull(response.getHeaderString(HttpHeaders.LOCATION));
+        assertNull(response.getHeaderString(HttpHeaders.ETAG));
+    }
+
+    @Test
+    public void testValidateUpdateFailure() {
+        final Response response = fhir().post(
+                UriBuilder.fromUri(fhir().getBaseUri()).path("Patient").path(IdUtils.generateId()).path("$validate").build(),
+                Json.createObjectBuilder().build());
+
+        assertEquals(400, response.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
     }
 

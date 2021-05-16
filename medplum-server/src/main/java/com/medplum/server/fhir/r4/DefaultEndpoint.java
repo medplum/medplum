@@ -52,6 +52,13 @@ public class DefaultEndpoint {
     }
 
     @POST
+    @Path("/{resourceType}/$validate")
+    @Consumes(FhirMediaType.APPLICATION_FHIR_JSON)
+    public OperationOutcome validateCreate(final FhirResource data) {
+        return repo.validateCreate(getUser(), data);
+    }
+
+    @POST
     @Path("/{resourceType}")
     @Consumes(FhirMediaType.APPLICATION_FHIR_JSON)
     public OperationOutcome create(final FhirResource data) {
@@ -80,6 +87,13 @@ public class DefaultEndpoint {
     @Path("/{resourceType}/{id}/_history/{vid}")
     public OperationOutcome readVersion() {
         return repo.readVersion(getUser(), resourceType, id, vid);
+    }
+
+    @POST
+    @Path("/{resourceType}/{id}/$validate")
+    @Consumes(FhirMediaType.APPLICATION_FHIR_JSON)
+    public OperationOutcome validateUpdate(final FhirResource data) {
+        return repo.validateUpdate(getUser(), id, data);
     }
 
     @PUT

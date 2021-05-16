@@ -102,6 +102,31 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     @Override
+    public OperationOutcome validateCreate(final SecurityUser user, final FhirResource resource) {
+        final OperationOutcome validateOutcome = FhirSchema.validate(resource);
+        if (!validateOutcome.isOk()) {
+            return validateOutcome;
+        }
+
+        return StandardOutcomes.ok();
+    }
+
+    @Override
+    public OperationOutcome validateUpdate(final SecurityUser user, final String id, final FhirResource resource) {
+        final OperationOutcome validateOutcome = FhirSchema.validate(resource);
+        if (!validateOutcome.isOk()) {
+            return validateOutcome;
+        }
+
+        return StandardOutcomes.ok();
+    }
+
+    @Override
+    public OperationOutcome validateDelete(final SecurityUser user, final String resourceType, final String id) {
+        return StandardOutcomes.ok();
+    }
+
+    @Override
     public OperationOutcome create(final SecurityUser user, final FhirResource data) {
         final OperationOutcome validateOutcome = FhirSchema.validate(data);
         if (!validateOutcome.isOk()) {
