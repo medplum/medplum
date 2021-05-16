@@ -34,6 +34,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+      - name: Configure AWS credentials
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        if: github.ref == 'refs/heads/main'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
       - name: Build Docker image
         if: github.ref == 'refs/heads/main'
-        run: echo "Build Docker image"
+        run: |
+          mvn -B versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+          mvn -B -P docker -DskipTests=true clean deploy
+          docker tag medplum-server:$VERSION $REPO:$VERSION
+          docker tag medplum-server:$VERSION $REPO:latest
+          docker push $REPO:$VERSION
+          docker push $REPO:latest
