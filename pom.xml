@@ -74,15 +74,15 @@
         </site>
     </distributionManagement>
     <properties>
-        <aws.version>2.16.44</aws.version>
+        <aws.version>2.16.63</aws.version>
         <bcrypt.version>0.4</bcrypt.version>
-        <cdk.version>1.94.1</cdk.version>
-        <checkstyle.version>8.41.1</checkstyle.version>
+        <cdk.version>1.104.0</cdk.version>
+        <checkstyle.version>8.42</checkstyle.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-text.version>1.9</commons-text.version>
         <dockerfile.version>1.4.13</dockerfile.version>
         <eclipselink.version>3.0.0</eclipselink.version>
-        <graphql.version>2021-04-19T03-51-46-d783ec7e</graphql.version>
+        <graphql.version>2021-05-03T08-53-12-8f1ec444</graphql.version>
         <h2.version>1.4.200</h2.version>
         <hikaricp.version>4.0.3</hikaricp.version>
         <httpcomponents-client.version>4.5.13</httpcomponents-client.version>
@@ -92,18 +92,17 @@
         <jakarta-json.version>2.0.0</jakarta-json.version>
         <jakarta-rs.version>3.0.0</jakarta-rs.version>
         <jakarta.ws.rs.version>3.0.0</jakarta.ws.rs.version>
-        <jersey.version>3.0.1</jersey.version>
+        <jersey.version>3.0.2</jersey.version>
         <jose4j.version>0.7.7</jose4j.version>
-        <junit.version>5.7.0</junit.version>
+        <junit.version>5.7.2</junit.version>
         <junit4.version>4.13.2</junit4.version>
         <logback.version>1.2.3</logback.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <medplum.sdk.version>0.0.1-SNAPSHOT</medplum.sdk.version>
-        <mockito.version>3.9.0</mockito.version>
+        <mockito.version>3.10.0</mockito.version>
         <mustache.version>0.9.7</mustache.version>
-        <netty.version>4.1.56.Final</netty.version>
-        <postgresql.version>42.2.19</postgresql.version>
+        <postgresql.version>42.2.20</postgresql.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <reactive.version>1.0.3</reactive.version>
         <shade.version>3.1.0</shade.version>
@@ -145,11 +144,6 @@
                 <groupId>com.medplum</groupId>
                 <artifactId>medplum-server</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-all</artifactId>
-                <version>${netty.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.json</groupId>
@@ -223,7 +217,7 @@
             </dependency>
             <dependency>
                 <groupId>org.glassfish.jersey.test-framework.providers</groupId>
-                <artifactId>jersey-test-framework-provider-netty</artifactId>
+                <artifactId>jersey-test-framework-provider-inmemory</artifactId>
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
@@ -265,6 +259,14 @@
     </dependencyManagement>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.8.1</version>
+                <configuration>
+                    <rulesUri>file:///${session.executionRootDirectory}/maven-version-rules.xml</rulesUri>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
