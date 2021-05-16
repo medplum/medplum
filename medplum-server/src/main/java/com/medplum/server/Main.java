@@ -3,7 +3,7 @@ package com.medplum.server;
 import java.net.URI;
 import java.util.Map;
 
-import org.glassfish.jersey.netty.httpserver.NettyHttpContainerProvider;
+import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +15,7 @@ public class Main {
         LOG.info("App starting with args: {}", (Object[]) args);
         final Map<String, Object> config = ConfigSettings.loadConfig(args);
 
-        NettyHttpContainerProvider.createServer(BASE_URI, new App(config), false);
+        GrizzlyHttpServerFactory.createHttpServer(BASE_URI, new App(config), true);
         LOG.info("App started at: {}", BASE_URI);
         System.in.read();
     }
