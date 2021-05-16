@@ -45,6 +45,6 @@ jobs:
         if: github.ref == 'refs/heads/main'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-      - name: Build Docker image
+      - name: Release
         if: github.ref == 'refs/heads/main'
-        run: release.sh ${{ github.run_number }}
+        run: ./release.sh ${{ github.run_number }}
