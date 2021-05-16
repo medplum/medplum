@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.medplum</groupId>
     <artifactId>medplum</artifactId>
-    <version>0.0.5-SNAPSHOT</version>
+    <version>0.0.7</version>
     <packaging>pom</packaging>
     <name>medplum</name>
     <description>Medplum</description>
@@ -430,7 +430,15 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.1.2</version>
+                <configuration>
+                    <configLocation>checkstyle.xml</configLocation>
+                    <encoding>UTF-8</encoding>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>true</failsOnError>
+                    <linkXRef>false</linkXRef>
+                    <violationSeverity>warning</violationSeverity>
+                </configuration>
                 <reportSets>
                     <reportSet>
                         <reports>
