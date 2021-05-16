@@ -47,7 +47,7 @@ mvn clean install
 #mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator site:site site:stage
 
 # Deploy site
-#aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --profile medplum --region us-east-1 --recursive --acl public-read
+#aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --region us-east-1 --recursive --acl public-read
 
 # Build docker image
 pushd medplum-server
@@ -60,7 +60,6 @@ popd
 
 # Update the medplum fargate service
 aws ecs update-service \
-  --profile medplum \
   --region us-east-1 \
   --cluster MedplumStack-BackEndCluster6B6DC4A8-eFbKEVFrgmMR \
   --service MedplumStack-BackEndFargateServiceD3B260C0-BAnXfRE5eGRD \
