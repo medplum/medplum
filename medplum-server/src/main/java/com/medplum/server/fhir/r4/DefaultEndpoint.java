@@ -20,7 +20,7 @@ import com.medplum.fhir.r4.types.Bundle;
 import com.medplum.fhir.r4.types.FhirResource;
 import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.server.fhir.r4.repo.Repository;
-import com.medplum.server.fhir.r4.search.SearchRequestParser;
+import com.medplum.server.fhir.r4.search.SearchParser;
 import com.medplum.server.security.SecurityUser;
 
 @Path("/fhir/R4")
@@ -68,7 +68,7 @@ public class DefaultEndpoint {
     @GET
     @Path("/{resourceType}")
     public OperationOutcome search() {
-        return repo.search(getUser(), SearchRequestParser.parse(uriInfo.getRequestUri()));
+        return repo.search(getUser(), SearchParser.parse(uriInfo.getRequestUri()));
     }
 
     @GET

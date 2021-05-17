@@ -18,7 +18,7 @@ import com.medplum.fhir.r4.types.Bundle.BundleEntry;
 import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.fhir.r4.search.SearchRequest;
-import com.medplum.server.fhir.r4.search.SearchRequestParser;
+import com.medplum.server.fhir.r4.search.SearchParser;
 import com.medplum.server.security.SecurityUser;
 
 import graphql.language.Argument;
@@ -77,7 +77,7 @@ public class FhirGraphQLDataFetcher<T> implements DataFetcher<T> {
         final String fieldName = field.getName();
         final String resourceType = fieldName.endsWith("List") ? fieldName.substring(0, fieldName.length() - 4) : fieldName;
         final List<Argument> arguments = field.getArguments();
-        final SearchRequestParser parser = new SearchRequestParser(resourceType);
+        final SearchParser parser = new SearchParser(resourceType);
 
         for (final Argument arg : arguments) {
             final String key = arg.getName();

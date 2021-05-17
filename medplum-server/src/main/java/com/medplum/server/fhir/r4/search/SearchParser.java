@@ -9,7 +9,7 @@ import com.medplum.fhir.r4.types.SearchParameter;
  * Parses a FHIR search query.
  * See: https://www.hl7.org/fhir/search.html
  */
-public class SearchRequestParser {
+public class SearchParser {
     private final String resourceType;
     private final SearchRequest.Builder builder;
 
@@ -33,7 +33,7 @@ public class SearchRequestParser {
             throw new IllegalArgumentException("Resource type is missing");
         }
 
-        final SearchRequestParser parser = new SearchRequestParser(resourceType);
+        final SearchParser parser = new SearchParser(resourceType);
 
         final String query = uri.getQuery();
         if (query != null && !query.isBlank()) {
@@ -50,13 +50,25 @@ public class SearchRequestParser {
         return parser.build();
     }
 
-    public SearchRequestParser(final String resourceType) {
+    public SearchParser(final String resourceType) {
         this.resourceType = Objects.requireNonNull(resourceType);
         this.builder = SearchRequest.create(resourceType);
     }
 
     public void parseKeyValue(final String key, final String value) {
-        switch (key) {
+        final String code;
+        final String modifier;
+
+        final int colonIndex = key.indexOf(':');
+        if (colonIndex >= 0) {
+            code = key.substring(0, colonIndex);
+            modifier = key.substring(colonIndex + 1);
+        } else {
+            code = key;
+            modifier = "";
+        }
+
+        switch (code) {
         case "_id":
         case "id":
             builder.filter(new Filter(SearchParameters.getParameter("Resource", "_id"), Operation.EQUALS, value));
@@ -75,9 +87,9 @@ public class SearchRequestParser {
             break;
 
         default:
-            final SearchParameter param = SearchParameters.getParameter(resourceType, key);
+            final SearchParameter param = SearchParameters.getParameter(resourceType, code);
             if (param != null) {
-                parseParameter(param, value);
+                parseParameter(param, modifier, value);
             }
         }
     }
@@ -96,7 +108,7 @@ public class SearchRequestParser {
         }
     }
 
-    private void parseParameter(final SearchParameter searchParam, final String value) {
+    private void parseParameter(final SearchParameter searchParam, final String modifier, final String value) {
         switch (searchParam.type()) {
         case "number":
             parseNumber(searchParam, value);
@@ -105,10 +117,10 @@ public class SearchRequestParser {
             parseDate(searchParam, value);
             break;
         case "string":
-            parseString(searchParam, value);
+            parseString(searchParam, modifier, value);
             break;
         case "token":
-            parseToken(searchParam, value);
+            parseToken(searchParam, modifier, value);
             break;
         case "reference":
             parseReference(searchParam, value);
@@ -139,16 +151,28 @@ public class SearchRequestParser {
         } else if (value.startsWith("ne")) {
             op = Operation.NOT_EQUALS;
             num = value.substring(2);
+
+        } else if (value.startsWith("lt")) {
+            op = Operation.LESS_THAN;
+            num = value.substring(2);
+
+        } else if (value.startsWith("le")) {
+            op = Operation.LESS_THAN_OR_EQUALS;
+            num = value.substring(2);
+
+        } else if (value.startsWith("gt")) {
+            op = Operation.GREATER_THAN;
+            num = value.substring(2);
+
+        } else if (value.startsWith("ge")) {
+            op = Operation.GREATER_THAN_OR_EQUALS;
+            num = value.substring(2);
         }
 
         builder.filter(new Filter(param, op, num));
     }
 
     private void parseDate(final SearchParameter param, final String value) {
-
-    }
-
-    private void parseString(final SearchParameter param, final String value) {
         Operation op = Operation.EQUALS;
         String str = value;
 
@@ -159,14 +183,93 @@ public class SearchRequestParser {
         } else if (value.startsWith("ne")) {
             op = Operation.NOT_EQUALS;
             str = value.substring(2);
+
+        } else if (value.startsWith("lt")) {
+            op = Operation.LESS_THAN;
+            str = value.substring(2);
+
+        } else if (value.startsWith("le")) {
+            op = Operation.LESS_THAN_OR_EQUALS;
+            str = value.substring(2);
+
+        } else if (value.startsWith("gt")) {
+            op = Operation.GREATER_THAN;
+            str = value.substring(2);
+
+        } else if (value.startsWith("ge")) {
+            op = Operation.GREATER_THAN_OR_EQUALS;
+            str = value.substring(2);
+
+        } else if (value.startsWith("sa")) {
+            op = Operation.STARTS_AFTER;
+            str = value.substring(2);
+
+        } else if (value.startsWith("eb")) {
+            op = Operation.ENDS_BEFORE;
+            str = value.substring(2);
+
+        } else if (value.startsWith("ap")) {
+            op = Operation.APPROXIMATELY;
+            str = value.substring(2);
         }
 
         builder.filter(new Filter(param, op, str));
-
     }
 
-    private void parseToken(final SearchParameter param, final String value) {
-        builder.filter(new Filter(param, Operation.EQUALS, value));
+    private void parseString(final SearchParameter param, final String modifier, final String value) {
+        Operation op = Operation.EQUALS;
+
+        if (modifier != null && !modifier.isBlank()) {
+            switch (modifier) {
+            case "contains":
+                op = Operation.CONTAINS;
+                break;
+
+            case "exact":
+                op = Operation.EXACT;
+                break;
+            }
+        }
+
+        builder.filter(new Filter(param, op, value));
+    }
+
+    private void parseToken(final SearchParameter param, final String modifier, final String value) {
+        Operation op = Operation.EQUALS;
+
+        if (modifier != null && !modifier.isBlank()) {
+            switch (modifier) {
+            case "text":
+                op = Operation.TEXT;
+                break;
+
+            case "not":
+                op = Operation.NOT_EQUALS;
+                break;
+
+            case "above":
+                op = Operation.ABOVE;
+                break;
+
+            case "below":
+                op = Operation.BELOW;
+                break;
+
+            case "in":
+                op = Operation.IN;
+                break;
+
+            case "not-in":
+                op = Operation.NOT_IN;
+                break;
+
+            case "of-type":
+                op = Operation.OF_TYPE;
+                break;
+            }
+        }
+
+        builder.filter(new Filter(param, op, value));
     }
 
     private void parseReference(final SearchParameter param, final String value) {

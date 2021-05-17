@@ -7,7 +7,7 @@ import jakarta.ws.rs.sse.SseEventSink;
 
 import com.medplum.fhir.r4.types.Subscription;
 import com.medplum.server.fhir.r4.search.SearchRequest;
-import com.medplum.server.fhir.r4.search.SearchRequestParser;
+import com.medplum.server.fhir.r4.search.SearchParser;
 
 public class SseConnection {
     private final SseEventSink eventSink;
@@ -23,7 +23,7 @@ public class SseConnection {
         this.eventSink = Objects.requireNonNull(eventSink);
         this.sse = Objects.requireNonNull(sse);
         this.subscription = Objects.requireNonNull(subscription);
-        this.criteria = SearchRequestParser.parse(Objects.requireNonNull(subscription.criteria()));
+        this.criteria = SearchParser.parse(Objects.requireNonNull(subscription.criteria()));
     }
 
     public SseEventSink getEventSink() {

@@ -21,7 +21,7 @@ import com.medplum.fhir.r4.types.Practitioner;
 import com.medplum.fhir.r4.types.StructureDefinition;
 import com.medplum.fhir.r4.types.User;
 import com.medplum.server.fhir.r4.search.SearchRequest;
-import com.medplum.server.fhir.r4.search.SearchRequestParser;
+import com.medplum.server.fhir.r4.search.SearchParser;
 import com.medplum.server.security.SecurityUser;
 import com.medplum.util.JsonUtils;
 
@@ -77,7 +77,7 @@ public class SetupExecutor {
     private void createOrganization() {
         final Bundle bundle = repo.search(
                 SecurityUser.SYSTEM_USER,
-                SearchRequestParser.parse("Organization?name=Medplum")).resource(Bundle.class);
+                SearchParser.parse("Organization?name=Medplum")).resource(Bundle.class);
 
         if (!bundle.entry().isEmpty()) {
             return;
