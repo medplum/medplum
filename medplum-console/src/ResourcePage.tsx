@@ -1,5 +1,5 @@
 import { Resource } from 'medplum';
-import { Document, ResourceForm, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from 'medplum-ui';
+import { Button, Document, parseForm, ResourceForm, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from 'medplum-ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
@@ -9,10 +9,15 @@ export function ResourcePage() {
   const { resourceType, id, tab } = useParams() as any;
   const medplum = useMedplum();
   const [value, setValue] = useState<Resource | undefined>();
+  const [historyBundle, setHistoryBundle] = useState<Resource | undefined>();
+
+  function loadResource() {
+    medplum.read(resourceType, id).then(result => setValue(result));
+    medplum.readHistory(resourceType, id).then(result => setHistoryBundle(result));
+  }
 
   useEffect(() => {
-    medplum.read(resourceType, id)
-      .then(result => setValue(result));
+    loadResource();
   }, [resourceType, id]);
 
   if (!value) {
@@ -49,20 +54,21 @@ export function ResourcePage() {
           </TabPanel>
           <TabPanel name="history">
             <div>History</div>
+            <pre>{JSON.stringify(historyBundle, undefined, 2)}</pre>
           </TabPanel>
           <TabPanel name="blame">
             <div>Blame</div>
           </TabPanel>
           <TabPanel name="json">
-            <pre></pre>
             <form onSubmit={e => {
               e.preventDefault();
+              const formData = parseForm(e.target as HTMLFormElement);
+              const resource = JSON.parse(formData.resource);
+              medplum.update(resource).then(() => loadResource());
             }}>
-              <textarea>{JSON.stringify(value, undefined, 2)}</textarea>
+              <textarea id="resource" name="resource" defaultValue={JSON.stringify(value, undefined, 2)} />
+              <Button type="submit">OK</Button>
             </form>
-          </TabPanel>
-          <TabPanel name="jsonedit">
-            <div>JSON Edit</div>
           </TabPanel>
         </TabSwitch>
       </Document>
