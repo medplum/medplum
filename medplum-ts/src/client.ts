@@ -3,10 +3,10 @@
 
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Bundle, Reference, Resource, Subscription, User } from './fhir';
+import { Binary, Bundle, Reference, Resource, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
+import { formatSearchQuery, SearchDefinition } from './search';
 import { Storage } from './storage';
-import { SearchDefinition } from './types';
 import { arrayBufferToBase64 } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
@@ -244,29 +244,10 @@ export class MedplumClient extends EventTarget {
   }
 
   search(search: SearchDefinition): Promise<Bundle> {
-    const path = this.fhirUrl(search.resourceType);
-    const params = [];
-    if (search.page) {
-      params.push('_page=' + search.page);
-    }
-    if (search.pageSize) {
-      params.push('_pageSize=' + search.page);
-    }
-    if (search.sort) {
-      params.push('_sort=' + search.sort);
-    }
-    const filters = search.filters;
-    if (filters) {
-      for (let i = 0; i < filters.length; i++) {
-        const filter = filters[i];
-        params.push(filter.key + '=' + filter.value);
-      }
-    }
-    const url = path + (params.length > 0 ? '?' + params.join('&') : '');
-    return this.get(url) as Promise<Bundle>;
+    return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search));
   }
 
-  read(resourceType: string, id: string): Promise<any> {
+  read(resourceType: string, id: string): Promise<Resource> {
     return this.get(this.fhirUrl(resourceType, id));
   }
 
@@ -293,7 +274,7 @@ export class MedplumClient extends EventTarget {
     return this.post(this.fhirUrl(resource.resourceType), resource);
   }
 
-  createBinary(data: any, contentType: string): Promise<any> {
+  createBinary(data: any, contentType: string): Promise<Binary> {
     return this.post(this.fhirUrl('Binary'), data, contentType);
   }
 
@@ -455,7 +436,6 @@ export class MedplumClient extends EventTarget {
     const codeChallenge = arrayBufferToBase64(arrayHash);
     sessionStorage.setItem('codeChallenge', codeChallenge);
 
-    //const scope = 'launch/patient openid fhirUser offline_access patient/Medication.read patient/AllergyIntolerance.read patient/CarePlan.read patient/CareTeam.read patient/Condition.read patient/Device.read patient/DiagnosticReport.read patient/DocumentReference.read patient/Encounter.read patient/Goal.read patient/Immunization.read patient/Location.read patient/MedicationRequest.read patient/Observation.read patient/Organization.read patient/Patient.read patient/Practitioner.read patient/Procedure.read patient/Provenance.read';
     const scope = 'launch/patient openid fhirUser offline_access user/*.*';
 
     window.location.href = this.authorizeUrl +
