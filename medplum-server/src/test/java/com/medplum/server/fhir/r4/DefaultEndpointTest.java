@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.net.URI;
 
 import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
@@ -187,49 +185,5 @@ public class DefaultEndpointTest extends BaseTest {
         final Response response2 = fhir().readVersion("Patient", id, vid);
         assertEquals(200, response2.getStatus());
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response2.getHeaderString(HttpHeaders.CONTENT_TYPE));
-    }
-
-    @Test
-    public void testSearch() {
-        // Create 3 patients
-        for (int i = 0; i < 3; i++) {
-            fhir().create(Patient.create().build());
-        }
-
-        // Ensure search returns at least 3 patients
-        final Response response = fhir().search("Patient", "");
-        assertEquals(200, response.getStatus());
-        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-        final JsonObject json = response.readEntity(JsonObject.class);
-        assertEquals("searchset", json.getString("type"));
-
-        final JsonArray entries = json.getJsonArray("entry");
-        assertTrue(entries.size() >= 3);
-    }
-
-    @Test
-    public void testSearchById() {
-        String id = null;
-
-        // Create 3 patients
-        for (int i = 0; i < 3; i++) {
-            final Response response = fhir().create(Patient.create().build());
-            if (i == 0) {
-                final String[] path = URI.create(response.getHeaderString(HttpHeaders.LOCATION)).getPath().split("/");
-                id = path[4];
-            }
-        }
-
-        // Search by ID, should only return exactly one result
-        final Response response = fhir().search("Patient", "_id=" + id);
-        assertEquals(200, response.getStatus());
-        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
-
-        final JsonObject json = response.readEntity(JsonObject.class);
-        assertEquals("searchset", json.getString("type"));
-
-        final JsonArray entries = json.getJsonArray("entry");
-        assertEquals(1, entries.size());
     }
 }

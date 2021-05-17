@@ -18,6 +18,11 @@ public class SqlBuilder implements AutoCloseable {
         return this;
     }
 
+    public SqlBuilder append(final int i) {
+        sql.append(i);
+        return this;
+    }
+
     public SqlBuilder appendIdentifier(final String str) throws SQLException {
         sql.append(formatter.enquoteIdentifier(str, true));
         return this;

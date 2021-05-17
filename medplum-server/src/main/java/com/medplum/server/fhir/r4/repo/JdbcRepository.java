@@ -3,6 +3,7 @@ package com.medplum.server.fhir.r4.repo;
 import static com.medplum.util.IdUtils.*;
 
 import java.io.Closeable;
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -18,9 +19,12 @@ import java.util.UUID;
 
 import jakarta.inject.Inject;
 import jakarta.json.Json;
+import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonPatch;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonValue.ValueType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +33,11 @@ import com.medplum.fhir.r4.FhirSchema;
 import com.medplum.fhir.r4.StandardOutcomes;
 import com.medplum.fhir.r4.types.Bundle;
 import com.medplum.fhir.r4.types.Bundle.BundleEntry;
+import com.medplum.fhir.r4.types.FhirList;
 import com.medplum.fhir.r4.types.FhirResource;
+import com.medplum.fhir.r4.types.Identifier;
 import com.medplum.fhir.r4.types.OperationOutcome;
+import com.medplum.fhir.r4.types.Patient;
 import com.medplum.fhir.r4.types.Reference;
 import com.medplum.fhir.r4.types.SearchParameter;
 import com.medplum.server.fhir.r4.search.Filter;
@@ -46,10 +53,12 @@ import com.medplum.server.sql.Parameter;
 import com.medplum.server.sql.SqlBuilder;
 import com.medplum.server.sql.UpdateQuery;
 import com.medplum.server.sse.SseService;
+import com.medplum.util.IdentifierComparator;
 import com.medplum.util.JsonUtils;
 
 public class JdbcRepository implements Repository, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(JdbcRepository.class);
+    private static final String TABLE_IDENTIFIER = "IDENTIFIER";
     private static final String COLUMN_ID = "ID";
     private static final String COLUMN_VERSION_ID = "VERSIONID";
     private static final String COLUMN_LAST_UPDATED = "LASTUPDATED";
@@ -58,6 +67,9 @@ public class JdbcRepository implements Repository, Closeable {
     private static final String COLUMN_TYPE_TIMESTAMP = "TIMESTAMP NOT NULL";
     private static final String COLUMN_TYPE_TEXT = "TEXT NOT NULL";
     private static final String COLUMN_TYPE_VARCHAR128 = "VARCHAR(128)";
+    private static final String COLUMN_IDENTIFIER_RESOURCE_ID = "RESOURCEID";
+    private static final String COLUMN_IDENTIFIER_SYSTEM = "SYSTEM";
+    private static final String COLUMN_IDENTIFIER_VALUE = "VALUE";
     private static final String PRIMARY_KEY = " PRIMARY KEY";
     private final Connection conn;
     private final SseService sseService;
@@ -70,6 +82,8 @@ public class JdbcRepository implements Repository, Closeable {
 
     public void createTables() {
         try {
+            createIdentifierTable();
+
             for (final String resourceType : FhirSchema.getResourceTypes()) {
                 createResourceTable(resourceType);
                 createHistoryTable(resourceType);
@@ -79,6 +93,18 @@ public class JdbcRepository implements Repository, Closeable {
         }
     }
 
+    private void createIdentifierTable() throws SQLException {
+        executeCreateTable(new CreateTableQuery.Builder(TABLE_IDENTIFIER)
+                .column(COLUMN_ID, COLUMN_TYPE_UUID + PRIMARY_KEY)
+                .column(COLUMN_IDENTIFIER_RESOURCE_ID, COLUMN_TYPE_UUID)
+                .column(COLUMN_IDENTIFIER_SYSTEM, COLUMN_TYPE_VARCHAR128)
+                .column(COLUMN_IDENTIFIER_VALUE, COLUMN_TYPE_VARCHAR128)
+                .index(COLUMN_IDENTIFIER_RESOURCE_ID)
+                .index(COLUMN_IDENTIFIER_SYSTEM)
+                .index(COLUMN_IDENTIFIER_VALUE)
+                .build());
+    }
+
     private void createResourceTable(final String resourceType) throws SQLException {
         final CreateTableQuery.Builder builder = new CreateTableQuery.Builder(getTableName(resourceType))
                 .column(COLUMN_ID, COLUMN_TYPE_UUID + PRIMARY_KEY)
@@ -86,10 +112,22 @@ public class JdbcRepository implements Repository, Closeable {
                 .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT);
 
         for (final SearchParameter searchParam : SearchParameters.getParameters(resourceType)) {
+            if (isIndexTable(searchParam)) {
+                continue;
+            }
             builder.column(getColumnName(searchParam.code()), COLUMN_TYPE_VARCHAR128);
         }
 
         executeCreateTable(builder.build());
+    }
+
+    private boolean isIndexTable(final SearchParameter searchParam) {
+        if (searchParam.code().equals("identifier") && searchParam.type().equals("token")) {
+            // Identifier searches handled with the Identifier table
+            return true;
+        }
+
+        return false;
     }
 
     private void createHistoryTable(final String resourceType) throws SQLException {
@@ -350,11 +388,15 @@ public class JdbcRepository implements Repository, Closeable {
                 .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
         for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
+            if (isIndexTable(param)) {
+                continue;
+            }
             builder.value(getColumnName(param.code()), getColumnValue(param.expression(), resource), Types.VARCHAR);
         }
 
         try {
             executeInsert(builder.build());
+            writeIdentifiers(id, resource);
             writeVersion(resourceType, id, versionId, lastUpdated, resource);
             sseService.handleUp(resource);
             return StandardOutcomes.created(resource);
@@ -377,6 +419,9 @@ public class JdbcRepository implements Repository, Closeable {
                 .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
         for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
+            if (isIndexTable(param)) {
+                continue;
+            }
             builder.value(getColumnName(param.code()), getColumnValue(param.expression(), resource), Types.VARCHAR);
         }
 
@@ -384,6 +429,7 @@ public class JdbcRepository implements Repository, Closeable {
 
         try {
             executeUpdate(builder.build());
+            writeIdentifiers(id, resource);
             writeVersion(resourceType, id, versionId, lastUpdated, resource);
             sseService.handleUp(resource);
             return StandardOutcomes.ok(resource);
@@ -392,6 +438,65 @@ public class JdbcRepository implements Repository, Closeable {
             LOG.error("Error creating resource: {}", ex.getMessage(), ex);
             return StandardOutcomes.invalid(ex.getMessage());
         }
+    }
+
+    private void writeIdentifiers(final UUID resourceId, final JsonObject resource) throws SQLException {
+        if (!resource.containsKey(Patient.PROPERTY_IDENTIFIER)) {
+            return;
+        }
+
+        final JsonValue identifier = resource.get(Patient.PROPERTY_IDENTIFIER);
+        if (identifier == null || identifier.getValueType() != ValueType.ARRAY) {
+            return;
+        }
+
+        final List<Identifier> incoming = new ArrayList<>(new FhirList<>(Identifier.class, (JsonArray) identifier));
+        final List<Identifier> existing = this.getIdentifiers(resourceId);
+
+        if (!compareIdentifiers(incoming, existing)) {
+            try (final SqlBuilder sql = new SqlBuilder(conn)) {
+                sql.append("DELETE FROM ");
+                sql.appendIdentifier(TABLE_IDENTIFIER);
+                sql.append(" WHERE ");
+                sql.appendIdentifier(COLUMN_IDENTIFIER_RESOURCE_ID);
+                sql.append("=?");
+
+                LOG.debug("{}", sql);
+
+                try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                    stmt.setObject(1, resourceId, Types.BINARY);
+                    stmt.executeUpdate();
+                }
+            }
+
+            for (final Identifier incomingId : incoming) {
+                executeInsert(new InsertQuery.Builder(TABLE_IDENTIFIER)
+                        .value(COLUMN_ID, UUID.randomUUID(), Types.BINARY)
+                        .value(COLUMN_IDENTIFIER_RESOURCE_ID, resourceId, Types.BINARY)
+                        .value(COLUMN_IDENTIFIER_SYSTEM, incomingId.system().toString(), Types.VARCHAR)
+                        .value(COLUMN_IDENTIFIER_VALUE, incomingId.value(), Types.VARCHAR)
+                        .build());
+            }
+        }
+    }
+
+    private boolean compareIdentifiers(final List<Identifier> incoming, final List<Identifier> existing) {
+        if (incoming.size() != existing.size()) {
+            return false;
+        }
+
+        incoming.sort(IdentifierComparator.INSTANCE);
+        existing.sort(IdentifierComparator.INSTANCE);
+
+        for (int i = 0; i < incoming.size(); i++) {
+            final Identifier incomingId = incoming.get(i);
+            final Identifier existingId = existing.get(i);
+            if (!incomingId.system().equals(existingId.system()) || !incomingId.value().equals(existingId.value())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void writeVersion(
@@ -417,6 +522,8 @@ public class JdbcRepository implements Repository, Closeable {
 
     @Override
     public OperationOutcome search(final SecurityUser user, final SearchRequest searchRequest) {
+        LOG.debug("{}", searchRequest);
+
         final OperationOutcome validateOutcome = FhirSchema.validate(searchRequest.getResourceType());
         if (!validateOutcome.isOk()) {
             return validateOutcome;
@@ -426,21 +533,56 @@ public class JdbcRepository implements Repository, Closeable {
             return StandardOutcomes.security("Cannot read resource type");
         }
 
-        try (final Statement formatter = conn.createStatement()) {
-            final StringBuilder sql = new StringBuilder();
+        final String tableName = getTableName(searchRequest.getResourceType());
+
+        try (final SqlBuilder sql = new SqlBuilder(conn)) {
             sql.append("SELECT ");
-            sql.append(formatter.enquoteIdentifier(COLUMN_CONTENT, true));
+            sql.appendIdentifier(COLUMN_CONTENT);
             sql.append(" FROM ");
-            sql.append(formatter.enquoteIdentifier(getTableName(searchRequest.getResourceType()), true));
+            sql.appendIdentifier(tableName);
+
+            boolean joinIdentifier = false;
+            for (final Filter filter : searchRequest.getFilters()) {
+                final SearchParameter searchParam = filter.getSearchParam();
+                if (searchParam.code().equals("identifier") && searchParam.type().equals("token")) {
+                    joinIdentifier = true;
+                }
+            }
+
+            if (joinIdentifier) {
+                sql.append(" JOIN ");
+                sql.appendIdentifier(TABLE_IDENTIFIER);
+                sql.append(" ON ");
+                sql.appendIdentifier(tableName);
+                sql.append(".");
+                sql.appendIdentifier(COLUMN_ID);
+                sql.append("=");
+                sql.appendIdentifier(TABLE_IDENTIFIER);
+                sql.append(".");
+                sql.appendIdentifier(COLUMN_IDENTIFIER_RESOURCE_ID);
+            }
 
             boolean first = true;
             for (final Filter filter : searchRequest.getFilters()) {
+                final SearchParameter searchParam = filter.getSearchParam();
+
                 sql.append(first ? " WHERE " : " AND ");
-                sql.append(formatter.enquoteIdentifier(getColumnName(filter.getSearchParam().code()), true));
-                if (filter.getSearchParam().type().equals("string")) {
-                    sql.append(" LIKE ?");
+
+                if (isIndexTable(filter.getSearchParam())) {
+                    if (searchParam.code().equals("identifier") && searchParam.type().equals("token")) {
+                        sql.appendIdentifier(TABLE_IDENTIFIER);
+                        sql.append(".");
+                        sql.appendIdentifier(COLUMN_IDENTIFIER_VALUE);
+                        sql.append("=?");
+                    }
+
                 } else {
-                    sql.append("=?");
+                    sql.appendIdentifier(getColumnName(searchParam.code()));
+                    if (filter.getSearchParam().type().equals("string")) {
+                        sql.append(" LIKE ?");
+                    } else {
+                        sql.append("=?");
+                    }
                 }
                 first = false;
             }
@@ -448,7 +590,7 @@ public class JdbcRepository implements Repository, Closeable {
             first = true;
             for (final SortRule sortRule : searchRequest.getSortRules()) {
                 sql.append(first ? " ORDER BY " : ", ");
-                sql.append(formatter.enquoteIdentifier(getColumnName(sortRule.getCode()), true));
+                sql.appendIdentifier(getColumnName(sortRule.getCode()));
                 sql.append(sortRule.isDescending() ? " DESC" : " ASC");
                 first = false;
             }
@@ -574,6 +716,22 @@ public class JdbcRepository implements Repository, Closeable {
                 stmt.executeUpdate(sql.toString());
             }
         }
+
+        for (final String index : createTableQuery.getIndexes()) {
+            try (final SqlBuilder sql = new SqlBuilder(conn)) {
+                sql.append("CREATE INDEX ON");
+                sql.appendIdentifier(createTableQuery.getTableName());
+                sql.append(" (");
+                sql.appendIdentifier(index);
+                sql.append(")");
+
+                LOG.debug("{}", sql);
+
+                try (final Statement stmt = conn.createStatement()) {
+                    stmt.executeUpdate(sql.toString());
+                }
+            }
+        }
     }
 
     private int executeInsert(final InsertQuery insertQuery) throws SQLException {
@@ -609,7 +767,12 @@ public class JdbcRepository implements Repository, Closeable {
             try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
                 int i = 1;
                 for (final Parameter value : values) {
-                    stmt.setObject(i++, value.getValue(), value.getValueType());
+                    LOG.debug("  {} = {} (len={})", i, value.getValue(), Objects.toString(value.getValue()).length());
+                    if (value.getValueType() == Types.VARCHAR) {
+                        stmt.setString(i++, (String) value.getValue());
+                    } else {
+                        stmt.setObject(i++, value.getValue(), value.getValueType());
+                    }
                 }
                 return stmt.executeUpdate();
             }
@@ -659,6 +822,39 @@ public class JdbcRepository implements Repository, Closeable {
                 }
                 return stmt.executeUpdate();
             }
+        }
+    }
+
+    private List<Identifier> getIdentifiers(final UUID resourceId) throws SQLException {
+        try (final SqlBuilder sql = new SqlBuilder(conn)) {
+            sql.append("SELECT ");
+            sql.appendIdentifier(COLUMN_IDENTIFIER_SYSTEM);
+            sql.append(", ");
+            sql.appendIdentifier(COLUMN_IDENTIFIER_VALUE);
+            sql.append(" FROM ");
+            sql.appendIdentifier(TABLE_IDENTIFIER);
+            sql.append(" WHERE ");
+            sql.appendIdentifier(COLUMN_IDENTIFIER_RESOURCE_ID);
+            sql.append("=?");
+
+            LOG.debug("{}", sql);
+
+            final List<Identifier> results = new ArrayList<>();
+
+            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                stmt.setObject(1, resourceId, Types.BINARY);
+
+                try (final ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        results.add(Identifier.create()
+                                .system(URI.create(rs.getString(1)))
+                                .value(rs.getString(2))
+                                .build());
+                    }
+                }
+            }
+
+            return results;
         }
     }
 }

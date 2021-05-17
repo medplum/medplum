@@ -12,7 +12,7 @@ import org.junit.Test;
 import com.medplum.fhir.r4.FhirMediaType;
 import com.medplum.server.BaseTest;
 
-public class BinaryTest extends BaseTest {
+public class BinaryEndpointTest extends BaseTest {
 
     @Test
     public void testCreateBinary() {
