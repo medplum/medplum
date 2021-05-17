@@ -7,50 +7,14 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The EventDefinition resource provides a reusable description of when a
  * particular event can occur.
  */
 public class EventDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "EventDefinition";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_SUBTITLE = "subtitle";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_SUBJECT_CODEABLE_CONCEPT = "subjectCodeableConcept";
-    public static final String PROPERTY_SUBJECT_REFERENCE = "subjectReference";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_PUBLISHER = "publisher";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USE_CONTEXT = "useContext";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_PURPOSE = "purpose";
-    public static final String PROPERTY_USAGE = "usage";
-    public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_APPROVAL_DATE = "approvalDate";
-    public static final String PROPERTY_LAST_REVIEW_DATE = "lastReviewDate";
-    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
-    public static final String PROPERTY_TOPIC = "topic";
-    public static final String PROPERTY_AUTHOR = "author";
-    public static final String PROPERTY_EDITOR = "editor";
-    public static final String PROPERTY_REVIEWER = "reviewer";
-    public static final String PROPERTY_ENDORSER = "endorser";
-    public static final String PROPERTY_RELATED_ARTIFACT = "relatedArtifact";
-    public static final String PROPERTY_TRIGGER = "trigger";
 
     public static Builder create() {
         return new Builder();
@@ -71,14 +35,14 @@ public class EventDefinition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -90,7 +54,7 @@ public class EventDefinition extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -99,7 +63,7 @@ public class EventDefinition extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -111,7 +75,7 @@ public class EventDefinition extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -131,7 +95,7 @@ public class EventDefinition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -144,7 +108,7 @@ public class EventDefinition extends FhirResource {
      * when the event definition is stored on different servers.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -153,7 +117,7 @@ public class EventDefinition extends FhirResource {
      * specification, model, design or an instance.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -166,7 +130,7 @@ public class EventDefinition extends FhirResource {
      * a lexicographical sequence.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -175,14 +139,14 @@ public class EventDefinition extends FhirResource {
      * applications such as code generation.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
      * A short, descriptive, user-friendly title for the event definition.
      */
     public String title() {
-        return getString(PROPERTY_TITLE);
+        return getString(FhirPropertyNames.PROPERTY_TITLE);
     }
 
     /**
@@ -190,7 +154,7 @@ public class EventDefinition extends FhirResource {
      * additional information about its content.
      */
     public String subtitle() {
-        return getString(PROPERTY_SUBTITLE);
+        return getString(FhirPropertyNames.PROPERTY_SUBTITLE);
     }
 
     /**
@@ -198,7 +162,7 @@ public class EventDefinition extends FhirResource {
      * of the content.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -207,7 +171,7 @@ public class EventDefinition extends FhirResource {
      * intended to be used for genuine usage.
      */
     public Boolean experimental() {
-        return data.getBoolean(PROPERTY_EXPERIMENTAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_EXPERIMENTAL);
     }
 
     /**
@@ -215,7 +179,7 @@ public class EventDefinition extends FhirResource {
      * event definition.
      */
     public CodeableConcept subjectCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_SUBJECT_CODEABLE_CONCEPT);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SUBJECT_CODEABLE_CONCEPT);
     }
 
     /**
@@ -223,7 +187,7 @@ public class EventDefinition extends FhirResource {
      * event definition.
      */
     public Reference subjectReference() {
-        return getObject(Reference.class, PROPERTY_SUBJECT_REFERENCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT_REFERENCE);
     }
 
     /**
@@ -233,7 +197,7 @@ public class EventDefinition extends FhirResource {
      * change when the substantive content of the event definition changes.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -241,7 +205,7 @@ public class EventDefinition extends FhirResource {
      * definition.
      */
     public String publisher() {
-        return getString(PROPERTY_PUBLISHER);
+        return getString(FhirPropertyNames.PROPERTY_PUBLISHER);
     }
 
     /**
@@ -249,7 +213,7 @@ public class EventDefinition extends FhirResource {
      * publisher.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
@@ -257,7 +221,7 @@ public class EventDefinition extends FhirResource {
      * a consumer's perspective.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -268,7 +232,7 @@ public class EventDefinition extends FhirResource {
      * indexing and searching for appropriate event definition instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
+        return getList(UsageContext.class, FhirPropertyNames.PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -276,7 +240,7 @@ public class EventDefinition extends FhirResource {
      * to be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
-        return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -284,7 +248,7 @@ public class EventDefinition extends FhirResource {
      * designed as it has.
      */
     public String purpose() {
-        return getString(PROPERTY_PURPOSE);
+        return getString(FhirPropertyNames.PROPERTY_PURPOSE);
     }
 
     /**
@@ -292,7 +256,7 @@ public class EventDefinition extends FhirResource {
      * clinical perspective.
      */
     public String usage() {
-        return getString(PROPERTY_USAGE);
+        return getString(FhirPropertyNames.PROPERTY_USAGE);
     }
 
     /**
@@ -301,7 +265,7 @@ public class EventDefinition extends FhirResource {
      * use and publishing of the event definition.
      */
     public String copyright() {
-        return getString(PROPERTY_COPYRIGHT);
+        return getString(FhirPropertyNames.PROPERTY_COPYRIGHT);
     }
 
     /**
@@ -310,7 +274,7 @@ public class EventDefinition extends FhirResource {
      * usage.
      */
     public java.time.LocalDate approvalDate() {
-        return getLocalDate(PROPERTY_APPROVAL_DATE);
+        return getLocalDate(FhirPropertyNames.PROPERTY_APPROVAL_DATE);
     }
 
     /**
@@ -319,7 +283,7 @@ public class EventDefinition extends FhirResource {
      * approval date.
      */
     public java.time.LocalDate lastReviewDate() {
-        return getLocalDate(PROPERTY_LAST_REVIEW_DATE);
+        return getLocalDate(FhirPropertyNames.PROPERTY_LAST_REVIEW_DATE);
     }
 
     /**
@@ -327,7 +291,7 @@ public class EventDefinition extends FhirResource {
      * to be in active use.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -336,7 +300,7 @@ public class EventDefinition extends FhirResource {
      * searching.
      */
     public java.util.List<CodeableConcept> topic() {
-        return getList(CodeableConcept.class, PROPERTY_TOPIC);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_TOPIC);
     }
 
     /**
@@ -344,7 +308,7 @@ public class EventDefinition extends FhirResource {
      * maintenance of the content.
      */
     public java.util.List<ContactDetail> author() {
-        return getList(ContactDetail.class, PROPERTY_AUTHOR);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_AUTHOR);
     }
 
     /**
@@ -352,7 +316,7 @@ public class EventDefinition extends FhirResource {
      * coherence of the content.
      */
     public java.util.List<ContactDetail> editor() {
-        return getList(ContactDetail.class, PROPERTY_EDITOR);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_EDITOR);
     }
 
     /**
@@ -360,7 +324,7 @@ public class EventDefinition extends FhirResource {
      * aspect of the content.
      */
     public java.util.List<ContactDetail> reviewer() {
-        return getList(ContactDetail.class, PROPERTY_REVIEWER);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_REVIEWER);
     }
 
     /**
@@ -368,7 +332,7 @@ public class EventDefinition extends FhirResource {
      * content for use in some setting.
      */
     public java.util.List<ContactDetail> endorser() {
-        return getList(ContactDetail.class, PROPERTY_ENDORSER);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_ENDORSER);
     }
 
     /**
@@ -376,7 +340,7 @@ public class EventDefinition extends FhirResource {
      * bibliographic references.
      */
     public java.util.List<RelatedArtifact> relatedArtifact() {
-        return getList(RelatedArtifact.class, PROPERTY_RELATED_ARTIFACT);
+        return getList(RelatedArtifact.class, FhirPropertyNames.PROPERTY_RELATED_ARTIFACT);
     }
 
     /**
@@ -385,7 +349,7 @@ public class EventDefinition extends FhirResource {
      * the trigger conditions is met.
      */
     public java.util.List<TriggerDefinition> trigger() {
-        return getList(TriggerDefinition.class, PROPERTY_TRIGGER);
+        return getList(TriggerDefinition.class, FhirPropertyNames.PROPERTY_TRIGGER);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -399,192 +363,192 @@ public class EventDefinition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder title(final String title) {
-            b.add(PROPERTY_TITLE, title);
+            b.add(FhirPropertyNames.PROPERTY_TITLE, title);
             return this;
         }
 
         public Builder subtitle(final String subtitle) {
-            b.add(PROPERTY_SUBTITLE, subtitle);
+            b.add(FhirPropertyNames.PROPERTY_SUBTITLE, subtitle);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder experimental(final Boolean experimental) {
-            b.add(PROPERTY_EXPERIMENTAL, experimental);
+            b.add(FhirPropertyNames.PROPERTY_EXPERIMENTAL, experimental);
             return this;
         }
 
         public Builder subjectCodeableConcept(final CodeableConcept subjectCodeableConcept) {
-            b.add(PROPERTY_SUBJECT_CODEABLE_CONCEPT, subjectCodeableConcept);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT_CODEABLE_CONCEPT, subjectCodeableConcept);
             return this;
         }
 
         public Builder subjectReference(final Reference subjectReference) {
-            b.add(PROPERTY_SUBJECT_REFERENCE, subjectReference);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT_REFERENCE, subjectReference);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder publisher(final String publisher) {
-            b.add(PROPERTY_PUBLISHER, publisher);
+            b.add(FhirPropertyNames.PROPERTY_PUBLISHER, publisher);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
+            b.add(FhirPropertyNames.PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
         public Builder jurisdiction(final java.util.List<CodeableConcept> jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
             return this;
         }
 
         public Builder purpose(final String purpose) {
-            b.add(PROPERTY_PURPOSE, purpose);
+            b.add(FhirPropertyNames.PROPERTY_PURPOSE, purpose);
             return this;
         }
 
         public Builder usage(final String usage) {
-            b.add(PROPERTY_USAGE, usage);
+            b.add(FhirPropertyNames.PROPERTY_USAGE, usage);
             return this;
         }
 
         public Builder copyright(final String copyright) {
-            b.add(PROPERTY_COPYRIGHT, copyright);
+            b.add(FhirPropertyNames.PROPERTY_COPYRIGHT, copyright);
             return this;
         }
 
         public Builder approvalDate(final java.time.LocalDate approvalDate) {
-            b.add(PROPERTY_APPROVAL_DATE, approvalDate.toString());
+            b.add(FhirPropertyNames.PROPERTY_APPROVAL_DATE, approvalDate.toString());
             return this;
         }
 
         public Builder lastReviewDate(final java.time.LocalDate lastReviewDate) {
-            b.add(PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
+            b.add(FhirPropertyNames.PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
+            b.add(FhirPropertyNames.PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
         public Builder topic(final java.util.List<CodeableConcept> topic) {
-            b.add(PROPERTY_TOPIC, FhirObject.toArray(topic));
+            b.add(FhirPropertyNames.PROPERTY_TOPIC, FhirObject.toArray(topic));
             return this;
         }
 
         public Builder author(final java.util.List<ContactDetail> author) {
-            b.add(PROPERTY_AUTHOR, FhirObject.toArray(author));
+            b.add(FhirPropertyNames.PROPERTY_AUTHOR, FhirObject.toArray(author));
             return this;
         }
 
         public Builder editor(final java.util.List<ContactDetail> editor) {
-            b.add(PROPERTY_EDITOR, FhirObject.toArray(editor));
+            b.add(FhirPropertyNames.PROPERTY_EDITOR, FhirObject.toArray(editor));
             return this;
         }
 
         public Builder reviewer(final java.util.List<ContactDetail> reviewer) {
-            b.add(PROPERTY_REVIEWER, FhirObject.toArray(reviewer));
+            b.add(FhirPropertyNames.PROPERTY_REVIEWER, FhirObject.toArray(reviewer));
             return this;
         }
 
         public Builder endorser(final java.util.List<ContactDetail> endorser) {
-            b.add(PROPERTY_ENDORSER, FhirObject.toArray(endorser));
+            b.add(FhirPropertyNames.PROPERTY_ENDORSER, FhirObject.toArray(endorser));
             return this;
         }
 
         public Builder relatedArtifact(final java.util.List<RelatedArtifact> relatedArtifact) {
-            b.add(PROPERTY_RELATED_ARTIFACT, FhirObject.toArray(relatedArtifact));
+            b.add(FhirPropertyNames.PROPERTY_RELATED_ARTIFACT, FhirObject.toArray(relatedArtifact));
             return this;
         }
 
         public Builder trigger(final java.util.List<TriggerDefinition> trigger) {
-            b.add(PROPERTY_TRIGGER, FhirObject.toArray(trigger));
+            b.add(FhirPropertyNames.PROPERTY_TRIGGER, FhirObject.toArray(trigger));
             return this;
         }
 

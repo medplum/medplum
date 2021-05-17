@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Source material shall capture information on the taxonomic and
  * anatomical origins as well as the fraction of a material that can
@@ -28,28 +30,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class SubstanceSourceMaterial extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceSourceMaterial";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_SOURCE_MATERIAL_CLASS = "sourceMaterialClass";
-    public static final String PROPERTY_SOURCE_MATERIAL_TYPE = "sourceMaterialType";
-    public static final String PROPERTY_SOURCE_MATERIAL_STATE = "sourceMaterialState";
-    public static final String PROPERTY_ORGANISM_ID = "organismId";
-    public static final String PROPERTY_ORGANISM_NAME = "organismName";
-    public static final String PROPERTY_PARENT_SUBSTANCE_ID = "parentSubstanceId";
-    public static final String PROPERTY_PARENT_SUBSTANCE_NAME = "parentSubstanceName";
-    public static final String PROPERTY_COUNTRY_OF_ORIGIN = "countryOfOrigin";
-    public static final String PROPERTY_GEOGRAPHICAL_LOCATION = "geographicalLocation";
-    public static final String PROPERTY_DEVELOPMENT_STAGE = "developmentStage";
-    public static final String PROPERTY_FRACTION_DESCRIPTION = "fractionDescription";
-    public static final String PROPERTY_ORGANISM = "organism";
-    public static final String PROPERTY_PART_DESCRIPTION = "partDescription";
 
     public static Builder create() {
         return new Builder();
@@ -70,14 +50,14 @@ public class SubstanceSourceMaterial extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -89,7 +69,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -98,7 +78,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -110,7 +90,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -130,7 +110,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -138,7 +118,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * the origin of the material.
      */
     public CodeableConcept sourceMaterialClass() {
-        return getObject(CodeableConcept.class, PROPERTY_SOURCE_MATERIAL_CLASS);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SOURCE_MATERIAL_CLASS);
     }
 
     /**
@@ -147,14 +127,14 @@ public class SubstanceSourceMaterial extends FhirResource {
      * class of infectious agent.
      */
     public CodeableConcept sourceMaterialType() {
-        return getObject(CodeableConcept.class, PROPERTY_SOURCE_MATERIAL_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SOURCE_MATERIAL_TYPE);
     }
 
     /**
      * The state of the source material when extracted.
      */
     public CodeableConcept sourceMaterialState() {
-        return getObject(CodeableConcept.class, PROPERTY_SOURCE_MATERIAL_STATE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SOURCE_MATERIAL_STATE);
     }
 
     /**
@@ -162,7 +142,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * organism shall be specified.
      */
     public Identifier organismId() {
-        return getObject(Identifier.class, PROPERTY_ORGANISM_ID);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_ORGANISM_ID);
     }
 
     /**
@@ -170,7 +150,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * organism taxonomy.
      */
     public String organismName() {
-        return getString(PROPERTY_ORGANISM_NAME);
+        return getString(FhirPropertyNames.PROPERTY_ORGANISM_NAME);
     }
 
     /**
@@ -179,14 +159,14 @@ public class SubstanceSourceMaterial extends FhirResource {
      * (Whole plant).
      */
     public java.util.List<Identifier> parentSubstanceId() {
-        return getList(Identifier.class, PROPERTY_PARENT_SUBSTANCE_ID);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_PARENT_SUBSTANCE_ID);
     }
 
     /**
      * The parent substance of the Herbal Drug, or Herbal preparation.
      */
     public java.util.List<String> parentSubstanceName() {
-        return getList(String.class, PROPERTY_PARENT_SUBSTANCE_NAME);
+        return getList(String.class, FhirPropertyNames.PROPERTY_PARENT_SUBSTANCE_NAME);
     }
 
     /**
@@ -197,7 +177,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * the manufacturing of the Cryopoor plama or Crioprecipitate.
      */
     public java.util.List<CodeableConcept> countryOfOrigin() {
-        return getList(CodeableConcept.class, PROPERTY_COUNTRY_OF_ORIGIN);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_COUNTRY_OF_ORIGIN);
     }
 
     /**
@@ -205,7 +185,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * where the animal source material has its habitat.
      */
     public java.util.List<String> geographicalLocation() {
-        return getList(String.class, PROPERTY_GEOGRAPHICAL_LOCATION);
+        return getList(String.class, FhirPropertyNames.PROPERTY_GEOGRAPHICAL_LOCATION);
     }
 
     /**
@@ -214,7 +194,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * different in these stages (e.g. foetal bovine serum).
      */
     public CodeableConcept developmentStage() {
-        return getObject(CodeableConcept.class, PROPERTY_DEVELOPMENT_STAGE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_DEVELOPMENT_STAGE);
     }
 
     /**
@@ -229,7 +209,7 @@ public class SubstanceSourceMaterial extends FhirResource {
      * Substance and the Specified Substance Group 1 levels.
      */
     public java.util.List<SubstanceSourceMaterialFractionDescription> fractionDescription() {
-        return getList(SubstanceSourceMaterialFractionDescription.class, PROPERTY_FRACTION_DESCRIPTION);
+        return getList(SubstanceSourceMaterialFractionDescription.class, FhirPropertyNames.PROPERTY_FRACTION_DESCRIPTION);
     }
 
     /**
@@ -239,14 +219,14 @@ public class SubstanceSourceMaterial extends FhirResource {
      * described for the Substance Name: ., Leaf.
      */
     public SubstanceSourceMaterialOrganism organism() {
-        return getObject(SubstanceSourceMaterialOrganism.class, PROPERTY_ORGANISM);
+        return getObject(SubstanceSourceMaterialOrganism.class, FhirPropertyNames.PROPERTY_ORGANISM);
     }
 
     /**
      * To do.
      */
     public java.util.List<SubstanceSourceMaterialPartDescription> partDescription() {
-        return getList(SubstanceSourceMaterialPartDescription.class, PROPERTY_PART_DESCRIPTION);
+        return getList(SubstanceSourceMaterialPartDescription.class, FhirPropertyNames.PROPERTY_PART_DESCRIPTION);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -260,112 +240,112 @@ public class SubstanceSourceMaterial extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder sourceMaterialClass(final CodeableConcept sourceMaterialClass) {
-            b.add(PROPERTY_SOURCE_MATERIAL_CLASS, sourceMaterialClass);
+            b.add(FhirPropertyNames.PROPERTY_SOURCE_MATERIAL_CLASS, sourceMaterialClass);
             return this;
         }
 
         public Builder sourceMaterialType(final CodeableConcept sourceMaterialType) {
-            b.add(PROPERTY_SOURCE_MATERIAL_TYPE, sourceMaterialType);
+            b.add(FhirPropertyNames.PROPERTY_SOURCE_MATERIAL_TYPE, sourceMaterialType);
             return this;
         }
 
         public Builder sourceMaterialState(final CodeableConcept sourceMaterialState) {
-            b.add(PROPERTY_SOURCE_MATERIAL_STATE, sourceMaterialState);
+            b.add(FhirPropertyNames.PROPERTY_SOURCE_MATERIAL_STATE, sourceMaterialState);
             return this;
         }
 
         public Builder organismId(final Identifier organismId) {
-            b.add(PROPERTY_ORGANISM_ID, organismId);
+            b.add(FhirPropertyNames.PROPERTY_ORGANISM_ID, organismId);
             return this;
         }
 
         public Builder organismName(final String organismName) {
-            b.add(PROPERTY_ORGANISM_NAME, organismName);
+            b.add(FhirPropertyNames.PROPERTY_ORGANISM_NAME, organismName);
             return this;
         }
 
         public Builder parentSubstanceId(final java.util.List<Identifier> parentSubstanceId) {
-            b.add(PROPERTY_PARENT_SUBSTANCE_ID, FhirObject.toArray(parentSubstanceId));
+            b.add(FhirPropertyNames.PROPERTY_PARENT_SUBSTANCE_ID, FhirObject.toArray(parentSubstanceId));
             return this;
         }
 
         public Builder parentSubstanceName(final java.util.List<String> parentSubstanceName) {
-            b.add(PROPERTY_PARENT_SUBSTANCE_NAME, FhirObject.toStringArray(parentSubstanceName));
+            b.add(FhirPropertyNames.PROPERTY_PARENT_SUBSTANCE_NAME, FhirObject.toStringArray(parentSubstanceName));
             return this;
         }
 
         public Builder countryOfOrigin(final java.util.List<CodeableConcept> countryOfOrigin) {
-            b.add(PROPERTY_COUNTRY_OF_ORIGIN, FhirObject.toArray(countryOfOrigin));
+            b.add(FhirPropertyNames.PROPERTY_COUNTRY_OF_ORIGIN, FhirObject.toArray(countryOfOrigin));
             return this;
         }
 
         public Builder geographicalLocation(final java.util.List<String> geographicalLocation) {
-            b.add(PROPERTY_GEOGRAPHICAL_LOCATION, FhirObject.toStringArray(geographicalLocation));
+            b.add(FhirPropertyNames.PROPERTY_GEOGRAPHICAL_LOCATION, FhirObject.toStringArray(geographicalLocation));
             return this;
         }
 
         public Builder developmentStage(final CodeableConcept developmentStage) {
-            b.add(PROPERTY_DEVELOPMENT_STAGE, developmentStage);
+            b.add(FhirPropertyNames.PROPERTY_DEVELOPMENT_STAGE, developmentStage);
             return this;
         }
 
         public Builder fractionDescription(final java.util.List<SubstanceSourceMaterialFractionDescription> fractionDescription) {
-            b.add(PROPERTY_FRACTION_DESCRIPTION, FhirObject.toArray(fractionDescription));
+            b.add(FhirPropertyNames.PROPERTY_FRACTION_DESCRIPTION, FhirObject.toArray(fractionDescription));
             return this;
         }
 
         public Builder organism(final SubstanceSourceMaterialOrganism organism) {
-            b.add(PROPERTY_ORGANISM, organism);
+            b.add(FhirPropertyNames.PROPERTY_ORGANISM, organism);
             return this;
         }
 
         public Builder partDescription(final java.util.List<SubstanceSourceMaterialPartDescription> partDescription) {
-            b.add(PROPERTY_PART_DESCRIPTION, FhirObject.toArray(partDescription));
+            b.add(FhirPropertyNames.PROPERTY_PART_DESCRIPTION, FhirObject.toArray(partDescription));
             return this;
         }
 
@@ -393,11 +373,6 @@ public class SubstanceSourceMaterial extends FhirResource {
      */
     public static class SubstanceSourceMaterialAuthor extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialAuthor";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_AUTHOR_TYPE = "authorType";
-        public static final String PROPERTY_AUTHOR_DESCRIPTION = "authorDescription";
 
         public static Builder create() {
             return new Builder();
@@ -416,7 +391,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -428,7 +403,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -449,7 +424,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -460,7 +435,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * published the plant/animal name.
          */
         public CodeableConcept authorType() {
-            return getObject(CodeableConcept.class, PROPERTY_AUTHOR_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_AUTHOR_TYPE);
         }
 
         /**
@@ -470,7 +445,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * plant/animal name (of any rank).
          */
         public String authorDescription() {
-            return getString(PROPERTY_AUTHOR_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_AUTHOR_DESCRIPTION);
         }
 
         public static class Builder {
@@ -485,27 +460,27 @@ public class SubstanceSourceMaterial extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder authorType(final CodeableConcept authorType) {
-                b.add(PROPERTY_AUTHOR_TYPE, authorType);
+                b.add(FhirPropertyNames.PROPERTY_AUTHOR_TYPE, authorType);
                 return this;
             }
 
             public Builder authorDescription(final String authorDescription) {
-                b.add(PROPERTY_AUTHOR_DESCRIPTION, authorDescription);
+                b.add(FhirPropertyNames.PROPERTY_AUTHOR_DESCRIPTION, authorDescription);
                 return this;
             }
 
@@ -534,11 +509,6 @@ public class SubstanceSourceMaterial extends FhirResource {
      */
     public static class SubstanceSourceMaterialFractionDescription extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialFractionDescription";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_FRACTION = "fraction";
-        public static final String PROPERTY_MATERIAL_TYPE = "materialType";
 
         public static Builder create() {
             return new Builder();
@@ -557,7 +527,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -569,7 +539,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -590,7 +560,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -598,7 +568,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * part, or human plasma for fractionation.
          */
         public String fraction() {
-            return getString(PROPERTY_FRACTION);
+            return getString(FhirPropertyNames.PROPERTY_FRACTION);
         }
 
         /**
@@ -607,7 +577,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * described in Specified Substance Group 1.
          */
         public CodeableConcept materialType() {
-            return getObject(CodeableConcept.class, PROPERTY_MATERIAL_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_MATERIAL_TYPE);
         }
 
         public static class Builder {
@@ -622,27 +592,27 @@ public class SubstanceSourceMaterial extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder fraction(final String fraction) {
-                b.add(PROPERTY_FRACTION, fraction);
+                b.add(FhirPropertyNames.PROPERTY_FRACTION, fraction);
                 return this;
             }
 
             public Builder materialType(final CodeableConcept materialType) {
-                b.add(PROPERTY_MATERIAL_TYPE, materialType);
+                b.add(FhirPropertyNames.PROPERTY_MATERIAL_TYPE, materialType);
                 return this;
             }
 
@@ -671,14 +641,6 @@ public class SubstanceSourceMaterial extends FhirResource {
      */
     public static class SubstanceSourceMaterialHybrid extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialHybrid";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_MATERNAL_ORGANISM_ID = "maternalOrganismId";
-        public static final String PROPERTY_MATERNAL_ORGANISM_NAME = "maternalOrganismName";
-        public static final String PROPERTY_PATERNAL_ORGANISM_ID = "paternalOrganismId";
-        public static final String PROPERTY_PATERNAL_ORGANISM_NAME = "paternalOrganismName";
-        public static final String PROPERTY_HYBRID_TYPE = "hybridType";
 
         public static Builder create() {
             return new Builder();
@@ -697,7 +659,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -709,7 +671,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -730,7 +692,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -740,7 +702,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * will be known which is maternal and which is paternal.
          */
         public String maternalOrganismId() {
-            return getString(PROPERTY_MATERNAL_ORGANISM_ID);
+            return getString(FhirPropertyNames.PROPERTY_MATERNAL_ORGANISM_ID);
         }
 
         /**
@@ -750,7 +712,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * paternal.
          */
         public String maternalOrganismName() {
-            return getString(PROPERTY_MATERNAL_ORGANISM_NAME);
+            return getString(FhirPropertyNames.PROPERTY_MATERNAL_ORGANISM_NAME);
         }
 
         /**
@@ -758,7 +720,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * organism shall be specified based on a controlled vocabulary.
          */
         public String paternalOrganismId() {
-            return getString(PROPERTY_PATERNAL_ORGANISM_ID);
+            return getString(FhirPropertyNames.PROPERTY_PATERNAL_ORGANISM_ID);
         }
 
         /**
@@ -766,14 +728,14 @@ public class SubstanceSourceMaterial extends FhirResource {
          * shall be specified.
          */
         public String paternalOrganismName() {
-            return getString(PROPERTY_PATERNAL_ORGANISM_NAME);
+            return getString(FhirPropertyNames.PROPERTY_PATERNAL_ORGANISM_NAME);
         }
 
         /**
          * The hybrid type of an organism shall be specified.
          */
         public CodeableConcept hybridType() {
-            return getObject(CodeableConcept.class, PROPERTY_HYBRID_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_HYBRID_TYPE);
         }
 
         public static class Builder {
@@ -788,42 +750,42 @@ public class SubstanceSourceMaterial extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder maternalOrganismId(final String maternalOrganismId) {
-                b.add(PROPERTY_MATERNAL_ORGANISM_ID, maternalOrganismId);
+                b.add(FhirPropertyNames.PROPERTY_MATERNAL_ORGANISM_ID, maternalOrganismId);
                 return this;
             }
 
             public Builder maternalOrganismName(final String maternalOrganismName) {
-                b.add(PROPERTY_MATERNAL_ORGANISM_NAME, maternalOrganismName);
+                b.add(FhirPropertyNames.PROPERTY_MATERNAL_ORGANISM_NAME, maternalOrganismName);
                 return this;
             }
 
             public Builder paternalOrganismId(final String paternalOrganismId) {
-                b.add(PROPERTY_PATERNAL_ORGANISM_ID, paternalOrganismId);
+                b.add(FhirPropertyNames.PROPERTY_PATERNAL_ORGANISM_ID, paternalOrganismId);
                 return this;
             }
 
             public Builder paternalOrganismName(final String paternalOrganismName) {
-                b.add(PROPERTY_PATERNAL_ORGANISM_NAME, paternalOrganismName);
+                b.add(FhirPropertyNames.PROPERTY_PATERNAL_ORGANISM_NAME, paternalOrganismName);
                 return this;
             }
 
             public Builder hybridType(final CodeableConcept hybridType) {
-                b.add(PROPERTY_HYBRID_TYPE, hybridType);
+                b.add(FhirPropertyNames.PROPERTY_HYBRID_TYPE, hybridType);
                 return this;
             }
 
@@ -852,17 +814,6 @@ public class SubstanceSourceMaterial extends FhirResource {
      */
     public static class SubstanceSourceMaterialOrganism extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialOrganism";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_FAMILY = "family";
-        public static final String PROPERTY_GENUS = "genus";
-        public static final String PROPERTY_SPECIES = "species";
-        public static final String PROPERTY_INTRASPECIFIC_TYPE = "intraspecificType";
-        public static final String PROPERTY_INTRASPECIFIC_DESCRIPTION = "intraspecificDescription";
-        public static final String PROPERTY_AUTHOR = "author";
-        public static final String PROPERTY_HYBRID = "hybrid";
-        public static final String PROPERTY_ORGANISM_GENERAL = "organismGeneral";
 
         public static Builder create() {
             return new Builder();
@@ -881,7 +832,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -893,7 +844,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -914,14 +865,14 @@ public class SubstanceSourceMaterial extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The family of an organism shall be specified.
          */
         public CodeableConcept family() {
-            return getObject(CodeableConcept.class, PROPERTY_FAMILY);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_FAMILY);
         }
 
         /**
@@ -930,7 +881,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * is present in names for genera, species and infraspecies.
          */
         public CodeableConcept genus() {
-            return getObject(CodeableConcept.class, PROPERTY_GENUS);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_GENUS);
         }
 
         /**
@@ -939,14 +890,14 @@ public class SubstanceSourceMaterial extends FhirResource {
          * species and infraspecies.
          */
         public CodeableConcept species() {
-            return getObject(CodeableConcept.class, PROPERTY_SPECIES);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SPECIES);
         }
 
         /**
          * The Intraspecific type of an organism shall be specified.
          */
         public CodeableConcept intraspecificType() {
-            return getObject(CodeableConcept.class, PROPERTY_INTRASPECIFIC_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_INTRASPECIFIC_TYPE);
         }
 
         /**
@@ -956,28 +907,28 @@ public class SubstanceSourceMaterial extends FhirResource {
          * WHO convention.
          */
         public String intraspecificDescription() {
-            return getString(PROPERTY_INTRASPECIFIC_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_INTRASPECIFIC_DESCRIPTION);
         }
 
         /**
          * 4.9.13.6.1 Author type (Conditional).
          */
         public java.util.List<SubstanceSourceMaterialAuthor> author() {
-            return getList(SubstanceSourceMaterialAuthor.class, PROPERTY_AUTHOR);
+            return getList(SubstanceSourceMaterialAuthor.class, FhirPropertyNames.PROPERTY_AUTHOR);
         }
 
         /**
          * 4.9.13.8.1 Hybrid species maternal organism ID (Optional).
          */
         public SubstanceSourceMaterialHybrid hybrid() {
-            return getObject(SubstanceSourceMaterialHybrid.class, PROPERTY_HYBRID);
+            return getObject(SubstanceSourceMaterialHybrid.class, FhirPropertyNames.PROPERTY_HYBRID);
         }
 
         /**
          * 4.9.13.7.1 Kingdom (Conditional).
          */
         public SubstanceSourceMaterialOrganismGeneral organismGeneral() {
-            return getObject(SubstanceSourceMaterialOrganismGeneral.class, PROPERTY_ORGANISM_GENERAL);
+            return getObject(SubstanceSourceMaterialOrganismGeneral.class, FhirPropertyNames.PROPERTY_ORGANISM_GENERAL);
         }
 
         public static class Builder {
@@ -992,57 +943,57 @@ public class SubstanceSourceMaterial extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder family(final CodeableConcept family) {
-                b.add(PROPERTY_FAMILY, family);
+                b.add(FhirPropertyNames.PROPERTY_FAMILY, family);
                 return this;
             }
 
             public Builder genus(final CodeableConcept genus) {
-                b.add(PROPERTY_GENUS, genus);
+                b.add(FhirPropertyNames.PROPERTY_GENUS, genus);
                 return this;
             }
 
             public Builder species(final CodeableConcept species) {
-                b.add(PROPERTY_SPECIES, species);
+                b.add(FhirPropertyNames.PROPERTY_SPECIES, species);
                 return this;
             }
 
             public Builder intraspecificType(final CodeableConcept intraspecificType) {
-                b.add(PROPERTY_INTRASPECIFIC_TYPE, intraspecificType);
+                b.add(FhirPropertyNames.PROPERTY_INTRASPECIFIC_TYPE, intraspecificType);
                 return this;
             }
 
             public Builder intraspecificDescription(final String intraspecificDescription) {
-                b.add(PROPERTY_INTRASPECIFIC_DESCRIPTION, intraspecificDescription);
+                b.add(FhirPropertyNames.PROPERTY_INTRASPECIFIC_DESCRIPTION, intraspecificDescription);
                 return this;
             }
 
             public Builder author(final java.util.List<SubstanceSourceMaterialAuthor> author) {
-                b.add(PROPERTY_AUTHOR, FhirObject.toArray(author));
+                b.add(FhirPropertyNames.PROPERTY_AUTHOR, FhirObject.toArray(author));
                 return this;
             }
 
             public Builder hybrid(final SubstanceSourceMaterialHybrid hybrid) {
-                b.add(PROPERTY_HYBRID, hybrid);
+                b.add(FhirPropertyNames.PROPERTY_HYBRID, hybrid);
                 return this;
             }
 
             public Builder organismGeneral(final SubstanceSourceMaterialOrganismGeneral organismGeneral) {
-                b.add(PROPERTY_ORGANISM_GENERAL, organismGeneral);
+                b.add(FhirPropertyNames.PROPERTY_ORGANISM_GENERAL, organismGeneral);
                 return this;
             }
 
@@ -1071,13 +1022,6 @@ public class SubstanceSourceMaterial extends FhirResource {
      */
     public static class SubstanceSourceMaterialOrganismGeneral extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialOrganismGeneral";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_KINGDOM = "kingdom";
-        public static final String PROPERTY_PHYLUM = "phylum";
-        public static final String PROPERTY_CLASS = "class";
-        public static final String PROPERTY_ORDER = "order";
 
         public static Builder create() {
             return new Builder();
@@ -1096,7 +1040,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1108,7 +1052,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1129,35 +1073,35 @@ public class SubstanceSourceMaterial extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The kingdom of an organism shall be specified.
          */
         public CodeableConcept kingdom() {
-            return getObject(CodeableConcept.class, PROPERTY_KINGDOM);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_KINGDOM);
         }
 
         /**
          * The phylum of an organism shall be specified.
          */
         public CodeableConcept phylum() {
-            return getObject(CodeableConcept.class, PROPERTY_PHYLUM);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PHYLUM);
         }
 
         /**
          * The class of an organism shall be specified.
          */
         public CodeableConcept classValue() {
-            return getObject(CodeableConcept.class, PROPERTY_CLASS);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CLASS);
         }
 
         /**
          * The order of an organism shall be specified,.
          */
         public CodeableConcept order() {
-            return getObject(CodeableConcept.class, PROPERTY_ORDER);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ORDER);
         }
 
         public static class Builder {
@@ -1172,37 +1116,37 @@ public class SubstanceSourceMaterial extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder kingdom(final CodeableConcept kingdom) {
-                b.add(PROPERTY_KINGDOM, kingdom);
+                b.add(FhirPropertyNames.PROPERTY_KINGDOM, kingdom);
                 return this;
             }
 
             public Builder phylum(final CodeableConcept phylum) {
-                b.add(PROPERTY_PHYLUM, phylum);
+                b.add(FhirPropertyNames.PROPERTY_PHYLUM, phylum);
                 return this;
             }
 
             public Builder classValue(final CodeableConcept classValue) {
-                b.add(PROPERTY_CLASS, classValue);
+                b.add(FhirPropertyNames.PROPERTY_CLASS, classValue);
                 return this;
             }
 
             public Builder order(final CodeableConcept order) {
-                b.add(PROPERTY_ORDER, order);
+                b.add(FhirPropertyNames.PROPERTY_ORDER, order);
                 return this;
             }
 
@@ -1231,11 +1175,6 @@ public class SubstanceSourceMaterial extends FhirResource {
      */
     public static class SubstanceSourceMaterialPartDescription extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceSourceMaterialPartDescription";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_PART = "part";
-        public static final String PROPERTY_PART_LOCATION = "partLocation";
 
         public static Builder create() {
             return new Builder();
@@ -1254,7 +1193,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1266,7 +1205,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1287,14 +1226,14 @@ public class SubstanceSourceMaterial extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Entity of anatomical origin of source material within an organism.
          */
         public CodeableConcept part() {
-            return getObject(CodeableConcept.class, PROPERTY_PART);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PART);
         }
 
         /**
@@ -1303,7 +1242,7 @@ public class SubstanceSourceMaterial extends FhirResource {
          * locations may apply.
          */
         public CodeableConcept partLocation() {
-            return getObject(CodeableConcept.class, PROPERTY_PART_LOCATION);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PART_LOCATION);
         }
 
         public static class Builder {
@@ -1318,27 +1257,27 @@ public class SubstanceSourceMaterial extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder part(final CodeableConcept part) {
-                b.add(PROPERTY_PART, part);
+                b.add(FhirPropertyNames.PROPERTY_PART, part);
                 return this;
             }
 
             public Builder partLocation(final CodeableConcept partLocation) {
-                b.add(PROPERTY_PART_LOCATION, partLocation);
+                b.add(FhirPropertyNames.PROPERTY_PART_LOCATION, partLocation);
                 return this;
             }
 

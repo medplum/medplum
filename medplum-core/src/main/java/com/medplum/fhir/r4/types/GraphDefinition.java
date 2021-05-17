@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A formal computable definition of a graph of resources - that is, a
  * coherent set of resources that form a graph by following references.
@@ -17,30 +19,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class GraphDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "GraphDefinition";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_PUBLISHER = "publisher";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USE_CONTEXT = "useContext";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_PURPOSE = "purpose";
-    public static final String PROPERTY_START = "start";
-    public static final String PROPERTY_PROFILE = "profile";
-    public static final String PROPERTY_LINK = "link";
 
     public static Builder create() {
         return new Builder();
@@ -61,14 +39,14 @@ public class GraphDefinition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -80,7 +58,7 @@ public class GraphDefinition extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -89,7 +67,7 @@ public class GraphDefinition extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -101,7 +79,7 @@ public class GraphDefinition extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -121,7 +99,7 @@ public class GraphDefinition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -134,7 +112,7 @@ public class GraphDefinition extends FhirResource {
      * when the graph definition is stored on different servers.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -147,7 +125,7 @@ public class GraphDefinition extends FhirResource {
      * a lexicographical sequence.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -156,7 +134,7 @@ public class GraphDefinition extends FhirResource {
      * applications such as code generation.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -164,7 +142,7 @@ public class GraphDefinition extends FhirResource {
      * of the content.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -173,7 +151,7 @@ public class GraphDefinition extends FhirResource {
      * intended to be used for genuine usage.
      */
     public Boolean experimental() {
-        return data.getBoolean(PROPERTY_EXPERIMENTAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_EXPERIMENTAL);
     }
 
     /**
@@ -183,7 +161,7 @@ public class GraphDefinition extends FhirResource {
      * change when the substantive content of the graph definition changes.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -191,7 +169,7 @@ public class GraphDefinition extends FhirResource {
      * definition.
      */
     public String publisher() {
-        return getString(PROPERTY_PUBLISHER);
+        return getString(FhirPropertyNames.PROPERTY_PUBLISHER);
     }
 
     /**
@@ -199,7 +177,7 @@ public class GraphDefinition extends FhirResource {
      * publisher.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
@@ -207,7 +185,7 @@ public class GraphDefinition extends FhirResource {
      * a consumer's perspective.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -218,7 +196,7 @@ public class GraphDefinition extends FhirResource {
      * indexing and searching for appropriate graph definition instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
+        return getList(UsageContext.class, FhirPropertyNames.PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -226,7 +204,7 @@ public class GraphDefinition extends FhirResource {
      * to be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
-        return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -234,28 +212,28 @@ public class GraphDefinition extends FhirResource {
      * designed as it has.
      */
     public String purpose() {
-        return getString(PROPERTY_PURPOSE);
+        return getString(FhirPropertyNames.PROPERTY_PURPOSE);
     }
 
     /**
      * The type of FHIR resource at which instances of this graph start.
      */
     public String start() {
-        return getString(PROPERTY_START);
+        return getString(FhirPropertyNames.PROPERTY_START);
     }
 
     /**
      * The profile that describes the use of the base resource.
      */
     public String profile() {
-        return getString(PROPERTY_PROFILE);
+        return getString(FhirPropertyNames.PROPERTY_PROFILE);
     }
 
     /**
      * Links this graph makes rules about.
      */
     public java.util.List<GraphDefinitionLink> link() {
-        return getList(GraphDefinitionLink.class, PROPERTY_LINK);
+        return getList(GraphDefinitionLink.class, FhirPropertyNames.PROPERTY_LINK);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -269,122 +247,122 @@ public class GraphDefinition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder experimental(final Boolean experimental) {
-            b.add(PROPERTY_EXPERIMENTAL, experimental);
+            b.add(FhirPropertyNames.PROPERTY_EXPERIMENTAL, experimental);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder publisher(final String publisher) {
-            b.add(PROPERTY_PUBLISHER, publisher);
+            b.add(FhirPropertyNames.PROPERTY_PUBLISHER, publisher);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
+            b.add(FhirPropertyNames.PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
         public Builder jurisdiction(final java.util.List<CodeableConcept> jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
             return this;
         }
 
         public Builder purpose(final String purpose) {
-            b.add(PROPERTY_PURPOSE, purpose);
+            b.add(FhirPropertyNames.PROPERTY_PURPOSE, purpose);
             return this;
         }
 
         public Builder start(final String start) {
-            b.add(PROPERTY_START, start);
+            b.add(FhirPropertyNames.PROPERTY_START, start);
             return this;
         }
 
         public Builder profile(final String profile) {
-            b.add(PROPERTY_PROFILE, profile);
+            b.add(FhirPropertyNames.PROPERTY_PROFILE, profile);
             return this;
         }
 
         public Builder link(final java.util.List<GraphDefinitionLink> link) {
-            b.add(PROPERTY_LINK, FhirObject.toArray(link));
+            b.add(FhirPropertyNames.PROPERTY_LINK, FhirObject.toArray(link));
             return this;
         }
 
@@ -401,14 +379,6 @@ public class GraphDefinition extends FhirResource {
      */
     public static class GraphDefinitionCompartment extends FhirObject {
         public static final String RESOURCE_TYPE = "GraphDefinitionCompartment";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_USE = "use";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_RULE = "rule";
-        public static final String PROPERTY_EXPRESSION = "expression";
-        public static final String PROPERTY_DESCRIPTION = "description";
 
         public static Builder create() {
             return new Builder();
@@ -427,7 +397,7 @@ public class GraphDefinition extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -439,7 +409,7 @@ public class GraphDefinition extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -460,7 +430,7 @@ public class GraphDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -469,35 +439,35 @@ public class GraphDefinition extends FhirResource {
          * rule that must be followed.
          */
         public String use() {
-            return getString(PROPERTY_USE);
+            return getString(FhirPropertyNames.PROPERTY_USE);
         }
 
         /**
          * Identifies the compartment.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * identical | matching | different | no-rule | custom.
          */
         public String rule() {
-            return getString(PROPERTY_RULE);
+            return getString(FhirPropertyNames.PROPERTY_RULE);
         }
 
         /**
          * Custom rule, as a FHIRPath expression.
          */
         public String expression() {
-            return getString(PROPERTY_EXPRESSION);
+            return getString(FhirPropertyNames.PROPERTY_EXPRESSION);
         }
 
         /**
          * Documentation for FHIRPath expression.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         public static class Builder {
@@ -512,42 +482,42 @@ public class GraphDefinition extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder use(final String use) {
-                b.add(PROPERTY_USE, use);
+                b.add(FhirPropertyNames.PROPERTY_USE, use);
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder rule(final String rule) {
-                b.add(PROPERTY_RULE, rule);
+                b.add(FhirPropertyNames.PROPERTY_RULE, rule);
                 return this;
             }
 
             public Builder expression(final String expression) {
-                b.add(PROPERTY_EXPRESSION, expression);
+                b.add(FhirPropertyNames.PROPERTY_EXPRESSION, expression);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
@@ -565,15 +535,6 @@ public class GraphDefinition extends FhirResource {
      */
     public static class GraphDefinitionLink extends FhirObject {
         public static final String RESOURCE_TYPE = "GraphDefinitionLink";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_PATH = "path";
-        public static final String PROPERTY_SLICE_NAME = "sliceName";
-        public static final String PROPERTY_MIN = "min";
-        public static final String PROPERTY_MAX = "max";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_TARGET = "target";
 
         public static Builder create() {
             return new Builder();
@@ -592,7 +553,7 @@ public class GraphDefinition extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -604,7 +565,7 @@ public class GraphDefinition extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -625,7 +586,7 @@ public class GraphDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -633,28 +594,28 @@ public class GraphDefinition extends FhirResource {
          * resources.
          */
         public String path() {
-            return getString(PROPERTY_PATH);
+            return getString(FhirPropertyNames.PROPERTY_PATH);
         }
 
         /**
          * Which slice (if profiled).
          */
         public String sliceName() {
-            return getString(PROPERTY_SLICE_NAME);
+            return getString(FhirPropertyNames.PROPERTY_SLICE_NAME);
         }
 
         /**
          * Minimum occurrences for this link.
          */
         public Integer min() {
-            return data.getInt(PROPERTY_MIN);
+            return data.getInt(FhirPropertyNames.PROPERTY_MIN);
         }
 
         /**
          * Maximum occurrences for this link.
          */
         public String max() {
-            return getString(PROPERTY_MAX);
+            return getString(FhirPropertyNames.PROPERTY_MAX);
         }
 
         /**
@@ -662,14 +623,14 @@ public class GraphDefinition extends FhirResource {
          * definition.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * Potential target for the link.
          */
         public java.util.List<GraphDefinitionTarget> target() {
-            return getList(GraphDefinitionTarget.class, PROPERTY_TARGET);
+            return getList(GraphDefinitionTarget.class, FhirPropertyNames.PROPERTY_TARGET);
         }
 
         public static class Builder {
@@ -684,47 +645,47 @@ public class GraphDefinition extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder path(final String path) {
-                b.add(PROPERTY_PATH, path);
+                b.add(FhirPropertyNames.PROPERTY_PATH, path);
                 return this;
             }
 
             public Builder sliceName(final String sliceName) {
-                b.add(PROPERTY_SLICE_NAME, sliceName);
+                b.add(FhirPropertyNames.PROPERTY_SLICE_NAME, sliceName);
                 return this;
             }
 
             public Builder min(final Integer min) {
-                b.add(PROPERTY_MIN, min);
+                b.add(FhirPropertyNames.PROPERTY_MIN, min);
                 return this;
             }
 
             public Builder max(final String max) {
-                b.add(PROPERTY_MAX, max);
+                b.add(FhirPropertyNames.PROPERTY_MAX, max);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder target(final java.util.List<GraphDefinitionTarget> target) {
-                b.add(PROPERTY_TARGET, FhirObject.toArray(target));
+                b.add(FhirPropertyNames.PROPERTY_TARGET, FhirObject.toArray(target));
                 return this;
             }
 
@@ -742,14 +703,6 @@ public class GraphDefinition extends FhirResource {
      */
     public static class GraphDefinitionTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "GraphDefinitionTarget";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_PARAMS = "params";
-        public static final String PROPERTY_PROFILE = "profile";
-        public static final String PROPERTY_COMPARTMENT = "compartment";
-        public static final String PROPERTY_LINK = "link";
 
         public static Builder create() {
             return new Builder();
@@ -768,7 +721,7 @@ public class GraphDefinition extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -780,7 +733,7 @@ public class GraphDefinition extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -801,42 +754,42 @@ public class GraphDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Type of resource this link refers to.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * A set of parameters to look up.
          */
         public String params() {
-            return getString(PROPERTY_PARAMS);
+            return getString(FhirPropertyNames.PROPERTY_PARAMS);
         }
 
         /**
          * Profile for the target resource.
          */
         public String profile() {
-            return getString(PROPERTY_PROFILE);
+            return getString(FhirPropertyNames.PROPERTY_PROFILE);
         }
 
         /**
          * Compartment Consistency Rules.
          */
         public java.util.List<GraphDefinitionCompartment> compartment() {
-            return getList(GraphDefinitionCompartment.class, PROPERTY_COMPARTMENT);
+            return getList(GraphDefinitionCompartment.class, FhirPropertyNames.PROPERTY_COMPARTMENT);
         }
 
         /**
          * Additional links from target resource.
          */
         public java.util.List<GraphDefinitionLink> link() {
-            return getList(GraphDefinitionLink.class, PROPERTY_LINK);
+            return getList(GraphDefinitionLink.class, FhirPropertyNames.PROPERTY_LINK);
         }
 
         public static class Builder {
@@ -851,42 +804,42 @@ public class GraphDefinition extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder params(final String params) {
-                b.add(PROPERTY_PARAMS, params);
+                b.add(FhirPropertyNames.PROPERTY_PARAMS, params);
                 return this;
             }
 
             public Builder profile(final String profile) {
-                b.add(PROPERTY_PROFILE, profile);
+                b.add(FhirPropertyNames.PROPERTY_PROFILE, profile);
                 return this;
             }
 
             public Builder compartment(final java.util.List<GraphDefinitionCompartment> compartment) {
-                b.add(PROPERTY_COMPARTMENT, FhirObject.toArray(compartment));
+                b.add(FhirPropertyNames.PROPERTY_COMPARTMENT, FhirObject.toArray(compartment));
                 return this;
             }
 
             public Builder link(final java.util.List<GraphDefinitionLink> link) {
-                b.add(PROPERTY_LINK, FhirObject.toArray(link));
+                b.add(FhirPropertyNames.PROPERTY_LINK, FhirObject.toArray(link));
                 return this;
             }
 

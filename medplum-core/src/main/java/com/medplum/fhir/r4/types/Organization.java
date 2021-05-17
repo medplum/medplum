@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A formally or informally recognized grouping of people or
  * organizations formed for the purpose of achieving some form of
@@ -18,25 +20,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Organization extends FhirResource {
     public static final String RESOURCE_TYPE = "Organization";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_ACTIVE = "active";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_ALIAS = "alias";
-    public static final String PROPERTY_TELECOM = "telecom";
-    public static final String PROPERTY_ADDRESS = "address";
-    public static final String PROPERTY_PART_OF = "partOf";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_ENDPOINT = "endpoint";
 
     public static Builder create() {
         return new Builder();
@@ -57,14 +40,14 @@ public class Organization extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -76,7 +59,7 @@ public class Organization extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -85,7 +68,7 @@ public class Organization extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -97,7 +80,7 @@ public class Organization extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -117,7 +100,7 @@ public class Organization extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -125,28 +108,28 @@ public class Organization extends FhirResource {
      * organization across multiple disparate systems.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * Whether the organization's record is still in active use.
      */
     public Boolean active() {
-        return data.getBoolean(PROPERTY_ACTIVE);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_ACTIVE);
     }
 
     /**
      * The kind(s) of organization that this is.
      */
     public java.util.List<CodeableConcept> type() {
-        return getList(CodeableConcept.class, PROPERTY_TYPE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
      * A name associated with the organization.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -154,35 +137,35 @@ public class Organization extends FhirResource {
      * known as in the past.
      */
     public java.util.List<String> alias() {
-        return getList(String.class, PROPERTY_ALIAS);
+        return getList(String.class, FhirPropertyNames.PROPERTY_ALIAS);
     }
 
     /**
      * A contact detail for the organization.
      */
     public java.util.List<ContactPoint> telecom() {
-        return getList(ContactPoint.class, PROPERTY_TELECOM);
+        return getList(ContactPoint.class, FhirPropertyNames.PROPERTY_TELECOM);
     }
 
     /**
      * An address for the organization.
      */
     public java.util.List<Address> address() {
-        return getList(Address.class, PROPERTY_ADDRESS);
+        return getList(Address.class, FhirPropertyNames.PROPERTY_ADDRESS);
     }
 
     /**
      * The organization of which this organization forms a part.
      */
     public Reference partOf() {
-        return getObject(Reference.class, PROPERTY_PART_OF);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PART_OF);
     }
 
     /**
      * Contact for the organization for a certain purpose.
      */
     public java.util.List<OrganizationContact> contact() {
-        return getList(OrganizationContact.class, PROPERTY_CONTACT);
+        return getList(OrganizationContact.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
@@ -190,7 +173,7 @@ public class Organization extends FhirResource {
      * organization.
      */
     public java.util.List<Reference> endpoint() {
-        return getList(Reference.class, PROPERTY_ENDPOINT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_ENDPOINT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -204,97 +187,97 @@ public class Organization extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder active(final Boolean active) {
-            b.add(PROPERTY_ACTIVE, active);
+            b.add(FhirPropertyNames.PROPERTY_ACTIVE, active);
             return this;
         }
 
         public Builder type(final java.util.List<CodeableConcept> type) {
-            b.add(PROPERTY_TYPE, FhirObject.toArray(type));
+            b.add(FhirPropertyNames.PROPERTY_TYPE, FhirObject.toArray(type));
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder alias(final java.util.List<String> alias) {
-            b.add(PROPERTY_ALIAS, FhirObject.toStringArray(alias));
+            b.add(FhirPropertyNames.PROPERTY_ALIAS, FhirObject.toStringArray(alias));
             return this;
         }
 
         public Builder telecom(final java.util.List<ContactPoint> telecom) {
-            b.add(PROPERTY_TELECOM, FhirObject.toArray(telecom));
+            b.add(FhirPropertyNames.PROPERTY_TELECOM, FhirObject.toArray(telecom));
             return this;
         }
 
         public Builder address(final java.util.List<Address> address) {
-            b.add(PROPERTY_ADDRESS, FhirObject.toArray(address));
+            b.add(FhirPropertyNames.PROPERTY_ADDRESS, FhirObject.toArray(address));
             return this;
         }
 
         public Builder partOf(final Reference partOf) {
-            b.add(PROPERTY_PART_OF, partOf);
+            b.add(FhirPropertyNames.PROPERTY_PART_OF, partOf);
             return this;
         }
 
         public Builder contact(final java.util.List<OrganizationContact> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder endpoint(final java.util.List<Reference> endpoint) {
-            b.add(PROPERTY_ENDPOINT, FhirObject.toArray(endpoint));
+            b.add(FhirPropertyNames.PROPERTY_ENDPOINT, FhirObject.toArray(endpoint));
             return this;
         }
 
@@ -312,13 +295,6 @@ public class Organization extends FhirResource {
      */
     public static class OrganizationContact extends FhirObject {
         public static final String RESOURCE_TYPE = "OrganizationContact";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_PURPOSE = "purpose";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_TELECOM = "telecom";
-        public static final String PROPERTY_ADDRESS = "address";
 
         public static Builder create() {
             return new Builder();
@@ -337,7 +313,7 @@ public class Organization extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -349,7 +325,7 @@ public class Organization extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -370,21 +346,21 @@ public class Organization extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Indicates a purpose for which the contact can be reached.
          */
         public CodeableConcept purpose() {
-            return getObject(CodeableConcept.class, PROPERTY_PURPOSE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PURPOSE);
         }
 
         /**
          * A name associated with the contact.
          */
         public HumanName name() {
-            return getObject(HumanName.class, PROPERTY_NAME);
+            return getObject(HumanName.class, FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
@@ -392,14 +368,14 @@ public class Organization extends FhirResource {
          * which the party may be contacted.
          */
         public java.util.List<ContactPoint> telecom() {
-            return getList(ContactPoint.class, PROPERTY_TELECOM);
+            return getList(ContactPoint.class, FhirPropertyNames.PROPERTY_TELECOM);
         }
 
         /**
          * Visiting or postal addresses for the contact.
          */
         public Address address() {
-            return getObject(Address.class, PROPERTY_ADDRESS);
+            return getObject(Address.class, FhirPropertyNames.PROPERTY_ADDRESS);
         }
 
         public static class Builder {
@@ -414,37 +390,37 @@ public class Organization extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder purpose(final CodeableConcept purpose) {
-                b.add(PROPERTY_PURPOSE, purpose);
+                b.add(FhirPropertyNames.PROPERTY_PURPOSE, purpose);
                 return this;
             }
 
             public Builder name(final HumanName name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder telecom(final java.util.List<ContactPoint> telecom) {
-                b.add(PROPERTY_TELECOM, FhirObject.toArray(telecom));
+                b.add(FhirPropertyNames.PROPERTY_TELECOM, FhirObject.toArray(telecom));
                 return this;
             }
 
             public Builder address(final Address address) {
-                b.add(PROPERTY_ADDRESS, address);
+                b.add(FhirPropertyNames.PROPERTY_ADDRESS, address);
                 return this;
             }
 

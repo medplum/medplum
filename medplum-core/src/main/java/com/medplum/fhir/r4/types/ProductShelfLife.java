@@ -9,19 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The shelf-life and storage information for a medicinal product item or
  * container can be described using this class.
  */
 public class ProductShelfLife extends FhirResource {
     public static final String RESOURCE_TYPE = "ProductShelfLife";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE = "specialPrecautionsForStorage";
 
     public static Builder create() {
         return new Builder();
@@ -40,7 +35,7 @@ public class ProductShelfLife extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -52,7 +47,7 @@ public class ProductShelfLife extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -73,14 +68,14 @@ public class ProductShelfLife extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Unique identifier for the packaged Medicinal Product.
      */
     public Identifier identifier() {
-        return getObject(Identifier.class, PROPERTY_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -92,7 +87,7 @@ public class ProductShelfLife extends FhirResource {
      * controlled term identifier shall be specified.
      */
     public CodeableConcept type() {
-        return getObject(CodeableConcept.class, PROPERTY_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -103,7 +98,7 @@ public class ProductShelfLife extends FhirResource {
      * used.
      */
     public Quantity period() {
-        return getObject(Quantity.class, PROPERTY_PERIOD);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     /**
@@ -112,7 +107,7 @@ public class ProductShelfLife extends FhirResource {
      * controlled term identifier shall be specified.
      */
     public java.util.List<CodeableConcept> specialPrecautionsForStorage() {
-        return getList(CodeableConcept.class, PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE);
     }
 
     public static class Builder {
@@ -127,37 +122,37 @@ public class ProductShelfLife extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final Identifier identifier) {
-            b.add(PROPERTY_IDENTIFIER, identifier);
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, identifier);
             return this;
         }
 
         public Builder type(final CodeableConcept type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder period(final Quantity period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 
         public Builder specialPrecautionsForStorage(final java.util.List<CodeableConcept> specialPrecautionsForStorage) {
-            b.add(PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE, FhirObject.toArray(specialPrecautionsForStorage));
+            b.add(FhirPropertyNames.PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE, FhirObject.toArray(specialPrecautionsForStorage));
             return this;
         }
 

@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A Capability Statement documents a set of capabilities (behaviors) of
  * a FHIR Server for a particular version of FHIR that may be used as a
@@ -17,41 +19,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class CapabilityStatement extends FhirResource {
     public static final String RESOURCE_TYPE = "CapabilityStatement";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_PUBLISHER = "publisher";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USE_CONTEXT = "useContext";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_PURPOSE = "purpose";
-    public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_KIND = "kind";
-    public static final String PROPERTY_INSTANTIATES = "instantiates";
-    public static final String PROPERTY_IMPORTS = "imports";
-    public static final String PROPERTY_SOFTWARE = "software";
-    public static final String PROPERTY_IMPLEMENTATION = "implementation";
-    public static final String PROPERTY_FHIR_VERSION = "fhirVersion";
-    public static final String PROPERTY_FORMAT = "format";
-    public static final String PROPERTY_PATCH_FORMAT = "patchFormat";
-    public static final String PROPERTY_IMPLEMENTATION_GUIDE = "implementationGuide";
-    public static final String PROPERTY_REST = "rest";
-    public static final String PROPERTY_MESSAGING = "messaging";
-    public static final String PROPERTY_DOCUMENT = "document";
 
     public static Builder create() {
         return new Builder();
@@ -72,14 +39,14 @@ public class CapabilityStatement extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -91,7 +58,7 @@ public class CapabilityStatement extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -100,7 +67,7 @@ public class CapabilityStatement extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -112,7 +79,7 @@ public class CapabilityStatement extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -132,7 +99,7 @@ public class CapabilityStatement extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -146,7 +113,7 @@ public class CapabilityStatement extends FhirResource {
      * different servers.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -159,7 +126,7 @@ public class CapabilityStatement extends FhirResource {
      * placed in a lexicographical sequence.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -168,7 +135,7 @@ public class CapabilityStatement extends FhirResource {
      * processing applications such as code generation.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -176,7 +143,7 @@ public class CapabilityStatement extends FhirResource {
      * statement.
      */
     public String title() {
-        return getString(PROPERTY_TITLE);
+        return getString(FhirPropertyNames.PROPERTY_TITLE);
     }
 
     /**
@@ -184,7 +151,7 @@ public class CapabilityStatement extends FhirResource {
      * life-cycle of the content.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -193,7 +160,7 @@ public class CapabilityStatement extends FhirResource {
      * intended to be used for genuine usage.
      */
     public Boolean experimental() {
-        return data.getBoolean(PROPERTY_EXPERIMENTAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_EXPERIMENTAL);
     }
 
     /**
@@ -204,7 +171,7 @@ public class CapabilityStatement extends FhirResource {
      * changes.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -212,7 +179,7 @@ public class CapabilityStatement extends FhirResource {
      * capability statement.
      */
     public String publisher() {
-        return getString(PROPERTY_PUBLISHER);
+        return getString(FhirPropertyNames.PROPERTY_PUBLISHER);
     }
 
     /**
@@ -220,7 +187,7 @@ public class CapabilityStatement extends FhirResource {
      * publisher.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
@@ -231,7 +198,7 @@ public class CapabilityStatement extends FhirResource {
      * of an RFP.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -242,7 +209,7 @@ public class CapabilityStatement extends FhirResource {
      * indexing and searching for appropriate capability statement instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
+        return getList(UsageContext.class, FhirPropertyNames.PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -250,7 +217,7 @@ public class CapabilityStatement extends FhirResource {
      * intended to be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
-        return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -258,7 +225,7 @@ public class CapabilityStatement extends FhirResource {
      * been designed as it has.
      */
     public String purpose() {
-        return getString(PROPERTY_PURPOSE);
+        return getString(FhirPropertyNames.PROPERTY_PURPOSE);
     }
 
     /**
@@ -267,7 +234,7 @@ public class CapabilityStatement extends FhirResource {
      * use and publishing of the capability statement.
      */
     public String copyright() {
-        return getString(PROPERTY_COPYRIGHT);
+        return getString(FhirPropertyNames.PROPERTY_COPYRIGHT);
     }
 
     /**
@@ -277,7 +244,7 @@ public class CapabilityStatement extends FhirResource {
      * purchase).
      */
     public String kind() {
-        return getString(PROPERTY_KIND);
+        return getString(FhirPropertyNames.PROPERTY_KIND);
     }
 
     /**
@@ -289,7 +256,7 @@ public class CapabilityStatement extends FhirResource {
      * capability details.
      */
     public java.util.List<String> instantiates() {
-        return getList(String.class, PROPERTY_INSTANTIATES);
+        return getList(String.class, FhirPropertyNames.PROPERTY_INSTANTIATES);
     }
 
     /**
@@ -300,7 +267,7 @@ public class CapabilityStatement extends FhirResource {
      * to add additional details to them.
      */
     public java.util.List<String> imports() {
-        return getList(String.class, PROPERTY_IMPORTS);
+        return getList(String.class, FhirPropertyNames.PROPERTY_IMPORTS);
     }
 
     /**
@@ -309,7 +276,7 @@ public class CapabilityStatement extends FhirResource {
      * particular software version, independent of an installation.
      */
     public CapabilityStatementSoftware software() {
-        return getObject(CapabilityStatementSoftware.class, PROPERTY_SOFTWARE);
+        return getObject(CapabilityStatementSoftware.class, FhirPropertyNames.PROPERTY_SOFTWARE);
     }
 
     /**
@@ -318,7 +285,7 @@ public class CapabilityStatement extends FhirResource {
      * capabilities of a software program.
      */
     public CapabilityStatementImplementation implementation() {
-        return getObject(CapabilityStatementImplementation.class, PROPERTY_IMPLEMENTATION);
+        return getObject(CapabilityStatementImplementation.class, FhirPropertyNames.PROPERTY_IMPLEMENTATION);
     }
 
     /**
@@ -327,7 +294,7 @@ public class CapabilityStatement extends FhirResource {
      * CapabilityStatement itself). There is no default value.
      */
     public String fhirVersion() {
-        return getString(PROPERTY_FHIR_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_FHIR_VERSION);
     }
 
     /**
@@ -335,7 +302,7 @@ public class CapabilityStatement extends FhirResource {
      * content types.
      */
     public java.util.List<String> format() {
-        return getList(String.class, PROPERTY_FORMAT);
+        return getList(String.class, FhirPropertyNames.PROPERTY_FORMAT);
     }
 
     /**
@@ -343,7 +310,7 @@ public class CapabilityStatement extends FhirResource {
      * their content types.
      */
     public java.util.List<String> patchFormat() {
-        return getList(String.class, PROPERTY_PATCH_FORMAT);
+        return getList(String.class, FhirPropertyNames.PROPERTY_PATCH_FORMAT);
     }
 
     /**
@@ -351,28 +318,28 @@ public class CapabilityStatement extends FhirResource {
      * support in their entirety.
      */
     public java.util.List<String> implementationGuide() {
-        return getList(String.class, PROPERTY_IMPLEMENTATION_GUIDE);
+        return getList(String.class, FhirPropertyNames.PROPERTY_IMPLEMENTATION_GUIDE);
     }
 
     /**
      * A definition of the restful capabilities of the solution, if any.
      */
     public java.util.List<CapabilityStatementRest> rest() {
-        return getList(CapabilityStatementRest.class, PROPERTY_REST);
+        return getList(CapabilityStatementRest.class, FhirPropertyNames.PROPERTY_REST);
     }
 
     /**
      * A description of the messaging capabilities of the solution.
      */
     public java.util.List<CapabilityStatementMessaging> messaging() {
-        return getList(CapabilityStatementMessaging.class, PROPERTY_MESSAGING);
+        return getList(CapabilityStatementMessaging.class, FhirPropertyNames.PROPERTY_MESSAGING);
     }
 
     /**
      * A document definition.
      */
     public java.util.List<CapabilityStatementDocument> document() {
-        return getList(CapabilityStatementDocument.class, PROPERTY_DOCUMENT);
+        return getList(CapabilityStatementDocument.class, FhirPropertyNames.PROPERTY_DOCUMENT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -386,177 +353,177 @@ public class CapabilityStatement extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder title(final String title) {
-            b.add(PROPERTY_TITLE, title);
+            b.add(FhirPropertyNames.PROPERTY_TITLE, title);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder experimental(final Boolean experimental) {
-            b.add(PROPERTY_EXPERIMENTAL, experimental);
+            b.add(FhirPropertyNames.PROPERTY_EXPERIMENTAL, experimental);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder publisher(final String publisher) {
-            b.add(PROPERTY_PUBLISHER, publisher);
+            b.add(FhirPropertyNames.PROPERTY_PUBLISHER, publisher);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
+            b.add(FhirPropertyNames.PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
         public Builder jurisdiction(final java.util.List<CodeableConcept> jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
             return this;
         }
 
         public Builder purpose(final String purpose) {
-            b.add(PROPERTY_PURPOSE, purpose);
+            b.add(FhirPropertyNames.PROPERTY_PURPOSE, purpose);
             return this;
         }
 
         public Builder copyright(final String copyright) {
-            b.add(PROPERTY_COPYRIGHT, copyright);
+            b.add(FhirPropertyNames.PROPERTY_COPYRIGHT, copyright);
             return this;
         }
 
         public Builder kind(final String kind) {
-            b.add(PROPERTY_KIND, kind);
+            b.add(FhirPropertyNames.PROPERTY_KIND, kind);
             return this;
         }
 
         public Builder instantiates(final java.util.List<String> instantiates) {
-            b.add(PROPERTY_INSTANTIATES, FhirObject.toStringArray(instantiates));
+            b.add(FhirPropertyNames.PROPERTY_INSTANTIATES, FhirObject.toStringArray(instantiates));
             return this;
         }
 
         public Builder imports(final java.util.List<String> imports) {
-            b.add(PROPERTY_IMPORTS, FhirObject.toStringArray(imports));
+            b.add(FhirPropertyNames.PROPERTY_IMPORTS, FhirObject.toStringArray(imports));
             return this;
         }
 
         public Builder software(final CapabilityStatementSoftware software) {
-            b.add(PROPERTY_SOFTWARE, software);
+            b.add(FhirPropertyNames.PROPERTY_SOFTWARE, software);
             return this;
         }
 
         public Builder implementation(final CapabilityStatementImplementation implementation) {
-            b.add(PROPERTY_IMPLEMENTATION, implementation);
+            b.add(FhirPropertyNames.PROPERTY_IMPLEMENTATION, implementation);
             return this;
         }
 
         public Builder fhirVersion(final String fhirVersion) {
-            b.add(PROPERTY_FHIR_VERSION, fhirVersion);
+            b.add(FhirPropertyNames.PROPERTY_FHIR_VERSION, fhirVersion);
             return this;
         }
 
         public Builder format(final java.util.List<String> format) {
-            b.add(PROPERTY_FORMAT, FhirObject.toStringArray(format));
+            b.add(FhirPropertyNames.PROPERTY_FORMAT, FhirObject.toStringArray(format));
             return this;
         }
 
         public Builder patchFormat(final java.util.List<String> patchFormat) {
-            b.add(PROPERTY_PATCH_FORMAT, FhirObject.toStringArray(patchFormat));
+            b.add(FhirPropertyNames.PROPERTY_PATCH_FORMAT, FhirObject.toStringArray(patchFormat));
             return this;
         }
 
         public Builder implementationGuide(final java.util.List<String> implementationGuide) {
-            b.add(PROPERTY_IMPLEMENTATION_GUIDE, FhirObject.toStringArray(implementationGuide));
+            b.add(FhirPropertyNames.PROPERTY_IMPLEMENTATION_GUIDE, FhirObject.toStringArray(implementationGuide));
             return this;
         }
 
         public Builder rest(final java.util.List<CapabilityStatementRest> rest) {
-            b.add(PROPERTY_REST, FhirObject.toArray(rest));
+            b.add(FhirPropertyNames.PROPERTY_REST, FhirObject.toArray(rest));
             return this;
         }
 
         public Builder messaging(final java.util.List<CapabilityStatementMessaging> messaging) {
-            b.add(PROPERTY_MESSAGING, FhirObject.toArray(messaging));
+            b.add(FhirPropertyNames.PROPERTY_MESSAGING, FhirObject.toArray(messaging));
             return this;
         }
 
         public Builder document(final java.util.List<CapabilityStatementDocument> document) {
-            b.add(PROPERTY_DOCUMENT, FhirObject.toArray(document));
+            b.add(FhirPropertyNames.PROPERTY_DOCUMENT, FhirObject.toArray(document));
             return this;
         }
 
@@ -573,12 +540,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementDocument extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementDocument";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_MODE = "mode";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
-        public static final String PROPERTY_PROFILE = "profile";
 
         public static Builder create() {
             return new Builder();
@@ -597,7 +558,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -609,7 +570,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -630,7 +591,7 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -638,7 +599,7 @@ public class CapabilityStatement extends FhirResource {
          * producer or consumer.
          */
         public String mode() {
-            return getString(PROPERTY_MODE);
+            return getString(FhirPropertyNames.PROPERTY_MODE);
         }
 
         /**
@@ -647,7 +608,7 @@ public class CapabilityStatement extends FhirResource {
          * action is taken with consumed documents, etc.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         /**
@@ -655,7 +616,7 @@ public class CapabilityStatement extends FhirResource {
          * present, and their contents.
          */
         public String profile() {
-            return getString(PROPERTY_PROFILE);
+            return getString(FhirPropertyNames.PROPERTY_PROFILE);
         }
 
         public static class Builder {
@@ -670,32 +631,32 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder mode(final String mode) {
-                b.add(PROPERTY_MODE, mode);
+                b.add(FhirPropertyNames.PROPERTY_MODE, mode);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
             public Builder profile(final String profile) {
-                b.add(PROPERTY_PROFILE, profile);
+                b.add(FhirPropertyNames.PROPERTY_PROFILE, profile);
                 return this;
             }
 
@@ -713,11 +674,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementEndpoint extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementEndpoint";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_PROTOCOL = "protocol";
-        public static final String PROPERTY_ADDRESS = "address";
 
         public static Builder create() {
             return new Builder();
@@ -736,7 +692,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -748,7 +704,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -769,7 +725,7 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -777,7 +733,7 @@ public class CapabilityStatement extends FhirResource {
          * by this endpoint.
          */
         public Coding protocol() {
-            return getObject(Coding.class, PROPERTY_PROTOCOL);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_PROTOCOL);
         }
 
         /**
@@ -785,7 +741,7 @@ public class CapabilityStatement extends FhirResource {
          * network addresses for routing, it can be just an identifier.
          */
         public java.net.URI address() {
-            return getUri(PROPERTY_ADDRESS);
+            return getUri(FhirPropertyNames.PROPERTY_ADDRESS);
         }
 
         public static class Builder {
@@ -800,27 +756,27 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder protocol(final Coding protocol) {
-                b.add(PROPERTY_PROTOCOL, protocol);
+                b.add(FhirPropertyNames.PROPERTY_PROTOCOL, protocol);
                 return this;
             }
 
             public Builder address(final java.net.URI address) {
-                b.add(PROPERTY_ADDRESS, address.toString());
+                b.add(FhirPropertyNames.PROPERTY_ADDRESS, address.toString());
                 return this;
             }
 
@@ -838,12 +794,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementImplementation extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementImplementation";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_URL = "url";
-        public static final String PROPERTY_CUSTODIAN = "custodian";
 
         public static Builder create() {
             return new Builder();
@@ -862,7 +812,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -874,7 +824,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -895,7 +845,7 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -903,7 +853,7 @@ public class CapabilityStatement extends FhirResource {
          * statement relates to.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
@@ -911,7 +861,7 @@ public class CapabilityStatement extends FhirResource {
          * REST interfaces as well as the mailbox and document interfaces.
          */
         public java.net.URI url() {
-            return getUri(PROPERTY_URL);
+            return getUri(FhirPropertyNames.PROPERTY_URL);
         }
 
         /**
@@ -919,7 +869,7 @@ public class CapabilityStatement extends FhirResource {
          * oversight of the data on the server at the specified URL.
          */
         public Reference custodian() {
-            return getObject(Reference.class, PROPERTY_CUSTODIAN);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_CUSTODIAN);
         }
 
         public static class Builder {
@@ -934,32 +884,32 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder url(final java.net.URI url) {
-                b.add(PROPERTY_URL, url.toString());
+                b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
                 return this;
             }
 
             public Builder custodian(final Reference custodian) {
-                b.add(PROPERTY_CUSTODIAN, custodian);
+                b.add(FhirPropertyNames.PROPERTY_CUSTODIAN, custodian);
                 return this;
             }
 
@@ -977,11 +927,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementInteraction extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementInteraction";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
 
         public static Builder create() {
             return new Builder();
@@ -1000,7 +945,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1012,7 +957,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1033,14 +978,14 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Coded identifier of the operation, supported by the system resource.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -1049,7 +994,7 @@ public class CapabilityStatement extends FhirResource {
          * id' or 'creates permitted from pre-authorized certificates only'.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         public static class Builder {
@@ -1064,27 +1009,27 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
@@ -1102,11 +1047,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementInteraction1 extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementInteraction1";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
 
         public static Builder create() {
             return new Builder();
@@ -1125,7 +1065,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1137,7 +1077,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1158,14 +1098,14 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * A coded identifier of the operation, supported by the system.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -1174,7 +1114,7 @@ public class CapabilityStatement extends FhirResource {
          * system wide search is implemented.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         public static class Builder {
@@ -1189,27 +1129,27 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
@@ -1227,13 +1167,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementMessaging extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementMessaging";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ENDPOINT = "endpoint";
-        public static final String PROPERTY_RELIABLE_CACHE = "reliableCache";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
-        public static final String PROPERTY_SUPPORTED_MESSAGE = "supportedMessage";
 
         public static Builder create() {
             return new Builder();
@@ -1252,7 +1185,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1264,7 +1197,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1285,7 +1218,7 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1293,7 +1226,7 @@ public class CapabilityStatement extends FhirResource {
          * replies are to be sent.
          */
         public java.util.List<CapabilityStatementEndpoint> endpoint() {
-            return getList(CapabilityStatementEndpoint.class, PROPERTY_ENDPOINT);
+            return getList(CapabilityStatementEndpoint.class, FhirPropertyNames.PROPERTY_ENDPOINT);
         }
 
         /**
@@ -1302,7 +1235,7 @@ public class CapabilityStatement extends FhirResource {
          * sender).
          */
         public Integer reliableCache() {
-            return data.getInt(PROPERTY_RELIABLE_CACHE);
+            return data.getInt(FhirPropertyNames.PROPERTY_RELIABLE_CACHE);
         }
 
         /**
@@ -1312,7 +1245,7 @@ public class CapabilityStatement extends FhirResource {
          * partner.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         /**
@@ -1320,7 +1253,7 @@ public class CapabilityStatement extends FhirResource {
          * receive.
          */
         public java.util.List<CapabilityStatementSupportedMessage> supportedMessage() {
-            return getList(CapabilityStatementSupportedMessage.class, PROPERTY_SUPPORTED_MESSAGE);
+            return getList(CapabilityStatementSupportedMessage.class, FhirPropertyNames.PROPERTY_SUPPORTED_MESSAGE);
         }
 
         public static class Builder {
@@ -1335,37 +1268,37 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder endpoint(final java.util.List<CapabilityStatementEndpoint> endpoint) {
-                b.add(PROPERTY_ENDPOINT, FhirObject.toArray(endpoint));
+                b.add(FhirPropertyNames.PROPERTY_ENDPOINT, FhirObject.toArray(endpoint));
                 return this;
             }
 
             public Builder reliableCache(final Integer reliableCache) {
-                b.add(PROPERTY_RELIABLE_CACHE, reliableCache);
+                b.add(FhirPropertyNames.PROPERTY_RELIABLE_CACHE, reliableCache);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
             public Builder supportedMessage(final java.util.List<CapabilityStatementSupportedMessage> supportedMessage) {
-                b.add(PROPERTY_SUPPORTED_MESSAGE, FhirObject.toArray(supportedMessage));
+                b.add(FhirPropertyNames.PROPERTY_SUPPORTED_MESSAGE, FhirObject.toArray(supportedMessage));
                 return this;
             }
 
@@ -1383,12 +1316,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementOperation";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DEFINITION = "definition";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
 
         public static Builder create() {
             return new Builder();
@@ -1407,7 +1334,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1419,7 +1346,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1440,7 +1367,7 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1449,7 +1376,7 @@ public class CapabilityStatement extends FhirResource {
          * used in the _query parameter when the query is called.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
@@ -1464,7 +1391,7 @@ public class CapabilityStatement extends FhirResource {
          * specific subset of functionality supported.
          */
         public String definition() {
-            return getString(PROPERTY_DEFINITION);
+            return getString(FhirPropertyNames.PROPERTY_DEFINITION);
         }
 
         /**
@@ -1473,7 +1400,7 @@ public class CapabilityStatement extends FhirResource {
          * instance-level invocation of the operation.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         public static class Builder {
@@ -1488,32 +1415,32 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder definition(final String definition) {
-                b.add(PROPERTY_DEFINITION, definition);
+                b.add(FhirPropertyNames.PROPERTY_DEFINITION, definition);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
@@ -1531,26 +1458,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementResource extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementResource";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_PROFILE = "profile";
-        public static final String PROPERTY_SUPPORTED_PROFILE = "supportedProfile";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
-        public static final String PROPERTY_INTERACTION = "interaction";
-        public static final String PROPERTY_VERSIONING = "versioning";
-        public static final String PROPERTY_READ_HISTORY = "readHistory";
-        public static final String PROPERTY_UPDATE_CREATE = "updateCreate";
-        public static final String PROPERTY_CONDITIONAL_CREATE = "conditionalCreate";
-        public static final String PROPERTY_CONDITIONAL_READ = "conditionalRead";
-        public static final String PROPERTY_CONDITIONAL_UPDATE = "conditionalUpdate";
-        public static final String PROPERTY_CONDITIONAL_DELETE = "conditionalDelete";
-        public static final String PROPERTY_REFERENCE_POLICY = "referencePolicy";
-        public static final String PROPERTY_SEARCH_INCLUDE = "searchInclude";
-        public static final String PROPERTY_SEARCH_REV_INCLUDE = "searchRevInclude";
-        public static final String PROPERTY_SEARCH_PARAM = "searchParam";
-        public static final String PROPERTY_OPERATION = "operation";
 
         public static Builder create() {
             return new Builder();
@@ -1569,7 +1476,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1581,7 +1488,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1602,14 +1509,14 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * A type of resource exposed via the restful interface.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
@@ -1619,7 +1526,7 @@ public class CapabilityStatement extends FhirResource {
          * [Using Profiles](profiling.html#profile-uses).
          */
         public String profile() {
-            return getString(PROPERTY_PROFILE);
+            return getString(FhirPropertyNames.PROPERTY_PROFILE);
         }
 
         /**
@@ -1633,21 +1540,21 @@ public class CapabilityStatement extends FhirResource {
          * Profiles](profiling.html#profile-uses).
          */
         public java.util.List<String> supportedProfile() {
-            return getList(String.class, PROPERTY_SUPPORTED_PROFILE);
+            return getList(String.class, FhirPropertyNames.PROPERTY_SUPPORTED_PROFILE);
         }
 
         /**
          * Additional information about the resource type used by the system.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         /**
          * Identifies a restful operation supported by the solution.
          */
         public java.util.List<CapabilityStatementInteraction> interaction() {
-            return getList(CapabilityStatementInteraction.class, PROPERTY_INTERACTION);
+            return getList(CapabilityStatementInteraction.class, FhirPropertyNames.PROPERTY_INTERACTION);
         }
 
         /**
@@ -1659,7 +1566,7 @@ public class CapabilityStatement extends FhirResource {
          * features, including using e-tags for version integrity in the API.
          */
         public String versioning() {
-            return getString(PROPERTY_VERSIONING);
+            return getString(FhirPropertyNames.PROPERTY_VERSIONING);
         }
 
         /**
@@ -1667,7 +1574,7 @@ public class CapabilityStatement extends FhirResource {
          * of the vRead operation.
          */
         public Boolean readHistory() {
-            return data.getBoolean(PROPERTY_READ_HISTORY);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_READ_HISTORY);
         }
 
         /**
@@ -1678,49 +1585,49 @@ public class CapabilityStatement extends FhirResource {
          * the server.
          */
         public Boolean updateCreate() {
-            return data.getBoolean(PROPERTY_UPDATE_CREATE);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_UPDATE_CREATE);
         }
 
         /**
          * A flag that indicates that the server supports conditional create.
          */
         public Boolean conditionalCreate() {
-            return data.getBoolean(PROPERTY_CONDITIONAL_CREATE);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_CONDITIONAL_CREATE);
         }
 
         /**
          * A code that indicates how the server supports conditional read.
          */
         public String conditionalRead() {
-            return getString(PROPERTY_CONDITIONAL_READ);
+            return getString(FhirPropertyNames.PROPERTY_CONDITIONAL_READ);
         }
 
         /**
          * A flag that indicates that the server supports conditional update.
          */
         public Boolean conditionalUpdate() {
-            return data.getBoolean(PROPERTY_CONDITIONAL_UPDATE);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_CONDITIONAL_UPDATE);
         }
 
         /**
          * A code that indicates how the server supports conditional delete.
          */
         public String conditionalDelete() {
-            return getString(PROPERTY_CONDITIONAL_DELETE);
+            return getString(FhirPropertyNames.PROPERTY_CONDITIONAL_DELETE);
         }
 
         /**
          * A set of flags that defines how references are supported.
          */
         public java.util.List<String> referencePolicy() {
-            return getList(String.class, PROPERTY_REFERENCE_POLICY);
+            return getList(String.class, FhirPropertyNames.PROPERTY_REFERENCE_POLICY);
         }
 
         /**
          * A list of _include values supported by the server.
          */
         public java.util.List<String> searchInclude() {
-            return getList(String.class, PROPERTY_SEARCH_INCLUDE);
+            return getList(String.class, FhirPropertyNames.PROPERTY_SEARCH_INCLUDE);
         }
 
         /**
@@ -1728,7 +1635,7 @@ public class CapabilityStatement extends FhirResource {
          * server.
          */
         public java.util.List<String> searchRevInclude() {
-            return getList(String.class, PROPERTY_SEARCH_REV_INCLUDE);
+            return getList(String.class, FhirPropertyNames.PROPERTY_SEARCH_REV_INCLUDE);
         }
 
         /**
@@ -1737,7 +1644,7 @@ public class CapabilityStatement extends FhirResource {
          * ones defined for/by the implementation.
          */
         public java.util.List<CapabilityStatementSearchParam> searchParam() {
-            return getList(CapabilityStatementSearchParam.class, PROPERTY_SEARCH_PARAM);
+            return getList(CapabilityStatementSearchParam.class, FhirPropertyNames.PROPERTY_SEARCH_PARAM);
         }
 
         /**
@@ -1747,7 +1654,7 @@ public class CapabilityStatement extends FhirResource {
          * parameters.
          */
         public java.util.List<CapabilityStatementOperation> operation() {
-            return getList(CapabilityStatementOperation.class, PROPERTY_OPERATION);
+            return getList(CapabilityStatementOperation.class, FhirPropertyNames.PROPERTY_OPERATION);
         }
 
         public static class Builder {
@@ -1762,102 +1669,102 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder profile(final String profile) {
-                b.add(PROPERTY_PROFILE, profile);
+                b.add(FhirPropertyNames.PROPERTY_PROFILE, profile);
                 return this;
             }
 
             public Builder supportedProfile(final java.util.List<String> supportedProfile) {
-                b.add(PROPERTY_SUPPORTED_PROFILE, FhirObject.toStringArray(supportedProfile));
+                b.add(FhirPropertyNames.PROPERTY_SUPPORTED_PROFILE, FhirObject.toStringArray(supportedProfile));
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
             public Builder interaction(final java.util.List<CapabilityStatementInteraction> interaction) {
-                b.add(PROPERTY_INTERACTION, FhirObject.toArray(interaction));
+                b.add(FhirPropertyNames.PROPERTY_INTERACTION, FhirObject.toArray(interaction));
                 return this;
             }
 
             public Builder versioning(final String versioning) {
-                b.add(PROPERTY_VERSIONING, versioning);
+                b.add(FhirPropertyNames.PROPERTY_VERSIONING, versioning);
                 return this;
             }
 
             public Builder readHistory(final Boolean readHistory) {
-                b.add(PROPERTY_READ_HISTORY, readHistory);
+                b.add(FhirPropertyNames.PROPERTY_READ_HISTORY, readHistory);
                 return this;
             }
 
             public Builder updateCreate(final Boolean updateCreate) {
-                b.add(PROPERTY_UPDATE_CREATE, updateCreate);
+                b.add(FhirPropertyNames.PROPERTY_UPDATE_CREATE, updateCreate);
                 return this;
             }
 
             public Builder conditionalCreate(final Boolean conditionalCreate) {
-                b.add(PROPERTY_CONDITIONAL_CREATE, conditionalCreate);
+                b.add(FhirPropertyNames.PROPERTY_CONDITIONAL_CREATE, conditionalCreate);
                 return this;
             }
 
             public Builder conditionalRead(final String conditionalRead) {
-                b.add(PROPERTY_CONDITIONAL_READ, conditionalRead);
+                b.add(FhirPropertyNames.PROPERTY_CONDITIONAL_READ, conditionalRead);
                 return this;
             }
 
             public Builder conditionalUpdate(final Boolean conditionalUpdate) {
-                b.add(PROPERTY_CONDITIONAL_UPDATE, conditionalUpdate);
+                b.add(FhirPropertyNames.PROPERTY_CONDITIONAL_UPDATE, conditionalUpdate);
                 return this;
             }
 
             public Builder conditionalDelete(final String conditionalDelete) {
-                b.add(PROPERTY_CONDITIONAL_DELETE, conditionalDelete);
+                b.add(FhirPropertyNames.PROPERTY_CONDITIONAL_DELETE, conditionalDelete);
                 return this;
             }
 
             public Builder referencePolicy(final java.util.List<String> referencePolicy) {
-                b.add(PROPERTY_REFERENCE_POLICY, FhirObject.toStringArray(referencePolicy));
+                b.add(FhirPropertyNames.PROPERTY_REFERENCE_POLICY, FhirObject.toStringArray(referencePolicy));
                 return this;
             }
 
             public Builder searchInclude(final java.util.List<String> searchInclude) {
-                b.add(PROPERTY_SEARCH_INCLUDE, FhirObject.toStringArray(searchInclude));
+                b.add(FhirPropertyNames.PROPERTY_SEARCH_INCLUDE, FhirObject.toStringArray(searchInclude));
                 return this;
             }
 
             public Builder searchRevInclude(final java.util.List<String> searchRevInclude) {
-                b.add(PROPERTY_SEARCH_REV_INCLUDE, FhirObject.toStringArray(searchRevInclude));
+                b.add(FhirPropertyNames.PROPERTY_SEARCH_REV_INCLUDE, FhirObject.toStringArray(searchRevInclude));
                 return this;
             }
 
             public Builder searchParam(final java.util.List<CapabilityStatementSearchParam> searchParam) {
-                b.add(PROPERTY_SEARCH_PARAM, FhirObject.toArray(searchParam));
+                b.add(FhirPropertyNames.PROPERTY_SEARCH_PARAM, FhirObject.toArray(searchParam));
                 return this;
             }
 
             public Builder operation(final java.util.List<CapabilityStatementOperation> operation) {
-                b.add(PROPERTY_OPERATION, FhirObject.toArray(operation));
+                b.add(FhirPropertyNames.PROPERTY_OPERATION, FhirObject.toArray(operation));
                 return this;
             }
 
@@ -1875,17 +1782,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementRest extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementRest";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_MODE = "mode";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
-        public static final String PROPERTY_SECURITY = "security";
-        public static final String PROPERTY_RESOURCE = "resource";
-        public static final String PROPERTY_INTERACTION = "interaction";
-        public static final String PROPERTY_SEARCH_PARAM = "searchParam";
-        public static final String PROPERTY_OPERATION = "operation";
-        public static final String PROPERTY_COMPARTMENT = "compartment";
 
         public static Builder create() {
             return new Builder();
@@ -1904,7 +1800,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1916,7 +1812,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1937,7 +1833,7 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1945,7 +1841,7 @@ public class CapabilityStatement extends FhirResource {
          * ability to initiate or receive restful operations.
          */
         public String mode() {
-            return getString(PROPERTY_MODE);
+            return getString(FhirPropertyNames.PROPERTY_MODE);
         }
 
         /**
@@ -1953,7 +1849,7 @@ public class CapabilityStatement extends FhirResource {
          * all applications, such as security.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         /**
@@ -1961,7 +1857,7 @@ public class CapabilityStatement extends FhirResource {
          * perspective - what a client needs to know.
          */
         public CapabilityStatementSecurity security() {
-            return getObject(CapabilityStatementSecurity.class, PROPERTY_SECURITY);
+            return getObject(CapabilityStatementSecurity.class, FhirPropertyNames.PROPERTY_SECURITY);
         }
 
         /**
@@ -1969,14 +1865,14 @@ public class CapabilityStatement extends FhirResource {
          * specific resource type.
          */
         public java.util.List<CapabilityStatementResource> resource() {
-            return getList(CapabilityStatementResource.class, PROPERTY_RESOURCE);
+            return getList(CapabilityStatementResource.class, FhirPropertyNames.PROPERTY_RESOURCE);
         }
 
         /**
          * A specification of restful operations supported by the system.
          */
         public java.util.List<CapabilityStatementInteraction1> interaction() {
-            return getList(CapabilityStatementInteraction1.class, PROPERTY_INTERACTION);
+            return getList(CapabilityStatementInteraction1.class, FhirPropertyNames.PROPERTY_INTERACTION);
         }
 
         /**
@@ -1986,7 +1882,7 @@ public class CapabilityStatement extends FhirResource {
          * the implementation.
          */
         public java.util.List<CapabilityStatementSearchParam> searchParam() {
-            return getList(CapabilityStatementSearchParam.class, PROPERTY_SEARCH_PARAM);
+            return getList(CapabilityStatementSearchParam.class, FhirPropertyNames.PROPERTY_SEARCH_PARAM);
         }
 
         /**
@@ -1994,7 +1890,7 @@ public class CapabilityStatement extends FhirResource {
          * parameters and their meaning and type.
          */
         public java.util.List<CapabilityStatementOperation> operation() {
-            return getList(CapabilityStatementOperation.class, PROPERTY_OPERATION);
+            return getList(CapabilityStatementOperation.class, FhirPropertyNames.PROPERTY_OPERATION);
         }
 
         /**
@@ -2003,7 +1899,7 @@ public class CapabilityStatement extends FhirResource {
          * CompartmentDefinition resource by its canonical URL .
          */
         public java.util.List<String> compartment() {
-            return getList(String.class, PROPERTY_COMPARTMENT);
+            return getList(String.class, FhirPropertyNames.PROPERTY_COMPARTMENT);
         }
 
         public static class Builder {
@@ -2018,57 +1914,57 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder mode(final String mode) {
-                b.add(PROPERTY_MODE, mode);
+                b.add(FhirPropertyNames.PROPERTY_MODE, mode);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
             public Builder security(final CapabilityStatementSecurity security) {
-                b.add(PROPERTY_SECURITY, security);
+                b.add(FhirPropertyNames.PROPERTY_SECURITY, security);
                 return this;
             }
 
             public Builder resource(final java.util.List<CapabilityStatementResource> resource) {
-                b.add(PROPERTY_RESOURCE, FhirObject.toArray(resource));
+                b.add(FhirPropertyNames.PROPERTY_RESOURCE, FhirObject.toArray(resource));
                 return this;
             }
 
             public Builder interaction(final java.util.List<CapabilityStatementInteraction1> interaction) {
-                b.add(PROPERTY_INTERACTION, FhirObject.toArray(interaction));
+                b.add(FhirPropertyNames.PROPERTY_INTERACTION, FhirObject.toArray(interaction));
                 return this;
             }
 
             public Builder searchParam(final java.util.List<CapabilityStatementSearchParam> searchParam) {
-                b.add(PROPERTY_SEARCH_PARAM, FhirObject.toArray(searchParam));
+                b.add(FhirPropertyNames.PROPERTY_SEARCH_PARAM, FhirObject.toArray(searchParam));
                 return this;
             }
 
             public Builder operation(final java.util.List<CapabilityStatementOperation> operation) {
-                b.add(PROPERTY_OPERATION, FhirObject.toArray(operation));
+                b.add(FhirPropertyNames.PROPERTY_OPERATION, FhirObject.toArray(operation));
                 return this;
             }
 
             public Builder compartment(final java.util.List<String> compartment) {
-                b.add(PROPERTY_COMPARTMENT, FhirObject.toStringArray(compartment));
+                b.add(FhirPropertyNames.PROPERTY_COMPARTMENT, FhirObject.toStringArray(compartment));
                 return this;
             }
 
@@ -2086,13 +1982,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementSearchParam extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementSearchParam";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DEFINITION = "definition";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
 
         public static Builder create() {
             return new Builder();
@@ -2111,7 +2000,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -2123,7 +2012,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -2144,14 +2033,14 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The name of the search parameter used in the interface.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
@@ -2163,7 +2052,7 @@ public class CapabilityStatement extends FhirResource {
          * defined IGs.
          */
         public String definition() {
-            return getString(PROPERTY_DEFINITION);
+            return getString(FhirPropertyNames.PROPERTY_DEFINITION);
         }
 
         /**
@@ -2171,7 +2060,7 @@ public class CapabilityStatement extends FhirResource {
          * interpreted.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
@@ -2179,7 +2068,7 @@ public class CapabilityStatement extends FhirResource {
          * search parameter is used.  For example, text matching algorithms.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         public static class Builder {
@@ -2194,37 +2083,37 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder definition(final String definition) {
-                b.add(PROPERTY_DEFINITION, definition);
+                b.add(FhirPropertyNames.PROPERTY_DEFINITION, definition);
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
@@ -2242,12 +2131,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementSecurity extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementSecurity";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CORS = "cors";
-        public static final String PROPERTY_SERVICE = "service";
-        public static final String PROPERTY_DESCRIPTION = "description";
 
         public static Builder create() {
             return new Builder();
@@ -2266,7 +2149,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -2278,7 +2161,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -2299,7 +2182,7 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2307,21 +2190,21 @@ public class CapabilityStatement extends FhirResource {
          * Javascript applications to use the server.
          */
         public Boolean cors() {
-            return data.getBoolean(PROPERTY_CORS);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_CORS);
         }
 
         /**
          * Types of security services that are supported/required by the system.
          */
         public java.util.List<CodeableConcept> service() {
-            return getList(CodeableConcept.class, PROPERTY_SERVICE);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_SERVICE);
         }
 
         /**
          * General description of how security works.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         public static class Builder {
@@ -2336,32 +2219,32 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder cors(final Boolean cors) {
-                b.add(PROPERTY_CORS, cors);
+                b.add(FhirPropertyNames.PROPERTY_CORS, cors);
                 return this;
             }
 
             public Builder service(final java.util.List<CodeableConcept> service) {
-                b.add(PROPERTY_SERVICE, FhirObject.toArray(service));
+                b.add(FhirPropertyNames.PROPERTY_SERVICE, FhirObject.toArray(service));
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
@@ -2379,12 +2262,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementSoftware extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementSoftware";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_VERSION = "version";
-        public static final String PROPERTY_RELEASE_DATE = "releaseDate";
 
         public static Builder create() {
             return new Builder();
@@ -2403,7 +2280,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -2415,7 +2292,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -2436,28 +2313,28 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Name the software is known by.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * The version identifier for the software covered by this statement.
          */
         public String version() {
-            return getString(PROPERTY_VERSION);
+            return getString(FhirPropertyNames.PROPERTY_VERSION);
         }
 
         /**
          * Date this version of the software was released.
          */
         public java.time.Instant releaseDate() {
-            return getInstant(PROPERTY_RELEASE_DATE);
+            return getInstant(FhirPropertyNames.PROPERTY_RELEASE_DATE);
         }
 
         public static class Builder {
@@ -2472,32 +2349,32 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder version(final String version) {
-                b.add(PROPERTY_VERSION, version);
+                b.add(FhirPropertyNames.PROPERTY_VERSION, version);
                 return this;
             }
 
             public Builder releaseDate(final java.time.Instant releaseDate) {
-                b.add(PROPERTY_RELEASE_DATE, releaseDate.toString());
+                b.add(FhirPropertyNames.PROPERTY_RELEASE_DATE, releaseDate.toString());
                 return this;
             }
 
@@ -2515,11 +2392,6 @@ public class CapabilityStatement extends FhirResource {
      */
     public static class CapabilityStatementSupportedMessage extends FhirObject {
         public static final String RESOURCE_TYPE = "CapabilityStatementSupportedMessage";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_MODE = "mode";
-        public static final String PROPERTY_DEFINITION = "definition";
 
         public static Builder create() {
             return new Builder();
@@ -2538,7 +2410,7 @@ public class CapabilityStatement extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -2550,7 +2422,7 @@ public class CapabilityStatement extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -2571,7 +2443,7 @@ public class CapabilityStatement extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -2579,7 +2451,7 @@ public class CapabilityStatement extends FhirResource {
          * receiver.
          */
         public String mode() {
-            return getString(PROPERTY_MODE);
+            return getString(FhirPropertyNames.PROPERTY_MODE);
         }
 
         /**
@@ -2587,7 +2459,7 @@ public class CapabilityStatement extends FhirResource {
          * message structure, allowed responses, etc.
          */
         public String definition() {
-            return getString(PROPERTY_DEFINITION);
+            return getString(FhirPropertyNames.PROPERTY_DEFINITION);
         }
 
         public static class Builder {
@@ -2602,27 +2474,27 @@ public class CapabilityStatement extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder mode(final String mode) {
-                b.add(PROPERTY_MODE, mode);
+                b.add(FhirPropertyNames.PROPERTY_MODE, mode);
                 return this;
             }
 
             public Builder definition(final String definition) {
-                b.add(PROPERTY_DEFINITION, definition);
+                b.add(FhirPropertyNames.PROPERTY_DEFINITION, definition);
                 return this;
             }
 

@@ -9,17 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A contributor to the content of a knowledge asset, including authors,
  * editors, reviewers, and endorsers.
  */
 public class Contributor extends FhirResource {
     public static final String RESOURCE_TYPE = "Contributor";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_CONTACT = "contact";
 
     public static Builder create() {
         return new Builder();
@@ -38,7 +35,7 @@ public class Contributor extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -50,14 +47,14 @@ public class Contributor extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * The type of contributor.
      */
     public String type() {
-        return getString(PROPERTY_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -65,7 +62,7 @@ public class Contributor extends FhirResource {
      * contribution.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -73,7 +70,7 @@ public class Contributor extends FhirResource {
      * contributor.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     public static class Builder {
@@ -88,27 +85,27 @@ public class Contributor extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder type(final String type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 

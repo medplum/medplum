@@ -9,16 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A relationship of two Quantity values - expressed as a numerator and a
  * denominator.
  */
 public class Ratio extends FhirResource {
     public static final String RESOURCE_TYPE = "Ratio";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_NUMERATOR = "numerator";
-    public static final String PROPERTY_DENOMINATOR = "denominator";
 
     public static Builder create() {
         return new Builder();
@@ -37,7 +35,7 @@ public class Ratio extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -49,21 +47,21 @@ public class Ratio extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * The value of the numerator.
      */
     public Quantity numerator() {
-        return getObject(Quantity.class, PROPERTY_NUMERATOR);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_NUMERATOR);
     }
 
     /**
      * The value of the denominator.
      */
     public Quantity denominator() {
-        return getObject(Quantity.class, PROPERTY_DENOMINATOR);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_DENOMINATOR);
     }
 
     public static class Builder {
@@ -78,22 +76,22 @@ public class Ratio extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder numerator(final Quantity numerator) {
-            b.add(PROPERTY_NUMERATOR, numerator);
+            b.add(FhirPropertyNames.PROPERTY_NUMERATOR, numerator);
             return this;
         }
 
         public Builder denominator(final Quantity denominator) {
-            b.add(PROPERTY_DENOMINATOR, denominator);
+            b.add(FhirPropertyNames.PROPERTY_DENOMINATOR, denominator);
             return this;
         }
 

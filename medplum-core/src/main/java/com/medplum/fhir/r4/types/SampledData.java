@@ -9,21 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A series of measurements taken by a device, with upper and lower
  * limits. There may be more than one dimension in the data.
  */
 public class SampledData extends FhirResource {
     public static final String RESOURCE_TYPE = "SampledData";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_ORIGIN = "origin";
-    public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_FACTOR = "factor";
-    public static final String PROPERTY_LOWER_LIMIT = "lowerLimit";
-    public static final String PROPERTY_UPPER_LIMIT = "upperLimit";
-    public static final String PROPERTY_DIMENSIONS = "dimensions";
-    public static final String PROPERTY_DATA = "data";
 
     public static Builder create() {
         return new Builder();
@@ -42,7 +35,7 @@ public class SampledData extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -54,7 +47,7 @@ public class SampledData extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -62,14 +55,14 @@ public class SampledData extends FhirResource {
      * addition, this provides the units of the entire measurement series.
      */
     public Quantity origin() {
-        return getObject(Quantity.class, PROPERTY_ORIGIN);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_ORIGIN);
     }
 
     /**
      * The length of time between sampling times, measured in milliseconds.
      */
     public Double period() {
-        return data.getJsonNumber(PROPERTY_PERIOD).doubleValue();
+        return data.getJsonNumber(FhirPropertyNames.PROPERTY_PERIOD).doubleValue();
     }
 
     /**
@@ -77,7 +70,7 @@ public class SampledData extends FhirResource {
      * they are added to the origin.
      */
     public Double factor() {
-        return data.getJsonNumber(PROPERTY_FACTOR).doubleValue();
+        return data.getJsonNumber(FhirPropertyNames.PROPERTY_FACTOR).doubleValue();
     }
 
     /**
@@ -86,7 +79,7 @@ public class SampledData extends FhirResource {
      * limit).
      */
     public Double lowerLimit() {
-        return data.getJsonNumber(PROPERTY_LOWER_LIMIT).doubleValue();
+        return data.getJsonNumber(FhirPropertyNames.PROPERTY_LOWER_LIMIT).doubleValue();
     }
 
     /**
@@ -95,7 +88,7 @@ public class SampledData extends FhirResource {
      * limit).
      */
     public Double upperLimit() {
-        return data.getJsonNumber(PROPERTY_UPPER_LIMIT).doubleValue();
+        return data.getJsonNumber(FhirPropertyNames.PROPERTY_UPPER_LIMIT).doubleValue();
     }
 
     /**
@@ -104,7 +97,7 @@ public class SampledData extends FhirResource {
      * sample points for a point in time will be recorded at once.
      */
     public Integer dimensions() {
-        return data.getInt(PROPERTY_DIMENSIONS);
+        return data.getInt(FhirPropertyNames.PROPERTY_DIMENSIONS);
     }
 
     /**
@@ -114,7 +107,7 @@ public class SampledData extends FhirResource {
      * place of a decimal value.
      */
     public String data() {
-        return getString(PROPERTY_DATA);
+        return getString(FhirPropertyNames.PROPERTY_DATA);
     }
 
     public static class Builder {
@@ -129,47 +122,47 @@ public class SampledData extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder origin(final Quantity origin) {
-            b.add(PROPERTY_ORIGIN, origin);
+            b.add(FhirPropertyNames.PROPERTY_ORIGIN, origin);
             return this;
         }
 
         public Builder period(final Double period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 
         public Builder factor(final Double factor) {
-            b.add(PROPERTY_FACTOR, factor);
+            b.add(FhirPropertyNames.PROPERTY_FACTOR, factor);
             return this;
         }
 
         public Builder lowerLimit(final Double lowerLimit) {
-            b.add(PROPERTY_LOWER_LIMIT, lowerLimit);
+            b.add(FhirPropertyNames.PROPERTY_LOWER_LIMIT, lowerLimit);
             return this;
         }
 
         public Builder upperLimit(final Double upperLimit) {
-            b.add(PROPERTY_UPPER_LIMIT, upperLimit);
+            b.add(FhirPropertyNames.PROPERTY_UPPER_LIMIT, upperLimit);
             return this;
         }
 
         public Builder dimensions(final Integer dimensions) {
-            b.add(PROPERTY_DIMENSIONS, dimensions);
+            b.add(FhirPropertyNames.PROPERTY_DIMENSIONS, dimensions);
             return this;
         }
 
         public Builder data(final String data) {
-            b.add(PROPERTY_DATA, data);
+            b.add(FhirPropertyNames.PROPERTY_DATA, data);
             return this;
         }
 

@@ -9,64 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Optional Extension Element - found in all resources.
  */
 public class Extension extends FhirResource {
     public static final String RESOURCE_TYPE = "Extension";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_VALUE_BASE64_BINARY = "valueBase64Binary";
-    public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
-    public static final String PROPERTY_VALUE_CANONICAL = "valueCanonical";
-    public static final String PROPERTY_VALUE_CODE = "valueCode";
-    public static final String PROPERTY_VALUE_DATE = "valueDate";
-    public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
-    public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
-    public static final String PROPERTY_VALUE_ID = "valueId";
-    public static final String PROPERTY_VALUE_INSTANT = "valueInstant";
-    public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
-    public static final String PROPERTY_VALUE_MARKDOWN = "valueMarkdown";
-    public static final String PROPERTY_VALUE_OID = "valueOid";
-    public static final String PROPERTY_VALUE_POSITIVE_INT = "valuePositiveInt";
-    public static final String PROPERTY_VALUE_STRING = "valueString";
-    public static final String PROPERTY_VALUE_TIME = "valueTime";
-    public static final String PROPERTY_VALUE_UNSIGNED_INT = "valueUnsignedInt";
-    public static final String PROPERTY_VALUE_URI = "valueUri";
-    public static final String PROPERTY_VALUE_URL = "valueUrl";
-    public static final String PROPERTY_VALUE_UUID = "valueUuid";
-    public static final String PROPERTY_VALUE_ADDRESS = "valueAddress";
-    public static final String PROPERTY_VALUE_AGE = "valueAge";
-    public static final String PROPERTY_VALUE_ANNOTATION = "valueAnnotation";
-    public static final String PROPERTY_VALUE_ATTACHMENT = "valueAttachment";
-    public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
-    public static final String PROPERTY_VALUE_CODING = "valueCoding";
-    public static final String PROPERTY_VALUE_CONTACT_POINT = "valueContactPoint";
-    public static final String PROPERTY_VALUE_COUNT = "valueCount";
-    public static final String PROPERTY_VALUE_DISTANCE = "valueDistance";
-    public static final String PROPERTY_VALUE_DURATION = "valueDuration";
-    public static final String PROPERTY_VALUE_HUMAN_NAME = "valueHumanName";
-    public static final String PROPERTY_VALUE_IDENTIFIER = "valueIdentifier";
-    public static final String PROPERTY_VALUE_MONEY = "valueMoney";
-    public static final String PROPERTY_VALUE_PERIOD = "valuePeriod";
-    public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
-    public static final String PROPERTY_VALUE_RANGE = "valueRange";
-    public static final String PROPERTY_VALUE_RATIO = "valueRatio";
-    public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
-    public static final String PROPERTY_VALUE_SAMPLED_DATA = "valueSampledData";
-    public static final String PROPERTY_VALUE_SIGNATURE = "valueSignature";
-    public static final String PROPERTY_VALUE_TIMING = "valueTiming";
-    public static final String PROPERTY_VALUE_CONTACT_DETAIL = "valueContactDetail";
-    public static final String PROPERTY_VALUE_CONTRIBUTOR = "valueContributor";
-    public static final String PROPERTY_VALUE_DATA_REQUIREMENT = "valueDataRequirement";
-    public static final String PROPERTY_VALUE_EXPRESSION = "valueExpression";
-    public static final String PROPERTY_VALUE_PARAMETER_DEFINITION = "valueParameterDefinition";
-    public static final String PROPERTY_VALUE_RELATED_ARTIFACT = "valueRelatedArtifact";
-    public static final String PROPERTY_VALUE_TRIGGER_DEFINITION = "valueTriggerDefinition";
-    public static final String PROPERTY_VALUE_USAGE_CONTEXT = "valueUsageContext";
-    public static final String PROPERTY_VALUE_DOSAGE = "valueDosage";
-    public static final String PROPERTY_VALUE_META = "valueMeta";
 
     public static Builder create() {
         return new Builder();
@@ -85,7 +34,7 @@ public class Extension extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -97,7 +46,7 @@ public class Extension extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -105,7 +54,7 @@ public class Extension extends FhirResource {
      * URL.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -113,7 +62,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueBase64Binary() {
-        return getString(PROPERTY_VALUE_BASE64_BINARY);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_BASE64_BINARY);
     }
 
     /**
@@ -121,7 +70,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Boolean valueBoolean() {
-        return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN);
     }
 
     /**
@@ -129,7 +78,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueCanonical() {
-        return getString(PROPERTY_VALUE_CANONICAL);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_CANONICAL);
     }
 
     /**
@@ -137,7 +86,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueCode() {
-        return getString(PROPERTY_VALUE_CODE);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_CODE);
     }
 
     /**
@@ -145,7 +94,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueDate() {
-        return getString(PROPERTY_VALUE_DATE);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_DATE);
     }
 
     /**
@@ -153,7 +102,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueDateTime() {
-        return getString(PROPERTY_VALUE_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_DATE_TIME);
     }
 
     /**
@@ -161,7 +110,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Integer valueDecimal() {
-        return data.getInt(PROPERTY_VALUE_DECIMAL);
+        return data.getInt(FhirPropertyNames.PROPERTY_VALUE_DECIMAL);
     }
 
     /**
@@ -169,7 +118,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueId() {
-        return getString(PROPERTY_VALUE_ID);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_ID);
     }
 
     /**
@@ -177,7 +126,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueInstant() {
-        return getString(PROPERTY_VALUE_INSTANT);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_INSTANT);
     }
 
     /**
@@ -185,7 +134,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Integer valueInteger() {
-        return data.getInt(PROPERTY_VALUE_INTEGER);
+        return data.getInt(FhirPropertyNames.PROPERTY_VALUE_INTEGER);
     }
 
     /**
@@ -193,7 +142,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueMarkdown() {
-        return getString(PROPERTY_VALUE_MARKDOWN);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_MARKDOWN);
     }
 
     /**
@@ -201,7 +150,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueOid() {
-        return getString(PROPERTY_VALUE_OID);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_OID);
     }
 
     /**
@@ -209,7 +158,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Integer valuePositiveInt() {
-        return data.getInt(PROPERTY_VALUE_POSITIVE_INT);
+        return data.getInt(FhirPropertyNames.PROPERTY_VALUE_POSITIVE_INT);
     }
 
     /**
@@ -217,7 +166,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueString() {
-        return getString(PROPERTY_VALUE_STRING);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_STRING);
     }
 
     /**
@@ -225,7 +174,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueTime() {
-        return getString(PROPERTY_VALUE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_TIME);
     }
 
     /**
@@ -233,7 +182,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Integer valueUnsignedInt() {
-        return data.getInt(PROPERTY_VALUE_UNSIGNED_INT);
+        return data.getInt(FhirPropertyNames.PROPERTY_VALUE_UNSIGNED_INT);
     }
 
     /**
@@ -241,7 +190,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public java.net.URI valueUri() {
-        return getUri(PROPERTY_VALUE_URI);
+        return getUri(FhirPropertyNames.PROPERTY_VALUE_URI);
     }
 
     /**
@@ -249,7 +198,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public java.net.URI valueUrl() {
-        return getUri(PROPERTY_VALUE_URL);
+        return getUri(FhirPropertyNames.PROPERTY_VALUE_URL);
     }
 
     /**
@@ -257,7 +206,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public String valueUuid() {
-        return getString(PROPERTY_VALUE_UUID);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_UUID);
     }
 
     /**
@@ -265,7 +214,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Address valueAddress() {
-        return getObject(Address.class, PROPERTY_VALUE_ADDRESS);
+        return getObject(Address.class, FhirPropertyNames.PROPERTY_VALUE_ADDRESS);
     }
 
     /**
@@ -273,7 +222,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Age valueAge() {
-        return getObject(Age.class, PROPERTY_VALUE_AGE);
+        return getObject(Age.class, FhirPropertyNames.PROPERTY_VALUE_AGE);
     }
 
     /**
@@ -281,7 +230,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Annotation valueAnnotation() {
-        return getObject(Annotation.class, PROPERTY_VALUE_ANNOTATION);
+        return getObject(Annotation.class, FhirPropertyNames.PROPERTY_VALUE_ANNOTATION);
     }
 
     /**
@@ -289,7 +238,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Attachment valueAttachment() {
-        return getObject(Attachment.class, PROPERTY_VALUE_ATTACHMENT);
+        return getObject(Attachment.class, FhirPropertyNames.PROPERTY_VALUE_ATTACHMENT);
     }
 
     /**
@@ -297,7 +246,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public CodeableConcept valueCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_VALUE_CODEABLE_CONCEPT);
     }
 
     /**
@@ -305,7 +254,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Coding valueCoding() {
-        return getObject(Coding.class, PROPERTY_VALUE_CODING);
+        return getObject(Coding.class, FhirPropertyNames.PROPERTY_VALUE_CODING);
     }
 
     /**
@@ -313,7 +262,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public ContactPoint valueContactPoint() {
-        return getObject(ContactPoint.class, PROPERTY_VALUE_CONTACT_POINT);
+        return getObject(ContactPoint.class, FhirPropertyNames.PROPERTY_VALUE_CONTACT_POINT);
     }
 
     /**
@@ -321,7 +270,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Count valueCount() {
-        return getObject(Count.class, PROPERTY_VALUE_COUNT);
+        return getObject(Count.class, FhirPropertyNames.PROPERTY_VALUE_COUNT);
     }
 
     /**
@@ -329,7 +278,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Distance valueDistance() {
-        return getObject(Distance.class, PROPERTY_VALUE_DISTANCE);
+        return getObject(Distance.class, FhirPropertyNames.PROPERTY_VALUE_DISTANCE);
     }
 
     /**
@@ -337,7 +286,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Duration valueDuration() {
-        return getObject(Duration.class, PROPERTY_VALUE_DURATION);
+        return getObject(Duration.class, FhirPropertyNames.PROPERTY_VALUE_DURATION);
     }
 
     /**
@@ -345,7 +294,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public HumanName valueHumanName() {
-        return getObject(HumanName.class, PROPERTY_VALUE_HUMAN_NAME);
+        return getObject(HumanName.class, FhirPropertyNames.PROPERTY_VALUE_HUMAN_NAME);
     }
 
     /**
@@ -353,7 +302,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Identifier valueIdentifier() {
-        return getObject(Identifier.class, PROPERTY_VALUE_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_VALUE_IDENTIFIER);
     }
 
     /**
@@ -361,7 +310,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Money valueMoney() {
-        return getObject(Money.class, PROPERTY_VALUE_MONEY);
+        return getObject(Money.class, FhirPropertyNames.PROPERTY_VALUE_MONEY);
     }
 
     /**
@@ -369,7 +318,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Period valuePeriod() {
-        return getObject(Period.class, PROPERTY_VALUE_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_VALUE_PERIOD);
     }
 
     /**
@@ -377,7 +326,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Quantity valueQuantity() {
-        return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_VALUE_QUANTITY);
     }
 
     /**
@@ -385,7 +334,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Range valueRange() {
-        return getObject(Range.class, PROPERTY_VALUE_RANGE);
+        return getObject(Range.class, FhirPropertyNames.PROPERTY_VALUE_RANGE);
     }
 
     /**
@@ -393,7 +342,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Ratio valueRatio() {
-        return getObject(Ratio.class, PROPERTY_VALUE_RATIO);
+        return getObject(Ratio.class, FhirPropertyNames.PROPERTY_VALUE_RATIO);
     }
 
     /**
@@ -401,7 +350,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Reference valueReference() {
-        return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_VALUE_REFERENCE);
     }
 
     /**
@@ -409,7 +358,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public SampledData valueSampledData() {
-        return getObject(SampledData.class, PROPERTY_VALUE_SAMPLED_DATA);
+        return getObject(SampledData.class, FhirPropertyNames.PROPERTY_VALUE_SAMPLED_DATA);
     }
 
     /**
@@ -417,7 +366,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Signature valueSignature() {
-        return getObject(Signature.class, PROPERTY_VALUE_SIGNATURE);
+        return getObject(Signature.class, FhirPropertyNames.PROPERTY_VALUE_SIGNATURE);
     }
 
     /**
@@ -425,7 +374,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Timing valueTiming() {
-        return getObject(Timing.class, PROPERTY_VALUE_TIMING);
+        return getObject(Timing.class, FhirPropertyNames.PROPERTY_VALUE_TIMING);
     }
 
     /**
@@ -433,7 +382,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public ContactDetail valueContactDetail() {
-        return getObject(ContactDetail.class, PROPERTY_VALUE_CONTACT_DETAIL);
+        return getObject(ContactDetail.class, FhirPropertyNames.PROPERTY_VALUE_CONTACT_DETAIL);
     }
 
     /**
@@ -441,7 +390,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Contributor valueContributor() {
-        return getObject(Contributor.class, PROPERTY_VALUE_CONTRIBUTOR);
+        return getObject(Contributor.class, FhirPropertyNames.PROPERTY_VALUE_CONTRIBUTOR);
     }
 
     /**
@@ -449,7 +398,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public DataRequirement valueDataRequirement() {
-        return getObject(DataRequirement.class, PROPERTY_VALUE_DATA_REQUIREMENT);
+        return getObject(DataRequirement.class, FhirPropertyNames.PROPERTY_VALUE_DATA_REQUIREMENT);
     }
 
     /**
@@ -457,7 +406,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Expression valueExpression() {
-        return getObject(Expression.class, PROPERTY_VALUE_EXPRESSION);
+        return getObject(Expression.class, FhirPropertyNames.PROPERTY_VALUE_EXPRESSION);
     }
 
     /**
@@ -465,7 +414,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public ParameterDefinition valueParameterDefinition() {
-        return getObject(ParameterDefinition.class, PROPERTY_VALUE_PARAMETER_DEFINITION);
+        return getObject(ParameterDefinition.class, FhirPropertyNames.PROPERTY_VALUE_PARAMETER_DEFINITION);
     }
 
     /**
@@ -473,7 +422,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public RelatedArtifact valueRelatedArtifact() {
-        return getObject(RelatedArtifact.class, PROPERTY_VALUE_RELATED_ARTIFACT);
+        return getObject(RelatedArtifact.class, FhirPropertyNames.PROPERTY_VALUE_RELATED_ARTIFACT);
     }
 
     /**
@@ -481,7 +430,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public TriggerDefinition valueTriggerDefinition() {
-        return getObject(TriggerDefinition.class, PROPERTY_VALUE_TRIGGER_DEFINITION);
+        return getObject(TriggerDefinition.class, FhirPropertyNames.PROPERTY_VALUE_TRIGGER_DEFINITION);
     }
 
     /**
@@ -489,7 +438,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public UsageContext valueUsageContext() {
-        return getObject(UsageContext.class, PROPERTY_VALUE_USAGE_CONTEXT);
+        return getObject(UsageContext.class, FhirPropertyNames.PROPERTY_VALUE_USAGE_CONTEXT);
     }
 
     /**
@@ -497,7 +446,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Dosage valueDosage() {
-        return getObject(Dosage.class, PROPERTY_VALUE_DOSAGE);
+        return getObject(Dosage.class, FhirPropertyNames.PROPERTY_VALUE_DOSAGE);
     }
 
     /**
@@ -505,7 +454,7 @@ public class Extension extends FhirResource {
      * types (see [Extensibility](extensibility.html) for a list).
      */
     public Meta valueMeta() {
-        return getObject(Meta.class, PROPERTY_VALUE_META);
+        return getObject(Meta.class, FhirPropertyNames.PROPERTY_VALUE_META);
     }
 
     public static class Builder {
@@ -520,267 +469,267 @@ public class Extension extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder valueBase64Binary(final String valueBase64Binary) {
-            b.add(PROPERTY_VALUE_BASE64_BINARY, valueBase64Binary);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_BASE64_BINARY, valueBase64Binary);
             return this;
         }
 
         public Builder valueBoolean(final Boolean valueBoolean) {
-            b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN, valueBoolean);
             return this;
         }
 
         public Builder valueCanonical(final String valueCanonical) {
-            b.add(PROPERTY_VALUE_CANONICAL, valueCanonical);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_CANONICAL, valueCanonical);
             return this;
         }
 
         public Builder valueCode(final String valueCode) {
-            b.add(PROPERTY_VALUE_CODE, valueCode);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_CODE, valueCode);
             return this;
         }
 
         public Builder valueDate(final String valueDate) {
-            b.add(PROPERTY_VALUE_DATE, valueDate);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_DATE, valueDate);
             return this;
         }
 
         public Builder valueDateTime(final String valueDateTime) {
-            b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_DATE_TIME, valueDateTime);
             return this;
         }
 
         public Builder valueDecimal(final Integer valueDecimal) {
-            b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_DECIMAL, valueDecimal);
             return this;
         }
 
         public Builder valueId(final String valueId) {
-            b.add(PROPERTY_VALUE_ID, valueId);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_ID, valueId);
             return this;
         }
 
         public Builder valueInstant(final String valueInstant) {
-            b.add(PROPERTY_VALUE_INSTANT, valueInstant);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_INSTANT, valueInstant);
             return this;
         }
 
         public Builder valueInteger(final Integer valueInteger) {
-            b.add(PROPERTY_VALUE_INTEGER, valueInteger);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_INTEGER, valueInteger);
             return this;
         }
 
         public Builder valueMarkdown(final String valueMarkdown) {
-            b.add(PROPERTY_VALUE_MARKDOWN, valueMarkdown);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_MARKDOWN, valueMarkdown);
             return this;
         }
 
         public Builder valueOid(final String valueOid) {
-            b.add(PROPERTY_VALUE_OID, valueOid);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_OID, valueOid);
             return this;
         }
 
         public Builder valuePositiveInt(final Integer valuePositiveInt) {
-            b.add(PROPERTY_VALUE_POSITIVE_INT, valuePositiveInt);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_POSITIVE_INT, valuePositiveInt);
             return this;
         }
 
         public Builder valueString(final String valueString) {
-            b.add(PROPERTY_VALUE_STRING, valueString);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_STRING, valueString);
             return this;
         }
 
         public Builder valueTime(final String valueTime) {
-            b.add(PROPERTY_VALUE_TIME, valueTime);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_TIME, valueTime);
             return this;
         }
 
         public Builder valueUnsignedInt(final Integer valueUnsignedInt) {
-            b.add(PROPERTY_VALUE_UNSIGNED_INT, valueUnsignedInt);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_UNSIGNED_INT, valueUnsignedInt);
             return this;
         }
 
         public Builder valueUri(final java.net.URI valueUri) {
-            b.add(PROPERTY_VALUE_URI, valueUri.toString());
+            b.add(FhirPropertyNames.PROPERTY_VALUE_URI, valueUri.toString());
             return this;
         }
 
         public Builder valueUrl(final java.net.URI valueUrl) {
-            b.add(PROPERTY_VALUE_URL, valueUrl.toString());
+            b.add(FhirPropertyNames.PROPERTY_VALUE_URL, valueUrl.toString());
             return this;
         }
 
         public Builder valueUuid(final String valueUuid) {
-            b.add(PROPERTY_VALUE_UUID, valueUuid);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_UUID, valueUuid);
             return this;
         }
 
         public Builder valueAddress(final Address valueAddress) {
-            b.add(PROPERTY_VALUE_ADDRESS, valueAddress);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_ADDRESS, valueAddress);
             return this;
         }
 
         public Builder valueAge(final Age valueAge) {
-            b.add(PROPERTY_VALUE_AGE, valueAge);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_AGE, valueAge);
             return this;
         }
 
         public Builder valueAnnotation(final Annotation valueAnnotation) {
-            b.add(PROPERTY_VALUE_ANNOTATION, valueAnnotation);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_ANNOTATION, valueAnnotation);
             return this;
         }
 
         public Builder valueAttachment(final Attachment valueAttachment) {
-            b.add(PROPERTY_VALUE_ATTACHMENT, valueAttachment);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_ATTACHMENT, valueAttachment);
             return this;
         }
 
         public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-            b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
             return this;
         }
 
         public Builder valueCoding(final Coding valueCoding) {
-            b.add(PROPERTY_VALUE_CODING, valueCoding);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_CODING, valueCoding);
             return this;
         }
 
         public Builder valueContactPoint(final ContactPoint valueContactPoint) {
-            b.add(PROPERTY_VALUE_CONTACT_POINT, valueContactPoint);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_CONTACT_POINT, valueContactPoint);
             return this;
         }
 
         public Builder valueCount(final Count valueCount) {
-            b.add(PROPERTY_VALUE_COUNT, valueCount);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_COUNT, valueCount);
             return this;
         }
 
         public Builder valueDistance(final Distance valueDistance) {
-            b.add(PROPERTY_VALUE_DISTANCE, valueDistance);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_DISTANCE, valueDistance);
             return this;
         }
 
         public Builder valueDuration(final Duration valueDuration) {
-            b.add(PROPERTY_VALUE_DURATION, valueDuration);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_DURATION, valueDuration);
             return this;
         }
 
         public Builder valueHumanName(final HumanName valueHumanName) {
-            b.add(PROPERTY_VALUE_HUMAN_NAME, valueHumanName);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_HUMAN_NAME, valueHumanName);
             return this;
         }
 
         public Builder valueIdentifier(final Identifier valueIdentifier) {
-            b.add(PROPERTY_VALUE_IDENTIFIER, valueIdentifier);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_IDENTIFIER, valueIdentifier);
             return this;
         }
 
         public Builder valueMoney(final Money valueMoney) {
-            b.add(PROPERTY_VALUE_MONEY, valueMoney);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_MONEY, valueMoney);
             return this;
         }
 
         public Builder valuePeriod(final Period valuePeriod) {
-            b.add(PROPERTY_VALUE_PERIOD, valuePeriod);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_PERIOD, valuePeriod);
             return this;
         }
 
         public Builder valueQuantity(final Quantity valueQuantity) {
-            b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_QUANTITY, valueQuantity);
             return this;
         }
 
         public Builder valueRange(final Range valueRange) {
-            b.add(PROPERTY_VALUE_RANGE, valueRange);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_RANGE, valueRange);
             return this;
         }
 
         public Builder valueRatio(final Ratio valueRatio) {
-            b.add(PROPERTY_VALUE_RATIO, valueRatio);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_RATIO, valueRatio);
             return this;
         }
 
         public Builder valueReference(final Reference valueReference) {
-            b.add(PROPERTY_VALUE_REFERENCE, valueReference);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_REFERENCE, valueReference);
             return this;
         }
 
         public Builder valueSampledData(final SampledData valueSampledData) {
-            b.add(PROPERTY_VALUE_SAMPLED_DATA, valueSampledData);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_SAMPLED_DATA, valueSampledData);
             return this;
         }
 
         public Builder valueSignature(final Signature valueSignature) {
-            b.add(PROPERTY_VALUE_SIGNATURE, valueSignature);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_SIGNATURE, valueSignature);
             return this;
         }
 
         public Builder valueTiming(final Timing valueTiming) {
-            b.add(PROPERTY_VALUE_TIMING, valueTiming);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_TIMING, valueTiming);
             return this;
         }
 
         public Builder valueContactDetail(final ContactDetail valueContactDetail) {
-            b.add(PROPERTY_VALUE_CONTACT_DETAIL, valueContactDetail);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_CONTACT_DETAIL, valueContactDetail);
             return this;
         }
 
         public Builder valueContributor(final Contributor valueContributor) {
-            b.add(PROPERTY_VALUE_CONTRIBUTOR, valueContributor);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_CONTRIBUTOR, valueContributor);
             return this;
         }
 
         public Builder valueDataRequirement(final DataRequirement valueDataRequirement) {
-            b.add(PROPERTY_VALUE_DATA_REQUIREMENT, valueDataRequirement);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_DATA_REQUIREMENT, valueDataRequirement);
             return this;
         }
 
         public Builder valueExpression(final Expression valueExpression) {
-            b.add(PROPERTY_VALUE_EXPRESSION, valueExpression);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_EXPRESSION, valueExpression);
             return this;
         }
 
         public Builder valueParameterDefinition(final ParameterDefinition valueParameterDefinition) {
-            b.add(PROPERTY_VALUE_PARAMETER_DEFINITION, valueParameterDefinition);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_PARAMETER_DEFINITION, valueParameterDefinition);
             return this;
         }
 
         public Builder valueRelatedArtifact(final RelatedArtifact valueRelatedArtifact) {
-            b.add(PROPERTY_VALUE_RELATED_ARTIFACT, valueRelatedArtifact);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_RELATED_ARTIFACT, valueRelatedArtifact);
             return this;
         }
 
         public Builder valueTriggerDefinition(final TriggerDefinition valueTriggerDefinition) {
-            b.add(PROPERTY_VALUE_TRIGGER_DEFINITION, valueTriggerDefinition);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_TRIGGER_DEFINITION, valueTriggerDefinition);
             return this;
         }
 
         public Builder valueUsageContext(final UsageContext valueUsageContext) {
-            b.add(PROPERTY_VALUE_USAGE_CONTEXT, valueUsageContext);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_USAGE_CONTEXT, valueUsageContext);
             return this;
         }
 
         public Builder valueDosage(final Dosage valueDosage) {
-            b.add(PROPERTY_VALUE_DOSAGE, valueDosage);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_DOSAGE, valueDosage);
             return this;
         }
 
         public Builder valueMeta(final Meta valueMeta) {
-            b.add(PROPERTY_VALUE_META, valueMeta);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_META, valueMeta);
             return this;
         }
 

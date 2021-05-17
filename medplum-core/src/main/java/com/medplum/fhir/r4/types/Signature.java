@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A signature along with supporting context. The signature may be a
  * digital signature that is cryptographic in nature, or some other
@@ -19,15 +21,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Signature extends FhirResource {
     public static final String RESOURCE_TYPE = "Signature";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_WHEN = "when";
-    public static final String PROPERTY_WHO = "who";
-    public static final String PROPERTY_ON_BEHALF_OF = "onBehalfOf";
-    public static final String PROPERTY_TARGET_FORMAT = "targetFormat";
-    public static final String PROPERTY_SIG_FORMAT = "sigFormat";
-    public static final String PROPERTY_DATA = "data";
 
     public static Builder create() {
         return new Builder();
@@ -46,7 +39,7 @@ public class Signature extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -58,7 +51,7 @@ public class Signature extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -68,14 +61,14 @@ public class Signature extends FhirResource {
      * concerning the document.
      */
     public java.util.List<Coding> type() {
-        return getList(Coding.class, PROPERTY_TYPE);
+        return getList(Coding.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
      * When the digital signature was signed.
      */
     public java.time.Instant when() {
-        return getInstant(PROPERTY_WHEN);
+        return getInstant(FhirPropertyNames.PROPERTY_WHEN);
     }
 
     /**
@@ -83,7 +76,7 @@ public class Signature extends FhirResource {
      * signed  (e.g. the signature used their private key).
      */
     public Reference who() {
-        return getObject(Reference.class, PROPERTY_WHO);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_WHO);
     }
 
     /**
@@ -91,7 +84,7 @@ public class Signature extends FhirResource {
      * is represented by the signature.
      */
     public Reference onBehalfOf() {
-        return getObject(Reference.class, PROPERTY_ON_BEHALF_OF);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ON_BEHALF_OF);
     }
 
     /**
@@ -99,7 +92,7 @@ public class Signature extends FhirResource {
      * resources signed by the signature.
      */
     public String targetFormat() {
-        return getString(PROPERTY_TARGET_FORMAT);
+        return getString(FhirPropertyNames.PROPERTY_TARGET_FORMAT);
     }
 
     /**
@@ -109,7 +102,7 @@ public class Signature extends FhirResource {
      * signature, etc.
      */
     public String sigFormat() {
-        return getString(PROPERTY_SIG_FORMAT);
+        return getString(FhirPropertyNames.PROPERTY_SIG_FORMAT);
     }
 
     /**
@@ -117,7 +110,7 @@ public class Signature extends FhirResource {
      * recorded electronically this element would be empty.
      */
     public String data() {
-        return getString(PROPERTY_DATA);
+        return getString(FhirPropertyNames.PROPERTY_DATA);
     }
 
     public static class Builder {
@@ -132,47 +125,47 @@ public class Signature extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder type(final java.util.List<Coding> type) {
-            b.add(PROPERTY_TYPE, FhirObject.toArray(type));
+            b.add(FhirPropertyNames.PROPERTY_TYPE, FhirObject.toArray(type));
             return this;
         }
 
         public Builder when(final java.time.Instant when) {
-            b.add(PROPERTY_WHEN, when.toString());
+            b.add(FhirPropertyNames.PROPERTY_WHEN, when.toString());
             return this;
         }
 
         public Builder who(final Reference who) {
-            b.add(PROPERTY_WHO, who);
+            b.add(FhirPropertyNames.PROPERTY_WHO, who);
             return this;
         }
 
         public Builder onBehalfOf(final Reference onBehalfOf) {
-            b.add(PROPERTY_ON_BEHALF_OF, onBehalfOf);
+            b.add(FhirPropertyNames.PROPERTY_ON_BEHALF_OF, onBehalfOf);
             return this;
         }
 
         public Builder targetFormat(final String targetFormat) {
-            b.add(PROPERTY_TARGET_FORMAT, targetFormat);
+            b.add(FhirPropertyNames.PROPERTY_TARGET_FORMAT, targetFormat);
             return this;
         }
 
         public Builder sigFormat(final String sigFormat) {
-            b.add(PROPERTY_SIG_FORMAT, sigFormat);
+            b.add(FhirPropertyNames.PROPERTY_SIG_FORMAT, sigFormat);
             return this;
         }
 
         public Builder data(final String data) {
-            b.add(PROPERTY_DATA, data);
+            b.add(FhirPropertyNames.PROPERTY_DATA, data);
             return this;
         }
 

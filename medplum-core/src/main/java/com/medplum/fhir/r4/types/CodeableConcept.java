@@ -9,16 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A concept that may be defined by a formal reference to a terminology
  * or ontology or may be provided by text.
  */
 public class CodeableConcept extends FhirResource {
     public static final String RESOURCE_TYPE = "CodeableConcept";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_CODING = "coding";
-    public static final String PROPERTY_TEXT = "text";
 
     public static Builder create() {
         return new Builder();
@@ -37,7 +35,7 @@ public class CodeableConcept extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -49,14 +47,14 @@ public class CodeableConcept extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * A reference to a code defined by a terminology system.
      */
     public java.util.List<Coding> coding() {
-        return getList(Coding.class, PROPERTY_CODING);
+        return getList(Coding.class, FhirPropertyNames.PROPERTY_CODING);
     }
 
     /**
@@ -65,7 +63,7 @@ public class CodeableConcept extends FhirResource {
      * represents the intended meaning of the user.
      */
     public String text() {
-        return getString(PROPERTY_TEXT);
+        return getString(FhirPropertyNames.PROPERTY_TEXT);
     }
 
     public static class Builder {
@@ -80,22 +78,22 @@ public class CodeableConcept extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder coding(final java.util.List<Coding> coding) {
-            b.add(PROPERTY_CODING, FhirObject.toArray(coding));
+            b.add(FhirPropertyNames.PROPERTY_CODING, FhirObject.toArray(coding));
             return this;
         }
 
         public Builder text(final String text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 

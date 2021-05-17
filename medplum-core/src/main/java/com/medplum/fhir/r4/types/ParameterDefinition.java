@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The parameters to the module. This collection specifies both the input
  * and output parameters. Input parameters are provided by the caller as
@@ -17,15 +19,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class ParameterDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ParameterDefinition";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_USE = "use";
-    public static final String PROPERTY_MIN = "min";
-    public static final String PROPERTY_MAX = "max";
-    public static final String PROPERTY_DOCUMENTATION = "documentation";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_PROFILE = "profile";
 
     public static Builder create() {
         return new Builder();
@@ -44,7 +37,7 @@ public class ParameterDefinition extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -56,7 +49,7 @@ public class ParameterDefinition extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -64,14 +57,14 @@ public class ParameterDefinition extends FhirResource {
      * parameter in evaluation contexts.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
      * Whether the parameter is input or output for the module.
      */
     public String use() {
-        return getString(PROPERTY_USE);
+        return getString(FhirPropertyNames.PROPERTY_USE);
     }
 
     /**
@@ -79,7 +72,7 @@ public class ParameterDefinition extends FhirResource {
      * or response.
      */
     public Integer min() {
-        return data.getInt(PROPERTY_MIN);
+        return data.getInt(FhirPropertyNames.PROPERTY_MIN);
     }
 
     /**
@@ -87,7 +80,7 @@ public class ParameterDefinition extends FhirResource {
      * request or response.
      */
     public String max() {
-        return getString(PROPERTY_MAX);
+        return getString(FhirPropertyNames.PROPERTY_MAX);
     }
 
     /**
@@ -95,14 +88,14 @@ public class ParameterDefinition extends FhirResource {
      * the module.
      */
     public String documentation() {
-        return getString(PROPERTY_DOCUMENTATION);
+        return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
     }
 
     /**
      * The type of the parameter.
      */
     public String type() {
-        return getString(PROPERTY_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -110,7 +103,7 @@ public class ParameterDefinition extends FhirResource {
      * conform to, or that the output data will conform to.
      */
     public String profile() {
-        return getString(PROPERTY_PROFILE);
+        return getString(FhirPropertyNames.PROPERTY_PROFILE);
     }
 
     public static class Builder {
@@ -125,47 +118,47 @@ public class ParameterDefinition extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder use(final String use) {
-            b.add(PROPERTY_USE, use);
+            b.add(FhirPropertyNames.PROPERTY_USE, use);
             return this;
         }
 
         public Builder min(final Integer min) {
-            b.add(PROPERTY_MIN, min);
+            b.add(FhirPropertyNames.PROPERTY_MIN, min);
             return this;
         }
 
         public Builder max(final String max) {
-            b.add(PROPERTY_MAX, max);
+            b.add(FhirPropertyNames.PROPERTY_MAX, max);
             return this;
         }
 
         public Builder documentation(final String documentation) {
-            b.add(PROPERTY_DOCUMENTATION, documentation);
+            b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
             return this;
         }
 
         public Builder type(final String type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder profile(final String profile) {
-            b.add(PROPERTY_PROFILE, profile);
+            b.add(FhirPropertyNames.PROPERTY_PROFILE, profile);
             return this;
         }
 

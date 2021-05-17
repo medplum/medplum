@@ -9,33 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A sample to be used for analysis.
  */
 public class Specimen extends FhirResource {
     public static final String RESOURCE_TYPE = "Specimen";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_ACCESSION_IDENTIFIER = "accessionIdentifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_RECEIVED_TIME = "receivedTime";
-    public static final String PROPERTY_PARENT = "parent";
-    public static final String PROPERTY_REQUEST = "request";
-    public static final String PROPERTY_COLLECTION = "collection";
-    public static final String PROPERTY_PROCESSING = "processing";
-    public static final String PROPERTY_CONTAINER = "container";
-    public static final String PROPERTY_CONDITION = "condition";
-    public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
         return new Builder();
@@ -56,14 +36,14 @@ public class Specimen extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -75,7 +55,7 @@ public class Specimen extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -84,7 +64,7 @@ public class Specimen extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -96,7 +76,7 @@ public class Specimen extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -116,14 +96,14 @@ public class Specimen extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Id for specimen.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -132,21 +112,21 @@ public class Specimen extends FhirResource {
      * local lab procedures.
      */
     public Identifier accessionIdentifier() {
-        return getObject(Identifier.class, PROPERTY_ACCESSION_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_ACCESSION_IDENTIFIER);
     }
 
     /**
      * The availability of the specimen.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
      * The kind of material that forms the specimen.
      */
     public CodeableConcept type() {
-        return getObject(CodeableConcept.class, PROPERTY_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -155,14 +135,14 @@ public class Specimen extends FhirResource {
      * of a substance or a device.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
      * Time when specimen was received for processing or testing.
      */
     public java.time.Instant receivedTime() {
-        return getInstant(PROPERTY_RECEIVED_TIME);
+        return getInstant(FhirPropertyNames.PROPERTY_RECEIVED_TIME);
     }
 
     /**
@@ -170,7 +150,7 @@ public class Specimen extends FhirResource {
      * specimen was either derived from or a component of another specimen.
      */
     public java.util.List<Reference> parent() {
-        return getList(Reference.class, PROPERTY_PARENT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_PARENT);
     }
 
     /**
@@ -178,21 +158,21 @@ public class Specimen extends FhirResource {
      * collected.
      */
     public java.util.List<Reference> request() {
-        return getList(Reference.class, PROPERTY_REQUEST);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_REQUEST);
     }
 
     /**
      * Details concerning the specimen collection.
      */
     public SpecimenCollection collection() {
-        return getObject(SpecimenCollection.class, PROPERTY_COLLECTION);
+        return getObject(SpecimenCollection.class, FhirPropertyNames.PROPERTY_COLLECTION);
     }
 
     /**
      * Details concerning processing and processing steps for the specimen.
      */
     public java.util.List<SpecimenProcessing> processing() {
-        return getList(SpecimenProcessing.class, PROPERTY_PROCESSING);
+        return getList(SpecimenProcessing.class, FhirPropertyNames.PROPERTY_PROCESSING);
     }
 
     /**
@@ -200,14 +180,14 @@ public class Specimen extends FhirResource {
      * containers; i.e. blood in tube in tray in rack is not addressed here.
      */
     public java.util.List<SpecimenContainer> container() {
-        return getList(SpecimenContainer.class, PROPERTY_CONTAINER);
+        return getList(SpecimenContainer.class, FhirPropertyNames.PROPERTY_CONTAINER);
     }
 
     /**
      * A mode or state of being that describes the nature of the specimen.
      */
     public java.util.List<CodeableConcept> condition() {
-        return getList(CodeableConcept.class, PROPERTY_CONDITION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_CONDITION);
     }
 
     /**
@@ -216,7 +196,7 @@ public class Specimen extends FhirResource {
      * frozen).
      */
     public java.util.List<Annotation> note() {
-        return getList(Annotation.class, PROPERTY_NOTE);
+        return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -230,112 +210,112 @@ public class Specimen extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder accessionIdentifier(final Identifier accessionIdentifier) {
-            b.add(PROPERTY_ACCESSION_IDENTIFIER, accessionIdentifier);
+            b.add(FhirPropertyNames.PROPERTY_ACCESSION_IDENTIFIER, accessionIdentifier);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder type(final CodeableConcept type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder receivedTime(final java.time.Instant receivedTime) {
-            b.add(PROPERTY_RECEIVED_TIME, receivedTime.toString());
+            b.add(FhirPropertyNames.PROPERTY_RECEIVED_TIME, receivedTime.toString());
             return this;
         }
 
         public Builder parent(final java.util.List<Reference> parent) {
-            b.add(PROPERTY_PARENT, FhirObject.toArray(parent));
+            b.add(FhirPropertyNames.PROPERTY_PARENT, FhirObject.toArray(parent));
             return this;
         }
 
         public Builder request(final java.util.List<Reference> request) {
-            b.add(PROPERTY_REQUEST, FhirObject.toArray(request));
+            b.add(FhirPropertyNames.PROPERTY_REQUEST, FhirObject.toArray(request));
             return this;
         }
 
         public Builder collection(final SpecimenCollection collection) {
-            b.add(PROPERTY_COLLECTION, collection);
+            b.add(FhirPropertyNames.PROPERTY_COLLECTION, collection);
             return this;
         }
 
         public Builder processing(final java.util.List<SpecimenProcessing> processing) {
-            b.add(PROPERTY_PROCESSING, FhirObject.toArray(processing));
+            b.add(FhirPropertyNames.PROPERTY_PROCESSING, FhirObject.toArray(processing));
             return this;
         }
 
         public Builder container(final java.util.List<SpecimenContainer> container) {
-            b.add(PROPERTY_CONTAINER, FhirObject.toArray(container));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINER, FhirObject.toArray(container));
             return this;
         }
 
         public Builder condition(final java.util.List<CodeableConcept> condition) {
-            b.add(PROPERTY_CONDITION, FhirObject.toArray(condition));
+            b.add(FhirPropertyNames.PROPERTY_CONDITION, FhirObject.toArray(condition));
             return this;
         }
 
         public Builder note(final java.util.List<Annotation> note) {
-            b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+            b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
             return this;
         }
 
@@ -349,18 +329,6 @@ public class Specimen extends FhirResource {
      */
     public static class SpecimenCollection extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenCollection";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_COLLECTOR = "collector";
-        public static final String PROPERTY_COLLECTED_DATE_TIME = "collectedDateTime";
-        public static final String PROPERTY_COLLECTED_PERIOD = "collectedPeriod";
-        public static final String PROPERTY_DURATION = "duration";
-        public static final String PROPERTY_QUANTITY = "quantity";
-        public static final String PROPERTY_METHOD = "method";
-        public static final String PROPERTY_BODY_SITE = "bodySite";
-        public static final String PROPERTY_FASTING_STATUS_CODEABLE_CONCEPT = "fastingStatusCodeableConcept";
-        public static final String PROPERTY_FASTING_STATUS_DURATION = "fastingStatusDuration";
 
         public static Builder create() {
             return new Builder();
@@ -379,7 +347,7 @@ public class Specimen extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -391,7 +359,7 @@ public class Specimen extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -412,14 +380,14 @@ public class Specimen extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Person who collected the specimen.
          */
         public Reference collector() {
-            return getObject(Reference.class, PROPERTY_COLLECTOR);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_COLLECTOR);
         }
 
         /**
@@ -427,7 +395,7 @@ public class Specimen extends FhirResource {
          * relevant time.
          */
         public String collectedDateTime() {
-            return getString(PROPERTY_COLLECTED_DATE_TIME);
+            return getString(FhirPropertyNames.PROPERTY_COLLECTED_DATE_TIME);
         }
 
         /**
@@ -435,14 +403,14 @@ public class Specimen extends FhirResource {
          * relevant time.
          */
         public Period collectedPeriod() {
-            return getObject(Period.class, PROPERTY_COLLECTED_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_COLLECTED_PERIOD);
         }
 
         /**
          * The span of time over which the collection of a specimen occurred.
          */
         public Duration duration() {
-            return getObject(Duration.class, PROPERTY_DURATION);
+            return getObject(Duration.class, FhirPropertyNames.PROPERTY_DURATION);
         }
 
         /**
@@ -450,7 +418,7 @@ public class Specimen extends FhirResource {
          * sample, or the physical measurement of an anatomic pathology sample.
          */
         public Quantity quantity() {
-            return getObject(Quantity.class, PROPERTY_QUANTITY);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_QUANTITY);
         }
 
         /**
@@ -458,7 +426,7 @@ public class Specimen extends FhirResource {
          * procedure.
          */
         public CodeableConcept method() {
-            return getObject(CodeableConcept.class, PROPERTY_METHOD);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_METHOD);
         }
 
         /**
@@ -467,7 +435,7 @@ public class Specimen extends FhirResource {
          * environmental specimens.
          */
         public CodeableConcept bodySite() {
-            return getObject(CodeableConcept.class, PROPERTY_BODY_SITE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_BODY_SITE);
         }
 
         /**
@@ -475,7 +443,7 @@ public class Specimen extends FhirResource {
          * period of time prior to sample collection.
          */
         public CodeableConcept fastingStatusCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_FASTING_STATUS_CODEABLE_CONCEPT);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_FASTING_STATUS_CODEABLE_CONCEPT);
         }
 
         /**
@@ -483,7 +451,7 @@ public class Specimen extends FhirResource {
          * period of time prior to sample collection.
          */
         public Duration fastingStatusDuration() {
-            return getObject(Duration.class, PROPERTY_FASTING_STATUS_DURATION);
+            return getObject(Duration.class, FhirPropertyNames.PROPERTY_FASTING_STATUS_DURATION);
         }
 
         public static class Builder {
@@ -498,62 +466,62 @@ public class Specimen extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder collector(final Reference collector) {
-                b.add(PROPERTY_COLLECTOR, collector);
+                b.add(FhirPropertyNames.PROPERTY_COLLECTOR, collector);
                 return this;
             }
 
             public Builder collectedDateTime(final String collectedDateTime) {
-                b.add(PROPERTY_COLLECTED_DATE_TIME, collectedDateTime);
+                b.add(FhirPropertyNames.PROPERTY_COLLECTED_DATE_TIME, collectedDateTime);
                 return this;
             }
 
             public Builder collectedPeriod(final Period collectedPeriod) {
-                b.add(PROPERTY_COLLECTED_PERIOD, collectedPeriod);
+                b.add(FhirPropertyNames.PROPERTY_COLLECTED_PERIOD, collectedPeriod);
                 return this;
             }
 
             public Builder duration(final Duration duration) {
-                b.add(PROPERTY_DURATION, duration);
+                b.add(FhirPropertyNames.PROPERTY_DURATION, duration);
                 return this;
             }
 
             public Builder quantity(final Quantity quantity) {
-                b.add(PROPERTY_QUANTITY, quantity);
+                b.add(FhirPropertyNames.PROPERTY_QUANTITY, quantity);
                 return this;
             }
 
             public Builder method(final CodeableConcept method) {
-                b.add(PROPERTY_METHOD, method);
+                b.add(FhirPropertyNames.PROPERTY_METHOD, method);
                 return this;
             }
 
             public Builder bodySite(final CodeableConcept bodySite) {
-                b.add(PROPERTY_BODY_SITE, bodySite);
+                b.add(FhirPropertyNames.PROPERTY_BODY_SITE, bodySite);
                 return this;
             }
 
             public Builder fastingStatusCodeableConcept(final CodeableConcept fastingStatusCodeableConcept) {
-                b.add(PROPERTY_FASTING_STATUS_CODEABLE_CONCEPT, fastingStatusCodeableConcept);
+                b.add(FhirPropertyNames.PROPERTY_FASTING_STATUS_CODEABLE_CONCEPT, fastingStatusCodeableConcept);
                 return this;
             }
 
             public Builder fastingStatusDuration(final Duration fastingStatusDuration) {
-                b.add(PROPERTY_FASTING_STATUS_DURATION, fastingStatusDuration);
+                b.add(FhirPropertyNames.PROPERTY_FASTING_STATUS_DURATION, fastingStatusDuration);
                 return this;
             }
 
@@ -568,16 +536,6 @@ public class Specimen extends FhirResource {
      */
     public static class SpecimenContainer extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenContainer";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_IDENTIFIER = "identifier";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_CAPACITY = "capacity";
-        public static final String PROPERTY_SPECIMEN_QUANTITY = "specimenQuantity";
-        public static final String PROPERTY_ADDITIVE_CODEABLE_CONCEPT = "additiveCodeableConcept";
-        public static final String PROPERTY_ADDITIVE_REFERENCE = "additiveReference";
 
         public static Builder create() {
             return new Builder();
@@ -596,7 +554,7 @@ public class Specimen extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -608,7 +566,7 @@ public class Specimen extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -629,7 +587,7 @@ public class Specimen extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -638,14 +596,14 @@ public class Specimen extends FhirResource {
          * specimen id in some circumstances.
          */
         public java.util.List<Identifier> identifier() {
-            return getList(Identifier.class, PROPERTY_IDENTIFIER);
+            return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
         }
 
         /**
          * Textual description of the container.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
@@ -653,14 +611,14 @@ public class Specimen extends FhirResource {
          * aliquot, etc.).
          */
         public CodeableConcept type() {
-            return getObject(CodeableConcept.class, PROPERTY_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The capacity (volume or other measure) the container may contain.
          */
         public Quantity capacity() {
-            return getObject(Quantity.class, PROPERTY_CAPACITY);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_CAPACITY);
         }
 
         /**
@@ -668,7 +626,7 @@ public class Specimen extends FhirResource {
          * or other appropriate measurements, depending on the specimen type.
          */
         public Quantity specimenQuantity() {
-            return getObject(Quantity.class, PROPERTY_SPECIMEN_QUANTITY);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_SPECIMEN_QUANTITY);
         }
 
         /**
@@ -676,7 +634,7 @@ public class Specimen extends FhirResource {
          * Examples: Formalin, Citrate, EDTA.
          */
         public CodeableConcept additiveCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_ADDITIVE_CODEABLE_CONCEPT);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ADDITIVE_CODEABLE_CONCEPT);
         }
 
         /**
@@ -684,7 +642,7 @@ public class Specimen extends FhirResource {
          * Examples: Formalin, Citrate, EDTA.
          */
         public Reference additiveReference() {
-            return getObject(Reference.class, PROPERTY_ADDITIVE_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_ADDITIVE_REFERENCE);
         }
 
         public static class Builder {
@@ -699,52 +657,52 @@ public class Specimen extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder identifier(final java.util.List<Identifier> identifier) {
-                b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+                b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder type(final CodeableConcept type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder capacity(final Quantity capacity) {
-                b.add(PROPERTY_CAPACITY, capacity);
+                b.add(FhirPropertyNames.PROPERTY_CAPACITY, capacity);
                 return this;
             }
 
             public Builder specimenQuantity(final Quantity specimenQuantity) {
-                b.add(PROPERTY_SPECIMEN_QUANTITY, specimenQuantity);
+                b.add(FhirPropertyNames.PROPERTY_SPECIMEN_QUANTITY, specimenQuantity);
                 return this;
             }
 
             public Builder additiveCodeableConcept(final CodeableConcept additiveCodeableConcept) {
-                b.add(PROPERTY_ADDITIVE_CODEABLE_CONCEPT, additiveCodeableConcept);
+                b.add(FhirPropertyNames.PROPERTY_ADDITIVE_CODEABLE_CONCEPT, additiveCodeableConcept);
                 return this;
             }
 
             public Builder additiveReference(final Reference additiveReference) {
-                b.add(PROPERTY_ADDITIVE_REFERENCE, additiveReference);
+                b.add(FhirPropertyNames.PROPERTY_ADDITIVE_REFERENCE, additiveReference);
                 return this;
             }
 
@@ -759,14 +717,6 @@ public class Specimen extends FhirResource {
      */
     public static class SpecimenProcessing extends FhirObject {
         public static final String RESOURCE_TYPE = "SpecimenProcessing";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_PROCEDURE = "procedure";
-        public static final String PROPERTY_ADDITIVE = "additive";
-        public static final String PROPERTY_TIME_DATE_TIME = "timeDateTime";
-        public static final String PROPERTY_TIME_PERIOD = "timePeriod";
 
         public static Builder create() {
             return new Builder();
@@ -785,7 +735,7 @@ public class Specimen extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -797,7 +747,7 @@ public class Specimen extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -818,28 +768,28 @@ public class Specimen extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Textual description of procedure.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * A coded value specifying the procedure used to process the specimen.
          */
         public CodeableConcept procedure() {
-            return getObject(CodeableConcept.class, PROPERTY_PROCEDURE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PROCEDURE);
         }
 
         /**
          * Material used in the processing step.
          */
         public java.util.List<Reference> additive() {
-            return getList(Reference.class, PROPERTY_ADDITIVE);
+            return getList(Reference.class, FhirPropertyNames.PROPERTY_ADDITIVE);
         }
 
         /**
@@ -848,7 +798,7 @@ public class Specimen extends FhirResource {
          * sample was in formalin.
          */
         public String timeDateTime() {
-            return getString(PROPERTY_TIME_DATE_TIME);
+            return getString(FhirPropertyNames.PROPERTY_TIME_DATE_TIME);
         }
 
         /**
@@ -857,7 +807,7 @@ public class Specimen extends FhirResource {
          * sample was in formalin.
          */
         public Period timePeriod() {
-            return getObject(Period.class, PROPERTY_TIME_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_TIME_PERIOD);
         }
 
         public static class Builder {
@@ -872,42 +822,42 @@ public class Specimen extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder procedure(final CodeableConcept procedure) {
-                b.add(PROPERTY_PROCEDURE, procedure);
+                b.add(FhirPropertyNames.PROPERTY_PROCEDURE, procedure);
                 return this;
             }
 
             public Builder additive(final java.util.List<Reference> additive) {
-                b.add(PROPERTY_ADDITIVE, FhirObject.toArray(additive));
+                b.add(FhirPropertyNames.PROPERTY_ADDITIVE, FhirObject.toArray(additive));
                 return this;
             }
 
             public Builder timeDateTime(final String timeDateTime) {
-                b.add(PROPERTY_TIME_DATE_TIME, timeDateTime);
+                b.add(FhirPropertyNames.PROPERTY_TIME_DATE_TIME, timeDateTime);
                 return this;
             }
 
             public Builder timePeriod(final Period timePeriod) {
-                b.add(PROPERTY_TIME_PERIOD, timePeriod);
+                b.add(FhirPropertyNames.PROPERTY_TIME_PERIOD, timePeriod);
                 return this;
             }
 

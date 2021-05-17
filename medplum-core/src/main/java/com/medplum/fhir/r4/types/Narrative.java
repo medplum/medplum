@@ -9,16 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A human-readable summary of the resource conveying the essential
  * clinical and business information for the resource.
  */
 public class Narrative extends FhirResource {
     public static final String RESOURCE_TYPE = "Narrative";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_DIV = "div";
 
     public static Builder create() {
         return new Builder();
@@ -37,7 +35,7 @@ public class Narrative extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -49,7 +47,7 @@ public class Narrative extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -58,14 +56,14 @@ public class Narrative extends FhirResource {
      * authored it and it may contain additional data.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
      * The actual narrative content, a stripped down version of XHTML.
      */
     public String div() {
-        return getString(PROPERTY_DIV);
+        return getString(FhirPropertyNames.PROPERTY_DIV);
     }
 
     public static class Builder {
@@ -80,22 +78,22 @@ public class Narrative extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder div(final String div) {
-            b.add(PROPERTY_DIV, div);
+            b.add(FhirPropertyNames.PROPERTY_DIV, div);
             return this;
         }
 

@@ -9,15 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * An amount of economic utility in some recognized currency.
  */
 public class Money extends FhirResource {
     public static final String RESOURCE_TYPE = "Money";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_VALUE = "value";
-    public static final String PROPERTY_CURRENCY = "currency";
 
     public static Builder create() {
         return new Builder();
@@ -36,7 +34,7 @@ public class Money extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -48,21 +46,21 @@ public class Money extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * Numerical value (with implicit precision).
      */
     public Double value() {
-        return data.getJsonNumber(PROPERTY_VALUE).doubleValue();
+        return data.getJsonNumber(FhirPropertyNames.PROPERTY_VALUE).doubleValue();
     }
 
     /**
      * ISO 4217 Currency Code.
      */
     public String currency() {
-        return getString(PROPERTY_CURRENCY);
+        return getString(FhirPropertyNames.PROPERTY_CURRENCY);
     }
 
     public static class Builder {
@@ -77,22 +75,22 @@ public class Money extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder value(final Double value) {
-            b.add(PROPERTY_VALUE, value);
+            b.add(FhirPropertyNames.PROPERTY_VALUE, value);
             return this;
         }
 
         public Builder currency(final String currency) {
-            b.add(PROPERTY_CURRENCY, currency);
+            b.add(FhirPropertyNames.PROPERTY_CURRENCY, currency);
             return this;
         }
 

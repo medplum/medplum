@@ -9,18 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A reference from one resource to another.
  */
 public class Reference extends FhirResource {
     public static final String RESOURCE_TYPE = "Reference";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_REFERENCE = "reference";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_DISPLAY = "display";
-    public static final String PROPERTY_RESOURCE = "resource";
 
     public static Builder create() {
         return new Builder();
@@ -39,7 +34,7 @@ public class Reference extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -51,7 +46,7 @@ public class Reference extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -64,7 +59,7 @@ public class Reference extends FhirResource {
      * with '#') refer to contained resources.
      */
     public String reference() {
-        return getString(PROPERTY_REFERENCE);
+        return getString(FhirPropertyNames.PROPERTY_REFERENCE);
     }
 
     /**
@@ -80,7 +75,7 @@ public class Reference extends FhirResource {
      * logical models, not resources).
      */
     public java.net.URI type() {
-        return getUri(PROPERTY_TYPE);
+        return getUri(FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -95,7 +90,7 @@ public class Reference extends FhirResource {
      * need to be of a FHIR resource type allowed by the reference.
      */
     public Identifier identifier() {
-        return getObject(Identifier.class, PROPERTY_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -103,18 +98,18 @@ public class Reference extends FhirResource {
      * resource reference.
      */
     public String display() {
-        return getString(PROPERTY_DISPLAY);
+        return getString(FhirPropertyNames.PROPERTY_DISPLAY);
     }
 
     /**
      * Optional Resource referred to by this reference.
      */
     public FhirResource resource() {
-        return getObject(FhirResource.class, PROPERTY_RESOURCE);
+        return getObject(FhirResource.class, FhirPropertyNames.PROPERTY_RESOURCE);
     }
 
     public <T extends FhirResource> T resource(final Class<T> c) {
-        return getObject(c, PROPERTY_RESOURCE);
+        return getObject(c, FhirPropertyNames.PROPERTY_RESOURCE);
     }
 
     public static class Builder {
@@ -129,37 +124,37 @@ public class Reference extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder reference(final String reference) {
-            b.add(PROPERTY_REFERENCE, reference);
+            b.add(FhirPropertyNames.PROPERTY_REFERENCE, reference);
             return this;
         }
 
         public Builder type(final java.net.URI type) {
-            b.add(PROPERTY_TYPE, type.toString());
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type.toString());
             return this;
         }
 
         public Builder identifier(final Identifier identifier) {
-            b.add(PROPERTY_IDENTIFIER, identifier);
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, identifier);
             return this;
         }
 
         public Builder display(final String display) {
-            b.add(PROPERTY_DISPLAY, display);
+            b.add(FhirPropertyNames.PROPERTY_DISPLAY, display);
             return this;
         }
 
         public Builder resource(final JsonObject resource) {
-            b.add(PROPERTY_RESOURCE, resource);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE, resource);
             return this;
         }
 

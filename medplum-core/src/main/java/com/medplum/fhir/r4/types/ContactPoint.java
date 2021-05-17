@@ -9,19 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Details for all kinds of technology mediated contact points for a
  * person or organization, including telephone, email, etc.
  */
 public class ContactPoint extends FhirResource {
     public static final String RESOURCE_TYPE = "ContactPoint";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_SYSTEM = "system";
-    public static final String PROPERTY_VALUE = "value";
-    public static final String PROPERTY_USE = "use";
-    public static final String PROPERTY_RANK = "rank";
-    public static final String PROPERTY_PERIOD = "period";
 
     public static Builder create() {
         return new Builder();
@@ -40,7 +35,7 @@ public class ContactPoint extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -52,7 +47,7 @@ public class ContactPoint extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -60,7 +55,7 @@ public class ContactPoint extends FhirResource {
      * is required to make use of the contact.
      */
     public String system() {
-        return getString(PROPERTY_SYSTEM);
+        return getString(FhirPropertyNames.PROPERTY_SYSTEM);
     }
 
     /**
@@ -68,14 +63,14 @@ public class ContactPoint extends FhirResource {
      * designated communication system (i.e. phone number or email address).
      */
     public String value() {
-        return getString(PROPERTY_VALUE);
+        return getString(FhirPropertyNames.PROPERTY_VALUE);
     }
 
     /**
      * Identifies the purpose for the contact point.
      */
     public String use() {
-        return getString(PROPERTY_USE);
+        return getString(FhirPropertyNames.PROPERTY_USE);
     }
 
     /**
@@ -84,14 +79,14 @@ public class ContactPoint extends FhirResource {
      * with higher rank values.
      */
     public Integer rank() {
-        return data.getInt(PROPERTY_RANK);
+        return data.getInt(FhirPropertyNames.PROPERTY_RANK);
     }
 
     /**
      * Time period when the contact point was/is in use.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     public static class Builder {
@@ -106,37 +101,37 @@ public class ContactPoint extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder system(final String system) {
-            b.add(PROPERTY_SYSTEM, system);
+            b.add(FhirPropertyNames.PROPERTY_SYSTEM, system);
             return this;
         }
 
         public Builder value(final String value) {
-            b.add(PROPERTY_VALUE, value);
+            b.add(FhirPropertyNames.PROPERTY_VALUE, value);
             return this;
         }
 
         public Builder use(final String use) {
-            b.add(PROPERTY_USE, use);
+            b.add(FhirPropertyNames.PROPERTY_USE, use);
             return this;
         }
 
         public Builder rank(final Integer rank) {
-            b.add(PROPERTY_RANK, rank);
+            b.add(FhirPropertyNames.PROPERTY_RANK, rank);
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 

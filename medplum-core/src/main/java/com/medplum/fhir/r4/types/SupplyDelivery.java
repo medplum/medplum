@@ -9,33 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Record of delivery of what is supplied.
  */
 public class SupplyDelivery extends FhirResource {
     public static final String RESOURCE_TYPE = "SupplyDelivery";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASED_ON = "basedOn";
-    public static final String PROPERTY_PART_OF = "partOf";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_PATIENT = "patient";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_SUPPLIED_ITEM = "suppliedItem";
-    public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
-    public static final String PROPERTY_OCCURRENCE_PERIOD = "occurrencePeriod";
-    public static final String PROPERTY_OCCURRENCE_TIMING = "occurrenceTiming";
-    public static final String PROPERTY_SUPPLIER = "supplier";
-    public static final String PROPERTY_DESTINATION = "destination";
-    public static final String PROPERTY_RECEIVER = "receiver";
 
     public static Builder create() {
         return new Builder();
@@ -56,14 +36,14 @@ public class SupplyDelivery extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -75,7 +55,7 @@ public class SupplyDelivery extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -84,7 +64,7 @@ public class SupplyDelivery extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -96,7 +76,7 @@ public class SupplyDelivery extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -116,7 +96,7 @@ public class SupplyDelivery extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -124,7 +104,7 @@ public class SupplyDelivery extends FhirResource {
      * across multiple disparate systems.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -132,21 +112,21 @@ public class SupplyDelivery extends FhirResource {
      * this event.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASED_ON);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_BASED_ON);
     }
 
     /**
      * A larger event of which this particular event is a component or step.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PART_OF);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_PART_OF);
     }
 
     /**
      * A code specifying the state of the dispense event.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -154,7 +134,7 @@ public class SupplyDelivery extends FhirResource {
      * is for.
      */
     public Reference patient() {
-        return getObject(Reference.class, PROPERTY_PATIENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PATIENT);
     }
 
     /**
@@ -163,35 +143,35 @@ public class SupplyDelivery extends FhirResource {
      * Fill, Samples, etc.
      */
     public CodeableConcept type() {
-        return getObject(CodeableConcept.class, PROPERTY_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
      * The item that is being delivered or has been supplied.
      */
     public SupplyDeliverySuppliedItem suppliedItem() {
-        return getObject(SupplyDeliverySuppliedItem.class, PROPERTY_SUPPLIED_ITEM);
+        return getObject(SupplyDeliverySuppliedItem.class, FhirPropertyNames.PROPERTY_SUPPLIED_ITEM);
     }
 
     /**
      * The date or time(s) the activity occurred.
      */
     public String occurrenceDateTime() {
-        return getString(PROPERTY_OCCURRENCE_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_OCCURRENCE_DATE_TIME);
     }
 
     /**
      * The date or time(s) the activity occurred.
      */
     public Period occurrencePeriod() {
-        return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_OCCURRENCE_PERIOD);
     }
 
     /**
      * The date or time(s) the activity occurred.
      */
     public Timing occurrenceTiming() {
-        return getObject(Timing.class, PROPERTY_OCCURRENCE_TIMING);
+        return getObject(Timing.class, FhirPropertyNames.PROPERTY_OCCURRENCE_TIMING);
     }
 
     /**
@@ -199,7 +179,7 @@ public class SupplyDelivery extends FhirResource {
      * device.
      */
     public Reference supplier() {
-        return getObject(Reference.class, PROPERTY_SUPPLIER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUPPLIER);
     }
 
     /**
@@ -207,14 +187,14 @@ public class SupplyDelivery extends FhirResource {
      * to, as part of the dispense event.
      */
     public Reference destination() {
-        return getObject(Reference.class, PROPERTY_DESTINATION);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_DESTINATION);
     }
 
     /**
      * Identifies the person who picked up the Supply.
      */
     public java.util.List<Reference> receiver() {
-        return getList(Reference.class, PROPERTY_RECEIVER);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_RECEIVER);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -228,112 +208,112 @@ public class SupplyDelivery extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
+            b.add(FhirPropertyNames.PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
+            b.add(FhirPropertyNames.PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder patient(final Reference patient) {
-            b.add(PROPERTY_PATIENT, patient);
+            b.add(FhirPropertyNames.PROPERTY_PATIENT, patient);
             return this;
         }
 
         public Builder type(final CodeableConcept type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder suppliedItem(final SupplyDeliverySuppliedItem suppliedItem) {
-            b.add(PROPERTY_SUPPLIED_ITEM, suppliedItem);
+            b.add(FhirPropertyNames.PROPERTY_SUPPLIED_ITEM, suppliedItem);
             return this;
         }
 
         public Builder occurrenceDateTime(final String occurrenceDateTime) {
-            b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
+            b.add(FhirPropertyNames.PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
             return this;
         }
 
         public Builder occurrencePeriod(final Period occurrencePeriod) {
-            b.add(PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
+            b.add(FhirPropertyNames.PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
             return this;
         }
 
         public Builder occurrenceTiming(final Timing occurrenceTiming) {
-            b.add(PROPERTY_OCCURRENCE_TIMING, occurrenceTiming);
+            b.add(FhirPropertyNames.PROPERTY_OCCURRENCE_TIMING, occurrenceTiming);
             return this;
         }
 
         public Builder supplier(final Reference supplier) {
-            b.add(PROPERTY_SUPPLIER, supplier);
+            b.add(FhirPropertyNames.PROPERTY_SUPPLIER, supplier);
             return this;
         }
 
         public Builder destination(final Reference destination) {
-            b.add(PROPERTY_DESTINATION, destination);
+            b.add(FhirPropertyNames.PROPERTY_DESTINATION, destination);
             return this;
         }
 
         public Builder receiver(final java.util.List<Reference> receiver) {
-            b.add(PROPERTY_RECEIVER, FhirObject.toArray(receiver));
+            b.add(FhirPropertyNames.PROPERTY_RECEIVER, FhirObject.toArray(receiver));
             return this;
         }
 
@@ -347,12 +327,6 @@ public class SupplyDelivery extends FhirResource {
      */
     public static class SupplyDeliverySuppliedItem extends FhirObject {
         public static final String RESOURCE_TYPE = "SupplyDeliverySuppliedItem";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_QUANTITY = "quantity";
-        public static final String PROPERTY_ITEM_CODEABLE_CONCEPT = "itemCodeableConcept";
-        public static final String PROPERTY_ITEM_REFERENCE = "itemReference";
 
         public static Builder create() {
             return new Builder();
@@ -371,7 +345,7 @@ public class SupplyDelivery extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -383,7 +357,7 @@ public class SupplyDelivery extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -404,7 +378,7 @@ public class SupplyDelivery extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -412,7 +386,7 @@ public class SupplyDelivery extends FhirResource {
          * measure.
          */
         public Quantity quantity() {
-            return getObject(Quantity.class, PROPERTY_QUANTITY);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_QUANTITY);
         }
 
         /**
@@ -421,7 +395,7 @@ public class SupplyDelivery extends FhirResource {
          * a code that identifies the item from a known list.
          */
         public CodeableConcept itemCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_ITEM_CODEABLE_CONCEPT);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ITEM_CODEABLE_CONCEPT);
         }
 
         /**
@@ -430,7 +404,7 @@ public class SupplyDelivery extends FhirResource {
          * a code that identifies the item from a known list.
          */
         public Reference itemReference() {
-            return getObject(Reference.class, PROPERTY_ITEM_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_ITEM_REFERENCE);
         }
 
         public static class Builder {
@@ -445,32 +419,32 @@ public class SupplyDelivery extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder quantity(final Quantity quantity) {
-                b.add(PROPERTY_QUANTITY, quantity);
+                b.add(FhirPropertyNames.PROPERTY_QUANTITY, quantity);
                 return this;
             }
 
             public Builder itemCodeableConcept(final CodeableConcept itemCodeableConcept) {
-                b.add(PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
+                b.add(FhirPropertyNames.PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
                 return this;
             }
 
             public Builder itemReference(final Reference itemReference) {
-                b.add(PROPERTY_ITEM_REFERENCE, itemReference);
+                b.add(FhirPropertyNames.PROPERTY_ITEM_REFERENCE, itemReference);
                 return this;
             }
 

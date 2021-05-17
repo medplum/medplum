@@ -29,6 +29,7 @@ import jakarta.json.JsonValue.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
 import com.medplum.fhir.r4.FhirSchema;
 import com.medplum.fhir.r4.StandardOutcomes;
 import com.medplum.fhir.r4.types.Bundle;
@@ -37,7 +38,6 @@ import com.medplum.fhir.r4.types.FhirList;
 import com.medplum.fhir.r4.types.FhirResource;
 import com.medplum.fhir.r4.types.Identifier;
 import com.medplum.fhir.r4.types.OperationOutcome;
-import com.medplum.fhir.r4.types.Patient;
 import com.medplum.fhir.r4.types.Reference;
 import com.medplum.fhir.r4.types.SearchParameter;
 import com.medplum.server.fhir.r4.search.Filter;
@@ -441,11 +441,11 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     private void writeIdentifiers(final UUID resourceId, final JsonObject resource) throws SQLException {
-        if (!resource.containsKey(Patient.PROPERTY_IDENTIFIER)) {
+        if (!resource.containsKey(FhirPropertyNames.PROPERTY_IDENTIFIER)) {
             return;
         }
 
-        final JsonValue identifier = resource.get(Patient.PROPERTY_IDENTIFIER);
+        final JsonValue identifier = resource.get(FhirPropertyNames.PROPERTY_IDENTIFIER);
         if (identifier == null || identifier.getValueType() != ValueType.ARRAY) {
             return;
         }

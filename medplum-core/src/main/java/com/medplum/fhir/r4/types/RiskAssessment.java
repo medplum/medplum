@@ -9,39 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * An assessment of the likely outcome(s) for a patient or other subject
  * as well as the likelihood of each outcome.
  */
 public class RiskAssessment extends FhirResource {
     public static final String RESOURCE_TYPE = "RiskAssessment";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASED_ON = "basedOn";
-    public static final String PROPERTY_PARENT = "parent";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_METHOD = "method";
-    public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
-    public static final String PROPERTY_OCCURRENCE_PERIOD = "occurrencePeriod";
-    public static final String PROPERTY_CONDITION = "condition";
-    public static final String PROPERTY_PERFORMER = "performer";
-    public static final String PROPERTY_REASON_CODE = "reasonCode";
-    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
-    public static final String PROPERTY_BASIS = "basis";
-    public static final String PROPERTY_PREDICTION = "prediction";
-    public static final String PROPERTY_MITIGATION = "mitigation";
-    public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
         return new Builder();
@@ -62,14 +37,14 @@ public class RiskAssessment extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -81,7 +56,7 @@ public class RiskAssessment extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -90,7 +65,7 @@ public class RiskAssessment extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -102,7 +77,7 @@ public class RiskAssessment extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -122,21 +97,21 @@ public class RiskAssessment extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Business identifier assigned to the risk assessment.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * A reference to the request that is fulfilled by this risk assessment.
      */
     public Reference basedOn() {
-        return getObject(Reference.class, PROPERTY_BASED_ON);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_BASED_ON);
     }
 
     /**
@@ -144,7 +119,7 @@ public class RiskAssessment extends FhirResource {
      * as a Procedure.
      */
     public Reference parent() {
-        return getObject(Reference.class, PROPERTY_PARENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PARENT);
     }
 
     /**
@@ -152,49 +127,49 @@ public class RiskAssessment extends FhirResource {
      * Observation.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
      * The algorithm, process or mechanism used to evaluate the risk.
      */
     public CodeableConcept method() {
-        return getObject(CodeableConcept.class, PROPERTY_METHOD);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_METHOD);
     }
 
     /**
      * The type of the risk assessment performed.
      */
     public CodeableConcept code() {
-        return getObject(CodeableConcept.class, PROPERTY_CODE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
     }
 
     /**
      * The patient or group the risk assessment applies to.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
      * The encounter where the assessment was performed.
      */
     public Reference encounter() {
-        return getObject(Reference.class, PROPERTY_ENCOUNTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ENCOUNTER);
     }
 
     /**
      * The date (and possibly time) the risk assessment was performed.
      */
     public String occurrenceDateTime() {
-        return getString(PROPERTY_OCCURRENCE_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_OCCURRENCE_DATE_TIME);
     }
 
     /**
      * The date (and possibly time) the risk assessment was performed.
      */
     public Period occurrencePeriod() {
-        return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_OCCURRENCE_PERIOD);
     }
 
     /**
@@ -202,28 +177,28 @@ public class RiskAssessment extends FhirResource {
      * indicates the condition being assessed.
      */
     public Reference condition() {
-        return getObject(Reference.class, PROPERTY_CONDITION);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_CONDITION);
     }
 
     /**
      * The provider or software application that performed the assessment.
      */
     public Reference performer() {
-        return getObject(Reference.class, PROPERTY_PERFORMER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PERFORMER);
     }
 
     /**
      * The reason the risk assessment was performed.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_REASON_CODE);
     }
 
     /**
      * Resources supporting the reason the risk assessment was performed.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -231,14 +206,14 @@ public class RiskAssessment extends FhirResource {
      * example, FamilyHistory, Observations, Procedures, Conditions, etc.).
      */
     public java.util.List<Reference> basis() {
-        return getList(Reference.class, PROPERTY_BASIS);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_BASIS);
     }
 
     /**
      * Describes the expected outcome for the subject.
      */
     public java.util.List<RiskAssessmentPrediction> prediction() {
-        return getList(RiskAssessmentPrediction.class, PROPERTY_PREDICTION);
+        return getList(RiskAssessmentPrediction.class, FhirPropertyNames.PROPERTY_PREDICTION);
     }
 
     /**
@@ -246,14 +221,14 @@ public class RiskAssessment extends FhirResource {
      * identified risk(s).
      */
     public String mitigation() {
-        return getString(PROPERTY_MITIGATION);
+        return getString(FhirPropertyNames.PROPERTY_MITIGATION);
     }
 
     /**
      * Additional comments about the risk assessment.
      */
     public java.util.List<Annotation> note() {
-        return getList(Annotation.class, PROPERTY_NOTE);
+        return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -267,137 +242,137 @@ public class RiskAssessment extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder basedOn(final Reference basedOn) {
-            b.add(PROPERTY_BASED_ON, basedOn);
+            b.add(FhirPropertyNames.PROPERTY_BASED_ON, basedOn);
             return this;
         }
 
         public Builder parent(final Reference parent) {
-            b.add(PROPERTY_PARENT, parent);
+            b.add(FhirPropertyNames.PROPERTY_PARENT, parent);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder method(final CodeableConcept method) {
-            b.add(PROPERTY_METHOD, method);
+            b.add(FhirPropertyNames.PROPERTY_METHOD, method);
             return this;
         }
 
         public Builder code(final CodeableConcept code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder encounter(final Reference encounter) {
-            b.add(PROPERTY_ENCOUNTER, encounter);
+            b.add(FhirPropertyNames.PROPERTY_ENCOUNTER, encounter);
             return this;
         }
 
         public Builder occurrenceDateTime(final String occurrenceDateTime) {
-            b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
+            b.add(FhirPropertyNames.PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
             return this;
         }
 
         public Builder occurrencePeriod(final Period occurrencePeriod) {
-            b.add(PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
+            b.add(FhirPropertyNames.PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
             return this;
         }
 
         public Builder condition(final Reference condition) {
-            b.add(PROPERTY_CONDITION, condition);
+            b.add(FhirPropertyNames.PROPERTY_CONDITION, condition);
             return this;
         }
 
         public Builder performer(final Reference performer) {
-            b.add(PROPERTY_PERFORMER, performer);
+            b.add(FhirPropertyNames.PROPERTY_PERFORMER, performer);
             return this;
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
+            b.add(FhirPropertyNames.PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
+            b.add(FhirPropertyNames.PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
         public Builder basis(final java.util.List<Reference> basis) {
-            b.add(PROPERTY_BASIS, FhirObject.toArray(basis));
+            b.add(FhirPropertyNames.PROPERTY_BASIS, FhirObject.toArray(basis));
             return this;
         }
 
         public Builder prediction(final java.util.List<RiskAssessmentPrediction> prediction) {
-            b.add(PROPERTY_PREDICTION, FhirObject.toArray(prediction));
+            b.add(FhirPropertyNames.PROPERTY_PREDICTION, FhirObject.toArray(prediction));
             return this;
         }
 
         public Builder mitigation(final String mitigation) {
-            b.add(PROPERTY_MITIGATION, mitigation);
+            b.add(FhirPropertyNames.PROPERTY_MITIGATION, mitigation);
             return this;
         }
 
         public Builder note(final java.util.List<Annotation> note) {
-            b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+            b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
             return this;
         }
 
@@ -412,17 +387,6 @@ public class RiskAssessment extends FhirResource {
      */
     public static class RiskAssessmentPrediction extends FhirObject {
         public static final String RESOURCE_TYPE = "RiskAssessmentPrediction";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_OUTCOME = "outcome";
-        public static final String PROPERTY_PROBABILITY_DECIMAL = "probabilityDecimal";
-        public static final String PROPERTY_PROBABILITY_RANGE = "probabilityRange";
-        public static final String PROPERTY_QUALITATIVE_RISK = "qualitativeRisk";
-        public static final String PROPERTY_RELATIVE_RISK = "relativeRisk";
-        public static final String PROPERTY_WHEN_PERIOD = "whenPeriod";
-        public static final String PROPERTY_WHEN_RANGE = "whenRange";
-        public static final String PROPERTY_RATIONALE = "rationale";
 
         public static Builder create() {
             return new Builder();
@@ -441,7 +405,7 @@ public class RiskAssessment extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -453,7 +417,7 @@ public class RiskAssessment extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -474,7 +438,7 @@ public class RiskAssessment extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -482,21 +446,21 @@ public class RiskAssessment extends FhirResource {
          * a particular condition).
          */
         public CodeableConcept outcome() {
-            return getObject(CodeableConcept.class, PROPERTY_OUTCOME);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_OUTCOME);
         }
 
         /**
          * Indicates how likely the outcome is (in the specified timeframe).
          */
         public Integer probabilityDecimal() {
-            return data.getInt(PROPERTY_PROBABILITY_DECIMAL);
+            return data.getInt(FhirPropertyNames.PROPERTY_PROBABILITY_DECIMAL);
         }
 
         /**
          * Indicates how likely the outcome is (in the specified timeframe).
          */
         public Range probabilityRange() {
-            return getObject(Range.class, PROPERTY_PROBABILITY_RANGE);
+            return getObject(Range.class, FhirPropertyNames.PROPERTY_PROBABILITY_RANGE);
         }
 
         /**
@@ -504,7 +468,7 @@ public class RiskAssessment extends FhirResource {
          * expressed as a qualitative value (e.g. low, medium, or high).
          */
         public CodeableConcept qualitativeRisk() {
-            return getObject(CodeableConcept.class, PROPERTY_QUALITATIVE_RISK);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_QUALITATIVE_RISK);
         }
 
         /**
@@ -514,7 +478,7 @@ public class RiskAssessment extends FhirResource {
          * less than 1 = lower risk.).
          */
         public Double relativeRisk() {
-            return data.getJsonNumber(PROPERTY_RELATIVE_RISK).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_RELATIVE_RISK).doubleValue();
         }
 
         /**
@@ -522,7 +486,7 @@ public class RiskAssessment extends FhirResource {
          * specified probability applies.
          */
         public Period whenPeriod() {
-            return getObject(Period.class, PROPERTY_WHEN_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_WHEN_PERIOD);
         }
 
         /**
@@ -530,14 +494,14 @@ public class RiskAssessment extends FhirResource {
          * specified probability applies.
          */
         public Range whenRange() {
-            return getObject(Range.class, PROPERTY_WHEN_RANGE);
+            return getObject(Range.class, FhirPropertyNames.PROPERTY_WHEN_RANGE);
         }
 
         /**
          * Additional information explaining the basis for the prediction.
          */
         public String rationale() {
-            return getString(PROPERTY_RATIONALE);
+            return getString(FhirPropertyNames.PROPERTY_RATIONALE);
         }
 
         public static class Builder {
@@ -552,57 +516,57 @@ public class RiskAssessment extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder outcome(final CodeableConcept outcome) {
-                b.add(PROPERTY_OUTCOME, outcome);
+                b.add(FhirPropertyNames.PROPERTY_OUTCOME, outcome);
                 return this;
             }
 
             public Builder probabilityDecimal(final Integer probabilityDecimal) {
-                b.add(PROPERTY_PROBABILITY_DECIMAL, probabilityDecimal);
+                b.add(FhirPropertyNames.PROPERTY_PROBABILITY_DECIMAL, probabilityDecimal);
                 return this;
             }
 
             public Builder probabilityRange(final Range probabilityRange) {
-                b.add(PROPERTY_PROBABILITY_RANGE, probabilityRange);
+                b.add(FhirPropertyNames.PROPERTY_PROBABILITY_RANGE, probabilityRange);
                 return this;
             }
 
             public Builder qualitativeRisk(final CodeableConcept qualitativeRisk) {
-                b.add(PROPERTY_QUALITATIVE_RISK, qualitativeRisk);
+                b.add(FhirPropertyNames.PROPERTY_QUALITATIVE_RISK, qualitativeRisk);
                 return this;
             }
 
             public Builder relativeRisk(final Double relativeRisk) {
-                b.add(PROPERTY_RELATIVE_RISK, relativeRisk);
+                b.add(FhirPropertyNames.PROPERTY_RELATIVE_RISK, relativeRisk);
                 return this;
             }
 
             public Builder whenPeriod(final Period whenPeriod) {
-                b.add(PROPERTY_WHEN_PERIOD, whenPeriod);
+                b.add(FhirPropertyNames.PROPERTY_WHEN_PERIOD, whenPeriod);
                 return this;
             }
 
             public Builder whenRange(final Range whenRange) {
-                b.add(PROPERTY_WHEN_RANGE, whenRange);
+                b.add(FhirPropertyNames.PROPERTY_WHEN_RANGE, whenRange);
                 return this;
             }
 
             public Builder rationale(final String rationale) {
-                b.add(PROPERTY_RATIONALE, rationale);
+                b.add(FhirPropertyNames.PROPERTY_RATIONALE, rationale);
                 return this;
             }
 

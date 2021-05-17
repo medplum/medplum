@@ -6,8 +6,8 @@ import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
 
 import com.medplum.fhir.r4.types.Subscription;
-import com.medplum.server.fhir.r4.search.SearchRequest;
 import com.medplum.server.fhir.r4.search.SearchParser;
+import com.medplum.server.fhir.r4.search.SearchRequest;
 
 public class SseConnection {
     private final SseEventSink eventSink;

@@ -9,36 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * This resource provides the details including amount of a payment and
  * allocates the payment items being paid.
  */
 public class PaymentReconciliation extends FhirResource {
     public static final String RESOURCE_TYPE = "PaymentReconciliation";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_CREATED = "created";
-    public static final String PROPERTY_PAYMENT_ISSUER = "paymentIssuer";
-    public static final String PROPERTY_REQUEST = "request";
-    public static final String PROPERTY_REQUESTOR = "requestor";
-    public static final String PROPERTY_OUTCOME = "outcome";
-    public static final String PROPERTY_DISPOSITION = "disposition";
-    public static final String PROPERTY_PAYMENT_DATE = "paymentDate";
-    public static final String PROPERTY_PAYMENT_AMOUNT = "paymentAmount";
-    public static final String PROPERTY_PAYMENT_IDENTIFIER = "paymentIdentifier";
-    public static final String PROPERTY_DETAIL = "detail";
-    public static final String PROPERTY_FORM_CODE = "formCode";
-    public static final String PROPERTY_PROCESS_NOTE = "processNote";
 
     public static Builder create() {
         return new Builder();
@@ -59,14 +37,14 @@ public class PaymentReconciliation extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -78,7 +56,7 @@ public class PaymentReconciliation extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -87,7 +65,7 @@ public class PaymentReconciliation extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -99,7 +77,7 @@ public class PaymentReconciliation extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -119,21 +97,21 @@ public class PaymentReconciliation extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * A unique identifier assigned to this payment reconciliation.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * The status of the resource instance.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -141,28 +119,28 @@ public class PaymentReconciliation extends FhirResource {
      * bulk payment for settlement.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     /**
      * The date when the resource was created.
      */
     public java.time.Instant created() {
-        return getInstant(PROPERTY_CREATED);
+        return getInstant(FhirPropertyNames.PROPERTY_CREATED);
     }
 
     /**
      * The party who generated the payment.
      */
     public Reference paymentIssuer() {
-        return getObject(Reference.class, PROPERTY_PAYMENT_ISSUER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PAYMENT_ISSUER);
     }
 
     /**
      * Original request resource reference.
      */
     public Reference request() {
-        return getObject(Reference.class, PROPERTY_REQUEST);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_REQUEST);
     }
 
     /**
@@ -170,14 +148,14 @@ public class PaymentReconciliation extends FhirResource {
      * patient.
      */
     public Reference requestor() {
-        return getObject(Reference.class, PROPERTY_REQUESTOR);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_REQUESTOR);
     }
 
     /**
      * The outcome of a request for a reconciliation.
      */
     public String outcome() {
-        return getString(PROPERTY_OUTCOME);
+        return getString(FhirPropertyNames.PROPERTY_OUTCOME);
     }
 
     /**
@@ -185,28 +163,28 @@ public class PaymentReconciliation extends FhirResource {
      * reconciliation.
      */
     public String disposition() {
-        return getString(PROPERTY_DISPOSITION);
+        return getString(FhirPropertyNames.PROPERTY_DISPOSITION);
     }
 
     /**
      * The date of payment as indicated on the financial instrument.
      */
     public java.time.LocalDate paymentDate() {
-        return getLocalDate(PROPERTY_PAYMENT_DATE);
+        return getLocalDate(FhirPropertyNames.PROPERTY_PAYMENT_DATE);
     }
 
     /**
      * Total payment amount as indicated on the financial instrument.
      */
     public Money paymentAmount() {
-        return getObject(Money.class, PROPERTY_PAYMENT_AMOUNT);
+        return getObject(Money.class, FhirPropertyNames.PROPERTY_PAYMENT_AMOUNT);
     }
 
     /**
      * Issuer's unique identifier for the payment instrument.
      */
     public Identifier paymentIdentifier() {
-        return getObject(Identifier.class, PROPERTY_PAYMENT_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_PAYMENT_IDENTIFIER);
     }
 
     /**
@@ -214,14 +192,14 @@ public class PaymentReconciliation extends FhirResource {
      * payable.
      */
     public java.util.List<PaymentReconciliationDetail> detail() {
-        return getList(PaymentReconciliationDetail.class, PROPERTY_DETAIL);
+        return getList(PaymentReconciliationDetail.class, FhirPropertyNames.PROPERTY_DETAIL);
     }
 
     /**
      * A code for the form to be used for printing the content.
      */
     public CodeableConcept formCode() {
-        return getObject(CodeableConcept.class, PROPERTY_FORM_CODE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_FORM_CODE);
     }
 
     /**
@@ -229,7 +207,7 @@ public class PaymentReconciliation extends FhirResource {
      * form.
      */
     public java.util.List<PaymentReconciliationProcessNote> processNote() {
-        return getList(PaymentReconciliationProcessNote.class, PROPERTY_PROCESS_NOTE);
+        return getList(PaymentReconciliationProcessNote.class, FhirPropertyNames.PROPERTY_PROCESS_NOTE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -243,122 +221,122 @@ public class PaymentReconciliation extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 
         public Builder created(final java.time.Instant created) {
-            b.add(PROPERTY_CREATED, created.toString());
+            b.add(FhirPropertyNames.PROPERTY_CREATED, created.toString());
             return this;
         }
 
         public Builder paymentIssuer(final Reference paymentIssuer) {
-            b.add(PROPERTY_PAYMENT_ISSUER, paymentIssuer);
+            b.add(FhirPropertyNames.PROPERTY_PAYMENT_ISSUER, paymentIssuer);
             return this;
         }
 
         public Builder request(final Reference request) {
-            b.add(PROPERTY_REQUEST, request);
+            b.add(FhirPropertyNames.PROPERTY_REQUEST, request);
             return this;
         }
 
         public Builder requestor(final Reference requestor) {
-            b.add(PROPERTY_REQUESTOR, requestor);
+            b.add(FhirPropertyNames.PROPERTY_REQUESTOR, requestor);
             return this;
         }
 
         public Builder outcome(final String outcome) {
-            b.add(PROPERTY_OUTCOME, outcome);
+            b.add(FhirPropertyNames.PROPERTY_OUTCOME, outcome);
             return this;
         }
 
         public Builder disposition(final String disposition) {
-            b.add(PROPERTY_DISPOSITION, disposition);
+            b.add(FhirPropertyNames.PROPERTY_DISPOSITION, disposition);
             return this;
         }
 
         public Builder paymentDate(final java.time.LocalDate paymentDate) {
-            b.add(PROPERTY_PAYMENT_DATE, paymentDate.toString());
+            b.add(FhirPropertyNames.PROPERTY_PAYMENT_DATE, paymentDate.toString());
             return this;
         }
 
         public Builder paymentAmount(final Money paymentAmount) {
-            b.add(PROPERTY_PAYMENT_AMOUNT, paymentAmount);
+            b.add(FhirPropertyNames.PROPERTY_PAYMENT_AMOUNT, paymentAmount);
             return this;
         }
 
         public Builder paymentIdentifier(final Identifier paymentIdentifier) {
-            b.add(PROPERTY_PAYMENT_IDENTIFIER, paymentIdentifier);
+            b.add(FhirPropertyNames.PROPERTY_PAYMENT_IDENTIFIER, paymentIdentifier);
             return this;
         }
 
         public Builder detail(final java.util.List<PaymentReconciliationDetail> detail) {
-            b.add(PROPERTY_DETAIL, FhirObject.toArray(detail));
+            b.add(FhirPropertyNames.PROPERTY_DETAIL, FhirObject.toArray(detail));
             return this;
         }
 
         public Builder formCode(final CodeableConcept formCode) {
-            b.add(PROPERTY_FORM_CODE, formCode);
+            b.add(FhirPropertyNames.PROPERTY_FORM_CODE, formCode);
             return this;
         }
 
         public Builder processNote(final java.util.List<PaymentReconciliationProcessNote> processNote) {
-            b.add(PROPERTY_PROCESS_NOTE, FhirObject.toArray(processNote));
+            b.add(FhirPropertyNames.PROPERTY_PROCESS_NOTE, FhirObject.toArray(processNote));
             return this;
         }
 
@@ -373,19 +351,6 @@ public class PaymentReconciliation extends FhirResource {
      */
     public static class PaymentReconciliationDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "PaymentReconciliationDetail";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_IDENTIFIER = "identifier";
-        public static final String PROPERTY_PREDECESSOR = "predecessor";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_REQUEST = "request";
-        public static final String PROPERTY_SUBMITTER = "submitter";
-        public static final String PROPERTY_RESPONSE = "response";
-        public static final String PROPERTY_DATE = "date";
-        public static final String PROPERTY_RESPONSIBLE = "responsible";
-        public static final String PROPERTY_PAYEE = "payee";
-        public static final String PROPERTY_AMOUNT = "amount";
 
         public static Builder create() {
             return new Builder();
@@ -404,7 +369,7 @@ public class PaymentReconciliation extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -416,7 +381,7 @@ public class PaymentReconciliation extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -437,7 +402,7 @@ public class PaymentReconciliation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -445,7 +410,7 @@ public class PaymentReconciliation extends FhirResource {
          * payable.
          */
         public Identifier identifier() {
-            return getObject(Identifier.class, PROPERTY_IDENTIFIER);
+            return getObject(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
         }
 
         /**
@@ -453,14 +418,14 @@ public class PaymentReconciliation extends FhirResource {
          * payable.
          */
         public Identifier predecessor() {
-            return getObject(Identifier.class, PROPERTY_PREDECESSOR);
+            return getObject(Identifier.class, FhirPropertyNames.PROPERTY_PREDECESSOR);
         }
 
         /**
          * Code to indicate the nature of the payment.
          */
         public CodeableConcept type() {
-            return getObject(CodeableConcept.class, PROPERTY_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
@@ -468,14 +433,14 @@ public class PaymentReconciliation extends FhirResource {
          * payment.
          */
         public Reference request() {
-            return getObject(Reference.class, PROPERTY_REQUEST);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_REQUEST);
         }
 
         /**
          * The party which submitted the claim or financial transaction.
          */
         public Reference submitter() {
-            return getObject(Reference.class, PROPERTY_SUBMITTER);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBMITTER);
         }
 
         /**
@@ -483,14 +448,14 @@ public class PaymentReconciliation extends FhirResource {
          * payment.
          */
         public Reference response() {
-            return getObject(Reference.class, PROPERTY_RESPONSE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_RESPONSE);
         }
 
         /**
          * The date from the response resource containing a commitment to pay.
          */
         public java.time.LocalDate date() {
-            return getLocalDate(PROPERTY_DATE);
+            return getLocalDate(FhirPropertyNames.PROPERTY_DATE);
         }
 
         /**
@@ -498,21 +463,21 @@ public class PaymentReconciliation extends FhirResource {
          * regarding the response and its payment.
          */
         public Reference responsible() {
-            return getObject(Reference.class, PROPERTY_RESPONSIBLE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_RESPONSIBLE);
         }
 
         /**
          * The party which is receiving the payment.
          */
         public Reference payee() {
-            return getObject(Reference.class, PROPERTY_PAYEE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_PAYEE);
         }
 
         /**
          * The monetary amount allocated from the total payment to the payable.
          */
         public Money amount() {
-            return getObject(Money.class, PROPERTY_AMOUNT);
+            return getObject(Money.class, FhirPropertyNames.PROPERTY_AMOUNT);
         }
 
         public static class Builder {
@@ -527,67 +492,67 @@ public class PaymentReconciliation extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder identifier(final Identifier identifier) {
-                b.add(PROPERTY_IDENTIFIER, identifier);
+                b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, identifier);
                 return this;
             }
 
             public Builder predecessor(final Identifier predecessor) {
-                b.add(PROPERTY_PREDECESSOR, predecessor);
+                b.add(FhirPropertyNames.PROPERTY_PREDECESSOR, predecessor);
                 return this;
             }
 
             public Builder type(final CodeableConcept type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder request(final Reference request) {
-                b.add(PROPERTY_REQUEST, request);
+                b.add(FhirPropertyNames.PROPERTY_REQUEST, request);
                 return this;
             }
 
             public Builder submitter(final Reference submitter) {
-                b.add(PROPERTY_SUBMITTER, submitter);
+                b.add(FhirPropertyNames.PROPERTY_SUBMITTER, submitter);
                 return this;
             }
 
             public Builder response(final Reference response) {
-                b.add(PROPERTY_RESPONSE, response);
+                b.add(FhirPropertyNames.PROPERTY_RESPONSE, response);
                 return this;
             }
 
             public Builder date(final java.time.LocalDate date) {
-                b.add(PROPERTY_DATE, date.toString());
+                b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
                 return this;
             }
 
             public Builder responsible(final Reference responsible) {
-                b.add(PROPERTY_RESPONSIBLE, responsible);
+                b.add(FhirPropertyNames.PROPERTY_RESPONSIBLE, responsible);
                 return this;
             }
 
             public Builder payee(final Reference payee) {
-                b.add(PROPERTY_PAYEE, payee);
+                b.add(FhirPropertyNames.PROPERTY_PAYEE, payee);
                 return this;
             }
 
             public Builder amount(final Money amount) {
-                b.add(PROPERTY_AMOUNT, amount);
+                b.add(FhirPropertyNames.PROPERTY_AMOUNT, amount);
                 return this;
             }
 
@@ -603,11 +568,6 @@ public class PaymentReconciliation extends FhirResource {
      */
     public static class PaymentReconciliationProcessNote extends FhirObject {
         public static final String RESOURCE_TYPE = "PaymentReconciliationProcessNote";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_TEXT = "text";
 
         public static Builder create() {
             return new Builder();
@@ -626,7 +586,7 @@ public class PaymentReconciliation extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -638,7 +598,7 @@ public class PaymentReconciliation extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -659,21 +619,21 @@ public class PaymentReconciliation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The business purpose of the note text.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The explanation or description associated with the processing.
          */
         public String text() {
-            return getString(PROPERTY_TEXT);
+            return getString(FhirPropertyNames.PROPERTY_TEXT);
         }
 
         public static class Builder {
@@ -688,27 +648,27 @@ public class PaymentReconciliation extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder text(final String text) {
-                b.add(PROPERTY_TEXT, text);
+                b.add(FhirPropertyNames.PROPERTY_TEXT, text);
                 return this;
             }
 

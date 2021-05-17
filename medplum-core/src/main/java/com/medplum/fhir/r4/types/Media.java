@@ -7,44 +7,14 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A photo, video, or audio recording acquired or used in healthcare. The
  * actual content may be inline or provided by direct reference.
  */
 public class Media extends FhirResource {
     public static final String RESOURCE_TYPE = "Media";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASED_ON = "basedOn";
-    public static final String PROPERTY_PART_OF = "partOf";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_MODALITY = "modality";
-    public static final String PROPERTY_VIEW = "view";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_CREATED_DATE_TIME = "createdDateTime";
-    public static final String PROPERTY_CREATED_PERIOD = "createdPeriod";
-    public static final String PROPERTY_ISSUED = "issued";
-    public static final String PROPERTY_OPERATOR = "operator";
-    public static final String PROPERTY_REASON_CODE = "reasonCode";
-    public static final String PROPERTY_BODY_SITE = "bodySite";
-    public static final String PROPERTY_DEVICE_NAME = "deviceName";
-    public static final String PROPERTY_DEVICE = "device";
-    public static final String PROPERTY_HEIGHT = "height";
-    public static final String PROPERTY_WIDTH = "width";
-    public static final String PROPERTY_FRAMES = "frames";
-    public static final String PROPERTY_DURATION = "duration";
-    public static final String PROPERTY_CONTENT = "content";
-    public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
         return new Builder();
@@ -65,14 +35,14 @@ public class Media extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -84,7 +54,7 @@ public class Media extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -93,7 +63,7 @@ public class Media extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -105,7 +75,7 @@ public class Media extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -125,7 +95,7 @@ public class Media extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -135,7 +105,7 @@ public class Media extends FhirResource {
      * workflow identifiers.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -143,21 +113,21 @@ public class Media extends FhirResource {
      * this media.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASED_ON);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_BASED_ON);
     }
 
     /**
      * A larger event of which this particular event is a component or step.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PART_OF);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_PART_OF);
     }
 
     /**
      * The current state of the {{title}}.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -165,7 +135,7 @@ public class Media extends FhirResource {
      * recording or some other media category.
      */
     public CodeableConcept type() {
-        return getObject(CodeableConcept.class, PROPERTY_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -174,42 +144,42 @@ public class Media extends FhirResource {
      * a Media resource, then this is the modality.
      */
     public CodeableConcept modality() {
-        return getObject(CodeableConcept.class, PROPERTY_MODALITY);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_MODALITY);
     }
 
     /**
      * The name of the imaging view e.g. Lateral or Antero-posterior (AP).
      */
     public CodeableConcept view() {
-        return getObject(CodeableConcept.class, PROPERTY_VIEW);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_VIEW);
     }
 
     /**
      * Who/What this Media is a record of.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
      * The encounter that establishes the context for this media.
      */
     public Reference encounter() {
-        return getObject(Reference.class, PROPERTY_ENCOUNTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ENCOUNTER);
     }
 
     /**
      * The date and time(s) at which the media was collected.
      */
     public String createdDateTime() {
-        return getString(PROPERTY_CREATED_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_CREATED_DATE_TIME);
     }
 
     /**
      * The date and time(s) at which the media was collected.
      */
     public Period createdPeriod() {
-        return getObject(Period.class, PROPERTY_CREATED_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_CREATED_PERIOD);
     }
 
     /**
@@ -217,21 +187,21 @@ public class Media extends FhirResource {
      * providers, typically after having been reviewed.
      */
     public java.time.Instant issued() {
-        return getInstant(PROPERTY_ISSUED);
+        return getInstant(FhirPropertyNames.PROPERTY_ISSUED);
     }
 
     /**
      * The person who administered the collection of the image.
      */
     public Reference operator() {
-        return getObject(Reference.class, PROPERTY_OPERATOR);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_OPERATOR);
     }
 
     /**
      * Describes why the event occurred in coded or textual form.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_REASON_CODE);
     }
 
     /**
@@ -239,7 +209,7 @@ public class Media extends FhirResource {
      * made (i.e. the target site).
      */
     public CodeableConcept bodySite() {
-        return getObject(CodeableConcept.class, PROPERTY_BODY_SITE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_BODY_SITE);
     }
 
     /**
@@ -247,28 +217,28 @@ public class Media extends FhirResource {
      * make the recording.
      */
     public String deviceName() {
-        return getString(PROPERTY_DEVICE_NAME);
+        return getString(FhirPropertyNames.PROPERTY_DEVICE_NAME);
     }
 
     /**
      * The device used to collect the media.
      */
     public Reference device() {
-        return getObject(Reference.class, PROPERTY_DEVICE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_DEVICE);
     }
 
     /**
      * Height of the image in pixels (photo/video).
      */
     public Integer height() {
-        return data.getInt(PROPERTY_HEIGHT);
+        return data.getInt(FhirPropertyNames.PROPERTY_HEIGHT);
     }
 
     /**
      * Width of the image in pixels (photo/video).
      */
     public Integer width() {
-        return data.getInt(PROPERTY_WIDTH);
+        return data.getInt(FhirPropertyNames.PROPERTY_WIDTH);
     }
 
     /**
@@ -279,14 +249,14 @@ public class Media extends FhirResource {
      * multi-frame capable rendering widget is required.
      */
     public Integer frames() {
-        return data.getInt(PROPERTY_FRAMES);
+        return data.getInt(FhirPropertyNames.PROPERTY_FRAMES);
     }
 
     /**
      * The duration of the recording in seconds - for audio and video.
      */
     public Double duration() {
-        return data.getJsonNumber(PROPERTY_DURATION).doubleValue();
+        return data.getJsonNumber(FhirPropertyNames.PROPERTY_DURATION).doubleValue();
     }
 
     /**
@@ -294,7 +264,7 @@ public class Media extends FhirResource {
      * media source file.
      */
     public Attachment content() {
-        return getObject(Attachment.class, PROPERTY_CONTENT);
+        return getObject(Attachment.class, FhirPropertyNames.PROPERTY_CONTENT);
     }
 
     /**
@@ -302,7 +272,7 @@ public class Media extends FhirResource {
      * participants.
      */
     public java.util.List<Annotation> note() {
-        return getList(Annotation.class, PROPERTY_NOTE);
+        return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -316,162 +286,162 @@ public class Media extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
+            b.add(FhirPropertyNames.PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
+            b.add(FhirPropertyNames.PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder type(final CodeableConcept type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder modality(final CodeableConcept modality) {
-            b.add(PROPERTY_MODALITY, modality);
+            b.add(FhirPropertyNames.PROPERTY_MODALITY, modality);
             return this;
         }
 
         public Builder view(final CodeableConcept view) {
-            b.add(PROPERTY_VIEW, view);
+            b.add(FhirPropertyNames.PROPERTY_VIEW, view);
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder encounter(final Reference encounter) {
-            b.add(PROPERTY_ENCOUNTER, encounter);
+            b.add(FhirPropertyNames.PROPERTY_ENCOUNTER, encounter);
             return this;
         }
 
         public Builder createdDateTime(final String createdDateTime) {
-            b.add(PROPERTY_CREATED_DATE_TIME, createdDateTime);
+            b.add(FhirPropertyNames.PROPERTY_CREATED_DATE_TIME, createdDateTime);
             return this;
         }
 
         public Builder createdPeriod(final Period createdPeriod) {
-            b.add(PROPERTY_CREATED_PERIOD, createdPeriod);
+            b.add(FhirPropertyNames.PROPERTY_CREATED_PERIOD, createdPeriod);
             return this;
         }
 
         public Builder issued(final java.time.Instant issued) {
-            b.add(PROPERTY_ISSUED, issued.toString());
+            b.add(FhirPropertyNames.PROPERTY_ISSUED, issued.toString());
             return this;
         }
 
         public Builder operator(final Reference operator) {
-            b.add(PROPERTY_OPERATOR, operator);
+            b.add(FhirPropertyNames.PROPERTY_OPERATOR, operator);
             return this;
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
+            b.add(FhirPropertyNames.PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder bodySite(final CodeableConcept bodySite) {
-            b.add(PROPERTY_BODY_SITE, bodySite);
+            b.add(FhirPropertyNames.PROPERTY_BODY_SITE, bodySite);
             return this;
         }
 
         public Builder deviceName(final String deviceName) {
-            b.add(PROPERTY_DEVICE_NAME, deviceName);
+            b.add(FhirPropertyNames.PROPERTY_DEVICE_NAME, deviceName);
             return this;
         }
 
         public Builder device(final Reference device) {
-            b.add(PROPERTY_DEVICE, device);
+            b.add(FhirPropertyNames.PROPERTY_DEVICE, device);
             return this;
         }
 
         public Builder height(final Integer height) {
-            b.add(PROPERTY_HEIGHT, height);
+            b.add(FhirPropertyNames.PROPERTY_HEIGHT, height);
             return this;
         }
 
         public Builder width(final Integer width) {
-            b.add(PROPERTY_WIDTH, width);
+            b.add(FhirPropertyNames.PROPERTY_WIDTH, width);
             return this;
         }
 
         public Builder frames(final Integer frames) {
-            b.add(PROPERTY_FRAMES, frames);
+            b.add(FhirPropertyNames.PROPERTY_FRAMES, frames);
             return this;
         }
 
         public Builder duration(final Double duration) {
-            b.add(PROPERTY_DURATION, duration);
+            b.add(FhirPropertyNames.PROPERTY_DURATION, duration);
             return this;
         }
 
         public Builder content(final Attachment content) {
-            b.add(PROPERTY_CONTENT, content);
+            b.add(FhirPropertyNames.PROPERTY_CONTENT, content);
             return this;
         }
 
         public Builder note(final java.util.List<Annotation> note) {
-            b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+            b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
             return this;
         }
 

@@ -4,9 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
@@ -16,8 +19,10 @@ import org.apache.commons.text.WordUtils;
 
 public class JavaGenerator {
     private static final String INDENT = " ".repeat(4);
-    private static final String OUTPUT_PACKAGE = "com.medplum.fhir.r4.types";
-    private static final String OUTPUT_PATH = "../medplum-core/src/main/java/com/medplum/fhir/r4/types/";
+    private static final String OUTPUT_PACKAGE = "com.medplum.fhir.r4";
+    private static final String OUTPUT_PATH = "../medplum-core/src/main/java/com/medplum/fhir/r4/";
+    private static final String TYPES_PACKAGE = OUTPUT_PACKAGE + ".types";
+    private static final String TYPES_PATH = OUTPUT_PATH + "types/";
     private static final String TEST_PATH = "../medplum-core/src/test/java/com/medplum/fhir/r4/types/";
     private static final List<String> RESERVED = Arrays.asList("abstract", "assert", "boolean", "break", "byte", "case",
             "catch", "char", "class", "const", "continue", "default", "do", "double", "else", "enum", "extends",
@@ -27,13 +32,41 @@ public class JavaGenerator {
             "volatile", "while");
 
     public static void mkdirs() {
-        new File(OUTPUT_PATH).mkdirs();
+        new File(TYPES_PATH).mkdirs();
         new File(TEST_PATH).mkdirs();
+    }
+
+    public static void writePropertyNames(final List<FhirType> allTypes) throws IOException {
+        final Set<String> nameSet = new HashSet<>();
+
+        for (final FhirType fhirType : allTypes) {
+            for (final Property property : fhirType.getProperties()) {
+                nameSet.add(property.getName());
+            }
+        }
+
+        final List<String> sortedNames = new ArrayList<>(nameSet);
+        Collections.sort(sortedNames);
+
+        final FileBuilder b = new FileBuilder(INDENT);
+        b.append("package " + OUTPUT_PACKAGE + ";");
+        b.newLine();
+
+        b.append("public class FhirPropertyNames {");
+        b.increaseIndent();
+
+        for (final String name : sortedNames) {
+            b.append("public static final String " + getConstantName(name) + " = \"" + name + "\";");
+        }
+
+        b.decreaseIndent();
+        b.append("}");
+        Files.writeString(Path.of(OUTPUT_PATH + "FhirPropertyNames.java"), b.toString());
     }
 
     public static void writeMainFile(final FhirType fhirType) throws IOException {
         final FileBuilder b = new FileBuilder(INDENT);
-        b.append("package " + OUTPUT_PACKAGE + ";");
+        b.append("package " + TYPES_PACKAGE + ";");
         b.newLine();
 
         if (fhirType.isResource() && fhirType.getSubTypes().isEmpty()) {
@@ -44,13 +77,15 @@ public class JavaGenerator {
             b.append("import jakarta.json.JsonObjectBuilder;");
         }
 
+        b.newLine();
+        b.append("import com.medplum.fhir.r4.FhirPropertyNames;");
+
         if (fhirType.getOutputName().equals("OperationOutcome")) {
-            b.newLine();
             b.append("import com.medplum.fhir.r4.StandardOutcomes;");
         }
 
         writeClass(b, fhirType, true);
-        Files.writeString(Path.of(OUTPUT_PATH + fhirType.getOutputName() + ".java"), b.toString());
+        Files.writeString(Path.of(TYPES_PATH + fhirType.getOutputName() + ".java"), b.toString());
     }
 
     private static void writeClass(final FileBuilder b, final FhirType fhirType, final boolean topLevel) {
@@ -69,10 +104,6 @@ public class JavaGenerator {
         b.increaseIndent();
 
         b.append("public static final String RESOURCE_TYPE = \"" + resourceType + "\";");
-
-        for (final Property property : fhirType.getProperties()) {
-            b.append("public static final String " + getConstantName(property.getName()) + " = \"" + property.getName() + "\";");
-        }
 
         b.newLine();
         b.append("public static Builder create() {");
@@ -103,7 +134,7 @@ public class JavaGenerator {
                 continue;
             }
 
-            final String constantName = getConstantName(property.getName());
+            final String constantName = "FhirPropertyNames." + getConstantName(property.getName());
             final String javaType = getJavaType(property);
 
             b.newLine();
@@ -191,7 +222,7 @@ public class JavaGenerator {
 
         for (final Property property : fhirType.getProperties()) {
             final String propertyName = getOutputName(property.getName());
-            final String constantName = getConstantName(property.getName());
+            final String constantName = "FhirPropertyNames." + getConstantName(property.getName());
             String javaType = getJavaType(property);
 
             if (javaType.equals("FhirResource")) {
@@ -247,7 +278,7 @@ public class JavaGenerator {
         final String qualifiedType = fhirType.getQualifiedName();
 
         final FileBuilder b = new FileBuilder(INDENT);
-        b.append("package " + OUTPUT_PACKAGE + ";");
+        b.append("package " + TYPES_PACKAGE + ";");
         b.newLine();
         b.append("import static org.junit.jupiter.api.Assertions.*;");
         b.newLine();

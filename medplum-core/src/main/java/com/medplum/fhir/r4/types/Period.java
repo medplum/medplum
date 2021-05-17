@@ -9,15 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A time period defined by a start and end date and optionally time.
  */
 public class Period extends FhirResource {
     public static final String RESOURCE_TYPE = "Period";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_START = "start";
-    public static final String PROPERTY_END = "end";
 
     public static Builder create() {
         return new Builder();
@@ -36,7 +34,7 @@ public class Period extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -48,14 +46,14 @@ public class Period extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * The start of the period. The boundary is inclusive.
      */
     public java.time.Instant start() {
-        return getInstant(PROPERTY_START);
+        return getInstant(FhirPropertyNames.PROPERTY_START);
     }
 
     /**
@@ -65,7 +63,7 @@ public class Period extends FhirResource {
      * that period is expected/planned to end at that time.
      */
     public java.time.Instant end() {
-        return getInstant(PROPERTY_END);
+        return getInstant(FhirPropertyNames.PROPERTY_END);
     }
 
     public static class Builder {
@@ -80,22 +78,22 @@ public class Period extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder start(final java.time.Instant start) {
-            b.add(PROPERTY_START, start.toString());
+            b.add(FhirPropertyNames.PROPERTY_START, start.toString());
             return this;
         }
 
         public Builder end(final java.time.Instant end) {
-            b.add(PROPERTY_END, end.toString());
+            b.add(FhirPropertyNames.PROPERTY_END, end.toString());
             return this;
         }
 

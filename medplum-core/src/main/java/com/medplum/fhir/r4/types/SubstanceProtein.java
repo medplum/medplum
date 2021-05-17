@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A SubstanceProtein is defined as a single unit of a linear amino acid
  * sequence, or a combination of subunits that are either covalently
@@ -21,19 +23,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class SubstanceProtein extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceProtein";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_SEQUENCE_TYPE = "sequenceType";
-    public static final String PROPERTY_NUMBER_OF_SUBUNITS = "numberOfSubunits";
-    public static final String PROPERTY_DISULFIDE_LINKAGE = "disulfideLinkage";
-    public static final String PROPERTY_SUBUNIT = "subunit";
 
     public static Builder create() {
         return new Builder();
@@ -54,14 +43,14 @@ public class SubstanceProtein extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -73,7 +62,7 @@ public class SubstanceProtein extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -82,7 +71,7 @@ public class SubstanceProtein extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -94,7 +83,7 @@ public class SubstanceProtein extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -114,7 +103,7 @@ public class SubstanceProtein extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -123,7 +112,7 @@ public class SubstanceProtein extends FhirResource {
      * a nucleic acid sequence.
      */
     public CodeableConcept sequenceType() {
-        return getObject(CodeableConcept.class, PROPERTY_SEQUENCE_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SEQUENCE_TYPE);
     }
 
     /**
@@ -133,7 +122,7 @@ public class SubstanceProtein extends FhirResource {
      * variable.
      */
     public Integer numberOfSubunits() {
-        return data.getInt(PROPERTY_NUMBER_OF_SUBUNITS);
+        return data.getInt(FhirPropertyNames.PROPERTY_NUMBER_OF_SUBUNITS);
     }
 
     /**
@@ -146,7 +135,7 @@ public class SubstanceProtein extends FhirResource {
      * Cysteine at the respective positions.
      */
     public java.util.List<String> disulfideLinkage() {
-        return getList(String.class, PROPERTY_DISULFIDE_LINKAGE);
+        return getList(String.class, FhirPropertyNames.PROPERTY_DISULFIDE_LINKAGE);
     }
 
     /**
@@ -161,7 +150,7 @@ public class SubstanceProtein extends FhirResource {
      * times.
      */
     public java.util.List<SubstanceProteinSubunit> subunit() {
-        return getList(SubstanceProteinSubunit.class, PROPERTY_SUBUNIT);
+        return getList(SubstanceProteinSubunit.class, FhirPropertyNames.PROPERTY_SUBUNIT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -175,67 +164,67 @@ public class SubstanceProtein extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder sequenceType(final CodeableConcept sequenceType) {
-            b.add(PROPERTY_SEQUENCE_TYPE, sequenceType);
+            b.add(FhirPropertyNames.PROPERTY_SEQUENCE_TYPE, sequenceType);
             return this;
         }
 
         public Builder numberOfSubunits(final Integer numberOfSubunits) {
-            b.add(PROPERTY_NUMBER_OF_SUBUNITS, numberOfSubunits);
+            b.add(FhirPropertyNames.PROPERTY_NUMBER_OF_SUBUNITS, numberOfSubunits);
             return this;
         }
 
         public Builder disulfideLinkage(final java.util.List<String> disulfideLinkage) {
-            b.add(PROPERTY_DISULFIDE_LINKAGE, FhirObject.toStringArray(disulfideLinkage));
+            b.add(FhirPropertyNames.PROPERTY_DISULFIDE_LINKAGE, FhirObject.toStringArray(disulfideLinkage));
             return this;
         }
 
         public Builder subunit(final java.util.List<SubstanceProteinSubunit> subunit) {
-            b.add(PROPERTY_SUBUNIT, FhirObject.toArray(subunit));
+            b.add(FhirPropertyNames.PROPERTY_SUBUNIT, FhirObject.toArray(subunit));
             return this;
         }
 
@@ -256,17 +245,6 @@ public class SubstanceProtein extends FhirResource {
      */
     public static class SubstanceProteinSubunit extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceProteinSubunit";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_SUBUNIT = "subunit";
-        public static final String PROPERTY_SEQUENCE = "sequence";
-        public static final String PROPERTY_LENGTH = "length";
-        public static final String PROPERTY_SEQUENCE_ATTACHMENT = "sequenceAttachment";
-        public static final String PROPERTY_N_TERMINAL_MODIFICATION_ID = "nTerminalModificationId";
-        public static final String PROPERTY_N_TERMINAL_MODIFICATION = "nTerminalModification";
-        public static final String PROPERTY_C_TERMINAL_MODIFICATION_ID = "cTerminalModificationId";
-        public static final String PROPERTY_C_TERMINAL_MODIFICATION = "cTerminalModification";
 
         public static Builder create() {
             return new Builder();
@@ -285,7 +263,7 @@ public class SubstanceProtein extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -297,7 +275,7 @@ public class SubstanceProtein extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -318,7 +296,7 @@ public class SubstanceProtein extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -328,7 +306,7 @@ public class SubstanceProtein extends FhirResource {
          * will be repeated and have sequential subscripts.
          */
         public Integer subunit() {
-            return data.getInt(PROPERTY_SUBUNIT);
+            return data.getInt(FhirPropertyNames.PROPERTY_SUBUNIT);
         }
 
         /**
@@ -342,14 +320,14 @@ public class SubstanceProtein extends FhirResource {
          * distinguished by their position in the sequence.
          */
         public String sequence() {
-            return getString(PROPERTY_SEQUENCE);
+            return getString(FhirPropertyNames.PROPERTY_SEQUENCE);
         }
 
         /**
          * Length of linear sequences of amino acids contained in the subunit.
          */
         public Integer length() {
-            return data.getInt(PROPERTY_LENGTH);
+            return data.getInt(FhirPropertyNames.PROPERTY_LENGTH);
         }
 
         /**
@@ -363,7 +341,7 @@ public class SubstanceProtein extends FhirResource {
          * distinguished by their position in the sequence.
          */
         public Attachment sequenceAttachment() {
-            return getObject(Attachment.class, PROPERTY_SEQUENCE_ATTACHMENT);
+            return getObject(Attachment.class, FhirPropertyNames.PROPERTY_SEQUENCE_ATTACHMENT);
         }
 
         /**
@@ -371,7 +349,7 @@ public class SubstanceProtein extends FhirResource {
          * 11238 Substance ID.
          */
         public Identifier nTerminalModificationId() {
-            return getObject(Identifier.class, PROPERTY_N_TERMINAL_MODIFICATION_ID);
+            return getObject(Identifier.class, FhirPropertyNames.PROPERTY_N_TERMINAL_MODIFICATION_ID);
         }
 
         /**
@@ -379,7 +357,7 @@ public class SubstanceProtein extends FhirResource {
          * SubstanceProtein shall be specified.
          */
         public String nTerminalModification() {
-            return getString(PROPERTY_N_TERMINAL_MODIFICATION);
+            return getString(FhirPropertyNames.PROPERTY_N_TERMINAL_MODIFICATION);
         }
 
         /**
@@ -387,14 +365,14 @@ public class SubstanceProtein extends FhirResource {
          * 11238 Substance ID.
          */
         public Identifier cTerminalModificationId() {
-            return getObject(Identifier.class, PROPERTY_C_TERMINAL_MODIFICATION_ID);
+            return getObject(Identifier.class, FhirPropertyNames.PROPERTY_C_TERMINAL_MODIFICATION_ID);
         }
 
         /**
          * The modification at the C-terminal shall be specified.
          */
         public String cTerminalModification() {
-            return getString(PROPERTY_C_TERMINAL_MODIFICATION);
+            return getString(FhirPropertyNames.PROPERTY_C_TERMINAL_MODIFICATION);
         }
 
         public static class Builder {
@@ -409,57 +387,57 @@ public class SubstanceProtein extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder subunit(final Integer subunit) {
-                b.add(PROPERTY_SUBUNIT, subunit);
+                b.add(FhirPropertyNames.PROPERTY_SUBUNIT, subunit);
                 return this;
             }
 
             public Builder sequence(final String sequence) {
-                b.add(PROPERTY_SEQUENCE, sequence);
+                b.add(FhirPropertyNames.PROPERTY_SEQUENCE, sequence);
                 return this;
             }
 
             public Builder length(final Integer length) {
-                b.add(PROPERTY_LENGTH, length);
+                b.add(FhirPropertyNames.PROPERTY_LENGTH, length);
                 return this;
             }
 
             public Builder sequenceAttachment(final Attachment sequenceAttachment) {
-                b.add(PROPERTY_SEQUENCE_ATTACHMENT, sequenceAttachment);
+                b.add(FhirPropertyNames.PROPERTY_SEQUENCE_ATTACHMENT, sequenceAttachment);
                 return this;
             }
 
             public Builder nTerminalModificationId(final Identifier nTerminalModificationId) {
-                b.add(PROPERTY_N_TERMINAL_MODIFICATION_ID, nTerminalModificationId);
+                b.add(FhirPropertyNames.PROPERTY_N_TERMINAL_MODIFICATION_ID, nTerminalModificationId);
                 return this;
             }
 
             public Builder nTerminalModification(final String nTerminalModification) {
-                b.add(PROPERTY_N_TERMINAL_MODIFICATION, nTerminalModification);
+                b.add(FhirPropertyNames.PROPERTY_N_TERMINAL_MODIFICATION, nTerminalModification);
                 return this;
             }
 
             public Builder cTerminalModificationId(final Identifier cTerminalModificationId) {
-                b.add(PROPERTY_C_TERMINAL_MODIFICATION_ID, cTerminalModificationId);
+                b.add(FhirPropertyNames.PROPERTY_C_TERMINAL_MODIFICATION_ID, cTerminalModificationId);
                 return this;
             }
 
             public Builder cTerminalModification(final String cTerminalModification) {
-                b.add(PROPERTY_C_TERMINAL_MODIFICATION, cTerminalModification);
+                b.add(FhirPropertyNames.PROPERTY_C_TERMINAL_MODIFICATION, cTerminalModification);
                 return this;
             }
 

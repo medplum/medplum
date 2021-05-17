@@ -9,33 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A summary of information based on the results of executing a
  * TestScript.
  */
 public class TestReport extends FhirResource {
     public static final String RESOURCE_TYPE = "TestReport";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_TEST_SCRIPT = "testScript";
-    public static final String PROPERTY_RESULT = "result";
-    public static final String PROPERTY_SCORE = "score";
-    public static final String PROPERTY_TESTER = "tester";
-    public static final String PROPERTY_ISSUED = "issued";
-    public static final String PROPERTY_PARTICIPANT = "participant";
-    public static final String PROPERTY_SETUP = "setup";
-    public static final String PROPERTY_TEST = "test";
-    public static final String PROPERTY_TEARDOWN = "teardown";
 
     public static Builder create() {
         return new Builder();
@@ -56,14 +37,14 @@ public class TestReport extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -75,7 +56,7 @@ public class TestReport extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -84,7 +65,7 @@ public class TestReport extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -96,7 +77,7 @@ public class TestReport extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -116,7 +97,7 @@ public class TestReport extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -124,21 +105,21 @@ public class TestReport extends FhirResource {
      * the context of FHIR.
      */
     public Identifier identifier() {
-        return getObject(Identifier.class, PROPERTY_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * A free text natural language name identifying the executed TestScript.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
      * The current state of this test report.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -147,14 +128,14 @@ public class TestReport extends FhirResource {
      * `TestScript.url`.
      */
     public Reference testScript() {
-        return getObject(Reference.class, PROPERTY_TEST_SCRIPT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_TEST_SCRIPT);
     }
 
     /**
      * The overall result from the execution of the TestScript.
      */
     public String result() {
-        return getString(PROPERTY_RESULT);
+        return getString(FhirPropertyNames.PROPERTY_RESULT);
     }
 
     /**
@@ -162,21 +143,21 @@ public class TestReport extends FhirResource {
      * execution of the TestScript.
      */
     public Double score() {
-        return data.getJsonNumber(PROPERTY_SCORE).doubleValue();
+        return data.getJsonNumber(FhirPropertyNames.PROPERTY_SCORE).doubleValue();
     }
 
     /**
      * Name of the tester producing this report (Organization or individual).
      */
     public String tester() {
-        return getString(PROPERTY_TESTER);
+        return getString(FhirPropertyNames.PROPERTY_TESTER);
     }
 
     /**
      * When the TestScript was executed and this TestReport was generated.
      */
     public java.time.Instant issued() {
-        return getInstant(PROPERTY_ISSUED);
+        return getInstant(FhirPropertyNames.PROPERTY_ISSUED);
     }
 
     /**
@@ -184,7 +165,7 @@ public class TestReport extends FhirResource {
      * client, or a server.
      */
     public java.util.List<TestReportParticipant> participant() {
-        return getList(TestReportParticipant.class, PROPERTY_PARTICIPANT);
+        return getList(TestReportParticipant.class, FhirPropertyNames.PROPERTY_PARTICIPANT);
     }
 
     /**
@@ -192,14 +173,14 @@ public class TestReport extends FhirResource {
      * tests were executed.
      */
     public TestReportSetup setup() {
-        return getObject(TestReportSetup.class, PROPERTY_SETUP);
+        return getObject(TestReportSetup.class, FhirPropertyNames.PROPERTY_SETUP);
     }
 
     /**
      * A test executed from the test script.
      */
     public java.util.List<TestReportTest> test() {
-        return getList(TestReportTest.class, PROPERTY_TEST);
+        return getList(TestReportTest.class, FhirPropertyNames.PROPERTY_TEST);
     }
 
     /**
@@ -207,7 +188,7 @@ public class TestReport extends FhirResource {
      * the tests were executed (successfully or otherwise).
      */
     public TestReportTeardown teardown() {
-        return getObject(TestReportTeardown.class, PROPERTY_TEARDOWN);
+        return getObject(TestReportTeardown.class, FhirPropertyNames.PROPERTY_TEARDOWN);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -221,107 +202,107 @@ public class TestReport extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final Identifier identifier) {
-            b.add(PROPERTY_IDENTIFIER, identifier);
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, identifier);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder testScript(final Reference testScript) {
-            b.add(PROPERTY_TEST_SCRIPT, testScript);
+            b.add(FhirPropertyNames.PROPERTY_TEST_SCRIPT, testScript);
             return this;
         }
 
         public Builder result(final String result) {
-            b.add(PROPERTY_RESULT, result);
+            b.add(FhirPropertyNames.PROPERTY_RESULT, result);
             return this;
         }
 
         public Builder score(final Double score) {
-            b.add(PROPERTY_SCORE, score);
+            b.add(FhirPropertyNames.PROPERTY_SCORE, score);
             return this;
         }
 
         public Builder tester(final String tester) {
-            b.add(PROPERTY_TESTER, tester);
+            b.add(FhirPropertyNames.PROPERTY_TESTER, tester);
             return this;
         }
 
         public Builder issued(final java.time.Instant issued) {
-            b.add(PROPERTY_ISSUED, issued.toString());
+            b.add(FhirPropertyNames.PROPERTY_ISSUED, issued.toString());
             return this;
         }
 
         public Builder participant(final java.util.List<TestReportParticipant> participant) {
-            b.add(PROPERTY_PARTICIPANT, FhirObject.toArray(participant));
+            b.add(FhirPropertyNames.PROPERTY_PARTICIPANT, FhirObject.toArray(participant));
             return this;
         }
 
         public Builder setup(final TestReportSetup setup) {
-            b.add(PROPERTY_SETUP, setup);
+            b.add(FhirPropertyNames.PROPERTY_SETUP, setup);
             return this;
         }
 
         public Builder test(final java.util.List<TestReportTest> test) {
-            b.add(PROPERTY_TEST, FhirObject.toArray(test));
+            b.add(FhirPropertyNames.PROPERTY_TEST, FhirObject.toArray(test));
             return this;
         }
 
         public Builder teardown(final TestReportTeardown teardown) {
-            b.add(PROPERTY_TEARDOWN, teardown);
+            b.add(FhirPropertyNames.PROPERTY_TEARDOWN, teardown);
             return this;
         }
 
@@ -336,11 +317,6 @@ public class TestReport extends FhirResource {
      */
     public static class TestReportAction extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportAction";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_OPERATION = "operation";
-        public static final String PROPERTY_ASSERT = "assert";
 
         public static Builder create() {
             return new Builder();
@@ -359,7 +335,7 @@ public class TestReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -371,7 +347,7 @@ public class TestReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -392,21 +368,21 @@ public class TestReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The operation performed.
          */
         public TestReportOperation operation() {
-            return getObject(TestReportOperation.class, PROPERTY_OPERATION);
+            return getObject(TestReportOperation.class, FhirPropertyNames.PROPERTY_OPERATION);
         }
 
         /**
          * The results of the assertion performed on the previous operations.
          */
         public TestReportAssert assertValue() {
-            return getObject(TestReportAssert.class, PROPERTY_ASSERT);
+            return getObject(TestReportAssert.class, FhirPropertyNames.PROPERTY_ASSERT);
         }
 
         public static class Builder {
@@ -421,27 +397,27 @@ public class TestReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder operation(final TestReportOperation operation) {
-                b.add(PROPERTY_OPERATION, operation);
+                b.add(FhirPropertyNames.PROPERTY_OPERATION, operation);
                 return this;
             }
 
             public Builder assertValue(final TestReportAssert assertValue) {
-                b.add(PROPERTY_ASSERT, assertValue);
+                b.add(FhirPropertyNames.PROPERTY_ASSERT, assertValue);
                 return this;
             }
 
@@ -457,11 +433,6 @@ public class TestReport extends FhirResource {
      */
     public static class TestReportAction1 extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportAction1";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_OPERATION = "operation";
-        public static final String PROPERTY_ASSERT = "assert";
 
         public static Builder create() {
             return new Builder();
@@ -480,7 +451,7 @@ public class TestReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -492,7 +463,7 @@ public class TestReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -513,21 +484,21 @@ public class TestReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * An operation would involve a REST request to a server.
          */
         public TestReportOperation operation() {
-            return getObject(TestReportOperation.class, PROPERTY_OPERATION);
+            return getObject(TestReportOperation.class, FhirPropertyNames.PROPERTY_OPERATION);
         }
 
         /**
          * The results of the assertion performed on the previous operations.
          */
         public TestReportAssert assertValue() {
-            return getObject(TestReportAssert.class, PROPERTY_ASSERT);
+            return getObject(TestReportAssert.class, FhirPropertyNames.PROPERTY_ASSERT);
         }
 
         public static class Builder {
@@ -542,27 +513,27 @@ public class TestReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder operation(final TestReportOperation operation) {
-                b.add(PROPERTY_OPERATION, operation);
+                b.add(FhirPropertyNames.PROPERTY_OPERATION, operation);
                 return this;
             }
 
             public Builder assertValue(final TestReportAssert assertValue) {
-                b.add(PROPERTY_ASSERT, assertValue);
+                b.add(FhirPropertyNames.PROPERTY_ASSERT, assertValue);
                 return this;
             }
 
@@ -578,10 +549,6 @@ public class TestReport extends FhirResource {
      */
     public static class TestReportAction2 extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportAction2";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_OPERATION = "operation";
 
         public static Builder create() {
             return new Builder();
@@ -600,7 +567,7 @@ public class TestReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -612,7 +579,7 @@ public class TestReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -633,14 +600,14 @@ public class TestReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * An operation would involve a REST request to a server.
          */
         public TestReportOperation operation() {
-            return getObject(TestReportOperation.class, PROPERTY_OPERATION);
+            return getObject(TestReportOperation.class, FhirPropertyNames.PROPERTY_OPERATION);
         }
 
         public static class Builder {
@@ -655,22 +622,22 @@ public class TestReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder operation(final TestReportOperation operation) {
-                b.add(PROPERTY_OPERATION, operation);
+                b.add(FhirPropertyNames.PROPERTY_OPERATION, operation);
                 return this;
             }
 
@@ -686,12 +653,6 @@ public class TestReport extends FhirResource {
      */
     public static class TestReportAssert extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportAssert";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_RESULT = "result";
-        public static final String PROPERTY_MESSAGE = "message";
-        public static final String PROPERTY_DETAIL = "detail";
 
         public static Builder create() {
             return new Builder();
@@ -710,7 +671,7 @@ public class TestReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -722,7 +683,7 @@ public class TestReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -743,28 +704,28 @@ public class TestReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The result of this assertion.
          */
         public String result() {
-            return getString(PROPERTY_RESULT);
+            return getString(FhirPropertyNames.PROPERTY_RESULT);
         }
 
         /**
          * An explanatory message associated with the result.
          */
         public String message() {
-            return getString(PROPERTY_MESSAGE);
+            return getString(FhirPropertyNames.PROPERTY_MESSAGE);
         }
 
         /**
          * A link to further details on the result.
          */
         public String detail() {
-            return getString(PROPERTY_DETAIL);
+            return getString(FhirPropertyNames.PROPERTY_DETAIL);
         }
 
         public static class Builder {
@@ -779,32 +740,32 @@ public class TestReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder result(final String result) {
-                b.add(PROPERTY_RESULT, result);
+                b.add(FhirPropertyNames.PROPERTY_RESULT, result);
                 return this;
             }
 
             public Builder message(final String message) {
-                b.add(PROPERTY_MESSAGE, message);
+                b.add(FhirPropertyNames.PROPERTY_MESSAGE, message);
                 return this;
             }
 
             public Builder detail(final String detail) {
-                b.add(PROPERTY_DETAIL, detail);
+                b.add(FhirPropertyNames.PROPERTY_DETAIL, detail);
                 return this;
             }
 
@@ -820,12 +781,6 @@ public class TestReport extends FhirResource {
      */
     public static class TestReportOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportOperation";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_RESULT = "result";
-        public static final String PROPERTY_MESSAGE = "message";
-        public static final String PROPERTY_DETAIL = "detail";
 
         public static Builder create() {
             return new Builder();
@@ -844,7 +799,7 @@ public class TestReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -856,7 +811,7 @@ public class TestReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -877,28 +832,28 @@ public class TestReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The result of this operation.
          */
         public String result() {
-            return getString(PROPERTY_RESULT);
+            return getString(FhirPropertyNames.PROPERTY_RESULT);
         }
 
         /**
          * An explanatory message associated with the result.
          */
         public String message() {
-            return getString(PROPERTY_MESSAGE);
+            return getString(FhirPropertyNames.PROPERTY_MESSAGE);
         }
 
         /**
          * A link to further details on the result.
          */
         public java.net.URI detail() {
-            return getUri(PROPERTY_DETAIL);
+            return getUri(FhirPropertyNames.PROPERTY_DETAIL);
         }
 
         public static class Builder {
@@ -913,32 +868,32 @@ public class TestReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder result(final String result) {
-                b.add(PROPERTY_RESULT, result);
+                b.add(FhirPropertyNames.PROPERTY_RESULT, result);
                 return this;
             }
 
             public Builder message(final String message) {
-                b.add(PROPERTY_MESSAGE, message);
+                b.add(FhirPropertyNames.PROPERTY_MESSAGE, message);
                 return this;
             }
 
             public Builder detail(final java.net.URI detail) {
-                b.add(PROPERTY_DETAIL, detail.toString());
+                b.add(FhirPropertyNames.PROPERTY_DETAIL, detail.toString());
                 return this;
             }
 
@@ -954,12 +909,6 @@ public class TestReport extends FhirResource {
      */
     public static class TestReportParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportParticipant";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_URI = "uri";
-        public static final String PROPERTY_DISPLAY = "display";
 
         public static Builder create() {
             return new Builder();
@@ -978,7 +927,7 @@ public class TestReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -990,7 +939,7 @@ public class TestReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1011,28 +960,28 @@ public class TestReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The type of participant.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The uri of the participant. An absolute URL is preferred.
          */
         public java.net.URI uri() {
-            return getUri(PROPERTY_URI);
+            return getUri(FhirPropertyNames.PROPERTY_URI);
         }
 
         /**
          * The display name of the participant.
          */
         public String display() {
-            return getString(PROPERTY_DISPLAY);
+            return getString(FhirPropertyNames.PROPERTY_DISPLAY);
         }
 
         public static class Builder {
@@ -1047,32 +996,32 @@ public class TestReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder uri(final java.net.URI uri) {
-                b.add(PROPERTY_URI, uri.toString());
+                b.add(FhirPropertyNames.PROPERTY_URI, uri.toString());
                 return this;
             }
 
             public Builder display(final String display) {
-                b.add(PROPERTY_DISPLAY, display);
+                b.add(FhirPropertyNames.PROPERTY_DISPLAY, display);
                 return this;
             }
 
@@ -1088,10 +1037,6 @@ public class TestReport extends FhirResource {
      */
     public static class TestReportSetup extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportSetup";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ACTION = "action";
 
         public static Builder create() {
             return new Builder();
@@ -1110,7 +1055,7 @@ public class TestReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1122,7 +1067,7 @@ public class TestReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1143,14 +1088,14 @@ public class TestReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Action would contain either an operation or an assertion.
          */
         public java.util.List<TestReportAction> action() {
-            return getList(TestReportAction.class, PROPERTY_ACTION);
+            return getList(TestReportAction.class, FhirPropertyNames.PROPERTY_ACTION);
         }
 
         public static class Builder {
@@ -1165,22 +1110,22 @@ public class TestReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder action(final java.util.List<TestReportAction> action) {
-                b.add(PROPERTY_ACTION, FhirObject.toArray(action));
+                b.add(FhirPropertyNames.PROPERTY_ACTION, FhirObject.toArray(action));
                 return this;
             }
 
@@ -1196,10 +1141,6 @@ public class TestReport extends FhirResource {
      */
     public static class TestReportTeardown extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportTeardown";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ACTION = "action";
 
         public static Builder create() {
             return new Builder();
@@ -1218,7 +1159,7 @@ public class TestReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1230,7 +1171,7 @@ public class TestReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1251,14 +1192,14 @@ public class TestReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The teardown action will only contain an operation.
          */
         public java.util.List<TestReportAction2> action() {
-            return getList(TestReportAction2.class, PROPERTY_ACTION);
+            return getList(TestReportAction2.class, FhirPropertyNames.PROPERTY_ACTION);
         }
 
         public static class Builder {
@@ -1273,22 +1214,22 @@ public class TestReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder action(final java.util.List<TestReportAction2> action) {
-                b.add(PROPERTY_ACTION, FhirObject.toArray(action));
+                b.add(FhirPropertyNames.PROPERTY_ACTION, FhirObject.toArray(action));
                 return this;
             }
 
@@ -1304,12 +1245,6 @@ public class TestReport extends FhirResource {
      */
     public static class TestReportTest extends FhirObject {
         public static final String RESOURCE_TYPE = "TestReportTest";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_ACTION = "action";
 
         public static Builder create() {
             return new Builder();
@@ -1328,7 +1263,7 @@ public class TestReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1340,7 +1275,7 @@ public class TestReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1361,7 +1296,7 @@ public class TestReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1369,7 +1304,7 @@ public class TestReport extends FhirResource {
          * engines.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
@@ -1377,14 +1312,14 @@ public class TestReport extends FhirResource {
          * reporting purposes.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * Action would contain either an operation or an assertion.
          */
         public java.util.List<TestReportAction1> action() {
-            return getList(TestReportAction1.class, PROPERTY_ACTION);
+            return getList(TestReportAction1.class, FhirPropertyNames.PROPERTY_ACTION);
         }
 
         public static class Builder {
@@ -1399,32 +1334,32 @@ public class TestReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder action(final java.util.List<TestReportAction1> action) {
-                b.add(PROPERTY_ACTION, FhirObject.toArray(action));
+                b.add(FhirPropertyNames.PROPERTY_ACTION, FhirObject.toArray(action));
                 return this;
             }
 

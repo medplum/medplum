@@ -9,39 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A Map of relationships between 2 structures that can be used to
  * transform data.
  */
 public class StructureMap extends FhirResource {
     public static final String RESOURCE_TYPE = "StructureMap";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_PUBLISHER = "publisher";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USE_CONTEXT = "useContext";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_PURPOSE = "purpose";
-    public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_STRUCTURE = "structure";
-    public static final String PROPERTY_IMPORT = "import";
-    public static final String PROPERTY_GROUP = "group";
 
     public static Builder create() {
         return new Builder();
@@ -62,14 +37,14 @@ public class StructureMap extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -81,7 +56,7 @@ public class StructureMap extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -90,7 +65,7 @@ public class StructureMap extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -102,7 +77,7 @@ public class StructureMap extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -122,7 +97,7 @@ public class StructureMap extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -135,7 +110,7 @@ public class StructureMap extends FhirResource {
      * the structure map is stored on different servers.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -144,7 +119,7 @@ public class StructureMap extends FhirResource {
      * model, design or an instance.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -157,7 +132,7 @@ public class StructureMap extends FhirResource {
      * a lexicographical sequence.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -166,14 +141,14 @@ public class StructureMap extends FhirResource {
      * applications such as code generation.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
      * A short, descriptive, user-friendly title for the structure map.
      */
     public String title() {
-        return getString(PROPERTY_TITLE);
+        return getString(FhirPropertyNames.PROPERTY_TITLE);
     }
 
     /**
@@ -181,7 +156,7 @@ public class StructureMap extends FhirResource {
      * the content.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -190,7 +165,7 @@ public class StructureMap extends FhirResource {
      * intended to be used for genuine usage.
      */
     public Boolean experimental() {
-        return data.getBoolean(PROPERTY_EXPERIMENTAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_EXPERIMENTAL);
     }
 
     /**
@@ -200,7 +175,7 @@ public class StructureMap extends FhirResource {
      * the substantive content of the structure map changes.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -208,7 +183,7 @@ public class StructureMap extends FhirResource {
      * structure map.
      */
     public String publisher() {
-        return getString(PROPERTY_PUBLISHER);
+        return getString(FhirPropertyNames.PROPERTY_PUBLISHER);
     }
 
     /**
@@ -216,7 +191,7 @@ public class StructureMap extends FhirResource {
      * publisher.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
@@ -224,7 +199,7 @@ public class StructureMap extends FhirResource {
      * consumer's perspective.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -235,7 +210,7 @@ public class StructureMap extends FhirResource {
      * indexing and searching for appropriate structure map instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
+        return getList(UsageContext.class, FhirPropertyNames.PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -243,7 +218,7 @@ public class StructureMap extends FhirResource {
      * be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
-        return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -251,7 +226,7 @@ public class StructureMap extends FhirResource {
      * designed as it has.
      */
     public String purpose() {
-        return getString(PROPERTY_PURPOSE);
+        return getString(FhirPropertyNames.PROPERTY_PURPOSE);
     }
 
     /**
@@ -260,7 +235,7 @@ public class StructureMap extends FhirResource {
      * use and publishing of the structure map.
      */
     public String copyright() {
-        return getString(PROPERTY_COPYRIGHT);
+        return getString(FhirPropertyNames.PROPERTY_COPYRIGHT);
     }
 
     /**
@@ -269,14 +244,14 @@ public class StructureMap extends FhirResource {
      * produced.
      */
     public java.util.List<StructureMapStructure> structure() {
-        return getList(StructureMapStructure.class, PROPERTY_STRUCTURE);
+        return getList(StructureMapStructure.class, FhirPropertyNames.PROPERTY_STRUCTURE);
     }
 
     /**
      * Other maps used by this map (canonical URLs).
      */
     public java.util.List<String> importValue() {
-        return getList(String.class, PROPERTY_IMPORT);
+        return getList(String.class, FhirPropertyNames.PROPERTY_IMPORT);
     }
 
     /**
@@ -284,7 +259,7 @@ public class StructureMap extends FhirResource {
      * maintenance.
      */
     public java.util.List<StructureMapGroup> group() {
-        return getList(StructureMapGroup.class, PROPERTY_GROUP);
+        return getList(StructureMapGroup.class, FhirPropertyNames.PROPERTY_GROUP);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -298,137 +273,137 @@ public class StructureMap extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder title(final String title) {
-            b.add(PROPERTY_TITLE, title);
+            b.add(FhirPropertyNames.PROPERTY_TITLE, title);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder experimental(final Boolean experimental) {
-            b.add(PROPERTY_EXPERIMENTAL, experimental);
+            b.add(FhirPropertyNames.PROPERTY_EXPERIMENTAL, experimental);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder publisher(final String publisher) {
-            b.add(PROPERTY_PUBLISHER, publisher);
+            b.add(FhirPropertyNames.PROPERTY_PUBLISHER, publisher);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
+            b.add(FhirPropertyNames.PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
         public Builder jurisdiction(final java.util.List<CodeableConcept> jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
             return this;
         }
 
         public Builder purpose(final String purpose) {
-            b.add(PROPERTY_PURPOSE, purpose);
+            b.add(FhirPropertyNames.PROPERTY_PURPOSE, purpose);
             return this;
         }
 
         public Builder copyright(final String copyright) {
-            b.add(PROPERTY_COPYRIGHT, copyright);
+            b.add(FhirPropertyNames.PROPERTY_COPYRIGHT, copyright);
             return this;
         }
 
         public Builder structure(final java.util.List<StructureMapStructure> structure) {
-            b.add(PROPERTY_STRUCTURE, FhirObject.toArray(structure));
+            b.add(FhirPropertyNames.PROPERTY_STRUCTURE, FhirObject.toArray(structure));
             return this;
         }
 
         public Builder importValue(final java.util.List<String> importValue) {
-            b.add(PROPERTY_IMPORT, FhirObject.toStringArray(importValue));
+            b.add(FhirPropertyNames.PROPERTY_IMPORT, FhirObject.toStringArray(importValue));
             return this;
         }
 
         public Builder group(final java.util.List<StructureMapGroup> group) {
-            b.add(PROPERTY_GROUP, FhirObject.toArray(group));
+            b.add(FhirPropertyNames.PROPERTY_GROUP, FhirObject.toArray(group));
             return this;
         }
 
@@ -443,11 +418,6 @@ public class StructureMap extends FhirResource {
      */
     public static class StructureMapDependent extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapDependent";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_VARIABLE = "variable";
 
         public static Builder create() {
             return new Builder();
@@ -466,7 +436,7 @@ public class StructureMap extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -478,7 +448,7 @@ public class StructureMap extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -499,21 +469,21 @@ public class StructureMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Name of a rule or group to apply.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * Variable to pass to the rule or group.
          */
         public java.util.List<String> variable() {
-            return getList(String.class, PROPERTY_VARIABLE);
+            return getList(String.class, FhirPropertyNames.PROPERTY_VARIABLE);
         }
 
         public static class Builder {
@@ -528,27 +498,27 @@ public class StructureMap extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder variable(final java.util.List<String> variable) {
-                b.add(PROPERTY_VARIABLE, FhirObject.toStringArray(variable));
+                b.add(FhirPropertyNames.PROPERTY_VARIABLE, FhirObject.toStringArray(variable));
                 return this;
             }
 
@@ -564,15 +534,6 @@ public class StructureMap extends FhirResource {
      */
     public static class StructureMapGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapGroup";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_EXTENDS = "extends";
-        public static final String PROPERTY_TYPE_MODE = "typeMode";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
-        public static final String PROPERTY_INPUT = "input";
-        public static final String PROPERTY_RULE = "rule";
 
         public static Builder create() {
             return new Builder();
@@ -591,7 +552,7 @@ public class StructureMap extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -603,7 +564,7 @@ public class StructureMap extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -624,21 +585,21 @@ public class StructureMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * A unique name for the group for the convenience of human readers.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * Another group that this group adds rules to.
          */
         public String extendsValue() {
-            return getString(PROPERTY_EXTENDS);
+            return getString(FhirPropertyNames.PROPERTY_EXTENDS);
         }
 
         /**
@@ -646,7 +607,7 @@ public class StructureMap extends FhirResource {
          * combination of types.
          */
         public String typeMode() {
-            return getString(PROPERTY_TYPE_MODE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE_MODE);
         }
 
         /**
@@ -654,7 +615,7 @@ public class StructureMap extends FhirResource {
          * group and the types of mappings within it.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         /**
@@ -662,14 +623,14 @@ public class StructureMap extends FhirResource {
          * when the mapping is invoked.
          */
         public java.util.List<StructureMapInput> input() {
-            return getList(StructureMapInput.class, PROPERTY_INPUT);
+            return getList(StructureMapInput.class, FhirPropertyNames.PROPERTY_INPUT);
         }
 
         /**
          * Transform Rule from source to target.
          */
         public java.util.List<StructureMapRule> rule() {
-            return getList(StructureMapRule.class, PROPERTY_RULE);
+            return getList(StructureMapRule.class, FhirPropertyNames.PROPERTY_RULE);
         }
 
         public static class Builder {
@@ -684,47 +645,47 @@ public class StructureMap extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder extendsValue(final String extendsValue) {
-                b.add(PROPERTY_EXTENDS, extendsValue);
+                b.add(FhirPropertyNames.PROPERTY_EXTENDS, extendsValue);
                 return this;
             }
 
             public Builder typeMode(final String typeMode) {
-                b.add(PROPERTY_TYPE_MODE, typeMode);
+                b.add(FhirPropertyNames.PROPERTY_TYPE_MODE, typeMode);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
             public Builder input(final java.util.List<StructureMapInput> input) {
-                b.add(PROPERTY_INPUT, FhirObject.toArray(input));
+                b.add(FhirPropertyNames.PROPERTY_INPUT, FhirObject.toArray(input));
                 return this;
             }
 
             public Builder rule(final java.util.List<StructureMapRule> rule) {
-                b.add(PROPERTY_RULE, FhirObject.toArray(rule));
+                b.add(FhirPropertyNames.PROPERTY_RULE, FhirObject.toArray(rule));
                 return this;
             }
 
@@ -740,13 +701,6 @@ public class StructureMap extends FhirResource {
      */
     public static class StructureMapInput extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapInput";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_MODE = "mode";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
 
         public static Builder create() {
             return new Builder();
@@ -765,7 +719,7 @@ public class StructureMap extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -777,7 +731,7 @@ public class StructureMap extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -798,35 +752,35 @@ public class StructureMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Name for this instance of data.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * Type for this instance of data.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * Mode for this instance of data.
          */
         public String mode() {
-            return getString(PROPERTY_MODE);
+            return getString(FhirPropertyNames.PROPERTY_MODE);
         }
 
         /**
          * Documentation for this instance of data.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         public static class Builder {
@@ -841,37 +795,37 @@ public class StructureMap extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder mode(final String mode) {
-                b.add(PROPERTY_MODE, mode);
+                b.add(FhirPropertyNames.PROPERTY_MODE, mode);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
@@ -887,14 +841,6 @@ public class StructureMap extends FhirResource {
      */
     public static class StructureMapParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapParameter";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_VALUE_ID = "valueId";
-        public static final String PROPERTY_VALUE_STRING = "valueString";
-        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
-        public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
 
         public static Builder create() {
             return new Builder();
@@ -913,7 +859,7 @@ public class StructureMap extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -925,7 +871,7 @@ public class StructureMap extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -946,42 +892,42 @@ public class StructureMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Parameter value - variable or literal.
          */
         public String valueId() {
-            return getString(PROPERTY_VALUE_ID);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_ID);
         }
 
         /**
          * Parameter value - variable or literal.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUE_STRING);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_STRING);
         }
 
         /**
          * Parameter value - variable or literal.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
          * Parameter value - variable or literal.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUE_INTEGER);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_INTEGER);
         }
 
         /**
          * Parameter value - variable or literal.
          */
         public Integer valueDecimal() {
-            return data.getInt(PROPERTY_VALUE_DECIMAL);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_DECIMAL);
         }
 
         public static class Builder {
@@ -996,42 +942,42 @@ public class StructureMap extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder valueId(final String valueId) {
-                b.add(PROPERTY_VALUE_ID, valueId);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_ID, valueId);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUE_STRING, valueString);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueDecimal(final Integer valueDecimal) {
-                b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DECIMAL, valueDecimal);
                 return this;
             }
 
@@ -1047,15 +993,6 @@ public class StructureMap extends FhirResource {
      */
     public static class StructureMapRule extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapRule";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_SOURCE = "source";
-        public static final String PROPERTY_TARGET = "target";
-        public static final String PROPERTY_RULE = "rule";
-        public static final String PROPERTY_DEPENDENT = "dependent";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
 
         public static Builder create() {
             return new Builder();
@@ -1074,7 +1011,7 @@ public class StructureMap extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1086,7 +1023,7 @@ public class StructureMap extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1107,49 +1044,49 @@ public class StructureMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Name of the rule for internal references.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * Source inputs to the mapping.
          */
         public java.util.List<StructureMapSource> source() {
-            return getList(StructureMapSource.class, PROPERTY_SOURCE);
+            return getList(StructureMapSource.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
         /**
          * Content to create because of this mapping rule.
          */
         public java.util.List<StructureMapTarget> target() {
-            return getList(StructureMapTarget.class, PROPERTY_TARGET);
+            return getList(StructureMapTarget.class, FhirPropertyNames.PROPERTY_TARGET);
         }
 
         /**
          * Rules contained in this rule.
          */
         public java.util.List<StructureMapRule> rule() {
-            return getList(StructureMapRule.class, PROPERTY_RULE);
+            return getList(StructureMapRule.class, FhirPropertyNames.PROPERTY_RULE);
         }
 
         /**
          * Which other rules to apply in the context of this rule.
          */
         public java.util.List<StructureMapDependent> dependent() {
-            return getList(StructureMapDependent.class, PROPERTY_DEPENDENT);
+            return getList(StructureMapDependent.class, FhirPropertyNames.PROPERTY_DEPENDENT);
         }
 
         /**
          * Documentation for this instance of data.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         public static class Builder {
@@ -1164,47 +1101,47 @@ public class StructureMap extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder source(final java.util.List<StructureMapSource> source) {
-                b.add(PROPERTY_SOURCE, FhirObject.toArray(source));
+                b.add(FhirPropertyNames.PROPERTY_SOURCE, FhirObject.toArray(source));
                 return this;
             }
 
             public Builder target(final java.util.List<StructureMapTarget> target) {
-                b.add(PROPERTY_TARGET, FhirObject.toArray(target));
+                b.add(FhirPropertyNames.PROPERTY_TARGET, FhirObject.toArray(target));
                 return this;
             }
 
             public Builder rule(final java.util.List<StructureMapRule> rule) {
-                b.add(PROPERTY_RULE, FhirObject.toArray(rule));
+                b.add(FhirPropertyNames.PROPERTY_RULE, FhirObject.toArray(rule));
                 return this;
             }
 
             public Builder dependent(final java.util.List<StructureMapDependent> dependent) {
-                b.add(PROPERTY_DEPENDENT, FhirObject.toArray(dependent));
+                b.add(FhirPropertyNames.PROPERTY_DEPENDENT, FhirObject.toArray(dependent));
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
@@ -1220,69 +1157,6 @@ public class StructureMap extends FhirResource {
      */
     public static class StructureMapSource extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapSource";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CONTEXT = "context";
-        public static final String PROPERTY_MIN = "min";
-        public static final String PROPERTY_MAX = "max";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_DEFAULT_VALUE_BASE64_BINARY = "defaultValueBase64Binary";
-        public static final String PROPERTY_DEFAULT_VALUE_BOOLEAN = "defaultValueBoolean";
-        public static final String PROPERTY_DEFAULT_VALUE_CANONICAL = "defaultValueCanonical";
-        public static final String PROPERTY_DEFAULT_VALUE_CODE = "defaultValueCode";
-        public static final String PROPERTY_DEFAULT_VALUE_DATE = "defaultValueDate";
-        public static final String PROPERTY_DEFAULT_VALUE_DATE_TIME = "defaultValueDateTime";
-        public static final String PROPERTY_DEFAULT_VALUE_DECIMAL = "defaultValueDecimal";
-        public static final String PROPERTY_DEFAULT_VALUE_ID = "defaultValueId";
-        public static final String PROPERTY_DEFAULT_VALUE_INSTANT = "defaultValueInstant";
-        public static final String PROPERTY_DEFAULT_VALUE_INTEGER = "defaultValueInteger";
-        public static final String PROPERTY_DEFAULT_VALUE_MARKDOWN = "defaultValueMarkdown";
-        public static final String PROPERTY_DEFAULT_VALUE_OID = "defaultValueOid";
-        public static final String PROPERTY_DEFAULT_VALUE_POSITIVE_INT = "defaultValuePositiveInt";
-        public static final String PROPERTY_DEFAULT_VALUE_STRING = "defaultValueString";
-        public static final String PROPERTY_DEFAULT_VALUE_TIME = "defaultValueTime";
-        public static final String PROPERTY_DEFAULT_VALUE_UNSIGNED_INT = "defaultValueUnsignedInt";
-        public static final String PROPERTY_DEFAULT_VALUE_URI = "defaultValueUri";
-        public static final String PROPERTY_DEFAULT_VALUE_URL = "defaultValueUrl";
-        public static final String PROPERTY_DEFAULT_VALUE_UUID = "defaultValueUuid";
-        public static final String PROPERTY_DEFAULT_VALUE_ADDRESS = "defaultValueAddress";
-        public static final String PROPERTY_DEFAULT_VALUE_AGE = "defaultValueAge";
-        public static final String PROPERTY_DEFAULT_VALUE_ANNOTATION = "defaultValueAnnotation";
-        public static final String PROPERTY_DEFAULT_VALUE_ATTACHMENT = "defaultValueAttachment";
-        public static final String PROPERTY_DEFAULT_VALUE_CODEABLE_CONCEPT = "defaultValueCodeableConcept";
-        public static final String PROPERTY_DEFAULT_VALUE_CODING = "defaultValueCoding";
-        public static final String PROPERTY_DEFAULT_VALUE_CONTACT_POINT = "defaultValueContactPoint";
-        public static final String PROPERTY_DEFAULT_VALUE_COUNT = "defaultValueCount";
-        public static final String PROPERTY_DEFAULT_VALUE_DISTANCE = "defaultValueDistance";
-        public static final String PROPERTY_DEFAULT_VALUE_DURATION = "defaultValueDuration";
-        public static final String PROPERTY_DEFAULT_VALUE_HUMAN_NAME = "defaultValueHumanName";
-        public static final String PROPERTY_DEFAULT_VALUE_IDENTIFIER = "defaultValueIdentifier";
-        public static final String PROPERTY_DEFAULT_VALUE_MONEY = "defaultValueMoney";
-        public static final String PROPERTY_DEFAULT_VALUE_PERIOD = "defaultValuePeriod";
-        public static final String PROPERTY_DEFAULT_VALUE_QUANTITY = "defaultValueQuantity";
-        public static final String PROPERTY_DEFAULT_VALUE_RANGE = "defaultValueRange";
-        public static final String PROPERTY_DEFAULT_VALUE_RATIO = "defaultValueRatio";
-        public static final String PROPERTY_DEFAULT_VALUE_REFERENCE = "defaultValueReference";
-        public static final String PROPERTY_DEFAULT_VALUE_SAMPLED_DATA = "defaultValueSampledData";
-        public static final String PROPERTY_DEFAULT_VALUE_SIGNATURE = "defaultValueSignature";
-        public static final String PROPERTY_DEFAULT_VALUE_TIMING = "defaultValueTiming";
-        public static final String PROPERTY_DEFAULT_VALUE_CONTACT_DETAIL = "defaultValueContactDetail";
-        public static final String PROPERTY_DEFAULT_VALUE_CONTRIBUTOR = "defaultValueContributor";
-        public static final String PROPERTY_DEFAULT_VALUE_DATA_REQUIREMENT = "defaultValueDataRequirement";
-        public static final String PROPERTY_DEFAULT_VALUE_EXPRESSION = "defaultValueExpression";
-        public static final String PROPERTY_DEFAULT_VALUE_PARAMETER_DEFINITION = "defaultValueParameterDefinition";
-        public static final String PROPERTY_DEFAULT_VALUE_RELATED_ARTIFACT = "defaultValueRelatedArtifact";
-        public static final String PROPERTY_DEFAULT_VALUE_TRIGGER_DEFINITION = "defaultValueTriggerDefinition";
-        public static final String PROPERTY_DEFAULT_VALUE_USAGE_CONTEXT = "defaultValueUsageContext";
-        public static final String PROPERTY_DEFAULT_VALUE_DOSAGE = "defaultValueDosage";
-        public static final String PROPERTY_DEFAULT_VALUE_META = "defaultValueMeta";
-        public static final String PROPERTY_ELEMENT = "element";
-        public static final String PROPERTY_LIST_MODE = "listMode";
-        public static final String PROPERTY_VARIABLE = "variable";
-        public static final String PROPERTY_CONDITION = "condition";
-        public static final String PROPERTY_CHECK = "check";
-        public static final String PROPERTY_LOG_MESSAGE = "logMessage";
 
         public static Builder create() {
             return new Builder();
@@ -1301,7 +1175,7 @@ public class StructureMap extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1313,7 +1187,7 @@ public class StructureMap extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1334,14 +1208,14 @@ public class StructureMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Type or variable this rule applies to.
          */
         public String context() {
-            return getString(PROPERTY_CONTEXT);
+            return getString(FhirPropertyNames.PROPERTY_CONTEXT);
         }
 
         /**
@@ -1349,7 +1223,7 @@ public class StructureMap extends FhirResource {
          * present, it acts an implicit check on the input content.
          */
         public Integer min() {
-            return data.getInt(PROPERTY_MIN);
+            return data.getInt(FhirPropertyNames.PROPERTY_MIN);
         }
 
         /**
@@ -1358,7 +1232,7 @@ public class StructureMap extends FhirResource {
          * content (* just serves as documentation; it's the default value).
          */
         public String max() {
-            return getString(PROPERTY_MAX);
+            return getString(FhirPropertyNames.PROPERTY_MAX);
         }
 
         /**
@@ -1366,385 +1240,385 @@ public class StructureMap extends FhirResource {
          * mapping - use for polymorphic elements.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueBase64Binary() {
-            return getString(PROPERTY_DEFAULT_VALUE_BASE64_BINARY);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_BASE64_BINARY);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Boolean defaultValueBoolean() {
-            return data.getBoolean(PROPERTY_DEFAULT_VALUE_BOOLEAN);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_BOOLEAN);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueCanonical() {
-            return getString(PROPERTY_DEFAULT_VALUE_CANONICAL);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CANONICAL);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueCode() {
-            return getString(PROPERTY_DEFAULT_VALUE_CODE);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CODE);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueDate() {
-            return getString(PROPERTY_DEFAULT_VALUE_DATE);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DATE);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueDateTime() {
-            return getString(PROPERTY_DEFAULT_VALUE_DATE_TIME);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DATE_TIME);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Integer defaultValueDecimal() {
-            return data.getInt(PROPERTY_DEFAULT_VALUE_DECIMAL);
+            return data.getInt(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DECIMAL);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueId() {
-            return getString(PROPERTY_DEFAULT_VALUE_ID);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_ID);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueInstant() {
-            return getString(PROPERTY_DEFAULT_VALUE_INSTANT);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_INSTANT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Integer defaultValueInteger() {
-            return data.getInt(PROPERTY_DEFAULT_VALUE_INTEGER);
+            return data.getInt(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_INTEGER);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueMarkdown() {
-            return getString(PROPERTY_DEFAULT_VALUE_MARKDOWN);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_MARKDOWN);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueOid() {
-            return getString(PROPERTY_DEFAULT_VALUE_OID);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_OID);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Integer defaultValuePositiveInt() {
-            return data.getInt(PROPERTY_DEFAULT_VALUE_POSITIVE_INT);
+            return data.getInt(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_POSITIVE_INT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueString() {
-            return getString(PROPERTY_DEFAULT_VALUE_STRING);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_STRING);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueTime() {
-            return getString(PROPERTY_DEFAULT_VALUE_TIME);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_TIME);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Integer defaultValueUnsignedInt() {
-            return data.getInt(PROPERTY_DEFAULT_VALUE_UNSIGNED_INT);
+            return data.getInt(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_UNSIGNED_INT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueUri() {
-            return getString(PROPERTY_DEFAULT_VALUE_URI);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_URI);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueUrl() {
-            return getString(PROPERTY_DEFAULT_VALUE_URL);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_URL);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public String defaultValueUuid() {
-            return getString(PROPERTY_DEFAULT_VALUE_UUID);
+            return getString(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_UUID);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Address defaultValueAddress() {
-            return getObject(Address.class, PROPERTY_DEFAULT_VALUE_ADDRESS);
+            return getObject(Address.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_ADDRESS);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Age defaultValueAge() {
-            return getObject(Age.class, PROPERTY_DEFAULT_VALUE_AGE);
+            return getObject(Age.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_AGE);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Annotation defaultValueAnnotation() {
-            return getObject(Annotation.class, PROPERTY_DEFAULT_VALUE_ANNOTATION);
+            return getObject(Annotation.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_ANNOTATION);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Attachment defaultValueAttachment() {
-            return getObject(Attachment.class, PROPERTY_DEFAULT_VALUE_ATTACHMENT);
+            return getObject(Attachment.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_ATTACHMENT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public CodeableConcept defaultValueCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_DEFAULT_VALUE_CODEABLE_CONCEPT);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CODEABLE_CONCEPT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Coding defaultValueCoding() {
-            return getObject(Coding.class, PROPERTY_DEFAULT_VALUE_CODING);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CODING);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public ContactPoint defaultValueContactPoint() {
-            return getObject(ContactPoint.class, PROPERTY_DEFAULT_VALUE_CONTACT_POINT);
+            return getObject(ContactPoint.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CONTACT_POINT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Count defaultValueCount() {
-            return getObject(Count.class, PROPERTY_DEFAULT_VALUE_COUNT);
+            return getObject(Count.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_COUNT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Distance defaultValueDistance() {
-            return getObject(Distance.class, PROPERTY_DEFAULT_VALUE_DISTANCE);
+            return getObject(Distance.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DISTANCE);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Duration defaultValueDuration() {
-            return getObject(Duration.class, PROPERTY_DEFAULT_VALUE_DURATION);
+            return getObject(Duration.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DURATION);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public HumanName defaultValueHumanName() {
-            return getObject(HumanName.class, PROPERTY_DEFAULT_VALUE_HUMAN_NAME);
+            return getObject(HumanName.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_HUMAN_NAME);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Identifier defaultValueIdentifier() {
-            return getObject(Identifier.class, PROPERTY_DEFAULT_VALUE_IDENTIFIER);
+            return getObject(Identifier.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_IDENTIFIER);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Money defaultValueMoney() {
-            return getObject(Money.class, PROPERTY_DEFAULT_VALUE_MONEY);
+            return getObject(Money.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_MONEY);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Period defaultValuePeriod() {
-            return getObject(Period.class, PROPERTY_DEFAULT_VALUE_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_PERIOD);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Quantity defaultValueQuantity() {
-            return getObject(Quantity.class, PROPERTY_DEFAULT_VALUE_QUANTITY);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_QUANTITY);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Range defaultValueRange() {
-            return getObject(Range.class, PROPERTY_DEFAULT_VALUE_RANGE);
+            return getObject(Range.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_RANGE);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Ratio defaultValueRatio() {
-            return getObject(Ratio.class, PROPERTY_DEFAULT_VALUE_RATIO);
+            return getObject(Ratio.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_RATIO);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Reference defaultValueReference() {
-            return getObject(Reference.class, PROPERTY_DEFAULT_VALUE_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_REFERENCE);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public SampledData defaultValueSampledData() {
-            return getObject(SampledData.class, PROPERTY_DEFAULT_VALUE_SAMPLED_DATA);
+            return getObject(SampledData.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_SAMPLED_DATA);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Signature defaultValueSignature() {
-            return getObject(Signature.class, PROPERTY_DEFAULT_VALUE_SIGNATURE);
+            return getObject(Signature.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_SIGNATURE);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Timing defaultValueTiming() {
-            return getObject(Timing.class, PROPERTY_DEFAULT_VALUE_TIMING);
+            return getObject(Timing.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_TIMING);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public ContactDetail defaultValueContactDetail() {
-            return getObject(ContactDetail.class, PROPERTY_DEFAULT_VALUE_CONTACT_DETAIL);
+            return getObject(ContactDetail.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CONTACT_DETAIL);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Contributor defaultValueContributor() {
-            return getObject(Contributor.class, PROPERTY_DEFAULT_VALUE_CONTRIBUTOR);
+            return getObject(Contributor.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CONTRIBUTOR);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public DataRequirement defaultValueDataRequirement() {
-            return getObject(DataRequirement.class, PROPERTY_DEFAULT_VALUE_DATA_REQUIREMENT);
+            return getObject(DataRequirement.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DATA_REQUIREMENT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Expression defaultValueExpression() {
-            return getObject(Expression.class, PROPERTY_DEFAULT_VALUE_EXPRESSION);
+            return getObject(Expression.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_EXPRESSION);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public ParameterDefinition defaultValueParameterDefinition() {
-            return getObject(ParameterDefinition.class, PROPERTY_DEFAULT_VALUE_PARAMETER_DEFINITION);
+            return getObject(ParameterDefinition.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_PARAMETER_DEFINITION);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public RelatedArtifact defaultValueRelatedArtifact() {
-            return getObject(RelatedArtifact.class, PROPERTY_DEFAULT_VALUE_RELATED_ARTIFACT);
+            return getObject(RelatedArtifact.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_RELATED_ARTIFACT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public TriggerDefinition defaultValueTriggerDefinition() {
-            return getObject(TriggerDefinition.class, PROPERTY_DEFAULT_VALUE_TRIGGER_DEFINITION);
+            return getObject(TriggerDefinition.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_TRIGGER_DEFINITION);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public UsageContext defaultValueUsageContext() {
-            return getObject(UsageContext.class, PROPERTY_DEFAULT_VALUE_USAGE_CONTEXT);
+            return getObject(UsageContext.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_USAGE_CONTEXT);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Dosage defaultValueDosage() {
-            return getObject(Dosage.class, PROPERTY_DEFAULT_VALUE_DOSAGE);
+            return getObject(Dosage.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DOSAGE);
         }
 
         /**
          * A value to use if there is no existing value in the source object.
          */
         public Meta defaultValueMeta() {
-            return getObject(Meta.class, PROPERTY_DEFAULT_VALUE_META);
+            return getObject(Meta.class, FhirPropertyNames.PROPERTY_DEFAULT_VALUE_META);
         }
 
         /**
          * Optional field for this source.
          */
         public String element() {
-            return getString(PROPERTY_ELEMENT);
+            return getString(FhirPropertyNames.PROPERTY_ELEMENT);
         }
 
         /**
          * How to handle the list mode for this element.
          */
         public String listMode() {
-            return getString(PROPERTY_LIST_MODE);
+            return getString(FhirPropertyNames.PROPERTY_LIST_MODE);
         }
 
         /**
          * Named context for field, if a field is specified.
          */
         public String variable() {
-            return getString(PROPERTY_VARIABLE);
+            return getString(FhirPropertyNames.PROPERTY_VARIABLE);
         }
 
         /**
          * FHIRPath expression  - must be true or the rule does not apply.
          */
         public String condition() {
-            return getString(PROPERTY_CONDITION);
+            return getString(FhirPropertyNames.PROPERTY_CONDITION);
         }
 
         /**
@@ -1752,7 +1626,7 @@ public class StructureMap extends FhirResource {
          * error instead of completing.
          */
         public String check() {
-            return getString(PROPERTY_CHECK);
+            return getString(FhirPropertyNames.PROPERTY_CHECK);
         }
 
         /**
@@ -1760,7 +1634,7 @@ public class StructureMap extends FhirResource {
          * transform log when content matching the source rule is found.
          */
         public String logMessage() {
-            return getString(PROPERTY_LOG_MESSAGE);
+            return getString(FhirPropertyNames.PROPERTY_LOG_MESSAGE);
         }
 
         public static class Builder {
@@ -1775,317 +1649,317 @@ public class StructureMap extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder context(final String context) {
-                b.add(PROPERTY_CONTEXT, context);
+                b.add(FhirPropertyNames.PROPERTY_CONTEXT, context);
                 return this;
             }
 
             public Builder min(final Integer min) {
-                b.add(PROPERTY_MIN, min);
+                b.add(FhirPropertyNames.PROPERTY_MIN, min);
                 return this;
             }
 
             public Builder max(final String max) {
-                b.add(PROPERTY_MAX, max);
+                b.add(FhirPropertyNames.PROPERTY_MAX, max);
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder defaultValueBase64Binary(final String defaultValueBase64Binary) {
-                b.add(PROPERTY_DEFAULT_VALUE_BASE64_BINARY, defaultValueBase64Binary);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_BASE64_BINARY, defaultValueBase64Binary);
                 return this;
             }
 
             public Builder defaultValueBoolean(final Boolean defaultValueBoolean) {
-                b.add(PROPERTY_DEFAULT_VALUE_BOOLEAN, defaultValueBoolean);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_BOOLEAN, defaultValueBoolean);
                 return this;
             }
 
             public Builder defaultValueCanonical(final String defaultValueCanonical) {
-                b.add(PROPERTY_DEFAULT_VALUE_CANONICAL, defaultValueCanonical);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CANONICAL, defaultValueCanonical);
                 return this;
             }
 
             public Builder defaultValueCode(final String defaultValueCode) {
-                b.add(PROPERTY_DEFAULT_VALUE_CODE, defaultValueCode);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CODE, defaultValueCode);
                 return this;
             }
 
             public Builder defaultValueDate(final String defaultValueDate) {
-                b.add(PROPERTY_DEFAULT_VALUE_DATE, defaultValueDate);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DATE, defaultValueDate);
                 return this;
             }
 
             public Builder defaultValueDateTime(final String defaultValueDateTime) {
-                b.add(PROPERTY_DEFAULT_VALUE_DATE_TIME, defaultValueDateTime);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DATE_TIME, defaultValueDateTime);
                 return this;
             }
 
             public Builder defaultValueDecimal(final Integer defaultValueDecimal) {
-                b.add(PROPERTY_DEFAULT_VALUE_DECIMAL, defaultValueDecimal);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DECIMAL, defaultValueDecimal);
                 return this;
             }
 
             public Builder defaultValueId(final String defaultValueId) {
-                b.add(PROPERTY_DEFAULT_VALUE_ID, defaultValueId);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_ID, defaultValueId);
                 return this;
             }
 
             public Builder defaultValueInstant(final String defaultValueInstant) {
-                b.add(PROPERTY_DEFAULT_VALUE_INSTANT, defaultValueInstant);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_INSTANT, defaultValueInstant);
                 return this;
             }
 
             public Builder defaultValueInteger(final Integer defaultValueInteger) {
-                b.add(PROPERTY_DEFAULT_VALUE_INTEGER, defaultValueInteger);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_INTEGER, defaultValueInteger);
                 return this;
             }
 
             public Builder defaultValueMarkdown(final String defaultValueMarkdown) {
-                b.add(PROPERTY_DEFAULT_VALUE_MARKDOWN, defaultValueMarkdown);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_MARKDOWN, defaultValueMarkdown);
                 return this;
             }
 
             public Builder defaultValueOid(final String defaultValueOid) {
-                b.add(PROPERTY_DEFAULT_VALUE_OID, defaultValueOid);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_OID, defaultValueOid);
                 return this;
             }
 
             public Builder defaultValuePositiveInt(final Integer defaultValuePositiveInt) {
-                b.add(PROPERTY_DEFAULT_VALUE_POSITIVE_INT, defaultValuePositiveInt);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_POSITIVE_INT, defaultValuePositiveInt);
                 return this;
             }
 
             public Builder defaultValueString(final String defaultValueString) {
-                b.add(PROPERTY_DEFAULT_VALUE_STRING, defaultValueString);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_STRING, defaultValueString);
                 return this;
             }
 
             public Builder defaultValueTime(final String defaultValueTime) {
-                b.add(PROPERTY_DEFAULT_VALUE_TIME, defaultValueTime);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_TIME, defaultValueTime);
                 return this;
             }
 
             public Builder defaultValueUnsignedInt(final Integer defaultValueUnsignedInt) {
-                b.add(PROPERTY_DEFAULT_VALUE_UNSIGNED_INT, defaultValueUnsignedInt);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_UNSIGNED_INT, defaultValueUnsignedInt);
                 return this;
             }
 
             public Builder defaultValueUri(final String defaultValueUri) {
-                b.add(PROPERTY_DEFAULT_VALUE_URI, defaultValueUri);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_URI, defaultValueUri);
                 return this;
             }
 
             public Builder defaultValueUrl(final String defaultValueUrl) {
-                b.add(PROPERTY_DEFAULT_VALUE_URL, defaultValueUrl);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_URL, defaultValueUrl);
                 return this;
             }
 
             public Builder defaultValueUuid(final String defaultValueUuid) {
-                b.add(PROPERTY_DEFAULT_VALUE_UUID, defaultValueUuid);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_UUID, defaultValueUuid);
                 return this;
             }
 
             public Builder defaultValueAddress(final Address defaultValueAddress) {
-                b.add(PROPERTY_DEFAULT_VALUE_ADDRESS, defaultValueAddress);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_ADDRESS, defaultValueAddress);
                 return this;
             }
 
             public Builder defaultValueAge(final Age defaultValueAge) {
-                b.add(PROPERTY_DEFAULT_VALUE_AGE, defaultValueAge);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_AGE, defaultValueAge);
                 return this;
             }
 
             public Builder defaultValueAnnotation(final Annotation defaultValueAnnotation) {
-                b.add(PROPERTY_DEFAULT_VALUE_ANNOTATION, defaultValueAnnotation);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_ANNOTATION, defaultValueAnnotation);
                 return this;
             }
 
             public Builder defaultValueAttachment(final Attachment defaultValueAttachment) {
-                b.add(PROPERTY_DEFAULT_VALUE_ATTACHMENT, defaultValueAttachment);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_ATTACHMENT, defaultValueAttachment);
                 return this;
             }
 
             public Builder defaultValueCodeableConcept(final CodeableConcept defaultValueCodeableConcept) {
-                b.add(PROPERTY_DEFAULT_VALUE_CODEABLE_CONCEPT, defaultValueCodeableConcept);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CODEABLE_CONCEPT, defaultValueCodeableConcept);
                 return this;
             }
 
             public Builder defaultValueCoding(final Coding defaultValueCoding) {
-                b.add(PROPERTY_DEFAULT_VALUE_CODING, defaultValueCoding);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CODING, defaultValueCoding);
                 return this;
             }
 
             public Builder defaultValueContactPoint(final ContactPoint defaultValueContactPoint) {
-                b.add(PROPERTY_DEFAULT_VALUE_CONTACT_POINT, defaultValueContactPoint);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CONTACT_POINT, defaultValueContactPoint);
                 return this;
             }
 
             public Builder defaultValueCount(final Count defaultValueCount) {
-                b.add(PROPERTY_DEFAULT_VALUE_COUNT, defaultValueCount);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_COUNT, defaultValueCount);
                 return this;
             }
 
             public Builder defaultValueDistance(final Distance defaultValueDistance) {
-                b.add(PROPERTY_DEFAULT_VALUE_DISTANCE, defaultValueDistance);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DISTANCE, defaultValueDistance);
                 return this;
             }
 
             public Builder defaultValueDuration(final Duration defaultValueDuration) {
-                b.add(PROPERTY_DEFAULT_VALUE_DURATION, defaultValueDuration);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DURATION, defaultValueDuration);
                 return this;
             }
 
             public Builder defaultValueHumanName(final HumanName defaultValueHumanName) {
-                b.add(PROPERTY_DEFAULT_VALUE_HUMAN_NAME, defaultValueHumanName);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_HUMAN_NAME, defaultValueHumanName);
                 return this;
             }
 
             public Builder defaultValueIdentifier(final Identifier defaultValueIdentifier) {
-                b.add(PROPERTY_DEFAULT_VALUE_IDENTIFIER, defaultValueIdentifier);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_IDENTIFIER, defaultValueIdentifier);
                 return this;
             }
 
             public Builder defaultValueMoney(final Money defaultValueMoney) {
-                b.add(PROPERTY_DEFAULT_VALUE_MONEY, defaultValueMoney);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_MONEY, defaultValueMoney);
                 return this;
             }
 
             public Builder defaultValuePeriod(final Period defaultValuePeriod) {
-                b.add(PROPERTY_DEFAULT_VALUE_PERIOD, defaultValuePeriod);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_PERIOD, defaultValuePeriod);
                 return this;
             }
 
             public Builder defaultValueQuantity(final Quantity defaultValueQuantity) {
-                b.add(PROPERTY_DEFAULT_VALUE_QUANTITY, defaultValueQuantity);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_QUANTITY, defaultValueQuantity);
                 return this;
             }
 
             public Builder defaultValueRange(final Range defaultValueRange) {
-                b.add(PROPERTY_DEFAULT_VALUE_RANGE, defaultValueRange);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_RANGE, defaultValueRange);
                 return this;
             }
 
             public Builder defaultValueRatio(final Ratio defaultValueRatio) {
-                b.add(PROPERTY_DEFAULT_VALUE_RATIO, defaultValueRatio);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_RATIO, defaultValueRatio);
                 return this;
             }
 
             public Builder defaultValueReference(final Reference defaultValueReference) {
-                b.add(PROPERTY_DEFAULT_VALUE_REFERENCE, defaultValueReference);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_REFERENCE, defaultValueReference);
                 return this;
             }
 
             public Builder defaultValueSampledData(final SampledData defaultValueSampledData) {
-                b.add(PROPERTY_DEFAULT_VALUE_SAMPLED_DATA, defaultValueSampledData);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_SAMPLED_DATA, defaultValueSampledData);
                 return this;
             }
 
             public Builder defaultValueSignature(final Signature defaultValueSignature) {
-                b.add(PROPERTY_DEFAULT_VALUE_SIGNATURE, defaultValueSignature);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_SIGNATURE, defaultValueSignature);
                 return this;
             }
 
             public Builder defaultValueTiming(final Timing defaultValueTiming) {
-                b.add(PROPERTY_DEFAULT_VALUE_TIMING, defaultValueTiming);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_TIMING, defaultValueTiming);
                 return this;
             }
 
             public Builder defaultValueContactDetail(final ContactDetail defaultValueContactDetail) {
-                b.add(PROPERTY_DEFAULT_VALUE_CONTACT_DETAIL, defaultValueContactDetail);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CONTACT_DETAIL, defaultValueContactDetail);
                 return this;
             }
 
             public Builder defaultValueContributor(final Contributor defaultValueContributor) {
-                b.add(PROPERTY_DEFAULT_VALUE_CONTRIBUTOR, defaultValueContributor);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_CONTRIBUTOR, defaultValueContributor);
                 return this;
             }
 
             public Builder defaultValueDataRequirement(final DataRequirement defaultValueDataRequirement) {
-                b.add(PROPERTY_DEFAULT_VALUE_DATA_REQUIREMENT, defaultValueDataRequirement);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DATA_REQUIREMENT, defaultValueDataRequirement);
                 return this;
             }
 
             public Builder defaultValueExpression(final Expression defaultValueExpression) {
-                b.add(PROPERTY_DEFAULT_VALUE_EXPRESSION, defaultValueExpression);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_EXPRESSION, defaultValueExpression);
                 return this;
             }
 
             public Builder defaultValueParameterDefinition(final ParameterDefinition defaultValueParameterDefinition) {
-                b.add(PROPERTY_DEFAULT_VALUE_PARAMETER_DEFINITION, defaultValueParameterDefinition);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_PARAMETER_DEFINITION, defaultValueParameterDefinition);
                 return this;
             }
 
             public Builder defaultValueRelatedArtifact(final RelatedArtifact defaultValueRelatedArtifact) {
-                b.add(PROPERTY_DEFAULT_VALUE_RELATED_ARTIFACT, defaultValueRelatedArtifact);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_RELATED_ARTIFACT, defaultValueRelatedArtifact);
                 return this;
             }
 
             public Builder defaultValueTriggerDefinition(final TriggerDefinition defaultValueTriggerDefinition) {
-                b.add(PROPERTY_DEFAULT_VALUE_TRIGGER_DEFINITION, defaultValueTriggerDefinition);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_TRIGGER_DEFINITION, defaultValueTriggerDefinition);
                 return this;
             }
 
             public Builder defaultValueUsageContext(final UsageContext defaultValueUsageContext) {
-                b.add(PROPERTY_DEFAULT_VALUE_USAGE_CONTEXT, defaultValueUsageContext);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_USAGE_CONTEXT, defaultValueUsageContext);
                 return this;
             }
 
             public Builder defaultValueDosage(final Dosage defaultValueDosage) {
-                b.add(PROPERTY_DEFAULT_VALUE_DOSAGE, defaultValueDosage);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_DOSAGE, defaultValueDosage);
                 return this;
             }
 
             public Builder defaultValueMeta(final Meta defaultValueMeta) {
-                b.add(PROPERTY_DEFAULT_VALUE_META, defaultValueMeta);
+                b.add(FhirPropertyNames.PROPERTY_DEFAULT_VALUE_META, defaultValueMeta);
                 return this;
             }
 
             public Builder element(final String element) {
-                b.add(PROPERTY_ELEMENT, element);
+                b.add(FhirPropertyNames.PROPERTY_ELEMENT, element);
                 return this;
             }
 
             public Builder listMode(final String listMode) {
-                b.add(PROPERTY_LIST_MODE, listMode);
+                b.add(FhirPropertyNames.PROPERTY_LIST_MODE, listMode);
                 return this;
             }
 
             public Builder variable(final String variable) {
-                b.add(PROPERTY_VARIABLE, variable);
+                b.add(FhirPropertyNames.PROPERTY_VARIABLE, variable);
                 return this;
             }
 
             public Builder condition(final String condition) {
-                b.add(PROPERTY_CONDITION, condition);
+                b.add(FhirPropertyNames.PROPERTY_CONDITION, condition);
                 return this;
             }
 
             public Builder check(final String check) {
-                b.add(PROPERTY_CHECK, check);
+                b.add(FhirPropertyNames.PROPERTY_CHECK, check);
                 return this;
             }
 
             public Builder logMessage(final String logMessage) {
-                b.add(PROPERTY_LOG_MESSAGE, logMessage);
+                b.add(FhirPropertyNames.PROPERTY_LOG_MESSAGE, logMessage);
                 return this;
             }
 
@@ -2101,13 +1975,6 @@ public class StructureMap extends FhirResource {
      */
     public static class StructureMapStructure extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapStructure";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_URL = "url";
-        public static final String PROPERTY_MODE = "mode";
-        public static final String PROPERTY_ALIAS = "alias";
-        public static final String PROPERTY_DOCUMENTATION = "documentation";
 
         public static Builder create() {
             return new Builder();
@@ -2126,7 +1993,7 @@ public class StructureMap extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -2138,7 +2005,7 @@ public class StructureMap extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -2159,35 +2026,35 @@ public class StructureMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The canonical reference to the structure.
          */
         public String url() {
-            return getString(PROPERTY_URL);
+            return getString(FhirPropertyNames.PROPERTY_URL);
         }
 
         /**
          * How the referenced structure is used in this mapping.
          */
         public String mode() {
-            return getString(PROPERTY_MODE);
+            return getString(FhirPropertyNames.PROPERTY_MODE);
         }
 
         /**
          * The name used for this type in the map.
          */
         public String alias() {
-            return getString(PROPERTY_ALIAS);
+            return getString(FhirPropertyNames.PROPERTY_ALIAS);
         }
 
         /**
          * Documentation that describes how the structure is used in the mapping.
          */
         public String documentation() {
-            return getString(PROPERTY_DOCUMENTATION);
+            return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
         public static class Builder {
@@ -2202,37 +2069,37 @@ public class StructureMap extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder url(final String url) {
-                b.add(PROPERTY_URL, url);
+                b.add(FhirPropertyNames.PROPERTY_URL, url);
                 return this;
             }
 
             public Builder mode(final String mode) {
-                b.add(PROPERTY_MODE, mode);
+                b.add(FhirPropertyNames.PROPERTY_MODE, mode);
                 return this;
             }
 
             public Builder alias(final String alias) {
-                b.add(PROPERTY_ALIAS, alias);
+                b.add(FhirPropertyNames.PROPERTY_ALIAS, alias);
                 return this;
             }
 
             public Builder documentation(final String documentation) {
-                b.add(PROPERTY_DOCUMENTATION, documentation);
+                b.add(FhirPropertyNames.PROPERTY_DOCUMENTATION, documentation);
                 return this;
             }
 
@@ -2248,17 +2115,6 @@ public class StructureMap extends FhirResource {
      */
     public static class StructureMapTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "StructureMapTarget";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CONTEXT = "context";
-        public static final String PROPERTY_CONTEXT_TYPE = "contextType";
-        public static final String PROPERTY_ELEMENT = "element";
-        public static final String PROPERTY_VARIABLE = "variable";
-        public static final String PROPERTY_LIST_MODE = "listMode";
-        public static final String PROPERTY_LIST_RULE_ID = "listRuleId";
-        public static final String PROPERTY_TRANSFORM = "transform";
-        public static final String PROPERTY_PARAMETER = "parameter";
 
         public static Builder create() {
             return new Builder();
@@ -2277,7 +2133,7 @@ public class StructureMap extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -2289,7 +2145,7 @@ public class StructureMap extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -2310,63 +2166,63 @@ public class StructureMap extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Type or variable this rule applies to.
          */
         public String context() {
-            return getString(PROPERTY_CONTEXT);
+            return getString(FhirPropertyNames.PROPERTY_CONTEXT);
         }
 
         /**
          * How to interpret the context.
          */
         public String contextType() {
-            return getString(PROPERTY_CONTEXT_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_CONTEXT_TYPE);
         }
 
         /**
          * Field to create in the context.
          */
         public String element() {
-            return getString(PROPERTY_ELEMENT);
+            return getString(FhirPropertyNames.PROPERTY_ELEMENT);
         }
 
         /**
          * Named context for field, if desired, and a field is specified.
          */
         public String variable() {
-            return getString(PROPERTY_VARIABLE);
+            return getString(FhirPropertyNames.PROPERTY_VARIABLE);
         }
 
         /**
          * If field is a list, how to manage the list.
          */
         public java.util.List<String> listMode() {
-            return getList(String.class, PROPERTY_LIST_MODE);
+            return getList(String.class, FhirPropertyNames.PROPERTY_LIST_MODE);
         }
 
         /**
          * Internal rule reference for shared list items.
          */
         public String listRuleId() {
-            return getString(PROPERTY_LIST_RULE_ID);
+            return getString(FhirPropertyNames.PROPERTY_LIST_RULE_ID);
         }
 
         /**
          * How the data is copied / created.
          */
         public String transform() {
-            return getString(PROPERTY_TRANSFORM);
+            return getString(FhirPropertyNames.PROPERTY_TRANSFORM);
         }
 
         /**
          * Parameters to the transform.
          */
         public java.util.List<StructureMapParameter> parameter() {
-            return getList(StructureMapParameter.class, PROPERTY_PARAMETER);
+            return getList(StructureMapParameter.class, FhirPropertyNames.PROPERTY_PARAMETER);
         }
 
         public static class Builder {
@@ -2381,57 +2237,57 @@ public class StructureMap extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder context(final String context) {
-                b.add(PROPERTY_CONTEXT, context);
+                b.add(FhirPropertyNames.PROPERTY_CONTEXT, context);
                 return this;
             }
 
             public Builder contextType(final String contextType) {
-                b.add(PROPERTY_CONTEXT_TYPE, contextType);
+                b.add(FhirPropertyNames.PROPERTY_CONTEXT_TYPE, contextType);
                 return this;
             }
 
             public Builder element(final String element) {
-                b.add(PROPERTY_ELEMENT, element);
+                b.add(FhirPropertyNames.PROPERTY_ELEMENT, element);
                 return this;
             }
 
             public Builder variable(final String variable) {
-                b.add(PROPERTY_VARIABLE, variable);
+                b.add(FhirPropertyNames.PROPERTY_VARIABLE, variable);
                 return this;
             }
 
             public Builder listMode(final java.util.List<String> listMode) {
-                b.add(PROPERTY_LIST_MODE, FhirObject.toStringArray(listMode));
+                b.add(FhirPropertyNames.PROPERTY_LIST_MODE, FhirObject.toStringArray(listMode));
                 return this;
             }
 
             public Builder listRuleId(final String listRuleId) {
-                b.add(PROPERTY_LIST_RULE_ID, listRuleId);
+                b.add(FhirPropertyNames.PROPERTY_LIST_RULE_ID, listRuleId);
                 return this;
             }
 
             public Builder transform(final String transform) {
-                b.add(PROPERTY_TRANSFORM, transform);
+                b.add(FhirPropertyNames.PROPERTY_TRANSFORM, transform);
                 return this;
             }
 
             public Builder parameter(final java.util.List<StructureMapParameter> parameter) {
-                b.add(PROPERTY_PARAMETER, FhirObject.toArray(parameter));
+                b.add(FhirPropertyNames.PROPERTY_PARAMETER, FhirObject.toArray(parameter));
                 return this;
             }
 

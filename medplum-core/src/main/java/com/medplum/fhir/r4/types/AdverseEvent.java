@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Actual or  potential/avoided event causing unintended physical injury
  * resulting from or contributed to by medical care, a research study or
@@ -17,35 +19,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class AdverseEvent extends FhirResource {
     public static final String RESOURCE_TYPE = "AdverseEvent";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_ACTUALITY = "actuality";
-    public static final String PROPERTY_CATEGORY = "category";
-    public static final String PROPERTY_EVENT = "event";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_DETECTED = "detected";
-    public static final String PROPERTY_RECORDED_DATE = "recordedDate";
-    public static final String PROPERTY_RESULTING_CONDITION = "resultingCondition";
-    public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_SERIOUSNESS = "seriousness";
-    public static final String PROPERTY_SEVERITY = "severity";
-    public static final String PROPERTY_OUTCOME = "outcome";
-    public static final String PROPERTY_RECORDER = "recorder";
-    public static final String PROPERTY_CONTRIBUTOR = "contributor";
-    public static final String PROPERTY_SUSPECT_ENTITY = "suspectEntity";
-    public static final String PROPERTY_SUBJECT_MEDICAL_HISTORY = "subjectMedicalHistory";
-    public static final String PROPERTY_REFERENCE_DOCUMENT = "referenceDocument";
-    public static final String PROPERTY_STUDY = "study";
 
     public static Builder create() {
         return new Builder();
@@ -66,14 +39,14 @@ public class AdverseEvent extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -85,7 +58,7 @@ public class AdverseEvent extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -94,7 +67,7 @@ public class AdverseEvent extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -106,7 +79,7 @@ public class AdverseEvent extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -126,7 +99,7 @@ public class AdverseEvent extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -135,7 +108,7 @@ public class AdverseEvent extends FhirResource {
      * propagates from server to server.
      */
     public Identifier identifier() {
-        return getObject(Identifier.class, PROPERTY_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -144,14 +117,14 @@ public class AdverseEvent extends FhirResource {
      * or how severely.
      */
     public String actuality() {
-        return getString(PROPERTY_ACTUALITY);
+        return getString(FhirPropertyNames.PROPERTY_ACTUALITY);
     }
 
     /**
      * The overall type of event, intended for search and filtering purposes.
      */
     public java.util.List<CodeableConcept> category() {
-        return getList(CodeableConcept.class, PROPERTY_CATEGORY);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_CATEGORY);
     }
 
     /**
@@ -159,14 +132,14 @@ public class AdverseEvent extends FhirResource {
      * was prevented from occurring.
      */
     public CodeableConcept event() {
-        return getObject(CodeableConcept.class, PROPERTY_EVENT);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_EVENT);
     }
 
     /**
      * This subject or group impacted by the event.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
@@ -174,14 +147,14 @@ public class AdverseEvent extends FhirResource {
      * creation of this record is tightly associated.
      */
     public Reference encounter() {
-        return getObject(Reference.class, PROPERTY_ENCOUNTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ENCOUNTER);
     }
 
     /**
      * The date (and perhaps time) when the adverse event occurred.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -189,7 +162,7 @@ public class AdverseEvent extends FhirResource {
      * reporter.
      */
     public java.time.Instant detected() {
-        return getInstant(PROPERTY_DETECTED);
+        return getInstant(FhirPropertyNames.PROPERTY_DETECTED);
     }
 
     /**
@@ -197,7 +170,7 @@ public class AdverseEvent extends FhirResource {
      * recorded.
      */
     public java.time.Instant recordedDate() {
-        return getInstant(PROPERTY_RECORDED_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_RECORDED_DATE);
     }
 
     /**
@@ -205,21 +178,21 @@ public class AdverseEvent extends FhirResource {
      * exposure to a substance (for example, a drug or a chemical).
      */
     public java.util.List<Reference> resultingCondition() {
-        return getList(Reference.class, PROPERTY_RESULTING_CONDITION);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_RESULTING_CONDITION);
     }
 
     /**
      * The information about where the adverse event occurred.
      */
     public Reference location() {
-        return getObject(Reference.class, PROPERTY_LOCATION);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_LOCATION);
     }
 
     /**
      * Assessment whether this event was of real importance.
      */
     public CodeableConcept seriousness() {
-        return getObject(CodeableConcept.class, PROPERTY_SERIOUSNESS);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SERIOUSNESS);
     }
 
     /**
@@ -228,14 +201,14 @@ public class AdverseEvent extends FhirResource {
      * not be serious, but a mild heart problem is.
      */
     public CodeableConcept severity() {
-        return getObject(CodeableConcept.class, PROPERTY_SEVERITY);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SEVERITY);
     }
 
     /**
      * Describes the type of outcome from the adverse event.
      */
     public CodeableConcept outcome() {
-        return getObject(CodeableConcept.class, PROPERTY_OUTCOME);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_OUTCOME);
     }
 
     /**
@@ -243,7 +216,7 @@ public class AdverseEvent extends FhirResource {
      * a practitioner.
      */
     public Reference recorder() {
-        return getObject(Reference.class, PROPERTY_RECORDER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_RECORDER);
     }
 
     /**
@@ -256,7 +229,7 @@ public class AdverseEvent extends FhirResource {
      * activity was performed (e.g. informant witness).
      */
     public java.util.List<Reference> contributor() {
-        return getList(Reference.class, PROPERTY_CONTRIBUTOR);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_CONTRIBUTOR);
     }
 
     /**
@@ -264,28 +237,28 @@ public class AdverseEvent extends FhirResource {
      * event.
      */
     public java.util.List<AdverseEventSuspectEntity> suspectEntity() {
-        return getList(AdverseEventSuspectEntity.class, PROPERTY_SUSPECT_ENTITY);
+        return getList(AdverseEventSuspectEntity.class, FhirPropertyNames.PROPERTY_SUSPECT_ENTITY);
     }
 
     /**
      * AdverseEvent.subjectMedicalHistory.
      */
     public java.util.List<Reference> subjectMedicalHistory() {
-        return getList(Reference.class, PROPERTY_SUBJECT_MEDICAL_HISTORY);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT_MEDICAL_HISTORY);
     }
 
     /**
      * AdverseEvent.referenceDocument.
      */
     public java.util.List<Reference> referenceDocument() {
-        return getList(Reference.class, PROPERTY_REFERENCE_DOCUMENT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_REFERENCE_DOCUMENT);
     }
 
     /**
      * AdverseEvent.study.
      */
     public java.util.List<Reference> study() {
-        return getList(Reference.class, PROPERTY_STUDY);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_STUDY);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -299,147 +272,147 @@ public class AdverseEvent extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final Identifier identifier) {
-            b.add(PROPERTY_IDENTIFIER, identifier);
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, identifier);
             return this;
         }
 
         public Builder actuality(final String actuality) {
-            b.add(PROPERTY_ACTUALITY, actuality);
+            b.add(FhirPropertyNames.PROPERTY_ACTUALITY, actuality);
             return this;
         }
 
         public Builder category(final java.util.List<CodeableConcept> category) {
-            b.add(PROPERTY_CATEGORY, FhirObject.toArray(category));
+            b.add(FhirPropertyNames.PROPERTY_CATEGORY, FhirObject.toArray(category));
             return this;
         }
 
         public Builder event(final CodeableConcept event) {
-            b.add(PROPERTY_EVENT, event);
+            b.add(FhirPropertyNames.PROPERTY_EVENT, event);
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder encounter(final Reference encounter) {
-            b.add(PROPERTY_ENCOUNTER, encounter);
+            b.add(FhirPropertyNames.PROPERTY_ENCOUNTER, encounter);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder detected(final java.time.Instant detected) {
-            b.add(PROPERTY_DETECTED, detected.toString());
+            b.add(FhirPropertyNames.PROPERTY_DETECTED, detected.toString());
             return this;
         }
 
         public Builder recordedDate(final java.time.Instant recordedDate) {
-            b.add(PROPERTY_RECORDED_DATE, recordedDate.toString());
+            b.add(FhirPropertyNames.PROPERTY_RECORDED_DATE, recordedDate.toString());
             return this;
         }
 
         public Builder resultingCondition(final java.util.List<Reference> resultingCondition) {
-            b.add(PROPERTY_RESULTING_CONDITION, FhirObject.toArray(resultingCondition));
+            b.add(FhirPropertyNames.PROPERTY_RESULTING_CONDITION, FhirObject.toArray(resultingCondition));
             return this;
         }
 
         public Builder location(final Reference location) {
-            b.add(PROPERTY_LOCATION, location);
+            b.add(FhirPropertyNames.PROPERTY_LOCATION, location);
             return this;
         }
 
         public Builder seriousness(final CodeableConcept seriousness) {
-            b.add(PROPERTY_SERIOUSNESS, seriousness);
+            b.add(FhirPropertyNames.PROPERTY_SERIOUSNESS, seriousness);
             return this;
         }
 
         public Builder severity(final CodeableConcept severity) {
-            b.add(PROPERTY_SEVERITY, severity);
+            b.add(FhirPropertyNames.PROPERTY_SEVERITY, severity);
             return this;
         }
 
         public Builder outcome(final CodeableConcept outcome) {
-            b.add(PROPERTY_OUTCOME, outcome);
+            b.add(FhirPropertyNames.PROPERTY_OUTCOME, outcome);
             return this;
         }
 
         public Builder recorder(final Reference recorder) {
-            b.add(PROPERTY_RECORDER, recorder);
+            b.add(FhirPropertyNames.PROPERTY_RECORDER, recorder);
             return this;
         }
 
         public Builder contributor(final java.util.List<Reference> contributor) {
-            b.add(PROPERTY_CONTRIBUTOR, FhirObject.toArray(contributor));
+            b.add(FhirPropertyNames.PROPERTY_CONTRIBUTOR, FhirObject.toArray(contributor));
             return this;
         }
 
         public Builder suspectEntity(final java.util.List<AdverseEventSuspectEntity> suspectEntity) {
-            b.add(PROPERTY_SUSPECT_ENTITY, FhirObject.toArray(suspectEntity));
+            b.add(FhirPropertyNames.PROPERTY_SUSPECT_ENTITY, FhirObject.toArray(suspectEntity));
             return this;
         }
 
         public Builder subjectMedicalHistory(final java.util.List<Reference> subjectMedicalHistory) {
-            b.add(PROPERTY_SUBJECT_MEDICAL_HISTORY, FhirObject.toArray(subjectMedicalHistory));
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT_MEDICAL_HISTORY, FhirObject.toArray(subjectMedicalHistory));
             return this;
         }
 
         public Builder referenceDocument(final java.util.List<Reference> referenceDocument) {
-            b.add(PROPERTY_REFERENCE_DOCUMENT, FhirObject.toArray(referenceDocument));
+            b.add(FhirPropertyNames.PROPERTY_REFERENCE_DOCUMENT, FhirObject.toArray(referenceDocument));
             return this;
         }
 
         public Builder study(final java.util.List<Reference> study) {
-            b.add(PROPERTY_STUDY, FhirObject.toArray(study));
+            b.add(FhirPropertyNames.PROPERTY_STUDY, FhirObject.toArray(study));
             return this;
         }
 
@@ -456,13 +429,6 @@ public class AdverseEvent extends FhirResource {
      */
     public static class AdverseEventCausality extends FhirObject {
         public static final String RESOURCE_TYPE = "AdverseEventCausality";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ASSESSMENT = "assessment";
-        public static final String PROPERTY_PRODUCT_RELATEDNESS = "productRelatedness";
-        public static final String PROPERTY_AUTHOR = "author";
-        public static final String PROPERTY_METHOD = "method";
 
         public static Builder create() {
             return new Builder();
@@ -481,7 +447,7 @@ public class AdverseEvent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -493,7 +459,7 @@ public class AdverseEvent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -514,35 +480,35 @@ public class AdverseEvent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Assessment of if the entity caused the event.
          */
         public CodeableConcept assessment() {
-            return getObject(CodeableConcept.class, PROPERTY_ASSESSMENT);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ASSESSMENT);
         }
 
         /**
          * AdverseEvent.suspectEntity.causalityProductRelatedness.
          */
         public String productRelatedness() {
-            return getString(PROPERTY_PRODUCT_RELATEDNESS);
+            return getString(FhirPropertyNames.PROPERTY_PRODUCT_RELATEDNESS);
         }
 
         /**
          * AdverseEvent.suspectEntity.causalityAuthor.
          */
         public Reference author() {
-            return getObject(Reference.class, PROPERTY_AUTHOR);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_AUTHOR);
         }
 
         /**
          * ProbabilityScale | Bayesian | Checklist.
          */
         public CodeableConcept method() {
-            return getObject(CodeableConcept.class, PROPERTY_METHOD);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_METHOD);
         }
 
         public static class Builder {
@@ -557,37 +523,37 @@ public class AdverseEvent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder assessment(final CodeableConcept assessment) {
-                b.add(PROPERTY_ASSESSMENT, assessment);
+                b.add(FhirPropertyNames.PROPERTY_ASSESSMENT, assessment);
                 return this;
             }
 
             public Builder productRelatedness(final String productRelatedness) {
-                b.add(PROPERTY_PRODUCT_RELATEDNESS, productRelatedness);
+                b.add(FhirPropertyNames.PROPERTY_PRODUCT_RELATEDNESS, productRelatedness);
                 return this;
             }
 
             public Builder author(final Reference author) {
-                b.add(PROPERTY_AUTHOR, author);
+                b.add(FhirPropertyNames.PROPERTY_AUTHOR, author);
                 return this;
             }
 
             public Builder method(final CodeableConcept method) {
-                b.add(PROPERTY_METHOD, method);
+                b.add(FhirPropertyNames.PROPERTY_METHOD, method);
                 return this;
             }
 
@@ -605,11 +571,6 @@ public class AdverseEvent extends FhirResource {
      */
     public static class AdverseEventSuspectEntity extends FhirObject {
         public static final String RESOURCE_TYPE = "AdverseEventSuspectEntity";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_INSTANCE = "instance";
-        public static final String PROPERTY_CAUSALITY = "causality";
 
         public static Builder create() {
             return new Builder();
@@ -628,7 +589,7 @@ public class AdverseEvent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -640,7 +601,7 @@ public class AdverseEvent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -661,7 +622,7 @@ public class AdverseEvent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -670,14 +631,14 @@ public class AdverseEvent extends FhirResource {
          * statement or a device.
          */
         public Reference instance() {
-            return getObject(Reference.class, PROPERTY_INSTANCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_INSTANCE);
         }
 
         /**
          * Information on the possible cause of the event.
          */
         public java.util.List<AdverseEventCausality> causality() {
-            return getList(AdverseEventCausality.class, PROPERTY_CAUSALITY);
+            return getList(AdverseEventCausality.class, FhirPropertyNames.PROPERTY_CAUSALITY);
         }
 
         public static class Builder {
@@ -692,27 +653,27 @@ public class AdverseEvent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder instance(final Reference instance) {
-                b.add(PROPERTY_INSTANCE, instance);
+                b.add(FhirPropertyNames.PROPERTY_INSTANCE, instance);
                 return this;
             }
 
             public Builder causality(final java.util.List<AdverseEventCausality> causality) {
-                b.add(PROPERTY_CAUSALITY, FhirObject.toArray(causality));
+                b.add(FhirPropertyNames.PROPERTY_CAUSALITY, FhirObject.toArray(causality));
                 return this;
             }
 

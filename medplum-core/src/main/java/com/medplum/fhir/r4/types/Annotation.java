@@ -9,18 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A  text note which also  contains information about who made the
  * statement and when.
  */
 public class Annotation extends FhirResource {
     public static final String RESOURCE_TYPE = "Annotation";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_AUTHOR_REFERENCE = "authorReference";
-    public static final String PROPERTY_AUTHOR_STRING = "authorString";
-    public static final String PROPERTY_TIME = "time";
-    public static final String PROPERTY_TEXT = "text";
 
     public static Builder create() {
         return new Builder();
@@ -39,7 +35,7 @@ public class Annotation extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -51,35 +47,35 @@ public class Annotation extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * The individual responsible for making the annotation.
      */
     public Reference authorReference() {
-        return getObject(Reference.class, PROPERTY_AUTHOR_REFERENCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_AUTHOR_REFERENCE);
     }
 
     /**
      * The individual responsible for making the annotation.
      */
     public String authorString() {
-        return getString(PROPERTY_AUTHOR_STRING);
+        return getString(FhirPropertyNames.PROPERTY_AUTHOR_STRING);
     }
 
     /**
      * Indicates when this particular annotation was made.
      */
     public java.time.Instant time() {
-        return getInstant(PROPERTY_TIME);
+        return getInstant(FhirPropertyNames.PROPERTY_TIME);
     }
 
     /**
      * The text of the annotation in markdown format.
      */
     public String text() {
-        return getString(PROPERTY_TEXT);
+        return getString(FhirPropertyNames.PROPERTY_TEXT);
     }
 
     public static class Builder {
@@ -94,32 +90,32 @@ public class Annotation extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder authorReference(final Reference authorReference) {
-            b.add(PROPERTY_AUTHOR_REFERENCE, authorReference);
+            b.add(FhirPropertyNames.PROPERTY_AUTHOR_REFERENCE, authorReference);
             return this;
         }
 
         public Builder authorString(final String authorString) {
-            b.add(PROPERTY_AUTHOR_STRING, authorString);
+            b.add(FhirPropertyNames.PROPERTY_AUTHOR_STRING, authorString);
             return this;
         }
 
         public Builder time(final java.time.Instant time) {
-            b.add(PROPERTY_TIME, time.toString());
+            b.add(FhirPropertyNames.PROPERTY_TIME, time.toString());
             return this;
         }
 
         public Builder text(final String text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 

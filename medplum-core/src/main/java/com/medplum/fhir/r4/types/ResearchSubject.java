@@ -7,29 +7,14 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A physical entity which is the primary unit of operational and/or
  * administrative interest in a study.
  */
 public class ResearchSubject extends FhirResource {
     public static final String RESOURCE_TYPE = "ResearchSubject";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_STUDY = "study";
-    public static final String PROPERTY_INDIVIDUAL = "individual";
-    public static final String PROPERTY_ASSIGNED_ARM = "assignedArm";
-    public static final String PROPERTY_ACTUAL_ARM = "actualArm";
-    public static final String PROPERTY_CONSENT = "consent";
 
     public static Builder create() {
         return new Builder();
@@ -50,14 +35,14 @@ public class ResearchSubject extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -69,7 +54,7 @@ public class ResearchSubject extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -78,7 +63,7 @@ public class ResearchSubject extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -90,7 +75,7 @@ public class ResearchSubject extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -110,21 +95,21 @@ public class ResearchSubject extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Identifiers assigned to this research subject for a study.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * The current state of the subject.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -132,21 +117,21 @@ public class ResearchSubject extends FhirResource {
      * study.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     /**
      * Reference to the study the subject is participating in.
      */
     public Reference study() {
-        return getObject(Reference.class, PROPERTY_STUDY);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_STUDY);
     }
 
     /**
      * The record of the person or animal who is involved in the study.
      */
     public Reference individual() {
-        return getObject(Reference.class, PROPERTY_INDIVIDUAL);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_INDIVIDUAL);
     }
 
     /**
@@ -154,7 +139,7 @@ public class ResearchSubject extends FhirResource {
      * part of this study.
      */
     public String assignedArm() {
-        return getString(PROPERTY_ASSIGNED_ARM);
+        return getString(FhirPropertyNames.PROPERTY_ASSIGNED_ARM);
     }
 
     /**
@@ -162,7 +147,7 @@ public class ResearchSubject extends FhirResource {
      * of this study.
      */
     public String actualArm() {
-        return getString(PROPERTY_ACTUAL_ARM);
+        return getString(FhirPropertyNames.PROPERTY_ACTUAL_ARM);
     }
 
     /**
@@ -170,7 +155,7 @@ public class ResearchSubject extends FhirResource {
      * study.
      */
     public Reference consent() {
-        return getObject(Reference.class, PROPERTY_CONSENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_CONSENT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -184,87 +169,87 @@ public class ResearchSubject extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 
         public Builder study(final Reference study) {
-            b.add(PROPERTY_STUDY, study);
+            b.add(FhirPropertyNames.PROPERTY_STUDY, study);
             return this;
         }
 
         public Builder individual(final Reference individual) {
-            b.add(PROPERTY_INDIVIDUAL, individual);
+            b.add(FhirPropertyNames.PROPERTY_INDIVIDUAL, individual);
             return this;
         }
 
         public Builder assignedArm(final String assignedArm) {
-            b.add(PROPERTY_ASSIGNED_ARM, assignedArm);
+            b.add(FhirPropertyNames.PROPERTY_ASSIGNED_ARM, assignedArm);
             return this;
         }
 
         public Builder actualArm(final String actualArm) {
-            b.add(PROPERTY_ACTUAL_ARM, actualArm);
+            b.add(FhirPropertyNames.PROPERTY_ACTUAL_ARM, actualArm);
             return this;
         }
 
         public Builder consent(final Reference consent) {
-            b.add(PROPERTY_CONSENT, consent);
+            b.add(FhirPropertyNames.PROPERTY_CONSENT, consent);
             return this;
         }
 

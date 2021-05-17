@@ -9,18 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A reference to a code defined by a terminology system.
  */
 public class Coding extends FhirResource {
     public static final String RESOURCE_TYPE = "Coding";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_SYSTEM = "system";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_DISPLAY = "display";
-    public static final String PROPERTY_USER_SELECTED = "userSelected";
 
     public static Builder create() {
         return new Builder();
@@ -39,7 +34,7 @@ public class Coding extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -51,7 +46,7 @@ public class Coding extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -59,7 +54,7 @@ public class Coding extends FhirResource {
      * symbol in the code.
      */
     public java.net.URI system() {
-        return getUri(PROPERTY_SYSTEM);
+        return getUri(FhirPropertyNames.PROPERTY_SYSTEM);
     }
 
     /**
@@ -70,7 +65,7 @@ public class Coding extends FhirResource {
      * not guaranteed to be consistent, the version SHOULD be exchanged.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -79,7 +74,7 @@ public class Coding extends FhirResource {
      * system (e.g. post-coordination).
      */
     public String code() {
-        return getString(PROPERTY_CODE);
+        return getString(FhirPropertyNames.PROPERTY_CODE);
     }
 
     /**
@@ -87,7 +82,7 @@ public class Coding extends FhirResource {
      * the rules of the system.
      */
     public String display() {
-        return getString(PROPERTY_DISPLAY);
+        return getString(FhirPropertyNames.PROPERTY_DISPLAY);
     }
 
     /**
@@ -95,7 +90,7 @@ public class Coding extends FhirResource {
      * pick list of available items (codes or displays).
      */
     public Boolean userSelected() {
-        return data.getBoolean(PROPERTY_USER_SELECTED);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_USER_SELECTED);
     }
 
     public static class Builder {
@@ -110,37 +105,37 @@ public class Coding extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder system(final java.net.URI system) {
-            b.add(PROPERTY_SYSTEM, system.toString());
+            b.add(FhirPropertyNames.PROPERTY_SYSTEM, system.toString());
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder code(final String code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 
         public Builder display(final String display) {
-            b.add(PROPERTY_DISPLAY, display);
+            b.add(FhirPropertyNames.PROPERTY_DISPLAY, display);
             return this;
         }
 
         public Builder userSelected(final Boolean userSelected) {
-            b.add(PROPERTY_USER_SELECTED, userSelected);
+            b.add(FhirPropertyNames.PROPERTY_USER_SELECTED, userSelected);
             return this;
         }
 

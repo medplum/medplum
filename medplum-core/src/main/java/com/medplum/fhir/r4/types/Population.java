@@ -9,19 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A populatioof people with some set of grouping criteria.
  */
 public class Population extends FhirResource {
     public static final String RESOURCE_TYPE = "Population";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_AGE_RANGE = "ageRange";
-    public static final String PROPERTY_AGE_CODEABLE_CONCEPT = "ageCodeableConcept";
-    public static final String PROPERTY_GENDER = "gender";
-    public static final String PROPERTY_RACE = "race";
-    public static final String PROPERTY_PHYSIOLOGICAL_CONDITION = "physiologicalCondition";
 
     public static Builder create() {
         return new Builder();
@@ -40,7 +34,7 @@ public class Population extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -52,7 +46,7 @@ public class Population extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -73,35 +67,35 @@ public class Population extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * The age of the specific population.
      */
     public Range ageRange() {
-        return getObject(Range.class, PROPERTY_AGE_RANGE);
+        return getObject(Range.class, FhirPropertyNames.PROPERTY_AGE_RANGE);
     }
 
     /**
      * The age of the specific population.
      */
     public CodeableConcept ageCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_AGE_CODEABLE_CONCEPT);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_AGE_CODEABLE_CONCEPT);
     }
 
     /**
      * The gender of the specific population.
      */
     public CodeableConcept gender() {
-        return getObject(CodeableConcept.class, PROPERTY_GENDER);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_GENDER);
     }
 
     /**
      * Race of the specific population.
      */
     public CodeableConcept race() {
-        return getObject(CodeableConcept.class, PROPERTY_RACE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_RACE);
     }
 
     /**
@@ -109,7 +103,7 @@ public class Population extends FhirResource {
      * which this applies.
      */
     public CodeableConcept physiologicalCondition() {
-        return getObject(CodeableConcept.class, PROPERTY_PHYSIOLOGICAL_CONDITION);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PHYSIOLOGICAL_CONDITION);
     }
 
     public static class Builder {
@@ -124,42 +118,42 @@ public class Population extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder ageRange(final Range ageRange) {
-            b.add(PROPERTY_AGE_RANGE, ageRange);
+            b.add(FhirPropertyNames.PROPERTY_AGE_RANGE, ageRange);
             return this;
         }
 
         public Builder ageCodeableConcept(final CodeableConcept ageCodeableConcept) {
-            b.add(PROPERTY_AGE_CODEABLE_CONCEPT, ageCodeableConcept);
+            b.add(FhirPropertyNames.PROPERTY_AGE_CODEABLE_CONCEPT, ageCodeableConcept);
             return this;
         }
 
         public Builder gender(final CodeableConcept gender) {
-            b.add(PROPERTY_GENDER, gender);
+            b.add(FhirPropertyNames.PROPERTY_GENDER, gender);
             return this;
         }
 
         public Builder race(final CodeableConcept race) {
-            b.add(PROPERTY_RACE, race);
+            b.add(FhirPropertyNames.PROPERTY_RACE, race);
             return this;
         }
 
         public Builder physiologicalCondition(final CodeableConcept physiologicalCondition) {
-            b.add(PROPERTY_PHYSIOLOGICAL_CONDITION, physiologicalCondition);
+            b.add(FhirPropertyNames.PROPERTY_PHYSIOLOGICAL_CONDITION, physiologicalCondition);
             return this;
         }
 

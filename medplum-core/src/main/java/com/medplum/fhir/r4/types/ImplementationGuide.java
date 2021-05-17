@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A set of rules of how a particular interoperability or standards
  * problem is solved - typically through the use of FHIR resources. This
@@ -18,35 +20,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class ImplementationGuide extends FhirResource {
     public static final String RESOURCE_TYPE = "ImplementationGuide";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_PUBLISHER = "publisher";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USE_CONTEXT = "useContext";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_PACKAGE_ID = "packageId";
-    public static final String PROPERTY_LICENSE = "license";
-    public static final String PROPERTY_FHIR_VERSION = "fhirVersion";
-    public static final String PROPERTY_DEPENDS_ON = "dependsOn";
-    public static final String PROPERTY_GLOBAL = "global";
-    public static final String PROPERTY_DEFINITION = "definition";
-    public static final String PROPERTY_MANIFEST = "manifest";
 
     public static Builder create() {
         return new Builder();
@@ -67,14 +40,14 @@ public class ImplementationGuide extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -86,7 +59,7 @@ public class ImplementationGuide extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -95,7 +68,7 @@ public class ImplementationGuide extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -107,7 +80,7 @@ public class ImplementationGuide extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -127,7 +100,7 @@ public class ImplementationGuide extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -141,7 +114,7 @@ public class ImplementationGuide extends FhirResource {
      * different servers.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -154,7 +127,7 @@ public class ImplementationGuide extends FhirResource {
      * can be placed in a lexicographical sequence.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -163,7 +136,7 @@ public class ImplementationGuide extends FhirResource {
      * processing applications such as code generation.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -171,7 +144,7 @@ public class ImplementationGuide extends FhirResource {
      * guide.
      */
     public String title() {
-        return getString(PROPERTY_TITLE);
+        return getString(FhirPropertyNames.PROPERTY_TITLE);
     }
 
     /**
@@ -179,7 +152,7 @@ public class ImplementationGuide extends FhirResource {
      * life-cycle of the content.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -188,7 +161,7 @@ public class ImplementationGuide extends FhirResource {
      * intended to be used for genuine usage.
      */
     public Boolean experimental() {
-        return data.getBoolean(PROPERTY_EXPERIMENTAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_EXPERIMENTAL);
     }
 
     /**
@@ -199,7 +172,7 @@ public class ImplementationGuide extends FhirResource {
      * changes.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -207,7 +180,7 @@ public class ImplementationGuide extends FhirResource {
      * implementation guide.
      */
     public String publisher() {
-        return getString(PROPERTY_PUBLISHER);
+        return getString(FhirPropertyNames.PROPERTY_PUBLISHER);
     }
 
     /**
@@ -215,7 +188,7 @@ public class ImplementationGuide extends FhirResource {
      * publisher.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
@@ -223,7 +196,7 @@ public class ImplementationGuide extends FhirResource {
      * from a consumer's perspective.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -234,7 +207,7 @@ public class ImplementationGuide extends FhirResource {
      * indexing and searching for appropriate implementation guide instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
+        return getList(UsageContext.class, FhirPropertyNames.PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -242,7 +215,7 @@ public class ImplementationGuide extends FhirResource {
      * intended to be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
-        return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -251,7 +224,7 @@ public class ImplementationGuide extends FhirResource {
      * use and publishing of the implementation guide.
      */
     public String copyright() {
-        return getString(PROPERTY_COPYRIGHT);
+        return getString(FhirPropertyNames.PROPERTY_COPYRIGHT);
     }
 
     /**
@@ -261,7 +234,7 @@ public class ImplementationGuide extends FhirResource {
      * unique, and should be assigned with care.
      */
     public String packageId() {
-        return getString(PROPERTY_PACKAGE_ID);
+        return getString(FhirPropertyNames.PROPERTY_PACKAGE_ID);
     }
 
     /**
@@ -269,7 +242,7 @@ public class ImplementationGuide extends FhirResource {
      * license code, or 'not-open-source'.
      */
     public String license() {
-        return getString(PROPERTY_LICENSE);
+        return getString(FhirPropertyNames.PROPERTY_LICENSE);
     }
 
     /**
@@ -279,7 +252,7 @@ public class ImplementationGuide extends FhirResource {
      * [publication].[major].[minor], which is 4.0.1. for this version.
      */
     public java.util.List<String> fhirVersion() {
-        return getList(String.class, PROPERTY_FHIR_VERSION);
+        return getList(String.class, FhirPropertyNames.PROPERTY_FHIR_VERSION);
     }
 
     /**
@@ -288,7 +261,7 @@ public class ImplementationGuide extends FhirResource {
      * etc.defined in other implementation guides.
      */
     public java.util.List<ImplementationGuideDependsOn> dependsOn() {
-        return getList(ImplementationGuideDependsOn.class, PROPERTY_DEPENDS_ON);
+        return getList(ImplementationGuideDependsOn.class, FhirPropertyNames.PROPERTY_DEPENDS_ON);
     }
 
     /**
@@ -296,7 +269,7 @@ public class ImplementationGuide extends FhirResource {
      * guide must conform to.
      */
     public java.util.List<ImplementationGuideGlobal> global() {
-        return getList(ImplementationGuideGlobal.class, PROPERTY_GLOBAL);
+        return getList(ImplementationGuideGlobal.class, FhirPropertyNames.PROPERTY_GLOBAL);
     }
 
     /**
@@ -304,7 +277,7 @@ public class ImplementationGuide extends FhirResource {
      * implementation guide.
      */
     public ImplementationGuideDefinition definition() {
-        return getObject(ImplementationGuideDefinition.class, PROPERTY_DEFINITION);
+        return getObject(ImplementationGuideDefinition.class, FhirPropertyNames.PROPERTY_DEFINITION);
     }
 
     /**
@@ -312,7 +285,7 @@ public class ImplementationGuide extends FhirResource {
      * publication tooling.
      */
     public ImplementationGuideManifest manifest() {
-        return getObject(ImplementationGuideManifest.class, PROPERTY_MANIFEST);
+        return getObject(ImplementationGuideManifest.class, FhirPropertyNames.PROPERTY_MANIFEST);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -326,147 +299,147 @@ public class ImplementationGuide extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder title(final String title) {
-            b.add(PROPERTY_TITLE, title);
+            b.add(FhirPropertyNames.PROPERTY_TITLE, title);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder experimental(final Boolean experimental) {
-            b.add(PROPERTY_EXPERIMENTAL, experimental);
+            b.add(FhirPropertyNames.PROPERTY_EXPERIMENTAL, experimental);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder publisher(final String publisher) {
-            b.add(PROPERTY_PUBLISHER, publisher);
+            b.add(FhirPropertyNames.PROPERTY_PUBLISHER, publisher);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
+            b.add(FhirPropertyNames.PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
         public Builder jurisdiction(final java.util.List<CodeableConcept> jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
             return this;
         }
 
         public Builder copyright(final String copyright) {
-            b.add(PROPERTY_COPYRIGHT, copyright);
+            b.add(FhirPropertyNames.PROPERTY_COPYRIGHT, copyright);
             return this;
         }
 
         public Builder packageId(final String packageId) {
-            b.add(PROPERTY_PACKAGE_ID, packageId);
+            b.add(FhirPropertyNames.PROPERTY_PACKAGE_ID, packageId);
             return this;
         }
 
         public Builder license(final String license) {
-            b.add(PROPERTY_LICENSE, license);
+            b.add(FhirPropertyNames.PROPERTY_LICENSE, license);
             return this;
         }
 
         public Builder fhirVersion(final java.util.List<String> fhirVersion) {
-            b.add(PROPERTY_FHIR_VERSION, FhirObject.toStringArray(fhirVersion));
+            b.add(FhirPropertyNames.PROPERTY_FHIR_VERSION, FhirObject.toStringArray(fhirVersion));
             return this;
         }
 
         public Builder dependsOn(final java.util.List<ImplementationGuideDependsOn> dependsOn) {
-            b.add(PROPERTY_DEPENDS_ON, FhirObject.toArray(dependsOn));
+            b.add(FhirPropertyNames.PROPERTY_DEPENDS_ON, FhirObject.toArray(dependsOn));
             return this;
         }
 
         public Builder global(final java.util.List<ImplementationGuideGlobal> global) {
-            b.add(PROPERTY_GLOBAL, FhirObject.toArray(global));
+            b.add(FhirPropertyNames.PROPERTY_GLOBAL, FhirObject.toArray(global));
             return this;
         }
 
         public Builder definition(final ImplementationGuideDefinition definition) {
-            b.add(PROPERTY_DEFINITION, definition);
+            b.add(FhirPropertyNames.PROPERTY_DEFINITION, definition);
             return this;
         }
 
         public Builder manifest(final ImplementationGuideManifest manifest) {
-            b.add(PROPERTY_MANIFEST, manifest);
+            b.add(FhirPropertyNames.PROPERTY_MANIFEST, manifest);
             return this;
         }
 
@@ -484,14 +457,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuideDefinition extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideDefinition";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_GROUPING = "grouping";
-        public static final String PROPERTY_RESOURCE = "resource";
-        public static final String PROPERTY_PAGE = "page";
-        public static final String PROPERTY_PARAMETER = "parameter";
-        public static final String PROPERTY_TEMPLATE = "template";
 
         public static Builder create() {
             return new Builder();
@@ -510,7 +475,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -522,7 +487,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -543,7 +508,7 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -551,7 +516,7 @@ public class ImplementationGuide extends FhirResource {
          * pages.
          */
         public java.util.List<ImplementationGuideGrouping> grouping() {
-            return getList(ImplementationGuideGrouping.class, PROPERTY_GROUPING);
+            return getList(ImplementationGuideGrouping.class, FhirPropertyNames.PROPERTY_GROUPING);
         }
 
         /**
@@ -561,7 +526,7 @@ public class ImplementationGuide extends FhirResource {
          * can be included as an example resource.
          */
         public java.util.List<ImplementationGuideResource> resource() {
-            return getList(ImplementationGuideResource.class, PROPERTY_RESOURCE);
+            return getList(ImplementationGuideResource.class, FhirPropertyNames.PROPERTY_RESOURCE);
         }
 
         /**
@@ -569,21 +534,21 @@ public class ImplementationGuide extends FhirResource {
          * implementation guide home page.
          */
         public ImplementationGuidePage page() {
-            return getObject(ImplementationGuidePage.class, PROPERTY_PAGE);
+            return getObject(ImplementationGuidePage.class, FhirPropertyNames.PROPERTY_PAGE);
         }
 
         /**
          * Defines how IG is built by tools.
          */
         public java.util.List<ImplementationGuideParameter> parameter() {
-            return getList(ImplementationGuideParameter.class, PROPERTY_PARAMETER);
+            return getList(ImplementationGuideParameter.class, FhirPropertyNames.PROPERTY_PARAMETER);
         }
 
         /**
          * A template for building resources.
          */
         public java.util.List<ImplementationGuideTemplate> template() {
-            return getList(ImplementationGuideTemplate.class, PROPERTY_TEMPLATE);
+            return getList(ImplementationGuideTemplate.class, FhirPropertyNames.PROPERTY_TEMPLATE);
         }
 
         public static class Builder {
@@ -598,42 +563,42 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder grouping(final java.util.List<ImplementationGuideGrouping> grouping) {
-                b.add(PROPERTY_GROUPING, FhirObject.toArray(grouping));
+                b.add(FhirPropertyNames.PROPERTY_GROUPING, FhirObject.toArray(grouping));
                 return this;
             }
 
             public Builder resource(final java.util.List<ImplementationGuideResource> resource) {
-                b.add(PROPERTY_RESOURCE, FhirObject.toArray(resource));
+                b.add(FhirPropertyNames.PROPERTY_RESOURCE, FhirObject.toArray(resource));
                 return this;
             }
 
             public Builder page(final ImplementationGuidePage page) {
-                b.add(PROPERTY_PAGE, page);
+                b.add(FhirPropertyNames.PROPERTY_PAGE, page);
                 return this;
             }
 
             public Builder parameter(final java.util.List<ImplementationGuideParameter> parameter) {
-                b.add(PROPERTY_PARAMETER, FhirObject.toArray(parameter));
+                b.add(FhirPropertyNames.PROPERTY_PARAMETER, FhirObject.toArray(parameter));
                 return this;
             }
 
             public Builder template(final java.util.List<ImplementationGuideTemplate> template) {
-                b.add(PROPERTY_TEMPLATE, FhirObject.toArray(template));
+                b.add(FhirPropertyNames.PROPERTY_TEMPLATE, FhirObject.toArray(template));
                 return this;
             }
 
@@ -652,12 +617,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuideDependsOn extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideDependsOn";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_URI = "uri";
-        public static final String PROPERTY_PACKAGE_ID = "packageId";
-        public static final String PROPERTY_VERSION = "version";
 
         public static Builder create() {
             return new Builder();
@@ -676,7 +635,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -688,7 +647,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -709,14 +668,14 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * A canonical reference to the Implementation guide for the dependency.
          */
         public String uri() {
-            return getString(PROPERTY_URI);
+            return getString(FhirPropertyNames.PROPERTY_URI);
         }
 
         /**
@@ -724,7 +683,7 @@ public class ImplementationGuide extends FhirResource {
          * on.
          */
         public String packageId() {
-            return getString(PROPERTY_PACKAGE_ID);
+            return getString(FhirPropertyNames.PROPERTY_PACKAGE_ID);
         }
 
         /**
@@ -732,7 +691,7 @@ public class ImplementationGuide extends FhirResource {
          * required to understand the IG correctly.
          */
         public String version() {
-            return getString(PROPERTY_VERSION);
+            return getString(FhirPropertyNames.PROPERTY_VERSION);
         }
 
         public static class Builder {
@@ -747,32 +706,32 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder uri(final String uri) {
-                b.add(PROPERTY_URI, uri);
+                b.add(FhirPropertyNames.PROPERTY_URI, uri);
                 return this;
             }
 
             public Builder packageId(final String packageId) {
-                b.add(PROPERTY_PACKAGE_ID, packageId);
+                b.add(FhirPropertyNames.PROPERTY_PACKAGE_ID, packageId);
                 return this;
             }
 
             public Builder version(final String version) {
-                b.add(PROPERTY_VERSION, version);
+                b.add(FhirPropertyNames.PROPERTY_VERSION, version);
                 return this;
             }
 
@@ -791,11 +750,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuideGlobal extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideGlobal";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_PROFILE = "profile";
 
         public static Builder create() {
             return new Builder();
@@ -814,7 +768,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -826,7 +780,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -847,21 +801,21 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The type of resource that all instances must conform to.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * A reference to the profile that all instances must conform to.
          */
         public String profile() {
-            return getString(PROPERTY_PROFILE);
+            return getString(FhirPropertyNames.PROPERTY_PROFILE);
         }
 
         public static class Builder {
@@ -876,27 +830,27 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder profile(final String profile) {
-                b.add(PROPERTY_PROFILE, profile);
+                b.add(FhirPropertyNames.PROPERTY_PROFILE, profile);
                 return this;
             }
 
@@ -915,11 +869,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuideGrouping extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideGrouping";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DESCRIPTION = "description";
 
         public static Builder create() {
             return new Builder();
@@ -938,7 +887,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -950,7 +899,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -971,7 +920,7 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -979,14 +928,14 @@ public class ImplementationGuide extends FhirResource {
          * rendering the implementation guide.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * Human readable text describing the package.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         public static class Builder {
@@ -1001,27 +950,27 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
@@ -1040,14 +989,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuideManifest extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideManifest";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_RENDERING = "rendering";
-        public static final String PROPERTY_RESOURCE = "resource";
-        public static final String PROPERTY_PAGE = "page";
-        public static final String PROPERTY_IMAGE = "image";
-        public static final String PROPERTY_OTHER = "other";
 
         public static Builder create() {
             return new Builder();
@@ -1066,7 +1007,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1078,7 +1019,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1099,7 +1040,7 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1107,7 +1048,7 @@ public class ImplementationGuide extends FhirResource {
          * implementation guide.
          */
         public java.net.URI rendering() {
-            return getUri(PROPERTY_RENDERING);
+            return getUri(FhirPropertyNames.PROPERTY_RENDERING);
         }
 
         /**
@@ -1117,21 +1058,21 @@ public class ImplementationGuide extends FhirResource {
          * can be included as an example resource.
          */
         public java.util.List<ImplementationGuideResource1> resource() {
-            return getList(ImplementationGuideResource1.class, PROPERTY_RESOURCE);
+            return getList(ImplementationGuideResource1.class, FhirPropertyNames.PROPERTY_RESOURCE);
         }
 
         /**
          * Information about a page within the IG.
          */
         public java.util.List<ImplementationGuidePage1> page() {
-            return getList(ImplementationGuidePage1.class, PROPERTY_PAGE);
+            return getList(ImplementationGuidePage1.class, FhirPropertyNames.PROPERTY_PAGE);
         }
 
         /**
          * Indicates a relative path to an image that exists within the IG.
          */
         public java.util.List<String> image() {
-            return getList(String.class, PROPERTY_IMAGE);
+            return getList(String.class, FhirPropertyNames.PROPERTY_IMAGE);
         }
 
         /**
@@ -1140,7 +1081,7 @@ public class ImplementationGuide extends FhirResource {
          * the target of a hyperlink in a derived IG.
          */
         public java.util.List<String> other() {
-            return getList(String.class, PROPERTY_OTHER);
+            return getList(String.class, FhirPropertyNames.PROPERTY_OTHER);
         }
 
         public static class Builder {
@@ -1155,42 +1096,42 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder rendering(final java.net.URI rendering) {
-                b.add(PROPERTY_RENDERING, rendering.toString());
+                b.add(FhirPropertyNames.PROPERTY_RENDERING, rendering.toString());
                 return this;
             }
 
             public Builder resource(final java.util.List<ImplementationGuideResource1> resource) {
-                b.add(PROPERTY_RESOURCE, FhirObject.toArray(resource));
+                b.add(FhirPropertyNames.PROPERTY_RESOURCE, FhirObject.toArray(resource));
                 return this;
             }
 
             public Builder page(final java.util.List<ImplementationGuidePage1> page) {
-                b.add(PROPERTY_PAGE, FhirObject.toArray(page));
+                b.add(FhirPropertyNames.PROPERTY_PAGE, FhirObject.toArray(page));
                 return this;
             }
 
             public Builder image(final java.util.List<String> image) {
-                b.add(PROPERTY_IMAGE, FhirObject.toStringArray(image));
+                b.add(FhirPropertyNames.PROPERTY_IMAGE, FhirObject.toStringArray(image));
                 return this;
             }
 
             public Builder other(final java.util.List<String> other) {
-                b.add(PROPERTY_OTHER, FhirObject.toStringArray(other));
+                b.add(FhirPropertyNames.PROPERTY_OTHER, FhirObject.toStringArray(other));
                 return this;
             }
 
@@ -1209,14 +1150,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuidePage extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuidePage";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME_URL = "nameUrl";
-        public static final String PROPERTY_NAME_REFERENCE = "nameReference";
-        public static final String PROPERTY_TITLE = "title";
-        public static final String PROPERTY_GENERATION = "generation";
-        public static final String PROPERTY_PAGE = "page";
 
         public static Builder create() {
             return new Builder();
@@ -1235,7 +1168,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1247,7 +1180,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1268,21 +1201,21 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The source address for the page.
          */
         public String nameUrl() {
-            return getString(PROPERTY_NAME_URL);
+            return getString(FhirPropertyNames.PROPERTY_NAME_URL);
         }
 
         /**
          * The source address for the page.
          */
         public Reference nameReference() {
-            return getObject(Reference.class, PROPERTY_NAME_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_NAME_REFERENCE);
         }
 
         /**
@@ -1290,21 +1223,21 @@ public class ImplementationGuide extends FhirResource {
          * such as table of contents, bread crumbs, etc.
          */
         public String title() {
-            return getString(PROPERTY_TITLE);
+            return getString(FhirPropertyNames.PROPERTY_TITLE);
         }
 
         /**
          * A code that indicates how the page is generated.
          */
         public String generation() {
-            return getString(PROPERTY_GENERATION);
+            return getString(FhirPropertyNames.PROPERTY_GENERATION);
         }
 
         /**
          * Nested Pages/Sections under this page.
          */
         public java.util.List<ImplementationGuidePage> page() {
-            return getList(ImplementationGuidePage.class, PROPERTY_PAGE);
+            return getList(ImplementationGuidePage.class, FhirPropertyNames.PROPERTY_PAGE);
         }
 
         public static class Builder {
@@ -1319,42 +1252,42 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder nameUrl(final String nameUrl) {
-                b.add(PROPERTY_NAME_URL, nameUrl);
+                b.add(FhirPropertyNames.PROPERTY_NAME_URL, nameUrl);
                 return this;
             }
 
             public Builder nameReference(final Reference nameReference) {
-                b.add(PROPERTY_NAME_REFERENCE, nameReference);
+                b.add(FhirPropertyNames.PROPERTY_NAME_REFERENCE, nameReference);
                 return this;
             }
 
             public Builder title(final String title) {
-                b.add(PROPERTY_TITLE, title);
+                b.add(FhirPropertyNames.PROPERTY_TITLE, title);
                 return this;
             }
 
             public Builder generation(final String generation) {
-                b.add(PROPERTY_GENERATION, generation);
+                b.add(FhirPropertyNames.PROPERTY_GENERATION, generation);
                 return this;
             }
 
             public Builder page(final java.util.List<ImplementationGuidePage> page) {
-                b.add(PROPERTY_PAGE, FhirObject.toArray(page));
+                b.add(FhirPropertyNames.PROPERTY_PAGE, FhirObject.toArray(page));
                 return this;
             }
 
@@ -1373,12 +1306,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuidePage1 extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuidePage1";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_TITLE = "title";
-        public static final String PROPERTY_ANCHOR = "anchor";
 
         public static Builder create() {
             return new Builder();
@@ -1397,7 +1324,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1409,7 +1336,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1430,28 +1357,28 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Relative path to the page.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * Label for the page intended for human display.
          */
         public String title() {
-            return getString(PROPERTY_TITLE);
+            return getString(FhirPropertyNames.PROPERTY_TITLE);
         }
 
         /**
          * The name of an anchor available on the page.
          */
         public java.util.List<String> anchor() {
-            return getList(String.class, PROPERTY_ANCHOR);
+            return getList(String.class, FhirPropertyNames.PROPERTY_ANCHOR);
         }
 
         public static class Builder {
@@ -1466,32 +1393,32 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder title(final String title) {
-                b.add(PROPERTY_TITLE, title);
+                b.add(FhirPropertyNames.PROPERTY_TITLE, title);
                 return this;
             }
 
             public Builder anchor(final java.util.List<String> anchor) {
-                b.add(PROPERTY_ANCHOR, FhirObject.toStringArray(anchor));
+                b.add(FhirPropertyNames.PROPERTY_ANCHOR, FhirObject.toStringArray(anchor));
                 return this;
             }
 
@@ -1510,11 +1437,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuideParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideParameter";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_VALUE = "value";
 
         public static Builder create() {
             return new Builder();
@@ -1533,7 +1455,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1545,7 +1467,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1566,7 +1488,7 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1575,14 +1497,14 @@ public class ImplementationGuide extends FhirResource {
          * | generate-turtle | html-template.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * Value for named type.
          */
         public String value() {
-            return getString(PROPERTY_VALUE);
+            return getString(FhirPropertyNames.PROPERTY_VALUE);
         }
 
         public static class Builder {
@@ -1597,27 +1519,27 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder value(final String value) {
-                b.add(PROPERTY_VALUE, value);
+                b.add(FhirPropertyNames.PROPERTY_VALUE, value);
                 return this;
             }
 
@@ -1636,16 +1558,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuideResource extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideResource";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_REFERENCE = "reference";
-        public static final String PROPERTY_FHIR_VERSION = "fhirVersion";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_EXAMPLE_BOOLEAN = "exampleBoolean";
-        public static final String PROPERTY_EXAMPLE_CANONICAL = "exampleCanonical";
-        public static final String PROPERTY_GROUPING_ID = "groupingId";
 
         public static Builder create() {
             return new Builder();
@@ -1664,7 +1576,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1676,7 +1588,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1697,14 +1609,14 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Where this resource is found.
          */
         public Reference reference() {
-            return getObject(Reference.class, PROPERTY_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_REFERENCE);
         }
 
         /**
@@ -1713,7 +1625,7 @@ public class ImplementationGuide extends FhirResource {
          * the versions stated in ImplementationGuide.fhirVersion.
          */
         public java.util.List<String> fhirVersion() {
-            return getList(String.class, PROPERTY_FHIR_VERSION);
+            return getList(String.class, FhirPropertyNames.PROPERTY_FHIR_VERSION);
         }
 
         /**
@@ -1722,7 +1634,7 @@ public class ImplementationGuide extends FhirResource {
          * ValueSet.name).
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
@@ -1730,7 +1642,7 @@ public class ImplementationGuide extends FhirResource {
          * implementation guide.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
@@ -1739,7 +1651,7 @@ public class ImplementationGuide extends FhirResource {
          * the specified profile.
          */
         public Boolean exampleBoolean() {
-            return data.getBoolean(PROPERTY_EXAMPLE_BOOLEAN);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_EXAMPLE_BOOLEAN);
         }
 
         /**
@@ -1748,14 +1660,14 @@ public class ImplementationGuide extends FhirResource {
          * the specified profile.
          */
         public String exampleCanonical() {
-            return getString(PROPERTY_EXAMPLE_CANONICAL);
+            return getString(FhirPropertyNames.PROPERTY_EXAMPLE_CANONICAL);
         }
 
         /**
          * Reference to the id of the grouping this resource appears in.
          */
         public String groupingId() {
-            return getString(PROPERTY_GROUPING_ID);
+            return getString(FhirPropertyNames.PROPERTY_GROUPING_ID);
         }
 
         public static class Builder {
@@ -1770,52 +1682,52 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder reference(final Reference reference) {
-                b.add(PROPERTY_REFERENCE, reference);
+                b.add(FhirPropertyNames.PROPERTY_REFERENCE, reference);
                 return this;
             }
 
             public Builder fhirVersion(final java.util.List<String> fhirVersion) {
-                b.add(PROPERTY_FHIR_VERSION, FhirObject.toStringArray(fhirVersion));
+                b.add(FhirPropertyNames.PROPERTY_FHIR_VERSION, FhirObject.toStringArray(fhirVersion));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder exampleBoolean(final Boolean exampleBoolean) {
-                b.add(PROPERTY_EXAMPLE_BOOLEAN, exampleBoolean);
+                b.add(FhirPropertyNames.PROPERTY_EXAMPLE_BOOLEAN, exampleBoolean);
                 return this;
             }
 
             public Builder exampleCanonical(final String exampleCanonical) {
-                b.add(PROPERTY_EXAMPLE_CANONICAL, exampleCanonical);
+                b.add(FhirPropertyNames.PROPERTY_EXAMPLE_CANONICAL, exampleCanonical);
                 return this;
             }
 
             public Builder groupingId(final String groupingId) {
-                b.add(PROPERTY_GROUPING_ID, groupingId);
+                b.add(FhirPropertyNames.PROPERTY_GROUPING_ID, groupingId);
                 return this;
             }
 
@@ -1834,13 +1746,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuideResource1 extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideResource1";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_REFERENCE = "reference";
-        public static final String PROPERTY_EXAMPLE_BOOLEAN = "exampleBoolean";
-        public static final String PROPERTY_EXAMPLE_CANONICAL = "exampleCanonical";
-        public static final String PROPERTY_RELATIVE_PATH = "relativePath";
 
         public static Builder create() {
             return new Builder();
@@ -1859,7 +1764,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1871,7 +1776,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1892,14 +1797,14 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Where this resource is found.
          */
         public Reference reference() {
-            return getObject(Reference.class, PROPERTY_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_REFERENCE);
         }
 
         /**
@@ -1908,7 +1813,7 @@ public class ImplementationGuide extends FhirResource {
          * the specified profile.
          */
         public Boolean exampleBoolean() {
-            return data.getBoolean(PROPERTY_EXAMPLE_BOOLEAN);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_EXAMPLE_BOOLEAN);
         }
 
         /**
@@ -1917,14 +1822,14 @@ public class ImplementationGuide extends FhirResource {
          * the specified profile.
          */
         public String exampleCanonical() {
-            return getString(PROPERTY_EXAMPLE_CANONICAL);
+            return getString(FhirPropertyNames.PROPERTY_EXAMPLE_CANONICAL);
         }
 
         /**
          * The relative path for primary page for this resource within the IG.
          */
         public java.net.URI relativePath() {
-            return getUri(PROPERTY_RELATIVE_PATH);
+            return getUri(FhirPropertyNames.PROPERTY_RELATIVE_PATH);
         }
 
         public static class Builder {
@@ -1939,37 +1844,37 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder reference(final Reference reference) {
-                b.add(PROPERTY_REFERENCE, reference);
+                b.add(FhirPropertyNames.PROPERTY_REFERENCE, reference);
                 return this;
             }
 
             public Builder exampleBoolean(final Boolean exampleBoolean) {
-                b.add(PROPERTY_EXAMPLE_BOOLEAN, exampleBoolean);
+                b.add(FhirPropertyNames.PROPERTY_EXAMPLE_BOOLEAN, exampleBoolean);
                 return this;
             }
 
             public Builder exampleCanonical(final String exampleCanonical) {
-                b.add(PROPERTY_EXAMPLE_CANONICAL, exampleCanonical);
+                b.add(FhirPropertyNames.PROPERTY_EXAMPLE_CANONICAL, exampleCanonical);
                 return this;
             }
 
             public Builder relativePath(final java.net.URI relativePath) {
-                b.add(PROPERTY_RELATIVE_PATH, relativePath.toString());
+                b.add(FhirPropertyNames.PROPERTY_RELATIVE_PATH, relativePath.toString());
                 return this;
             }
 
@@ -1988,12 +1893,6 @@ public class ImplementationGuide extends FhirResource {
      */
     public static class ImplementationGuideTemplate extends FhirObject {
         public static final String RESOURCE_TYPE = "ImplementationGuideTemplate";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_SOURCE = "source";
-        public static final String PROPERTY_SCOPE = "scope";
 
         public static Builder create() {
             return new Builder();
@@ -2012,7 +1911,7 @@ public class ImplementationGuide extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -2024,7 +1923,7 @@ public class ImplementationGuide extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -2045,28 +1944,28 @@ public class ImplementationGuide extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Type of template specified.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * The source location for the template.
          */
         public String source() {
-            return getString(PROPERTY_SOURCE);
+            return getString(FhirPropertyNames.PROPERTY_SOURCE);
         }
 
         /**
          * The scope in which the template applies.
          */
         public String scope() {
-            return getString(PROPERTY_SCOPE);
+            return getString(FhirPropertyNames.PROPERTY_SCOPE);
         }
 
         public static class Builder {
@@ -2081,32 +1980,32 @@ public class ImplementationGuide extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder source(final String source) {
-                b.add(PROPERTY_SOURCE, source);
+                b.add(FhirPropertyNames.PROPERTY_SOURCE, source);
                 return this;
             }
 
             public Builder scope(final String scope) {
-                b.add(PROPERTY_SCOPE, scope);
+                b.add(FhirPropertyNames.PROPERTY_SCOPE, scope);
                 return this;
             }
 

@@ -7,15 +7,13 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * OAuth client application.
  */
 public class ClientApplication extends FhirResource {
     public static final String RESOURCE_TYPE = "ClientApplication";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_SECRET = "secret";
-    public static final String PROPERTY_REDIRECT_URI = "redirectUri";
 
     public static Builder create() {
         return new Builder();
@@ -33,7 +31,7 @@ public class ClientApplication extends FhirResource {
      * Client secret string used to verify the identity of a client.
      */
     public String secret() {
-        return getString(PROPERTY_SECRET);
+        return getString(FhirPropertyNames.PROPERTY_SECRET);
     }
 
     /**
@@ -41,7 +39,7 @@ public class ClientApplication extends FhirResource {
      * application.
      */
     public String redirectUri() {
-        return getString(PROPERTY_REDIRECT_URI);
+        return getString(FhirPropertyNames.PROPERTY_REDIRECT_URI);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -55,22 +53,22 @@ public class ClientApplication extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder secret(final String secret) {
-            b.add(PROPERTY_SECRET, secret);
+            b.add(FhirPropertyNames.PROPERTY_SECRET, secret);
             return this;
         }
 
         public Builder redirectUri(final String redirectUri) {
-            b.add(PROPERTY_REDIRECT_URI, redirectUri);
+            b.add(FhirPropertyNames.PROPERTY_REDIRECT_URI, redirectUri);
             return this;
         }
 

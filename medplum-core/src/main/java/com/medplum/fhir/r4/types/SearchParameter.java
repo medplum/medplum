@@ -9,47 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A search parameter that defines a named search item that can be used
  * to search/filter on a resource.
  */
 public class SearchParameter extends FhirResource {
     public static final String RESOURCE_TYPE = "SearchParameter";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_DERIVED_FROM = "derivedFrom";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_PUBLISHER = "publisher";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USE_CONTEXT = "useContext";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_PURPOSE = "purpose";
-    public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_BASE = "base";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_EXPRESSION = "expression";
-    public static final String PROPERTY_XPATH = "xpath";
-    public static final String PROPERTY_XPATH_USAGE = "xpathUsage";
-    public static final String PROPERTY_TARGET = "target";
-    public static final String PROPERTY_MULTIPLE_OR = "multipleOr";
-    public static final String PROPERTY_MULTIPLE_AND = "multipleAnd";
-    public static final String PROPERTY_COMPARATOR = "comparator";
-    public static final String PROPERTY_MODIFIER = "modifier";
-    public static final String PROPERTY_CHAIN = "chain";
-    public static final String PROPERTY_COMPONENT = "component";
 
     public static Builder create() {
         return new Builder();
@@ -70,14 +37,14 @@ public class SearchParameter extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -89,7 +56,7 @@ public class SearchParameter extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -98,7 +65,7 @@ public class SearchParameter extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -110,7 +77,7 @@ public class SearchParameter extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -130,7 +97,7 @@ public class SearchParameter extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -143,7 +110,7 @@ public class SearchParameter extends FhirResource {
      * when the search parameter is stored on different servers.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -156,7 +123,7 @@ public class SearchParameter extends FhirResource {
      * a lexicographical sequence.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -165,7 +132,7 @@ public class SearchParameter extends FhirResource {
      * applications such as code generation.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -176,7 +143,7 @@ public class SearchParameter extends FhirResource {
      * be a proper subset of the underlying search parameter.
      */
     public String derivedFrom() {
-        return getString(PROPERTY_DERIVED_FROM);
+        return getString(FhirPropertyNames.PROPERTY_DERIVED_FROM);
     }
 
     /**
@@ -184,7 +151,7 @@ public class SearchParameter extends FhirResource {
      * of the content.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -193,7 +160,7 @@ public class SearchParameter extends FhirResource {
      * intended to be used for genuine usage.
      */
     public Boolean experimental() {
-        return data.getBoolean(PROPERTY_EXPERIMENTAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_EXPERIMENTAL);
     }
 
     /**
@@ -203,7 +170,7 @@ public class SearchParameter extends FhirResource {
      * change when the substantive content of the search parameter changes.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -211,7 +178,7 @@ public class SearchParameter extends FhirResource {
      * parameter.
      */
     public String publisher() {
-        return getString(PROPERTY_PUBLISHER);
+        return getString(FhirPropertyNames.PROPERTY_PUBLISHER);
     }
 
     /**
@@ -219,14 +186,14 @@ public class SearchParameter extends FhirResource {
      * publisher.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
      * And how it used.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -237,7 +204,7 @@ public class SearchParameter extends FhirResource {
      * indexing and searching for appropriate search parameter instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
+        return getList(UsageContext.class, FhirPropertyNames.PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -245,7 +212,7 @@ public class SearchParameter extends FhirResource {
      * to be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
-        return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -253,7 +220,7 @@ public class SearchParameter extends FhirResource {
      * designed as it has.
      */
     public String purpose() {
-        return getString(PROPERTY_PURPOSE);
+        return getString(FhirPropertyNames.PROPERTY_PURPOSE);
     }
 
     /**
@@ -261,7 +228,7 @@ public class SearchParameter extends FhirResource {
      * resource for this search parameter.
      */
     public String code() {
-        return getString(PROPERTY_CODE);
+        return getString(FhirPropertyNames.PROPERTY_CODE);
     }
 
     /**
@@ -269,7 +236,7 @@ public class SearchParameter extends FhirResource {
      * against.
      */
     public java.util.List<String> base() {
-        return getList(String.class, PROPERTY_BASE);
+        return getList(String.class, FhirPropertyNames.PROPERTY_BASE);
     }
 
     /**
@@ -277,7 +244,7 @@ public class SearchParameter extends FhirResource {
      * content is interpreted.
      */
     public String type() {
-        return getString(PROPERTY_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -285,7 +252,7 @@ public class SearchParameter extends FhirResource {
      * parameter.
      */
     public String expression() {
-        return getString(PROPERTY_EXPRESSION);
+        return getString(FhirPropertyNames.PROPERTY_EXPRESSION);
     }
 
     /**
@@ -293,7 +260,7 @@ public class SearchParameter extends FhirResource {
      * parameter.
      */
     public String xpath() {
-        return getString(PROPERTY_XPATH);
+        return getString(FhirPropertyNames.PROPERTY_XPATH);
     }
 
     /**
@@ -301,14 +268,14 @@ public class SearchParameter extends FhirResource {
      * evaluating the xpath query.
      */
     public String xpathUsage() {
-        return getString(PROPERTY_XPATH_USAGE);
+        return getString(FhirPropertyNames.PROPERTY_XPATH_USAGE);
     }
 
     /**
      * Types of resource (if a resource is referenced).
      */
     public java.util.List<String> target() {
-        return getList(String.class, PROPERTY_TARGET);
+        return getList(String.class, FhirPropertyNames.PROPERTY_TARGET);
     }
 
     /**
@@ -317,7 +284,7 @@ public class SearchParameter extends FhirResource {
      * any of the values match.
      */
     public Boolean multipleOr() {
-        return data.getBoolean(PROPERTY_MULTIPLE_OR);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_MULTIPLE_OR);
     }
 
     /**
@@ -325,21 +292,21 @@ public class SearchParameter extends FhirResource {
      * with the same name. The search matches if all the parameters match.
      */
     public Boolean multipleAnd() {
-        return data.getBoolean(PROPERTY_MULTIPLE_AND);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_MULTIPLE_AND);
     }
 
     /**
      * Comparators supported for the search parameter.
      */
     public java.util.List<String> comparator() {
-        return getList(String.class, PROPERTY_COMPARATOR);
+        return getList(String.class, FhirPropertyNames.PROPERTY_COMPARATOR);
     }
 
     /**
      * A modifier supported for the search parameter.
      */
     public java.util.List<String> modifier() {
-        return getList(String.class, PROPERTY_MODIFIER);
+        return getList(String.class, FhirPropertyNames.PROPERTY_MODIFIER);
     }
 
     /**
@@ -352,14 +319,14 @@ public class SearchParameter extends FhirResource {
      * type.
      */
     public java.util.List<String> chain() {
-        return getList(String.class, PROPERTY_CHAIN);
+        return getList(String.class, FhirPropertyNames.PROPERTY_CHAIN);
     }
 
     /**
      * Used to define the parts of a composite search parameter.
      */
     public java.util.List<SearchParameterComponent> component() {
-        return getList(SearchParameterComponent.class, PROPERTY_COMPONENT);
+        return getList(SearchParameterComponent.class, FhirPropertyNames.PROPERTY_COMPONENT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -373,177 +340,177 @@ public class SearchParameter extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder derivedFrom(final String derivedFrom) {
-            b.add(PROPERTY_DERIVED_FROM, derivedFrom);
+            b.add(FhirPropertyNames.PROPERTY_DERIVED_FROM, derivedFrom);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder experimental(final Boolean experimental) {
-            b.add(PROPERTY_EXPERIMENTAL, experimental);
+            b.add(FhirPropertyNames.PROPERTY_EXPERIMENTAL, experimental);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder publisher(final String publisher) {
-            b.add(PROPERTY_PUBLISHER, publisher);
+            b.add(FhirPropertyNames.PROPERTY_PUBLISHER, publisher);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
+            b.add(FhirPropertyNames.PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
         public Builder jurisdiction(final java.util.List<CodeableConcept> jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
             return this;
         }
 
         public Builder purpose(final String purpose) {
-            b.add(PROPERTY_PURPOSE, purpose);
+            b.add(FhirPropertyNames.PROPERTY_PURPOSE, purpose);
             return this;
         }
 
         public Builder code(final String code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 
         public Builder base(final java.util.List<String> base) {
-            b.add(PROPERTY_BASE, FhirObject.toStringArray(base));
+            b.add(FhirPropertyNames.PROPERTY_BASE, FhirObject.toStringArray(base));
             return this;
         }
 
         public Builder type(final String type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder expression(final String expression) {
-            b.add(PROPERTY_EXPRESSION, expression);
+            b.add(FhirPropertyNames.PROPERTY_EXPRESSION, expression);
             return this;
         }
 
         public Builder xpath(final String xpath) {
-            b.add(PROPERTY_XPATH, xpath);
+            b.add(FhirPropertyNames.PROPERTY_XPATH, xpath);
             return this;
         }
 
         public Builder xpathUsage(final String xpathUsage) {
-            b.add(PROPERTY_XPATH_USAGE, xpathUsage);
+            b.add(FhirPropertyNames.PROPERTY_XPATH_USAGE, xpathUsage);
             return this;
         }
 
         public Builder target(final java.util.List<String> target) {
-            b.add(PROPERTY_TARGET, FhirObject.toStringArray(target));
+            b.add(FhirPropertyNames.PROPERTY_TARGET, FhirObject.toStringArray(target));
             return this;
         }
 
         public Builder multipleOr(final Boolean multipleOr) {
-            b.add(PROPERTY_MULTIPLE_OR, multipleOr);
+            b.add(FhirPropertyNames.PROPERTY_MULTIPLE_OR, multipleOr);
             return this;
         }
 
         public Builder multipleAnd(final Boolean multipleAnd) {
-            b.add(PROPERTY_MULTIPLE_AND, multipleAnd);
+            b.add(FhirPropertyNames.PROPERTY_MULTIPLE_AND, multipleAnd);
             return this;
         }
 
         public Builder comparator(final java.util.List<String> comparator) {
-            b.add(PROPERTY_COMPARATOR, FhirObject.toStringArray(comparator));
+            b.add(FhirPropertyNames.PROPERTY_COMPARATOR, FhirObject.toStringArray(comparator));
             return this;
         }
 
         public Builder modifier(final java.util.List<String> modifier) {
-            b.add(PROPERTY_MODIFIER, FhirObject.toStringArray(modifier));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER, FhirObject.toStringArray(modifier));
             return this;
         }
 
         public Builder chain(final java.util.List<String> chain) {
-            b.add(PROPERTY_CHAIN, FhirObject.toStringArray(chain));
+            b.add(FhirPropertyNames.PROPERTY_CHAIN, FhirObject.toStringArray(chain));
             return this;
         }
 
         public Builder component(final java.util.List<SearchParameterComponent> component) {
-            b.add(PROPERTY_COMPONENT, FhirObject.toArray(component));
+            b.add(FhirPropertyNames.PROPERTY_COMPONENT, FhirObject.toArray(component));
             return this;
         }
 
@@ -558,11 +525,6 @@ public class SearchParameter extends FhirResource {
      */
     public static class SearchParameterComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "SearchParameterComponent";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_DEFINITION = "definition";
-        public static final String PROPERTY_EXPRESSION = "expression";
 
         public static Builder create() {
             return new Builder();
@@ -581,7 +543,7 @@ public class SearchParameter extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -593,7 +555,7 @@ public class SearchParameter extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -614,14 +576,14 @@ public class SearchParameter extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The definition of the search parameter that describes this part.
          */
         public String definition() {
-            return getString(PROPERTY_DEFINITION);
+            return getString(FhirPropertyNames.PROPERTY_DEFINITION);
         }
 
         /**
@@ -629,7 +591,7 @@ public class SearchParameter extends FhirResource {
          * from the output of the main SearchParameter.expression.
          */
         public String expression() {
-            return getString(PROPERTY_EXPRESSION);
+            return getString(FhirPropertyNames.PROPERTY_EXPRESSION);
         }
 
         public static class Builder {
@@ -644,27 +606,27 @@ public class SearchParameter extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder definition(final String definition) {
-                b.add(PROPERTY_DEFINITION, definition);
+                b.add(FhirPropertyNames.PROPERTY_DEFINITION, definition);
                 return this;
             }
 
             public Builder expression(final String expression) {
-                b.add(PROPERTY_EXPRESSION, expression);
+                b.add(FhirPropertyNames.PROPERTY_EXPRESSION, expression);
                 return this;
             }
 

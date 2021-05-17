@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Specifies clinical/business/etc. metadata that can be used to
  * retrieve, index and/or categorize an artifact. This metadata can
@@ -18,13 +20,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class UsageContext extends FhirResource {
     public static final String RESOURCE_TYPE = "UsageContext";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
-    public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
-    public static final String PROPERTY_VALUE_RANGE = "valueRange";
-    public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
 
     public static Builder create() {
         return new Builder();
@@ -43,7 +38,7 @@ public class UsageContext extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -55,7 +50,7 @@ public class UsageContext extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -63,7 +58,7 @@ public class UsageContext extends FhirResource {
      * usage context.
      */
     public Coding code() {
-        return getObject(Coding.class, PROPERTY_CODE);
+        return getObject(Coding.class, FhirPropertyNames.PROPERTY_CODE);
     }
 
     /**
@@ -71,7 +66,7 @@ public class UsageContext extends FhirResource {
      * interpretation of the value is defined by the code.
      */
     public CodeableConcept valueCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_VALUE_CODEABLE_CONCEPT);
     }
 
     /**
@@ -79,7 +74,7 @@ public class UsageContext extends FhirResource {
      * interpretation of the value is defined by the code.
      */
     public Quantity valueQuantity() {
-        return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_VALUE_QUANTITY);
     }
 
     /**
@@ -87,7 +82,7 @@ public class UsageContext extends FhirResource {
      * interpretation of the value is defined by the code.
      */
     public Range valueRange() {
-        return getObject(Range.class, PROPERTY_VALUE_RANGE);
+        return getObject(Range.class, FhirPropertyNames.PROPERTY_VALUE_RANGE);
     }
 
     /**
@@ -95,7 +90,7 @@ public class UsageContext extends FhirResource {
      * interpretation of the value is defined by the code.
      */
     public Reference valueReference() {
-        return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_VALUE_REFERENCE);
     }
 
     public static class Builder {
@@ -110,37 +105,37 @@ public class UsageContext extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder code(final Coding code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 
         public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-            b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
             return this;
         }
 
         public Builder valueQuantity(final Quantity valueQuantity) {
-            b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_QUANTITY, valueQuantity);
             return this;
         }
 
         public Builder valueRange(final Range valueRange) {
-            b.add(PROPERTY_VALUE_RANGE, valueRange);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_RANGE, valueRange);
             return this;
         }
 
         public Builder valueReference(final Reference valueReference) {
-            b.add(PROPERTY_VALUE_REFERENCE, valueReference);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_REFERENCE, valueReference);
             return this;
         }
 

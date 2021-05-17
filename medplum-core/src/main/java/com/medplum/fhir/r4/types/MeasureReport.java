@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The MeasureReport resource contains the results of the calculation of
  * a measure; and optionally a reference to the resources involved in
@@ -16,26 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class MeasureReport extends FhirResource {
     public static final String RESOURCE_TYPE = "MeasureReport";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_MEASURE = "measure";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_REPORTER = "reporter";
-    public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_IMPROVEMENT_NOTATION = "improvementNotation";
-    public static final String PROPERTY_GROUP = "group";
-    public static final String PROPERTY_EVALUATED_RESOURCE = "evaluatedResource";
 
     public static Builder create() {
         return new Builder();
@@ -56,14 +38,14 @@ public class MeasureReport extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -75,7 +57,7 @@ public class MeasureReport extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -84,7 +66,7 @@ public class MeasureReport extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -96,7 +78,7 @@ public class MeasureReport extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -116,7 +98,7 @@ public class MeasureReport extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -125,7 +107,7 @@ public class MeasureReport extends FhirResource {
      * model, design or an instance.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -133,7 +115,7 @@ public class MeasureReport extends FhirResource {
      * MeasureReport status is complete.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -146,14 +128,14 @@ public class MeasureReport extends FhirResource {
      * exchange the data-of-interest for a quality measure.
      */
     public String type() {
-        return getString(PROPERTY_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
      * A reference to the Measure that was calculated to produce this report.
      */
     public String measure() {
-        return getString(PROPERTY_MEASURE);
+        return getString(FhirPropertyNames.PROPERTY_MEASURE);
     }
 
     /**
@@ -161,28 +143,28 @@ public class MeasureReport extends FhirResource {
      * is for.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
      * The date this measure report was generated.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
      * The individual, location, or organization that is reporting the data.
      */
     public Reference reporter() {
-        return getObject(Reference.class, PROPERTY_REPORTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_REPORTER);
     }
 
     /**
      * The reporting period for which the report was calculated.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     /**
@@ -190,7 +172,7 @@ public class MeasureReport extends FhirResource {
      * in the measure score.
      */
     public CodeableConcept improvementNotation() {
-        return getObject(CodeableConcept.class, PROPERTY_IMPROVEMENT_NOTATION);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_IMPROVEMENT_NOTATION);
     }
 
     /**
@@ -198,7 +180,7 @@ public class MeasureReport extends FhirResource {
      * measure.
      */
     public java.util.List<MeasureReportGroup> group() {
-        return getList(MeasureReportGroup.class, PROPERTY_GROUP);
+        return getList(MeasureReportGroup.class, FhirPropertyNames.PROPERTY_GROUP);
     }
 
     /**
@@ -206,7 +188,7 @@ public class MeasureReport extends FhirResource {
      * calculation of this measure.
      */
     public java.util.List<Reference> evaluatedResource() {
-        return getList(Reference.class, PROPERTY_EVALUATED_RESOURCE);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_EVALUATED_RESOURCE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -220,102 +202,102 @@ public class MeasureReport extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder type(final String type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder measure(final String measure) {
-            b.add(PROPERTY_MEASURE, measure);
+            b.add(FhirPropertyNames.PROPERTY_MEASURE, measure);
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder reporter(final Reference reporter) {
-            b.add(PROPERTY_REPORTER, reporter);
+            b.add(FhirPropertyNames.PROPERTY_REPORTER, reporter);
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 
         public Builder improvementNotation(final CodeableConcept improvementNotation) {
-            b.add(PROPERTY_IMPROVEMENT_NOTATION, improvementNotation);
+            b.add(FhirPropertyNames.PROPERTY_IMPROVEMENT_NOTATION, improvementNotation);
             return this;
         }
 
         public Builder group(final java.util.List<MeasureReportGroup> group) {
-            b.add(PROPERTY_GROUP, FhirObject.toArray(group));
+            b.add(FhirPropertyNames.PROPERTY_GROUP, FhirObject.toArray(group));
             return this;
         }
 
         public Builder evaluatedResource(final java.util.List<Reference> evaluatedResource) {
-            b.add(PROPERTY_EVALUATED_RESOURCE, FhirObject.toArray(evaluatedResource));
+            b.add(FhirPropertyNames.PROPERTY_EVALUATED_RESOURCE, FhirObject.toArray(evaluatedResource));
             return this;
         }
 
@@ -331,11 +313,6 @@ public class MeasureReport extends FhirResource {
      */
     public static class MeasureReportComponent extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportComponent";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_VALUE = "value";
 
         public static Builder create() {
             return new Builder();
@@ -354,7 +331,7 @@ public class MeasureReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -366,7 +343,7 @@ public class MeasureReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -387,21 +364,21 @@ public class MeasureReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The code for the stratum component value.
          */
         public CodeableConcept code() {
-            return getObject(CodeableConcept.class, PROPERTY_CODE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * The stratum component value.
          */
         public CodeableConcept value() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_VALUE);
         }
 
         public static class Builder {
@@ -416,27 +393,27 @@ public class MeasureReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final CodeableConcept code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder value(final CodeableConcept value) {
-                b.add(PROPERTY_VALUE, value);
+                b.add(FhirPropertyNames.PROPERTY_VALUE, value);
                 return this;
             }
 
@@ -453,13 +430,6 @@ public class MeasureReport extends FhirResource {
      */
     public static class MeasureReportGroup extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportGroup";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_POPULATION = "population";
-        public static final String PROPERTY_MEASURE_SCORE = "measureScore";
-        public static final String PROPERTY_STRATIFIER = "stratifier";
 
         public static Builder create() {
             return new Builder();
@@ -478,7 +448,7 @@ public class MeasureReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -490,7 +460,7 @@ public class MeasureReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -511,7 +481,7 @@ public class MeasureReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -519,7 +489,7 @@ public class MeasureReport extends FhirResource {
          * definition.
          */
         public CodeableConcept code() {
-            return getObject(CodeableConcept.class, PROPERTY_CODE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -527,7 +497,7 @@ public class MeasureReport extends FhirResource {
          * of population appropriate for the measure.
          */
         public java.util.List<MeasureReportPopulation> population() {
-            return getList(MeasureReportPopulation.class, PROPERTY_POPULATION);
+            return getList(MeasureReportPopulation.class, FhirPropertyNames.PROPERTY_POPULATION);
         }
 
         /**
@@ -536,7 +506,7 @@ public class MeasureReport extends FhirResource {
          * the populations defined in the group.
          */
         public Quantity measureScore() {
-            return getObject(Quantity.class, PROPERTY_MEASURE_SCORE);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_MEASURE_SCORE);
         }
 
         /**
@@ -544,7 +514,7 @@ public class MeasureReport extends FhirResource {
          * stratifier group for each stratifier defined by the measure.
          */
         public java.util.List<MeasureReportStratifier> stratifier() {
-            return getList(MeasureReportStratifier.class, PROPERTY_STRATIFIER);
+            return getList(MeasureReportStratifier.class, FhirPropertyNames.PROPERTY_STRATIFIER);
         }
 
         public static class Builder {
@@ -559,37 +529,37 @@ public class MeasureReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final CodeableConcept code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder population(final java.util.List<MeasureReportPopulation> population) {
-                b.add(PROPERTY_POPULATION, FhirObject.toArray(population));
+                b.add(FhirPropertyNames.PROPERTY_POPULATION, FhirObject.toArray(population));
                 return this;
             }
 
             public Builder measureScore(final Quantity measureScore) {
-                b.add(PROPERTY_MEASURE_SCORE, measureScore);
+                b.add(FhirPropertyNames.PROPERTY_MEASURE_SCORE, measureScore);
                 return this;
             }
 
             public Builder stratifier(final java.util.List<MeasureReportStratifier> stratifier) {
-                b.add(PROPERTY_STRATIFIER, FhirObject.toArray(stratifier));
+                b.add(FhirPropertyNames.PROPERTY_STRATIFIER, FhirObject.toArray(stratifier));
                 return this;
             }
 
@@ -606,12 +576,6 @@ public class MeasureReport extends FhirResource {
      */
     public static class MeasureReportPopulation extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportPopulation";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_COUNT = "count";
-        public static final String PROPERTY_SUBJECT_RESULTS = "subjectResults";
 
         public static Builder create() {
             return new Builder();
@@ -630,7 +594,7 @@ public class MeasureReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -642,7 +606,7 @@ public class MeasureReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -663,21 +627,21 @@ public class MeasureReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The type of the population.
          */
         public CodeableConcept code() {
-            return getObject(CodeableConcept.class, PROPERTY_CODE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * The number of members of the population.
          */
         public Integer count() {
-            return data.getInt(PROPERTY_COUNT);
+            return data.getInt(FhirPropertyNames.PROPERTY_COUNT);
         }
 
         /**
@@ -685,7 +649,7 @@ public class MeasureReport extends FhirResource {
          * resources, one for each subject in this population.
          */
         public Reference subjectResults() {
-            return getObject(Reference.class, PROPERTY_SUBJECT_RESULTS);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT_RESULTS);
         }
 
         public static class Builder {
@@ -700,32 +664,32 @@ public class MeasureReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final CodeableConcept code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder count(final Integer count) {
-                b.add(PROPERTY_COUNT, count);
+                b.add(FhirPropertyNames.PROPERTY_COUNT, count);
                 return this;
             }
 
             public Builder subjectResults(final Reference subjectResults) {
-                b.add(PROPERTY_SUBJECT_RESULTS, subjectResults);
+                b.add(FhirPropertyNames.PROPERTY_SUBJECT_RESULTS, subjectResults);
                 return this;
             }
 
@@ -742,12 +706,6 @@ public class MeasureReport extends FhirResource {
      */
     public static class MeasureReportPopulation1 extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportPopulation1";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_COUNT = "count";
-        public static final String PROPERTY_SUBJECT_RESULTS = "subjectResults";
 
         public static Builder create() {
             return new Builder();
@@ -766,7 +724,7 @@ public class MeasureReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -778,7 +736,7 @@ public class MeasureReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -799,21 +757,21 @@ public class MeasureReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The type of the population.
          */
         public CodeableConcept code() {
-            return getObject(CodeableConcept.class, PROPERTY_CODE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * The number of members of the population in this stratum.
          */
         public Integer count() {
-            return data.getInt(PROPERTY_COUNT);
+            return data.getInt(FhirPropertyNames.PROPERTY_COUNT);
         }
 
         /**
@@ -821,7 +779,7 @@ public class MeasureReport extends FhirResource {
          * resources, one for each subject in this population in this stratum.
          */
         public Reference subjectResults() {
-            return getObject(Reference.class, PROPERTY_SUBJECT_RESULTS);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT_RESULTS);
         }
 
         public static class Builder {
@@ -836,32 +794,32 @@ public class MeasureReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final CodeableConcept code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder count(final Integer count) {
-                b.add(PROPERTY_COUNT, count);
+                b.add(FhirPropertyNames.PROPERTY_COUNT, count);
                 return this;
             }
 
             public Builder subjectResults(final Reference subjectResults) {
-                b.add(PROPERTY_SUBJECT_RESULTS, subjectResults);
+                b.add(FhirPropertyNames.PROPERTY_SUBJECT_RESULTS, subjectResults);
                 return this;
             }
 
@@ -878,11 +836,6 @@ public class MeasureReport extends FhirResource {
      */
     public static class MeasureReportStratifier extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportStratifier";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_STRATUM = "stratum";
 
         public static Builder create() {
             return new Builder();
@@ -901,7 +854,7 @@ public class MeasureReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -913,7 +866,7 @@ public class MeasureReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -934,14 +887,14 @@ public class MeasureReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The meaning of this stratifier, as defined in the measure definition.
          */
         public java.util.List<CodeableConcept> code() {
-            return getList(CodeableConcept.class, PROPERTY_CODE);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -950,7 +903,7 @@ public class MeasureReport extends FhirResource {
          * there will be four strata, one for each possible gender value.
          */
         public java.util.List<MeasureReportStratum> stratum() {
-            return getList(MeasureReportStratum.class, PROPERTY_STRATUM);
+            return getList(MeasureReportStratum.class, FhirPropertyNames.PROPERTY_STRATUM);
         }
 
         public static class Builder {
@@ -965,27 +918,27 @@ public class MeasureReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final java.util.List<CodeableConcept> code) {
-                b.add(PROPERTY_CODE, FhirObject.toArray(code));
+                b.add(FhirPropertyNames.PROPERTY_CODE, FhirObject.toArray(code));
                 return this;
             }
 
             public Builder stratum(final java.util.List<MeasureReportStratum> stratum) {
-                b.add(PROPERTY_STRATUM, FhirObject.toArray(stratum));
+                b.add(FhirPropertyNames.PROPERTY_STRATUM, FhirObject.toArray(stratum));
                 return this;
             }
 
@@ -1002,13 +955,6 @@ public class MeasureReport extends FhirResource {
      */
     public static class MeasureReportStratum extends FhirObject {
         public static final String RESOURCE_TYPE = "MeasureReportStratum";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_VALUE = "value";
-        public static final String PROPERTY_COMPONENT = "component";
-        public static final String PROPERTY_POPULATION = "population";
-        public static final String PROPERTY_MEASURE_SCORE = "measureScore";
 
         public static Builder create() {
             return new Builder();
@@ -1027,7 +973,7 @@ public class MeasureReport extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1039,7 +985,7 @@ public class MeasureReport extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1060,7 +1006,7 @@ public class MeasureReport extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1069,14 +1015,14 @@ public class MeasureReport extends FhirResource {
          * such that the value for each stratum within the stratifier is unique.
          */
         public CodeableConcept value() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_VALUE);
         }
 
         /**
          * A stratifier component value.
          */
         public java.util.List<MeasureReportComponent> component() {
-            return getList(MeasureReportComponent.class, PROPERTY_COMPONENT);
+            return getList(MeasureReportComponent.class, FhirPropertyNames.PROPERTY_COMPONENT);
         }
 
         /**
@@ -1084,7 +1030,7 @@ public class MeasureReport extends FhirResource {
          * population appropriate to the measure.
          */
         public java.util.List<MeasureReportPopulation1> population() {
-            return getList(MeasureReportPopulation1.class, PROPERTY_POPULATION);
+            return getList(MeasureReportPopulation1.class, FhirPropertyNames.PROPERTY_POPULATION);
         }
 
         /**
@@ -1093,7 +1039,7 @@ public class MeasureReport extends FhirResource {
          * stratum.
          */
         public Quantity measureScore() {
-            return getObject(Quantity.class, PROPERTY_MEASURE_SCORE);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_MEASURE_SCORE);
         }
 
         public static class Builder {
@@ -1108,37 +1054,37 @@ public class MeasureReport extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder value(final CodeableConcept value) {
-                b.add(PROPERTY_VALUE, value);
+                b.add(FhirPropertyNames.PROPERTY_VALUE, value);
                 return this;
             }
 
             public Builder component(final java.util.List<MeasureReportComponent> component) {
-                b.add(PROPERTY_COMPONENT, FhirObject.toArray(component));
+                b.add(FhirPropertyNames.PROPERTY_COMPONENT, FhirObject.toArray(component));
                 return this;
             }
 
             public Builder population(final java.util.List<MeasureReportPopulation1> population) {
-                b.add(PROPERTY_POPULATION, FhirObject.toArray(population));
+                b.add(FhirPropertyNames.PROPERTY_POPULATION, FhirObject.toArray(population));
                 return this;
             }
 
             public Builder measureScore(final Quantity measureScore) {
-                b.add(PROPERTY_MEASURE_SCORE, measureScore);
+                b.add(FhirPropertyNames.PROPERTY_MEASURE_SCORE, measureScore);
                 return this;
             }
 

@@ -9,26 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * An ingredient of a manufactured item or pharmaceutical product.
  */
 public class MedicinalProductIngredient extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductIngredient";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_ROLE = "role";
-    public static final String PROPERTY_ALLERGENIC_INDICATOR = "allergenicIndicator";
-    public static final String PROPERTY_MANUFACTURER = "manufacturer";
-    public static final String PROPERTY_SPECIFIED_SUBSTANCE = "specifiedSubstance";
-    public static final String PROPERTY_SUBSTANCE = "substance";
 
     public static Builder create() {
         return new Builder();
@@ -49,14 +36,14 @@ public class MedicinalProductIngredient extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -68,7 +55,7 @@ public class MedicinalProductIngredient extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -77,7 +64,7 @@ public class MedicinalProductIngredient extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -89,7 +76,7 @@ public class MedicinalProductIngredient extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -109,7 +96,7 @@ public class MedicinalProductIngredient extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -118,42 +105,42 @@ public class MedicinalProductIngredient extends FhirResource {
      * the resource itself is not appropriate.
      */
     public Identifier identifier() {
-        return getObject(Identifier.class, PROPERTY_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * Ingredient role e.g. Active ingredient, excipient.
      */
     public CodeableConcept role() {
-        return getObject(CodeableConcept.class, PROPERTY_ROLE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ROLE);
     }
 
     /**
      * If the ingredient is a known or suspected allergen.
      */
     public Boolean allergenicIndicator() {
-        return data.getBoolean(PROPERTY_ALLERGENIC_INDICATOR);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_ALLERGENIC_INDICATOR);
     }
 
     /**
      * Manufacturer of this Ingredient.
      */
     public java.util.List<Reference> manufacturer() {
-        return getList(Reference.class, PROPERTY_MANUFACTURER);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_MANUFACTURER);
     }
 
     /**
      * A specified substance that comprises this ingredient.
      */
     public java.util.List<MedicinalProductIngredientSpecifiedSubstance> specifiedSubstance() {
-        return getList(MedicinalProductIngredientSpecifiedSubstance.class, PROPERTY_SPECIFIED_SUBSTANCE);
+        return getList(MedicinalProductIngredientSpecifiedSubstance.class, FhirPropertyNames.PROPERTY_SPECIFIED_SUBSTANCE);
     }
 
     /**
      * The ingredient substance.
      */
     public MedicinalProductIngredientSubstance substance() {
-        return getObject(MedicinalProductIngredientSubstance.class, PROPERTY_SUBSTANCE);
+        return getObject(MedicinalProductIngredientSubstance.class, FhirPropertyNames.PROPERTY_SUBSTANCE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -167,77 +154,77 @@ public class MedicinalProductIngredient extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final Identifier identifier) {
-            b.add(PROPERTY_IDENTIFIER, identifier);
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, identifier);
             return this;
         }
 
         public Builder role(final CodeableConcept role) {
-            b.add(PROPERTY_ROLE, role);
+            b.add(FhirPropertyNames.PROPERTY_ROLE, role);
             return this;
         }
 
         public Builder allergenicIndicator(final Boolean allergenicIndicator) {
-            b.add(PROPERTY_ALLERGENIC_INDICATOR, allergenicIndicator);
+            b.add(FhirPropertyNames.PROPERTY_ALLERGENIC_INDICATOR, allergenicIndicator);
             return this;
         }
 
         public Builder manufacturer(final java.util.List<Reference> manufacturer) {
-            b.add(PROPERTY_MANUFACTURER, FhirObject.toArray(manufacturer));
+            b.add(FhirPropertyNames.PROPERTY_MANUFACTURER, FhirObject.toArray(manufacturer));
             return this;
         }
 
         public Builder specifiedSubstance(final java.util.List<MedicinalProductIngredientSpecifiedSubstance> specifiedSubstance) {
-            b.add(PROPERTY_SPECIFIED_SUBSTANCE, FhirObject.toArray(specifiedSubstance));
+            b.add(FhirPropertyNames.PROPERTY_SPECIFIED_SUBSTANCE, FhirObject.toArray(specifiedSubstance));
             return this;
         }
 
         public Builder substance(final MedicinalProductIngredientSubstance substance) {
-            b.add(PROPERTY_SUBSTANCE, substance);
+            b.add(FhirPropertyNames.PROPERTY_SUBSTANCE, substance);
             return this;
         }
 
@@ -251,14 +238,6 @@ public class MedicinalProductIngredient extends FhirResource {
      */
     public static class MedicinalProductIngredientReferenceStrength extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIngredientReferenceStrength";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_SUBSTANCE = "substance";
-        public static final String PROPERTY_STRENGTH = "strength";
-        public static final String PROPERTY_STRENGTH_LOW_LIMIT = "strengthLowLimit";
-        public static final String PROPERTY_MEASUREMENT_POINT = "measurementPoint";
-        public static final String PROPERTY_COUNTRY = "country";
 
         public static Builder create() {
             return new Builder();
@@ -277,7 +256,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -289,7 +268,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -310,42 +289,42 @@ public class MedicinalProductIngredient extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Relevant reference substance.
          */
         public CodeableConcept substance() {
-            return getObject(CodeableConcept.class, PROPERTY_SUBSTANCE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SUBSTANCE);
         }
 
         /**
          * Strength expressed in terms of a reference substance.
          */
         public Ratio strength() {
-            return getObject(Ratio.class, PROPERTY_STRENGTH);
+            return getObject(Ratio.class, FhirPropertyNames.PROPERTY_STRENGTH);
         }
 
         /**
          * Strength expressed in terms of a reference substance.
          */
         public Ratio strengthLowLimit() {
-            return getObject(Ratio.class, PROPERTY_STRENGTH_LOW_LIMIT);
+            return getObject(Ratio.class, FhirPropertyNames.PROPERTY_STRENGTH_LOW_LIMIT);
         }
 
         /**
          * For when strength is measured at a particular point or distance.
          */
         public String measurementPoint() {
-            return getString(PROPERTY_MEASUREMENT_POINT);
+            return getString(FhirPropertyNames.PROPERTY_MEASUREMENT_POINT);
         }
 
         /**
          * The country or countries for which the strength range applies.
          */
         public java.util.List<CodeableConcept> country() {
-            return getList(CodeableConcept.class, PROPERTY_COUNTRY);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_COUNTRY);
         }
 
         public static class Builder {
@@ -360,42 +339,42 @@ public class MedicinalProductIngredient extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder substance(final CodeableConcept substance) {
-                b.add(PROPERTY_SUBSTANCE, substance);
+                b.add(FhirPropertyNames.PROPERTY_SUBSTANCE, substance);
                 return this;
             }
 
             public Builder strength(final Ratio strength) {
-                b.add(PROPERTY_STRENGTH, strength);
+                b.add(FhirPropertyNames.PROPERTY_STRENGTH, strength);
                 return this;
             }
 
             public Builder strengthLowLimit(final Ratio strengthLowLimit) {
-                b.add(PROPERTY_STRENGTH_LOW_LIMIT, strengthLowLimit);
+                b.add(FhirPropertyNames.PROPERTY_STRENGTH_LOW_LIMIT, strengthLowLimit);
                 return this;
             }
 
             public Builder measurementPoint(final String measurementPoint) {
-                b.add(PROPERTY_MEASUREMENT_POINT, measurementPoint);
+                b.add(FhirPropertyNames.PROPERTY_MEASUREMENT_POINT, measurementPoint);
                 return this;
             }
 
             public Builder country(final java.util.List<CodeableConcept> country) {
-                b.add(PROPERTY_COUNTRY, FhirObject.toArray(country));
+                b.add(FhirPropertyNames.PROPERTY_COUNTRY, FhirObject.toArray(country));
                 return this;
             }
 
@@ -410,13 +389,6 @@ public class MedicinalProductIngredient extends FhirResource {
      */
     public static class MedicinalProductIngredientSpecifiedSubstance extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIngredientSpecifiedSubstance";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_GROUP = "group";
-        public static final String PROPERTY_CONFIDENTIALITY = "confidentiality";
-        public static final String PROPERTY_STRENGTH = "strength";
 
         public static Builder create() {
             return new Builder();
@@ -435,7 +407,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -447,7 +419,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -468,28 +440,28 @@ public class MedicinalProductIngredient extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The specified substance.
          */
         public CodeableConcept code() {
-            return getObject(CodeableConcept.class, PROPERTY_CODE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * The group of specified substance, e.g. group 1 to 4.
          */
         public CodeableConcept group() {
-            return getObject(CodeableConcept.class, PROPERTY_GROUP);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_GROUP);
         }
 
         /**
          * Confidentiality level of the specified substance as the ingredient.
          */
         public CodeableConcept confidentiality() {
-            return getObject(CodeableConcept.class, PROPERTY_CONFIDENTIALITY);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CONFIDENTIALITY);
         }
 
         /**
@@ -497,7 +469,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * manufactured item or pharmaceutical product.
          */
         public java.util.List<MedicinalProductIngredientStrength> strength() {
-            return getList(MedicinalProductIngredientStrength.class, PROPERTY_STRENGTH);
+            return getList(MedicinalProductIngredientStrength.class, FhirPropertyNames.PROPERTY_STRENGTH);
         }
 
         public static class Builder {
@@ -512,37 +484,37 @@ public class MedicinalProductIngredient extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final CodeableConcept code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder group(final CodeableConcept group) {
-                b.add(PROPERTY_GROUP, group);
+                b.add(FhirPropertyNames.PROPERTY_GROUP, group);
                 return this;
             }
 
             public Builder confidentiality(final CodeableConcept confidentiality) {
-                b.add(PROPERTY_CONFIDENTIALITY, confidentiality);
+                b.add(FhirPropertyNames.PROPERTY_CONFIDENTIALITY, confidentiality);
                 return this;
             }
 
             public Builder strength(final java.util.List<MedicinalProductIngredientStrength> strength) {
-                b.add(PROPERTY_STRENGTH, FhirObject.toArray(strength));
+                b.add(FhirPropertyNames.PROPERTY_STRENGTH, FhirObject.toArray(strength));
                 return this;
             }
 
@@ -557,16 +529,6 @@ public class MedicinalProductIngredient extends FhirResource {
      */
     public static class MedicinalProductIngredientStrength extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIngredientStrength";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_PRESENTATION = "presentation";
-        public static final String PROPERTY_PRESENTATION_LOW_LIMIT = "presentationLowLimit";
-        public static final String PROPERTY_CONCENTRATION = "concentration";
-        public static final String PROPERTY_CONCENTRATION_LOW_LIMIT = "concentrationLowLimit";
-        public static final String PROPERTY_MEASUREMENT_POINT = "measurementPoint";
-        public static final String PROPERTY_COUNTRY = "country";
-        public static final String PROPERTY_REFERENCE_STRENGTH = "referenceStrength";
 
         public static Builder create() {
             return new Builder();
@@ -585,7 +547,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -597,7 +559,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -618,7 +580,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -627,7 +589,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * item.
          */
         public Ratio presentation() {
-            return getObject(Ratio.class, PROPERTY_PRESENTATION);
+            return getObject(Ratio.class, FhirPropertyNames.PROPERTY_PRESENTATION);
         }
 
         /**
@@ -636,14 +598,14 @@ public class MedicinalProductIngredient extends FhirResource {
          * lower limit, with the presentation attribute becoming the upper limit.
          */
         public Ratio presentationLowLimit() {
-            return getObject(Ratio.class, PROPERTY_PRESENTATION_LOW_LIMIT);
+            return getObject(Ratio.class, FhirPropertyNames.PROPERTY_PRESENTATION_LOW_LIMIT);
         }
 
         /**
          * The strength per unitary volume (or mass).
          */
         public Ratio concentration() {
-            return getObject(Ratio.class, PROPERTY_CONCENTRATION);
+            return getObject(Ratio.class, FhirPropertyNames.PROPERTY_CONCENTRATION);
         }
 
         /**
@@ -652,28 +614,28 @@ public class MedicinalProductIngredient extends FhirResource {
          * limit.
          */
         public Ratio concentrationLowLimit() {
-            return getObject(Ratio.class, PROPERTY_CONCENTRATION_LOW_LIMIT);
+            return getObject(Ratio.class, FhirPropertyNames.PROPERTY_CONCENTRATION_LOW_LIMIT);
         }
 
         /**
          * For when strength is measured at a particular point or distance.
          */
         public String measurementPoint() {
-            return getString(PROPERTY_MEASUREMENT_POINT);
+            return getString(FhirPropertyNames.PROPERTY_MEASUREMENT_POINT);
         }
 
         /**
          * The country or countries for which the strength range applies.
          */
         public java.util.List<CodeableConcept> country() {
-            return getList(CodeableConcept.class, PROPERTY_COUNTRY);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_COUNTRY);
         }
 
         /**
          * Strength expressed in terms of a reference substance.
          */
         public java.util.List<MedicinalProductIngredientReferenceStrength> referenceStrength() {
-            return getList(MedicinalProductIngredientReferenceStrength.class, PROPERTY_REFERENCE_STRENGTH);
+            return getList(MedicinalProductIngredientReferenceStrength.class, FhirPropertyNames.PROPERTY_REFERENCE_STRENGTH);
         }
 
         public static class Builder {
@@ -688,52 +650,52 @@ public class MedicinalProductIngredient extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder presentation(final Ratio presentation) {
-                b.add(PROPERTY_PRESENTATION, presentation);
+                b.add(FhirPropertyNames.PROPERTY_PRESENTATION, presentation);
                 return this;
             }
 
             public Builder presentationLowLimit(final Ratio presentationLowLimit) {
-                b.add(PROPERTY_PRESENTATION_LOW_LIMIT, presentationLowLimit);
+                b.add(FhirPropertyNames.PROPERTY_PRESENTATION_LOW_LIMIT, presentationLowLimit);
                 return this;
             }
 
             public Builder concentration(final Ratio concentration) {
-                b.add(PROPERTY_CONCENTRATION, concentration);
+                b.add(FhirPropertyNames.PROPERTY_CONCENTRATION, concentration);
                 return this;
             }
 
             public Builder concentrationLowLimit(final Ratio concentrationLowLimit) {
-                b.add(PROPERTY_CONCENTRATION_LOW_LIMIT, concentrationLowLimit);
+                b.add(FhirPropertyNames.PROPERTY_CONCENTRATION_LOW_LIMIT, concentrationLowLimit);
                 return this;
             }
 
             public Builder measurementPoint(final String measurementPoint) {
-                b.add(PROPERTY_MEASUREMENT_POINT, measurementPoint);
+                b.add(FhirPropertyNames.PROPERTY_MEASUREMENT_POINT, measurementPoint);
                 return this;
             }
 
             public Builder country(final java.util.List<CodeableConcept> country) {
-                b.add(PROPERTY_COUNTRY, FhirObject.toArray(country));
+                b.add(FhirPropertyNames.PROPERTY_COUNTRY, FhirObject.toArray(country));
                 return this;
             }
 
             public Builder referenceStrength(final java.util.List<MedicinalProductIngredientReferenceStrength> referenceStrength) {
-                b.add(PROPERTY_REFERENCE_STRENGTH, FhirObject.toArray(referenceStrength));
+                b.add(FhirPropertyNames.PROPERTY_REFERENCE_STRENGTH, FhirObject.toArray(referenceStrength));
                 return this;
             }
 
@@ -748,11 +710,6 @@ public class MedicinalProductIngredient extends FhirResource {
      */
     public static class MedicinalProductIngredientSubstance extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductIngredientSubstance";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_STRENGTH = "strength";
 
         public static Builder create() {
             return new Builder();
@@ -771,7 +728,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -783,7 +740,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -804,14 +761,14 @@ public class MedicinalProductIngredient extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The ingredient substance.
          */
         public CodeableConcept code() {
-            return getObject(CodeableConcept.class, PROPERTY_CODE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -819,7 +776,7 @@ public class MedicinalProductIngredient extends FhirResource {
          * manufactured item or pharmaceutical product.
          */
         public java.util.List<MedicinalProductIngredientStrength> strength() {
-            return getList(MedicinalProductIngredientStrength.class, PROPERTY_STRENGTH);
+            return getList(MedicinalProductIngredientStrength.class, FhirPropertyNames.PROPERTY_STRENGTH);
         }
 
         public static class Builder {
@@ -834,27 +791,27 @@ public class MedicinalProductIngredient extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final CodeableConcept code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder strength(final java.util.List<MedicinalProductIngredientStrength> strength) {
-                b.add(PROPERTY_STRENGTH, FhirObject.toArray(strength));
+                b.add(FhirPropertyNames.PROPERTY_STRENGTH, FhirObject.toArray(strength));
                 return this;
             }
 

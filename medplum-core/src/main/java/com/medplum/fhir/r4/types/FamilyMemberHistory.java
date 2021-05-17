@@ -9,47 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Significant health conditions for a person related to the patient
  * relevant in the context of care for the patient.
  */
 public class FamilyMemberHistory extends FhirResource {
     public static final String RESOURCE_TYPE = "FamilyMemberHistory";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_INSTANTIATES_CANONICAL = "instantiatesCanonical";
-    public static final String PROPERTY_INSTANTIATES_URI = "instantiatesUri";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_DATA_ABSENT_REASON = "dataAbsentReason";
-    public static final String PROPERTY_PATIENT = "patient";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_RELATIONSHIP = "relationship";
-    public static final String PROPERTY_SEX = "sex";
-    public static final String PROPERTY_BORN_PERIOD = "bornPeriod";
-    public static final String PROPERTY_BORN_DATE = "bornDate";
-    public static final String PROPERTY_BORN_STRING = "bornString";
-    public static final String PROPERTY_AGE_AGE = "ageAge";
-    public static final String PROPERTY_AGE_RANGE = "ageRange";
-    public static final String PROPERTY_AGE_STRING = "ageString";
-    public static final String PROPERTY_ESTIMATED_AGE = "estimatedAge";
-    public static final String PROPERTY_DECEASED_BOOLEAN = "deceasedBoolean";
-    public static final String PROPERTY_DECEASED_AGE = "deceasedAge";
-    public static final String PROPERTY_DECEASED_RANGE = "deceasedRange";
-    public static final String PROPERTY_DECEASED_DATE = "deceasedDate";
-    public static final String PROPERTY_DECEASED_STRING = "deceasedString";
-    public static final String PROPERTY_REASON_CODE = "reasonCode";
-    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
-    public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_CONDITION = "condition";
 
     public static Builder create() {
         return new Builder();
@@ -70,14 +37,14 @@ public class FamilyMemberHistory extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -89,7 +56,7 @@ public class FamilyMemberHistory extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -98,7 +65,7 @@ public class FamilyMemberHistory extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -110,7 +77,7 @@ public class FamilyMemberHistory extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -130,7 +97,7 @@ public class FamilyMemberHistory extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -139,7 +106,7 @@ public class FamilyMemberHistory extends FhirResource {
      * updated and propagates from server to server.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -148,7 +115,7 @@ public class FamilyMemberHistory extends FhirResource {
      * FamilyMemberHistory.
      */
     public java.util.List<String> instantiatesCanonical() {
-        return getList(String.class, PROPERTY_INSTANTIATES_CANONICAL);
+        return getList(String.class, FhirPropertyNames.PROPERTY_INSTANTIATES_CANONICAL);
     }
 
     /**
@@ -157,7 +124,7 @@ public class FamilyMemberHistory extends FhirResource {
      * this FamilyMemberHistory.
      */
     public java.util.List<java.net.URI> instantiatesUri() {
-        return getList(java.net.URI.class, PROPERTY_INSTANTIATES_URI);
+        return getList(java.net.URI.class, FhirPropertyNames.PROPERTY_INSTANTIATES_URI);
     }
 
     /**
@@ -165,21 +132,21 @@ public class FamilyMemberHistory extends FhirResource {
      * specific family member.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
      * Describes why the family member's history is not available.
      */
     public CodeableConcept dataAbsentReason() {
-        return getObject(CodeableConcept.class, PROPERTY_DATA_ABSENT_REASON);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_DATA_ABSENT_REASON);
     }
 
     /**
      * The person who this history concerns.
      */
     public Reference patient() {
-        return getObject(Reference.class, PROPERTY_PATIENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PATIENT);
     }
 
     /**
@@ -187,7 +154,7 @@ public class FamilyMemberHistory extends FhirResource {
      * recorded or last updated.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -195,7 +162,7 @@ public class FamilyMemberHistory extends FhirResource {
      * cousin with the red hair&quot;.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -203,35 +170,35 @@ public class FamilyMemberHistory extends FhirResource {
      * mother, brother etc.).
      */
     public CodeableConcept relationship() {
-        return getObject(CodeableConcept.class, PROPERTY_RELATIONSHIP);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_RELATIONSHIP);
     }
 
     /**
      * The birth sex of the family member.
      */
     public CodeableConcept sex() {
-        return getObject(CodeableConcept.class, PROPERTY_SEX);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SEX);
     }
 
     /**
      * The actual or approximate date of birth of the relative.
      */
     public Period bornPeriod() {
-        return getObject(Period.class, PROPERTY_BORN_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_BORN_PERIOD);
     }
 
     /**
      * The actual or approximate date of birth of the relative.
      */
     public String bornDate() {
-        return getString(PROPERTY_BORN_DATE);
+        return getString(FhirPropertyNames.PROPERTY_BORN_DATE);
     }
 
     /**
      * The actual or approximate date of birth of the relative.
      */
     public String bornString() {
-        return getString(PROPERTY_BORN_STRING);
+        return getString(FhirPropertyNames.PROPERTY_BORN_STRING);
     }
 
     /**
@@ -239,7 +206,7 @@ public class FamilyMemberHistory extends FhirResource {
      * recorded.
      */
     public Age ageAge() {
-        return getObject(Age.class, PROPERTY_AGE_AGE);
+        return getObject(Age.class, FhirPropertyNames.PROPERTY_AGE_AGE);
     }
 
     /**
@@ -247,7 +214,7 @@ public class FamilyMemberHistory extends FhirResource {
      * recorded.
      */
     public Range ageRange() {
-        return getObject(Range.class, PROPERTY_AGE_RANGE);
+        return getObject(Range.class, FhirPropertyNames.PROPERTY_AGE_RANGE);
     }
 
     /**
@@ -255,14 +222,14 @@ public class FamilyMemberHistory extends FhirResource {
      * recorded.
      */
     public String ageString() {
-        return getString(PROPERTY_AGE_STRING);
+        return getString(FhirPropertyNames.PROPERTY_AGE_STRING);
     }
 
     /**
      * If true, indicates that the age value specified is an estimated value.
      */
     public Boolean estimatedAge() {
-        return data.getBoolean(PROPERTY_ESTIMATED_AGE);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_ESTIMATED_AGE);
     }
 
     /**
@@ -270,7 +237,7 @@ public class FamilyMemberHistory extends FhirResource {
      * time of death for the family member history record.
      */
     public Boolean deceasedBoolean() {
-        return data.getBoolean(PROPERTY_DECEASED_BOOLEAN);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_DECEASED_BOOLEAN);
     }
 
     /**
@@ -278,7 +245,7 @@ public class FamilyMemberHistory extends FhirResource {
      * time of death for the family member history record.
      */
     public Age deceasedAge() {
-        return getObject(Age.class, PROPERTY_DECEASED_AGE);
+        return getObject(Age.class, FhirPropertyNames.PROPERTY_DECEASED_AGE);
     }
 
     /**
@@ -286,7 +253,7 @@ public class FamilyMemberHistory extends FhirResource {
      * time of death for the family member history record.
      */
     public Range deceasedRange() {
-        return getObject(Range.class, PROPERTY_DECEASED_RANGE);
+        return getObject(Range.class, FhirPropertyNames.PROPERTY_DECEASED_RANGE);
     }
 
     /**
@@ -294,7 +261,7 @@ public class FamilyMemberHistory extends FhirResource {
      * time of death for the family member history record.
      */
     public String deceasedDate() {
-        return getString(PROPERTY_DECEASED_DATE);
+        return getString(FhirPropertyNames.PROPERTY_DECEASED_DATE);
     }
 
     /**
@@ -302,7 +269,7 @@ public class FamilyMemberHistory extends FhirResource {
      * time of death for the family member history record.
      */
     public String deceasedString() {
-        return getString(PROPERTY_DECEASED_STRING);
+        return getString(FhirPropertyNames.PROPERTY_DECEASED_STRING);
     }
 
     /**
@@ -310,7 +277,7 @@ public class FamilyMemberHistory extends FhirResource {
      * form.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_REASON_CODE);
     }
 
     /**
@@ -318,7 +285,7 @@ public class FamilyMemberHistory extends FhirResource {
      * QuestionnaireResponse that justifies this family member history event.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -327,7 +294,7 @@ public class FamilyMemberHistory extends FhirResource {
      * property, but this is not always possible.
      */
     public java.util.List<Annotation> note() {
-        return getList(Annotation.class, PROPERTY_NOTE);
+        return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
     }
 
     /**
@@ -337,7 +304,7 @@ public class FamilyMemberHistory extends FhirResource {
      * resources - one per condition.
      */
     public java.util.List<FamilyMemberHistoryCondition> condition() {
-        return getList(FamilyMemberHistoryCondition.class, PROPERTY_CONDITION);
+        return getList(FamilyMemberHistoryCondition.class, FhirPropertyNames.PROPERTY_CONDITION);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -351,177 +318,177 @@ public class FamilyMemberHistory extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder instantiatesCanonical(final java.util.List<String> instantiatesCanonical) {
-            b.add(PROPERTY_INSTANTIATES_CANONICAL, FhirObject.toStringArray(instantiatesCanonical));
+            b.add(FhirPropertyNames.PROPERTY_INSTANTIATES_CANONICAL, FhirObject.toStringArray(instantiatesCanonical));
             return this;
         }
 
         public Builder instantiatesUri(final java.util.List<java.net.URI> instantiatesUri) {
-            b.add(PROPERTY_INSTANTIATES_URI, FhirObject.toUriArray(instantiatesUri));
+            b.add(FhirPropertyNames.PROPERTY_INSTANTIATES_URI, FhirObject.toUriArray(instantiatesUri));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder dataAbsentReason(final CodeableConcept dataAbsentReason) {
-            b.add(PROPERTY_DATA_ABSENT_REASON, dataAbsentReason);
+            b.add(FhirPropertyNames.PROPERTY_DATA_ABSENT_REASON, dataAbsentReason);
             return this;
         }
 
         public Builder patient(final Reference patient) {
-            b.add(PROPERTY_PATIENT, patient);
+            b.add(FhirPropertyNames.PROPERTY_PATIENT, patient);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder relationship(final CodeableConcept relationship) {
-            b.add(PROPERTY_RELATIONSHIP, relationship);
+            b.add(FhirPropertyNames.PROPERTY_RELATIONSHIP, relationship);
             return this;
         }
 
         public Builder sex(final CodeableConcept sex) {
-            b.add(PROPERTY_SEX, sex);
+            b.add(FhirPropertyNames.PROPERTY_SEX, sex);
             return this;
         }
 
         public Builder bornPeriod(final Period bornPeriod) {
-            b.add(PROPERTY_BORN_PERIOD, bornPeriod);
+            b.add(FhirPropertyNames.PROPERTY_BORN_PERIOD, bornPeriod);
             return this;
         }
 
         public Builder bornDate(final String bornDate) {
-            b.add(PROPERTY_BORN_DATE, bornDate);
+            b.add(FhirPropertyNames.PROPERTY_BORN_DATE, bornDate);
             return this;
         }
 
         public Builder bornString(final String bornString) {
-            b.add(PROPERTY_BORN_STRING, bornString);
+            b.add(FhirPropertyNames.PROPERTY_BORN_STRING, bornString);
             return this;
         }
 
         public Builder ageAge(final Age ageAge) {
-            b.add(PROPERTY_AGE_AGE, ageAge);
+            b.add(FhirPropertyNames.PROPERTY_AGE_AGE, ageAge);
             return this;
         }
 
         public Builder ageRange(final Range ageRange) {
-            b.add(PROPERTY_AGE_RANGE, ageRange);
+            b.add(FhirPropertyNames.PROPERTY_AGE_RANGE, ageRange);
             return this;
         }
 
         public Builder ageString(final String ageString) {
-            b.add(PROPERTY_AGE_STRING, ageString);
+            b.add(FhirPropertyNames.PROPERTY_AGE_STRING, ageString);
             return this;
         }
 
         public Builder estimatedAge(final Boolean estimatedAge) {
-            b.add(PROPERTY_ESTIMATED_AGE, estimatedAge);
+            b.add(FhirPropertyNames.PROPERTY_ESTIMATED_AGE, estimatedAge);
             return this;
         }
 
         public Builder deceasedBoolean(final Boolean deceasedBoolean) {
-            b.add(PROPERTY_DECEASED_BOOLEAN, deceasedBoolean);
+            b.add(FhirPropertyNames.PROPERTY_DECEASED_BOOLEAN, deceasedBoolean);
             return this;
         }
 
         public Builder deceasedAge(final Age deceasedAge) {
-            b.add(PROPERTY_DECEASED_AGE, deceasedAge);
+            b.add(FhirPropertyNames.PROPERTY_DECEASED_AGE, deceasedAge);
             return this;
         }
 
         public Builder deceasedRange(final Range deceasedRange) {
-            b.add(PROPERTY_DECEASED_RANGE, deceasedRange);
+            b.add(FhirPropertyNames.PROPERTY_DECEASED_RANGE, deceasedRange);
             return this;
         }
 
         public Builder deceasedDate(final String deceasedDate) {
-            b.add(PROPERTY_DECEASED_DATE, deceasedDate);
+            b.add(FhirPropertyNames.PROPERTY_DECEASED_DATE, deceasedDate);
             return this;
         }
 
         public Builder deceasedString(final String deceasedString) {
-            b.add(PROPERTY_DECEASED_STRING, deceasedString);
+            b.add(FhirPropertyNames.PROPERTY_DECEASED_STRING, deceasedString);
             return this;
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
+            b.add(FhirPropertyNames.PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
+            b.add(FhirPropertyNames.PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
         public Builder note(final java.util.List<Annotation> note) {
-            b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+            b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
             return this;
         }
 
         public Builder condition(final java.util.List<FamilyMemberHistoryCondition> condition) {
-            b.add(PROPERTY_CONDITION, FhirObject.toArray(condition));
+            b.add(FhirPropertyNames.PROPERTY_CONDITION, FhirObject.toArray(condition));
             return this;
         }
 
@@ -536,17 +503,6 @@ public class FamilyMemberHistory extends FhirResource {
      */
     public static class FamilyMemberHistoryCondition extends FhirObject {
         public static final String RESOURCE_TYPE = "FamilyMemberHistoryCondition";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_OUTCOME = "outcome";
-        public static final String PROPERTY_CONTRIBUTED_TO_DEATH = "contributedToDeath";
-        public static final String PROPERTY_ONSET_AGE = "onsetAge";
-        public static final String PROPERTY_ONSET_RANGE = "onsetRange";
-        public static final String PROPERTY_ONSET_PERIOD = "onsetPeriod";
-        public static final String PROPERTY_ONSET_STRING = "onsetString";
-        public static final String PROPERTY_NOTE = "note";
 
         public static Builder create() {
             return new Builder();
@@ -565,7 +521,7 @@ public class FamilyMemberHistory extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -577,7 +533,7 @@ public class FamilyMemberHistory extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -598,7 +554,7 @@ public class FamilyMemberHistory extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -608,7 +564,7 @@ public class FamilyMemberHistory extends FhirResource {
          * system.
          */
         public CodeableConcept code() {
-            return getObject(CodeableConcept.class, PROPERTY_CODE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -616,7 +572,7 @@ public class FamilyMemberHistory extends FhirResource {
          * resulted in death, deceased date is captured on the relation.
          */
         public CodeableConcept outcome() {
-            return getObject(CodeableConcept.class, PROPERTY_OUTCOME);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_OUTCOME);
         }
 
         /**
@@ -624,7 +580,7 @@ public class FamilyMemberHistory extends FhirResource {
          * person. If contributedToDeath is not populated, then it is unknown.
          */
         public Boolean contributedToDeath() {
-            return data.getBoolean(PROPERTY_CONTRIBUTED_TO_DEATH);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_CONTRIBUTED_TO_DEATH);
         }
 
         /**
@@ -633,7 +589,7 @@ public class FamilyMemberHistory extends FhirResource {
          * this describes the first known occurrence.
          */
         public Age onsetAge() {
-            return getObject(Age.class, PROPERTY_ONSET_AGE);
+            return getObject(Age.class, FhirPropertyNames.PROPERTY_ONSET_AGE);
         }
 
         /**
@@ -642,7 +598,7 @@ public class FamilyMemberHistory extends FhirResource {
          * this describes the first known occurrence.
          */
         public Range onsetRange() {
-            return getObject(Range.class, PROPERTY_ONSET_RANGE);
+            return getObject(Range.class, FhirPropertyNames.PROPERTY_ONSET_RANGE);
         }
 
         /**
@@ -651,7 +607,7 @@ public class FamilyMemberHistory extends FhirResource {
          * this describes the first known occurrence.
          */
         public Period onsetPeriod() {
-            return getObject(Period.class, PROPERTY_ONSET_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_ONSET_PERIOD);
         }
 
         /**
@@ -660,7 +616,7 @@ public class FamilyMemberHistory extends FhirResource {
          * this describes the first known occurrence.
          */
         public String onsetString() {
-            return getString(PROPERTY_ONSET_STRING);
+            return getString(FhirPropertyNames.PROPERTY_ONSET_STRING);
         }
 
         /**
@@ -668,7 +624,7 @@ public class FamilyMemberHistory extends FhirResource {
          * condition.
          */
         public java.util.List<Annotation> note() {
-            return getList(Annotation.class, PROPERTY_NOTE);
+            return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
         }
 
         public static class Builder {
@@ -683,57 +639,57 @@ public class FamilyMemberHistory extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final CodeableConcept code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder outcome(final CodeableConcept outcome) {
-                b.add(PROPERTY_OUTCOME, outcome);
+                b.add(FhirPropertyNames.PROPERTY_OUTCOME, outcome);
                 return this;
             }
 
             public Builder contributedToDeath(final Boolean contributedToDeath) {
-                b.add(PROPERTY_CONTRIBUTED_TO_DEATH, contributedToDeath);
+                b.add(FhirPropertyNames.PROPERTY_CONTRIBUTED_TO_DEATH, contributedToDeath);
                 return this;
             }
 
             public Builder onsetAge(final Age onsetAge) {
-                b.add(PROPERTY_ONSET_AGE, onsetAge);
+                b.add(FhirPropertyNames.PROPERTY_ONSET_AGE, onsetAge);
                 return this;
             }
 
             public Builder onsetRange(final Range onsetRange) {
-                b.add(PROPERTY_ONSET_RANGE, onsetRange);
+                b.add(FhirPropertyNames.PROPERTY_ONSET_RANGE, onsetRange);
                 return this;
             }
 
             public Builder onsetPeriod(final Period onsetPeriod) {
-                b.add(PROPERTY_ONSET_PERIOD, onsetPeriod);
+                b.add(FhirPropertyNames.PROPERTY_ONSET_PERIOD, onsetPeriod);
                 return this;
             }
 
             public Builder onsetString(final String onsetString) {
-                b.add(PROPERTY_ONSET_STRING, onsetString);
+                b.add(FhirPropertyNames.PROPERTY_ONSET_STRING, onsetString);
                 return this;
             }
 
             public Builder note(final java.util.List<Annotation> note) {
-                b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+                b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
                 return this;
             }
 

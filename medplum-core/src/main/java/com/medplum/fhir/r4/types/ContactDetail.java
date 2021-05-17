@@ -9,15 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Specifies contact information for a person or organization.
  */
 public class ContactDetail extends FhirResource {
     public static final String RESOURCE_TYPE = "ContactDetail";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TELECOM = "telecom";
 
     public static Builder create() {
         return new Builder();
@@ -36,7 +34,7 @@ public class ContactDetail extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -48,14 +46,14 @@ public class ContactDetail extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * The name of an individual to contact.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -63,7 +61,7 @@ public class ContactDetail extends FhirResource {
      * organization.
      */
     public java.util.List<ContactPoint> telecom() {
-        return getList(ContactPoint.class, PROPERTY_TELECOM);
+        return getList(ContactPoint.class, FhirPropertyNames.PROPERTY_TELECOM);
     }
 
     public static class Builder {
@@ -78,22 +76,22 @@ public class ContactDetail extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder telecom(final java.util.List<ContactPoint> telecom) {
-            b.add(PROPERTY_TELECOM, FhirObject.toArray(telecom));
+            b.add(FhirPropertyNames.PROPERTY_TELECOM, FhirObject.toArray(telecom));
             return this;
         }
 

@@ -9,41 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Risk of harmful or undesirable, physiological response which is unique
  * to an individual and associated with exposure to a substance.
  */
 public class AllergyIntolerance extends FhirResource {
     public static final String RESOURCE_TYPE = "AllergyIntolerance";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_CLINICAL_STATUS = "clinicalStatus";
-    public static final String PROPERTY_VERIFICATION_STATUS = "verificationStatus";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_CATEGORY = "category";
-    public static final String PROPERTY_CRITICALITY = "criticality";
-    public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_PATIENT = "patient";
-    public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_ONSET_DATE_TIME = "onsetDateTime";
-    public static final String PROPERTY_ONSET_AGE = "onsetAge";
-    public static final String PROPERTY_ONSET_PERIOD = "onsetPeriod";
-    public static final String PROPERTY_ONSET_RANGE = "onsetRange";
-    public static final String PROPERTY_ONSET_STRING = "onsetString";
-    public static final String PROPERTY_RECORDED_DATE = "recordedDate";
-    public static final String PROPERTY_RECORDER = "recorder";
-    public static final String PROPERTY_ASSERTER = "asserter";
-    public static final String PROPERTY_LAST_OCCURRENCE = "lastOccurrence";
-    public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_REACTION = "reaction";
 
     public static Builder create() {
         return new Builder();
@@ -64,14 +37,14 @@ public class AllergyIntolerance extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -83,7 +56,7 @@ public class AllergyIntolerance extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -92,7 +65,7 @@ public class AllergyIntolerance extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -104,7 +77,7 @@ public class AllergyIntolerance extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -124,7 +97,7 @@ public class AllergyIntolerance extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -133,14 +106,14 @@ public class AllergyIntolerance extends FhirResource {
      * updated and propagates from server to server.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * The clinical status of the allergy or intolerance.
      */
     public CodeableConcept clinicalStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_CLINICAL_STATUS);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CLINICAL_STATUS);
     }
 
     /**
@@ -149,7 +122,7 @@ public class AllergyIntolerance extends FhirResource {
      * pharmaceutical product).
      */
     public CodeableConcept verificationStatus() {
-        return getObject(CodeableConcept.class, PROPERTY_VERIFICATION_STATUS);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_VERIFICATION_STATUS);
     }
 
     /**
@@ -157,14 +130,14 @@ public class AllergyIntolerance extends FhirResource {
      * reaction risk.
      */
     public String type() {
-        return getString(PROPERTY_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
      * Category of the identified substance.
      */
     public java.util.List<String> category() {
-        return getList(String.class, PROPERTY_CATEGORY);
+        return getList(String.class, FhirPropertyNames.PROPERTY_CATEGORY);
     }
 
     /**
@@ -172,7 +145,7 @@ public class AllergyIntolerance extends FhirResource {
      * reaction to the identified substance.
      */
     public String criticality() {
-        return getString(PROPERTY_CRITICALITY);
+        return getString(FhirPropertyNames.PROPERTY_CRITICALITY);
     }
 
     /**
@@ -195,21 +168,21 @@ public class AllergyIntolerance extends FhirResource {
      * AllergyIntolerance.reaction.substance.
      */
     public CodeableConcept code() {
-        return getObject(CodeableConcept.class, PROPERTY_CODE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
     }
 
     /**
      * The patient who has the allergy or intolerance.
      */
     public Reference patient() {
-        return getObject(Reference.class, PROPERTY_PATIENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PATIENT);
     }
 
     /**
      * The encounter when the allergy or intolerance was asserted.
      */
     public Reference encounter() {
-        return getObject(Reference.class, PROPERTY_ENCOUNTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ENCOUNTER);
     }
 
     /**
@@ -217,7 +190,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public String onsetDateTime() {
-        return getString(PROPERTY_ONSET_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_ONSET_DATE_TIME);
     }
 
     /**
@@ -225,7 +198,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public Age onsetAge() {
-        return getObject(Age.class, PROPERTY_ONSET_AGE);
+        return getObject(Age.class, FhirPropertyNames.PROPERTY_ONSET_AGE);
     }
 
     /**
@@ -233,7 +206,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public Period onsetPeriod() {
-        return getObject(Period.class, PROPERTY_ONSET_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_ONSET_PERIOD);
     }
 
     /**
@@ -241,7 +214,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public Range onsetRange() {
-        return getObject(Range.class, PROPERTY_ONSET_RANGE);
+        return getObject(Range.class, FhirPropertyNames.PROPERTY_ONSET_RANGE);
     }
 
     /**
@@ -249,7 +222,7 @@ public class AllergyIntolerance extends FhirResource {
      * intolerance was identified.
      */
     public String onsetString() {
-        return getString(PROPERTY_ONSET_STRING);
+        return getString(FhirPropertyNames.PROPERTY_ONSET_STRING);
     }
 
     /**
@@ -258,7 +231,7 @@ public class AllergyIntolerance extends FhirResource {
      * date.
      */
     public java.time.Instant recordedDate() {
-        return getInstant(PROPERTY_RECORDED_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_RECORDED_DATE);
     }
 
     /**
@@ -266,14 +239,14 @@ public class AllergyIntolerance extends FhirResource {
      * content.
      */
     public Reference recorder() {
-        return getObject(Reference.class, PROPERTY_RECORDER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_RECORDER);
     }
 
     /**
      * The source of the information about the allergy that is recorded.
      */
     public Reference asserter() {
-        return getObject(Reference.class, PROPERTY_ASSERTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ASSERTER);
     }
 
     /**
@@ -281,7 +254,7 @@ public class AllergyIntolerance extends FhirResource {
      * reaction event.
      */
     public java.time.Instant lastOccurrence() {
-        return getInstant(PROPERTY_LAST_OCCURRENCE);
+        return getInstant(FhirPropertyNames.PROPERTY_LAST_OCCURRENCE);
     }
 
     /**
@@ -289,7 +262,7 @@ public class AllergyIntolerance extends FhirResource {
      * not captured in other fields.
      */
     public java.util.List<Annotation> note() {
-        return getList(Annotation.class, PROPERTY_NOTE);
+        return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
     }
 
     /**
@@ -297,7 +270,7 @@ public class AllergyIntolerance extends FhirResource {
      * identified substance.
      */
     public java.util.List<AllergyIntoleranceReaction> reaction() {
-        return getList(AllergyIntoleranceReaction.class, PROPERTY_REACTION);
+        return getList(AllergyIntoleranceReaction.class, FhirPropertyNames.PROPERTY_REACTION);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -311,147 +284,147 @@ public class AllergyIntolerance extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder clinicalStatus(final CodeableConcept clinicalStatus) {
-            b.add(PROPERTY_CLINICAL_STATUS, clinicalStatus);
+            b.add(FhirPropertyNames.PROPERTY_CLINICAL_STATUS, clinicalStatus);
             return this;
         }
 
         public Builder verificationStatus(final CodeableConcept verificationStatus) {
-            b.add(PROPERTY_VERIFICATION_STATUS, verificationStatus);
+            b.add(FhirPropertyNames.PROPERTY_VERIFICATION_STATUS, verificationStatus);
             return this;
         }
 
         public Builder type(final String type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder category(final java.util.List<String> category) {
-            b.add(PROPERTY_CATEGORY, FhirObject.toStringArray(category));
+            b.add(FhirPropertyNames.PROPERTY_CATEGORY, FhirObject.toStringArray(category));
             return this;
         }
 
         public Builder criticality(final String criticality) {
-            b.add(PROPERTY_CRITICALITY, criticality);
+            b.add(FhirPropertyNames.PROPERTY_CRITICALITY, criticality);
             return this;
         }
 
         public Builder code(final CodeableConcept code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 
         public Builder patient(final Reference patient) {
-            b.add(PROPERTY_PATIENT, patient);
+            b.add(FhirPropertyNames.PROPERTY_PATIENT, patient);
             return this;
         }
 
         public Builder encounter(final Reference encounter) {
-            b.add(PROPERTY_ENCOUNTER, encounter);
+            b.add(FhirPropertyNames.PROPERTY_ENCOUNTER, encounter);
             return this;
         }
 
         public Builder onsetDateTime(final String onsetDateTime) {
-            b.add(PROPERTY_ONSET_DATE_TIME, onsetDateTime);
+            b.add(FhirPropertyNames.PROPERTY_ONSET_DATE_TIME, onsetDateTime);
             return this;
         }
 
         public Builder onsetAge(final Age onsetAge) {
-            b.add(PROPERTY_ONSET_AGE, onsetAge);
+            b.add(FhirPropertyNames.PROPERTY_ONSET_AGE, onsetAge);
             return this;
         }
 
         public Builder onsetPeriod(final Period onsetPeriod) {
-            b.add(PROPERTY_ONSET_PERIOD, onsetPeriod);
+            b.add(FhirPropertyNames.PROPERTY_ONSET_PERIOD, onsetPeriod);
             return this;
         }
 
         public Builder onsetRange(final Range onsetRange) {
-            b.add(PROPERTY_ONSET_RANGE, onsetRange);
+            b.add(FhirPropertyNames.PROPERTY_ONSET_RANGE, onsetRange);
             return this;
         }
 
         public Builder onsetString(final String onsetString) {
-            b.add(PROPERTY_ONSET_STRING, onsetString);
+            b.add(FhirPropertyNames.PROPERTY_ONSET_STRING, onsetString);
             return this;
         }
 
         public Builder recordedDate(final java.time.Instant recordedDate) {
-            b.add(PROPERTY_RECORDED_DATE, recordedDate.toString());
+            b.add(FhirPropertyNames.PROPERTY_RECORDED_DATE, recordedDate.toString());
             return this;
         }
 
         public Builder recorder(final Reference recorder) {
-            b.add(PROPERTY_RECORDER, recorder);
+            b.add(FhirPropertyNames.PROPERTY_RECORDER, recorder);
             return this;
         }
 
         public Builder asserter(final Reference asserter) {
-            b.add(PROPERTY_ASSERTER, asserter);
+            b.add(FhirPropertyNames.PROPERTY_ASSERTER, asserter);
             return this;
         }
 
         public Builder lastOccurrence(final java.time.Instant lastOccurrence) {
-            b.add(PROPERTY_LAST_OCCURRENCE, lastOccurrence.toString());
+            b.add(FhirPropertyNames.PROPERTY_LAST_OCCURRENCE, lastOccurrence.toString());
             return this;
         }
 
         public Builder note(final java.util.List<Annotation> note) {
-            b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+            b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
             return this;
         }
 
         public Builder reaction(final java.util.List<AllergyIntoleranceReaction> reaction) {
-            b.add(PROPERTY_REACTION, FhirObject.toArray(reaction));
+            b.add(FhirPropertyNames.PROPERTY_REACTION, FhirObject.toArray(reaction));
             return this;
         }
 
@@ -466,16 +439,6 @@ public class AllergyIntolerance extends FhirResource {
      */
     public static class AllergyIntoleranceReaction extends FhirObject {
         public static final String RESOURCE_TYPE = "AllergyIntoleranceReaction";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_SUBSTANCE = "substance";
-        public static final String PROPERTY_MANIFESTATION = "manifestation";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_ONSET = "onset";
-        public static final String PROPERTY_SEVERITY = "severity";
-        public static final String PROPERTY_EXPOSURE_ROUTE = "exposureRoute";
-        public static final String PROPERTY_NOTE = "note";
 
         public static Builder create() {
             return new Builder();
@@ -494,7 +457,7 @@ public class AllergyIntolerance extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -506,7 +469,7 @@ public class AllergyIntolerance extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -527,7 +490,7 @@ public class AllergyIntolerance extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -544,7 +507,7 @@ public class AllergyIntolerance extends FhirResource {
          * should ignore AllergyIntolerance.reaction.substance.
          */
         public CodeableConcept substance() {
-            return getObject(CodeableConcept.class, PROPERTY_SUBSTANCE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SUBSTANCE);
         }
 
         /**
@@ -552,7 +515,7 @@ public class AllergyIntolerance extends FhirResource {
          * the adverse reaction event.
          */
         public java.util.List<CodeableConcept> manifestation() {
-            return getList(CodeableConcept.class, PROPERTY_MANIFESTATION);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_MANIFESTATION);
         }
 
         /**
@@ -560,14 +523,14 @@ public class AllergyIntolerance extends FhirResource {
          * the manifestation if required.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * Record of the date and/or time of the onset of the Reaction.
          */
         public java.time.Instant onset() {
-            return getInstant(PROPERTY_ONSET);
+            return getInstant(FhirPropertyNames.PROPERTY_ONSET);
         }
 
         /**
@@ -575,7 +538,7 @@ public class AllergyIntolerance extends FhirResource {
          * potentially considering multiple different manifestations.
          */
         public String severity() {
-            return getString(PROPERTY_SEVERITY);
+            return getString(FhirPropertyNames.PROPERTY_SEVERITY);
         }
 
         /**
@@ -583,7 +546,7 @@ public class AllergyIntolerance extends FhirResource {
          * substance.
          */
         public CodeableConcept exposureRoute() {
-            return getObject(CodeableConcept.class, PROPERTY_EXPOSURE_ROUTE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_EXPOSURE_ROUTE);
         }
 
         /**
@@ -591,7 +554,7 @@ public class AllergyIntolerance extends FhirResource {
          * fields.
          */
         public java.util.List<Annotation> note() {
-            return getList(Annotation.class, PROPERTY_NOTE);
+            return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
         }
 
         public static class Builder {
@@ -606,52 +569,52 @@ public class AllergyIntolerance extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder substance(final CodeableConcept substance) {
-                b.add(PROPERTY_SUBSTANCE, substance);
+                b.add(FhirPropertyNames.PROPERTY_SUBSTANCE, substance);
                 return this;
             }
 
             public Builder manifestation(final java.util.List<CodeableConcept> manifestation) {
-                b.add(PROPERTY_MANIFESTATION, FhirObject.toArray(manifestation));
+                b.add(FhirPropertyNames.PROPERTY_MANIFESTATION, FhirObject.toArray(manifestation));
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder onset(final java.time.Instant onset) {
-                b.add(PROPERTY_ONSET, onset.toString());
+                b.add(FhirPropertyNames.PROPERTY_ONSET, onset.toString());
                 return this;
             }
 
             public Builder severity(final String severity) {
-                b.add(PROPERTY_SEVERITY, severity);
+                b.add(FhirPropertyNames.PROPERTY_SEVERITY, severity);
                 return this;
             }
 
             public Builder exposureRoute(final CodeableConcept exposureRoute) {
-                b.add(PROPERTY_EXPOSURE_ROUTE, exposureRoute);
+                b.add(FhirPropertyNames.PROPERTY_EXPOSURE_ROUTE, exposureRoute);
                 return this;
             }
 
             public Builder note(final java.util.List<Annotation> note) {
-                b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+                b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
                 return this;
             }
 

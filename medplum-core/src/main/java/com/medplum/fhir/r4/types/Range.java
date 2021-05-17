@@ -9,15 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A set of ordered Quantities defined by a low and high limit.
  */
 public class Range extends FhirResource {
     public static final String RESOURCE_TYPE = "Range";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_LOW = "low";
-    public static final String PROPERTY_HIGH = "high";
 
     public static Builder create() {
         return new Builder();
@@ -36,7 +34,7 @@ public class Range extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -48,21 +46,21 @@ public class Range extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * The low limit. The boundary is inclusive.
      */
     public Quantity low() {
-        return getObject(Quantity.class, PROPERTY_LOW);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_LOW);
     }
 
     /**
      * The high limit. The boundary is inclusive.
      */
     public Quantity high() {
-        return getObject(Quantity.class, PROPERTY_HIGH);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_HIGH);
     }
 
     public static class Builder {
@@ -77,22 +75,22 @@ public class Range extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder low(final Quantity low) {
-            b.add(PROPERTY_LOW, low);
+            b.add(FhirPropertyNames.PROPERTY_LOW, low);
             return this;
         }
 
         public Builder high(final Quantity high) {
-            b.add(PROPERTY_HIGH, high);
+            b.add(FhirPropertyNames.PROPERTY_HIGH, high);
             return this;
         }
 

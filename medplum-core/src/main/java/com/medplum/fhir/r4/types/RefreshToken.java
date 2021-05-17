@@ -7,16 +7,13 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * OAuth refresh token.
  */
 public class RefreshToken extends FhirResource {
     public static final String RESOURCE_TYPE = "RefreshToken";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_CLIENT = "client";
-    public static final String PROPERTY_USER = "user";
-    public static final String PROPERTY_SCOPE = "scope";
 
     public static Builder create() {
         return new Builder();
@@ -34,21 +31,21 @@ public class RefreshToken extends FhirResource {
      * The client requesting the code.
      */
     public Reference client() {
-        return getObject(Reference.class, PROPERTY_CLIENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_CLIENT);
     }
 
     /**
      * The user requesting the code.
      */
     public Reference user() {
-        return getObject(Reference.class, PROPERTY_USER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_USER);
     }
 
     /**
      * OAuth scope or scopes.
      */
     public String scope() {
-        return getString(PROPERTY_SCOPE);
+        return getString(FhirPropertyNames.PROPERTY_SCOPE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -62,27 +59,27 @@ public class RefreshToken extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder client(final Reference client) {
-            b.add(PROPERTY_CLIENT, client);
+            b.add(FhirPropertyNames.PROPERTY_CLIENT, client);
             return this;
         }
 
         public Builder user(final Reference user) {
-            b.add(PROPERTY_USER, user);
+            b.add(FhirPropertyNames.PROPERTY_USER, user);
             return this;
         }
 
         public Builder scope(final String scope) {
-            b.add(PROPERTY_SCOPE, scope);
+            b.add(FhirPropertyNames.PROPERTY_SCOPE, scope);
             return this;
         }
 

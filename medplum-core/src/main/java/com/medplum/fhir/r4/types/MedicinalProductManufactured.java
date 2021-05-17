@@ -7,27 +7,13 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The manufactured item as contained in the packaged medicinal product.
  */
 public class MedicinalProductManufactured extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductManufactured";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_MANUFACTURED_DOSE_FORM = "manufacturedDoseForm";
-    public static final String PROPERTY_UNIT_OF_PRESENTATION = "unitOfPresentation";
-    public static final String PROPERTY_QUANTITY = "quantity";
-    public static final String PROPERTY_MANUFACTURER = "manufacturer";
-    public static final String PROPERTY_INGREDIENT = "ingredient";
-    public static final String PROPERTY_PHYSICAL_CHARACTERISTICS = "physicalCharacteristics";
-    public static final String PROPERTY_OTHER_CHARACTERISTICS = "otherCharacteristics";
 
     public static Builder create() {
         return new Builder();
@@ -48,14 +34,14 @@ public class MedicinalProductManufactured extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -67,7 +53,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -76,7 +62,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -88,7 +74,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -108,7 +94,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -116,7 +102,7 @@ public class MedicinalProductManufactured extends FhirResource {
      * pharmaceutical product.
      */
     public CodeableConcept manufacturedDoseForm() {
-        return getObject(CodeableConcept.class, PROPERTY_MANUFACTURED_DOSE_FORM);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_MANUFACTURED_DOSE_FORM);
     }
 
     /**
@@ -124,14 +110,14 @@ public class MedicinalProductManufactured extends FhirResource {
      * is described.
      */
     public CodeableConcept unitOfPresentation() {
-        return getObject(CodeableConcept.class, PROPERTY_UNIT_OF_PRESENTATION);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_UNIT_OF_PRESENTATION);
     }
 
     /**
      * The quantity or &quot;count number&quot; of the manufactured item.
      */
     public Quantity quantity() {
-        return getObject(Quantity.class, PROPERTY_QUANTITY);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_QUANTITY);
     }
 
     /**
@@ -139,28 +125,28 @@ public class MedicinalProductManufactured extends FhirResource {
      * &quot;manufacturer&quot; but it currently causes technical issues).
      */
     public java.util.List<Reference> manufacturer() {
-        return getList(Reference.class, PROPERTY_MANUFACTURER);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_MANUFACTURER);
     }
 
     /**
      * Ingredient.
      */
     public java.util.List<Reference> ingredient() {
-        return getList(Reference.class, PROPERTY_INGREDIENT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_INGREDIENT);
     }
 
     /**
      * Dimensions, color etc.
      */
     public ProdCharacteristic physicalCharacteristics() {
-        return getObject(ProdCharacteristic.class, PROPERTY_PHYSICAL_CHARACTERISTICS);
+        return getObject(ProdCharacteristic.class, FhirPropertyNames.PROPERTY_PHYSICAL_CHARACTERISTICS);
     }
 
     /**
      * Other codeable characteristics.
      */
     public java.util.List<CodeableConcept> otherCharacteristics() {
-        return getList(CodeableConcept.class, PROPERTY_OTHER_CHARACTERISTICS);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_OTHER_CHARACTERISTICS);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -174,82 +160,82 @@ public class MedicinalProductManufactured extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder manufacturedDoseForm(final CodeableConcept manufacturedDoseForm) {
-            b.add(PROPERTY_MANUFACTURED_DOSE_FORM, manufacturedDoseForm);
+            b.add(FhirPropertyNames.PROPERTY_MANUFACTURED_DOSE_FORM, manufacturedDoseForm);
             return this;
         }
 
         public Builder unitOfPresentation(final CodeableConcept unitOfPresentation) {
-            b.add(PROPERTY_UNIT_OF_PRESENTATION, unitOfPresentation);
+            b.add(FhirPropertyNames.PROPERTY_UNIT_OF_PRESENTATION, unitOfPresentation);
             return this;
         }
 
         public Builder quantity(final Quantity quantity) {
-            b.add(PROPERTY_QUANTITY, quantity);
+            b.add(FhirPropertyNames.PROPERTY_QUANTITY, quantity);
             return this;
         }
 
         public Builder manufacturer(final java.util.List<Reference> manufacturer) {
-            b.add(PROPERTY_MANUFACTURER, FhirObject.toArray(manufacturer));
+            b.add(FhirPropertyNames.PROPERTY_MANUFACTURER, FhirObject.toArray(manufacturer));
             return this;
         }
 
         public Builder ingredient(final java.util.List<Reference> ingredient) {
-            b.add(PROPERTY_INGREDIENT, FhirObject.toArray(ingredient));
+            b.add(FhirPropertyNames.PROPERTY_INGREDIENT, FhirObject.toArray(ingredient));
             return this;
         }
 
         public Builder physicalCharacteristics(final ProdCharacteristic physicalCharacteristics) {
-            b.add(PROPERTY_PHYSICAL_CHARACTERISTICS, physicalCharacteristics);
+            b.add(FhirPropertyNames.PROPERTY_PHYSICAL_CHARACTERISTICS, physicalCharacteristics);
             return this;
         }
 
         public Builder otherCharacteristics(final java.util.List<CodeableConcept> otherCharacteristics) {
-            b.add(PROPERTY_OTHER_CHARACTERISTICS, FhirObject.toArray(otherCharacteristics));
+            b.add(FhirPropertyNames.PROPERTY_OTHER_CHARACTERISTICS, FhirObject.toArray(otherCharacteristics));
             return this;
         }
 

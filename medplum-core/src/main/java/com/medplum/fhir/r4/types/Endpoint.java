@@ -7,6 +7,8 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The technical details of an endpoint that can be used for electronic
  * services, such as for web services providing XDS.b or a REST endpoint
@@ -15,26 +17,6 @@ import jakarta.json.JsonObject;
  */
 public class Endpoint extends FhirResource {
     public static final String RESOURCE_TYPE = "Endpoint";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_CONNECTION_TYPE = "connectionType";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_MANAGING_ORGANIZATION = "managingOrganization";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_PAYLOAD_TYPE = "payloadType";
-    public static final String PROPERTY_PAYLOAD_MIME_TYPE = "payloadMimeType";
-    public static final String PROPERTY_ADDRESS = "address";
-    public static final String PROPERTY_HEADER = "header";
 
     public static Builder create() {
         return new Builder();
@@ -55,14 +37,14 @@ public class Endpoint extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -74,7 +56,7 @@ public class Endpoint extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -83,7 +65,7 @@ public class Endpoint extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -95,7 +77,7 @@ public class Endpoint extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -115,7 +97,7 @@ public class Endpoint extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -123,14 +105,14 @@ public class Endpoint extends FhirResource {
      * across multiple disparate systems.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * active | suspended | error | off | test.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -139,14 +121,14 @@ public class Endpoint extends FhirResource {
      * XDS.b/DICOM/cds-hook).
      */
     public Coding connectionType() {
-        return getObject(Coding.class, PROPERTY_CONNECTION_TYPE);
+        return getObject(Coding.class, FhirPropertyNames.PROPERTY_CONNECTION_TYPE);
     }
 
     /**
      * A friendly name that this endpoint can be referred to with.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -155,7 +137,7 @@ public class Endpoint extends FhirResource {
      * organization associated with the data).
      */
     public Reference managingOrganization() {
-        return getObject(Reference.class, PROPERTY_MANAGING_ORGANIZATION);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_MANAGING_ORGANIZATION);
     }
 
     /**
@@ -163,14 +145,14 @@ public class Endpoint extends FhirResource {
      * primary use of this for system administrator troubleshooting.
      */
     public java.util.List<ContactPoint> contact() {
-        return getList(ContactPoint.class, PROPERTY_CONTACT);
+        return getList(ContactPoint.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
      * The interval during which the endpoint is expected to be operational.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     /**
@@ -178,7 +160,7 @@ public class Endpoint extends FhirResource {
      * communicated on the endpoint.
      */
     public java.util.List<CodeableConcept> payloadType() {
-        return getList(CodeableConcept.class, PROPERTY_PAYLOAD_TYPE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_PAYLOAD_TYPE);
     }
 
     /**
@@ -188,21 +170,21 @@ public class Endpoint extends FhirResource {
      * connectionType).
      */
     public java.util.List<String> payloadMimeType() {
-        return getList(String.class, PROPERTY_PAYLOAD_MIME_TYPE);
+        return getList(String.class, FhirPropertyNames.PROPERTY_PAYLOAD_MIME_TYPE);
     }
 
     /**
      * The uri that describes the actual end-point to connect to.
      */
     public java.net.URI address() {
-        return getUri(PROPERTY_ADDRESS);
+        return getUri(FhirPropertyNames.PROPERTY_ADDRESS);
     }
 
     /**
      * Additional headers / information to send as part of the notification.
      */
     public java.util.List<String> header() {
-        return getList(String.class, PROPERTY_HEADER);
+        return getList(String.class, FhirPropertyNames.PROPERTY_HEADER);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -216,102 +198,102 @@ public class Endpoint extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder connectionType(final Coding connectionType) {
-            b.add(PROPERTY_CONNECTION_TYPE, connectionType);
+            b.add(FhirPropertyNames.PROPERTY_CONNECTION_TYPE, connectionType);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder managingOrganization(final Reference managingOrganization) {
-            b.add(PROPERTY_MANAGING_ORGANIZATION, managingOrganization);
+            b.add(FhirPropertyNames.PROPERTY_MANAGING_ORGANIZATION, managingOrganization);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactPoint> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 
         public Builder payloadType(final java.util.List<CodeableConcept> payloadType) {
-            b.add(PROPERTY_PAYLOAD_TYPE, FhirObject.toArray(payloadType));
+            b.add(FhirPropertyNames.PROPERTY_PAYLOAD_TYPE, FhirObject.toArray(payloadType));
             return this;
         }
 
         public Builder payloadMimeType(final java.util.List<String> payloadMimeType) {
-            b.add(PROPERTY_PAYLOAD_MIME_TYPE, FhirObject.toStringArray(payloadMimeType));
+            b.add(FhirPropertyNames.PROPERTY_PAYLOAD_MIME_TYPE, FhirObject.toStringArray(payloadMimeType));
             return this;
         }
 
         public Builder address(final java.net.URI address) {
-            b.add(PROPERTY_ADDRESS, address.toString());
+            b.add(FhirPropertyNames.PROPERTY_ADDRESS, address.toString());
             return this;
         }
 
         public Builder header(final java.util.List<String> header) {
-            b.add(PROPERTY_HEADER, FhirObject.toStringArray(header));
+            b.add(FhirPropertyNames.PROPERTY_HEADER, FhirObject.toStringArray(header));
             return this;
         }
 

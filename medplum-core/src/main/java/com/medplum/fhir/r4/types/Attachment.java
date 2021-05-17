@@ -9,21 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * For referring to data content defined in other formats.
  */
 public class Attachment extends FhirResource {
     public static final String RESOURCE_TYPE = "Attachment";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_CONTENT_TYPE = "contentType";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_DATA = "data";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_SIZE = "size";
-    public static final String PROPERTY_HASH = "hash";
-    public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_CREATION = "creation";
 
     public static Builder create() {
         return new Builder();
@@ -42,7 +34,7 @@ public class Attachment extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -54,7 +46,7 @@ public class Attachment extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -63,7 +55,7 @@ public class Attachment extends FhirResource {
      * parameters such as charset where appropriate.
      */
     public String contentType() {
-        return getString(PROPERTY_CONTENT_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_CONTENT_TYPE);
     }
 
     /**
@@ -71,7 +63,7 @@ public class Attachment extends FhirResource {
      * according to BCP 47.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -79,14 +71,14 @@ public class Attachment extends FhirResource {
      * encoded.
      */
     public String data() {
-        return getString(PROPERTY_DATA);
+        return getString(FhirPropertyNames.PROPERTY_DATA);
     }
 
     /**
      * A location where the data can be accessed.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -94,28 +86,28 @@ public class Attachment extends FhirResource {
      * base64 encoding, if that is done).
      */
     public Integer sizeValue() {
-        return data.getInt(PROPERTY_SIZE);
+        return data.getInt(FhirPropertyNames.PROPERTY_SIZE);
     }
 
     /**
      * The calculated hash of the data using SHA-1. Represented using base64.
      */
     public String hash() {
-        return getString(PROPERTY_HASH);
+        return getString(FhirPropertyNames.PROPERTY_HASH);
     }
 
     /**
      * A label or set of text to display in place of the data.
      */
     public String title() {
-        return getString(PROPERTY_TITLE);
+        return getString(FhirPropertyNames.PROPERTY_TITLE);
     }
 
     /**
      * The date that the attachment was first created.
      */
     public java.time.Instant creation() {
-        return getInstant(PROPERTY_CREATION);
+        return getInstant(FhirPropertyNames.PROPERTY_CREATION);
     }
 
     public static class Builder {
@@ -130,52 +122,52 @@ public class Attachment extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder contentType(final String contentType) {
-            b.add(PROPERTY_CONTENT_TYPE, contentType);
+            b.add(FhirPropertyNames.PROPERTY_CONTENT_TYPE, contentType);
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder data(final String data) {
-            b.add(PROPERTY_DATA, data);
+            b.add(FhirPropertyNames.PROPERTY_DATA, data);
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder sizeValue(final Integer sizeValue) {
-            b.add(PROPERTY_SIZE, sizeValue);
+            b.add(FhirPropertyNames.PROPERTY_SIZE, sizeValue);
             return this;
         }
 
         public Builder hash(final String hash) {
-            b.add(PROPERTY_HASH, hash);
+            b.add(FhirPropertyNames.PROPERTY_HASH, hash);
             return this;
         }
 
         public Builder title(final String title) {
-            b.add(PROPERTY_TITLE, title);
+            b.add(FhirPropertyNames.PROPERTY_TITLE, title);
             return this;
         }
 
         public Builder creation(final java.time.Instant creation) {
-            b.add(PROPERTY_CREATION, creation.toString());
+            b.add(FhirPropertyNames.PROPERTY_CREATION, creation.toString());
             return this;
         }
 

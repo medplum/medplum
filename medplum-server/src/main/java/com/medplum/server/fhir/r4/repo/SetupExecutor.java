@@ -20,8 +20,8 @@ import com.medplum.fhir.r4.types.Organization;
 import com.medplum.fhir.r4.types.Practitioner;
 import com.medplum.fhir.r4.types.StructureDefinition;
 import com.medplum.fhir.r4.types.User;
-import com.medplum.server.fhir.r4.search.SearchRequest;
 import com.medplum.server.fhir.r4.search.SearchParser;
+import com.medplum.server.fhir.r4.search.SearchRequest;
 import com.medplum.server.security.SecurityUser;
 import com.medplum.util.JsonUtils;
 

@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Specifies an event that may occur multiple times. Timing schedules are
  * used to record when things are planned, expected or requested to
@@ -19,12 +21,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Timing extends FhirResource {
     public static final String RESOURCE_TYPE = "Timing";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_EVENT = "event";
-    public static final String PROPERTY_REPEAT = "repeat";
-    public static final String PROPERTY_CODE = "code";
 
     public static Builder create() {
         return new Builder();
@@ -43,7 +39,7 @@ public class Timing extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -55,7 +51,7 @@ public class Timing extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -76,21 +72,21 @@ public class Timing extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Identifies specific times when the event occurs.
      */
     public java.util.List<java.time.Instant> event() {
-        return getList(java.time.Instant.class, PROPERTY_EVENT);
+        return getList(java.time.Instant.class, FhirPropertyNames.PROPERTY_EVENT);
     }
 
     /**
      * A set of rules that describe when the event is scheduled.
      */
     public TimingRepeat repeat() {
-        return getObject(TimingRepeat.class, PROPERTY_REPEAT);
+        return getObject(TimingRepeat.class, FhirPropertyNames.PROPERTY_REPEAT);
     }
 
     /**
@@ -103,7 +99,7 @@ public class Timing extends FhirResource {
      * code (and is not contained in the code).
      */
     public CodeableConcept code() {
-        return getObject(CodeableConcept.class, PROPERTY_CODE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
     }
 
     public static class Builder {
@@ -118,32 +114,32 @@ public class Timing extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder event(final java.util.List<java.time.Instant> event) {
-            b.add(PROPERTY_EVENT, FhirObject.toInstantArray(event));
+            b.add(FhirPropertyNames.PROPERTY_EVENT, FhirObject.toInstantArray(event));
             return this;
         }
 
         public Builder repeat(final TimingRepeat repeat) {
-            b.add(PROPERTY_REPEAT, repeat);
+            b.add(FhirPropertyNames.PROPERTY_REPEAT, repeat);
             return this;
         }
 
         public Builder code(final CodeableConcept code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 
@@ -162,26 +158,6 @@ public class Timing extends FhirResource {
      */
     public static class TimingRepeat extends FhirObject {
         public static final String RESOURCE_TYPE = "TimingRepeat";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_BOUNDS_DURATION = "boundsDuration";
-        public static final String PROPERTY_BOUNDS_RANGE = "boundsRange";
-        public static final String PROPERTY_BOUNDS_PERIOD = "boundsPeriod";
-        public static final String PROPERTY_COUNT = "count";
-        public static final String PROPERTY_COUNT_MAX = "countMax";
-        public static final String PROPERTY_DURATION = "duration";
-        public static final String PROPERTY_DURATION_MAX = "durationMax";
-        public static final String PROPERTY_DURATION_UNIT = "durationUnit";
-        public static final String PROPERTY_FREQUENCY = "frequency";
-        public static final String PROPERTY_FREQUENCY_MAX = "frequencyMax";
-        public static final String PROPERTY_PERIOD = "period";
-        public static final String PROPERTY_PERIOD_MAX = "periodMax";
-        public static final String PROPERTY_PERIOD_UNIT = "periodUnit";
-        public static final String PROPERTY_DAY_OF_WEEK = "dayOfWeek";
-        public static final String PROPERTY_TIME_OF_DAY = "timeOfDay";
-        public static final String PROPERTY_WHEN = "when";
-        public static final String PROPERTY_OFFSET = "offset";
 
         public static Builder create() {
             return new Builder();
@@ -200,7 +176,7 @@ public class Timing extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -212,7 +188,7 @@ public class Timing extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -233,7 +209,7 @@ public class Timing extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -242,7 +218,7 @@ public class Timing extends FhirResource {
          * timing schedule.
          */
         public Duration boundsDuration() {
-            return getObject(Duration.class, PROPERTY_BOUNDS_DURATION);
+            return getObject(Duration.class, FhirPropertyNames.PROPERTY_BOUNDS_DURATION);
         }
 
         /**
@@ -251,7 +227,7 @@ public class Timing extends FhirResource {
          * timing schedule.
          */
         public Range boundsRange() {
-            return getObject(Range.class, PROPERTY_BOUNDS_RANGE);
+            return getObject(Range.class, FhirPropertyNames.PROPERTY_BOUNDS_RANGE);
         }
 
         /**
@@ -260,7 +236,7 @@ public class Timing extends FhirResource {
          * timing schedule.
          */
         public Period boundsPeriod() {
-            return getObject(Period.class, PROPERTY_BOUNDS_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_BOUNDS_PERIOD);
         }
 
         /**
@@ -270,7 +246,7 @@ public class Timing extends FhirResource {
          * values.
          */
         public Integer count() {
-            return data.getInt(PROPERTY_COUNT);
+            return data.getInt(FhirPropertyNames.PROPERTY_COUNT);
         }
 
         /**
@@ -278,7 +254,7 @@ public class Timing extends FhirResource {
          * action between [count] and [countMax] times.
          */
         public Integer countMax() {
-            return data.getInt(PROPERTY_COUNT_MAX);
+            return data.getInt(FhirPropertyNames.PROPERTY_COUNT_MAX);
         }
 
         /**
@@ -287,7 +263,7 @@ public class Timing extends FhirResource {
          * of the duration.
          */
         public Double duration() {
-            return data.getJsonNumber(PROPERTY_DURATION).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_DURATION).doubleValue();
         }
 
         /**
@@ -295,14 +271,14 @@ public class Timing extends FhirResource {
          * action between [duration] and [durationMax] time length.
          */
         public Double durationMax() {
-            return data.getJsonNumber(PROPERTY_DURATION_MAX).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_DURATION_MAX).doubleValue();
         }
 
         /**
          * The units of time for the duration, in UCUM units.
          */
         public String durationUnit() {
-            return getString(PROPERTY_DURATION_UNIT);
+            return getString(FhirPropertyNames.PROPERTY_DURATION_UNIT);
         }
 
         /**
@@ -311,7 +287,7 @@ public class Timing extends FhirResource {
          * the allowed range of the frequency.
          */
         public Integer frequency() {
-            return data.getInt(PROPERTY_FREQUENCY);
+            return data.getInt(FhirPropertyNames.PROPERTY_FREQUENCY);
         }
 
         /**
@@ -320,7 +296,7 @@ public class Timing extends FhirResource {
          * period range.
          */
         public Integer frequencyMax() {
-            return data.getInt(PROPERTY_FREQUENCY_MAX);
+            return data.getInt(FhirPropertyNames.PROPERTY_FREQUENCY_MAX);
         }
 
         /**
@@ -330,7 +306,7 @@ public class Timing extends FhirResource {
          * indicates the lower bound of the allowed range of the period length.
          */
         public Double period() {
-            return data.getJsonNumber(PROPERTY_PERIOD).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_PERIOD).doubleValue();
         }
 
         /**
@@ -339,14 +315,14 @@ public class Timing extends FhirResource {
          * 3-5 days.
          */
         public Double periodMax() {
-            return data.getJsonNumber(PROPERTY_PERIOD_MAX).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_PERIOD_MAX).doubleValue();
         }
 
         /**
          * The units of time for the period in UCUM units.
          */
         public String periodUnit() {
-            return getString(PROPERTY_PERIOD_UNIT);
+            return getString(FhirPropertyNames.PROPERTY_PERIOD_UNIT);
         }
 
         /**
@@ -354,14 +330,14 @@ public class Timing extends FhirResource {
          * on the specified day(s).
          */
         public java.util.List<String> dayOfWeek() {
-            return getList(String.class, PROPERTY_DAY_OF_WEEK);
+            return getList(String.class, FhirPropertyNames.PROPERTY_DAY_OF_WEEK);
         }
 
         /**
          * Specified time of day for action to take place.
          */
         public java.util.List<java.time.Instant> timeOfDay() {
-            return getList(java.time.Instant.class, PROPERTY_TIME_OF_DAY);
+            return getList(java.time.Instant.class, FhirPropertyNames.PROPERTY_TIME_OF_DAY);
         }
 
         /**
@@ -369,7 +345,7 @@ public class Timing extends FhirResource {
          * event of daily living that indicates when the action should occur.
          */
         public java.util.List<String> when() {
-            return getList(String.class, PROPERTY_WHEN);
+            return getList(String.class, FhirPropertyNames.PROPERTY_WHEN);
         }
 
         /**
@@ -378,7 +354,7 @@ public class Timing extends FhirResource {
          * offset is assumed to be after the event.
          */
         public Integer offset() {
-            return data.getInt(PROPERTY_OFFSET);
+            return data.getInt(FhirPropertyNames.PROPERTY_OFFSET);
         }
 
         public static class Builder {
@@ -393,102 +369,102 @@ public class Timing extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder boundsDuration(final Duration boundsDuration) {
-                b.add(PROPERTY_BOUNDS_DURATION, boundsDuration);
+                b.add(FhirPropertyNames.PROPERTY_BOUNDS_DURATION, boundsDuration);
                 return this;
             }
 
             public Builder boundsRange(final Range boundsRange) {
-                b.add(PROPERTY_BOUNDS_RANGE, boundsRange);
+                b.add(FhirPropertyNames.PROPERTY_BOUNDS_RANGE, boundsRange);
                 return this;
             }
 
             public Builder boundsPeriod(final Period boundsPeriod) {
-                b.add(PROPERTY_BOUNDS_PERIOD, boundsPeriod);
+                b.add(FhirPropertyNames.PROPERTY_BOUNDS_PERIOD, boundsPeriod);
                 return this;
             }
 
             public Builder count(final Integer count) {
-                b.add(PROPERTY_COUNT, count);
+                b.add(FhirPropertyNames.PROPERTY_COUNT, count);
                 return this;
             }
 
             public Builder countMax(final Integer countMax) {
-                b.add(PROPERTY_COUNT_MAX, countMax);
+                b.add(FhirPropertyNames.PROPERTY_COUNT_MAX, countMax);
                 return this;
             }
 
             public Builder duration(final Double duration) {
-                b.add(PROPERTY_DURATION, duration);
+                b.add(FhirPropertyNames.PROPERTY_DURATION, duration);
                 return this;
             }
 
             public Builder durationMax(final Double durationMax) {
-                b.add(PROPERTY_DURATION_MAX, durationMax);
+                b.add(FhirPropertyNames.PROPERTY_DURATION_MAX, durationMax);
                 return this;
             }
 
             public Builder durationUnit(final String durationUnit) {
-                b.add(PROPERTY_DURATION_UNIT, durationUnit);
+                b.add(FhirPropertyNames.PROPERTY_DURATION_UNIT, durationUnit);
                 return this;
             }
 
             public Builder frequency(final Integer frequency) {
-                b.add(PROPERTY_FREQUENCY, frequency);
+                b.add(FhirPropertyNames.PROPERTY_FREQUENCY, frequency);
                 return this;
             }
 
             public Builder frequencyMax(final Integer frequencyMax) {
-                b.add(PROPERTY_FREQUENCY_MAX, frequencyMax);
+                b.add(FhirPropertyNames.PROPERTY_FREQUENCY_MAX, frequencyMax);
                 return this;
             }
 
             public Builder period(final Double period) {
-                b.add(PROPERTY_PERIOD, period);
+                b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
                 return this;
             }
 
             public Builder periodMax(final Double periodMax) {
-                b.add(PROPERTY_PERIOD_MAX, periodMax);
+                b.add(FhirPropertyNames.PROPERTY_PERIOD_MAX, periodMax);
                 return this;
             }
 
             public Builder periodUnit(final String periodUnit) {
-                b.add(PROPERTY_PERIOD_UNIT, periodUnit);
+                b.add(FhirPropertyNames.PROPERTY_PERIOD_UNIT, periodUnit);
                 return this;
             }
 
             public Builder dayOfWeek(final java.util.List<String> dayOfWeek) {
-                b.add(PROPERTY_DAY_OF_WEEK, FhirObject.toStringArray(dayOfWeek));
+                b.add(FhirPropertyNames.PROPERTY_DAY_OF_WEEK, FhirObject.toStringArray(dayOfWeek));
                 return this;
             }
 
             public Builder timeOfDay(final java.util.List<java.time.Instant> timeOfDay) {
-                b.add(PROPERTY_TIME_OF_DAY, FhirObject.toInstantArray(timeOfDay));
+                b.add(FhirPropertyNames.PROPERTY_TIME_OF_DAY, FhirObject.toInstantArray(timeOfDay));
                 return this;
             }
 
             public Builder when(final java.util.List<String> when) {
-                b.add(PROPERTY_WHEN, FhirObject.toStringArray(when));
+                b.add(FhirPropertyNames.PROPERTY_WHEN, FhirObject.toStringArray(when));
                 return this;
             }
 
             public Builder offset(final Integer offset) {
-                b.add(PROPERTY_OFFSET, offset);
+                b.add(FhirPropertyNames.PROPERTY_OFFSET, offset);
                 return this;
             }
 

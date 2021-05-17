@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
  * identified recipient(s) or recipient role(s) to perform one or more
@@ -17,29 +19,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Consent extends FhirResource {
     public static final String RESOURCE_TYPE = "Consent";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_SCOPE = "scope";
-    public static final String PROPERTY_CATEGORY = "category";
-    public static final String PROPERTY_PATIENT = "patient";
-    public static final String PROPERTY_DATE_TIME = "dateTime";
-    public static final String PROPERTY_PERFORMER = "performer";
-    public static final String PROPERTY_ORGANIZATION = "organization";
-    public static final String PROPERTY_SOURCE_ATTACHMENT = "sourceAttachment";
-    public static final String PROPERTY_SOURCE_REFERENCE = "sourceReference";
-    public static final String PROPERTY_POLICY = "policy";
-    public static final String PROPERTY_POLICY_RULE = "policyRule";
-    public static final String PROPERTY_VERIFICATION = "verification";
-    public static final String PROPERTY_PROVISION = "provision";
 
     public static Builder create() {
         return new Builder();
@@ -60,14 +39,14 @@ public class Consent extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -79,7 +58,7 @@ public class Consent extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -88,7 +67,7 @@ public class Consent extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -100,7 +79,7 @@ public class Consent extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -120,21 +99,21 @@ public class Consent extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Unique identifier for this copy of the Consent Statement.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * Indicates the current state of this consent.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -142,7 +121,7 @@ public class Consent extends FhirResource {
      * Treatment, Research.  This list is now extensible.
      */
     public CodeableConcept scope() {
-        return getObject(CodeableConcept.class, PROPERTY_SCOPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SCOPE);
     }
 
     /**
@@ -150,21 +129,21 @@ public class Consent extends FhirResource {
      * element supports indexing and retrieval of consent statements.
      */
     public java.util.List<CodeableConcept> category() {
-        return getList(CodeableConcept.class, PROPERTY_CATEGORY);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_CATEGORY);
     }
 
     /**
      * The patient/healthcare consumer to whom this consent applies.
      */
     public Reference patient() {
-        return getObject(Reference.class, PROPERTY_PATIENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PATIENT);
     }
 
     /**
      * When this  Consent was issued / created / indexed.
      */
     public java.time.Instant dateTime() {
-        return getInstant(PROPERTY_DATE_TIME);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE_TIME);
     }
 
     /**
@@ -175,7 +154,7 @@ public class Consent extends FhirResource {
      * prohibitions.
      */
     public java.util.List<Reference> performer() {
-        return getList(Reference.class, PROPERTY_PERFORMER);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_PERFORMER);
     }
 
     /**
@@ -183,7 +162,7 @@ public class Consent extends FhirResource {
      * which it is executed.
      */
     public java.util.List<Reference> organization() {
-        return getList(Reference.class, PROPERTY_ORGANIZATION);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_ORGANIZATION);
     }
 
     /**
@@ -193,7 +172,7 @@ public class Consent extends FhirResource {
      * (e.g. XDS) that stores the original consent document.
      */
     public Attachment sourceAttachment() {
-        return getObject(Attachment.class, PROPERTY_SOURCE_ATTACHMENT);
+        return getObject(Attachment.class, FhirPropertyNames.PROPERTY_SOURCE_ATTACHMENT);
     }
 
     /**
@@ -203,7 +182,7 @@ public class Consent extends FhirResource {
      * (e.g. XDS) that stores the original consent document.
      */
     public Reference sourceReference() {
-        return getObject(Reference.class, PROPERTY_SOURCE_REFERENCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SOURCE_REFERENCE);
     }
 
     /**
@@ -212,14 +191,14 @@ public class Consent extends FhirResource {
      * jurisdictionally, or in law.
      */
     public java.util.List<ConsentPolicy> policy() {
-        return getList(ConsentPolicy.class, PROPERTY_POLICY);
+        return getList(ConsentPolicy.class, FhirPropertyNames.PROPERTY_POLICY);
     }
 
     /**
      * A reference to the specific base computable regulation or policy.
      */
     public CodeableConcept policyRule() {
-        return getObject(CodeableConcept.class, PROPERTY_POLICY_RULE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_POLICY_RULE);
     }
 
     /**
@@ -228,7 +207,7 @@ public class Consent extends FhirResource {
      * authorized person.
      */
     public java.util.List<ConsentVerification> verification() {
-        return getList(ConsentVerification.class, PROPERTY_VERIFICATION);
+        return getList(ConsentVerification.class, FhirPropertyNames.PROPERTY_VERIFICATION);
     }
 
     /**
@@ -236,7 +215,7 @@ public class Consent extends FhirResource {
      * an addition or removal of access permissions.
      */
     public ConsentProvision provision() {
-        return getObject(ConsentProvision.class, PROPERTY_PROVISION);
+        return getObject(ConsentProvision.class, FhirPropertyNames.PROPERTY_PROVISION);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -250,117 +229,117 @@ public class Consent extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder scope(final CodeableConcept scope) {
-            b.add(PROPERTY_SCOPE, scope);
+            b.add(FhirPropertyNames.PROPERTY_SCOPE, scope);
             return this;
         }
 
         public Builder category(final java.util.List<CodeableConcept> category) {
-            b.add(PROPERTY_CATEGORY, FhirObject.toArray(category));
+            b.add(FhirPropertyNames.PROPERTY_CATEGORY, FhirObject.toArray(category));
             return this;
         }
 
         public Builder patient(final Reference patient) {
-            b.add(PROPERTY_PATIENT, patient);
+            b.add(FhirPropertyNames.PROPERTY_PATIENT, patient);
             return this;
         }
 
         public Builder dateTime(final java.time.Instant dateTime) {
-            b.add(PROPERTY_DATE_TIME, dateTime.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE_TIME, dateTime.toString());
             return this;
         }
 
         public Builder performer(final java.util.List<Reference> performer) {
-            b.add(PROPERTY_PERFORMER, FhirObject.toArray(performer));
+            b.add(FhirPropertyNames.PROPERTY_PERFORMER, FhirObject.toArray(performer));
             return this;
         }
 
         public Builder organization(final java.util.List<Reference> organization) {
-            b.add(PROPERTY_ORGANIZATION, FhirObject.toArray(organization));
+            b.add(FhirPropertyNames.PROPERTY_ORGANIZATION, FhirObject.toArray(organization));
             return this;
         }
 
         public Builder sourceAttachment(final Attachment sourceAttachment) {
-            b.add(PROPERTY_SOURCE_ATTACHMENT, sourceAttachment);
+            b.add(FhirPropertyNames.PROPERTY_SOURCE_ATTACHMENT, sourceAttachment);
             return this;
         }
 
         public Builder sourceReference(final Reference sourceReference) {
-            b.add(PROPERTY_SOURCE_REFERENCE, sourceReference);
+            b.add(FhirPropertyNames.PROPERTY_SOURCE_REFERENCE, sourceReference);
             return this;
         }
 
         public Builder policy(final java.util.List<ConsentPolicy> policy) {
-            b.add(PROPERTY_POLICY, FhirObject.toArray(policy));
+            b.add(FhirPropertyNames.PROPERTY_POLICY, FhirObject.toArray(policy));
             return this;
         }
 
         public Builder policyRule(final CodeableConcept policyRule) {
-            b.add(PROPERTY_POLICY_RULE, policyRule);
+            b.add(FhirPropertyNames.PROPERTY_POLICY_RULE, policyRule);
             return this;
         }
 
         public Builder verification(final java.util.List<ConsentVerification> verification) {
-            b.add(PROPERTY_VERIFICATION, FhirObject.toArray(verification));
+            b.add(FhirPropertyNames.PROPERTY_VERIFICATION, FhirObject.toArray(verification));
             return this;
         }
 
         public Builder provision(final ConsentProvision provision) {
-            b.add(PROPERTY_PROVISION, provision);
+            b.add(FhirPropertyNames.PROPERTY_PROVISION, provision);
             return this;
         }
 
@@ -377,11 +356,6 @@ public class Consent extends FhirResource {
      */
     public static class ConsentActor extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentActor";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ROLE = "role";
-        public static final String PROPERTY_REFERENCE = "reference";
 
         public static Builder create() {
             return new Builder();
@@ -400,7 +374,7 @@ public class Consent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -412,7 +386,7 @@ public class Consent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -433,7 +407,7 @@ public class Consent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -441,7 +415,7 @@ public class Consent extends FhirResource {
          * described in the exception.
          */
         public CodeableConcept role() {
-            return getObject(CodeableConcept.class, PROPERTY_ROLE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ROLE);
         }
 
         /**
@@ -450,7 +424,7 @@ public class Consent extends FhirResource {
          * (e.g. 'admitting officers').
          */
         public Reference reference() {
-            return getObject(Reference.class, PROPERTY_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_REFERENCE);
         }
 
         public static class Builder {
@@ -465,27 +439,27 @@ public class Consent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder role(final CodeableConcept role) {
-                b.add(PROPERTY_ROLE, role);
+                b.add(FhirPropertyNames.PROPERTY_ROLE, role);
                 return this;
             }
 
             public Builder reference(final Reference reference) {
-                b.add(PROPERTY_REFERENCE, reference);
+                b.add(FhirPropertyNames.PROPERTY_REFERENCE, reference);
                 return this;
             }
 
@@ -503,11 +477,6 @@ public class Consent extends FhirResource {
      */
     public static class ConsentData extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentData";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_MEANING = "meaning";
-        public static final String PROPERTY_REFERENCE = "reference";
 
         public static Builder create() {
             return new Builder();
@@ -526,7 +495,7 @@ public class Consent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -538,7 +507,7 @@ public class Consent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -559,7 +528,7 @@ public class Consent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -567,7 +536,7 @@ public class Consent extends FhirResource {
          * restrictions.
          */
         public String meaning() {
-            return getString(PROPERTY_MEANING);
+            return getString(FhirPropertyNames.PROPERTY_MEANING);
         }
 
         /**
@@ -575,7 +544,7 @@ public class Consent extends FhirResource {
          * covered by this consent.
          */
         public Reference reference() {
-            return getObject(Reference.class, PROPERTY_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_REFERENCE);
         }
 
         public static class Builder {
@@ -590,27 +559,27 @@ public class Consent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder meaning(final String meaning) {
-                b.add(PROPERTY_MEANING, meaning);
+                b.add(FhirPropertyNames.PROPERTY_MEANING, meaning);
                 return this;
             }
 
             public Builder reference(final Reference reference) {
-                b.add(PROPERTY_REFERENCE, reference);
+                b.add(FhirPropertyNames.PROPERTY_REFERENCE, reference);
                 return this;
             }
 
@@ -628,11 +597,6 @@ public class Consent extends FhirResource {
      */
     public static class ConsentPolicy extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentPolicy";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_AUTHORITY = "authority";
-        public static final String PROPERTY_URI = "uri";
 
         public static Builder create() {
             return new Builder();
@@ -651,7 +615,7 @@ public class Consent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -663,7 +627,7 @@ public class Consent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -684,7 +648,7 @@ public class Consent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -693,7 +657,7 @@ public class Consent extends FhirResource {
          * Directives.
          */
         public java.net.URI authority() {
-            return getUri(PROPERTY_AUTHORITY);
+            return getUri(FhirPropertyNames.PROPERTY_AUTHORITY);
         }
 
         /**
@@ -702,7 +666,7 @@ public class Consent extends FhirResource {
          * jurisdictionally, or in law.
          */
         public java.net.URI uri() {
-            return getUri(PROPERTY_URI);
+            return getUri(FhirPropertyNames.PROPERTY_URI);
         }
 
         public static class Builder {
@@ -717,27 +681,27 @@ public class Consent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder authority(final java.net.URI authority) {
-                b.add(PROPERTY_AUTHORITY, authority.toString());
+                b.add(FhirPropertyNames.PROPERTY_AUTHORITY, authority.toString());
                 return this;
             }
 
             public Builder uri(final java.net.URI uri) {
-                b.add(PROPERTY_URI, uri.toString());
+                b.add(FhirPropertyNames.PROPERTY_URI, uri.toString());
                 return this;
             }
 
@@ -755,20 +719,6 @@ public class Consent extends FhirResource {
      */
     public static class ConsentProvision extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentProvision";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_PERIOD = "period";
-        public static final String PROPERTY_ACTOR = "actor";
-        public static final String PROPERTY_ACTION = "action";
-        public static final String PROPERTY_SECURITY_LABEL = "securityLabel";
-        public static final String PROPERTY_PURPOSE = "purpose";
-        public static final String PROPERTY_CLASS = "class";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_DATA_PERIOD = "dataPeriod";
-        public static final String PROPERTY_DATA = "data";
-        public static final String PROPERTY_PROVISION = "provision";
 
         public static Builder create() {
             return new Builder();
@@ -787,7 +737,7 @@ public class Consent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -799,7 +749,7 @@ public class Consent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -820,7 +770,7 @@ public class Consent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -828,14 +778,14 @@ public class Consent extends FhirResource {
          * Not permitted in root rule, required in all nested rules.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The timeframe in this rule is valid.
          */
         public Period period() {
-            return getObject(Period.class, PROPERTY_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
         }
 
         /**
@@ -843,14 +793,14 @@ public class Consent extends FhirResource {
          * actors by some property they share (e.g. 'admitting officers').
          */
         public java.util.List<ConsentActor> actor() {
-            return getList(ConsentActor.class, PROPERTY_ACTOR);
+            return getList(ConsentActor.class, FhirPropertyNames.PROPERTY_ACTOR);
         }
 
         /**
          * Actions controlled by this Rule.
          */
         public java.util.List<CodeableConcept> action() {
-            return getList(CodeableConcept.class, PROPERTY_ACTION);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_ACTION);
         }
 
         /**
@@ -858,7 +808,7 @@ public class Consent extends FhirResource {
          * tags), which define which resources are controlled by this exception.
          */
         public java.util.List<Coding> securityLabel() {
-            return getList(Coding.class, PROPERTY_SECURITY_LABEL);
+            return getList(Coding.class, FhirPropertyNames.PROPERTY_SECURITY_LABEL);
         }
 
         /**
@@ -866,7 +816,7 @@ public class Consent extends FhirResource {
          * accessing the data - that are controlled by this rule.
          */
         public java.util.List<Coding> purpose() {
-            return getList(Coding.class, PROPERTY_PURPOSE);
+            return getList(Coding.class, FhirPropertyNames.PROPERTY_PURPOSE);
         }
 
         /**
@@ -875,14 +825,14 @@ public class Consent extends FhirResource {
          * type that indicates what sort of information the consent relates to.
          */
         public java.util.List<Coding> classValue() {
-            return getList(Coding.class, PROPERTY_CLASS);
+            return getList(Coding.class, FhirPropertyNames.PROPERTY_CLASS);
         }
 
         /**
          * If this code is found in an instance, then the rule applies.
          */
         public java.util.List<CodeableConcept> code() {
-            return getList(CodeableConcept.class, PROPERTY_CODE);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -890,7 +840,7 @@ public class Consent extends FhirResource {
          * controlled by this rule.
          */
         public Period dataPeriod() {
-            return getObject(Period.class, PROPERTY_DATA_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_DATA_PERIOD);
         }
 
         /**
@@ -898,14 +848,14 @@ public class Consent extends FhirResource {
          * referenced.
          */
         public java.util.List<ConsentData> data() {
-            return getList(ConsentData.class, PROPERTY_DATA);
+            return getList(ConsentData.class, FhirPropertyNames.PROPERTY_DATA);
         }
 
         /**
          * Rules which provide exceptions to the base rule or subrules.
          */
         public java.util.List<ConsentProvision> provision() {
-            return getList(ConsentProvision.class, PROPERTY_PROVISION);
+            return getList(ConsentProvision.class, FhirPropertyNames.PROPERTY_PROVISION);
         }
 
         public static class Builder {
@@ -920,72 +870,72 @@ public class Consent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder period(final Period period) {
-                b.add(PROPERTY_PERIOD, period);
+                b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
                 return this;
             }
 
             public Builder actor(final java.util.List<ConsentActor> actor) {
-                b.add(PROPERTY_ACTOR, FhirObject.toArray(actor));
+                b.add(FhirPropertyNames.PROPERTY_ACTOR, FhirObject.toArray(actor));
                 return this;
             }
 
             public Builder action(final java.util.List<CodeableConcept> action) {
-                b.add(PROPERTY_ACTION, FhirObject.toArray(action));
+                b.add(FhirPropertyNames.PROPERTY_ACTION, FhirObject.toArray(action));
                 return this;
             }
 
             public Builder securityLabel(final java.util.List<Coding> securityLabel) {
-                b.add(PROPERTY_SECURITY_LABEL, FhirObject.toArray(securityLabel));
+                b.add(FhirPropertyNames.PROPERTY_SECURITY_LABEL, FhirObject.toArray(securityLabel));
                 return this;
             }
 
             public Builder purpose(final java.util.List<Coding> purpose) {
-                b.add(PROPERTY_PURPOSE, FhirObject.toArray(purpose));
+                b.add(FhirPropertyNames.PROPERTY_PURPOSE, FhirObject.toArray(purpose));
                 return this;
             }
 
             public Builder classValue(final java.util.List<Coding> classValue) {
-                b.add(PROPERTY_CLASS, FhirObject.toArray(classValue));
+                b.add(FhirPropertyNames.PROPERTY_CLASS, FhirObject.toArray(classValue));
                 return this;
             }
 
             public Builder code(final java.util.List<CodeableConcept> code) {
-                b.add(PROPERTY_CODE, FhirObject.toArray(code));
+                b.add(FhirPropertyNames.PROPERTY_CODE, FhirObject.toArray(code));
                 return this;
             }
 
             public Builder dataPeriod(final Period dataPeriod) {
-                b.add(PROPERTY_DATA_PERIOD, dataPeriod);
+                b.add(FhirPropertyNames.PROPERTY_DATA_PERIOD, dataPeriod);
                 return this;
             }
 
             public Builder data(final java.util.List<ConsentData> data) {
-                b.add(PROPERTY_DATA, FhirObject.toArray(data));
+                b.add(FhirPropertyNames.PROPERTY_DATA, FhirObject.toArray(data));
                 return this;
             }
 
             public Builder provision(final java.util.List<ConsentProvision> provision) {
-                b.add(PROPERTY_PROVISION, FhirObject.toArray(provision));
+                b.add(FhirPropertyNames.PROPERTY_PROVISION, FhirObject.toArray(provision));
                 return this;
             }
 
@@ -1003,12 +953,6 @@ public class Consent extends FhirResource {
      */
     public static class ConsentVerification extends FhirObject {
         public static final String RESOURCE_TYPE = "ConsentVerification";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_VERIFIED = "verified";
-        public static final String PROPERTY_VERIFIED_WITH = "verifiedWith";
-        public static final String PROPERTY_VERIFICATION_DATE = "verificationDate";
 
         public static Builder create() {
             return new Builder();
@@ -1027,7 +971,7 @@ public class Consent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1039,7 +983,7 @@ public class Consent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1060,14 +1004,14 @@ public class Consent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Has the instruction been verified.
          */
         public Boolean verified() {
-            return data.getBoolean(PROPERTY_VERIFIED);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_VERIFIED);
         }
 
         /**
@@ -1075,14 +1019,14 @@ public class Consent extends FhirResource {
          * Person).
          */
         public Reference verifiedWith() {
-            return getObject(Reference.class, PROPERTY_VERIFIED_WITH);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_VERIFIED_WITH);
         }
 
         /**
          * Date verification was collected.
          */
         public java.time.Instant verificationDate() {
-            return getInstant(PROPERTY_VERIFICATION_DATE);
+            return getInstant(FhirPropertyNames.PROPERTY_VERIFICATION_DATE);
         }
 
         public static class Builder {
@@ -1097,32 +1041,32 @@ public class Consent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder verified(final Boolean verified) {
-                b.add(PROPERTY_VERIFIED, verified);
+                b.add(FhirPropertyNames.PROPERTY_VERIFIED, verified);
                 return this;
             }
 
             public Builder verifiedWith(final Reference verifiedWith) {
-                b.add(PROPERTY_VERIFIED_WITH, verifiedWith);
+                b.add(FhirPropertyNames.PROPERTY_VERIFIED_WITH, verifiedWith);
                 return this;
             }
 
             public Builder verificationDate(final java.time.Instant verificationDate) {
-                b.add(PROPERTY_VERIFICATION_DATE, verificationDate.toString());
+                b.add(FhirPropertyNames.PROPERTY_VERIFICATION_DATE, verificationDate.toString());
                 return this;
             }
 

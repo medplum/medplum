@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A expression that is evaluated in a specified context and returns a
  * value. The context of use of the expression must specify the context
@@ -17,13 +19,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Expression extends FhirResource {
     public static final String RESOURCE_TYPE = "Expression";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_EXPRESSION = "expression";
-    public static final String PROPERTY_REFERENCE = "reference";
 
     public static Builder create() {
         return new Builder();
@@ -42,7 +37,7 @@ public class Expression extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -54,7 +49,7 @@ public class Expression extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -62,7 +57,7 @@ public class Expression extends FhirResource {
      * effectively communicates the intended semantics.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -70,28 +65,28 @@ public class Expression extends FhirResource {
      * the expression in the context where it is defined.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
      * The media type of the language for the expression.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
      * An expression in the specified language that returns a value.
      */
     public String expression() {
-        return getString(PROPERTY_EXPRESSION);
+        return getString(FhirPropertyNames.PROPERTY_EXPRESSION);
     }
 
     /**
      * A URI that defines where the expression is found.
      */
     public java.net.URI reference() {
-        return getUri(PROPERTY_REFERENCE);
+        return getUri(FhirPropertyNames.PROPERTY_REFERENCE);
     }
 
     public static class Builder {
@@ -106,37 +101,37 @@ public class Expression extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder expression(final String expression) {
-            b.add(PROPERTY_EXPRESSION, expression);
+            b.add(FhirPropertyNames.PROPERTY_EXPRESSION, expression);
             return this;
         }
 
         public Builder reference(final java.net.URI reference) {
-            b.add(PROPERTY_REFERENCE, reference.toString());
+            b.add(FhirPropertyNames.PROPERTY_REFERENCE, reference.toString());
             return this;
         }
 

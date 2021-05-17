@@ -7,6 +7,8 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A resource that represents the data of a single raw artifact as
  * digital content accessible in its native format.  A Binary resource
@@ -14,14 +16,6 @@ import jakarta.json.JsonObject;
  */
 public class Binary extends FhirResource {
     public static final String RESOURCE_TYPE = "Binary";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_CONTENT_TYPE = "contentType";
-    public static final String PROPERTY_SECURITY_CONTEXT = "securityContext";
-    public static final String PROPERTY_DATA = "data";
 
     public static Builder create() {
         return new Builder();
@@ -42,14 +36,14 @@ public class Binary extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -57,7 +51,7 @@ public class Binary extends FhirResource {
      * 13).
      */
     public String contentType() {
-        return getString(PROPERTY_CONTENT_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_CONTENT_TYPE);
     }
 
     /**
@@ -74,14 +68,14 @@ public class Binary extends FhirResource {
      * access to the patient.
      */
     public Reference securityContext() {
-        return getObject(Reference.class, PROPERTY_SECURITY_CONTEXT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SECURITY_CONTEXT);
     }
 
     /**
      * The actual content, base64 encoded.
      */
     public String data() {
-        return getString(PROPERTY_DATA);
+        return getString(FhirPropertyNames.PROPERTY_DATA);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -95,42 +89,42 @@ public class Binary extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder contentType(final String contentType) {
-            b.add(PROPERTY_CONTENT_TYPE, contentType);
+            b.add(FhirPropertyNames.PROPERTY_CONTENT_TYPE, contentType);
             return this;
         }
 
         public Builder securityContext(final Reference securityContext) {
-            b.add(PROPERTY_SECURITY_CONTEXT, securityContext);
+            b.add(FhirPropertyNames.PROPERTY_SECURITY_CONTEXT, securityContext);
             return this;
         }
 
         public Builder data(final String data) {
-            b.add(PROPERTY_DATA, data);
+            b.add(FhirPropertyNames.PROPERTY_DATA, data);
             return this;
         }
 

@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The metadata about a resource. This is content in the resource that is
  * maintained by the infrastructure. Changes to the content might not
@@ -16,14 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Meta extends FhirResource {
     public static final String RESOURCE_TYPE = "Meta";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_VERSION_ID = "versionId";
-    public static final String PROPERTY_LAST_UPDATED = "lastUpdated";
-    public static final String PROPERTY_SOURCE = "source";
-    public static final String PROPERTY_PROFILE = "profile";
-    public static final String PROPERTY_SECURITY = "security";
-    public static final String PROPERTY_TAG = "tag";
 
     public static Builder create() {
         return new Builder();
@@ -42,7 +36,7 @@ public class Meta extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -54,7 +48,7 @@ public class Meta extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -63,14 +57,14 @@ public class Meta extends FhirResource {
      * or deleted.
      */
     public String versionId() {
-        return getString(PROPERTY_VERSION_ID);
+        return getString(FhirPropertyNames.PROPERTY_VERSION_ID);
     }
 
     /**
      * When the resource last changed - e.g. when the version changed.
      */
     public java.time.Instant lastUpdated() {
-        return getInstant(PROPERTY_LAST_UPDATED);
+        return getInstant(FhirPropertyNames.PROPERTY_LAST_UPDATED);
     }
 
     /**
@@ -81,7 +75,7 @@ public class Meta extends FhirResource {
      * etc.
      */
     public java.net.URI source() {
-        return getUri(PROPERTY_SOURCE);
+        return getUri(FhirPropertyNames.PROPERTY_SOURCE);
     }
 
     /**
@@ -90,7 +84,7 @@ public class Meta extends FhirResource {
      * [[[StructureDefinition.url]]].
      */
     public java.util.List<String> profile() {
-        return getList(String.class, PROPERTY_PROFILE);
+        return getList(String.class, FhirPropertyNames.PROPERTY_PROFILE);
     }
 
     /**
@@ -98,7 +92,7 @@ public class Meta extends FhirResource {
      * resources to the overall security policy and infrastructure.
      */
     public java.util.List<Coding> security() {
-        return getList(Coding.class, PROPERTY_SECURITY);
+        return getList(Coding.class, FhirPropertyNames.PROPERTY_SECURITY);
     }
 
     /**
@@ -108,7 +102,7 @@ public class Meta extends FhirResource {
      * the meaning of a resource.
      */
     public java.util.List<Coding> tag() {
-        return getList(Coding.class, PROPERTY_TAG);
+        return getList(Coding.class, FhirPropertyNames.PROPERTY_TAG);
     }
 
     public static class Builder {
@@ -123,42 +117,42 @@ public class Meta extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder versionId(final String versionId) {
-            b.add(PROPERTY_VERSION_ID, versionId);
+            b.add(FhirPropertyNames.PROPERTY_VERSION_ID, versionId);
             return this;
         }
 
         public Builder lastUpdated(final java.time.Instant lastUpdated) {
-            b.add(PROPERTY_LAST_UPDATED, lastUpdated.toString());
+            b.add(FhirPropertyNames.PROPERTY_LAST_UPDATED, lastUpdated.toString());
             return this;
         }
 
         public Builder source(final java.net.URI source) {
-            b.add(PROPERTY_SOURCE, source.toString());
+            b.add(FhirPropertyNames.PROPERTY_SOURCE, source.toString());
             return this;
         }
 
         public Builder profile(final java.util.List<String> profile) {
-            b.add(PROPERTY_PROFILE, FhirObject.toStringArray(profile));
+            b.add(FhirPropertyNames.PROPERTY_PROFILE, FhirObject.toStringArray(profile));
             return this;
         }
 
         public Builder security(final java.util.List<Coding> security) {
-            b.add(PROPERTY_SECURITY, FhirObject.toArray(security));
+            b.add(FhirPropertyNames.PROPERTY_SECURITY, FhirObject.toArray(security));
             return this;
         }
 
         public Builder tag(final java.util.List<Coding> tag) {
-            b.add(PROPERTY_TAG, FhirObject.toArray(tag));
+            b.add(FhirPropertyNames.PROPERTY_TAG, FhirObject.toArray(tag));
             return this;
         }
 

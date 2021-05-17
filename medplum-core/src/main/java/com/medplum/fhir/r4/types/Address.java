@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * An address expressed using postal conventions (as opposed to GPS or
  * other location definition formats).  This data type may be used to
@@ -18,18 +20,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Address extends FhirResource {
     public static final String RESOURCE_TYPE = "Address";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_USE = "use";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_LINE = "line";
-    public static final String PROPERTY_CITY = "city";
-    public static final String PROPERTY_DISTRICT = "district";
-    public static final String PROPERTY_STATE = "state";
-    public static final String PROPERTY_POSTAL_CODE = "postalCode";
-    public static final String PROPERTY_COUNTRY = "country";
-    public static final String PROPERTY_PERIOD = "period";
 
     public static Builder create() {
         return new Builder();
@@ -48,7 +38,7 @@ public class Address extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -60,14 +50,14 @@ public class Address extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * The purpose of this address.
      */
     public String use() {
-        return getString(PROPERTY_USE);
+        return getString(FhirPropertyNames.PROPERTY_USE);
     }
 
     /**
@@ -76,7 +66,7 @@ public class Address extends FhirResource {
      * addresses are both.
      */
     public String type() {
-        return getString(PROPERTY_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -85,7 +75,7 @@ public class Address extends FhirResource {
      * specific parts.
      */
     public String text() {
-        return getString(PROPERTY_TEXT);
+        return getString(FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -94,7 +84,7 @@ public class Address extends FhirResource {
      * address information.
      */
     public java.util.List<String> line() {
-        return getList(String.class, PROPERTY_LINE);
+        return getList(String.class, FhirPropertyNames.PROPERTY_LINE);
     }
 
     /**
@@ -102,14 +92,14 @@ public class Address extends FhirResource {
      * delivery center.
      */
     public String city() {
-        return getString(PROPERTY_CITY);
+        return getString(FhirPropertyNames.PROPERTY_CITY);
     }
 
     /**
      * The name of the administrative area (county).
      */
     public String district() {
-        return getString(PROPERTY_DISTRICT);
+        return getString(FhirPropertyNames.PROPERTY_DISTRICT);
     }
 
     /**
@@ -118,28 +108,28 @@ public class Address extends FhirResource {
      * US 2 letter state codes).
      */
     public String state() {
-        return getString(PROPERTY_STATE);
+        return getString(FhirPropertyNames.PROPERTY_STATE);
     }
 
     /**
      * A postal code designating a region defined by the postal service.
      */
     public String postalCode() {
-        return getString(PROPERTY_POSTAL_CODE);
+        return getString(FhirPropertyNames.PROPERTY_POSTAL_CODE);
     }
 
     /**
      * Country - a nation as commonly understood or generally accepted.
      */
     public String country() {
-        return getString(PROPERTY_COUNTRY);
+        return getString(FhirPropertyNames.PROPERTY_COUNTRY);
     }
 
     /**
      * Time period when address was/is in use.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     public static class Builder {
@@ -154,62 +144,62 @@ public class Address extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder use(final String use) {
-            b.add(PROPERTY_USE, use);
+            b.add(FhirPropertyNames.PROPERTY_USE, use);
             return this;
         }
 
         public Builder type(final String type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder text(final String text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder line(final java.util.List<String> line) {
-            b.add(PROPERTY_LINE, FhirObject.toStringArray(line));
+            b.add(FhirPropertyNames.PROPERTY_LINE, FhirObject.toStringArray(line));
             return this;
         }
 
         public Builder city(final String city) {
-            b.add(PROPERTY_CITY, city);
+            b.add(FhirPropertyNames.PROPERTY_CITY, city);
             return this;
         }
 
         public Builder district(final String district) {
-            b.add(PROPERTY_DISTRICT, district);
+            b.add(FhirPropertyNames.PROPERTY_DISTRICT, district);
             return this;
         }
 
         public Builder state(final String state) {
-            b.add(PROPERTY_STATE, state);
+            b.add(FhirPropertyNames.PROPERTY_STATE, state);
             return this;
         }
 
         public Builder postalCode(final String postalCode) {
-            b.add(PROPERTY_POSTAL_CODE, postalCode);
+            b.add(FhirPropertyNames.PROPERTY_POSTAL_CODE, postalCode);
             return this;
         }
 
         public Builder country(final String country) {
-            b.add(PROPERTY_COUNTRY, country);
+            b.add(FhirPropertyNames.PROPERTY_COUNTRY, country);
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 

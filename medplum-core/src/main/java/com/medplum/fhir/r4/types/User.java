@@ -7,17 +7,13 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * OAuth user.
  */
 public class User extends FhirResource {
     public static final String RESOURCE_TYPE = "User";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EMAIL = "email";
-    public static final String PROPERTY_PASSWORD_HASH = "passwordHash";
-    public static final String PROPERTY_PATIENT = "patient";
-    public static final String PROPERTY_PRACTITIONER = "practitioner";
 
     public static Builder create() {
         return new Builder();
@@ -35,28 +31,28 @@ public class User extends FhirResource {
      * User email.
      */
     public String email() {
-        return getString(PROPERTY_EMAIL);
+        return getString(FhirPropertyNames.PROPERTY_EMAIL);
     }
 
     /**
      * Encrypted hash of the user's password.
      */
     public String passwordHash() {
-        return getString(PROPERTY_PASSWORD_HASH);
+        return getString(FhirPropertyNames.PROPERTY_PASSWORD_HASH);
     }
 
     /**
      * Optional reference to the user's patient identity.
      */
     public Reference patient() {
-        return getObject(Reference.class, PROPERTY_PATIENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PATIENT);
     }
 
     /**
      * Optional reference to the user's practitioner identity.
      */
     public Reference practitioner() {
-        return getObject(Reference.class, PROPERTY_PRACTITIONER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PRACTITIONER);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -70,32 +66,32 @@ public class User extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder email(final String email) {
-            b.add(PROPERTY_EMAIL, email);
+            b.add(FhirPropertyNames.PROPERTY_EMAIL, email);
             return this;
         }
 
         public Builder passwordHash(final String passwordHash) {
-            b.add(PROPERTY_PASSWORD_HASH, passwordHash);
+            b.add(FhirPropertyNames.PROPERTY_PASSWORD_HASH, passwordHash);
             return this;
         }
 
         public Builder patient(final Reference patient) {
-            b.add(PROPERTY_PATIENT, patient);
+            b.add(FhirPropertyNames.PROPERTY_PATIENT, patient);
             return this;
         }
 
         public Builder practitioner(final Reference practitioner) {
-            b.add(PROPERTY_PRACTITIONER, practitioner);
+            b.add(FhirPropertyNames.PROPERTY_PRACTITIONER, practitioner);
             return this;
         }
 

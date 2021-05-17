@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A request to convey information; e.g. the CDS system proposes that an
  * alert be sent to a responsible provider, the CDS system proposes that
@@ -16,38 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class CommunicationRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "CommunicationRequest";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASED_ON = "basedOn";
-    public static final String PROPERTY_REPLACES = "replaces";
-    public static final String PROPERTY_GROUP_IDENTIFIER = "groupIdentifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUS_REASON = "statusReason";
-    public static final String PROPERTY_CATEGORY = "category";
-    public static final String PROPERTY_PRIORITY = "priority";
-    public static final String PROPERTY_DO_NOT_PERFORM = "doNotPerform";
-    public static final String PROPERTY_MEDIUM = "medium";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_ABOUT = "about";
-    public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_PAYLOAD = "payload";
-    public static final String PROPERTY_OCCURRENCE_DATE_TIME = "occurrenceDateTime";
-    public static final String PROPERTY_OCCURRENCE_PERIOD = "occurrencePeriod";
-    public static final String PROPERTY_AUTHORED_ON = "authoredOn";
-    public static final String PROPERTY_REQUESTER = "requester";
-    public static final String PROPERTY_RECIPIENT = "recipient";
-    public static final String PROPERTY_SENDER = "sender";
-    public static final String PROPERTY_REASON_CODE = "reasonCode";
-    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
-    public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
         return new Builder();
@@ -68,14 +38,14 @@ public class CommunicationRequest extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -87,7 +57,7 @@ public class CommunicationRequest extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -96,7 +66,7 @@ public class CommunicationRequest extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -108,7 +78,7 @@ public class CommunicationRequest extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -128,7 +98,7 @@ public class CommunicationRequest extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -137,7 +107,7 @@ public class CommunicationRequest extends FhirResource {
      * updated and propagates from server to server.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -145,7 +115,7 @@ public class CommunicationRequest extends FhirResource {
      * request.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASED_ON);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_BASED_ON);
     }
 
     /**
@@ -153,7 +123,7 @@ public class CommunicationRequest extends FhirResource {
      * request.
      */
     public java.util.List<Reference> replaces() {
-        return getList(Reference.class, PROPERTY_REPLACES);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_REPLACES);
     }
 
     /**
@@ -162,21 +132,21 @@ public class CommunicationRequest extends FhirResource {
      * of the requisition, prescription or similar form.
      */
     public Identifier groupIdentifier() {
-        return getObject(Identifier.class, PROPERTY_GROUP_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_GROUP_IDENTIFIER);
     }
 
     /**
      * The status of the proposal or order.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
      * Captures the reason for the current state of the CommunicationRequest.
      */
     public CodeableConcept statusReason() {
-        return getObject(CodeableConcept.class, PROPERTY_STATUS_REASON);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_STATUS_REASON);
     }
 
     /**
@@ -184,7 +154,7 @@ public class CommunicationRequest extends FhirResource {
      * instruction, etc.
      */
     public java.util.List<CodeableConcept> category() {
-        return getList(CodeableConcept.class, PROPERTY_CATEGORY);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_CATEGORY);
     }
 
     /**
@@ -192,7 +162,7 @@ public class CommunicationRequest extends FhirResource {
      * concepts such as stat, urgent, routine.
      */
     public String priority() {
-        return getString(PROPERTY_PRIORITY);
+        return getString(FhirPropertyNames.PROPERTY_PRIORITY);
     }
 
     /**
@@ -200,21 +170,21 @@ public class CommunicationRequest extends FhirResource {
      * specified action to *not* occur.
      */
     public Boolean doNotPerform() {
-        return data.getBoolean(PROPERTY_DO_NOT_PERFORM);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_DO_NOT_PERFORM);
     }
 
     /**
      * A channel that was used for this communication (e.g. email, fax).
      */
     public java.util.List<CodeableConcept> medium() {
-        return getList(CodeableConcept.class, PROPERTY_MEDIUM);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_MEDIUM);
     }
 
     /**
      * The patient or group that is the focus of this communication request.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
@@ -222,7 +192,7 @@ public class CommunicationRequest extends FhirResource {
      * which this communication request should be associated.
      */
     public java.util.List<Reference> about() {
-        return getList(Reference.class, PROPERTY_ABOUT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_ABOUT);
     }
 
     /**
@@ -230,7 +200,7 @@ public class CommunicationRequest extends FhirResource {
      * which the creation of this record is tightly associated.
      */
     public Reference encounter() {
-        return getObject(Reference.class, PROPERTY_ENCOUNTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ENCOUNTER);
     }
 
     /**
@@ -238,21 +208,21 @@ public class CommunicationRequest extends FhirResource {
      * recipient.
      */
     public java.util.List<CommunicationRequestPayload> payload() {
-        return getList(CommunicationRequestPayload.class, PROPERTY_PAYLOAD);
+        return getList(CommunicationRequestPayload.class, FhirPropertyNames.PROPERTY_PAYLOAD);
     }
 
     /**
      * The time when this communication is to occur.
      */
     public String occurrenceDateTime() {
-        return getString(PROPERTY_OCCURRENCE_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_OCCURRENCE_DATE_TIME);
     }
 
     /**
      * The time when this communication is to occur.
      */
     public Period occurrencePeriod() {
-        return getObject(Period.class, PROPERTY_OCCURRENCE_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_OCCURRENCE_PERIOD);
     }
 
     /**
@@ -260,7 +230,7 @@ public class CommunicationRequest extends FhirResource {
      * requests with other statuses, indicates the date of activation.
      */
     public java.time.Instant authoredOn() {
-        return getInstant(PROPERTY_AUTHORED_ON);
+        return getInstant(FhirPropertyNames.PROPERTY_AUTHORED_ON);
     }
 
     /**
@@ -268,7 +238,7 @@ public class CommunicationRequest extends FhirResource {
      * has responsibility for its activation.
      */
     public Reference requester() {
-        return getObject(Reference.class, PROPERTY_REQUESTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_REQUESTER);
     }
 
     /**
@@ -277,7 +247,7 @@ public class CommunicationRequest extends FhirResource {
      * communication.
      */
     public java.util.List<Reference> recipient() {
-        return getList(Reference.class, PROPERTY_RECIPIENT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_RECIPIENT);
     }
 
     /**
@@ -285,21 +255,21 @@ public class CommunicationRequest extends FhirResource {
      * device) which is to be the source of the communication.
      */
     public Reference sender() {
-        return getObject(Reference.class, PROPERTY_SENDER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SENDER);
     }
 
     /**
      * Describes why the request is being made in coded or textual form.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_REASON_CODE);
     }
 
     /**
      * Indicates another resource whose existence justifies this request.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -307,7 +277,7 @@ public class CommunicationRequest extends FhirResource {
      * subject or other participants.
      */
     public java.util.List<Annotation> note() {
-        return getList(Annotation.class, PROPERTY_NOTE);
+        return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -321,162 +291,162 @@ public class CommunicationRequest extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
+            b.add(FhirPropertyNames.PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder replaces(final java.util.List<Reference> replaces) {
-            b.add(PROPERTY_REPLACES, FhirObject.toArray(replaces));
+            b.add(FhirPropertyNames.PROPERTY_REPLACES, FhirObject.toArray(replaces));
             return this;
         }
 
         public Builder groupIdentifier(final Identifier groupIdentifier) {
-            b.add(PROPERTY_GROUP_IDENTIFIER, groupIdentifier);
+            b.add(FhirPropertyNames.PROPERTY_GROUP_IDENTIFIER, groupIdentifier);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder statusReason(final CodeableConcept statusReason) {
-            b.add(PROPERTY_STATUS_REASON, statusReason);
+            b.add(FhirPropertyNames.PROPERTY_STATUS_REASON, statusReason);
             return this;
         }
 
         public Builder category(final java.util.List<CodeableConcept> category) {
-            b.add(PROPERTY_CATEGORY, FhirObject.toArray(category));
+            b.add(FhirPropertyNames.PROPERTY_CATEGORY, FhirObject.toArray(category));
             return this;
         }
 
         public Builder priority(final String priority) {
-            b.add(PROPERTY_PRIORITY, priority);
+            b.add(FhirPropertyNames.PROPERTY_PRIORITY, priority);
             return this;
         }
 
         public Builder doNotPerform(final Boolean doNotPerform) {
-            b.add(PROPERTY_DO_NOT_PERFORM, doNotPerform);
+            b.add(FhirPropertyNames.PROPERTY_DO_NOT_PERFORM, doNotPerform);
             return this;
         }
 
         public Builder medium(final java.util.List<CodeableConcept> medium) {
-            b.add(PROPERTY_MEDIUM, FhirObject.toArray(medium));
+            b.add(FhirPropertyNames.PROPERTY_MEDIUM, FhirObject.toArray(medium));
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder about(final java.util.List<Reference> about) {
-            b.add(PROPERTY_ABOUT, FhirObject.toArray(about));
+            b.add(FhirPropertyNames.PROPERTY_ABOUT, FhirObject.toArray(about));
             return this;
         }
 
         public Builder encounter(final Reference encounter) {
-            b.add(PROPERTY_ENCOUNTER, encounter);
+            b.add(FhirPropertyNames.PROPERTY_ENCOUNTER, encounter);
             return this;
         }
 
         public Builder payload(final java.util.List<CommunicationRequestPayload> payload) {
-            b.add(PROPERTY_PAYLOAD, FhirObject.toArray(payload));
+            b.add(FhirPropertyNames.PROPERTY_PAYLOAD, FhirObject.toArray(payload));
             return this;
         }
 
         public Builder occurrenceDateTime(final String occurrenceDateTime) {
-            b.add(PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
+            b.add(FhirPropertyNames.PROPERTY_OCCURRENCE_DATE_TIME, occurrenceDateTime);
             return this;
         }
 
         public Builder occurrencePeriod(final Period occurrencePeriod) {
-            b.add(PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
+            b.add(FhirPropertyNames.PROPERTY_OCCURRENCE_PERIOD, occurrencePeriod);
             return this;
         }
 
         public Builder authoredOn(final java.time.Instant authoredOn) {
-            b.add(PROPERTY_AUTHORED_ON, authoredOn.toString());
+            b.add(FhirPropertyNames.PROPERTY_AUTHORED_ON, authoredOn.toString());
             return this;
         }
 
         public Builder requester(final Reference requester) {
-            b.add(PROPERTY_REQUESTER, requester);
+            b.add(FhirPropertyNames.PROPERTY_REQUESTER, requester);
             return this;
         }
 
         public Builder recipient(final java.util.List<Reference> recipient) {
-            b.add(PROPERTY_RECIPIENT, FhirObject.toArray(recipient));
+            b.add(FhirPropertyNames.PROPERTY_RECIPIENT, FhirObject.toArray(recipient));
             return this;
         }
 
         public Builder sender(final Reference sender) {
-            b.add(PROPERTY_SENDER, sender);
+            b.add(FhirPropertyNames.PROPERTY_SENDER, sender);
             return this;
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
+            b.add(FhirPropertyNames.PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
+            b.add(FhirPropertyNames.PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
         public Builder note(final java.util.List<Annotation> note) {
-            b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+            b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
             return this;
         }
 
@@ -492,12 +462,6 @@ public class CommunicationRequest extends FhirResource {
      */
     public static class CommunicationRequestPayload extends FhirObject {
         public static final String RESOURCE_TYPE = "CommunicationRequestPayload";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CONTENT_STRING = "contentString";
-        public static final String PROPERTY_CONTENT_ATTACHMENT = "contentAttachment";
-        public static final String PROPERTY_CONTENT_REFERENCE = "contentReference";
 
         public static Builder create() {
             return new Builder();
@@ -516,7 +480,7 @@ public class CommunicationRequest extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -528,7 +492,7 @@ public class CommunicationRequest extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -549,7 +513,7 @@ public class CommunicationRequest extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -557,7 +521,7 @@ public class CommunicationRequest extends FhirResource {
          * portion of the communication).
          */
         public String contentString() {
-            return getString(PROPERTY_CONTENT_STRING);
+            return getString(FhirPropertyNames.PROPERTY_CONTENT_STRING);
         }
 
         /**
@@ -565,7 +529,7 @@ public class CommunicationRequest extends FhirResource {
          * portion of the communication).
          */
         public Attachment contentAttachment() {
-            return getObject(Attachment.class, PROPERTY_CONTENT_ATTACHMENT);
+            return getObject(Attachment.class, FhirPropertyNames.PROPERTY_CONTENT_ATTACHMENT);
         }
 
         /**
@@ -573,7 +537,7 @@ public class CommunicationRequest extends FhirResource {
          * portion of the communication).
          */
         public Reference contentReference() {
-            return getObject(Reference.class, PROPERTY_CONTENT_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_CONTENT_REFERENCE);
         }
 
         public static class Builder {
@@ -588,32 +552,32 @@ public class CommunicationRequest extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder contentString(final String contentString) {
-                b.add(PROPERTY_CONTENT_STRING, contentString);
+                b.add(FhirPropertyNames.PROPERTY_CONTENT_STRING, contentString);
                 return this;
             }
 
             public Builder contentAttachment(final Attachment contentAttachment) {
-                b.add(PROPERTY_CONTENT_ATTACHMENT, contentAttachment);
+                b.add(FhirPropertyNames.PROPERTY_CONTENT_ATTACHMENT, contentAttachment);
                 return this;
             }
 
             public Builder contentReference(final Reference contentReference) {
-                b.add(PROPERTY_CONTENT_REFERENCE, contentReference);
+                b.add(FhirPropertyNames.PROPERTY_CONTENT_REFERENCE, contentReference);
                 return this;
             }
 

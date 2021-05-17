@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Chemical substances are a single substance type whose primary defining
  * element is the molecular structure. Chemical substances shall be
@@ -20,15 +22,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class SubstanceAmount extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceAmount";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_AMOUNT_QUANTITY = "amountQuantity";
-    public static final String PROPERTY_AMOUNT_RANGE = "amountRange";
-    public static final String PROPERTY_AMOUNT_STRING = "amountString";
-    public static final String PROPERTY_AMOUNT_TYPE = "amountType";
-    public static final String PROPERTY_AMOUNT_TEXT = "amountText";
-    public static final String PROPERTY_REFERENCE_RANGE = "referenceRange";
 
     public static Builder create() {
         return new Builder();
@@ -47,7 +40,7 @@ public class SubstanceAmount extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -59,7 +52,7 @@ public class SubstanceAmount extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -80,7 +73,7 @@ public class SubstanceAmount extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -90,7 +83,7 @@ public class SubstanceAmount extends FhirResource {
      * captured in this field.
      */
     public Quantity amountQuantity() {
-        return getObject(Quantity.class, PROPERTY_AMOUNT_QUANTITY);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_AMOUNT_QUANTITY);
     }
 
     /**
@@ -100,7 +93,7 @@ public class SubstanceAmount extends FhirResource {
      * captured in this field.
      */
     public Range amountRange() {
-        return getObject(Range.class, PROPERTY_AMOUNT_RANGE);
+        return getObject(Range.class, FhirPropertyNames.PROPERTY_AMOUNT_RANGE);
     }
 
     /**
@@ -110,7 +103,7 @@ public class SubstanceAmount extends FhirResource {
      * captured in this field.
      */
     public String amountString() {
-        return getString(PROPERTY_AMOUNT_STRING);
+        return getString(FhirPropertyNames.PROPERTY_AMOUNT_STRING);
     }
 
     /**
@@ -124,21 +117,21 @@ public class SubstanceAmount extends FhirResource {
      * elements.
      */
     public CodeableConcept amountType() {
-        return getObject(CodeableConcept.class, PROPERTY_AMOUNT_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_AMOUNT_TYPE);
     }
 
     /**
      * A textual comment on a numeric value.
      */
     public String amountText() {
-        return getString(PROPERTY_AMOUNT_TEXT);
+        return getString(FhirPropertyNames.PROPERTY_AMOUNT_TEXT);
     }
 
     /**
      * Reference range of possible or expected values.
      */
     public SubstanceAmountReferenceRange referenceRange() {
-        return getObject(SubstanceAmountReferenceRange.class, PROPERTY_REFERENCE_RANGE);
+        return getObject(SubstanceAmountReferenceRange.class, FhirPropertyNames.PROPERTY_REFERENCE_RANGE);
     }
 
     public static class Builder {
@@ -153,47 +146,47 @@ public class SubstanceAmount extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder amountQuantity(final Quantity amountQuantity) {
-            b.add(PROPERTY_AMOUNT_QUANTITY, amountQuantity);
+            b.add(FhirPropertyNames.PROPERTY_AMOUNT_QUANTITY, amountQuantity);
             return this;
         }
 
         public Builder amountRange(final Range amountRange) {
-            b.add(PROPERTY_AMOUNT_RANGE, amountRange);
+            b.add(FhirPropertyNames.PROPERTY_AMOUNT_RANGE, amountRange);
             return this;
         }
 
         public Builder amountString(final String amountString) {
-            b.add(PROPERTY_AMOUNT_STRING, amountString);
+            b.add(FhirPropertyNames.PROPERTY_AMOUNT_STRING, amountString);
             return this;
         }
 
         public Builder amountType(final CodeableConcept amountType) {
-            b.add(PROPERTY_AMOUNT_TYPE, amountType);
+            b.add(FhirPropertyNames.PROPERTY_AMOUNT_TYPE, amountType);
             return this;
         }
 
         public Builder amountText(final String amountText) {
-            b.add(PROPERTY_AMOUNT_TEXT, amountText);
+            b.add(FhirPropertyNames.PROPERTY_AMOUNT_TEXT, amountText);
             return this;
         }
 
         public Builder referenceRange(final SubstanceAmountReferenceRange referenceRange) {
-            b.add(PROPERTY_REFERENCE_RANGE, referenceRange);
+            b.add(FhirPropertyNames.PROPERTY_REFERENCE_RANGE, referenceRange);
             return this;
         }
 
@@ -213,11 +206,6 @@ public class SubstanceAmount extends FhirResource {
      */
     public static class SubstanceAmountReferenceRange extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceAmountReferenceRange";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_LOW_LIMIT = "lowLimit";
-        public static final String PROPERTY_HIGH_LIMIT = "highLimit";
 
         public static Builder create() {
             return new Builder();
@@ -236,7 +224,7 @@ public class SubstanceAmount extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -248,7 +236,7 @@ public class SubstanceAmount extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -269,21 +257,21 @@ public class SubstanceAmount extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Lower limit possible or expected.
          */
         public Quantity lowLimit() {
-            return getObject(Quantity.class, PROPERTY_LOW_LIMIT);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_LOW_LIMIT);
         }
 
         /**
          * Upper limit possible or expected.
          */
         public Quantity highLimit() {
-            return getObject(Quantity.class, PROPERTY_HIGH_LIMIT);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_HIGH_LIMIT);
         }
 
         public static class Builder {
@@ -298,27 +286,27 @@ public class SubstanceAmount extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder lowLimit(final Quantity lowLimit) {
-                b.add(PROPERTY_LOW_LIMIT, lowLimit);
+                b.add(FhirPropertyNames.PROPERTY_LOW_LIMIT, lowLimit);
                 return this;
             }
 
             public Builder highLimit(final Quantity highLimit) {
-                b.add(PROPERTY_HIGH_LIMIT, highLimit);
+                b.add(FhirPropertyNames.PROPERTY_HIGH_LIMIT, highLimit);
                 return this;
             }
 

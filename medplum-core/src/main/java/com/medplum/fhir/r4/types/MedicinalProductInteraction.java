@@ -9,28 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The interactions of the medicinal product with other medicinal
  * products, or other forms of interactions.
  */
 public class MedicinalProductInteraction extends FhirResource {
     public static final String RESOURCE_TYPE = "MedicinalProductInteraction";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_INTERACTANT = "interactant";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_EFFECT = "effect";
-    public static final String PROPERTY_INCIDENCE = "incidence";
-    public static final String PROPERTY_MANAGEMENT = "management";
 
     public static Builder create() {
         return new Builder();
@@ -51,14 +37,14 @@ public class MedicinalProductInteraction extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -70,7 +56,7 @@ public class MedicinalProductInteraction extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -79,7 +65,7 @@ public class MedicinalProductInteraction extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -91,7 +77,7 @@ public class MedicinalProductInteraction extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -111,28 +97,28 @@ public class MedicinalProductInteraction extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * The medication for which this is a described interaction.
      */
     public java.util.List<Reference> subject() {
-        return getList(Reference.class, PROPERTY_SUBJECT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
      * The interaction described.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
      * The specific medication, food or laboratory test that interacts.
      */
     public java.util.List<MedicinalProductInteractionInteractant> interactant() {
-        return getList(MedicinalProductInteractionInteractant.class, PROPERTY_INTERACTANT);
+        return getList(MedicinalProductInteractionInteractant.class, FhirPropertyNames.PROPERTY_INTERACTANT);
     }
 
     /**
@@ -140,7 +126,7 @@ public class MedicinalProductInteraction extends FhirResource {
      * interaction, drug-lab test interaction.
      */
     public CodeableConcept type() {
-        return getObject(CodeableConcept.class, PROPERTY_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -148,21 +134,21 @@ public class MedicinalProductInteraction extends FhirResource {
      * of primary medication&quot;.
      */
     public CodeableConcept effect() {
-        return getObject(CodeableConcept.class, PROPERTY_EFFECT);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_EFFECT);
     }
 
     /**
      * The incidence of the interaction, e.g. theoretical, observed.
      */
     public CodeableConcept incidence() {
-        return getObject(CodeableConcept.class, PROPERTY_INCIDENCE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_INCIDENCE);
     }
 
     /**
      * Actions for managing the interaction.
      */
     public CodeableConcept management() {
-        return getObject(CodeableConcept.class, PROPERTY_MANAGEMENT);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_MANAGEMENT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -176,82 +162,82 @@ public class MedicinalProductInteraction extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder subject(final java.util.List<Reference> subject) {
-            b.add(PROPERTY_SUBJECT, FhirObject.toArray(subject));
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, FhirObject.toArray(subject));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder interactant(final java.util.List<MedicinalProductInteractionInteractant> interactant) {
-            b.add(PROPERTY_INTERACTANT, FhirObject.toArray(interactant));
+            b.add(FhirPropertyNames.PROPERTY_INTERACTANT, FhirObject.toArray(interactant));
             return this;
         }
 
         public Builder type(final CodeableConcept type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder effect(final CodeableConcept effect) {
-            b.add(PROPERTY_EFFECT, effect);
+            b.add(FhirPropertyNames.PROPERTY_EFFECT, effect);
             return this;
         }
 
         public Builder incidence(final CodeableConcept incidence) {
-            b.add(PROPERTY_INCIDENCE, incidence);
+            b.add(FhirPropertyNames.PROPERTY_INCIDENCE, incidence);
             return this;
         }
 
         public Builder management(final CodeableConcept management) {
-            b.add(PROPERTY_MANAGEMENT, management);
+            b.add(FhirPropertyNames.PROPERTY_MANAGEMENT, management);
             return this;
         }
 
@@ -266,11 +252,6 @@ public class MedicinalProductInteraction extends FhirResource {
      */
     public static class MedicinalProductInteractionInteractant extends FhirObject {
         public static final String RESOURCE_TYPE = "MedicinalProductInteractionInteractant";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ITEM_REFERENCE = "itemReference";
-        public static final String PROPERTY_ITEM_CODEABLE_CONCEPT = "itemCodeableConcept";
 
         public static Builder create() {
             return new Builder();
@@ -289,7 +270,7 @@ public class MedicinalProductInteraction extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -301,7 +282,7 @@ public class MedicinalProductInteraction extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -322,21 +303,21 @@ public class MedicinalProductInteraction extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The specific medication, food or laboratory test that interacts.
          */
         public Reference itemReference() {
-            return getObject(Reference.class, PROPERTY_ITEM_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_ITEM_REFERENCE);
         }
 
         /**
          * The specific medication, food or laboratory test that interacts.
          */
         public CodeableConcept itemCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_ITEM_CODEABLE_CONCEPT);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ITEM_CODEABLE_CONCEPT);
         }
 
         public static class Builder {
@@ -351,27 +332,27 @@ public class MedicinalProductInteraction extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder itemReference(final Reference itemReference) {
-                b.add(PROPERTY_ITEM_REFERENCE, itemReference);
+                b.add(FhirPropertyNames.PROPERTY_ITEM_REFERENCE, itemReference);
                 return this;
             }
 
             public Builder itemCodeableConcept(final CodeableConcept itemCodeableConcept) {
-                b.add(PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
+                b.add(FhirPropertyNames.PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
                 return this;
             }
 

@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * This resource allows for the definition of some activity to be
  * performed, independent of a particular patient, practitioner, or other
@@ -16,68 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class ActivityDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "ActivityDefinition";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_SUBTITLE = "subtitle";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_SUBJECT_CODEABLE_CONCEPT = "subjectCodeableConcept";
-    public static final String PROPERTY_SUBJECT_REFERENCE = "subjectReference";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_PUBLISHER = "publisher";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USE_CONTEXT = "useContext";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_PURPOSE = "purpose";
-    public static final String PROPERTY_USAGE = "usage";
-    public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_APPROVAL_DATE = "approvalDate";
-    public static final String PROPERTY_LAST_REVIEW_DATE = "lastReviewDate";
-    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
-    public static final String PROPERTY_TOPIC = "topic";
-    public static final String PROPERTY_AUTHOR = "author";
-    public static final String PROPERTY_EDITOR = "editor";
-    public static final String PROPERTY_REVIEWER = "reviewer";
-    public static final String PROPERTY_ENDORSER = "endorser";
-    public static final String PROPERTY_RELATED_ARTIFACT = "relatedArtifact";
-    public static final String PROPERTY_LIBRARY = "library";
-    public static final String PROPERTY_KIND = "kind";
-    public static final String PROPERTY_PROFILE = "profile";
-    public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_INTENT = "intent";
-    public static final String PROPERTY_PRIORITY = "priority";
-    public static final String PROPERTY_DO_NOT_PERFORM = "doNotPerform";
-    public static final String PROPERTY_TIMING_TIMING = "timingTiming";
-    public static final String PROPERTY_TIMING_DATE_TIME = "timingDateTime";
-    public static final String PROPERTY_TIMING_AGE = "timingAge";
-    public static final String PROPERTY_TIMING_PERIOD = "timingPeriod";
-    public static final String PROPERTY_TIMING_RANGE = "timingRange";
-    public static final String PROPERTY_TIMING_DURATION = "timingDuration";
-    public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_PARTICIPANT = "participant";
-    public static final String PROPERTY_PRODUCT_REFERENCE = "productReference";
-    public static final String PROPERTY_PRODUCT_CODEABLE_CONCEPT = "productCodeableConcept";
-    public static final String PROPERTY_QUANTITY = "quantity";
-    public static final String PROPERTY_DOSAGE = "dosage";
-    public static final String PROPERTY_BODY_SITE = "bodySite";
-    public static final String PROPERTY_SPECIMEN_REQUIREMENT = "specimenRequirement";
-    public static final String PROPERTY_OBSERVATION_REQUIREMENT = "observationRequirement";
-    public static final String PROPERTY_OBSERVATION_RESULT_REQUIREMENT = "observationResultRequirement";
-    public static final String PROPERTY_TRANSFORM = "transform";
-    public static final String PROPERTY_DYNAMIC_VALUE = "dynamicValue";
 
     public static Builder create() {
         return new Builder();
@@ -98,14 +38,14 @@ public class ActivityDefinition extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -117,7 +57,7 @@ public class ActivityDefinition extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -126,7 +66,7 @@ public class ActivityDefinition extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -138,7 +78,7 @@ public class ActivityDefinition extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -158,7 +98,7 @@ public class ActivityDefinition extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -171,7 +111,7 @@ public class ActivityDefinition extends FhirResource {
      * same when the activity definition is stored on different servers.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -180,7 +120,7 @@ public class ActivityDefinition extends FhirResource {
      * specification, model, design or an instance.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -197,7 +137,7 @@ public class ActivityDefinition extends FhirResource {
      * Note that a version is required for non-experimental active assets.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -206,14 +146,14 @@ public class ActivityDefinition extends FhirResource {
      * applications such as code generation.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
      * A short, descriptive, user-friendly title for the activity definition.
      */
     public String title() {
-        return getString(PROPERTY_TITLE);
+        return getString(FhirPropertyNames.PROPERTY_TITLE);
     }
 
     /**
@@ -221,7 +161,7 @@ public class ActivityDefinition extends FhirResource {
      * additional information about its content.
      */
     public String subtitle() {
-        return getString(PROPERTY_SUBTITLE);
+        return getString(FhirPropertyNames.PROPERTY_SUBTITLE);
     }
 
     /**
@@ -229,7 +169,7 @@ public class ActivityDefinition extends FhirResource {
      * life-cycle of the content.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -238,7 +178,7 @@ public class ActivityDefinition extends FhirResource {
      * intended to be used for genuine usage.
      */
     public Boolean experimental() {
-        return data.getBoolean(PROPERTY_EXPERIMENTAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_EXPERIMENTAL);
     }
 
     /**
@@ -246,7 +186,7 @@ public class ActivityDefinition extends FhirResource {
      * activity being defined.
      */
     public CodeableConcept subjectCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_SUBJECT_CODEABLE_CONCEPT);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SUBJECT_CODEABLE_CONCEPT);
     }
 
     /**
@@ -254,7 +194,7 @@ public class ActivityDefinition extends FhirResource {
      * activity being defined.
      */
     public Reference subjectReference() {
-        return getObject(Reference.class, PROPERTY_SUBJECT_REFERENCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT_REFERENCE);
     }
 
     /**
@@ -265,7 +205,7 @@ public class ActivityDefinition extends FhirResource {
      * changes.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -273,7 +213,7 @@ public class ActivityDefinition extends FhirResource {
      * definition.
      */
     public String publisher() {
-        return getString(PROPERTY_PUBLISHER);
+        return getString(FhirPropertyNames.PROPERTY_PUBLISHER);
     }
 
     /**
@@ -281,7 +221,7 @@ public class ActivityDefinition extends FhirResource {
      * publisher.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
@@ -289,7 +229,7 @@ public class ActivityDefinition extends FhirResource {
      * from a consumer's perspective.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -300,7 +240,7 @@ public class ActivityDefinition extends FhirResource {
      * indexing and searching for appropriate activity definition instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
+        return getList(UsageContext.class, FhirPropertyNames.PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -308,7 +248,7 @@ public class ActivityDefinition extends FhirResource {
      * intended to be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
-        return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -316,7 +256,7 @@ public class ActivityDefinition extends FhirResource {
      * been designed as it has.
      */
     public String purpose() {
-        return getString(PROPERTY_PURPOSE);
+        return getString(FhirPropertyNames.PROPERTY_PURPOSE);
     }
 
     /**
@@ -324,7 +264,7 @@ public class ActivityDefinition extends FhirResource {
      * clinical perspective.
      */
     public String usage() {
-        return getString(PROPERTY_USAGE);
+        return getString(FhirPropertyNames.PROPERTY_USAGE);
     }
 
     /**
@@ -333,7 +273,7 @@ public class ActivityDefinition extends FhirResource {
      * use and publishing of the activity definition.
      */
     public String copyright() {
-        return getString(PROPERTY_COPYRIGHT);
+        return getString(FhirPropertyNames.PROPERTY_COPYRIGHT);
     }
 
     /**
@@ -342,7 +282,7 @@ public class ActivityDefinition extends FhirResource {
      * usage.
      */
     public java.time.LocalDate approvalDate() {
-        return getLocalDate(PROPERTY_APPROVAL_DATE);
+        return getLocalDate(FhirPropertyNames.PROPERTY_APPROVAL_DATE);
     }
 
     /**
@@ -351,7 +291,7 @@ public class ActivityDefinition extends FhirResource {
      * approval date.
      */
     public java.time.LocalDate lastReviewDate() {
-        return getLocalDate(PROPERTY_LAST_REVIEW_DATE);
+        return getLocalDate(FhirPropertyNames.PROPERTY_LAST_REVIEW_DATE);
     }
 
     /**
@@ -359,7 +299,7 @@ public class ActivityDefinition extends FhirResource {
      * planned to be in active use.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
@@ -368,7 +308,7 @@ public class ActivityDefinition extends FhirResource {
      * for filtering and searching.
      */
     public java.util.List<CodeableConcept> topic() {
-        return getList(CodeableConcept.class, PROPERTY_TOPIC);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_TOPIC);
     }
 
     /**
@@ -376,7 +316,7 @@ public class ActivityDefinition extends FhirResource {
      * maintenance of the content.
      */
     public java.util.List<ContactDetail> author() {
-        return getList(ContactDetail.class, PROPERTY_AUTHOR);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_AUTHOR);
     }
 
     /**
@@ -384,7 +324,7 @@ public class ActivityDefinition extends FhirResource {
      * coherence of the content.
      */
     public java.util.List<ContactDetail> editor() {
-        return getList(ContactDetail.class, PROPERTY_EDITOR);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_EDITOR);
     }
 
     /**
@@ -392,7 +332,7 @@ public class ActivityDefinition extends FhirResource {
      * aspect of the content.
      */
     public java.util.List<ContactDetail> reviewer() {
-        return getList(ContactDetail.class, PROPERTY_REVIEWER);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_REVIEWER);
     }
 
     /**
@@ -400,7 +340,7 @@ public class ActivityDefinition extends FhirResource {
      * content for use in some setting.
      */
     public java.util.List<ContactDetail> endorser() {
-        return getList(ContactDetail.class, PROPERTY_ENDORSER);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_ENDORSER);
     }
 
     /**
@@ -408,7 +348,7 @@ public class ActivityDefinition extends FhirResource {
      * bibliographic references.
      */
     public java.util.List<RelatedArtifact> relatedArtifact() {
-        return getList(RelatedArtifact.class, PROPERTY_RELATED_ARTIFACT);
+        return getList(RelatedArtifact.class, FhirPropertyNames.PROPERTY_RELATED_ARTIFACT);
     }
 
     /**
@@ -416,7 +356,7 @@ public class ActivityDefinition extends FhirResource {
      * the activity definition.
      */
     public java.util.List<String> library() {
-        return getList(String.class, PROPERTY_LIBRARY);
+        return getList(String.class, FhirPropertyNames.PROPERTY_LIBRARY);
     }
 
     /**
@@ -426,7 +366,7 @@ public class ActivityDefinition extends FhirResource {
      * resource.
      */
     public String kind() {
-        return getString(PROPERTY_KIND);
+        return getString(FhirPropertyNames.PROPERTY_KIND);
     }
 
     /**
@@ -434,7 +374,7 @@ public class ActivityDefinition extends FhirResource {
      * to conform.
      */
     public String profile() {
-        return getString(PROPERTY_PROFILE);
+        return getString(FhirPropertyNames.PROPERTY_PROFILE);
     }
 
     /**
@@ -442,7 +382,7 @@ public class ActivityDefinition extends FhirResource {
      * procedure, what kind of encounter.
      */
     public CodeableConcept code() {
-        return getObject(CodeableConcept.class, PROPERTY_CODE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
     }
 
     /**
@@ -450,7 +390,7 @@ public class ActivityDefinition extends FhirResource {
      * activity and where the request should fit into the workflow chain.
      */
     public String intent() {
-        return getString(PROPERTY_INTENT);
+        return getString(FhirPropertyNames.PROPERTY_INTENT);
     }
 
     /**
@@ -458,7 +398,7 @@ public class ActivityDefinition extends FhirResource {
      * to other requests.
      */
     public String priority() {
-        return getString(PROPERTY_PRIORITY);
+        return getString(FhirPropertyNames.PROPERTY_PRIORITY);
     }
 
     /**
@@ -469,7 +409,7 @@ public class ActivityDefinition extends FhirResource {
      * action.
      */
     public Boolean doNotPerform() {
-        return data.getBoolean(PROPERTY_DO_NOT_PERFORM);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_DO_NOT_PERFORM);
     }
 
     /**
@@ -477,7 +417,7 @@ public class ActivityDefinition extends FhirResource {
      * to occur.
      */
     public Timing timingTiming() {
-        return getObject(Timing.class, PROPERTY_TIMING_TIMING);
+        return getObject(Timing.class, FhirPropertyNames.PROPERTY_TIMING_TIMING);
     }
 
     /**
@@ -485,7 +425,7 @@ public class ActivityDefinition extends FhirResource {
      * to occur.
      */
     public String timingDateTime() {
-        return getString(PROPERTY_TIMING_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_TIMING_DATE_TIME);
     }
 
     /**
@@ -493,7 +433,7 @@ public class ActivityDefinition extends FhirResource {
      * to occur.
      */
     public Age timingAge() {
-        return getObject(Age.class, PROPERTY_TIMING_AGE);
+        return getObject(Age.class, FhirPropertyNames.PROPERTY_TIMING_AGE);
     }
 
     /**
@@ -501,7 +441,7 @@ public class ActivityDefinition extends FhirResource {
      * to occur.
      */
     public Period timingPeriod() {
-        return getObject(Period.class, PROPERTY_TIMING_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_TIMING_PERIOD);
     }
 
     /**
@@ -509,7 +449,7 @@ public class ActivityDefinition extends FhirResource {
      * to occur.
      */
     public Range timingRange() {
-        return getObject(Range.class, PROPERTY_TIMING_RANGE);
+        return getObject(Range.class, FhirPropertyNames.PROPERTY_TIMING_RANGE);
     }
 
     /**
@@ -517,7 +457,7 @@ public class ActivityDefinition extends FhirResource {
      * to occur.
      */
     public Duration timingDuration() {
-        return getObject(Duration.class, PROPERTY_TIMING_DURATION);
+        return getObject(Duration.class, FhirPropertyNames.PROPERTY_TIMING_DURATION);
     }
 
     /**
@@ -525,14 +465,14 @@ public class ActivityDefinition extends FhirResource {
      * hospital, specific clinic, etc.
      */
     public Reference location() {
-        return getObject(Reference.class, PROPERTY_LOCATION);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_LOCATION);
     }
 
     /**
      * Indicates who should participate in performing the action described.
      */
     public java.util.List<ActivityDefinitionParticipant> participant() {
-        return getList(ActivityDefinitionParticipant.class, PROPERTY_PARTICIPANT);
+        return getList(ActivityDefinitionParticipant.class, FhirPropertyNames.PROPERTY_PARTICIPANT);
     }
 
     /**
@@ -540,7 +480,7 @@ public class ActivityDefinition extends FhirResource {
      * in the activity.
      */
     public Reference productReference() {
-        return getObject(Reference.class, PROPERTY_PRODUCT_REFERENCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PRODUCT_REFERENCE);
     }
 
     /**
@@ -548,7 +488,7 @@ public class ActivityDefinition extends FhirResource {
      * in the activity.
      */
     public CodeableConcept productCodeableConcept() {
-        return getObject(CodeableConcept.class, PROPERTY_PRODUCT_CODEABLE_CONCEPT);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PRODUCT_CODEABLE_CONCEPT);
     }
 
     /**
@@ -556,7 +496,7 @@ public class ActivityDefinition extends FhirResource {
      * meal, etc.).
      */
     public Quantity quantity() {
-        return getObject(Quantity.class, PROPERTY_QUANTITY);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_QUANTITY);
     }
 
     /**
@@ -564,7 +504,7 @@ public class ActivityDefinition extends FhirResource {
      * described for MedicationRequest resources.
      */
     public java.util.List<Dosage> dosage() {
-        return getList(Dosage.class, PROPERTY_DOSAGE);
+        return getList(Dosage.class, FhirPropertyNames.PROPERTY_DOSAGE);
     }
 
     /**
@@ -572,7 +512,7 @@ public class ActivityDefinition extends FhirResource {
      * be performed (I.e. the target sites).
      */
     public java.util.List<CodeableConcept> bodySite() {
-        return getList(CodeableConcept.class, PROPERTY_BODY_SITE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_BODY_SITE);
     }
 
     /**
@@ -580,7 +520,7 @@ public class ActivityDefinition extends FhirResource {
      * required specimens for a lab test.
      */
     public java.util.List<Reference> specimenRequirement() {
-        return getList(Reference.class, PROPERTY_SPECIMEN_REQUIREMENT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_SPECIMEN_REQUIREMENT);
     }
 
     /**
@@ -588,7 +528,7 @@ public class ActivityDefinition extends FhirResource {
      * as body weight or surface area.
      */
     public java.util.List<Reference> observationRequirement() {
-        return getList(Reference.class, PROPERTY_OBSERVATION_REQUIREMENT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_OBSERVATION_REQUIREMENT);
     }
 
     /**
@@ -596,7 +536,7 @@ public class ActivityDefinition extends FhirResource {
      * action.
      */
     public java.util.List<Reference> observationResultRequirement() {
-        return getList(Reference.class, PROPERTY_OBSERVATION_RESULT_REQUIREMENT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_OBSERVATION_RESULT_REQUIREMENT);
     }
 
     /**
@@ -605,7 +545,7 @@ public class ActivityDefinition extends FhirResource {
      * ActivityDefinition instance as the input.
      */
     public String transform() {
-        return getString(PROPERTY_TRANSFORM);
+        return getString(FhirPropertyNames.PROPERTY_TRANSFORM);
     }
 
     /**
@@ -616,7 +556,7 @@ public class ActivityDefinition extends FhirResource {
      * path on the request resource that would contain the result.
      */
     public java.util.List<ActivityDefinitionDynamicValue> dynamicValue() {
-        return getList(ActivityDefinitionDynamicValue.class, PROPERTY_DYNAMIC_VALUE);
+        return getList(ActivityDefinitionDynamicValue.class, FhirPropertyNames.PROPERTY_DYNAMIC_VALUE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -630,312 +570,312 @@ public class ActivityDefinition extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder title(final String title) {
-            b.add(PROPERTY_TITLE, title);
+            b.add(FhirPropertyNames.PROPERTY_TITLE, title);
             return this;
         }
 
         public Builder subtitle(final String subtitle) {
-            b.add(PROPERTY_SUBTITLE, subtitle);
+            b.add(FhirPropertyNames.PROPERTY_SUBTITLE, subtitle);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder experimental(final Boolean experimental) {
-            b.add(PROPERTY_EXPERIMENTAL, experimental);
+            b.add(FhirPropertyNames.PROPERTY_EXPERIMENTAL, experimental);
             return this;
         }
 
         public Builder subjectCodeableConcept(final CodeableConcept subjectCodeableConcept) {
-            b.add(PROPERTY_SUBJECT_CODEABLE_CONCEPT, subjectCodeableConcept);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT_CODEABLE_CONCEPT, subjectCodeableConcept);
             return this;
         }
 
         public Builder subjectReference(final Reference subjectReference) {
-            b.add(PROPERTY_SUBJECT_REFERENCE, subjectReference);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT_REFERENCE, subjectReference);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder publisher(final String publisher) {
-            b.add(PROPERTY_PUBLISHER, publisher);
+            b.add(FhirPropertyNames.PROPERTY_PUBLISHER, publisher);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
+            b.add(FhirPropertyNames.PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
         public Builder jurisdiction(final java.util.List<CodeableConcept> jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
             return this;
         }
 
         public Builder purpose(final String purpose) {
-            b.add(PROPERTY_PURPOSE, purpose);
+            b.add(FhirPropertyNames.PROPERTY_PURPOSE, purpose);
             return this;
         }
 
         public Builder usage(final String usage) {
-            b.add(PROPERTY_USAGE, usage);
+            b.add(FhirPropertyNames.PROPERTY_USAGE, usage);
             return this;
         }
 
         public Builder copyright(final String copyright) {
-            b.add(PROPERTY_COPYRIGHT, copyright);
+            b.add(FhirPropertyNames.PROPERTY_COPYRIGHT, copyright);
             return this;
         }
 
         public Builder approvalDate(final java.time.LocalDate approvalDate) {
-            b.add(PROPERTY_APPROVAL_DATE, approvalDate.toString());
+            b.add(FhirPropertyNames.PROPERTY_APPROVAL_DATE, approvalDate.toString());
             return this;
         }
 
         public Builder lastReviewDate(final java.time.LocalDate lastReviewDate) {
-            b.add(PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
+            b.add(FhirPropertyNames.PROPERTY_LAST_REVIEW_DATE, lastReviewDate.toString());
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
+            b.add(FhirPropertyNames.PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
         public Builder topic(final java.util.List<CodeableConcept> topic) {
-            b.add(PROPERTY_TOPIC, FhirObject.toArray(topic));
+            b.add(FhirPropertyNames.PROPERTY_TOPIC, FhirObject.toArray(topic));
             return this;
         }
 
         public Builder author(final java.util.List<ContactDetail> author) {
-            b.add(PROPERTY_AUTHOR, FhirObject.toArray(author));
+            b.add(FhirPropertyNames.PROPERTY_AUTHOR, FhirObject.toArray(author));
             return this;
         }
 
         public Builder editor(final java.util.List<ContactDetail> editor) {
-            b.add(PROPERTY_EDITOR, FhirObject.toArray(editor));
+            b.add(FhirPropertyNames.PROPERTY_EDITOR, FhirObject.toArray(editor));
             return this;
         }
 
         public Builder reviewer(final java.util.List<ContactDetail> reviewer) {
-            b.add(PROPERTY_REVIEWER, FhirObject.toArray(reviewer));
+            b.add(FhirPropertyNames.PROPERTY_REVIEWER, FhirObject.toArray(reviewer));
             return this;
         }
 
         public Builder endorser(final java.util.List<ContactDetail> endorser) {
-            b.add(PROPERTY_ENDORSER, FhirObject.toArray(endorser));
+            b.add(FhirPropertyNames.PROPERTY_ENDORSER, FhirObject.toArray(endorser));
             return this;
         }
 
         public Builder relatedArtifact(final java.util.List<RelatedArtifact> relatedArtifact) {
-            b.add(PROPERTY_RELATED_ARTIFACT, FhirObject.toArray(relatedArtifact));
+            b.add(FhirPropertyNames.PROPERTY_RELATED_ARTIFACT, FhirObject.toArray(relatedArtifact));
             return this;
         }
 
         public Builder library(final java.util.List<String> library) {
-            b.add(PROPERTY_LIBRARY, FhirObject.toStringArray(library));
+            b.add(FhirPropertyNames.PROPERTY_LIBRARY, FhirObject.toStringArray(library));
             return this;
         }
 
         public Builder kind(final String kind) {
-            b.add(PROPERTY_KIND, kind);
+            b.add(FhirPropertyNames.PROPERTY_KIND, kind);
             return this;
         }
 
         public Builder profile(final String profile) {
-            b.add(PROPERTY_PROFILE, profile);
+            b.add(FhirPropertyNames.PROPERTY_PROFILE, profile);
             return this;
         }
 
         public Builder code(final CodeableConcept code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 
         public Builder intent(final String intent) {
-            b.add(PROPERTY_INTENT, intent);
+            b.add(FhirPropertyNames.PROPERTY_INTENT, intent);
             return this;
         }
 
         public Builder priority(final String priority) {
-            b.add(PROPERTY_PRIORITY, priority);
+            b.add(FhirPropertyNames.PROPERTY_PRIORITY, priority);
             return this;
         }
 
         public Builder doNotPerform(final Boolean doNotPerform) {
-            b.add(PROPERTY_DO_NOT_PERFORM, doNotPerform);
+            b.add(FhirPropertyNames.PROPERTY_DO_NOT_PERFORM, doNotPerform);
             return this;
         }
 
         public Builder timingTiming(final Timing timingTiming) {
-            b.add(PROPERTY_TIMING_TIMING, timingTiming);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_TIMING, timingTiming);
             return this;
         }
 
         public Builder timingDateTime(final String timingDateTime) {
-            b.add(PROPERTY_TIMING_DATE_TIME, timingDateTime);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_DATE_TIME, timingDateTime);
             return this;
         }
 
         public Builder timingAge(final Age timingAge) {
-            b.add(PROPERTY_TIMING_AGE, timingAge);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_AGE, timingAge);
             return this;
         }
 
         public Builder timingPeriod(final Period timingPeriod) {
-            b.add(PROPERTY_TIMING_PERIOD, timingPeriod);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_PERIOD, timingPeriod);
             return this;
         }
 
         public Builder timingRange(final Range timingRange) {
-            b.add(PROPERTY_TIMING_RANGE, timingRange);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_RANGE, timingRange);
             return this;
         }
 
         public Builder timingDuration(final Duration timingDuration) {
-            b.add(PROPERTY_TIMING_DURATION, timingDuration);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_DURATION, timingDuration);
             return this;
         }
 
         public Builder location(final Reference location) {
-            b.add(PROPERTY_LOCATION, location);
+            b.add(FhirPropertyNames.PROPERTY_LOCATION, location);
             return this;
         }
 
         public Builder participant(final java.util.List<ActivityDefinitionParticipant> participant) {
-            b.add(PROPERTY_PARTICIPANT, FhirObject.toArray(participant));
+            b.add(FhirPropertyNames.PROPERTY_PARTICIPANT, FhirObject.toArray(participant));
             return this;
         }
 
         public Builder productReference(final Reference productReference) {
-            b.add(PROPERTY_PRODUCT_REFERENCE, productReference);
+            b.add(FhirPropertyNames.PROPERTY_PRODUCT_REFERENCE, productReference);
             return this;
         }
 
         public Builder productCodeableConcept(final CodeableConcept productCodeableConcept) {
-            b.add(PROPERTY_PRODUCT_CODEABLE_CONCEPT, productCodeableConcept);
+            b.add(FhirPropertyNames.PROPERTY_PRODUCT_CODEABLE_CONCEPT, productCodeableConcept);
             return this;
         }
 
         public Builder quantity(final Quantity quantity) {
-            b.add(PROPERTY_QUANTITY, quantity);
+            b.add(FhirPropertyNames.PROPERTY_QUANTITY, quantity);
             return this;
         }
 
         public Builder dosage(final java.util.List<Dosage> dosage) {
-            b.add(PROPERTY_DOSAGE, FhirObject.toArray(dosage));
+            b.add(FhirPropertyNames.PROPERTY_DOSAGE, FhirObject.toArray(dosage));
             return this;
         }
 
         public Builder bodySite(final java.util.List<CodeableConcept> bodySite) {
-            b.add(PROPERTY_BODY_SITE, FhirObject.toArray(bodySite));
+            b.add(FhirPropertyNames.PROPERTY_BODY_SITE, FhirObject.toArray(bodySite));
             return this;
         }
 
         public Builder specimenRequirement(final java.util.List<Reference> specimenRequirement) {
-            b.add(PROPERTY_SPECIMEN_REQUIREMENT, FhirObject.toArray(specimenRequirement));
+            b.add(FhirPropertyNames.PROPERTY_SPECIMEN_REQUIREMENT, FhirObject.toArray(specimenRequirement));
             return this;
         }
 
         public Builder observationRequirement(final java.util.List<Reference> observationRequirement) {
-            b.add(PROPERTY_OBSERVATION_REQUIREMENT, FhirObject.toArray(observationRequirement));
+            b.add(FhirPropertyNames.PROPERTY_OBSERVATION_REQUIREMENT, FhirObject.toArray(observationRequirement));
             return this;
         }
 
         public Builder observationResultRequirement(final java.util.List<Reference> observationResultRequirement) {
-            b.add(PROPERTY_OBSERVATION_RESULT_REQUIREMENT, FhirObject.toArray(observationResultRequirement));
+            b.add(FhirPropertyNames.PROPERTY_OBSERVATION_RESULT_REQUIREMENT, FhirObject.toArray(observationResultRequirement));
             return this;
         }
 
         public Builder transform(final String transform) {
-            b.add(PROPERTY_TRANSFORM, transform);
+            b.add(FhirPropertyNames.PROPERTY_TRANSFORM, transform);
             return this;
         }
 
         public Builder dynamicValue(final java.util.List<ActivityDefinitionDynamicValue> dynamicValue) {
-            b.add(PROPERTY_DYNAMIC_VALUE, FhirObject.toArray(dynamicValue));
+            b.add(FhirPropertyNames.PROPERTY_DYNAMIC_VALUE, FhirObject.toArray(dynamicValue));
             return this;
         }
 
@@ -951,11 +891,6 @@ public class ActivityDefinition extends FhirResource {
      */
     public static class ActivityDefinitionDynamicValue extends FhirObject {
         public static final String RESOURCE_TYPE = "ActivityDefinitionDynamicValue";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_PATH = "path";
-        public static final String PROPERTY_EXPRESSION = "expression";
 
         public static Builder create() {
             return new Builder();
@@ -974,7 +909,7 @@ public class ActivityDefinition extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -986,7 +921,7 @@ public class ActivityDefinition extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1007,7 +942,7 @@ public class ActivityDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1022,14 +957,14 @@ public class ActivityDefinition extends FhirResource {
          * Profile](fhirpath.html#simple) for full details).
          */
         public String path() {
-            return getString(PROPERTY_PATH);
+            return getString(FhirPropertyNames.PROPERTY_PATH);
         }
 
         /**
          * An expression specifying the value of the customized element.
          */
         public Expression expression() {
-            return getObject(Expression.class, PROPERTY_EXPRESSION);
+            return getObject(Expression.class, FhirPropertyNames.PROPERTY_EXPRESSION);
         }
 
         public static class Builder {
@@ -1044,27 +979,27 @@ public class ActivityDefinition extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder path(final String path) {
-                b.add(PROPERTY_PATH, path);
+                b.add(FhirPropertyNames.PROPERTY_PATH, path);
                 return this;
             }
 
             public Builder expression(final Expression expression) {
-                b.add(PROPERTY_EXPRESSION, expression);
+                b.add(FhirPropertyNames.PROPERTY_EXPRESSION, expression);
                 return this;
             }
 
@@ -1081,11 +1016,6 @@ public class ActivityDefinition extends FhirResource {
      */
     public static class ActivityDefinitionParticipant extends FhirObject {
         public static final String RESOURCE_TYPE = "ActivityDefinitionParticipant";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_ROLE = "role";
 
         public static Builder create() {
             return new Builder();
@@ -1104,7 +1034,7 @@ public class ActivityDefinition extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1116,7 +1046,7 @@ public class ActivityDefinition extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1137,14 +1067,14 @@ public class ActivityDefinition extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The type of participant in the action.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
@@ -1152,7 +1082,7 @@ public class ActivityDefinition extends FhirResource {
          * action.
          */
         public CodeableConcept role() {
-            return getObject(CodeableConcept.class, PROPERTY_ROLE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ROLE);
         }
 
         public static class Builder {
@@ -1167,27 +1097,27 @@ public class ActivityDefinition extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder role(final CodeableConcept role) {
-                b.add(PROPERTY_ROLE, role);
+                b.add(FhirPropertyNames.PROPERTY_ROLE, role);
                 return this;
             }
 

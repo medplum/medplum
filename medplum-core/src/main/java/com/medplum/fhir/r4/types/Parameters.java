@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * This resource is a non-persisted resource used to pass information
  * into and back from an [operation](operations.html). It has no other
@@ -16,12 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Parameters extends FhirResource {
     public static final String RESOURCE_TYPE = "Parameters";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_PARAMETER = "parameter";
 
     public static Builder create() {
         return new Builder();
@@ -42,21 +38,21 @@ public class Parameters extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
      * A parameter passed to or received from the operation.
      */
     public java.util.List<ParametersParameter> parameter() {
-        return getList(ParametersParameter.class, PROPERTY_PARAMETER);
+        return getList(ParametersParameter.class, FhirPropertyNames.PROPERTY_PARAMETER);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -70,32 +66,32 @@ public class Parameters extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder parameter(final java.util.List<ParametersParameter> parameter) {
-            b.add(PROPERTY_PARAMETER, FhirObject.toArray(parameter));
+            b.add(FhirPropertyNames.PROPERTY_PARAMETER, FhirObject.toArray(parameter));
             return this;
         }
 
@@ -111,62 +107,6 @@ public class Parameters extends FhirResource {
      */
     public static class ParametersParameter extends FhirObject {
         public static final String RESOURCE_TYPE = "ParametersParameter";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_VALUE_BASE64_BINARY = "valueBase64Binary";
-        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUE_CANONICAL = "valueCanonical";
-        public static final String PROPERTY_VALUE_CODE = "valueCode";
-        public static final String PROPERTY_VALUE_DATE = "valueDate";
-        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
-        public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
-        public static final String PROPERTY_VALUE_ID = "valueId";
-        public static final String PROPERTY_VALUE_INSTANT = "valueInstant";
-        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
-        public static final String PROPERTY_VALUE_MARKDOWN = "valueMarkdown";
-        public static final String PROPERTY_VALUE_OID = "valueOid";
-        public static final String PROPERTY_VALUE_POSITIVE_INT = "valuePositiveInt";
-        public static final String PROPERTY_VALUE_STRING = "valueString";
-        public static final String PROPERTY_VALUE_TIME = "valueTime";
-        public static final String PROPERTY_VALUE_UNSIGNED_INT = "valueUnsignedInt";
-        public static final String PROPERTY_VALUE_URI = "valueUri";
-        public static final String PROPERTY_VALUE_URL = "valueUrl";
-        public static final String PROPERTY_VALUE_UUID = "valueUuid";
-        public static final String PROPERTY_VALUE_ADDRESS = "valueAddress";
-        public static final String PROPERTY_VALUE_AGE = "valueAge";
-        public static final String PROPERTY_VALUE_ANNOTATION = "valueAnnotation";
-        public static final String PROPERTY_VALUE_ATTACHMENT = "valueAttachment";
-        public static final String PROPERTY_VALUE_CODEABLE_CONCEPT = "valueCodeableConcept";
-        public static final String PROPERTY_VALUE_CODING = "valueCoding";
-        public static final String PROPERTY_VALUE_CONTACT_POINT = "valueContactPoint";
-        public static final String PROPERTY_VALUE_COUNT = "valueCount";
-        public static final String PROPERTY_VALUE_DISTANCE = "valueDistance";
-        public static final String PROPERTY_VALUE_DURATION = "valueDuration";
-        public static final String PROPERTY_VALUE_HUMAN_NAME = "valueHumanName";
-        public static final String PROPERTY_VALUE_IDENTIFIER = "valueIdentifier";
-        public static final String PROPERTY_VALUE_MONEY = "valueMoney";
-        public static final String PROPERTY_VALUE_PERIOD = "valuePeriod";
-        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUE_RANGE = "valueRange";
-        public static final String PROPERTY_VALUE_RATIO = "valueRatio";
-        public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
-        public static final String PROPERTY_VALUE_SAMPLED_DATA = "valueSampledData";
-        public static final String PROPERTY_VALUE_SIGNATURE = "valueSignature";
-        public static final String PROPERTY_VALUE_TIMING = "valueTiming";
-        public static final String PROPERTY_VALUE_CONTACT_DETAIL = "valueContactDetail";
-        public static final String PROPERTY_VALUE_CONTRIBUTOR = "valueContributor";
-        public static final String PROPERTY_VALUE_DATA_REQUIREMENT = "valueDataRequirement";
-        public static final String PROPERTY_VALUE_EXPRESSION = "valueExpression";
-        public static final String PROPERTY_VALUE_PARAMETER_DEFINITION = "valueParameterDefinition";
-        public static final String PROPERTY_VALUE_RELATED_ARTIFACT = "valueRelatedArtifact";
-        public static final String PROPERTY_VALUE_TRIGGER_DEFINITION = "valueTriggerDefinition";
-        public static final String PROPERTY_VALUE_USAGE_CONTEXT = "valueUsageContext";
-        public static final String PROPERTY_VALUE_DOSAGE = "valueDosage";
-        public static final String PROPERTY_VALUE_META = "valueMeta";
-        public static final String PROPERTY_RESOURCE = "resource";
-        public static final String PROPERTY_PART = "part";
 
         public static Builder create() {
             return new Builder();
@@ -185,7 +125,7 @@ public class Parameters extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -197,7 +137,7 @@ public class Parameters extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -218,382 +158,382 @@ public class Parameters extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The name of the parameter (reference to the operation definition).
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueBase64Binary() {
-            return getString(PROPERTY_VALUE_BASE64_BINARY);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_BASE64_BINARY);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueCanonical() {
-            return getString(PROPERTY_VALUE_CANONICAL);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_CANONICAL);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueCode() {
-            return getString(PROPERTY_VALUE_CODE);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_CODE);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueDate() {
-            return getString(PROPERTY_VALUE_DATE);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_DATE);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUE_DATE_TIME);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Integer valueDecimal() {
-            return data.getInt(PROPERTY_VALUE_DECIMAL);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_DECIMAL);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueId() {
-            return getString(PROPERTY_VALUE_ID);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_ID);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueInstant() {
-            return getString(PROPERTY_VALUE_INSTANT);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_INSTANT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUE_INTEGER);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_INTEGER);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueMarkdown() {
-            return getString(PROPERTY_VALUE_MARKDOWN);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_MARKDOWN);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueOid() {
-            return getString(PROPERTY_VALUE_OID);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_OID);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Integer valuePositiveInt() {
-            return data.getInt(PROPERTY_VALUE_POSITIVE_INT);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_POSITIVE_INT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUE_STRING);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_STRING);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueTime() {
-            return getString(PROPERTY_VALUE_TIME);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_TIME);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Integer valueUnsignedInt() {
-            return data.getInt(PROPERTY_VALUE_UNSIGNED_INT);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_UNSIGNED_INT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueUri() {
-            return getString(PROPERTY_VALUE_URI);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_URI);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueUrl() {
-            return getString(PROPERTY_VALUE_URL);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_URL);
         }
 
         /**
          * If the parameter is a data type.
          */
         public String valueUuid() {
-            return getString(PROPERTY_VALUE_UUID);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_UUID);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Address valueAddress() {
-            return getObject(Address.class, PROPERTY_VALUE_ADDRESS);
+            return getObject(Address.class, FhirPropertyNames.PROPERTY_VALUE_ADDRESS);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Age valueAge() {
-            return getObject(Age.class, PROPERTY_VALUE_AGE);
+            return getObject(Age.class, FhirPropertyNames.PROPERTY_VALUE_AGE);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Annotation valueAnnotation() {
-            return getObject(Annotation.class, PROPERTY_VALUE_ANNOTATION);
+            return getObject(Annotation.class, FhirPropertyNames.PROPERTY_VALUE_ANNOTATION);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Attachment valueAttachment() {
-            return getObject(Attachment.class, PROPERTY_VALUE_ATTACHMENT);
+            return getObject(Attachment.class, FhirPropertyNames.PROPERTY_VALUE_ATTACHMENT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public CodeableConcept valueCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_VALUE_CODEABLE_CONCEPT);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_VALUE_CODEABLE_CONCEPT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Coding valueCoding() {
-            return getObject(Coding.class, PROPERTY_VALUE_CODING);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_VALUE_CODING);
         }
 
         /**
          * If the parameter is a data type.
          */
         public ContactPoint valueContactPoint() {
-            return getObject(ContactPoint.class, PROPERTY_VALUE_CONTACT_POINT);
+            return getObject(ContactPoint.class, FhirPropertyNames.PROPERTY_VALUE_CONTACT_POINT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Count valueCount() {
-            return getObject(Count.class, PROPERTY_VALUE_COUNT);
+            return getObject(Count.class, FhirPropertyNames.PROPERTY_VALUE_COUNT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Distance valueDistance() {
-            return getObject(Distance.class, PROPERTY_VALUE_DISTANCE);
+            return getObject(Distance.class, FhirPropertyNames.PROPERTY_VALUE_DISTANCE);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Duration valueDuration() {
-            return getObject(Duration.class, PROPERTY_VALUE_DURATION);
+            return getObject(Duration.class, FhirPropertyNames.PROPERTY_VALUE_DURATION);
         }
 
         /**
          * If the parameter is a data type.
          */
         public HumanName valueHumanName() {
-            return getObject(HumanName.class, PROPERTY_VALUE_HUMAN_NAME);
+            return getObject(HumanName.class, FhirPropertyNames.PROPERTY_VALUE_HUMAN_NAME);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Identifier valueIdentifier() {
-            return getObject(Identifier.class, PROPERTY_VALUE_IDENTIFIER);
+            return getObject(Identifier.class, FhirPropertyNames.PROPERTY_VALUE_IDENTIFIER);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Money valueMoney() {
-            return getObject(Money.class, PROPERTY_VALUE_MONEY);
+            return getObject(Money.class, FhirPropertyNames.PROPERTY_VALUE_MONEY);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Period valuePeriod() {
-            return getObject(Period.class, PROPERTY_VALUE_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_VALUE_PERIOD);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_VALUE_QUANTITY);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Range valueRange() {
-            return getObject(Range.class, PROPERTY_VALUE_RANGE);
+            return getObject(Range.class, FhirPropertyNames.PROPERTY_VALUE_RANGE);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Ratio valueRatio() {
-            return getObject(Ratio.class, PROPERTY_VALUE_RATIO);
+            return getObject(Ratio.class, FhirPropertyNames.PROPERTY_VALUE_RATIO);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Reference valueReference() {
-            return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_VALUE_REFERENCE);
         }
 
         /**
          * If the parameter is a data type.
          */
         public SampledData valueSampledData() {
-            return getObject(SampledData.class, PROPERTY_VALUE_SAMPLED_DATA);
+            return getObject(SampledData.class, FhirPropertyNames.PROPERTY_VALUE_SAMPLED_DATA);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Signature valueSignature() {
-            return getObject(Signature.class, PROPERTY_VALUE_SIGNATURE);
+            return getObject(Signature.class, FhirPropertyNames.PROPERTY_VALUE_SIGNATURE);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Timing valueTiming() {
-            return getObject(Timing.class, PROPERTY_VALUE_TIMING);
+            return getObject(Timing.class, FhirPropertyNames.PROPERTY_VALUE_TIMING);
         }
 
         /**
          * If the parameter is a data type.
          */
         public ContactDetail valueContactDetail() {
-            return getObject(ContactDetail.class, PROPERTY_VALUE_CONTACT_DETAIL);
+            return getObject(ContactDetail.class, FhirPropertyNames.PROPERTY_VALUE_CONTACT_DETAIL);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Contributor valueContributor() {
-            return getObject(Contributor.class, PROPERTY_VALUE_CONTRIBUTOR);
+            return getObject(Contributor.class, FhirPropertyNames.PROPERTY_VALUE_CONTRIBUTOR);
         }
 
         /**
          * If the parameter is a data type.
          */
         public DataRequirement valueDataRequirement() {
-            return getObject(DataRequirement.class, PROPERTY_VALUE_DATA_REQUIREMENT);
+            return getObject(DataRequirement.class, FhirPropertyNames.PROPERTY_VALUE_DATA_REQUIREMENT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Expression valueExpression() {
-            return getObject(Expression.class, PROPERTY_VALUE_EXPRESSION);
+            return getObject(Expression.class, FhirPropertyNames.PROPERTY_VALUE_EXPRESSION);
         }
 
         /**
          * If the parameter is a data type.
          */
         public ParameterDefinition valueParameterDefinition() {
-            return getObject(ParameterDefinition.class, PROPERTY_VALUE_PARAMETER_DEFINITION);
+            return getObject(ParameterDefinition.class, FhirPropertyNames.PROPERTY_VALUE_PARAMETER_DEFINITION);
         }
 
         /**
          * If the parameter is a data type.
          */
         public RelatedArtifact valueRelatedArtifact() {
-            return getObject(RelatedArtifact.class, PROPERTY_VALUE_RELATED_ARTIFACT);
+            return getObject(RelatedArtifact.class, FhirPropertyNames.PROPERTY_VALUE_RELATED_ARTIFACT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public TriggerDefinition valueTriggerDefinition() {
-            return getObject(TriggerDefinition.class, PROPERTY_VALUE_TRIGGER_DEFINITION);
+            return getObject(TriggerDefinition.class, FhirPropertyNames.PROPERTY_VALUE_TRIGGER_DEFINITION);
         }
 
         /**
          * If the parameter is a data type.
          */
         public UsageContext valueUsageContext() {
-            return getObject(UsageContext.class, PROPERTY_VALUE_USAGE_CONTEXT);
+            return getObject(UsageContext.class, FhirPropertyNames.PROPERTY_VALUE_USAGE_CONTEXT);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Dosage valueDosage() {
-            return getObject(Dosage.class, PROPERTY_VALUE_DOSAGE);
+            return getObject(Dosage.class, FhirPropertyNames.PROPERTY_VALUE_DOSAGE);
         }
 
         /**
          * If the parameter is a data type.
          */
         public Meta valueMeta() {
-            return getObject(Meta.class, PROPERTY_VALUE_META);
+            return getObject(Meta.class, FhirPropertyNames.PROPERTY_VALUE_META);
         }
 
         /**
          * If the parameter is a whole resource.
          */
         public FhirResource resource() {
-            return getObject(FhirResource.class, PROPERTY_RESOURCE);
+            return getObject(FhirResource.class, FhirPropertyNames.PROPERTY_RESOURCE);
         }
 
         public <T extends FhirResource> T resource(final Class<T> c) {
-            return getObject(c, PROPERTY_RESOURCE);
+            return getObject(c, FhirPropertyNames.PROPERTY_RESOURCE);
         }
 
         /**
          * A named part of a multi-part parameter.
          */
         public java.util.List<ParametersParameter> part() {
-            return getList(ParametersParameter.class, PROPERTY_PART);
+            return getList(ParametersParameter.class, FhirPropertyNames.PROPERTY_PART);
         }
 
         public static class Builder {
@@ -608,282 +548,282 @@ public class Parameters extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder valueBase64Binary(final String valueBase64Binary) {
-                b.add(PROPERTY_VALUE_BASE64_BINARY, valueBase64Binary);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_BASE64_BINARY, valueBase64Binary);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueCanonical(final String valueCanonical) {
-                b.add(PROPERTY_VALUE_CANONICAL, valueCanonical);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CANONICAL, valueCanonical);
                 return this;
             }
 
             public Builder valueCode(final String valueCode) {
-                b.add(PROPERTY_VALUE_CODE, valueCode);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CODE, valueCode);
                 return this;
             }
 
             public Builder valueDate(final String valueDate) {
-                b.add(PROPERTY_VALUE_DATE, valueDate);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DATE, valueDate);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valueDecimal(final Integer valueDecimal) {
-                b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DECIMAL, valueDecimal);
                 return this;
             }
 
             public Builder valueId(final String valueId) {
-                b.add(PROPERTY_VALUE_ID, valueId);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_ID, valueId);
                 return this;
             }
 
             public Builder valueInstant(final String valueInstant) {
-                b.add(PROPERTY_VALUE_INSTANT, valueInstant);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_INSTANT, valueInstant);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueMarkdown(final String valueMarkdown) {
-                b.add(PROPERTY_VALUE_MARKDOWN, valueMarkdown);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_MARKDOWN, valueMarkdown);
                 return this;
             }
 
             public Builder valueOid(final String valueOid) {
-                b.add(PROPERTY_VALUE_OID, valueOid);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_OID, valueOid);
                 return this;
             }
 
             public Builder valuePositiveInt(final Integer valuePositiveInt) {
-                b.add(PROPERTY_VALUE_POSITIVE_INT, valuePositiveInt);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_POSITIVE_INT, valuePositiveInt);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUE_STRING, valueString);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueTime(final String valueTime) {
-                b.add(PROPERTY_VALUE_TIME, valueTime);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_TIME, valueTime);
                 return this;
             }
 
             public Builder valueUnsignedInt(final Integer valueUnsignedInt) {
-                b.add(PROPERTY_VALUE_UNSIGNED_INT, valueUnsignedInt);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_UNSIGNED_INT, valueUnsignedInt);
                 return this;
             }
 
             public Builder valueUri(final String valueUri) {
-                b.add(PROPERTY_VALUE_URI, valueUri);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_URI, valueUri);
                 return this;
             }
 
             public Builder valueUrl(final String valueUrl) {
-                b.add(PROPERTY_VALUE_URL, valueUrl);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_URL, valueUrl);
                 return this;
             }
 
             public Builder valueUuid(final String valueUuid) {
-                b.add(PROPERTY_VALUE_UUID, valueUuid);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_UUID, valueUuid);
                 return this;
             }
 
             public Builder valueAddress(final Address valueAddress) {
-                b.add(PROPERTY_VALUE_ADDRESS, valueAddress);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_ADDRESS, valueAddress);
                 return this;
             }
 
             public Builder valueAge(final Age valueAge) {
-                b.add(PROPERTY_VALUE_AGE, valueAge);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_AGE, valueAge);
                 return this;
             }
 
             public Builder valueAnnotation(final Annotation valueAnnotation) {
-                b.add(PROPERTY_VALUE_ANNOTATION, valueAnnotation);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_ANNOTATION, valueAnnotation);
                 return this;
             }
 
             public Builder valueAttachment(final Attachment valueAttachment) {
-                b.add(PROPERTY_VALUE_ATTACHMENT, valueAttachment);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_ATTACHMENT, valueAttachment);
                 return this;
             }
 
             public Builder valueCodeableConcept(final CodeableConcept valueCodeableConcept) {
-                b.add(PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CODEABLE_CONCEPT, valueCodeableConcept);
                 return this;
             }
 
             public Builder valueCoding(final Coding valueCoding) {
-                b.add(PROPERTY_VALUE_CODING, valueCoding);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CODING, valueCoding);
                 return this;
             }
 
             public Builder valueContactPoint(final ContactPoint valueContactPoint) {
-                b.add(PROPERTY_VALUE_CONTACT_POINT, valueContactPoint);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CONTACT_POINT, valueContactPoint);
                 return this;
             }
 
             public Builder valueCount(final Count valueCount) {
-                b.add(PROPERTY_VALUE_COUNT, valueCount);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_COUNT, valueCount);
                 return this;
             }
 
             public Builder valueDistance(final Distance valueDistance) {
-                b.add(PROPERTY_VALUE_DISTANCE, valueDistance);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DISTANCE, valueDistance);
                 return this;
             }
 
             public Builder valueDuration(final Duration valueDuration) {
-                b.add(PROPERTY_VALUE_DURATION, valueDuration);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DURATION, valueDuration);
                 return this;
             }
 
             public Builder valueHumanName(final HumanName valueHumanName) {
-                b.add(PROPERTY_VALUE_HUMAN_NAME, valueHumanName);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_HUMAN_NAME, valueHumanName);
                 return this;
             }
 
             public Builder valueIdentifier(final Identifier valueIdentifier) {
-                b.add(PROPERTY_VALUE_IDENTIFIER, valueIdentifier);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_IDENTIFIER, valueIdentifier);
                 return this;
             }
 
             public Builder valueMoney(final Money valueMoney) {
-                b.add(PROPERTY_VALUE_MONEY, valueMoney);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_MONEY, valueMoney);
                 return this;
             }
 
             public Builder valuePeriod(final Period valuePeriod) {
-                b.add(PROPERTY_VALUE_PERIOD, valuePeriod);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_PERIOD, valuePeriod);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueRange(final Range valueRange) {
-                b.add(PROPERTY_VALUE_RANGE, valueRange);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_RANGE, valueRange);
                 return this;
             }
 
             public Builder valueRatio(final Ratio valueRatio) {
-                b.add(PROPERTY_VALUE_RATIO, valueRatio);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_RATIO, valueRatio);
                 return this;
             }
 
             public Builder valueReference(final Reference valueReference) {
-                b.add(PROPERTY_VALUE_REFERENCE, valueReference);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_REFERENCE, valueReference);
                 return this;
             }
 
             public Builder valueSampledData(final SampledData valueSampledData) {
-                b.add(PROPERTY_VALUE_SAMPLED_DATA, valueSampledData);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_SAMPLED_DATA, valueSampledData);
                 return this;
             }
 
             public Builder valueSignature(final Signature valueSignature) {
-                b.add(PROPERTY_VALUE_SIGNATURE, valueSignature);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_SIGNATURE, valueSignature);
                 return this;
             }
 
             public Builder valueTiming(final Timing valueTiming) {
-                b.add(PROPERTY_VALUE_TIMING, valueTiming);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_TIMING, valueTiming);
                 return this;
             }
 
             public Builder valueContactDetail(final ContactDetail valueContactDetail) {
-                b.add(PROPERTY_VALUE_CONTACT_DETAIL, valueContactDetail);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CONTACT_DETAIL, valueContactDetail);
                 return this;
             }
 
             public Builder valueContributor(final Contributor valueContributor) {
-                b.add(PROPERTY_VALUE_CONTRIBUTOR, valueContributor);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CONTRIBUTOR, valueContributor);
                 return this;
             }
 
             public Builder valueDataRequirement(final DataRequirement valueDataRequirement) {
-                b.add(PROPERTY_VALUE_DATA_REQUIREMENT, valueDataRequirement);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DATA_REQUIREMENT, valueDataRequirement);
                 return this;
             }
 
             public Builder valueExpression(final Expression valueExpression) {
-                b.add(PROPERTY_VALUE_EXPRESSION, valueExpression);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_EXPRESSION, valueExpression);
                 return this;
             }
 
             public Builder valueParameterDefinition(final ParameterDefinition valueParameterDefinition) {
-                b.add(PROPERTY_VALUE_PARAMETER_DEFINITION, valueParameterDefinition);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_PARAMETER_DEFINITION, valueParameterDefinition);
                 return this;
             }
 
             public Builder valueRelatedArtifact(final RelatedArtifact valueRelatedArtifact) {
-                b.add(PROPERTY_VALUE_RELATED_ARTIFACT, valueRelatedArtifact);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_RELATED_ARTIFACT, valueRelatedArtifact);
                 return this;
             }
 
             public Builder valueTriggerDefinition(final TriggerDefinition valueTriggerDefinition) {
-                b.add(PROPERTY_VALUE_TRIGGER_DEFINITION, valueTriggerDefinition);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_TRIGGER_DEFINITION, valueTriggerDefinition);
                 return this;
             }
 
             public Builder valueUsageContext(final UsageContext valueUsageContext) {
-                b.add(PROPERTY_VALUE_USAGE_CONTEXT, valueUsageContext);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_USAGE_CONTEXT, valueUsageContext);
                 return this;
             }
 
             public Builder valueDosage(final Dosage valueDosage) {
-                b.add(PROPERTY_VALUE_DOSAGE, valueDosage);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DOSAGE, valueDosage);
                 return this;
             }
 
             public Builder valueMeta(final Meta valueMeta) {
-                b.add(PROPERTY_VALUE_META, valueMeta);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_META, valueMeta);
                 return this;
             }
 
             public Builder resource(final JsonObject resource) {
-                b.add(PROPERTY_RESOURCE, resource);
+                b.add(FhirPropertyNames.PROPERTY_RESOURCE, resource);
                 return this;
             }
 
             public Builder part(final java.util.List<ParametersParameter> part) {
-                b.add(PROPERTY_PART, FhirObject.toArray(part));
+                b.add(FhirPropertyNames.PROPERTY_PART, FhirObject.toArray(part));
                 return this;
             }
 

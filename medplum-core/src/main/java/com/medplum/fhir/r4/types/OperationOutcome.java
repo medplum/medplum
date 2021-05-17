@@ -9,6 +9,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
 import com.medplum.fhir.r4.StandardOutcomes;
 
 /**
@@ -17,18 +18,6 @@ import com.medplum.fhir.r4.StandardOutcomes;
  */
 public class OperationOutcome extends FhirResource {
     public static final String RESOURCE_TYPE = "OperationOutcome";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_ISSUE = "issue";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_RESOURCE = "resource";
 
     public static Builder create() {
         return new Builder();
@@ -54,14 +43,14 @@ public class OperationOutcome extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -73,7 +62,7 @@ public class OperationOutcome extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -82,7 +71,7 @@ public class OperationOutcome extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -94,7 +83,7 @@ public class OperationOutcome extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -114,7 +103,7 @@ public class OperationOutcome extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -122,25 +111,25 @@ public class OperationOutcome extends FhirResource {
      * action.
      */
     public java.util.List<OperationOutcomeIssue> issue() {
-        return getList(OperationOutcomeIssue.class, PROPERTY_ISSUE);
+        return getList(OperationOutcomeIssue.class, FhirPropertyNames.PROPERTY_ISSUE);
     }
 
     /**
      * Optional HTTP status code returned by the operation.
      */
     public Integer status() {
-        return data.getInt(PROPERTY_STATUS);
+        return data.getInt(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
      * Optional Resource created or modified by this operation.
      */
     public FhirResource resource() {
-        return getObject(FhirResource.class, PROPERTY_RESOURCE);
+        return getObject(FhirResource.class, FhirPropertyNames.PROPERTY_RESOURCE);
     }
 
     public <T extends FhirResource> T resource(final Class<T> c) {
-        return getObject(c, PROPERTY_RESOURCE);
+        return getObject(c, FhirPropertyNames.PROPERTY_RESOURCE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -154,62 +143,62 @@ public class OperationOutcome extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder issue(final java.util.List<OperationOutcomeIssue> issue) {
-            b.add(PROPERTY_ISSUE, FhirObject.toArray(issue));
+            b.add(FhirPropertyNames.PROPERTY_ISSUE, FhirObject.toArray(issue));
             return this;
         }
 
         public Builder status(final Integer status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder resource(final JsonObject resource) {
-            b.add(PROPERTY_RESOURCE, resource);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE, resource);
             return this;
         }
 
@@ -224,15 +213,6 @@ public class OperationOutcome extends FhirResource {
      */
     public static class OperationOutcomeIssue extends FhirObject {
         public static final String RESOURCE_TYPE = "OperationOutcomeIssue";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_SEVERITY = "severity";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_DETAILS = "details";
-        public static final String PROPERTY_DIAGNOSTICS = "diagnostics";
-        public static final String PROPERTY_LOCATION = "location";
-        public static final String PROPERTY_EXPRESSION = "expression";
 
         public static Builder create() {
             return new Builder();
@@ -251,7 +231,7 @@ public class OperationOutcome extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -263,7 +243,7 @@ public class OperationOutcome extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -284,7 +264,7 @@ public class OperationOutcome extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -292,7 +272,7 @@ public class OperationOutcome extends FhirResource {
          * processing.
          */
         public String severity() {
-            return getString(PROPERTY_SEVERITY);
+            return getString(FhirPropertyNames.PROPERTY_SEVERITY);
         }
 
         /**
@@ -302,7 +282,7 @@ public class OperationOutcome extends FhirResource {
          * error in the details element.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -310,14 +290,14 @@ public class OperationOutcome extends FhirResource {
          * the error or a system code that identifies the error.
          */
         public CodeableConcept details() {
-            return getObject(CodeableConcept.class, PROPERTY_DETAILS);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_DETAILS);
         }
 
         /**
          * Additional diagnostic information about the issue.
          */
         public String diagnostics() {
-            return getString(PROPERTY_DIAGNOSTICS);
+            return getString(FhirPropertyNames.PROPERTY_DIAGNOSTICS);
         }
 
         /**
@@ -331,7 +311,7 @@ public class OperationOutcome extends FhirResource {
          * to be raised.  For HTTP errors, will be &quot;http.&quot; + the parameter name.
          */
         public java.util.List<String> location() {
-            return getList(String.class, PROPERTY_LOCATION);
+            return getList(String.class, FhirPropertyNames.PROPERTY_LOCATION);
         }
 
         /**
@@ -341,7 +321,7 @@ public class OperationOutcome extends FhirResource {
          * to be raised.
          */
         public java.util.List<String> expression() {
-            return getList(String.class, PROPERTY_EXPRESSION);
+            return getList(String.class, FhirPropertyNames.PROPERTY_EXPRESSION);
         }
 
         public static class Builder {
@@ -356,47 +336,47 @@ public class OperationOutcome extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder severity(final String severity) {
-                b.add(PROPERTY_SEVERITY, severity);
+                b.add(FhirPropertyNames.PROPERTY_SEVERITY, severity);
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder details(final CodeableConcept details) {
-                b.add(PROPERTY_DETAILS, details);
+                b.add(FhirPropertyNames.PROPERTY_DETAILS, details);
                 return this;
             }
 
             public Builder diagnostics(final String diagnostics) {
-                b.add(PROPERTY_DIAGNOSTICS, diagnostics);
+                b.add(FhirPropertyNames.PROPERTY_DIAGNOSTICS, diagnostics);
                 return this;
             }
 
             public Builder location(final java.util.List<String> location) {
-                b.add(PROPERTY_LOCATION, FhirObject.toStringArray(location));
+                b.add(FhirPropertyNames.PROPERTY_LOCATION, FhirObject.toStringArray(location));
                 return this;
             }
 
             public Builder expression(final java.util.List<String> expression) {
-                b.add(PROPERTY_EXPRESSION, FhirObject.toStringArray(expression));
+                b.add(FhirPropertyNames.PROPERTY_EXPRESSION, FhirObject.toStringArray(expression));
                 return this;
             }
 

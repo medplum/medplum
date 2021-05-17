@@ -9,25 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Todo.
  */
 public class SubstanceReferenceInformation extends FhirResource {
     public static final String RESOURCE_TYPE = "SubstanceReferenceInformation";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_COMMENT = "comment";
-    public static final String PROPERTY_GENE = "gene";
-    public static final String PROPERTY_GENE_ELEMENT = "geneElement";
-    public static final String PROPERTY_CLASSIFICATION = "classification";
-    public static final String PROPERTY_TARGET = "target";
 
     public static Builder create() {
         return new Builder();
@@ -48,14 +36,14 @@ public class SubstanceReferenceInformation extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -67,7 +55,7 @@ public class SubstanceReferenceInformation extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -76,7 +64,7 @@ public class SubstanceReferenceInformation extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -88,7 +76,7 @@ public class SubstanceReferenceInformation extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -108,42 +96,42 @@ public class SubstanceReferenceInformation extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Todo.
      */
     public String comment() {
-        return getString(PROPERTY_COMMENT);
+        return getString(FhirPropertyNames.PROPERTY_COMMENT);
     }
 
     /**
      * Todo.
      */
     public java.util.List<SubstanceReferenceInformationGene> gene() {
-        return getList(SubstanceReferenceInformationGene.class, PROPERTY_GENE);
+        return getList(SubstanceReferenceInformationGene.class, FhirPropertyNames.PROPERTY_GENE);
     }
 
     /**
      * Todo.
      */
     public java.util.List<SubstanceReferenceInformationGeneElement> geneElement() {
-        return getList(SubstanceReferenceInformationGeneElement.class, PROPERTY_GENE_ELEMENT);
+        return getList(SubstanceReferenceInformationGeneElement.class, FhirPropertyNames.PROPERTY_GENE_ELEMENT);
     }
 
     /**
      * Todo.
      */
     public java.util.List<SubstanceReferenceInformationClassification> classification() {
-        return getList(SubstanceReferenceInformationClassification.class, PROPERTY_CLASSIFICATION);
+        return getList(SubstanceReferenceInformationClassification.class, FhirPropertyNames.PROPERTY_CLASSIFICATION);
     }
 
     /**
      * Todo.
      */
     public java.util.List<SubstanceReferenceInformationTarget> target() {
-        return getList(SubstanceReferenceInformationTarget.class, PROPERTY_TARGET);
+        return getList(SubstanceReferenceInformationTarget.class, FhirPropertyNames.PROPERTY_TARGET);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -157,72 +145,72 @@ public class SubstanceReferenceInformation extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder comment(final String comment) {
-            b.add(PROPERTY_COMMENT, comment);
+            b.add(FhirPropertyNames.PROPERTY_COMMENT, comment);
             return this;
         }
 
         public Builder gene(final java.util.List<SubstanceReferenceInformationGene> gene) {
-            b.add(PROPERTY_GENE, FhirObject.toArray(gene));
+            b.add(FhirPropertyNames.PROPERTY_GENE, FhirObject.toArray(gene));
             return this;
         }
 
         public Builder geneElement(final java.util.List<SubstanceReferenceInformationGeneElement> geneElement) {
-            b.add(PROPERTY_GENE_ELEMENT, FhirObject.toArray(geneElement));
+            b.add(FhirPropertyNames.PROPERTY_GENE_ELEMENT, FhirObject.toArray(geneElement));
             return this;
         }
 
         public Builder classification(final java.util.List<SubstanceReferenceInformationClassification> classification) {
-            b.add(PROPERTY_CLASSIFICATION, FhirObject.toArray(classification));
+            b.add(FhirPropertyNames.PROPERTY_CLASSIFICATION, FhirObject.toArray(classification));
             return this;
         }
 
         public Builder target(final java.util.List<SubstanceReferenceInformationTarget> target) {
-            b.add(PROPERTY_TARGET, FhirObject.toArray(target));
+            b.add(FhirPropertyNames.PROPERTY_TARGET, FhirObject.toArray(target));
             return this;
         }
 
@@ -236,13 +224,6 @@ public class SubstanceReferenceInformation extends FhirResource {
      */
     public static class SubstanceReferenceInformationClassification extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationClassification";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_DOMAIN = "domain";
-        public static final String PROPERTY_CLASSIFICATION = "classification";
-        public static final String PROPERTY_SUBTYPE = "subtype";
-        public static final String PROPERTY_SOURCE = "source";
 
         public static Builder create() {
             return new Builder();
@@ -261,7 +242,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -273,7 +254,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -294,35 +275,35 @@ public class SubstanceReferenceInformation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept domain() {
-            return getObject(CodeableConcept.class, PROPERTY_DOMAIN);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_DOMAIN);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept classification() {
-            return getObject(CodeableConcept.class, PROPERTY_CLASSIFICATION);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CLASSIFICATION);
         }
 
         /**
          * Todo.
          */
         public java.util.List<CodeableConcept> subtype() {
-            return getList(CodeableConcept.class, PROPERTY_SUBTYPE);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_SUBTYPE);
         }
 
         /**
          * Todo.
          */
         public java.util.List<Reference> source() {
-            return getList(Reference.class, PROPERTY_SOURCE);
+            return getList(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
         public static class Builder {
@@ -337,37 +318,37 @@ public class SubstanceReferenceInformation extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder domain(final CodeableConcept domain) {
-                b.add(PROPERTY_DOMAIN, domain);
+                b.add(FhirPropertyNames.PROPERTY_DOMAIN, domain);
                 return this;
             }
 
             public Builder classification(final CodeableConcept classification) {
-                b.add(PROPERTY_CLASSIFICATION, classification);
+                b.add(FhirPropertyNames.PROPERTY_CLASSIFICATION, classification);
                 return this;
             }
 
             public Builder subtype(final java.util.List<CodeableConcept> subtype) {
-                b.add(PROPERTY_SUBTYPE, FhirObject.toArray(subtype));
+                b.add(FhirPropertyNames.PROPERTY_SUBTYPE, FhirObject.toArray(subtype));
                 return this;
             }
 
             public Builder source(final java.util.List<Reference> source) {
-                b.add(PROPERTY_SOURCE, FhirObject.toArray(source));
+                b.add(FhirPropertyNames.PROPERTY_SOURCE, FhirObject.toArray(source));
                 return this;
             }
 
@@ -382,12 +363,6 @@ public class SubstanceReferenceInformation extends FhirResource {
      */
     public static class SubstanceReferenceInformationGene extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationGene";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_GENE_SEQUENCE_ORIGIN = "geneSequenceOrigin";
-        public static final String PROPERTY_GENE = "gene";
-        public static final String PROPERTY_SOURCE = "source";
 
         public static Builder create() {
             return new Builder();
@@ -406,7 +381,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -418,7 +393,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -439,28 +414,28 @@ public class SubstanceReferenceInformation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept geneSequenceOrigin() {
-            return getObject(CodeableConcept.class, PROPERTY_GENE_SEQUENCE_ORIGIN);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_GENE_SEQUENCE_ORIGIN);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept gene() {
-            return getObject(CodeableConcept.class, PROPERTY_GENE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_GENE);
         }
 
         /**
          * Todo.
          */
         public java.util.List<Reference> source() {
-            return getList(Reference.class, PROPERTY_SOURCE);
+            return getList(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
         public static class Builder {
@@ -475,32 +450,32 @@ public class SubstanceReferenceInformation extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder geneSequenceOrigin(final CodeableConcept geneSequenceOrigin) {
-                b.add(PROPERTY_GENE_SEQUENCE_ORIGIN, geneSequenceOrigin);
+                b.add(FhirPropertyNames.PROPERTY_GENE_SEQUENCE_ORIGIN, geneSequenceOrigin);
                 return this;
             }
 
             public Builder gene(final CodeableConcept gene) {
-                b.add(PROPERTY_GENE, gene);
+                b.add(FhirPropertyNames.PROPERTY_GENE, gene);
                 return this;
             }
 
             public Builder source(final java.util.List<Reference> source) {
-                b.add(PROPERTY_SOURCE, FhirObject.toArray(source));
+                b.add(FhirPropertyNames.PROPERTY_SOURCE, FhirObject.toArray(source));
                 return this;
             }
 
@@ -515,12 +490,6 @@ public class SubstanceReferenceInformation extends FhirResource {
      */
     public static class SubstanceReferenceInformationGeneElement extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationGeneElement";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_ELEMENT = "element";
-        public static final String PROPERTY_SOURCE = "source";
 
         public static Builder create() {
             return new Builder();
@@ -539,7 +508,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -551,7 +520,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -572,28 +541,28 @@ public class SubstanceReferenceInformation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept type() {
-            return getObject(CodeableConcept.class, PROPERTY_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * Todo.
          */
         public Identifier element() {
-            return getObject(Identifier.class, PROPERTY_ELEMENT);
+            return getObject(Identifier.class, FhirPropertyNames.PROPERTY_ELEMENT);
         }
 
         /**
          * Todo.
          */
         public java.util.List<Reference> source() {
-            return getList(Reference.class, PROPERTY_SOURCE);
+            return getList(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
         public static class Builder {
@@ -608,32 +577,32 @@ public class SubstanceReferenceInformation extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final CodeableConcept type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder element(final Identifier element) {
-                b.add(PROPERTY_ELEMENT, element);
+                b.add(FhirPropertyNames.PROPERTY_ELEMENT, element);
                 return this;
             }
 
             public Builder source(final java.util.List<Reference> source) {
-                b.add(PROPERTY_SOURCE, FhirObject.toArray(source));
+                b.add(FhirPropertyNames.PROPERTY_SOURCE, FhirObject.toArray(source));
                 return this;
             }
 
@@ -648,19 +617,6 @@ public class SubstanceReferenceInformation extends FhirResource {
      */
     public static class SubstanceReferenceInformationTarget extends FhirObject {
         public static final String RESOURCE_TYPE = "SubstanceReferenceInformationTarget";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TARGET = "target";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_INTERACTION = "interaction";
-        public static final String PROPERTY_ORGANISM = "organism";
-        public static final String PROPERTY_ORGANISM_TYPE = "organismType";
-        public static final String PROPERTY_AMOUNT_QUANTITY = "amountQuantity";
-        public static final String PROPERTY_AMOUNT_RANGE = "amountRange";
-        public static final String PROPERTY_AMOUNT_STRING = "amountString";
-        public static final String PROPERTY_AMOUNT_TYPE = "amountType";
-        public static final String PROPERTY_SOURCE = "source";
 
         public static Builder create() {
             return new Builder();
@@ -679,7 +635,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -691,7 +647,7 @@ public class SubstanceReferenceInformation extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -712,77 +668,77 @@ public class SubstanceReferenceInformation extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Todo.
          */
         public Identifier target() {
-            return getObject(Identifier.class, PROPERTY_TARGET);
+            return getObject(Identifier.class, FhirPropertyNames.PROPERTY_TARGET);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept type() {
-            return getObject(CodeableConcept.class, PROPERTY_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept interaction() {
-            return getObject(CodeableConcept.class, PROPERTY_INTERACTION);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_INTERACTION);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept organism() {
-            return getObject(CodeableConcept.class, PROPERTY_ORGANISM);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ORGANISM);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept organismType() {
-            return getObject(CodeableConcept.class, PROPERTY_ORGANISM_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ORGANISM_TYPE);
         }
 
         /**
          * Todo.
          */
         public Quantity amountQuantity() {
-            return getObject(Quantity.class, PROPERTY_AMOUNT_QUANTITY);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_AMOUNT_QUANTITY);
         }
 
         /**
          * Todo.
          */
         public Range amountRange() {
-            return getObject(Range.class, PROPERTY_AMOUNT_RANGE);
+            return getObject(Range.class, FhirPropertyNames.PROPERTY_AMOUNT_RANGE);
         }
 
         /**
          * Todo.
          */
         public String amountString() {
-            return getString(PROPERTY_AMOUNT_STRING);
+            return getString(FhirPropertyNames.PROPERTY_AMOUNT_STRING);
         }
 
         /**
          * Todo.
          */
         public CodeableConcept amountType() {
-            return getObject(CodeableConcept.class, PROPERTY_AMOUNT_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_AMOUNT_TYPE);
         }
 
         /**
          * Todo.
          */
         public java.util.List<Reference> source() {
-            return getList(Reference.class, PROPERTY_SOURCE);
+            return getList(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
         public static class Builder {
@@ -797,67 +753,67 @@ public class SubstanceReferenceInformation extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder target(final Identifier target) {
-                b.add(PROPERTY_TARGET, target);
+                b.add(FhirPropertyNames.PROPERTY_TARGET, target);
                 return this;
             }
 
             public Builder type(final CodeableConcept type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder interaction(final CodeableConcept interaction) {
-                b.add(PROPERTY_INTERACTION, interaction);
+                b.add(FhirPropertyNames.PROPERTY_INTERACTION, interaction);
                 return this;
             }
 
             public Builder organism(final CodeableConcept organism) {
-                b.add(PROPERTY_ORGANISM, organism);
+                b.add(FhirPropertyNames.PROPERTY_ORGANISM, organism);
                 return this;
             }
 
             public Builder organismType(final CodeableConcept organismType) {
-                b.add(PROPERTY_ORGANISM_TYPE, organismType);
+                b.add(FhirPropertyNames.PROPERTY_ORGANISM_TYPE, organismType);
                 return this;
             }
 
             public Builder amountQuantity(final Quantity amountQuantity) {
-                b.add(PROPERTY_AMOUNT_QUANTITY, amountQuantity);
+                b.add(FhirPropertyNames.PROPERTY_AMOUNT_QUANTITY, amountQuantity);
                 return this;
             }
 
             public Builder amountRange(final Range amountRange) {
-                b.add(PROPERTY_AMOUNT_RANGE, amountRange);
+                b.add(FhirPropertyNames.PROPERTY_AMOUNT_RANGE, amountRange);
                 return this;
             }
 
             public Builder amountString(final String amountString) {
-                b.add(PROPERTY_AMOUNT_STRING, amountString);
+                b.add(FhirPropertyNames.PROPERTY_AMOUNT_STRING, amountString);
                 return this;
             }
 
             public Builder amountType(final CodeableConcept amountType) {
-                b.add(PROPERTY_AMOUNT_TYPE, amountType);
+                b.add(FhirPropertyNames.PROPERTY_AMOUNT_TYPE, amountType);
                 return this;
             }
 
             public Builder source(final java.util.List<Reference> source) {
-                b.add(PROPERTY_SOURCE, FhirObject.toArray(source));
+                b.add(FhirPropertyNames.PROPERTY_SOURCE, FhirObject.toArray(source));
                 return this;
             }
 

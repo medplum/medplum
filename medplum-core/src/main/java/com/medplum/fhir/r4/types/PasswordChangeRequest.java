@@ -7,15 +7,13 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Password change request for the 'forgot password' flow.
  */
 public class PasswordChangeRequest extends FhirResource {
     public static final String RESOURCE_TYPE = "PasswordChangeRequest";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_USER = "user";
-    public static final String PROPERTY_REDIRECT_URI = "redirectUri";
 
     public static Builder create() {
         return new Builder();
@@ -33,7 +31,7 @@ public class PasswordChangeRequest extends FhirResource {
      * The user requesting the password change.
      */
     public Reference user() {
-        return getObject(Reference.class, PROPERTY_USER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_USER);
     }
 
     /**
@@ -41,7 +39,7 @@ public class PasswordChangeRequest extends FhirResource {
      * application.
      */
     public String redirectUri() {
-        return getString(PROPERTY_REDIRECT_URI);
+        return getString(FhirPropertyNames.PROPERTY_REDIRECT_URI);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -55,22 +53,22 @@ public class PasswordChangeRequest extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder user(final Reference user) {
-            b.add(PROPERTY_USER, user);
+            b.add(FhirPropertyNames.PROPERTY_USER, user);
             return this;
         }
 
         public Builder redirectUri(final String redirectUri) {
-            b.add(PROPERTY_REDIRECT_URI, redirectUri);
+            b.add(FhirPropertyNames.PROPERTY_REDIRECT_URI, redirectUri);
             return this;
         }
 

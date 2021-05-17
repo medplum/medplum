@@ -9,37 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Example of workflow instance.
  */
 public class ExampleScenario extends FhirResource {
     public static final String RESOURCE_TYPE = "ExampleScenario";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_PUBLISHER = "publisher";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_USE_CONTEXT = "useContext";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_PURPOSE = "purpose";
-    public static final String PROPERTY_ACTOR = "actor";
-    public static final String PROPERTY_INSTANCE = "instance";
-    public static final String PROPERTY_PROCESS = "process";
-    public static final String PROPERTY_WORKFLOW = "workflow";
 
     public static Builder create() {
         return new Builder();
@@ -60,14 +36,14 @@ public class ExampleScenario extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -79,7 +55,7 @@ public class ExampleScenario extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -88,7 +64,7 @@ public class ExampleScenario extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -100,7 +76,7 @@ public class ExampleScenario extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -120,7 +96,7 @@ public class ExampleScenario extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -133,7 +109,7 @@ public class ExampleScenario extends FhirResource {
      * when the example scenario is stored on different servers.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -142,7 +118,7 @@ public class ExampleScenario extends FhirResource {
      * specification, model, design or an instance.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -155,7 +131,7 @@ public class ExampleScenario extends FhirResource {
      * a lexicographical sequence.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -164,7 +140,7 @@ public class ExampleScenario extends FhirResource {
      * applications such as code generation.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -172,7 +148,7 @@ public class ExampleScenario extends FhirResource {
      * of the content.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -181,7 +157,7 @@ public class ExampleScenario extends FhirResource {
      * intended to be used for genuine usage.
      */
     public Boolean experimental() {
-        return data.getBoolean(PROPERTY_EXPERIMENTAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_EXPERIMENTAL);
     }
 
     /**
@@ -192,7 +168,7 @@ public class ExampleScenario extends FhirResource {
      * (e.g. the 'content logical definition').
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -200,7 +176,7 @@ public class ExampleScenario extends FhirResource {
      * scenario.
      */
     public String publisher() {
-        return getString(PROPERTY_PUBLISHER);
+        return getString(FhirPropertyNames.PROPERTY_PUBLISHER);
     }
 
     /**
@@ -208,7 +184,7 @@ public class ExampleScenario extends FhirResource {
      * publisher.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
@@ -219,7 +195,7 @@ public class ExampleScenario extends FhirResource {
      * indexing and searching for appropriate example scenario instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
+        return getList(UsageContext.class, FhirPropertyNames.PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -227,7 +203,7 @@ public class ExampleScenario extends FhirResource {
      * to be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
-        return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -236,7 +212,7 @@ public class ExampleScenario extends FhirResource {
      * use and publishing of the example scenario.
      */
     public String copyright() {
-        return getString(PROPERTY_COPYRIGHT);
+        return getString(FhirPropertyNames.PROPERTY_COPYRIGHT);
     }
 
     /**
@@ -245,35 +221,35 @@ public class ExampleScenario extends FhirResource {
      * purpose of documenting a scenario.
      */
     public String purpose() {
-        return getString(PROPERTY_PURPOSE);
+        return getString(FhirPropertyNames.PROPERTY_PURPOSE);
     }
 
     /**
      * Actor participating in the resource.
      */
     public java.util.List<ExampleScenarioActor> actor() {
-        return getList(ExampleScenarioActor.class, PROPERTY_ACTOR);
+        return getList(ExampleScenarioActor.class, FhirPropertyNames.PROPERTY_ACTOR);
     }
 
     /**
      * Each resource and each version that is present in the workflow.
      */
     public java.util.List<ExampleScenarioInstance> instance() {
-        return getList(ExampleScenarioInstance.class, PROPERTY_INSTANCE);
+        return getList(ExampleScenarioInstance.class, FhirPropertyNames.PROPERTY_INSTANCE);
     }
 
     /**
      * Each major process - a group of operations.
      */
     public java.util.List<ExampleScenarioProcess> process() {
-        return getList(ExampleScenarioProcess.class, PROPERTY_PROCESS);
+        return getList(ExampleScenarioProcess.class, FhirPropertyNames.PROPERTY_PROCESS);
     }
 
     /**
      * Another nested workflow.
      */
     public java.util.List<String> workflow() {
-        return getList(String.class, PROPERTY_WORKFLOW);
+        return getList(String.class, FhirPropertyNames.PROPERTY_WORKFLOW);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -287,132 +263,132 @@ public class ExampleScenario extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder experimental(final Boolean experimental) {
-            b.add(PROPERTY_EXPERIMENTAL, experimental);
+            b.add(FhirPropertyNames.PROPERTY_EXPERIMENTAL, experimental);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder publisher(final String publisher) {
-            b.add(PROPERTY_PUBLISHER, publisher);
+            b.add(FhirPropertyNames.PROPERTY_PUBLISHER, publisher);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
+            b.add(FhirPropertyNames.PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
         public Builder jurisdiction(final java.util.List<CodeableConcept> jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
             return this;
         }
 
         public Builder copyright(final String copyright) {
-            b.add(PROPERTY_COPYRIGHT, copyright);
+            b.add(FhirPropertyNames.PROPERTY_COPYRIGHT, copyright);
             return this;
         }
 
         public Builder purpose(final String purpose) {
-            b.add(PROPERTY_PURPOSE, purpose);
+            b.add(FhirPropertyNames.PROPERTY_PURPOSE, purpose);
             return this;
         }
 
         public Builder actor(final java.util.List<ExampleScenarioActor> actor) {
-            b.add(PROPERTY_ACTOR, FhirObject.toArray(actor));
+            b.add(FhirPropertyNames.PROPERTY_ACTOR, FhirObject.toArray(actor));
             return this;
         }
 
         public Builder instance(final java.util.List<ExampleScenarioInstance> instance) {
-            b.add(PROPERTY_INSTANCE, FhirObject.toArray(instance));
+            b.add(FhirPropertyNames.PROPERTY_INSTANCE, FhirObject.toArray(instance));
             return this;
         }
 
         public Builder process(final java.util.List<ExampleScenarioProcess> process) {
-            b.add(PROPERTY_PROCESS, FhirObject.toArray(process));
+            b.add(FhirPropertyNames.PROPERTY_PROCESS, FhirObject.toArray(process));
             return this;
         }
 
         public Builder workflow(final java.util.List<String> workflow) {
-            b.add(PROPERTY_WORKFLOW, FhirObject.toStringArray(workflow));
+            b.add(FhirPropertyNames.PROPERTY_WORKFLOW, FhirObject.toStringArray(workflow));
             return this;
         }
 
@@ -426,13 +402,6 @@ public class ExampleScenario extends FhirResource {
      */
     public static class ExampleScenarioActor extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioActor";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ACTOR_ID = "actorId";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DESCRIPTION = "description";
 
         public static Builder create() {
             return new Builder();
@@ -451,7 +420,7 @@ public class ExampleScenario extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -463,7 +432,7 @@ public class ExampleScenario extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -484,35 +453,35 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * ID or acronym of actor.
          */
         public String actorId() {
-            return getString(PROPERTY_ACTOR_ID);
+            return getString(FhirPropertyNames.PROPERTY_ACTOR_ID);
         }
 
         /**
          * The type of actor - person or system.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The name of the actor as shown in the page.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * The description of the actor.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         public static class Builder {
@@ -527,37 +496,37 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder actorId(final String actorId) {
-                b.add(PROPERTY_ACTOR_ID, actorId);
+                b.add(FhirPropertyNames.PROPERTY_ACTOR_ID, actorId);
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
@@ -572,12 +541,6 @@ public class ExampleScenario extends FhirResource {
      */
     public static class ExampleScenarioAlternative extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioAlternative";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TITLE = "title";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_STEP = "step";
 
         public static Builder create() {
             return new Builder();
@@ -596,7 +559,7 @@ public class ExampleScenario extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -608,7 +571,7 @@ public class ExampleScenario extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -629,7 +592,7 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -637,7 +600,7 @@ public class ExampleScenario extends FhirResource {
          * circumstance in which the alternative should be invoked.
          */
         public String title() {
-            return getString(PROPERTY_TITLE);
+            return getString(FhirPropertyNames.PROPERTY_TITLE);
         }
 
         /**
@@ -645,14 +608,14 @@ public class ExampleScenario extends FhirResource {
          * alternative should occur rather than the base step.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * What happens in each alternative option.
          */
         public java.util.List<ExampleScenarioStep> step() {
-            return getList(ExampleScenarioStep.class, PROPERTY_STEP);
+            return getList(ExampleScenarioStep.class, FhirPropertyNames.PROPERTY_STEP);
         }
 
         public static class Builder {
@@ -667,32 +630,32 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder title(final String title) {
-                b.add(PROPERTY_TITLE, title);
+                b.add(FhirPropertyNames.PROPERTY_TITLE, title);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder step(final java.util.List<ExampleScenarioStep> step) {
-                b.add(PROPERTY_STEP, FhirObject.toArray(step));
+                b.add(FhirPropertyNames.PROPERTY_STEP, FhirObject.toArray(step));
                 return this;
             }
 
@@ -707,11 +670,6 @@ public class ExampleScenario extends FhirResource {
      */
     public static class ExampleScenarioContainedInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioContainedInstance";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_RESOURCE_ID = "resourceId";
-        public static final String PROPERTY_VERSION_ID = "versionId";
 
         public static Builder create() {
             return new Builder();
@@ -730,7 +688,7 @@ public class ExampleScenario extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -742,7 +700,7 @@ public class ExampleScenario extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -763,21 +721,21 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Each resource contained in the instance.
          */
         public String resourceId() {
-            return getString(PROPERTY_RESOURCE_ID);
+            return getString(FhirPropertyNames.PROPERTY_RESOURCE_ID);
         }
 
         /**
          * A specific version of a resource contained in the instance.
          */
         public String versionId() {
-            return getString(PROPERTY_VERSION_ID);
+            return getString(FhirPropertyNames.PROPERTY_VERSION_ID);
         }
 
         public static class Builder {
@@ -792,27 +750,27 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder resourceId(final String resourceId) {
-                b.add(PROPERTY_RESOURCE_ID, resourceId);
+                b.add(FhirPropertyNames.PROPERTY_RESOURCE_ID, resourceId);
                 return this;
             }
 
             public Builder versionId(final String versionId) {
-                b.add(PROPERTY_VERSION_ID, versionId);
+                b.add(FhirPropertyNames.PROPERTY_VERSION_ID, versionId);
                 return this;
             }
 
@@ -827,15 +785,6 @@ public class ExampleScenario extends FhirResource {
      */
     public static class ExampleScenarioInstance extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioInstance";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_RESOURCE_ID = "resourceId";
-        public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_VERSION = "version";
-        public static final String PROPERTY_CONTAINED_INSTANCE = "containedInstance";
 
         public static Builder create() {
             return new Builder();
@@ -854,7 +803,7 @@ public class ExampleScenario extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -866,7 +815,7 @@ public class ExampleScenario extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -887,42 +836,42 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The id of the resource for referencing.
          */
         public String resourceId() {
-            return getString(PROPERTY_RESOURCE_ID);
+            return getString(FhirPropertyNames.PROPERTY_RESOURCE_ID);
         }
 
         /**
          * The type of the resource.
          */
         public String resourceType() {
-            return getString(PROPERTY_RESOURCE_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_RESOURCE_TYPE);
         }
 
         /**
          * A short name for the resource instance.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * Human-friendly description of the resource instance.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * A specific version of the resource.
          */
         public java.util.List<ExampleScenarioVersion> version() {
-            return getList(ExampleScenarioVersion.class, PROPERTY_VERSION);
+            return getList(ExampleScenarioVersion.class, FhirPropertyNames.PROPERTY_VERSION);
         }
 
         /**
@@ -930,7 +879,7 @@ public class ExampleScenario extends FhirResource {
          * in a bundle).
          */
         public java.util.List<ExampleScenarioContainedInstance> containedInstance() {
-            return getList(ExampleScenarioContainedInstance.class, PROPERTY_CONTAINED_INSTANCE);
+            return getList(ExampleScenarioContainedInstance.class, FhirPropertyNames.PROPERTY_CONTAINED_INSTANCE);
         }
 
         public static class Builder extends FhirResource.Builder {
@@ -944,47 +893,47 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder resourceId(final String resourceId) {
-                b.add(PROPERTY_RESOURCE_ID, resourceId);
+                b.add(FhirPropertyNames.PROPERTY_RESOURCE_ID, resourceId);
                 return this;
             }
 
             public Builder resourceType(final String resourceType) {
-                b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+                b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder version(final java.util.List<ExampleScenarioVersion> version) {
-                b.add(PROPERTY_VERSION, FhirObject.toArray(version));
+                b.add(FhirPropertyNames.PROPERTY_VERSION, FhirObject.toArray(version));
                 return this;
             }
 
             public Builder containedInstance(final java.util.List<ExampleScenarioContainedInstance> containedInstance) {
-                b.add(PROPERTY_CONTAINED_INSTANCE, FhirObject.toArray(containedInstance));
+                b.add(FhirPropertyNames.PROPERTY_CONTAINED_INSTANCE, FhirObject.toArray(containedInstance));
                 return this;
             }
 
@@ -999,19 +948,6 @@ public class ExampleScenario extends FhirResource {
      */
     public static class ExampleScenarioOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioOperation";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_NUMBER = "number";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_INITIATOR = "initiator";
-        public static final String PROPERTY_RECEIVER = "receiver";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_INITIATOR_ACTIVE = "initiatorActive";
-        public static final String PROPERTY_RECEIVER_ACTIVE = "receiverActive";
-        public static final String PROPERTY_REQUEST = "request";
-        public static final String PROPERTY_RESPONSE = "response";
 
         public static Builder create() {
             return new Builder();
@@ -1030,7 +966,7 @@ public class ExampleScenario extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1042,7 +978,7 @@ public class ExampleScenario extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1063,77 +999,77 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The sequential number of the interaction, e.g. 1.2.5.
          */
         public String number() {
-            return getString(PROPERTY_NUMBER);
+            return getString(FhirPropertyNames.PROPERTY_NUMBER);
         }
 
         /**
          * The type of operation - CRUD.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The human-friendly name of the interaction.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * Who starts the transaction.
          */
         public String initiator() {
-            return getString(PROPERTY_INITIATOR);
+            return getString(FhirPropertyNames.PROPERTY_INITIATOR);
         }
 
         /**
          * Who receives the transaction.
          */
         public String receiver() {
-            return getString(PROPERTY_RECEIVER);
+            return getString(FhirPropertyNames.PROPERTY_RECEIVER);
         }
 
         /**
          * A comment to be inserted in the diagram.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * Whether the initiator is deactivated right after the transaction.
          */
         public Boolean initiatorActive() {
-            return data.getBoolean(PROPERTY_INITIATOR_ACTIVE);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_INITIATOR_ACTIVE);
         }
 
         /**
          * Whether the receiver is deactivated right after the transaction.
          */
         public Boolean receiverActive() {
-            return data.getBoolean(PROPERTY_RECEIVER_ACTIVE);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_RECEIVER_ACTIVE);
         }
 
         /**
          * Each resource instance used by the initiator.
          */
         public ExampleScenarioContainedInstance request() {
-            return getObject(ExampleScenarioContainedInstance.class, PROPERTY_REQUEST);
+            return getObject(ExampleScenarioContainedInstance.class, FhirPropertyNames.PROPERTY_REQUEST);
         }
 
         /**
          * Each resource instance used by the responder.
          */
         public ExampleScenarioContainedInstance response() {
-            return getObject(ExampleScenarioContainedInstance.class, PROPERTY_RESPONSE);
+            return getObject(ExampleScenarioContainedInstance.class, FhirPropertyNames.PROPERTY_RESPONSE);
         }
 
         public static class Builder {
@@ -1148,67 +1084,67 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder number(final String number) {
-                b.add(PROPERTY_NUMBER, number);
+                b.add(FhirPropertyNames.PROPERTY_NUMBER, number);
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder initiator(final String initiator) {
-                b.add(PROPERTY_INITIATOR, initiator);
+                b.add(FhirPropertyNames.PROPERTY_INITIATOR, initiator);
                 return this;
             }
 
             public Builder receiver(final String receiver) {
-                b.add(PROPERTY_RECEIVER, receiver);
+                b.add(FhirPropertyNames.PROPERTY_RECEIVER, receiver);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder initiatorActive(final Boolean initiatorActive) {
-                b.add(PROPERTY_INITIATOR_ACTIVE, initiatorActive);
+                b.add(FhirPropertyNames.PROPERTY_INITIATOR_ACTIVE, initiatorActive);
                 return this;
             }
 
             public Builder receiverActive(final Boolean receiverActive) {
-                b.add(PROPERTY_RECEIVER_ACTIVE, receiverActive);
+                b.add(FhirPropertyNames.PROPERTY_RECEIVER_ACTIVE, receiverActive);
                 return this;
             }
 
             public Builder request(final ExampleScenarioContainedInstance request) {
-                b.add(PROPERTY_REQUEST, request);
+                b.add(FhirPropertyNames.PROPERTY_REQUEST, request);
                 return this;
             }
 
             public Builder response(final ExampleScenarioContainedInstance response) {
-                b.add(PROPERTY_RESPONSE, response);
+                b.add(FhirPropertyNames.PROPERTY_RESPONSE, response);
                 return this;
             }
 
@@ -1223,14 +1159,6 @@ public class ExampleScenario extends FhirResource {
      */
     public static class ExampleScenarioProcess extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioProcess";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TITLE = "title";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_PRE_CONDITIONS = "preConditions";
-        public static final String PROPERTY_POST_CONDITIONS = "postConditions";
-        public static final String PROPERTY_STEP = "step";
 
         public static Builder create() {
             return new Builder();
@@ -1249,7 +1177,7 @@ public class ExampleScenario extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1261,7 +1189,7 @@ public class ExampleScenario extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1282,42 +1210,42 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The diagram title of the group of operations.
          */
         public String title() {
-            return getString(PROPERTY_TITLE);
+            return getString(FhirPropertyNames.PROPERTY_TITLE);
         }
 
         /**
          * A longer description of the group of operations.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * Description of initial status before the process starts.
          */
         public String preConditions() {
-            return getString(PROPERTY_PRE_CONDITIONS);
+            return getString(FhirPropertyNames.PROPERTY_PRE_CONDITIONS);
         }
 
         /**
          * Description of final status after the process ends.
          */
         public String postConditions() {
-            return getString(PROPERTY_POST_CONDITIONS);
+            return getString(FhirPropertyNames.PROPERTY_POST_CONDITIONS);
         }
 
         /**
          * Each step of the process.
          */
         public java.util.List<ExampleScenarioStep> step() {
-            return getList(ExampleScenarioStep.class, PROPERTY_STEP);
+            return getList(ExampleScenarioStep.class, FhirPropertyNames.PROPERTY_STEP);
         }
 
         public static class Builder {
@@ -1332,42 +1260,42 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder title(final String title) {
-                b.add(PROPERTY_TITLE, title);
+                b.add(FhirPropertyNames.PROPERTY_TITLE, title);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder preConditions(final String preConditions) {
-                b.add(PROPERTY_PRE_CONDITIONS, preConditions);
+                b.add(FhirPropertyNames.PROPERTY_PRE_CONDITIONS, preConditions);
                 return this;
             }
 
             public Builder postConditions(final String postConditions) {
-                b.add(PROPERTY_POST_CONDITIONS, postConditions);
+                b.add(FhirPropertyNames.PROPERTY_POST_CONDITIONS, postConditions);
                 return this;
             }
 
             public Builder step(final java.util.List<ExampleScenarioStep> step) {
-                b.add(PROPERTY_STEP, FhirObject.toArray(step));
+                b.add(FhirPropertyNames.PROPERTY_STEP, FhirObject.toArray(step));
                 return this;
             }
 
@@ -1382,13 +1310,6 @@ public class ExampleScenario extends FhirResource {
      */
     public static class ExampleScenarioStep extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioStep";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_PROCESS = "process";
-        public static final String PROPERTY_PAUSE = "pause";
-        public static final String PROPERTY_OPERATION = "operation";
-        public static final String PROPERTY_ALTERNATIVE = "alternative";
 
         public static Builder create() {
             return new Builder();
@@ -1407,7 +1328,7 @@ public class ExampleScenario extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1419,7 +1340,7 @@ public class ExampleScenario extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1440,28 +1361,28 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Nested process.
          */
         public java.util.List<ExampleScenarioProcess> process() {
-            return getList(ExampleScenarioProcess.class, PROPERTY_PROCESS);
+            return getList(ExampleScenarioProcess.class, FhirPropertyNames.PROPERTY_PROCESS);
         }
 
         /**
          * If there is a pause in the flow.
          */
         public Boolean pause() {
-            return data.getBoolean(PROPERTY_PAUSE);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_PAUSE);
         }
 
         /**
          * Each interaction or action.
          */
         public ExampleScenarioOperation operation() {
-            return getObject(ExampleScenarioOperation.class, PROPERTY_OPERATION);
+            return getObject(ExampleScenarioOperation.class, FhirPropertyNames.PROPERTY_OPERATION);
         }
 
         /**
@@ -1469,7 +1390,7 @@ public class ExampleScenario extends FhirResource {
          * operations on the base step in exceptional/atypical circumstances.
          */
         public java.util.List<ExampleScenarioAlternative> alternative() {
-            return getList(ExampleScenarioAlternative.class, PROPERTY_ALTERNATIVE);
+            return getList(ExampleScenarioAlternative.class, FhirPropertyNames.PROPERTY_ALTERNATIVE);
         }
 
         public static class Builder {
@@ -1484,37 +1405,37 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder process(final java.util.List<ExampleScenarioProcess> process) {
-                b.add(PROPERTY_PROCESS, FhirObject.toArray(process));
+                b.add(FhirPropertyNames.PROPERTY_PROCESS, FhirObject.toArray(process));
                 return this;
             }
 
             public Builder pause(final Boolean pause) {
-                b.add(PROPERTY_PAUSE, pause);
+                b.add(FhirPropertyNames.PROPERTY_PAUSE, pause);
                 return this;
             }
 
             public Builder operation(final ExampleScenarioOperation operation) {
-                b.add(PROPERTY_OPERATION, operation);
+                b.add(FhirPropertyNames.PROPERTY_OPERATION, operation);
                 return this;
             }
 
             public Builder alternative(final java.util.List<ExampleScenarioAlternative> alternative) {
-                b.add(PROPERTY_ALTERNATIVE, FhirObject.toArray(alternative));
+                b.add(FhirPropertyNames.PROPERTY_ALTERNATIVE, FhirObject.toArray(alternative));
                 return this;
             }
 
@@ -1529,11 +1450,6 @@ public class ExampleScenario extends FhirResource {
      */
     public static class ExampleScenarioVersion extends FhirObject {
         public static final String RESOURCE_TYPE = "ExampleScenarioVersion";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_VERSION_ID = "versionId";
-        public static final String PROPERTY_DESCRIPTION = "description";
 
         public static Builder create() {
             return new Builder();
@@ -1552,7 +1468,7 @@ public class ExampleScenario extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1564,7 +1480,7 @@ public class ExampleScenario extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1585,21 +1501,21 @@ public class ExampleScenario extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The identifier of a specific version of a resource.
          */
         public String versionId() {
-            return getString(PROPERTY_VERSION_ID);
+            return getString(FhirPropertyNames.PROPERTY_VERSION_ID);
         }
 
         /**
          * The description of the resource version.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         public static class Builder {
@@ -1614,27 +1530,27 @@ public class ExampleScenario extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder versionId(final String versionId) {
-                b.add(PROPERTY_VERSION_ID, versionId);
+                b.add(FhirPropertyNames.PROPERTY_VERSION_ID, versionId);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 

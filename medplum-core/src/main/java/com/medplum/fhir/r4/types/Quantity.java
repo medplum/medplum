@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A measured amount (or an amount that can potentially be measured).
  * Note that measured amounts include amounts that are not precisely
@@ -17,13 +19,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Quantity extends FhirResource {
     public static final String RESOURCE_TYPE = "Quantity";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_VALUE = "value";
-    public static final String PROPERTY_COMPARATOR = "comparator";
-    public static final String PROPERTY_UNIT = "unit";
-    public static final String PROPERTY_SYSTEM = "system";
-    public static final String PROPERTY_CODE = "code";
 
     public static Builder create() {
         return new Builder();
@@ -42,7 +37,7 @@ public class Quantity extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -54,7 +49,7 @@ public class Quantity extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -62,7 +57,7 @@ public class Quantity extends FhirResource {
      * precision in the presentation of the value.
      */
     public Double value() {
-        return data.getJsonNumber(PROPERTY_VALUE).doubleValue();
+        return data.getJsonNumber(FhirPropertyNames.PROPERTY_VALUE).doubleValue();
     }
 
     /**
@@ -72,14 +67,14 @@ public class Quantity extends FhirResource {
      * value is &lt; stated value.
      */
     public String comparator() {
-        return getString(PROPERTY_COMPARATOR);
+        return getString(FhirPropertyNames.PROPERTY_COMPARATOR);
     }
 
     /**
      * A human-readable form of the unit.
      */
     public String unit() {
-        return getString(PROPERTY_UNIT);
+        return getString(FhirPropertyNames.PROPERTY_UNIT);
     }
 
     /**
@@ -87,7 +82,7 @@ public class Quantity extends FhirResource {
      * unit.
      */
     public java.net.URI system() {
-        return getUri(PROPERTY_SYSTEM);
+        return getUri(FhirPropertyNames.PROPERTY_SYSTEM);
     }
 
     /**
@@ -95,7 +90,7 @@ public class Quantity extends FhirResource {
      * system.
      */
     public String code() {
-        return getString(PROPERTY_CODE);
+        return getString(FhirPropertyNames.PROPERTY_CODE);
     }
 
     public static class Builder {
@@ -110,37 +105,37 @@ public class Quantity extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder value(final Double value) {
-            b.add(PROPERTY_VALUE, value);
+            b.add(FhirPropertyNames.PROPERTY_VALUE, value);
             return this;
         }
 
         public Builder comparator(final String comparator) {
-            b.add(PROPERTY_COMPARATOR, comparator);
+            b.add(FhirPropertyNames.PROPERTY_COMPARATOR, comparator);
             return this;
         }
 
         public Builder unit(final String unit) {
-            b.add(PROPERTY_UNIT, unit);
+            b.add(FhirPropertyNames.PROPERTY_UNIT, unit);
             return this;
         }
 
         public Builder system(final java.net.URI system) {
-            b.add(PROPERTY_SYSTEM, system.toString());
+            b.add(FhirPropertyNames.PROPERTY_SYSTEM, system.toString());
             return this;
         }
 
         public Builder code(final String code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 

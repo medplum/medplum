@@ -9,38 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Financial instrument which may be used to reimburse or pay for health
  * care products and services. Includes both insurance and self-payment.
  */
 public class Coverage extends FhirResource {
     public static final String RESOURCE_TYPE = "Coverage";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_POLICY_HOLDER = "policyHolder";
-    public static final String PROPERTY_SUBSCRIBER = "subscriber";
-    public static final String PROPERTY_SUBSCRIBER_ID = "subscriberId";
-    public static final String PROPERTY_BENEFICIARY = "beneficiary";
-    public static final String PROPERTY_DEPENDENT = "dependent";
-    public static final String PROPERTY_RELATIONSHIP = "relationship";
-    public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_PAYOR = "payor";
-    public static final String PROPERTY_CLASS = "class";
-    public static final String PROPERTY_ORDER = "order";
-    public static final String PROPERTY_NETWORK = "network";
-    public static final String PROPERTY_COST_TO_BENEFICIARY = "costToBeneficiary";
-    public static final String PROPERTY_SUBROGATION = "subrogation";
-    public static final String PROPERTY_CONTRACT = "contract";
 
     public static Builder create() {
         return new Builder();
@@ -61,14 +37,14 @@ public class Coverage extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -80,7 +56,7 @@ public class Coverage extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -89,7 +65,7 @@ public class Coverage extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -101,7 +77,7 @@ public class Coverage extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -121,21 +97,21 @@ public class Coverage extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * A unique identifier assigned to this coverage.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * The status of the resource instance.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -144,14 +120,14 @@ public class Coverage extends FhirResource {
      * or organization.
      */
     public CodeableConcept type() {
-        return getObject(CodeableConcept.class, PROPERTY_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
      * The party who 'owns' the insurance policy.
      */
     public Reference policyHolder() {
-        return getObject(Reference.class, PROPERTY_POLICY_HOLDER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_POLICY_HOLDER);
     }
 
     /**
@@ -160,14 +136,14 @@ public class Coverage extends FhirResource {
      * rendered to them or their family is due.
      */
     public Reference subscriber() {
-        return getObject(Reference.class, PROPERTY_SUBSCRIBER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBSCRIBER);
     }
 
     /**
      * The insurer assigned ID for the Subscriber.
      */
     public String subscriberId() {
-        return getString(PROPERTY_SUBSCRIBER_ID);
+        return getString(FhirPropertyNames.PROPERTY_SUBSCRIBER_ID);
     }
 
     /**
@@ -175,21 +151,21 @@ public class Coverage extends FhirResource {
      * products and/or services are provided.
      */
     public Reference beneficiary() {
-        return getObject(Reference.class, PROPERTY_BENEFICIARY);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_BENEFICIARY);
     }
 
     /**
      * A unique identifier for a dependent under the coverage.
      */
     public String dependent() {
-        return getString(PROPERTY_DEPENDENT);
+        return getString(FhirPropertyNames.PROPERTY_DEPENDENT);
     }
 
     /**
      * The relationship of beneficiary (patient) to the subscriber.
      */
     public CodeableConcept relationship() {
-        return getObject(CodeableConcept.class, PROPERTY_RELATIONSHIP);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_RELATIONSHIP);
     }
 
     /**
@@ -198,7 +174,7 @@ public class Coverage extends FhirResource {
      * the coverage is continuing to be in force.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     /**
@@ -206,14 +182,14 @@ public class Coverage extends FhirResource {
      * non-insurance agreements, such as patient-pay agreements.
      */
     public java.util.List<Reference> payor() {
-        return getList(Reference.class, PROPERTY_PAYOR);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_PAYOR);
     }
 
     /**
      * A suite of underwriter specific classifiers.
      */
     public java.util.List<CoverageClass> classValue() {
-        return getList(CoverageClass.class, PROPERTY_CLASS);
+        return getList(CoverageClass.class, FhirPropertyNames.PROPERTY_CLASS);
     }
 
     /**
@@ -223,7 +199,7 @@ public class Coverage extends FhirResource {
      * specific positioning of coverages depends upon the episode of care.
      */
     public Integer order() {
-        return data.getInt(PROPERTY_ORDER);
+        return data.getInt(FhirPropertyNames.PROPERTY_ORDER);
     }
 
     /**
@@ -233,7 +209,7 @@ public class Coverage extends FhirResource {
      * conditions apply.
      */
     public String network() {
-        return getString(PROPERTY_NETWORK);
+        return getString(FhirPropertyNames.PROPERTY_NETWORK);
     }
 
     /**
@@ -242,7 +218,7 @@ public class Coverage extends FhirResource {
      * the health card.
      */
     public java.util.List<CoverageCostToBeneficiary> costToBeneficiary() {
-        return getList(CoverageCostToBeneficiary.class, PROPERTY_COST_TO_BENEFICIARY);
+        return getList(CoverageCostToBeneficiary.class, FhirPropertyNames.PROPERTY_COST_TO_BENEFICIARY);
     }
 
     /**
@@ -251,14 +227,14 @@ public class Coverage extends FhirResource {
      * costs.
      */
     public Boolean subrogation() {
-        return data.getBoolean(PROPERTY_SUBROGATION);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_SUBROGATION);
     }
 
     /**
      * The policy(s) which constitute this insurance coverage.
      */
     public java.util.List<Reference> contract() {
-        return getList(Reference.class, PROPERTY_CONTRACT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_CONTRACT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -272,132 +248,132 @@ public class Coverage extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder type(final CodeableConcept type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder policyHolder(final Reference policyHolder) {
-            b.add(PROPERTY_POLICY_HOLDER, policyHolder);
+            b.add(FhirPropertyNames.PROPERTY_POLICY_HOLDER, policyHolder);
             return this;
         }
 
         public Builder subscriber(final Reference subscriber) {
-            b.add(PROPERTY_SUBSCRIBER, subscriber);
+            b.add(FhirPropertyNames.PROPERTY_SUBSCRIBER, subscriber);
             return this;
         }
 
         public Builder subscriberId(final String subscriberId) {
-            b.add(PROPERTY_SUBSCRIBER_ID, subscriberId);
+            b.add(FhirPropertyNames.PROPERTY_SUBSCRIBER_ID, subscriberId);
             return this;
         }
 
         public Builder beneficiary(final Reference beneficiary) {
-            b.add(PROPERTY_BENEFICIARY, beneficiary);
+            b.add(FhirPropertyNames.PROPERTY_BENEFICIARY, beneficiary);
             return this;
         }
 
         public Builder dependent(final String dependent) {
-            b.add(PROPERTY_DEPENDENT, dependent);
+            b.add(FhirPropertyNames.PROPERTY_DEPENDENT, dependent);
             return this;
         }
 
         public Builder relationship(final CodeableConcept relationship) {
-            b.add(PROPERTY_RELATIONSHIP, relationship);
+            b.add(FhirPropertyNames.PROPERTY_RELATIONSHIP, relationship);
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 
         public Builder payor(final java.util.List<Reference> payor) {
-            b.add(PROPERTY_PAYOR, FhirObject.toArray(payor));
+            b.add(FhirPropertyNames.PROPERTY_PAYOR, FhirObject.toArray(payor));
             return this;
         }
 
         public Builder classValue(final java.util.List<CoverageClass> classValue) {
-            b.add(PROPERTY_CLASS, FhirObject.toArray(classValue));
+            b.add(FhirPropertyNames.PROPERTY_CLASS, FhirObject.toArray(classValue));
             return this;
         }
 
         public Builder order(final Integer order) {
-            b.add(PROPERTY_ORDER, order);
+            b.add(FhirPropertyNames.PROPERTY_ORDER, order);
             return this;
         }
 
         public Builder network(final String network) {
-            b.add(PROPERTY_NETWORK, network);
+            b.add(FhirPropertyNames.PROPERTY_NETWORK, network);
             return this;
         }
 
         public Builder costToBeneficiary(final java.util.List<CoverageCostToBeneficiary> costToBeneficiary) {
-            b.add(PROPERTY_COST_TO_BENEFICIARY, FhirObject.toArray(costToBeneficiary));
+            b.add(FhirPropertyNames.PROPERTY_COST_TO_BENEFICIARY, FhirObject.toArray(costToBeneficiary));
             return this;
         }
 
         public Builder subrogation(final Boolean subrogation) {
-            b.add(PROPERTY_SUBROGATION, subrogation);
+            b.add(FhirPropertyNames.PROPERTY_SUBROGATION, subrogation);
             return this;
         }
 
         public Builder contract(final java.util.List<Reference> contract) {
-            b.add(PROPERTY_CONTRACT, FhirObject.toArray(contract));
+            b.add(FhirPropertyNames.PROPERTY_CONTRACT, FhirObject.toArray(contract));
             return this;
         }
 
@@ -412,12 +388,6 @@ public class Coverage extends FhirResource {
      */
     public static class CoverageClass extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageClass";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_VALUE = "value";
-        public static final String PROPERTY_NAME = "name";
 
         public static Builder create() {
             return new Builder();
@@ -436,7 +406,7 @@ public class Coverage extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -448,7 +418,7 @@ public class Coverage extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -469,7 +439,7 @@ public class Coverage extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -478,7 +448,7 @@ public class Coverage extends FhirResource {
          * identify a class of coverage or employer group, Policy, Plan.
          */
         public CodeableConcept type() {
-            return getObject(CodeableConcept.class, PROPERTY_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
@@ -486,14 +456,14 @@ public class Coverage extends FhirResource {
          * label.
          */
         public String value() {
-            return getString(PROPERTY_VALUE);
+            return getString(FhirPropertyNames.PROPERTY_VALUE);
         }
 
         /**
          * A short description for the class.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         public static class Builder {
@@ -508,32 +478,32 @@ public class Coverage extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final CodeableConcept type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder value(final String value) {
-                b.add(PROPERTY_VALUE, value);
+                b.add(FhirPropertyNames.PROPERTY_VALUE, value);
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
@@ -549,13 +519,6 @@ public class Coverage extends FhirResource {
      */
     public static class CoverageCostToBeneficiary extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageCostToBeneficiary";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUE_MONEY = "valueMoney";
-        public static final String PROPERTY_EXCEPTION = "exception";
 
         public static Builder create() {
             return new Builder();
@@ -574,7 +537,7 @@ public class Coverage extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -586,7 +549,7 @@ public class Coverage extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -607,28 +570,28 @@ public class Coverage extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The category of patient centric costs associated with treatment.
          */
         public CodeableConcept type() {
-            return getObject(CodeableConcept.class, PROPERTY_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The amount due from the patient for the cost category.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_VALUE_QUANTITY);
         }
 
         /**
          * The amount due from the patient for the cost category.
          */
         public Money valueMoney() {
-            return getObject(Money.class, PROPERTY_VALUE_MONEY);
+            return getObject(Money.class, FhirPropertyNames.PROPERTY_VALUE_MONEY);
         }
 
         /**
@@ -636,7 +599,7 @@ public class Coverage extends FhirResource {
          * and their effective periods.
          */
         public java.util.List<CoverageException> exception() {
-            return getList(CoverageException.class, PROPERTY_EXCEPTION);
+            return getList(CoverageException.class, FhirPropertyNames.PROPERTY_EXCEPTION);
         }
 
         public static class Builder {
@@ -651,37 +614,37 @@ public class Coverage extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final CodeableConcept type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueMoney(final Money valueMoney) {
-                b.add(PROPERTY_VALUE_MONEY, valueMoney);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_MONEY, valueMoney);
                 return this;
             }
 
             public Builder exception(final java.util.List<CoverageException> exception) {
-                b.add(PROPERTY_EXCEPTION, FhirObject.toArray(exception));
+                b.add(FhirPropertyNames.PROPERTY_EXCEPTION, FhirObject.toArray(exception));
                 return this;
             }
 
@@ -697,11 +660,6 @@ public class Coverage extends FhirResource {
      */
     public static class CoverageException extends FhirObject {
         public static final String RESOURCE_TYPE = "CoverageException";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_PERIOD = "period";
 
         public static Builder create() {
             return new Builder();
@@ -720,7 +678,7 @@ public class Coverage extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -732,7 +690,7 @@ public class Coverage extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -753,21 +711,21 @@ public class Coverage extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The code for the specific exception.
          */
         public CodeableConcept type() {
-            return getObject(CodeableConcept.class, PROPERTY_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The timeframe during when the exception is in force.
          */
         public Period period() {
-            return getObject(Period.class, PROPERTY_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
         }
 
         public static class Builder {
@@ -782,27 +740,27 @@ public class Coverage extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final CodeableConcept type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder period(final Period period) {
-                b.add(PROPERTY_PERIOD, period);
+                b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
                 return this;
             }
 

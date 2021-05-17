@@ -52,6 +52,7 @@ public class Generator {
         final List<FhirType> outputTypes = new ArrayList<>(parentTypes.values());
         Collections.sort(outputTypes, (o1, o2) -> o1.getOutputName().compareTo(o2.getOutputName()));
 
+        JavaGenerator.writePropertyNames(fhirTypes);
         TypeScriptGenerator.writeIndexFile(outputTypes);
         TypeScriptGenerator.writeResourceFile(outputTypes);
 

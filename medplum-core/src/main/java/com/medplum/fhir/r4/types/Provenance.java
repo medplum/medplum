@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Provenance of a resource is a record that describes entities and
  * processes involved in producing and delivering or otherwise
@@ -24,26 +26,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Provenance extends FhirResource {
     public static final String RESOURCE_TYPE = "Provenance";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_TARGET = "target";
-    public static final String PROPERTY_OCCURRED_PERIOD = "occurredPeriod";
-    public static final String PROPERTY_OCCURRED_DATE_TIME = "occurredDateTime";
-    public static final String PROPERTY_RECORDED = "recorded";
-    public static final String PROPERTY_POLICY = "policy";
-    public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_REASON = "reason";
-    public static final String PROPERTY_ACTIVITY = "activity";
-    public static final String PROPERTY_AGENT = "agent";
-    public static final String PROPERTY_ENTITY = "entity";
-    public static final String PROPERTY_SIGNATURE = "signature";
 
     public static Builder create() {
         return new Builder();
@@ -64,14 +46,14 @@ public class Provenance extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -83,7 +65,7 @@ public class Provenance extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -92,7 +74,7 @@ public class Provenance extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -104,7 +86,7 @@ public class Provenance extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -124,7 +106,7 @@ public class Provenance extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -134,28 +116,28 @@ public class Provenance extends FhirResource {
      * activity.
      */
     public java.util.List<Reference> target() {
-        return getList(Reference.class, PROPERTY_TARGET);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_TARGET);
     }
 
     /**
      * The period during which the activity occurred.
      */
     public Period occurredPeriod() {
-        return getObject(Period.class, PROPERTY_OCCURRED_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_OCCURRED_PERIOD);
     }
 
     /**
      * The period during which the activity occurred.
      */
     public String occurredDateTime() {
-        return getString(PROPERTY_OCCURRED_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_OCCURRED_DATE_TIME);
     }
 
     /**
      * The instant of time at which the activity was recorded.
      */
     public java.time.Instant recorded() {
-        return getInstant(PROPERTY_RECORDED);
+        return getInstant(FhirPropertyNames.PROPERTY_RECORDED);
     }
 
     /**
@@ -164,21 +146,21 @@ public class Provenance extends FhirResource {
      * patient consent, guarantor funding, etc.
      */
     public java.util.List<java.net.URI> policy() {
-        return getList(java.net.URI.class, PROPERTY_POLICY);
+        return getList(java.net.URI.class, FhirPropertyNames.PROPERTY_POLICY);
     }
 
     /**
      * Where the activity occurred, if relevant.
      */
     public Reference location() {
-        return getObject(Reference.class, PROPERTY_LOCATION);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_LOCATION);
     }
 
     /**
      * The reason that the activity was taking place.
      */
     public java.util.List<CodeableConcept> reason() {
-        return getList(CodeableConcept.class, PROPERTY_REASON);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_REASON);
     }
 
     /**
@@ -187,7 +169,7 @@ public class Provenance extends FhirResource {
      * transforming, modifying, relocating, using, or generating entities.
      */
     public CodeableConcept activity() {
-        return getObject(CodeableConcept.class, PROPERTY_ACTIVITY);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ACTIVITY);
     }
 
     /**
@@ -195,14 +177,14 @@ public class Provenance extends FhirResource {
      * some degree of responsibility for the activity taking place.
      */
     public java.util.List<ProvenanceAgent> agent() {
-        return getList(ProvenanceAgent.class, PROPERTY_AGENT);
+        return getList(ProvenanceAgent.class, FhirPropertyNames.PROPERTY_AGENT);
     }
 
     /**
      * An entity used in this activity.
      */
     public java.util.List<ProvenanceEntity> entity() {
-        return getList(ProvenanceEntity.class, PROPERTY_ENTITY);
+        return getList(ProvenanceEntity.class, FhirPropertyNames.PROPERTY_ENTITY);
     }
 
     /**
@@ -210,7 +192,7 @@ public class Provenance extends FhirResource {
      * match a Provenance.agent. The purpose of the signature is indicated.
      */
     public java.util.List<Signature> signature() {
-        return getList(Signature.class, PROPERTY_SIGNATURE);
+        return getList(Signature.class, FhirPropertyNames.PROPERTY_SIGNATURE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -224,102 +206,102 @@ public class Provenance extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder target(final java.util.List<Reference> target) {
-            b.add(PROPERTY_TARGET, FhirObject.toArray(target));
+            b.add(FhirPropertyNames.PROPERTY_TARGET, FhirObject.toArray(target));
             return this;
         }
 
         public Builder occurredPeriod(final Period occurredPeriod) {
-            b.add(PROPERTY_OCCURRED_PERIOD, occurredPeriod);
+            b.add(FhirPropertyNames.PROPERTY_OCCURRED_PERIOD, occurredPeriod);
             return this;
         }
 
         public Builder occurredDateTime(final String occurredDateTime) {
-            b.add(PROPERTY_OCCURRED_DATE_TIME, occurredDateTime);
+            b.add(FhirPropertyNames.PROPERTY_OCCURRED_DATE_TIME, occurredDateTime);
             return this;
         }
 
         public Builder recorded(final java.time.Instant recorded) {
-            b.add(PROPERTY_RECORDED, recorded.toString());
+            b.add(FhirPropertyNames.PROPERTY_RECORDED, recorded.toString());
             return this;
         }
 
         public Builder policy(final java.util.List<java.net.URI> policy) {
-            b.add(PROPERTY_POLICY, FhirObject.toUriArray(policy));
+            b.add(FhirPropertyNames.PROPERTY_POLICY, FhirObject.toUriArray(policy));
             return this;
         }
 
         public Builder location(final Reference location) {
-            b.add(PROPERTY_LOCATION, location);
+            b.add(FhirPropertyNames.PROPERTY_LOCATION, location);
             return this;
         }
 
         public Builder reason(final java.util.List<CodeableConcept> reason) {
-            b.add(PROPERTY_REASON, FhirObject.toArray(reason));
+            b.add(FhirPropertyNames.PROPERTY_REASON, FhirObject.toArray(reason));
             return this;
         }
 
         public Builder activity(final CodeableConcept activity) {
-            b.add(PROPERTY_ACTIVITY, activity);
+            b.add(FhirPropertyNames.PROPERTY_ACTIVITY, activity);
             return this;
         }
 
         public Builder agent(final java.util.List<ProvenanceAgent> agent) {
-            b.add(PROPERTY_AGENT, FhirObject.toArray(agent));
+            b.add(FhirPropertyNames.PROPERTY_AGENT, FhirObject.toArray(agent));
             return this;
         }
 
         public Builder entity(final java.util.List<ProvenanceEntity> entity) {
-            b.add(PROPERTY_ENTITY, FhirObject.toArray(entity));
+            b.add(FhirPropertyNames.PROPERTY_ENTITY, FhirObject.toArray(entity));
             return this;
         }
 
         public Builder signature(final java.util.List<Signature> signature) {
-            b.add(PROPERTY_SIGNATURE, FhirObject.toArray(signature));
+            b.add(FhirPropertyNames.PROPERTY_SIGNATURE, FhirObject.toArray(signature));
             return this;
         }
 
@@ -343,13 +325,6 @@ public class Provenance extends FhirResource {
      */
     public static class ProvenanceAgent extends FhirObject {
         public static final String RESOURCE_TYPE = "ProvenanceAgent";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_ROLE = "role";
-        public static final String PROPERTY_WHO = "who";
-        public static final String PROPERTY_ON_BEHALF_OF = "onBehalfOf";
 
         public static Builder create() {
             return new Builder();
@@ -368,7 +343,7 @@ public class Provenance extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -380,7 +355,7 @@ public class Provenance extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -401,14 +376,14 @@ public class Provenance extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The participation the agent had with respect to the activity.
          */
         public CodeableConcept type() {
-            return getObject(CodeableConcept.class, PROPERTY_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
@@ -416,21 +391,21 @@ public class Provenance extends FhirResource {
          * role enabling the agent with respect to the activity.
          */
         public java.util.List<CodeableConcept> role() {
-            return getList(CodeableConcept.class, PROPERTY_ROLE);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_ROLE);
         }
 
         /**
          * The individual, device or organization that participated in the event.
          */
         public Reference who() {
-            return getObject(Reference.class, PROPERTY_WHO);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_WHO);
         }
 
         /**
          * The individual, device, or organization for whom the change was made.
          */
         public Reference onBehalfOf() {
-            return getObject(Reference.class, PROPERTY_ON_BEHALF_OF);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_ON_BEHALF_OF);
         }
 
         public static class Builder {
@@ -445,37 +420,37 @@ public class Provenance extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final CodeableConcept type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder role(final java.util.List<CodeableConcept> role) {
-                b.add(PROPERTY_ROLE, FhirObject.toArray(role));
+                b.add(FhirPropertyNames.PROPERTY_ROLE, FhirObject.toArray(role));
                 return this;
             }
 
             public Builder who(final Reference who) {
-                b.add(PROPERTY_WHO, who);
+                b.add(FhirPropertyNames.PROPERTY_WHO, who);
                 return this;
             }
 
             public Builder onBehalfOf(final Reference onBehalfOf) {
-                b.add(PROPERTY_ON_BEHALF_OF, onBehalfOf);
+                b.add(FhirPropertyNames.PROPERTY_ON_BEHALF_OF, onBehalfOf);
                 return this;
             }
 
@@ -500,12 +475,6 @@ public class Provenance extends FhirResource {
      */
     public static class ProvenanceEntity extends FhirObject {
         public static final String RESOURCE_TYPE = "ProvenanceEntity";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ROLE = "role";
-        public static final String PROPERTY_WHAT = "what";
-        public static final String PROPERTY_AGENT = "agent";
 
         public static Builder create() {
             return new Builder();
@@ -524,7 +493,7 @@ public class Provenance extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -536,7 +505,7 @@ public class Provenance extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -557,14 +526,14 @@ public class Provenance extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * How the entity was used during the activity.
          */
         public String role() {
-            return getString(PROPERTY_ROLE);
+            return getString(FhirPropertyNames.PROPERTY_ROLE);
         }
 
         /**
@@ -572,7 +541,7 @@ public class Provenance extends FhirResource {
          * maybe absolute or relative.
          */
         public Reference what() {
-            return getObject(Reference.class, PROPERTY_WHAT);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_WHAT);
         }
 
         /**
@@ -582,7 +551,7 @@ public class Provenance extends FhirResource {
          * was responsible for the activity which generated the entity.
          */
         public java.util.List<ProvenanceAgent> agent() {
-            return getList(ProvenanceAgent.class, PROPERTY_AGENT);
+            return getList(ProvenanceAgent.class, FhirPropertyNames.PROPERTY_AGENT);
         }
 
         public static class Builder {
@@ -597,32 +566,32 @@ public class Provenance extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder role(final String role) {
-                b.add(PROPERTY_ROLE, role);
+                b.add(FhirPropertyNames.PROPERTY_ROLE, role);
                 return this;
             }
 
             public Builder what(final Reference what) {
-                b.add(PROPERTY_WHAT, what);
+                b.add(FhirPropertyNames.PROPERTY_WHAT, what);
                 return this;
             }
 
             public Builder agent(final java.util.List<ProvenanceAgent> agent) {
-                b.add(PROPERTY_AGENT, FhirObject.toArray(agent));
+                b.add(FhirPropertyNames.PROPERTY_AGENT, FhirObject.toArray(agent));
                 return this;
             }
 

@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Details and position information for a physical place where services
  * are provided and resources and participants may be stored, found,
@@ -16,32 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Location extends FhirResource {
     public static final String RESOURCE_TYPE = "Location";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_OPERATIONAL_STATUS = "operationalStatus";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_ALIAS = "alias";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_MODE = "mode";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_TELECOM = "telecom";
-    public static final String PROPERTY_ADDRESS = "address";
-    public static final String PROPERTY_PHYSICAL_TYPE = "physicalType";
-    public static final String PROPERTY_POSITION = "position";
-    public static final String PROPERTY_MANAGING_ORGANIZATION = "managingOrganization";
-    public static final String PROPERTY_PART_OF = "partOf";
-    public static final String PROPERTY_HOURS_OF_OPERATION = "hoursOfOperation";
-    public static final String PROPERTY_AVAILABILITY_EXCEPTIONS = "availabilityExceptions";
-    public static final String PROPERTY_ENDPOINT = "endpoint";
 
     public static Builder create() {
         return new Builder();
@@ -62,14 +38,14 @@ public class Location extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -81,7 +57,7 @@ public class Location extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -90,7 +66,7 @@ public class Location extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -102,7 +78,7 @@ public class Location extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -122,14 +98,14 @@ public class Location extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Unique code or number identifying the location to its users.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -138,7 +114,7 @@ public class Location extends FhirResource {
      * by a schedule/slots if they are configured for the location.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -148,14 +124,14 @@ public class Location extends FhirResource {
      * contamination, housekeeping, and other activities like maintenance.
      */
     public Coding operationalStatus() {
-        return getObject(Coding.class, PROPERTY_OPERATIONAL_STATUS);
+        return getObject(Coding.class, FhirPropertyNames.PROPERTY_OPERATIONAL_STATUS);
     }
 
     /**
      * Name of the location as used by humans. Does not need to be unique.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -163,7 +139,7 @@ public class Location extends FhirResource {
      * as, in the past.
      */
     public java.util.List<String> alias() {
-        return getList(String.class, PROPERTY_ALIAS);
+        return getList(String.class, FhirPropertyNames.PROPERTY_ALIAS);
     }
 
     /**
@@ -171,7 +147,7 @@ public class Location extends FhirResource {
      * place.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -179,14 +155,14 @@ public class Location extends FhirResource {
      * or a class of locations.
      */
     public String mode() {
-        return getString(PROPERTY_MODE);
+        return getString(FhirPropertyNames.PROPERTY_MODE);
     }
 
     /**
      * Indicates the type of function performed at the location.
      */
     public java.util.List<CodeableConcept> type() {
-        return getList(CodeableConcept.class, PROPERTY_TYPE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -195,21 +171,21 @@ public class Location extends FhirResource {
      * email addresses and web sites.
      */
     public java.util.List<ContactPoint> telecom() {
-        return getList(ContactPoint.class, PROPERTY_TELECOM);
+        return getList(ContactPoint.class, FhirPropertyNames.PROPERTY_TELECOM);
     }
 
     /**
      * Physical location.
      */
     public Address address() {
-        return getObject(Address.class, PROPERTY_ADDRESS);
+        return getObject(Address.class, FhirPropertyNames.PROPERTY_ADDRESS);
     }
 
     /**
      * Physical form of the location, e.g. building, room, vehicle, road.
      */
     public CodeableConcept physicalType() {
-        return getObject(CodeableConcept.class, PROPERTY_PHYSICAL_TYPE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PHYSICAL_TYPE);
     }
 
     /**
@@ -217,7 +193,7 @@ public class Location extends FhirResource {
      * WGS84 datum (This is the same co-ordinate system used in KML).
      */
     public LocationPosition position() {
-        return getObject(LocationPosition.class, PROPERTY_POSITION);
+        return getObject(LocationPosition.class, FhirPropertyNames.PROPERTY_POSITION);
     }
 
     /**
@@ -225,21 +201,21 @@ public class Location extends FhirResource {
      * location.
      */
     public Reference managingOrganization() {
-        return getObject(Reference.class, PROPERTY_MANAGING_ORGANIZATION);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_MANAGING_ORGANIZATION);
     }
 
     /**
      * Another Location of which this Location is physically a part of.
      */
     public Reference partOf() {
-        return getObject(Reference.class, PROPERTY_PART_OF);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PART_OF);
     }
 
     /**
      * What days/times during a week is this location usually open.
      */
     public java.util.List<LocationHoursOfOperation> hoursOfOperation() {
-        return getList(LocationHoursOfOperation.class, PROPERTY_HOURS_OF_OPERATION);
+        return getList(LocationHoursOfOperation.class, FhirPropertyNames.PROPERTY_HOURS_OF_OPERATION);
     }
 
     /**
@@ -249,7 +225,7 @@ public class Location extends FhirResource {
      * opening hours Times.
      */
     public String availabilityExceptions() {
-        return getString(PROPERTY_AVAILABILITY_EXCEPTIONS);
+        return getString(FhirPropertyNames.PROPERTY_AVAILABILITY_EXCEPTIONS);
     }
 
     /**
@@ -257,7 +233,7 @@ public class Location extends FhirResource {
      * location.
      */
     public java.util.List<Reference> endpoint() {
-        return getList(Reference.class, PROPERTY_ENDPOINT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_ENDPOINT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -271,132 +247,132 @@ public class Location extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder operationalStatus(final Coding operationalStatus) {
-            b.add(PROPERTY_OPERATIONAL_STATUS, operationalStatus);
+            b.add(FhirPropertyNames.PROPERTY_OPERATIONAL_STATUS, operationalStatus);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder alias(final java.util.List<String> alias) {
-            b.add(PROPERTY_ALIAS, FhirObject.toStringArray(alias));
+            b.add(FhirPropertyNames.PROPERTY_ALIAS, FhirObject.toStringArray(alias));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder mode(final String mode) {
-            b.add(PROPERTY_MODE, mode);
+            b.add(FhirPropertyNames.PROPERTY_MODE, mode);
             return this;
         }
 
         public Builder type(final java.util.List<CodeableConcept> type) {
-            b.add(PROPERTY_TYPE, FhirObject.toArray(type));
+            b.add(FhirPropertyNames.PROPERTY_TYPE, FhirObject.toArray(type));
             return this;
         }
 
         public Builder telecom(final java.util.List<ContactPoint> telecom) {
-            b.add(PROPERTY_TELECOM, FhirObject.toArray(telecom));
+            b.add(FhirPropertyNames.PROPERTY_TELECOM, FhirObject.toArray(telecom));
             return this;
         }
 
         public Builder address(final Address address) {
-            b.add(PROPERTY_ADDRESS, address);
+            b.add(FhirPropertyNames.PROPERTY_ADDRESS, address);
             return this;
         }
 
         public Builder physicalType(final CodeableConcept physicalType) {
-            b.add(PROPERTY_PHYSICAL_TYPE, physicalType);
+            b.add(FhirPropertyNames.PROPERTY_PHYSICAL_TYPE, physicalType);
             return this;
         }
 
         public Builder position(final LocationPosition position) {
-            b.add(PROPERTY_POSITION, position);
+            b.add(FhirPropertyNames.PROPERTY_POSITION, position);
             return this;
         }
 
         public Builder managingOrganization(final Reference managingOrganization) {
-            b.add(PROPERTY_MANAGING_ORGANIZATION, managingOrganization);
+            b.add(FhirPropertyNames.PROPERTY_MANAGING_ORGANIZATION, managingOrganization);
             return this;
         }
 
         public Builder partOf(final Reference partOf) {
-            b.add(PROPERTY_PART_OF, partOf);
+            b.add(FhirPropertyNames.PROPERTY_PART_OF, partOf);
             return this;
         }
 
         public Builder hoursOfOperation(final java.util.List<LocationHoursOfOperation> hoursOfOperation) {
-            b.add(PROPERTY_HOURS_OF_OPERATION, FhirObject.toArray(hoursOfOperation));
+            b.add(FhirPropertyNames.PROPERTY_HOURS_OF_OPERATION, FhirObject.toArray(hoursOfOperation));
             return this;
         }
 
         public Builder availabilityExceptions(final String availabilityExceptions) {
-            b.add(PROPERTY_AVAILABILITY_EXCEPTIONS, availabilityExceptions);
+            b.add(FhirPropertyNames.PROPERTY_AVAILABILITY_EXCEPTIONS, availabilityExceptions);
             return this;
         }
 
         public Builder endpoint(final java.util.List<Reference> endpoint) {
-            b.add(PROPERTY_ENDPOINT, FhirObject.toArray(endpoint));
+            b.add(FhirPropertyNames.PROPERTY_ENDPOINT, FhirObject.toArray(endpoint));
             return this;
         }
 
@@ -412,13 +388,6 @@ public class Location extends FhirResource {
      */
     public static class LocationHoursOfOperation extends FhirObject {
         public static final String RESOURCE_TYPE = "LocationHoursOfOperation";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_DAYS_OF_WEEK = "daysOfWeek";
-        public static final String PROPERTY_ALL_DAY = "allDay";
-        public static final String PROPERTY_OPENING_TIME = "openingTime";
-        public static final String PROPERTY_CLOSING_TIME = "closingTime";
 
         public static Builder create() {
             return new Builder();
@@ -437,7 +406,7 @@ public class Location extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -449,7 +418,7 @@ public class Location extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -470,7 +439,7 @@ public class Location extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -478,28 +447,28 @@ public class Location extends FhirResource {
          * end Times.
          */
         public java.util.List<String> daysOfWeek() {
-            return getList(String.class, PROPERTY_DAYS_OF_WEEK);
+            return getList(String.class, FhirPropertyNames.PROPERTY_DAYS_OF_WEEK);
         }
 
         /**
          * The Location is open all day.
          */
         public Boolean allDay() {
-            return data.getBoolean(PROPERTY_ALL_DAY);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_ALL_DAY);
         }
 
         /**
          * Time that the Location opens.
          */
         public java.time.Instant openingTime() {
-            return getInstant(PROPERTY_OPENING_TIME);
+            return getInstant(FhirPropertyNames.PROPERTY_OPENING_TIME);
         }
 
         /**
          * Time that the Location closes.
          */
         public java.time.Instant closingTime() {
-            return getInstant(PROPERTY_CLOSING_TIME);
+            return getInstant(FhirPropertyNames.PROPERTY_CLOSING_TIME);
         }
 
         public static class Builder {
@@ -514,37 +483,37 @@ public class Location extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder daysOfWeek(final java.util.List<String> daysOfWeek) {
-                b.add(PROPERTY_DAYS_OF_WEEK, FhirObject.toStringArray(daysOfWeek));
+                b.add(FhirPropertyNames.PROPERTY_DAYS_OF_WEEK, FhirObject.toStringArray(daysOfWeek));
                 return this;
             }
 
             public Builder allDay(final Boolean allDay) {
-                b.add(PROPERTY_ALL_DAY, allDay);
+                b.add(FhirPropertyNames.PROPERTY_ALL_DAY, allDay);
                 return this;
             }
 
             public Builder openingTime(final java.time.Instant openingTime) {
-                b.add(PROPERTY_OPENING_TIME, openingTime.toString());
+                b.add(FhirPropertyNames.PROPERTY_OPENING_TIME, openingTime.toString());
                 return this;
             }
 
             public Builder closingTime(final java.time.Instant closingTime) {
-                b.add(PROPERTY_CLOSING_TIME, closingTime.toString());
+                b.add(FhirPropertyNames.PROPERTY_CLOSING_TIME, closingTime.toString());
                 return this;
             }
 
@@ -561,12 +530,6 @@ public class Location extends FhirResource {
      */
     public static class LocationPosition extends FhirObject {
         public static final String RESOURCE_TYPE = "LocationPosition";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_LONGITUDE = "longitude";
-        public static final String PROPERTY_LATITUDE = "latitude";
-        public static final String PROPERTY_ALTITUDE = "altitude";
 
         public static Builder create() {
             return new Builder();
@@ -585,7 +548,7 @@ public class Location extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -597,7 +560,7 @@ public class Location extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -618,7 +581,7 @@ public class Location extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -626,7 +589,7 @@ public class Location extends FhirResource {
          * the text of the longitude element in KML (see notes below).
          */
         public Double longitude() {
-            return data.getJsonNumber(PROPERTY_LONGITUDE).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_LONGITUDE).doubleValue();
         }
 
         /**
@@ -634,7 +597,7 @@ public class Location extends FhirResource {
          * the text of the latitude element in KML (see notes below).
          */
         public Double latitude() {
-            return data.getJsonNumber(PROPERTY_LATITUDE).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_LATITUDE).doubleValue();
         }
 
         /**
@@ -642,7 +605,7 @@ public class Location extends FhirResource {
          * the text of the altitude element in KML (see notes below).
          */
         public Double altitude() {
-            return data.getJsonNumber(PROPERTY_ALTITUDE).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_ALTITUDE).doubleValue();
         }
 
         public static class Builder {
@@ -657,32 +620,32 @@ public class Location extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder longitude(final Double longitude) {
-                b.add(PROPERTY_LONGITUDE, longitude);
+                b.add(FhirPropertyNames.PROPERTY_LONGITUDE, longitude);
                 return this;
             }
 
             public Builder latitude(final Double latitude) {
-                b.add(PROPERTY_LATITUDE, latitude);
+                b.add(FhirPropertyNames.PROPERTY_LATITUDE, latitude);
                 return this;
             }
 
             public Builder altitude(final Double altitude) {
-                b.add(PROPERTY_ALTITUDE, altitude);
+                b.add(FhirPropertyNames.PROPERTY_ALTITUDE, altitude);
                 return this;
             }
 

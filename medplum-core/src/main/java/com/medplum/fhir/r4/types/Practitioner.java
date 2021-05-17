@@ -9,31 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A person who is directly or indirectly involved in the provisioning of
  * healthcare.
  */
 public class Practitioner extends FhirResource {
     public static final String RESOURCE_TYPE = "Practitioner";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_ACTIVE = "active";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TELECOM = "telecom";
-    public static final String PROPERTY_ADDRESS = "address";
-    public static final String PROPERTY_GENDER = "gender";
-    public static final String PROPERTY_BIRTH_DATE = "birthDate";
-    public static final String PROPERTY_PHOTO = "photo";
-    public static final String PROPERTY_QUALIFICATION = "qualification";
-    public static final String PROPERTY_COMMUNICATION = "communication";
 
     public static Builder create() {
         return new Builder();
@@ -54,14 +37,14 @@ public class Practitioner extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -73,7 +56,7 @@ public class Practitioner extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -82,7 +65,7 @@ public class Practitioner extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -94,7 +77,7 @@ public class Practitioner extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -114,28 +97,28 @@ public class Practitioner extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * An identifier that applies to this person in this role.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * Whether this practitioner's record is in active use.
      */
     public Boolean active() {
-        return data.getBoolean(PROPERTY_ACTIVE);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_ACTIVE);
     }
 
     /**
      * The name(s) associated with the practitioner.
      */
     public java.util.List<HumanName> name() {
-        return getList(HumanName.class, PROPERTY_NAME);
+        return getList(HumanName.class, FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
@@ -143,7 +126,7 @@ public class Practitioner extends FhirResource {
      * email address.
      */
     public java.util.List<ContactPoint> telecom() {
-        return getList(ContactPoint.class, PROPERTY_TELECOM);
+        return getList(ContactPoint.class, FhirPropertyNames.PROPERTY_TELECOM);
     }
 
     /**
@@ -152,7 +135,7 @@ public class Practitioner extends FhirResource {
      * property as they are usually role dependent.
      */
     public java.util.List<Address> address() {
-        return getList(Address.class, PROPERTY_ADDRESS);
+        return getList(Address.class, FhirPropertyNames.PROPERTY_ADDRESS);
     }
 
     /**
@@ -160,21 +143,21 @@ public class Practitioner extends FhirResource {
      * have for administration and record keeping purposes.
      */
     public String gender() {
-        return getString(PROPERTY_GENDER);
+        return getString(FhirPropertyNames.PROPERTY_GENDER);
     }
 
     /**
      * The date of birth for the practitioner.
      */
     public java.time.LocalDate birthDate() {
-        return getLocalDate(PROPERTY_BIRTH_DATE);
+        return getLocalDate(FhirPropertyNames.PROPERTY_BIRTH_DATE);
     }
 
     /**
      * Image of the person.
      */
     public java.util.List<Attachment> photo() {
-        return getList(Attachment.class, PROPERTY_PHOTO);
+        return getList(Attachment.class, FhirPropertyNames.PROPERTY_PHOTO);
     }
 
     /**
@@ -184,14 +167,14 @@ public class Practitioner extends FhirResource {
      * practitioner to practice medicine within a certian locality.
      */
     public java.util.List<PractitionerQualification> qualification() {
-        return getList(PractitionerQualification.class, PROPERTY_QUALIFICATION);
+        return getList(PractitionerQualification.class, FhirPropertyNames.PROPERTY_QUALIFICATION);
     }
 
     /**
      * A language the practitioner can use in patient communication.
      */
     public java.util.List<CodeableConcept> communication() {
-        return getList(CodeableConcept.class, PROPERTY_COMMUNICATION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_COMMUNICATION);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -205,97 +188,97 @@ public class Practitioner extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder active(final Boolean active) {
-            b.add(PROPERTY_ACTIVE, active);
+            b.add(FhirPropertyNames.PROPERTY_ACTIVE, active);
             return this;
         }
 
         public Builder name(final java.util.List<HumanName> name) {
-            b.add(PROPERTY_NAME, FhirObject.toArray(name));
+            b.add(FhirPropertyNames.PROPERTY_NAME, FhirObject.toArray(name));
             return this;
         }
 
         public Builder telecom(final java.util.List<ContactPoint> telecom) {
-            b.add(PROPERTY_TELECOM, FhirObject.toArray(telecom));
+            b.add(FhirPropertyNames.PROPERTY_TELECOM, FhirObject.toArray(telecom));
             return this;
         }
 
         public Builder address(final java.util.List<Address> address) {
-            b.add(PROPERTY_ADDRESS, FhirObject.toArray(address));
+            b.add(FhirPropertyNames.PROPERTY_ADDRESS, FhirObject.toArray(address));
             return this;
         }
 
         public Builder gender(final String gender) {
-            b.add(PROPERTY_GENDER, gender);
+            b.add(FhirPropertyNames.PROPERTY_GENDER, gender);
             return this;
         }
 
         public Builder birthDate(final java.time.LocalDate birthDate) {
-            b.add(PROPERTY_BIRTH_DATE, birthDate.toString());
+            b.add(FhirPropertyNames.PROPERTY_BIRTH_DATE, birthDate.toString());
             return this;
         }
 
         public Builder photo(final java.util.List<Attachment> photo) {
-            b.add(PROPERTY_PHOTO, FhirObject.toArray(photo));
+            b.add(FhirPropertyNames.PROPERTY_PHOTO, FhirObject.toArray(photo));
             return this;
         }
 
         public Builder qualification(final java.util.List<PractitionerQualification> qualification) {
-            b.add(PROPERTY_QUALIFICATION, FhirObject.toArray(qualification));
+            b.add(FhirPropertyNames.PROPERTY_QUALIFICATION, FhirObject.toArray(qualification));
             return this;
         }
 
         public Builder communication(final java.util.List<CodeableConcept> communication) {
-            b.add(PROPERTY_COMMUNICATION, FhirObject.toArray(communication));
+            b.add(FhirPropertyNames.PROPERTY_COMMUNICATION, FhirObject.toArray(communication));
             return this;
         }
 
@@ -310,13 +293,6 @@ public class Practitioner extends FhirResource {
      */
     public static class PractitionerQualification extends FhirObject {
         public static final String RESOURCE_TYPE = "PractitionerQualification";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_IDENTIFIER = "identifier";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_PERIOD = "period";
-        public static final String PROPERTY_ISSUER = "issuer";
 
         public static Builder create() {
             return new Builder();
@@ -335,7 +311,7 @@ public class Practitioner extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -347,7 +323,7 @@ public class Practitioner extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -368,7 +344,7 @@ public class Practitioner extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -376,28 +352,28 @@ public class Practitioner extends FhirResource {
          * role.
          */
         public java.util.List<Identifier> identifier() {
-            return getList(Identifier.class, PROPERTY_IDENTIFIER);
+            return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
         }
 
         /**
          * Coded representation of the qualification.
          */
         public CodeableConcept code() {
-            return getObject(CodeableConcept.class, PROPERTY_CODE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * Period during which the qualification is valid.
          */
         public Period period() {
-            return getObject(Period.class, PROPERTY_PERIOD);
+            return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
         }
 
         /**
          * Organization that regulates and issues the qualification.
          */
         public Reference issuer() {
-            return getObject(Reference.class, PROPERTY_ISSUER);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_ISSUER);
         }
 
         public static class Builder {
@@ -412,37 +388,37 @@ public class Practitioner extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder identifier(final java.util.List<Identifier> identifier) {
-                b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+                b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
                 return this;
             }
 
             public Builder code(final CodeableConcept code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder period(final Period period) {
-                b.add(PROPERTY_PERIOD, period);
+                b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
                 return this;
             }
 
             public Builder issuer(final Reference issuer) {
-                b.add(PROPERTY_ISSUER, issuer);
+                b.add(FhirPropertyNames.PROPERTY_ISSUER, issuer);
                 return this;
             }
 

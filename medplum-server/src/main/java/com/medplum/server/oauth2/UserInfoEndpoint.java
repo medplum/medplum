@@ -21,11 +21,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.FhirPropertyNames;
 import com.medplum.fhir.r4.StandardOutcomes;
 import com.medplum.fhir.r4.types.ContactPoint;
 import com.medplum.fhir.r4.types.FhirResource;
 import com.medplum.fhir.r4.types.HumanName;
-import com.medplum.fhir.r4.types.Patient;
 import com.medplum.fhir.r4.types.Reference;
 import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.security.SecurityUser;
@@ -72,8 +72,8 @@ public class UserInfoEndpoint {
         json.add("sub", resource.id());
         json.add("profile", resource.createReference().reference());
 
-        if (resource.containsKey(Patient.PROPERTY_NAME)) {
-            final List<HumanName> names = resource.getList(HumanName.class, Patient.PROPERTY_NAME);
+        if (resource.containsKey(FhirPropertyNames.PROPERTY_NAME)) {
+            final List<HumanName> names = resource.getList(HumanName.class, FhirPropertyNames.PROPERTY_NAME);
             if (!names.isEmpty()) {
                 final HumanName name = names.get(0);
                 final String given = String.join(" ", name.given());
@@ -84,8 +84,8 @@ public class UserInfoEndpoint {
             }
         }
 
-        if (resource.containsKey(Patient.PROPERTY_TELECOM)) {
-            final List<ContactPoint> telecom = resource.getList(ContactPoint.class, Patient.PROPERTY_TELECOM);
+        if (resource.containsKey(FhirPropertyNames.PROPERTY_TELECOM)) {
+            final List<ContactPoint> telecom = resource.getList(ContactPoint.class, FhirPropertyNames.PROPERTY_TELECOM);
             for (final ContactPoint contactPoint : telecom) {
                 if (contactPoint.system().equals("email")) {
                     json.add("email", contactPoint.value());

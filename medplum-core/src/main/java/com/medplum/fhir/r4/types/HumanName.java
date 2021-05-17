@@ -9,20 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A human's name with the ability to identify parts and usage.
  */
 public class HumanName extends FhirResource {
     public static final String RESOURCE_TYPE = "HumanName";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_USE = "use";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_FAMILY = "family";
-    public static final String PROPERTY_GIVEN = "given";
-    public static final String PROPERTY_PREFIX = "prefix";
-    public static final String PROPERTY_SUFFIX = "suffix";
-    public static final String PROPERTY_PERIOD = "period";
 
     public static Builder create() {
         return new Builder();
@@ -41,7 +34,7 @@ public class HumanName extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -53,14 +46,14 @@ public class HumanName extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * Identifies the purpose for this name.
      */
     public String use() {
-        return getString(PROPERTY_USE);
+        return getString(FhirPropertyNames.PROPERTY_USE);
     }
 
     /**
@@ -69,7 +62,7 @@ public class HumanName extends FhirResource {
      * specific parts.
      */
     public String text() {
-        return getString(PROPERTY_TEXT);
+        return getString(FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -77,14 +70,14 @@ public class HumanName extends FhirResource {
      * Eritrea) the family name of a son is the first name of his father.
      */
     public String family() {
-        return getString(PROPERTY_FAMILY);
+        return getString(FhirPropertyNames.PROPERTY_FAMILY);
     }
 
     /**
      * Given name.
      */
     public java.util.List<String> given() {
-        return getList(String.class, PROPERTY_GIVEN);
+        return getList(String.class, FhirPropertyNames.PROPERTY_GIVEN);
     }
 
     /**
@@ -93,7 +86,7 @@ public class HumanName extends FhirResource {
      * the name.
      */
     public java.util.List<String> prefix() {
-        return getList(String.class, PROPERTY_PREFIX);
+        return getList(String.class, FhirPropertyNames.PROPERTY_PREFIX);
     }
 
     /**
@@ -102,7 +95,7 @@ public class HumanName extends FhirResource {
      * name.
      */
     public java.util.List<String> suffix() {
-        return getList(String.class, PROPERTY_SUFFIX);
+        return getList(String.class, FhirPropertyNames.PROPERTY_SUFFIX);
     }
 
     /**
@@ -110,7 +103,7 @@ public class HumanName extends FhirResource {
      * person.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     public static class Builder {
@@ -125,47 +118,47 @@ public class HumanName extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder use(final String use) {
-            b.add(PROPERTY_USE, use);
+            b.add(FhirPropertyNames.PROPERTY_USE, use);
             return this;
         }
 
         public Builder text(final String text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder family(final String family) {
-            b.add(PROPERTY_FAMILY, family);
+            b.add(FhirPropertyNames.PROPERTY_FAMILY, family);
             return this;
         }
 
         public Builder given(final java.util.List<String> given) {
-            b.add(PROPERTY_GIVEN, FhirObject.toStringArray(given));
+            b.add(FhirPropertyNames.PROPERTY_GIVEN, FhirObject.toStringArray(given));
             return this;
         }
 
         public Builder prefix(final java.util.List<String> prefix) {
-            b.add(PROPERTY_PREFIX, FhirObject.toStringArray(prefix));
+            b.add(FhirPropertyNames.PROPERTY_PREFIX, FhirObject.toStringArray(prefix));
             return this;
         }
 
         public Builder suffix(final java.util.List<String> suffix) {
-            b.add(PROPERTY_SUFFIX, FhirObject.toStringArray(suffix));
+            b.add(FhirPropertyNames.PROPERTY_SUFFIX, FhirObject.toStringArray(suffix));
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 

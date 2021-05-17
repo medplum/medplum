@@ -9,33 +9,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A list is a curated collection of resources.
  */
 public class List extends FhirResource {
     public static final String RESOURCE_TYPE = "List";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_MODE = "mode";
-    public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_SOURCE = "source";
-    public static final String PROPERTY_ORDERED_BY = "orderedBy";
-    public static final String PROPERTY_NOTE = "note";
-    public static final String PROPERTY_ENTRY = "entry";
-    public static final String PROPERTY_EMPTY_REASON = "emptyReason";
 
     public static Builder create() {
         return new Builder();
@@ -56,14 +36,14 @@ public class List extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -75,7 +55,7 @@ public class List extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -84,7 +64,7 @@ public class List extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -96,7 +76,7 @@ public class List extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -116,7 +96,7 @@ public class List extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -124,14 +104,14 @@ public class List extends FhirResource {
      * context of FHIR.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * Indicates the current state of this list.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -141,21 +121,21 @@ public class List extends FhirResource {
      * prepared list where items may be marked as added, modified or deleted.
      */
     public String mode() {
-        return getString(PROPERTY_MODE);
+        return getString(FhirPropertyNames.PROPERTY_MODE);
     }
 
     /**
      * A label for the list assigned by the author.
      */
     public String title() {
-        return getString(PROPERTY_TITLE);
+        return getString(FhirPropertyNames.PROPERTY_TITLE);
     }
 
     /**
      * This code defines the purpose of the list - why it was created.
      */
     public CodeableConcept code() {
-        return getObject(CodeableConcept.class, PROPERTY_CODE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
     }
 
     /**
@@ -163,21 +143,21 @@ public class List extends FhirResource {
      * if there is one.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
      * The encounter that is the context in which this list was created.
      */
     public Reference encounter() {
-        return getObject(Reference.class, PROPERTY_ENCOUNTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ENCOUNTER);
     }
 
     /**
      * The date that the list was prepared.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -186,35 +166,35 @@ public class List extends FhirResource {
      * author of the list.
      */
     public Reference source() {
-        return getObject(Reference.class, PROPERTY_SOURCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
     }
 
     /**
      * What order applies to the items in the list.
      */
     public CodeableConcept orderedBy() {
-        return getObject(CodeableConcept.class, PROPERTY_ORDERED_BY);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ORDERED_BY);
     }
 
     /**
      * Comments that apply to the overall list.
      */
     public java.util.List<Annotation> note() {
-        return getList(Annotation.class, PROPERTY_NOTE);
+        return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
     }
 
     /**
      * Entries in this list.
      */
     public java.util.List<ListEntry> entry() {
-        return getList(ListEntry.class, PROPERTY_ENTRY);
+        return getList(ListEntry.class, FhirPropertyNames.PROPERTY_ENTRY);
     }
 
     /**
      * If the list is empty, why the list is empty.
      */
     public CodeableConcept emptyReason() {
-        return getObject(CodeableConcept.class, PROPERTY_EMPTY_REASON);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_EMPTY_REASON);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -228,112 +208,112 @@ public class List extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder mode(final String mode) {
-            b.add(PROPERTY_MODE, mode);
+            b.add(FhirPropertyNames.PROPERTY_MODE, mode);
             return this;
         }
 
         public Builder title(final String title) {
-            b.add(PROPERTY_TITLE, title);
+            b.add(FhirPropertyNames.PROPERTY_TITLE, title);
             return this;
         }
 
         public Builder code(final CodeableConcept code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder encounter(final Reference encounter) {
-            b.add(PROPERTY_ENCOUNTER, encounter);
+            b.add(FhirPropertyNames.PROPERTY_ENCOUNTER, encounter);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder source(final Reference source) {
-            b.add(PROPERTY_SOURCE, source);
+            b.add(FhirPropertyNames.PROPERTY_SOURCE, source);
             return this;
         }
 
         public Builder orderedBy(final CodeableConcept orderedBy) {
-            b.add(PROPERTY_ORDERED_BY, orderedBy);
+            b.add(FhirPropertyNames.PROPERTY_ORDERED_BY, orderedBy);
             return this;
         }
 
         public Builder note(final java.util.List<Annotation> note) {
-            b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+            b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
             return this;
         }
 
         public Builder entry(final java.util.List<ListEntry> entry) {
-            b.add(PROPERTY_ENTRY, FhirObject.toArray(entry));
+            b.add(FhirPropertyNames.PROPERTY_ENTRY, FhirObject.toArray(entry));
             return this;
         }
 
         public Builder emptyReason(final CodeableConcept emptyReason) {
-            b.add(PROPERTY_EMPTY_REASON, emptyReason);
+            b.add(FhirPropertyNames.PROPERTY_EMPTY_REASON, emptyReason);
             return this;
         }
 
@@ -347,13 +327,6 @@ public class List extends FhirResource {
      */
     public static class ListEntry extends FhirObject {
         public static final String RESOURCE_TYPE = "ListEntry";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_FLAG = "flag";
-        public static final String PROPERTY_DELETED = "deleted";
-        public static final String PROPERTY_DATE = "date";
-        public static final String PROPERTY_ITEM = "item";
 
         public static Builder create() {
             return new Builder();
@@ -372,7 +345,7 @@ public class List extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -384,7 +357,7 @@ public class List extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -405,7 +378,7 @@ public class List extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -413,28 +386,28 @@ public class List extends FhirResource {
          * and significance of the item in the list.
          */
         public CodeableConcept flag() {
-            return getObject(CodeableConcept.class, PROPERTY_FLAG);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_FLAG);
         }
 
         /**
          * True if this item is marked as deleted in the list.
          */
         public Boolean deleted() {
-            return data.getBoolean(PROPERTY_DELETED);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_DELETED);
         }
 
         /**
          * When this item was added to the list.
          */
         public java.time.Instant date() {
-            return getInstant(PROPERTY_DATE);
+            return getInstant(FhirPropertyNames.PROPERTY_DATE);
         }
 
         /**
          * A reference to the actual resource from which data was derived.
          */
         public Reference item() {
-            return getObject(Reference.class, PROPERTY_ITEM);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_ITEM);
         }
 
         public static class Builder {
@@ -449,37 +422,37 @@ public class List extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder flag(final CodeableConcept flag) {
-                b.add(PROPERTY_FLAG, flag);
+                b.add(FhirPropertyNames.PROPERTY_FLAG, flag);
                 return this;
             }
 
             public Builder deleted(final Boolean deleted) {
-                b.add(PROPERTY_DELETED, deleted);
+                b.add(FhirPropertyNames.PROPERTY_DELETED, deleted);
                 return this;
             }
 
             public Builder date(final java.time.Instant date) {
-                b.add(PROPERTY_DATE, date.toString());
+                b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
                 return this;
             }
 
             public Builder item(final Reference item) {
-                b.add(PROPERTY_ITEM, item);
+                b.add(FhirPropertyNames.PROPERTY_ITEM, item);
                 return this;
             }
 

@@ -7,6 +7,8 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Record details about an anatomical structure.  This resource may be
  * used when a coded concept does not provide the necessary detail needed
@@ -14,23 +16,6 @@ import jakarta.json.JsonObject;
  */
 public class BodyStructure extends FhirResource {
     public static final String RESOURCE_TYPE = "BodyStructure";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_ACTIVE = "active";
-    public static final String PROPERTY_MORPHOLOGY = "morphology";
-    public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_LOCATION_QUALIFIER = "locationQualifier";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_IMAGE = "image";
-    public static final String PROPERTY_PATIENT = "patient";
 
     public static Builder create() {
         return new Builder();
@@ -51,14 +36,14 @@ public class BodyStructure extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -70,7 +55,7 @@ public class BodyStructure extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -79,7 +64,7 @@ public class BodyStructure extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -91,7 +76,7 @@ public class BodyStructure extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -111,21 +96,21 @@ public class BodyStructure extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Identifier for this instance of the anatomical structure.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * Whether this body site is in active use.
      */
     public Boolean active() {
-        return data.getBoolean(PROPERTY_ACTIVE);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_ACTIVE);
     }
 
     /**
@@ -134,7 +119,7 @@ public class BodyStructure extends FhirResource {
      * morphologies.
      */
     public CodeableConcept morphology() {
-        return getObject(CodeableConcept.class, PROPERTY_MORPHOLOGY);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_MORPHOLOGY);
     }
 
     /**
@@ -142,7 +127,7 @@ public class BodyStructure extends FhirResource {
      * structure.
      */
     public CodeableConcept location() {
-        return getObject(CodeableConcept.class, PROPERTY_LOCATION);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_LOCATION);
     }
 
     /**
@@ -150,28 +135,28 @@ public class BodyStructure extends FhirResource {
      * for laterality, relative location, directionality, number, and plane.
      */
     public java.util.List<CodeableConcept> locationQualifier() {
-        return getList(CodeableConcept.class, PROPERTY_LOCATION_QUALIFIER);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_LOCATION_QUALIFIER);
     }
 
     /**
      * A summary, characterization or explanation of the body structure.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
      * Image or images used to identify a location.
      */
     public java.util.List<Attachment> image() {
-        return getList(Attachment.class, PROPERTY_IMAGE);
+        return getList(Attachment.class, FhirPropertyNames.PROPERTY_IMAGE);
     }
 
     /**
      * The person to which the body site belongs.
      */
     public Reference patient() {
-        return getObject(Reference.class, PROPERTY_PATIENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PATIENT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -185,87 +170,87 @@ public class BodyStructure extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder active(final Boolean active) {
-            b.add(PROPERTY_ACTIVE, active);
+            b.add(FhirPropertyNames.PROPERTY_ACTIVE, active);
             return this;
         }
 
         public Builder morphology(final CodeableConcept morphology) {
-            b.add(PROPERTY_MORPHOLOGY, morphology);
+            b.add(FhirPropertyNames.PROPERTY_MORPHOLOGY, morphology);
             return this;
         }
 
         public Builder location(final CodeableConcept location) {
-            b.add(PROPERTY_LOCATION, location);
+            b.add(FhirPropertyNames.PROPERTY_LOCATION, location);
             return this;
         }
 
         public Builder locationQualifier(final java.util.List<CodeableConcept> locationQualifier) {
-            b.add(PROPERTY_LOCATION_QUALIFIER, FhirObject.toArray(locationQualifier));
+            b.add(FhirPropertyNames.PROPERTY_LOCATION_QUALIFIER, FhirObject.toArray(locationQualifier));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder image(final java.util.List<Attachment> image) {
-            b.add(PROPERTY_IMAGE, FhirObject.toArray(image));
+            b.add(FhirPropertyNames.PROPERTY_IMAGE, FhirObject.toArray(image));
             return this;
         }
 
         public Builder patient(final Reference patient) {
-            b.add(PROPERTY_PATIENT, patient);
+            b.add(FhirPropertyNames.PROPERTY_PATIENT, patient);
             return this;
         }
 

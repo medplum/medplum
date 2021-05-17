@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A record of an event made for purposes of maintaining a security log.
  * Typical uses include detection of intrusion attempts and monitoring
@@ -16,26 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class AuditEvent extends FhirResource {
     public static final String RESOURCE_TYPE = "AuditEvent";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_SUBTYPE = "subtype";
-    public static final String PROPERTY_ACTION = "action";
-    public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_RECORDED = "recorded";
-    public static final String PROPERTY_OUTCOME = "outcome";
-    public static final String PROPERTY_OUTCOME_DESC = "outcomeDesc";
-    public static final String PROPERTY_PURPOSE_OF_EVENT = "purposeOfEvent";
-    public static final String PROPERTY_AGENT = "agent";
-    public static final String PROPERTY_SOURCE = "source";
-    public static final String PROPERTY_ENTITY = "entity";
 
     public static Builder create() {
         return new Builder();
@@ -56,14 +38,14 @@ public class AuditEvent extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -75,7 +57,7 @@ public class AuditEvent extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -84,7 +66,7 @@ public class AuditEvent extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -96,7 +78,7 @@ public class AuditEvent extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -116,7 +98,7 @@ public class AuditEvent extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -125,14 +107,14 @@ public class AuditEvent extends FhirResource {
      * identifies the performed function.
      */
     public Coding type() {
-        return getObject(Coding.class, PROPERTY_TYPE);
+        return getObject(Coding.class, FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
      * Identifier for the category of event.
      */
     public java.util.List<Coding> subtype() {
-        return getList(Coding.class, PROPERTY_SUBTYPE);
+        return getList(Coding.class, FhirPropertyNames.PROPERTY_SUBTYPE);
     }
 
     /**
@@ -140,35 +122,35 @@ public class AuditEvent extends FhirResource {
      * the audit.
      */
     public String action() {
-        return getString(PROPERTY_ACTION);
+        return getString(FhirPropertyNames.PROPERTY_ACTION);
     }
 
     /**
      * The period during which the activity occurred.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     /**
      * The time when the event was recorded.
      */
     public java.time.Instant recorded() {
-        return getInstant(PROPERTY_RECORDED);
+        return getInstant(FhirPropertyNames.PROPERTY_RECORDED);
     }
 
     /**
      * Indicates whether the event succeeded or failed.
      */
     public String outcome() {
-        return getString(PROPERTY_OUTCOME);
+        return getString(FhirPropertyNames.PROPERTY_OUTCOME);
     }
 
     /**
      * A free text description of the outcome of the event.
      */
     public String outcomeDesc() {
-        return getString(PROPERTY_OUTCOME_DESC);
+        return getString(FhirPropertyNames.PROPERTY_OUTCOME_DESC);
     }
 
     /**
@@ -176,7 +158,7 @@ public class AuditEvent extends FhirResource {
      * recorded.
      */
     public java.util.List<CodeableConcept> purposeOfEvent() {
-        return getList(CodeableConcept.class, PROPERTY_PURPOSE_OF_EVENT);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_PURPOSE_OF_EVENT);
     }
 
     /**
@@ -184,21 +166,21 @@ public class AuditEvent extends FhirResource {
      * logged.
      */
     public java.util.List<AuditEventAgent> agent() {
-        return getList(AuditEventAgent.class, PROPERTY_AGENT);
+        return getList(AuditEventAgent.class, FhirPropertyNames.PROPERTY_AGENT);
     }
 
     /**
      * The system that is reporting the event.
      */
     public AuditEventSource source() {
-        return getObject(AuditEventSource.class, PROPERTY_SOURCE);
+        return getObject(AuditEventSource.class, FhirPropertyNames.PROPERTY_SOURCE);
     }
 
     /**
      * Specific instances of data or objects that have been accessed.
      */
     public java.util.List<AuditEventEntity> entity() {
-        return getList(AuditEventEntity.class, PROPERTY_ENTITY);
+        return getList(AuditEventEntity.class, FhirPropertyNames.PROPERTY_ENTITY);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -212,102 +194,102 @@ public class AuditEvent extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder type(final Coding type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder subtype(final java.util.List<Coding> subtype) {
-            b.add(PROPERTY_SUBTYPE, FhirObject.toArray(subtype));
+            b.add(FhirPropertyNames.PROPERTY_SUBTYPE, FhirObject.toArray(subtype));
             return this;
         }
 
         public Builder action(final String action) {
-            b.add(PROPERTY_ACTION, action);
+            b.add(FhirPropertyNames.PROPERTY_ACTION, action);
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 
         public Builder recorded(final java.time.Instant recorded) {
-            b.add(PROPERTY_RECORDED, recorded.toString());
+            b.add(FhirPropertyNames.PROPERTY_RECORDED, recorded.toString());
             return this;
         }
 
         public Builder outcome(final String outcome) {
-            b.add(PROPERTY_OUTCOME, outcome);
+            b.add(FhirPropertyNames.PROPERTY_OUTCOME, outcome);
             return this;
         }
 
         public Builder outcomeDesc(final String outcomeDesc) {
-            b.add(PROPERTY_OUTCOME_DESC, outcomeDesc);
+            b.add(FhirPropertyNames.PROPERTY_OUTCOME_DESC, outcomeDesc);
             return this;
         }
 
         public Builder purposeOfEvent(final java.util.List<CodeableConcept> purposeOfEvent) {
-            b.add(PROPERTY_PURPOSE_OF_EVENT, FhirObject.toArray(purposeOfEvent));
+            b.add(FhirPropertyNames.PROPERTY_PURPOSE_OF_EVENT, FhirObject.toArray(purposeOfEvent));
             return this;
         }
 
         public Builder agent(final java.util.List<AuditEventAgent> agent) {
-            b.add(PROPERTY_AGENT, FhirObject.toArray(agent));
+            b.add(FhirPropertyNames.PROPERTY_AGENT, FhirObject.toArray(agent));
             return this;
         }
 
         public Builder source(final AuditEventSource source) {
-            b.add(PROPERTY_SOURCE, source);
+            b.add(FhirPropertyNames.PROPERTY_SOURCE, source);
             return this;
         }
 
         public Builder entity(final java.util.List<AuditEventEntity> entity) {
-            b.add(PROPERTY_ENTITY, FhirObject.toArray(entity));
+            b.add(FhirPropertyNames.PROPERTY_ENTITY, FhirObject.toArray(entity));
             return this;
         }
 
@@ -323,20 +305,6 @@ public class AuditEvent extends FhirResource {
      */
     public static class AuditEventAgent extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventAgent";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_ROLE = "role";
-        public static final String PROPERTY_WHO = "who";
-        public static final String PROPERTY_ALT_ID = "altId";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_REQUESTOR = "requestor";
-        public static final String PROPERTY_LOCATION = "location";
-        public static final String PROPERTY_POLICY = "policy";
-        public static final String PROPERTY_MEDIA = "media";
-        public static final String PROPERTY_NETWORK = "network";
-        public static final String PROPERTY_PURPOSE_OF_USE = "purposeOfUse";
 
         public static Builder create() {
             return new Builder();
@@ -355,7 +323,7 @@ public class AuditEvent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -367,7 +335,7 @@ public class AuditEvent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -388,7 +356,7 @@ public class AuditEvent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -396,7 +364,7 @@ public class AuditEvent extends FhirResource {
          * the event.
          */
         public CodeableConcept type() {
-            return getObject(CodeableConcept.class, PROPERTY_TYPE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
@@ -405,14 +373,14 @@ public class AuditEvent extends FhirResource {
          * used in the local context.
          */
         public java.util.List<CodeableConcept> role() {
-            return getList(CodeableConcept.class, PROPERTY_ROLE);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_ROLE);
         }
 
         /**
          * Reference to who this agent is that was involved in the event.
          */
         public Reference who() {
-            return getObject(Reference.class, PROPERTY_WHO);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_WHO);
         }
 
         /**
@@ -422,14 +390,14 @@ public class AuditEvent extends FhirResource {
          * sign-on), if available.
          */
         public String altId() {
-            return getString(PROPERTY_ALT_ID);
+            return getString(FhirPropertyNames.PROPERTY_ALT_ID);
         }
 
         /**
          * Human-meaningful name for the agent.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
@@ -437,14 +405,14 @@ public class AuditEvent extends FhirResource {
          * the event being audited.
          */
         public Boolean requestor() {
-            return data.getBoolean(PROPERTY_REQUESTOR);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_REQUESTOR);
         }
 
         /**
          * Where the event occurred.
          */
         public Reference location() {
-            return getObject(Reference.class, PROPERTY_LOCATION);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_LOCATION);
         }
 
         /**
@@ -454,7 +422,7 @@ public class AuditEvent extends FhirResource {
          * indicate the security token used.
          */
         public java.util.List<java.net.URI> policy() {
-            return getList(java.net.URI.class, PROPERTY_POLICY);
+            return getList(java.net.URI.class, FhirPropertyNames.PROPERTY_POLICY);
         }
 
         /**
@@ -462,7 +430,7 @@ public class AuditEvent extends FhirResource {
          * exporting/importing onto media.
          */
         public Coding media() {
-            return getObject(Coding.class, PROPERTY_MEDIA);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_MEDIA);
         }
 
         /**
@@ -470,7 +438,7 @@ public class AuditEvent extends FhirResource {
          * a network location.
          */
         public AuditEventNetwork network() {
-            return getObject(AuditEventNetwork.class, PROPERTY_NETWORK);
+            return getObject(AuditEventNetwork.class, FhirPropertyNames.PROPERTY_NETWORK);
         }
 
         /**
@@ -478,7 +446,7 @@ public class AuditEvent extends FhirResource {
          * during the event being recorded.
          */
         public java.util.List<CodeableConcept> purposeOfUse() {
-            return getList(CodeableConcept.class, PROPERTY_PURPOSE_OF_USE);
+            return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_PURPOSE_OF_USE);
         }
 
         public static class Builder {
@@ -493,72 +461,72 @@ public class AuditEvent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final CodeableConcept type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder role(final java.util.List<CodeableConcept> role) {
-                b.add(PROPERTY_ROLE, FhirObject.toArray(role));
+                b.add(FhirPropertyNames.PROPERTY_ROLE, FhirObject.toArray(role));
                 return this;
             }
 
             public Builder who(final Reference who) {
-                b.add(PROPERTY_WHO, who);
+                b.add(FhirPropertyNames.PROPERTY_WHO, who);
                 return this;
             }
 
             public Builder altId(final String altId) {
-                b.add(PROPERTY_ALT_ID, altId);
+                b.add(FhirPropertyNames.PROPERTY_ALT_ID, altId);
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder requestor(final Boolean requestor) {
-                b.add(PROPERTY_REQUESTOR, requestor);
+                b.add(FhirPropertyNames.PROPERTY_REQUESTOR, requestor);
                 return this;
             }
 
             public Builder location(final Reference location) {
-                b.add(PROPERTY_LOCATION, location);
+                b.add(FhirPropertyNames.PROPERTY_LOCATION, location);
                 return this;
             }
 
             public Builder policy(final java.util.List<java.net.URI> policy) {
-                b.add(PROPERTY_POLICY, FhirObject.toUriArray(policy));
+                b.add(FhirPropertyNames.PROPERTY_POLICY, FhirObject.toUriArray(policy));
                 return this;
             }
 
             public Builder media(final Coding media) {
-                b.add(PROPERTY_MEDIA, media);
+                b.add(FhirPropertyNames.PROPERTY_MEDIA, media);
                 return this;
             }
 
             public Builder network(final AuditEventNetwork network) {
-                b.add(PROPERTY_NETWORK, network);
+                b.add(FhirPropertyNames.PROPERTY_NETWORK, network);
                 return this;
             }
 
             public Builder purposeOfUse(final java.util.List<CodeableConcept> purposeOfUse) {
-                b.add(PROPERTY_PURPOSE_OF_USE, FhirObject.toArray(purposeOfUse));
+                b.add(FhirPropertyNames.PROPERTY_PURPOSE_OF_USE, FhirObject.toArray(purposeOfUse));
                 return this;
             }
 
@@ -575,12 +543,6 @@ public class AuditEvent extends FhirResource {
      */
     public static class AuditEventDetail extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventDetail";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_VALUE_STRING = "valueString";
-        public static final String PROPERTY_VALUE_BASE64_BINARY = "valueBase64Binary";
 
         public static Builder create() {
             return new Builder();
@@ -599,7 +561,7 @@ public class AuditEvent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -611,7 +573,7 @@ public class AuditEvent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -632,28 +594,28 @@ public class AuditEvent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The type of extra detail provided in the value.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The  value of the extra detail.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUE_STRING);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_STRING);
         }
 
         /**
          * The  value of the extra detail.
          */
         public String valueBase64Binary() {
-            return getString(PROPERTY_VALUE_BASE64_BINARY);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_BASE64_BINARY);
         }
 
         public static class Builder {
@@ -668,32 +630,32 @@ public class AuditEvent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUE_STRING, valueString);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueBase64Binary(final String valueBase64Binary) {
-                b.add(PROPERTY_VALUE_BASE64_BINARY, valueBase64Binary);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_BASE64_BINARY, valueBase64Binary);
                 return this;
             }
 
@@ -710,18 +672,6 @@ public class AuditEvent extends FhirResource {
      */
     public static class AuditEventEntity extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventEntity";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_WHAT = "what";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_ROLE = "role";
-        public static final String PROPERTY_LIFECYCLE = "lifecycle";
-        public static final String PROPERTY_SECURITY_LABEL = "securityLabel";
-        public static final String PROPERTY_NAME = "name";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_QUERY = "query";
-        public static final String PROPERTY_DETAIL = "detail";
 
         public static Builder create() {
             return new Builder();
@@ -740,7 +690,7 @@ public class AuditEvent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -752,7 +702,7 @@ public class AuditEvent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -773,7 +723,7 @@ public class AuditEvent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -781,14 +731,14 @@ public class AuditEvent extends FhirResource {
          * version specific.
          */
         public Reference what() {
-            return getObject(Reference.class, PROPERTY_WHAT);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_WHAT);
         }
 
         /**
          * The type of the object that was involved in this audit event.
          */
         public Coding type() {
-            return getObject(Coding.class, PROPERTY_TYPE);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
@@ -796,42 +746,42 @@ public class AuditEvent extends FhirResource {
          * audited.
          */
         public Coding role() {
-            return getObject(Coding.class, PROPERTY_ROLE);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_ROLE);
         }
 
         /**
          * Identifier for the data life-cycle stage for the entity.
          */
         public Coding lifecycle() {
-            return getObject(Coding.class, PROPERTY_LIFECYCLE);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_LIFECYCLE);
         }
 
         /**
          * Security labels for the identified entity.
          */
         public java.util.List<Coding> securityLabel() {
-            return getList(Coding.class, PROPERTY_SECURITY_LABEL);
+            return getList(Coding.class, FhirPropertyNames.PROPERTY_SECURITY_LABEL);
         }
 
         /**
          * A name of the entity in the audit event.
          */
         public String name() {
-            return getString(PROPERTY_NAME);
+            return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
         /**
          * Text that describes the entity in more detail.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * The query parameters for a query-type entities.
          */
         public String query() {
-            return getString(PROPERTY_QUERY);
+            return getString(FhirPropertyNames.PROPERTY_QUERY);
         }
 
         /**
@@ -839,7 +789,7 @@ public class AuditEvent extends FhirResource {
          * entity.
          */
         public java.util.List<AuditEventDetail> detail() {
-            return getList(AuditEventDetail.class, PROPERTY_DETAIL);
+            return getList(AuditEventDetail.class, FhirPropertyNames.PROPERTY_DETAIL);
         }
 
         public static class Builder {
@@ -854,62 +804,62 @@ public class AuditEvent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder what(final Reference what) {
-                b.add(PROPERTY_WHAT, what);
+                b.add(FhirPropertyNames.PROPERTY_WHAT, what);
                 return this;
             }
 
             public Builder type(final Coding type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder role(final Coding role) {
-                b.add(PROPERTY_ROLE, role);
+                b.add(FhirPropertyNames.PROPERTY_ROLE, role);
                 return this;
             }
 
             public Builder lifecycle(final Coding lifecycle) {
-                b.add(PROPERTY_LIFECYCLE, lifecycle);
+                b.add(FhirPropertyNames.PROPERTY_LIFECYCLE, lifecycle);
                 return this;
             }
 
             public Builder securityLabel(final java.util.List<Coding> securityLabel) {
-                b.add(PROPERTY_SECURITY_LABEL, FhirObject.toArray(securityLabel));
+                b.add(FhirPropertyNames.PROPERTY_SECURITY_LABEL, FhirObject.toArray(securityLabel));
                 return this;
             }
 
             public Builder name(final String name) {
-                b.add(PROPERTY_NAME, name);
+                b.add(FhirPropertyNames.PROPERTY_NAME, name);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder query(final String query) {
-                b.add(PROPERTY_QUERY, query);
+                b.add(FhirPropertyNames.PROPERTY_QUERY, query);
                 return this;
             }
 
             public Builder detail(final java.util.List<AuditEventDetail> detail) {
-                b.add(PROPERTY_DETAIL, FhirObject.toArray(detail));
+                b.add(FhirPropertyNames.PROPERTY_DETAIL, FhirObject.toArray(detail));
                 return this;
             }
 
@@ -926,11 +876,6 @@ public class AuditEvent extends FhirResource {
      */
     public static class AuditEventNetwork extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventNetwork";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ADDRESS = "address";
-        public static final String PROPERTY_TYPE = "type";
 
         public static Builder create() {
             return new Builder();
@@ -949,7 +894,7 @@ public class AuditEvent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -961,7 +906,7 @@ public class AuditEvent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -982,7 +927,7 @@ public class AuditEvent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -990,7 +935,7 @@ public class AuditEvent extends FhirResource {
          * audit event.
          */
         public String address() {
-            return getString(PROPERTY_ADDRESS);
+            return getString(FhirPropertyNames.PROPERTY_ADDRESS);
         }
 
         /**
@@ -998,7 +943,7 @@ public class AuditEvent extends FhirResource {
          * audit event.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         public static class Builder {
@@ -1013,27 +958,27 @@ public class AuditEvent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder address(final String address) {
-                b.add(PROPERTY_ADDRESS, address);
+                b.add(FhirPropertyNames.PROPERTY_ADDRESS, address);
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
@@ -1050,12 +995,6 @@ public class AuditEvent extends FhirResource {
      */
     public static class AuditEventSource extends FhirObject {
         public static final String RESOURCE_TYPE = "AuditEventSource";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_SITE = "site";
-        public static final String PROPERTY_OBSERVER = "observer";
-        public static final String PROPERTY_TYPE = "type";
 
         public static Builder create() {
             return new Builder();
@@ -1074,7 +1013,7 @@ public class AuditEvent extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1086,7 +1025,7 @@ public class AuditEvent extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1107,7 +1046,7 @@ public class AuditEvent extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1116,21 +1055,21 @@ public class AuditEvent extends FhirResource {
          * provider group.
          */
         public String site() {
-            return getString(PROPERTY_SITE);
+            return getString(FhirPropertyNames.PROPERTY_SITE);
         }
 
         /**
          * Identifier of the source where the event was detected.
          */
         public Reference observer() {
-            return getObject(Reference.class, PROPERTY_OBSERVER);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_OBSERVER);
         }
 
         /**
          * Code specifying the type of source where event originated.
          */
         public java.util.List<Coding> type() {
-            return getList(Coding.class, PROPERTY_TYPE);
+            return getList(Coding.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
         public static class Builder {
@@ -1145,32 +1084,32 @@ public class AuditEvent extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder site(final String site) {
-                b.add(PROPERTY_SITE, site);
+                b.add(FhirPropertyNames.PROPERTY_SITE, site);
                 return this;
             }
 
             public Builder observer(final Reference observer) {
-                b.add(PROPERTY_OBSERVER, observer);
+                b.add(FhirPropertyNames.PROPERTY_OBSERVER, observer);
                 return this;
             }
 
             public Builder type(final java.util.List<Coding> type) {
-                b.add(PROPERTY_TYPE, FhirObject.toArray(type));
+                b.add(FhirPropertyNames.PROPERTY_TYPE, FhirObject.toArray(type));
                 return this;
             }
 

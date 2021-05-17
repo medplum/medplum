@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A record of a clinical assessment performed to determine what
  * problem(s) may affect the patient and before planning the treatments
@@ -21,36 +23,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class ClinicalImpression extends FhirResource {
     public static final String RESOURCE_TYPE = "ClinicalImpression";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_STATUS_REASON = "statusReason";
-    public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_EFFECTIVE_DATE_TIME = "effectiveDateTime";
-    public static final String PROPERTY_EFFECTIVE_PERIOD = "effectivePeriod";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_ASSESSOR = "assessor";
-    public static final String PROPERTY_PREVIOUS = "previous";
-    public static final String PROPERTY_PROBLEM = "problem";
-    public static final String PROPERTY_INVESTIGATION = "investigation";
-    public static final String PROPERTY_PROTOCOL = "protocol";
-    public static final String PROPERTY_SUMMARY = "summary";
-    public static final String PROPERTY_FINDING = "finding";
-    public static final String PROPERTY_PROGNOSIS_CODEABLE_CONCEPT = "prognosisCodeableConcept";
-    public static final String PROPERTY_PROGNOSIS_REFERENCE = "prognosisReference";
-    public static final String PROPERTY_SUPPORTING_INFO = "supportingInfo";
-    public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
         return new Builder();
@@ -71,14 +43,14 @@ public class ClinicalImpression extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -90,7 +62,7 @@ public class ClinicalImpression extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -99,7 +71,7 @@ public class ClinicalImpression extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -111,7 +83,7 @@ public class ClinicalImpression extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -131,7 +103,7 @@ public class ClinicalImpression extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -140,28 +112,28 @@ public class ClinicalImpression extends FhirResource {
      * updated and propagates from server to server.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * Identifies the workflow status of the assessment.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
      * Captures the reason for the current state of the ClinicalImpression.
      */
     public CodeableConcept statusReason() {
-        return getObject(CodeableConcept.class, PROPERTY_STATUS_REASON);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_STATUS_REASON);
     }
 
     /**
      * Categorizes the type of clinical assessment performed.
      */
     public CodeableConcept code() {
-        return getObject(CodeableConcept.class, PROPERTY_CODE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
     }
 
     /**
@@ -169,14 +141,14 @@ public class ClinicalImpression extends FhirResource {
      * it was performed, and what patient events/status prompted it.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
      * The patient or group of individuals assessed as part of this record.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
@@ -184,35 +156,35 @@ public class ClinicalImpression extends FhirResource {
      * which the creation of this record is tightly associated.
      */
     public Reference encounter() {
-        return getObject(Reference.class, PROPERTY_ENCOUNTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ENCOUNTER);
     }
 
     /**
      * The point in time or period over which the subject was assessed.
      */
     public String effectiveDateTime() {
-        return getString(PROPERTY_EFFECTIVE_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_EFFECTIVE_DATE_TIME);
     }
 
     /**
      * The point in time or period over which the subject was assessed.
      */
     public Period effectivePeriod() {
-        return getObject(Period.class, PROPERTY_EFFECTIVE_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_EFFECTIVE_PERIOD);
     }
 
     /**
      * Indicates when the documentation of the assessment was complete.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
      * The clinician performing the assessment.
      */
     public Reference assessor() {
-        return getObject(Reference.class, PROPERTY_ASSESSOR);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ASSESSOR);
     }
 
     /**
@@ -222,14 +194,14 @@ public class ClinicalImpression extends FhirResource {
      * as new data arises or the patient's conditions changes.
      */
     public Reference previous() {
-        return getObject(Reference.class, PROPERTY_PREVIOUS);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PREVIOUS);
     }
 
     /**
      * A list of the relevant problems/conditions for a patient.
      */
     public java.util.List<Reference> problem() {
-        return getList(Reference.class, PROPERTY_PROBLEM);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_PROBLEM);
     }
 
     /**
@@ -240,7 +212,7 @@ public class ClinicalImpression extends FhirResource {
      * and recorded that is pertinent to the outcomes.
      */
     public java.util.List<ClinicalImpressionInvestigation> investigation() {
-        return getList(ClinicalImpressionInvestigation.class, PROPERTY_INVESTIGATION);
+        return getList(ClinicalImpressionInvestigation.class, FhirPropertyNames.PROPERTY_INVESTIGATION);
     }
 
     /**
@@ -249,14 +221,14 @@ public class ClinicalImpression extends FhirResource {
      * the diagnosis.
      */
     public java.util.List<java.net.URI> protocol() {
-        return getList(java.net.URI.class, PROPERTY_PROTOCOL);
+        return getList(java.net.URI.class, FhirPropertyNames.PROPERTY_PROTOCOL);
     }
 
     /**
      * A text summary of the investigations and the diagnosis.
      */
     public String summary() {
-        return getString(PROPERTY_SUMMARY);
+        return getString(FhirPropertyNames.PROPERTY_SUMMARY);
     }
 
     /**
@@ -264,28 +236,28 @@ public class ClinicalImpression extends FhirResource {
      * to ongoing treatment.
      */
     public java.util.List<ClinicalImpressionFinding> finding() {
-        return getList(ClinicalImpressionFinding.class, PROPERTY_FINDING);
+        return getList(ClinicalImpressionFinding.class, FhirPropertyNames.PROPERTY_FINDING);
     }
 
     /**
      * Estimate of likely outcome.
      */
     public java.util.List<CodeableConcept> prognosisCodeableConcept() {
-        return getList(CodeableConcept.class, PROPERTY_PROGNOSIS_CODEABLE_CONCEPT);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_PROGNOSIS_CODEABLE_CONCEPT);
     }
 
     /**
      * RiskAssessment expressing likely outcome.
      */
     public java.util.List<Reference> prognosisReference() {
-        return getList(Reference.class, PROPERTY_PROGNOSIS_REFERENCE);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_PROGNOSIS_REFERENCE);
     }
 
     /**
      * Information supporting the clinical impression.
      */
     public java.util.List<Reference> supportingInfo() {
-        return getList(Reference.class, PROPERTY_SUPPORTING_INFO);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_SUPPORTING_INFO);
     }
 
     /**
@@ -294,7 +266,7 @@ public class ClinicalImpression extends FhirResource {
      * author could also appear.
      */
     public java.util.List<Annotation> note() {
-        return getList(Annotation.class, PROPERTY_NOTE);
+        return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -308,152 +280,152 @@ public class ClinicalImpression extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder statusReason(final CodeableConcept statusReason) {
-            b.add(PROPERTY_STATUS_REASON, statusReason);
+            b.add(FhirPropertyNames.PROPERTY_STATUS_REASON, statusReason);
             return this;
         }
 
         public Builder code(final CodeableConcept code) {
-            b.add(PROPERTY_CODE, code);
+            b.add(FhirPropertyNames.PROPERTY_CODE, code);
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder encounter(final Reference encounter) {
-            b.add(PROPERTY_ENCOUNTER, encounter);
+            b.add(FhirPropertyNames.PROPERTY_ENCOUNTER, encounter);
             return this;
         }
 
         public Builder effectiveDateTime(final String effectiveDateTime) {
-            b.add(PROPERTY_EFFECTIVE_DATE_TIME, effectiveDateTime);
+            b.add(FhirPropertyNames.PROPERTY_EFFECTIVE_DATE_TIME, effectiveDateTime);
             return this;
         }
 
         public Builder effectivePeriod(final Period effectivePeriod) {
-            b.add(PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
+            b.add(FhirPropertyNames.PROPERTY_EFFECTIVE_PERIOD, effectivePeriod);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder assessor(final Reference assessor) {
-            b.add(PROPERTY_ASSESSOR, assessor);
+            b.add(FhirPropertyNames.PROPERTY_ASSESSOR, assessor);
             return this;
         }
 
         public Builder previous(final Reference previous) {
-            b.add(PROPERTY_PREVIOUS, previous);
+            b.add(FhirPropertyNames.PROPERTY_PREVIOUS, previous);
             return this;
         }
 
         public Builder problem(final java.util.List<Reference> problem) {
-            b.add(PROPERTY_PROBLEM, FhirObject.toArray(problem));
+            b.add(FhirPropertyNames.PROPERTY_PROBLEM, FhirObject.toArray(problem));
             return this;
         }
 
         public Builder investigation(final java.util.List<ClinicalImpressionInvestigation> investigation) {
-            b.add(PROPERTY_INVESTIGATION, FhirObject.toArray(investigation));
+            b.add(FhirPropertyNames.PROPERTY_INVESTIGATION, FhirObject.toArray(investigation));
             return this;
         }
 
         public Builder protocol(final java.util.List<java.net.URI> protocol) {
-            b.add(PROPERTY_PROTOCOL, FhirObject.toUriArray(protocol));
+            b.add(FhirPropertyNames.PROPERTY_PROTOCOL, FhirObject.toUriArray(protocol));
             return this;
         }
 
         public Builder summary(final String summary) {
-            b.add(PROPERTY_SUMMARY, summary);
+            b.add(FhirPropertyNames.PROPERTY_SUMMARY, summary);
             return this;
         }
 
         public Builder finding(final java.util.List<ClinicalImpressionFinding> finding) {
-            b.add(PROPERTY_FINDING, FhirObject.toArray(finding));
+            b.add(FhirPropertyNames.PROPERTY_FINDING, FhirObject.toArray(finding));
             return this;
         }
 
         public Builder prognosisCodeableConcept(final java.util.List<CodeableConcept> prognosisCodeableConcept) {
-            b.add(PROPERTY_PROGNOSIS_CODEABLE_CONCEPT, FhirObject.toArray(prognosisCodeableConcept));
+            b.add(FhirPropertyNames.PROPERTY_PROGNOSIS_CODEABLE_CONCEPT, FhirObject.toArray(prognosisCodeableConcept));
             return this;
         }
 
         public Builder prognosisReference(final java.util.List<Reference> prognosisReference) {
-            b.add(PROPERTY_PROGNOSIS_REFERENCE, FhirObject.toArray(prognosisReference));
+            b.add(FhirPropertyNames.PROPERTY_PROGNOSIS_REFERENCE, FhirObject.toArray(prognosisReference));
             return this;
         }
 
         public Builder supportingInfo(final java.util.List<Reference> supportingInfo) {
-            b.add(PROPERTY_SUPPORTING_INFO, FhirObject.toArray(supportingInfo));
+            b.add(FhirPropertyNames.PROPERTY_SUPPORTING_INFO, FhirObject.toArray(supportingInfo));
             return this;
         }
 
         public Builder note(final java.util.List<Annotation> note) {
-            b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+            b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
             return this;
         }
 
@@ -474,12 +446,6 @@ public class ClinicalImpression extends FhirResource {
      */
     public static class ClinicalImpressionFinding extends FhirObject {
         public static final String RESOURCE_TYPE = "ClinicalImpressionFinding";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_ITEM_CODEABLE_CONCEPT = "itemCodeableConcept";
-        public static final String PROPERTY_ITEM_REFERENCE = "itemReference";
-        public static final String PROPERTY_BASIS = "basis";
 
         public static Builder create() {
             return new Builder();
@@ -498,7 +464,7 @@ public class ClinicalImpression extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -510,7 +476,7 @@ public class ClinicalImpression extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -531,7 +497,7 @@ public class ClinicalImpression extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -539,7 +505,7 @@ public class ClinicalImpression extends FhirResource {
          * ruled-out or resolved conditions.
          */
         public CodeableConcept itemCodeableConcept() {
-            return getObject(CodeableConcept.class, PROPERTY_ITEM_CODEABLE_CONCEPT);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ITEM_CODEABLE_CONCEPT);
         }
 
         /**
@@ -547,14 +513,14 @@ public class ClinicalImpression extends FhirResource {
          * ruled-out or resolved conditions.
          */
         public Reference itemReference() {
-            return getObject(Reference.class, PROPERTY_ITEM_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_ITEM_REFERENCE);
         }
 
         /**
          * Which investigations support finding or diagnosis.
          */
         public String basis() {
-            return getString(PROPERTY_BASIS);
+            return getString(FhirPropertyNames.PROPERTY_BASIS);
         }
 
         public static class Builder {
@@ -569,32 +535,32 @@ public class ClinicalImpression extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder itemCodeableConcept(final CodeableConcept itemCodeableConcept) {
-                b.add(PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
+                b.add(FhirPropertyNames.PROPERTY_ITEM_CODEABLE_CONCEPT, itemCodeableConcept);
                 return this;
             }
 
             public Builder itemReference(final Reference itemReference) {
-                b.add(PROPERTY_ITEM_REFERENCE, itemReference);
+                b.add(FhirPropertyNames.PROPERTY_ITEM_REFERENCE, itemReference);
                 return this;
             }
 
             public Builder basis(final String basis) {
-                b.add(PROPERTY_BASIS, basis);
+                b.add(FhirPropertyNames.PROPERTY_BASIS, basis);
                 return this;
             }
 
@@ -616,11 +582,6 @@ public class ClinicalImpression extends FhirResource {
      */
     public static class ClinicalImpressionInvestigation extends FhirObject {
         public static final String RESOURCE_TYPE = "ClinicalImpressionInvestigation";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_ITEM = "item";
 
         public static Builder create() {
             return new Builder();
@@ -639,7 +600,7 @@ public class ClinicalImpression extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -651,7 +612,7 @@ public class ClinicalImpression extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -672,7 +633,7 @@ public class ClinicalImpression extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -682,14 +643,14 @@ public class ClinicalImpression extends FhirResource {
          * (exposure|family|travel|nutritional) history may be used.
          */
         public CodeableConcept code() {
-            return getObject(CodeableConcept.class, PROPERTY_CODE);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * A record of a specific investigation that was undertaken.
          */
         public java.util.List<Reference> item() {
-            return getList(Reference.class, PROPERTY_ITEM);
+            return getList(Reference.class, FhirPropertyNames.PROPERTY_ITEM);
         }
 
         public static class Builder {
@@ -704,27 +665,27 @@ public class ClinicalImpression extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final CodeableConcept code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder item(final java.util.List<Reference> item) {
-                b.add(PROPERTY_ITEM, FhirObject.toArray(item));
+                b.add(FhirPropertyNames.PROPERTY_ITEM, FhirObject.toArray(item));
                 return this;
             }
 

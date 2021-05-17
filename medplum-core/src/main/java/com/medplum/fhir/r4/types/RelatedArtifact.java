@@ -9,21 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Related artifacts such as additional documentation, justification, or
  * bibliographic references.
  */
 public class RelatedArtifact extends FhirResource {
     public static final String RESOURCE_TYPE = "RelatedArtifact";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_LABEL = "label";
-    public static final String PROPERTY_DISPLAY = "display";
-    public static final String PROPERTY_CITATION = "citation";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_DOCUMENT = "document";
-    public static final String PROPERTY_RESOURCE = "resource";
 
     public static Builder create() {
         return new Builder();
@@ -42,7 +35,7 @@ public class RelatedArtifact extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -54,14 +47,14 @@ public class RelatedArtifact extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * The type of relationship to the related artifact.
      */
     public String type() {
-        return getString(PROPERTY_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -69,7 +62,7 @@ public class RelatedArtifact extends FhirResource {
      * elsewhere in the containing artifact, such as a footnote index.
      */
     public String label() {
-        return getString(PROPERTY_LABEL);
+        return getString(FhirPropertyNames.PROPERTY_LABEL);
     }
 
     /**
@@ -77,7 +70,7 @@ public class RelatedArtifact extends FhirResource {
      * referenced, suitable for display to a consumer.
      */
     public String display() {
-        return getString(PROPERTY_DISPLAY);
+        return getString(FhirPropertyNames.PROPERTY_DISPLAY);
     }
 
     /**
@@ -85,7 +78,7 @@ public class RelatedArtifact extends FhirResource {
      * formatted according to an accepted citation format.
      */
     public String citation() {
-        return getString(PROPERTY_CITATION);
+        return getString(FhirPropertyNames.PROPERTY_CITATION);
     }
 
     /**
@@ -93,7 +86,7 @@ public class RelatedArtifact extends FhirResource {
      * content.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -101,7 +94,7 @@ public class RelatedArtifact extends FhirResource {
      * exclusive with the resource element.
      */
     public Attachment document() {
-        return getObject(Attachment.class, PROPERTY_DOCUMENT);
+        return getObject(Attachment.class, FhirPropertyNames.PROPERTY_DOCUMENT);
     }
 
     /**
@@ -109,7 +102,7 @@ public class RelatedArtifact extends FhirResource {
      * knowledge resource.
      */
     public String resource() {
-        return getString(PROPERTY_RESOURCE);
+        return getString(FhirPropertyNames.PROPERTY_RESOURCE);
     }
 
     public static class Builder {
@@ -124,47 +117,47 @@ public class RelatedArtifact extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder type(final String type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder label(final String label) {
-            b.add(PROPERTY_LABEL, label);
+            b.add(FhirPropertyNames.PROPERTY_LABEL, label);
             return this;
         }
 
         public Builder display(final String display) {
-            b.add(PROPERTY_DISPLAY, display);
+            b.add(FhirPropertyNames.PROPERTY_DISPLAY, display);
             return this;
         }
 
         public Builder citation(final String citation) {
-            b.add(PROPERTY_CITATION, citation);
+            b.add(FhirPropertyNames.PROPERTY_CITATION, citation);
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder document(final Attachment document) {
-            b.add(PROPERTY_DOCUMENT, document);
+            b.add(FhirPropertyNames.PROPERTY_DOCUMENT, document);
             return this;
         }
 
         public Builder resource(final String resource) {
-            b.add(PROPERTY_RESOURCE, resource);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE, resource);
             return this;
         }
 

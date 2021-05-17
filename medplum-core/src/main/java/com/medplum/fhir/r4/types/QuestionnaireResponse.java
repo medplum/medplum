@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A structured set of questions and their answers. The questions are
  * ordered and grouped into coherent subsets, corresponding to the
@@ -16,26 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class QuestionnaireResponse extends FhirResource {
     public static final String RESOURCE_TYPE = "QuestionnaireResponse";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASED_ON = "basedOn";
-    public static final String PROPERTY_PART_OF = "partOf";
-    public static final String PROPERTY_QUESTIONNAIRE = "questionnaire";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_AUTHORED = "authored";
-    public static final String PROPERTY_AUTHOR = "author";
-    public static final String PROPERTY_SOURCE = "source";
-    public static final String PROPERTY_ITEM = "item";
 
     public static Builder create() {
         return new Builder();
@@ -56,14 +38,14 @@ public class QuestionnaireResponse extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -75,7 +57,7 @@ public class QuestionnaireResponse extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -84,7 +66,7 @@ public class QuestionnaireResponse extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -96,7 +78,7 @@ public class QuestionnaireResponse extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -116,7 +98,7 @@ public class QuestionnaireResponse extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -124,7 +106,7 @@ public class QuestionnaireResponse extends FhirResource {
      * completed) questionnaire.
      */
     public Identifier identifier() {
-        return getObject(Identifier.class, PROPERTY_IDENTIFIER);
+        return getObject(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -134,7 +116,7 @@ public class QuestionnaireResponse extends FhirResource {
      * post-partum depression.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASED_ON);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_BASED_ON);
     }
 
     /**
@@ -143,7 +125,7 @@ public class QuestionnaireResponse extends FhirResource {
      * executed as part of.
      */
     public java.util.List<Reference> partOf() {
-        return getList(Reference.class, PROPERTY_PART_OF);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_PART_OF);
     }
 
     /**
@@ -151,7 +133,7 @@ public class QuestionnaireResponse extends FhirResource {
      * answers are being provided.
      */
     public String questionnaire() {
-        return getString(PROPERTY_QUESTIONNAIRE);
+        return getString(FhirPropertyNames.PROPERTY_QUESTIONNAIRE);
     }
 
     /**
@@ -159,7 +141,7 @@ public class QuestionnaireResponse extends FhirResource {
      * lifecycle.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -168,7 +150,7 @@ public class QuestionnaireResponse extends FhirResource {
      * apply to, but is not necessarily the source of information.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
@@ -176,14 +158,14 @@ public class QuestionnaireResponse extends FhirResource {
      * to which the creation of this record is tightly associated.
      */
     public Reference encounter() {
-        return getObject(Reference.class, PROPERTY_ENCOUNTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ENCOUNTER);
     }
 
     /**
      * The date and/or time that this set of answers were last changed.
      */
     public java.time.Instant authored() {
-        return getInstant(PROPERTY_AUTHORED);
+        return getInstant(FhirPropertyNames.PROPERTY_AUTHORED);
     }
 
     /**
@@ -191,14 +173,14 @@ public class QuestionnaireResponse extends FhirResource {
      * QuestionnaireResponse and recorded them in the system.
      */
     public Reference author() {
-        return getObject(Reference.class, PROPERTY_AUTHOR);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_AUTHOR);
     }
 
     /**
      * The person who answered the questions about the subject.
      */
     public Reference source() {
-        return getObject(Reference.class, PROPERTY_SOURCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
     }
 
     /**
@@ -206,7 +188,7 @@ public class QuestionnaireResponse extends FhirResource {
      * answers are provided.
      */
     public java.util.List<QuestionnaireResponseItem> item() {
-        return getList(QuestionnaireResponseItem.class, PROPERTY_ITEM);
+        return getList(QuestionnaireResponseItem.class, FhirPropertyNames.PROPERTY_ITEM);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -220,102 +202,102 @@ public class QuestionnaireResponse extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final Identifier identifier) {
-            b.add(PROPERTY_IDENTIFIER, identifier);
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, identifier);
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
+            b.add(FhirPropertyNames.PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder partOf(final java.util.List<Reference> partOf) {
-            b.add(PROPERTY_PART_OF, FhirObject.toArray(partOf));
+            b.add(FhirPropertyNames.PROPERTY_PART_OF, FhirObject.toArray(partOf));
             return this;
         }
 
         public Builder questionnaire(final String questionnaire) {
-            b.add(PROPERTY_QUESTIONNAIRE, questionnaire);
+            b.add(FhirPropertyNames.PROPERTY_QUESTIONNAIRE, questionnaire);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder encounter(final Reference encounter) {
-            b.add(PROPERTY_ENCOUNTER, encounter);
+            b.add(FhirPropertyNames.PROPERTY_ENCOUNTER, encounter);
             return this;
         }
 
         public Builder authored(final java.time.Instant authored) {
-            b.add(PROPERTY_AUTHORED, authored.toString());
+            b.add(FhirPropertyNames.PROPERTY_AUTHORED, authored.toString());
             return this;
         }
 
         public Builder author(final Reference author) {
-            b.add(PROPERTY_AUTHOR, author);
+            b.add(FhirPropertyNames.PROPERTY_AUTHOR, author);
             return this;
         }
 
         public Builder source(final Reference source) {
-            b.add(PROPERTY_SOURCE, source);
+            b.add(FhirPropertyNames.PROPERTY_SOURCE, source);
             return this;
         }
 
         public Builder item(final java.util.List<QuestionnaireResponseItem> item) {
-            b.add(PROPERTY_ITEM, FhirObject.toArray(item));
+            b.add(FhirPropertyNames.PROPERTY_ITEM, FhirObject.toArray(item));
             return this;
         }
 
@@ -331,22 +313,6 @@ public class QuestionnaireResponse extends FhirResource {
      */
     public static class QuestionnaireResponseAnswer extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireResponseAnswer";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
-        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
-        public static final String PROPERTY_VALUE_DATE = "valueDate";
-        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
-        public static final String PROPERTY_VALUE_TIME = "valueTime";
-        public static final String PROPERTY_VALUE_STRING = "valueString";
-        public static final String PROPERTY_VALUE_URI = "valueUri";
-        public static final String PROPERTY_VALUE_ATTACHMENT = "valueAttachment";
-        public static final String PROPERTY_VALUE_CODING = "valueCoding";
-        public static final String PROPERTY_VALUE_QUANTITY = "valueQuantity";
-        public static final String PROPERTY_VALUE_REFERENCE = "valueReference";
-        public static final String PROPERTY_ITEM = "item";
 
         public static Builder create() {
             return new Builder();
@@ -365,7 +331,7 @@ public class QuestionnaireResponse extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -377,7 +343,7 @@ public class QuestionnaireResponse extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -398,7 +364,7 @@ public class QuestionnaireResponse extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -406,7 +372,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
@@ -414,7 +380,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public Integer valueDecimal() {
-            return data.getInt(PROPERTY_VALUE_DECIMAL);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_DECIMAL);
         }
 
         /**
@@ -422,7 +388,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUE_INTEGER);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_INTEGER);
         }
 
         /**
@@ -430,7 +396,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public String valueDate() {
-            return getString(PROPERTY_VALUE_DATE);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_DATE);
         }
 
         /**
@@ -438,7 +404,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUE_DATE_TIME);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
@@ -446,7 +412,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public String valueTime() {
-            return getString(PROPERTY_VALUE_TIME);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_TIME);
         }
 
         /**
@@ -454,7 +420,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUE_STRING);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_STRING);
         }
 
         /**
@@ -462,7 +428,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public String valueUri() {
-            return getString(PROPERTY_VALUE_URI);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_URI);
         }
 
         /**
@@ -470,7 +436,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public Attachment valueAttachment() {
-            return getObject(Attachment.class, PROPERTY_VALUE_ATTACHMENT);
+            return getObject(Attachment.class, FhirPropertyNames.PROPERTY_VALUE_ATTACHMENT);
         }
 
         /**
@@ -478,7 +444,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public Coding valueCoding() {
-            return getObject(Coding.class, PROPERTY_VALUE_CODING);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_VALUE_CODING);
         }
 
         /**
@@ -486,7 +452,7 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public Quantity valueQuantity() {
-            return getObject(Quantity.class, PROPERTY_VALUE_QUANTITY);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_VALUE_QUANTITY);
         }
 
         /**
@@ -494,14 +460,14 @@ public class QuestionnaireResponse extends FhirResource {
          * question.
          */
         public Reference valueReference() {
-            return getObject(Reference.class, PROPERTY_VALUE_REFERENCE);
+            return getObject(Reference.class, FhirPropertyNames.PROPERTY_VALUE_REFERENCE);
         }
 
         /**
          * Nested groups and/or questions found within this particular answer.
          */
         public java.util.List<QuestionnaireResponseItem> item() {
-            return getList(QuestionnaireResponseItem.class, PROPERTY_ITEM);
+            return getList(QuestionnaireResponseItem.class, FhirPropertyNames.PROPERTY_ITEM);
         }
 
         public static class Builder {
@@ -516,82 +482,82 @@ public class QuestionnaireResponse extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueDecimal(final Integer valueDecimal) {
-                b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DECIMAL, valueDecimal);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueDate(final String valueDate) {
-                b.add(PROPERTY_VALUE_DATE, valueDate);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DATE, valueDate);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valueTime(final String valueTime) {
-                b.add(PROPERTY_VALUE_TIME, valueTime);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_TIME, valueTime);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUE_STRING, valueString);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueUri(final String valueUri) {
-                b.add(PROPERTY_VALUE_URI, valueUri);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_URI, valueUri);
                 return this;
             }
 
             public Builder valueAttachment(final Attachment valueAttachment) {
-                b.add(PROPERTY_VALUE_ATTACHMENT, valueAttachment);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_ATTACHMENT, valueAttachment);
                 return this;
             }
 
             public Builder valueCoding(final Coding valueCoding) {
-                b.add(PROPERTY_VALUE_CODING, valueCoding);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CODING, valueCoding);
                 return this;
             }
 
             public Builder valueQuantity(final Quantity valueQuantity) {
-                b.add(PROPERTY_VALUE_QUANTITY, valueQuantity);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_QUANTITY, valueQuantity);
                 return this;
             }
 
             public Builder valueReference(final Reference valueReference) {
-                b.add(PROPERTY_VALUE_REFERENCE, valueReference);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_REFERENCE, valueReference);
                 return this;
             }
 
             public Builder item(final java.util.List<QuestionnaireResponseItem> item) {
-                b.add(PROPERTY_ITEM, FhirObject.toArray(item));
+                b.add(FhirPropertyNames.PROPERTY_ITEM, FhirObject.toArray(item));
                 return this;
             }
 
@@ -608,14 +574,6 @@ public class QuestionnaireResponse extends FhirResource {
      */
     public static class QuestionnaireResponseItem extends FhirObject {
         public static final String RESOURCE_TYPE = "QuestionnaireResponseItem";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_LINK_ID = "linkId";
-        public static final String PROPERTY_DEFINITION = "definition";
-        public static final String PROPERTY_TEXT = "text";
-        public static final String PROPERTY_ANSWER = "answer";
-        public static final String PROPERTY_ITEM = "item";
 
         public static Builder create() {
             return new Builder();
@@ -634,7 +592,7 @@ public class QuestionnaireResponse extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -646,7 +604,7 @@ public class QuestionnaireResponse extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -667,7 +625,7 @@ public class QuestionnaireResponse extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -675,7 +633,7 @@ public class QuestionnaireResponse extends FhirResource {
          * QuestionnaireResponse resource.
          */
         public String linkId() {
-            return getString(PROPERTY_LINK_ID);
+            return getString(FhirPropertyNames.PROPERTY_LINK_ID);
         }
 
         /**
@@ -683,7 +641,7 @@ public class QuestionnaireResponse extends FhirResource {
          * for the item.
          */
         public java.net.URI definition() {
-            return getUri(PROPERTY_DEFINITION);
+            return getUri(FhirPropertyNames.PROPERTY_DEFINITION);
         }
 
         /**
@@ -691,21 +649,21 @@ public class QuestionnaireResponse extends FhirResource {
          * of the question being answered.
          */
         public String text() {
-            return getString(PROPERTY_TEXT);
+            return getString(FhirPropertyNames.PROPERTY_TEXT);
         }
 
         /**
          * The respondent's answer(s) to the question.
          */
         public java.util.List<QuestionnaireResponseAnswer> answer() {
-            return getList(QuestionnaireResponseAnswer.class, PROPERTY_ANSWER);
+            return getList(QuestionnaireResponseAnswer.class, FhirPropertyNames.PROPERTY_ANSWER);
         }
 
         /**
          * Questions or sub-groups nested beneath a question or group.
          */
         public java.util.List<QuestionnaireResponseItem> item() {
-            return getList(QuestionnaireResponseItem.class, PROPERTY_ITEM);
+            return getList(QuestionnaireResponseItem.class, FhirPropertyNames.PROPERTY_ITEM);
         }
 
         public static class Builder {
@@ -720,42 +678,42 @@ public class QuestionnaireResponse extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder linkId(final String linkId) {
-                b.add(PROPERTY_LINK_ID, linkId);
+                b.add(FhirPropertyNames.PROPERTY_LINK_ID, linkId);
                 return this;
             }
 
             public Builder definition(final java.net.URI definition) {
-                b.add(PROPERTY_DEFINITION, definition.toString());
+                b.add(FhirPropertyNames.PROPERTY_DEFINITION, definition.toString());
                 return this;
             }
 
             public Builder text(final String text) {
-                b.add(PROPERTY_TEXT, text);
+                b.add(FhirPropertyNames.PROPERTY_TEXT, text);
                 return this;
             }
 
             public Builder answer(final java.util.List<QuestionnaireResponseAnswer> answer) {
-                b.add(PROPERTY_ANSWER, FhirObject.toArray(answer));
+                b.add(FhirPropertyNames.PROPERTY_ANSWER, FhirObject.toArray(answer));
                 return this;
             }
 
             public Builder item(final java.util.List<QuestionnaireResponseItem> item) {
-                b.add(PROPERTY_ITEM, FhirObject.toArray(item));
+                b.add(FhirPropertyNames.PROPERTY_ITEM, FhirObject.toArray(item));
                 return this;
             }
 

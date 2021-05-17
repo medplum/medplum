@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The marketing status describes the date when a medicinal product is
  * actually put on the market or the date as of which it is no longer
@@ -16,20 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class ProdCharacteristic extends FhirResource {
     public static final String RESOURCE_TYPE = "ProdCharacteristic";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_HEIGHT = "height";
-    public static final String PROPERTY_WIDTH = "width";
-    public static final String PROPERTY_DEPTH = "depth";
-    public static final String PROPERTY_WEIGHT = "weight";
-    public static final String PROPERTY_NOMINAL_VOLUME = "nominalVolume";
-    public static final String PROPERTY_EXTERNAL_DIAMETER = "externalDiameter";
-    public static final String PROPERTY_SHAPE = "shape";
-    public static final String PROPERTY_COLOR = "color";
-    public static final String PROPERTY_IMPRINT = "imprint";
-    public static final String PROPERTY_IMAGE = "image";
-    public static final String PROPERTY_SCORING = "scoring";
 
     public static Builder create() {
         return new Builder();
@@ -48,7 +36,7 @@ public class ProdCharacteristic extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -60,7 +48,7 @@ public class ProdCharacteristic extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -81,7 +69,7 @@ public class ProdCharacteristic extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -91,7 +79,7 @@ public class ProdCharacteristic extends FhirResource {
      * and the symbol identifier shall be used.
      */
     public Quantity height() {
-        return getObject(Quantity.class, PROPERTY_HEIGHT);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_HEIGHT);
     }
 
     /**
@@ -101,7 +89,7 @@ public class ProdCharacteristic extends FhirResource {
      * and the symbol identifier shall be used.
      */
     public Quantity width() {
-        return getObject(Quantity.class, PROPERTY_WIDTH);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_WIDTH);
     }
 
     /**
@@ -111,7 +99,7 @@ public class ProdCharacteristic extends FhirResource {
      * and the symbol identifier shall be used.
      */
     public Quantity depth() {
-        return getObject(Quantity.class, PROPERTY_DEPTH);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_DEPTH);
     }
 
     /**
@@ -121,7 +109,7 @@ public class ProdCharacteristic extends FhirResource {
      * and the symbol identifier shall be used.
      */
     public Quantity weight() {
-        return getObject(Quantity.class, PROPERTY_WEIGHT);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_WEIGHT);
     }
 
     /**
@@ -131,7 +119,7 @@ public class ProdCharacteristic extends FhirResource {
      * terminology The symbol and the symbol identifier shall be used.
      */
     public Quantity nominalVolume() {
-        return getObject(Quantity.class, PROPERTY_NOMINAL_VOLUME);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_NOMINAL_VOLUME);
     }
 
     /**
@@ -141,7 +129,7 @@ public class ProdCharacteristic extends FhirResource {
      * terminology The symbol and the symbol identifier shall be used.
      */
     public Quantity externalDiameter() {
-        return getObject(Quantity.class, PROPERTY_EXTERNAL_DIAMETER);
+        return getObject(Quantity.class, FhirPropertyNames.PROPERTY_EXTERNAL_DIAMETER);
     }
 
     /**
@@ -150,7 +138,7 @@ public class ProdCharacteristic extends FhirResource {
      * used.
      */
     public String shape() {
-        return getString(PROPERTY_SHAPE);
+        return getString(FhirPropertyNames.PROPERTY_SHAPE);
     }
 
     /**
@@ -159,14 +147,14 @@ public class ProdCharacteristic extends FhirResource {
      * used.
      */
     public java.util.List<String> color() {
-        return getList(String.class, PROPERTY_COLOR);
+        return getList(String.class, FhirPropertyNames.PROPERTY_COLOR);
     }
 
     /**
      * Where applicable, the imprint can be specified as text.
      */
     public java.util.List<String> imprint() {
-        return getList(String.class, PROPERTY_IMPRINT);
+        return getList(String.class, FhirPropertyNames.PROPERTY_IMPRINT);
     }
 
     /**
@@ -174,7 +162,7 @@ public class ProdCharacteristic extends FhirResource {
      * attachment shall be specified by regional implementations.
      */
     public java.util.List<Attachment> image() {
-        return getList(Attachment.class, PROPERTY_IMAGE);
+        return getList(Attachment.class, FhirPropertyNames.PROPERTY_IMAGE);
     }
 
     /**
@@ -183,7 +171,7 @@ public class ProdCharacteristic extends FhirResource {
      * shall be used.
      */
     public CodeableConcept scoring() {
-        return getObject(CodeableConcept.class, PROPERTY_SCORING);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SCORING);
     }
 
     public static class Builder {
@@ -198,72 +186,72 @@ public class ProdCharacteristic extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder height(final Quantity height) {
-            b.add(PROPERTY_HEIGHT, height);
+            b.add(FhirPropertyNames.PROPERTY_HEIGHT, height);
             return this;
         }
 
         public Builder width(final Quantity width) {
-            b.add(PROPERTY_WIDTH, width);
+            b.add(FhirPropertyNames.PROPERTY_WIDTH, width);
             return this;
         }
 
         public Builder depth(final Quantity depth) {
-            b.add(PROPERTY_DEPTH, depth);
+            b.add(FhirPropertyNames.PROPERTY_DEPTH, depth);
             return this;
         }
 
         public Builder weight(final Quantity weight) {
-            b.add(PROPERTY_WEIGHT, weight);
+            b.add(FhirPropertyNames.PROPERTY_WEIGHT, weight);
             return this;
         }
 
         public Builder nominalVolume(final Quantity nominalVolume) {
-            b.add(PROPERTY_NOMINAL_VOLUME, nominalVolume);
+            b.add(FhirPropertyNames.PROPERTY_NOMINAL_VOLUME, nominalVolume);
             return this;
         }
 
         public Builder externalDiameter(final Quantity externalDiameter) {
-            b.add(PROPERTY_EXTERNAL_DIAMETER, externalDiameter);
+            b.add(FhirPropertyNames.PROPERTY_EXTERNAL_DIAMETER, externalDiameter);
             return this;
         }
 
         public Builder shape(final String shape) {
-            b.add(PROPERTY_SHAPE, shape);
+            b.add(FhirPropertyNames.PROPERTY_SHAPE, shape);
             return this;
         }
 
         public Builder color(final java.util.List<String> color) {
-            b.add(PROPERTY_COLOR, FhirObject.toStringArray(color));
+            b.add(FhirPropertyNames.PROPERTY_COLOR, FhirObject.toStringArray(color));
             return this;
         }
 
         public Builder imprint(final java.util.List<String> imprint) {
-            b.add(PROPERTY_IMPRINT, FhirObject.toStringArray(imprint));
+            b.add(FhirPropertyNames.PROPERTY_IMPRINT, FhirObject.toStringArray(imprint));
             return this;
         }
 
         public Builder image(final java.util.List<Attachment> image) {
-            b.add(PROPERTY_IMAGE, FhirObject.toArray(image));
+            b.add(FhirPropertyNames.PROPERTY_IMAGE, FhirObject.toArray(image));
             return this;
         }
 
         public Builder scoring(final CodeableConcept scoring) {
-            b.add(PROPERTY_SCORING, scoring);
+            b.add(FhirPropertyNames.PROPERTY_SCORING, scoring);
             return this;
         }
 

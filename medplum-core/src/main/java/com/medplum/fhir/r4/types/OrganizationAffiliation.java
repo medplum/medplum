@@ -7,6 +7,8 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * Defines an affiliation/assotiation/relationship between 2 distinct
  * oganizations, that is not a part-of relationship/sub-division
@@ -14,27 +16,6 @@ import jakarta.json.JsonObject;
  */
 public class OrganizationAffiliation extends FhirResource {
     public static final String RESOURCE_TYPE = "OrganizationAffiliation";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_ACTIVE = "active";
-    public static final String PROPERTY_PERIOD = "period";
-    public static final String PROPERTY_ORGANIZATION = "organization";
-    public static final String PROPERTY_PARTICIPATING_ORGANIZATION = "participatingOrganization";
-    public static final String PROPERTY_NETWORK = "network";
-    public static final String PROPERTY_CODE = "code";
-    public static final String PROPERTY_SPECIALTY = "specialty";
-    public static final String PROPERTY_LOCATION = "location";
-    public static final String PROPERTY_HEALTHCARE_SERVICE = "healthcareService";
-    public static final String PROPERTY_TELECOM = "telecom";
-    public static final String PROPERTY_ENDPOINT = "endpoint";
 
     public static Builder create() {
         return new Builder();
@@ -55,14 +36,14 @@ public class OrganizationAffiliation extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -74,7 +55,7 @@ public class OrganizationAffiliation extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -83,7 +64,7 @@ public class OrganizationAffiliation extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -95,7 +76,7 @@ public class OrganizationAffiliation extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -115,21 +96,21 @@ public class OrganizationAffiliation extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * Business identifiers that are specific to this role.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * Whether this organization affiliation record is in active use.
      */
     public Boolean active() {
-        return data.getBoolean(PROPERTY_ACTIVE);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_ACTIVE);
     }
 
     /**
@@ -137,7 +118,7 @@ public class OrganizationAffiliation extends FhirResource {
      * with the primary organization.
      */
     public Period period() {
-        return getObject(Period.class, PROPERTY_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
     /**
@@ -145,7 +126,7 @@ public class OrganizationAffiliation extends FhirResource {
      * members).
      */
     public Reference organization() {
-        return getObject(Reference.class, PROPERTY_ORGANIZATION);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ORGANIZATION);
     }
 
     /**
@@ -154,7 +135,7 @@ public class OrganizationAffiliation extends FhirResource {
      * a member of).
      */
     public Reference participatingOrganization() {
-        return getObject(Reference.class, PROPERTY_PARTICIPATING_ORGANIZATION);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PARTICIPATING_ORGANIZATION);
     }
 
     /**
@@ -163,7 +144,7 @@ public class OrganizationAffiliation extends FhirResource {
      * the indicated locations (if defined).
      */
     public java.util.List<Reference> network() {
-        return getList(Reference.class, PROPERTY_NETWORK);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_NETWORK);
     }
 
     /**
@@ -171,7 +152,7 @@ public class OrganizationAffiliation extends FhirResource {
      * association.
      */
     public java.util.List<CodeableConcept> code() {
-        return getList(CodeableConcept.class, PROPERTY_CODE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
     }
 
     /**
@@ -179,21 +160,21 @@ public class OrganizationAffiliation extends FhirResource {
      * the role.
      */
     public java.util.List<CodeableConcept> specialty() {
-        return getList(CodeableConcept.class, PROPERTY_SPECIALTY);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_SPECIALTY);
     }
 
     /**
      * The location(s) at which the role occurs.
      */
     public java.util.List<Reference> location() {
-        return getList(Reference.class, PROPERTY_LOCATION);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_LOCATION);
     }
 
     /**
      * Healthcare services provided through the role.
      */
     public java.util.List<Reference> healthcareService() {
-        return getList(Reference.class, PROPERTY_HEALTHCARE_SERVICE);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_HEALTHCARE_SERVICE);
     }
 
     /**
@@ -201,7 +182,7 @@ public class OrganizationAffiliation extends FhirResource {
      * Affiliation.
      */
     public java.util.List<ContactPoint> telecom() {
-        return getList(ContactPoint.class, PROPERTY_TELECOM);
+        return getList(ContactPoint.class, FhirPropertyNames.PROPERTY_TELECOM);
     }
 
     /**
@@ -209,7 +190,7 @@ public class OrganizationAffiliation extends FhirResource {
      * role.
      */
     public java.util.List<Reference> endpoint() {
-        return getList(Reference.class, PROPERTY_ENDPOINT);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_ENDPOINT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -223,107 +204,107 @@ public class OrganizationAffiliation extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder active(final Boolean active) {
-            b.add(PROPERTY_ACTIVE, active);
+            b.add(FhirPropertyNames.PROPERTY_ACTIVE, active);
             return this;
         }
 
         public Builder period(final Period period) {
-            b.add(PROPERTY_PERIOD, period);
+            b.add(FhirPropertyNames.PROPERTY_PERIOD, period);
             return this;
         }
 
         public Builder organization(final Reference organization) {
-            b.add(PROPERTY_ORGANIZATION, organization);
+            b.add(FhirPropertyNames.PROPERTY_ORGANIZATION, organization);
             return this;
         }
 
         public Builder participatingOrganization(final Reference participatingOrganization) {
-            b.add(PROPERTY_PARTICIPATING_ORGANIZATION, participatingOrganization);
+            b.add(FhirPropertyNames.PROPERTY_PARTICIPATING_ORGANIZATION, participatingOrganization);
             return this;
         }
 
         public Builder network(final java.util.List<Reference> network) {
-            b.add(PROPERTY_NETWORK, FhirObject.toArray(network));
+            b.add(FhirPropertyNames.PROPERTY_NETWORK, FhirObject.toArray(network));
             return this;
         }
 
         public Builder code(final java.util.List<CodeableConcept> code) {
-            b.add(PROPERTY_CODE, FhirObject.toArray(code));
+            b.add(FhirPropertyNames.PROPERTY_CODE, FhirObject.toArray(code));
             return this;
         }
 
         public Builder specialty(final java.util.List<CodeableConcept> specialty) {
-            b.add(PROPERTY_SPECIALTY, FhirObject.toArray(specialty));
+            b.add(FhirPropertyNames.PROPERTY_SPECIALTY, FhirObject.toArray(specialty));
             return this;
         }
 
         public Builder location(final java.util.List<Reference> location) {
-            b.add(PROPERTY_LOCATION, FhirObject.toArray(location));
+            b.add(FhirPropertyNames.PROPERTY_LOCATION, FhirObject.toArray(location));
             return this;
         }
 
         public Builder healthcareService(final java.util.List<Reference> healthcareService) {
-            b.add(PROPERTY_HEALTHCARE_SERVICE, FhirObject.toArray(healthcareService));
+            b.add(FhirPropertyNames.PROPERTY_HEALTHCARE_SERVICE, FhirObject.toArray(healthcareService));
             return this;
         }
 
         public Builder telecom(final java.util.List<ContactPoint> telecom) {
-            b.add(PROPERTY_TELECOM, FhirObject.toArray(telecom));
+            b.add(FhirPropertyNames.PROPERTY_TELECOM, FhirObject.toArray(telecom));
             return this;
         }
 
         public Builder endpoint(final java.util.List<Reference> endpoint) {
-            b.add(PROPERTY_ENDPOINT, FhirObject.toArray(endpoint));
+            b.add(FhirPropertyNames.PROPERTY_ENDPOINT, FhirObject.toArray(endpoint));
             return this;
         }
 

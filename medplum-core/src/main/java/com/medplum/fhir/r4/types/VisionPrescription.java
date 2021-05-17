@@ -9,29 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * An authorization for the provision of glasses and/or contact lenses to
  * a patient.
  */
 public class VisionPrescription extends FhirResource {
     public static final String RESOURCE_TYPE = "VisionPrescription";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_CREATED = "created";
-    public static final String PROPERTY_PATIENT = "patient";
-    public static final String PROPERTY_ENCOUNTER = "encounter";
-    public static final String PROPERTY_DATE_WRITTEN = "dateWritten";
-    public static final String PROPERTY_PRESCRIBER = "prescriber";
-    public static final String PROPERTY_LENS_SPECIFICATION = "lensSpecification";
 
     public static Builder create() {
         return new Builder();
@@ -52,14 +37,14 @@ public class VisionPrescription extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -71,7 +56,7 @@ public class VisionPrescription extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -80,7 +65,7 @@ public class VisionPrescription extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -92,7 +77,7 @@ public class VisionPrescription extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -112,28 +97,28 @@ public class VisionPrescription extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * A unique identifier assigned to this vision prescription.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
      * The status of the resource instance.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
      * The date this resource was created.
      */
     public java.time.Instant created() {
-        return getInstant(PROPERTY_CREATED);
+        return getInstant(FhirPropertyNames.PROPERTY_CREATED);
     }
 
     /**
@@ -141,7 +126,7 @@ public class VisionPrescription extends FhirResource {
      * applies.
      */
     public Reference patient() {
-        return getObject(Reference.class, PROPERTY_PATIENT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PATIENT);
     }
 
     /**
@@ -150,14 +135,14 @@ public class VisionPrescription extends FhirResource {
      * prescription was issued.
      */
     public Reference encounter() {
-        return getObject(Reference.class, PROPERTY_ENCOUNTER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_ENCOUNTER);
     }
 
     /**
      * The date (and perhaps time) when the prescription was written.
      */
     public java.time.Instant dateWritten() {
-        return getInstant(PROPERTY_DATE_WRITTEN);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE_WRITTEN);
     }
 
     /**
@@ -165,7 +150,7 @@ public class VisionPrescription extends FhirResource {
      * prescription.
      */
     public Reference prescriber() {
-        return getObject(Reference.class, PROPERTY_PRESCRIBER);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_PRESCRIBER);
     }
 
     /**
@@ -173,7 +158,7 @@ public class VisionPrescription extends FhirResource {
      * as the authorization for the fullfillment by certified professionals.
      */
     public java.util.List<VisionPrescriptionLensSpecification> lensSpecification() {
-        return getList(VisionPrescriptionLensSpecification.class, PROPERTY_LENS_SPECIFICATION);
+        return getList(VisionPrescriptionLensSpecification.class, FhirPropertyNames.PROPERTY_LENS_SPECIFICATION);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -187,87 +172,87 @@ public class VisionPrescription extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder created(final java.time.Instant created) {
-            b.add(PROPERTY_CREATED, created.toString());
+            b.add(FhirPropertyNames.PROPERTY_CREATED, created.toString());
             return this;
         }
 
         public Builder patient(final Reference patient) {
-            b.add(PROPERTY_PATIENT, patient);
+            b.add(FhirPropertyNames.PROPERTY_PATIENT, patient);
             return this;
         }
 
         public Builder encounter(final Reference encounter) {
-            b.add(PROPERTY_ENCOUNTER, encounter);
+            b.add(FhirPropertyNames.PROPERTY_ENCOUNTER, encounter);
             return this;
         }
 
         public Builder dateWritten(final java.time.Instant dateWritten) {
-            b.add(PROPERTY_DATE_WRITTEN, dateWritten.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE_WRITTEN, dateWritten.toString());
             return this;
         }
 
         public Builder prescriber(final Reference prescriber) {
-            b.add(PROPERTY_PRESCRIBER, prescriber);
+            b.add(FhirPropertyNames.PROPERTY_PRESCRIBER, prescriber);
             return this;
         }
 
         public Builder lensSpecification(final java.util.List<VisionPrescriptionLensSpecification> lensSpecification) {
-            b.add(PROPERTY_LENS_SPECIFICATION, FhirObject.toArray(lensSpecification));
+            b.add(FhirPropertyNames.PROPERTY_LENS_SPECIFICATION, FhirObject.toArray(lensSpecification));
             return this;
         }
 
@@ -282,23 +267,6 @@ public class VisionPrescription extends FhirResource {
      */
     public static class VisionPrescriptionLensSpecification extends FhirObject {
         public static final String RESOURCE_TYPE = "VisionPrescriptionLensSpecification";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_PRODUCT = "product";
-        public static final String PROPERTY_EYE = "eye";
-        public static final String PROPERTY_SPHERE = "sphere";
-        public static final String PROPERTY_CYLINDER = "cylinder";
-        public static final String PROPERTY_AXIS = "axis";
-        public static final String PROPERTY_PRISM = "prism";
-        public static final String PROPERTY_ADD = "add";
-        public static final String PROPERTY_POWER = "power";
-        public static final String PROPERTY_BACK_CURVE = "backCurve";
-        public static final String PROPERTY_DIAMETER = "diameter";
-        public static final String PROPERTY_DURATION = "duration";
-        public static final String PROPERTY_COLOR = "color";
-        public static final String PROPERTY_BRAND = "brand";
-        public static final String PROPERTY_NOTE = "note";
 
         public static Builder create() {
             return new Builder();
@@ -317,7 +285,7 @@ public class VisionPrescription extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -329,7 +297,7 @@ public class VisionPrescription extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -350,7 +318,7 @@ public class VisionPrescription extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -358,42 +326,42 @@ public class VisionPrescription extends FhirResource {
          * the patient.
          */
         public CodeableConcept product() {
-            return getObject(CodeableConcept.class, PROPERTY_PRODUCT);
+            return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PRODUCT);
         }
 
         /**
          * The eye for which the lens specification applies.
          */
         public String eye() {
-            return getString(PROPERTY_EYE);
+            return getString(FhirPropertyNames.PROPERTY_EYE);
         }
 
         /**
          * Lens power measured in dioptres (0.25 units).
          */
         public Double sphere() {
-            return data.getJsonNumber(PROPERTY_SPHERE).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_SPHERE).doubleValue();
         }
 
         /**
          * Power adjustment for astigmatism measured in dioptres (0.25 units).
          */
         public Double cylinder() {
-            return data.getJsonNumber(PROPERTY_CYLINDER).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_CYLINDER).doubleValue();
         }
 
         /**
          * Adjustment for astigmatism measured in integer degrees.
          */
         public Integer axis() {
-            return data.getInt(PROPERTY_AXIS);
+            return data.getInt(FhirPropertyNames.PROPERTY_AXIS);
         }
 
         /**
          * Allows for adjustment on two axis.
          */
         public java.util.List<VisionPrescriptionPrism> prism() {
-            return getList(VisionPrescriptionPrism.class, PROPERTY_PRISM);
+            return getList(VisionPrescriptionPrism.class, FhirPropertyNames.PROPERTY_PRISM);
         }
 
         /**
@@ -401,56 +369,56 @@ public class VisionPrescription extends FhirResource {
          * units).
          */
         public Double add() {
-            return data.getJsonNumber(PROPERTY_ADD).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_ADD).doubleValue();
         }
 
         /**
          * Contact lens power measured in dioptres (0.25 units).
          */
         public Double power() {
-            return data.getJsonNumber(PROPERTY_POWER).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_POWER).doubleValue();
         }
 
         /**
          * Back curvature measured in millimetres.
          */
         public Double backCurve() {
-            return data.getJsonNumber(PROPERTY_BACK_CURVE).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_BACK_CURVE).doubleValue();
         }
 
         /**
          * Contact lens diameter measured in millimetres.
          */
         public Double diameter() {
-            return data.getJsonNumber(PROPERTY_DIAMETER).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_DIAMETER).doubleValue();
         }
 
         /**
          * The recommended maximum wear period for the lens.
          */
         public Quantity duration() {
-            return getObject(Quantity.class, PROPERTY_DURATION);
+            return getObject(Quantity.class, FhirPropertyNames.PROPERTY_DURATION);
         }
 
         /**
          * Special color or pattern.
          */
         public String color() {
-            return getString(PROPERTY_COLOR);
+            return getString(FhirPropertyNames.PROPERTY_COLOR);
         }
 
         /**
          * Brand recommendations or restrictions.
          */
         public String brand() {
-            return getString(PROPERTY_BRAND);
+            return getString(FhirPropertyNames.PROPERTY_BRAND);
         }
 
         /**
          * Notes for special requirements such as coatings and lens materials.
          */
         public java.util.List<Annotation> note() {
-            return getList(Annotation.class, PROPERTY_NOTE);
+            return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
         }
 
         public static class Builder {
@@ -465,87 +433,87 @@ public class VisionPrescription extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder product(final CodeableConcept product) {
-                b.add(PROPERTY_PRODUCT, product);
+                b.add(FhirPropertyNames.PROPERTY_PRODUCT, product);
                 return this;
             }
 
             public Builder eye(final String eye) {
-                b.add(PROPERTY_EYE, eye);
+                b.add(FhirPropertyNames.PROPERTY_EYE, eye);
                 return this;
             }
 
             public Builder sphere(final Double sphere) {
-                b.add(PROPERTY_SPHERE, sphere);
+                b.add(FhirPropertyNames.PROPERTY_SPHERE, sphere);
                 return this;
             }
 
             public Builder cylinder(final Double cylinder) {
-                b.add(PROPERTY_CYLINDER, cylinder);
+                b.add(FhirPropertyNames.PROPERTY_CYLINDER, cylinder);
                 return this;
             }
 
             public Builder axis(final Integer axis) {
-                b.add(PROPERTY_AXIS, axis);
+                b.add(FhirPropertyNames.PROPERTY_AXIS, axis);
                 return this;
             }
 
             public Builder prism(final java.util.List<VisionPrescriptionPrism> prism) {
-                b.add(PROPERTY_PRISM, FhirObject.toArray(prism));
+                b.add(FhirPropertyNames.PROPERTY_PRISM, FhirObject.toArray(prism));
                 return this;
             }
 
             public Builder add(final Double add) {
-                b.add(PROPERTY_ADD, add);
+                b.add(FhirPropertyNames.PROPERTY_ADD, add);
                 return this;
             }
 
             public Builder power(final Double power) {
-                b.add(PROPERTY_POWER, power);
+                b.add(FhirPropertyNames.PROPERTY_POWER, power);
                 return this;
             }
 
             public Builder backCurve(final Double backCurve) {
-                b.add(PROPERTY_BACK_CURVE, backCurve);
+                b.add(FhirPropertyNames.PROPERTY_BACK_CURVE, backCurve);
                 return this;
             }
 
             public Builder diameter(final Double diameter) {
-                b.add(PROPERTY_DIAMETER, diameter);
+                b.add(FhirPropertyNames.PROPERTY_DIAMETER, diameter);
                 return this;
             }
 
             public Builder duration(final Quantity duration) {
-                b.add(PROPERTY_DURATION, duration);
+                b.add(FhirPropertyNames.PROPERTY_DURATION, duration);
                 return this;
             }
 
             public Builder color(final String color) {
-                b.add(PROPERTY_COLOR, color);
+                b.add(FhirPropertyNames.PROPERTY_COLOR, color);
                 return this;
             }
 
             public Builder brand(final String brand) {
-                b.add(PROPERTY_BRAND, brand);
+                b.add(FhirPropertyNames.PROPERTY_BRAND, brand);
                 return this;
             }
 
             public Builder note(final java.util.List<Annotation> note) {
-                b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+                b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
                 return this;
             }
 
@@ -561,11 +529,6 @@ public class VisionPrescription extends FhirResource {
      */
     public static class VisionPrescriptionPrism extends FhirObject {
         public static final String RESOURCE_TYPE = "VisionPrescriptionPrism";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_AMOUNT = "amount";
-        public static final String PROPERTY_BASE = "base";
 
         public static Builder create() {
             return new Builder();
@@ -584,7 +547,7 @@ public class VisionPrescription extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -596,7 +559,7 @@ public class VisionPrescription extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -617,21 +580,21 @@ public class VisionPrescription extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * Amount of prism to compensate for eye alignment in fractional units.
          */
         public Double amount() {
-            return data.getJsonNumber(PROPERTY_AMOUNT).doubleValue();
+            return data.getJsonNumber(FhirPropertyNames.PROPERTY_AMOUNT).doubleValue();
         }
 
         /**
          * The relative base, or reference lens edge, for the prism.
          */
         public String base() {
-            return getString(PROPERTY_BASE);
+            return getString(FhirPropertyNames.PROPERTY_BASE);
         }
 
         public static class Builder {
@@ -646,27 +609,27 @@ public class VisionPrescription extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder amount(final Double amount) {
-                b.add(PROPERTY_AMOUNT, amount);
+                b.add(FhirPropertyNames.PROPERTY_AMOUNT, amount);
                 return this;
             }
 
             public Builder base(final String base) {
-                b.add(PROPERTY_BASE, base);
+                b.add(FhirPropertyNames.PROPERTY_BASE, base);
                 return this;
             }
 

@@ -9,22 +9,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A description of a triggering event. Triggering events can be named
  * events, data events, or periodic, as determined by the type element.
  */
 public class TriggerDefinition extends FhirResource {
     public static final String RESOURCE_TYPE = "TriggerDefinition";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_TYPE = "type";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TIMING_TIMING = "timingTiming";
-    public static final String PROPERTY_TIMING_REFERENCE = "timingReference";
-    public static final String PROPERTY_TIMING_DATE = "timingDate";
-    public static final String PROPERTY_TIMING_DATE_TIME = "timingDateTime";
-    public static final String PROPERTY_DATA = "data";
-    public static final String PROPERTY_CONDITION = "condition";
 
     public static Builder create() {
         return new Builder();
@@ -43,7 +35,7 @@ public class TriggerDefinition extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -55,14 +47,14 @@ public class TriggerDefinition extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
      * The type of triggering event.
      */
     public String type() {
-        return getString(PROPERTY_TYPE);
+        return getString(FhirPropertyNames.PROPERTY_TYPE);
     }
 
     /**
@@ -71,35 +63,35 @@ public class TriggerDefinition extends FhirResource {
      * simple relative URI that identifies the event in a local context.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
      * The timing of the event (if this is a periodic trigger).
      */
     public Timing timingTiming() {
-        return getObject(Timing.class, PROPERTY_TIMING_TIMING);
+        return getObject(Timing.class, FhirPropertyNames.PROPERTY_TIMING_TIMING);
     }
 
     /**
      * The timing of the event (if this is a periodic trigger).
      */
     public Reference timingReference() {
-        return getObject(Reference.class, PROPERTY_TIMING_REFERENCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_TIMING_REFERENCE);
     }
 
     /**
      * The timing of the event (if this is a periodic trigger).
      */
     public String timingDate() {
-        return getString(PROPERTY_TIMING_DATE);
+        return getString(FhirPropertyNames.PROPERTY_TIMING_DATE);
     }
 
     /**
      * The timing of the event (if this is a periodic trigger).
      */
     public String timingDateTime() {
-        return getString(PROPERTY_TIMING_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_TIMING_DATE_TIME);
     }
 
     /**
@@ -108,7 +100,7 @@ public class TriggerDefinition extends FhirResource {
      * requirements must be true.
      */
     public java.util.List<DataRequirement> data() {
-        return getList(DataRequirement.class, PROPERTY_DATA);
+        return getList(DataRequirement.class, FhirPropertyNames.PROPERTY_DATA);
     }
 
     /**
@@ -117,7 +109,7 @@ public class TriggerDefinition extends FhirResource {
      * trigger fires.
      */
     public Expression condition() {
-        return getObject(Expression.class, PROPERTY_CONDITION);
+        return getObject(Expression.class, FhirPropertyNames.PROPERTY_CONDITION);
     }
 
     public static class Builder {
@@ -132,52 +124,52 @@ public class TriggerDefinition extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder type(final String type) {
-            b.add(PROPERTY_TYPE, type);
+            b.add(FhirPropertyNames.PROPERTY_TYPE, type);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder timingTiming(final Timing timingTiming) {
-            b.add(PROPERTY_TIMING_TIMING, timingTiming);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_TIMING, timingTiming);
             return this;
         }
 
         public Builder timingReference(final Reference timingReference) {
-            b.add(PROPERTY_TIMING_REFERENCE, timingReference);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_REFERENCE, timingReference);
             return this;
         }
 
         public Builder timingDate(final String timingDate) {
-            b.add(PROPERTY_TIMING_DATE, timingDate);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_DATE, timingDate);
             return this;
         }
 
         public Builder timingDateTime(final String timingDateTime) {
-            b.add(PROPERTY_TIMING_DATE_TIME, timingDateTime);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_DATE_TIME, timingDateTime);
             return this;
         }
 
         public Builder data(final java.util.List<DataRequirement> data) {
-            b.add(PROPERTY_DATA, FhirObject.toArray(data));
+            b.add(FhirPropertyNames.PROPERTY_DATA, FhirObject.toArray(data));
             return this;
         }
 
         public Builder condition(final Expression condition) {
-            b.add(PROPERTY_CONDITION, condition);
+            b.add(FhirPropertyNames.PROPERTY_CONDITION, condition);
             return this;
         }
 

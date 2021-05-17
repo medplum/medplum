@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The CodeSystem resource is used to declare the existence of and
  * describe a code system or code system supplement and its key
@@ -16,41 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class CodeSystem extends FhirResource {
     public static final String RESOURCE_TYPE = "CodeSystem";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_URL = "url";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_VERSION = "version";
-    public static final String PROPERTY_NAME = "name";
-    public static final String PROPERTY_TITLE = "title";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_EXPERIMENTAL = "experimental";
-    public static final String PROPERTY_DATE = "date";
-    public static final String PROPERTY_PUBLISHER = "publisher";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_DESCRIPTION = "description";
-    public static final String PROPERTY_USE_CONTEXT = "useContext";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_PURPOSE = "purpose";
-    public static final String PROPERTY_COPYRIGHT = "copyright";
-    public static final String PROPERTY_CASE_SENSITIVE = "caseSensitive";
-    public static final String PROPERTY_VALUE_SET = "valueSet";
-    public static final String PROPERTY_HIERARCHY_MEANING = "hierarchyMeaning";
-    public static final String PROPERTY_COMPOSITIONAL = "compositional";
-    public static final String PROPERTY_VERSION_NEEDED = "versionNeeded";
-    public static final String PROPERTY_CONTENT = "content";
-    public static final String PROPERTY_SUPPLEMENTS = "supplements";
-    public static final String PROPERTY_COUNT = "count";
-    public static final String PROPERTY_FILTER = "filter";
-    public static final String PROPERTY_PROPERTY = "property";
-    public static final String PROPERTY_CONCEPT = "concept";
 
     public static Builder create() {
         return new Builder();
@@ -71,14 +38,14 @@ public class CodeSystem extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -90,7 +57,7 @@ public class CodeSystem extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -99,7 +66,7 @@ public class CodeSystem extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -111,7 +78,7 @@ public class CodeSystem extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -131,7 +98,7 @@ public class CodeSystem extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -145,7 +112,7 @@ public class CodeSystem extends FhirResource {
      * [Coding](datatypes.html#Coding).system.
      */
     public java.net.URI url() {
-        return getUri(PROPERTY_URL);
+        return getUri(FhirPropertyNames.PROPERTY_URL);
     }
 
     /**
@@ -154,7 +121,7 @@ public class CodeSystem extends FhirResource {
      * model, design or an instance.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -168,7 +135,7 @@ public class CodeSystem extends FhirResource {
      * [Coding](datatypes.html#Coding).version.
      */
     public String version() {
-        return getString(PROPERTY_VERSION);
+        return getString(FhirPropertyNames.PROPERTY_VERSION);
     }
 
     /**
@@ -177,14 +144,14 @@ public class CodeSystem extends FhirResource {
      * applications such as code generation.
      */
     public String name() {
-        return getString(PROPERTY_NAME);
+        return getString(FhirPropertyNames.PROPERTY_NAME);
     }
 
     /**
      * A short, descriptive, user-friendly title for the code system.
      */
     public String title() {
-        return getString(PROPERTY_TITLE);
+        return getString(FhirPropertyNames.PROPERTY_TITLE);
     }
 
     /**
@@ -192,7 +159,7 @@ public class CodeSystem extends FhirResource {
      * created or revised.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -201,7 +168,7 @@ public class CodeSystem extends FhirResource {
      * intended to be used for genuine usage.
      */
     public Boolean experimental() {
-        return data.getBoolean(PROPERTY_EXPERIMENTAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_EXPERIMENTAL);
     }
 
     /**
@@ -211,7 +178,7 @@ public class CodeSystem extends FhirResource {
      * the substantive content of the code system changes.
      */
     public java.time.Instant date() {
-        return getInstant(PROPERTY_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_DATE);
     }
 
     /**
@@ -219,7 +186,7 @@ public class CodeSystem extends FhirResource {
      * system.
      */
     public String publisher() {
-        return getString(PROPERTY_PUBLISHER);
+        return getString(FhirPropertyNames.PROPERTY_PUBLISHER);
     }
 
     /**
@@ -227,7 +194,7 @@ public class CodeSystem extends FhirResource {
      * publisher.
      */
     public java.util.List<ContactDetail> contact() {
-        return getList(ContactDetail.class, PROPERTY_CONTACT);
+        return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
@@ -235,7 +202,7 @@ public class CodeSystem extends FhirResource {
      * consumer's perspective.
      */
     public String description() {
-        return getString(PROPERTY_DESCRIPTION);
+        return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
     }
 
     /**
@@ -246,7 +213,7 @@ public class CodeSystem extends FhirResource {
      * indexing and searching for appropriate code system instances.
      */
     public java.util.List<UsageContext> useContext() {
-        return getList(UsageContext.class, PROPERTY_USE_CONTEXT);
+        return getList(UsageContext.class, FhirPropertyNames.PROPERTY_USE_CONTEXT);
     }
 
     /**
@@ -254,7 +221,7 @@ public class CodeSystem extends FhirResource {
      * be used.
      */
     public java.util.List<CodeableConcept> jurisdiction() {
-        return getList(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -262,7 +229,7 @@ public class CodeSystem extends FhirResource {
      * designed as it has.
      */
     public String purpose() {
-        return getString(PROPERTY_PURPOSE);
+        return getString(FhirPropertyNames.PROPERTY_PURPOSE);
     }
 
     /**
@@ -271,7 +238,7 @@ public class CodeSystem extends FhirResource {
      * publishing of the code system.
      */
     public String copyright() {
-        return getString(PROPERTY_COPYRIGHT);
+        return getString(FhirPropertyNames.PROPERTY_COPYRIGHT);
     }
 
     /**
@@ -279,7 +246,7 @@ public class CodeSystem extends FhirResource {
      * compared to each other.
      */
     public Boolean caseSensitive() {
-        return data.getBoolean(PROPERTY_CASE_SENSITIVE);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_CASE_SENSITIVE);
     }
 
     /**
@@ -287,7 +254,7 @@ public class CodeSystem extends FhirResource {
      * system.
      */
     public String valueSet() {
-        return getString(PROPERTY_VALUE_SET);
+        return getString(FhirPropertyNames.PROPERTY_VALUE_SET);
     }
 
     /**
@@ -295,14 +262,14 @@ public class CodeSystem extends FhirResource {
      * resource.
      */
     public String hierarchyMeaning() {
-        return getString(PROPERTY_HIERARCHY_MEANING);
+        return getString(FhirPropertyNames.PROPERTY_HIERARCHY_MEANING);
     }
 
     /**
      * The code system defines a compositional (post-coordination) grammar.
      */
     public Boolean compositional() {
-        return data.getBoolean(PROPERTY_COMPOSITIONAL);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_COMPOSITIONAL);
     }
 
     /**
@@ -311,7 +278,7 @@ public class CodeSystem extends FhirResource {
      * specified when referencing this code system.
      */
     public Boolean versionNeeded() {
-        return data.getBoolean(PROPERTY_VERSION_NEEDED);
+        return data.getBoolean(FhirPropertyNames.PROPERTY_VERSION_NEEDED);
     }
 
     /**
@@ -319,7 +286,7 @@ public class CodeSystem extends FhirResource {
      * it defines) are represented in this resource instance.
      */
     public String content() {
-        return getString(PROPERTY_CONTENT);
+        return getString(FhirPropertyNames.PROPERTY_CONTENT);
     }
 
     /**
@@ -327,7 +294,7 @@ public class CodeSystem extends FhirResource {
      * is adding designations and properties to.
      */
     public String supplements() {
-        return getString(PROPERTY_SUPPLEMENTS);
+        return getString(FhirPropertyNames.PROPERTY_SUPPLEMENTS);
     }
 
     /**
@@ -336,7 +303,7 @@ public class CodeSystem extends FhirResource {
      * defined by the system steward.
      */
     public Integer count() {
-        return data.getInt(PROPERTY_COUNT);
+        return data.getInt(FhirPropertyNames.PROPERTY_COUNT);
     }
 
     /**
@@ -344,7 +311,7 @@ public class CodeSystem extends FhirResource {
      * selecting concepts using a filter.
      */
     public java.util.List<CodeSystemFilter> filter() {
-        return getList(CodeSystemFilter.class, PROPERTY_FILTER);
+        return getList(CodeSystemFilter.class, FhirPropertyNames.PROPERTY_FILTER);
     }
 
     /**
@@ -352,7 +319,7 @@ public class CodeSystem extends FhirResource {
      * information can be provided about a concept.
      */
     public java.util.List<CodeSystemProperty> property() {
-        return getList(CodeSystemProperty.class, PROPERTY_PROPERTY);
+        return getList(CodeSystemProperty.class, FhirPropertyNames.PROPERTY_PROPERTY);
     }
 
     /**
@@ -361,7 +328,7 @@ public class CodeSystem extends FhirResource {
      * determine what the meanings of the hierarchical relationships are.
      */
     public java.util.List<CodeSystemConcept> concept() {
-        return getList(CodeSystemConcept.class, PROPERTY_CONCEPT);
+        return getList(CodeSystemConcept.class, FhirPropertyNames.PROPERTY_CONCEPT);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -375,177 +342,177 @@ public class CodeSystem extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder url(final java.net.URI url) {
-            b.add(PROPERTY_URL, url.toString());
+            b.add(FhirPropertyNames.PROPERTY_URL, url.toString());
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder version(final String version) {
-            b.add(PROPERTY_VERSION, version);
+            b.add(FhirPropertyNames.PROPERTY_VERSION, version);
             return this;
         }
 
         public Builder name(final String name) {
-            b.add(PROPERTY_NAME, name);
+            b.add(FhirPropertyNames.PROPERTY_NAME, name);
             return this;
         }
 
         public Builder title(final String title) {
-            b.add(PROPERTY_TITLE, title);
+            b.add(FhirPropertyNames.PROPERTY_TITLE, title);
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder experimental(final Boolean experimental) {
-            b.add(PROPERTY_EXPERIMENTAL, experimental);
+            b.add(FhirPropertyNames.PROPERTY_EXPERIMENTAL, experimental);
             return this;
         }
 
         public Builder date(final java.time.Instant date) {
-            b.add(PROPERTY_DATE, date.toString());
+            b.add(FhirPropertyNames.PROPERTY_DATE, date.toString());
             return this;
         }
 
         public Builder publisher(final String publisher) {
-            b.add(PROPERTY_PUBLISHER, publisher);
+            b.add(FhirPropertyNames.PROPERTY_PUBLISHER, publisher);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactDetail> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder description(final String description) {
-            b.add(PROPERTY_DESCRIPTION, description);
+            b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
             return this;
         }
 
         public Builder useContext(final java.util.List<UsageContext> useContext) {
-            b.add(PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
+            b.add(FhirPropertyNames.PROPERTY_USE_CONTEXT, FhirObject.toArray(useContext));
             return this;
         }
 
         public Builder jurisdiction(final java.util.List<CodeableConcept> jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, FhirObject.toArray(jurisdiction));
             return this;
         }
 
         public Builder purpose(final String purpose) {
-            b.add(PROPERTY_PURPOSE, purpose);
+            b.add(FhirPropertyNames.PROPERTY_PURPOSE, purpose);
             return this;
         }
 
         public Builder copyright(final String copyright) {
-            b.add(PROPERTY_COPYRIGHT, copyright);
+            b.add(FhirPropertyNames.PROPERTY_COPYRIGHT, copyright);
             return this;
         }
 
         public Builder caseSensitive(final Boolean caseSensitive) {
-            b.add(PROPERTY_CASE_SENSITIVE, caseSensitive);
+            b.add(FhirPropertyNames.PROPERTY_CASE_SENSITIVE, caseSensitive);
             return this;
         }
 
         public Builder valueSet(final String valueSet) {
-            b.add(PROPERTY_VALUE_SET, valueSet);
+            b.add(FhirPropertyNames.PROPERTY_VALUE_SET, valueSet);
             return this;
         }
 
         public Builder hierarchyMeaning(final String hierarchyMeaning) {
-            b.add(PROPERTY_HIERARCHY_MEANING, hierarchyMeaning);
+            b.add(FhirPropertyNames.PROPERTY_HIERARCHY_MEANING, hierarchyMeaning);
             return this;
         }
 
         public Builder compositional(final Boolean compositional) {
-            b.add(PROPERTY_COMPOSITIONAL, compositional);
+            b.add(FhirPropertyNames.PROPERTY_COMPOSITIONAL, compositional);
             return this;
         }
 
         public Builder versionNeeded(final Boolean versionNeeded) {
-            b.add(PROPERTY_VERSION_NEEDED, versionNeeded);
+            b.add(FhirPropertyNames.PROPERTY_VERSION_NEEDED, versionNeeded);
             return this;
         }
 
         public Builder content(final String content) {
-            b.add(PROPERTY_CONTENT, content);
+            b.add(FhirPropertyNames.PROPERTY_CONTENT, content);
             return this;
         }
 
         public Builder supplements(final String supplements) {
-            b.add(PROPERTY_SUPPLEMENTS, supplements);
+            b.add(FhirPropertyNames.PROPERTY_SUPPLEMENTS, supplements);
             return this;
         }
 
         public Builder count(final Integer count) {
-            b.add(PROPERTY_COUNT, count);
+            b.add(FhirPropertyNames.PROPERTY_COUNT, count);
             return this;
         }
 
         public Builder filter(final java.util.List<CodeSystemFilter> filter) {
-            b.add(PROPERTY_FILTER, FhirObject.toArray(filter));
+            b.add(FhirPropertyNames.PROPERTY_FILTER, FhirObject.toArray(filter));
             return this;
         }
 
         public Builder property(final java.util.List<CodeSystemProperty> property) {
-            b.add(PROPERTY_PROPERTY, FhirObject.toArray(property));
+            b.add(FhirPropertyNames.PROPERTY_PROPERTY, FhirObject.toArray(property));
             return this;
         }
 
         public Builder concept(final java.util.List<CodeSystemConcept> concept) {
-            b.add(PROPERTY_CONCEPT, FhirObject.toArray(concept));
+            b.add(FhirPropertyNames.PROPERTY_CONCEPT, FhirObject.toArray(concept));
             return this;
         }
 
@@ -561,15 +528,6 @@ public class CodeSystem extends FhirResource {
      */
     public static class CodeSystemConcept extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemConcept";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_DISPLAY = "display";
-        public static final String PROPERTY_DEFINITION = "definition";
-        public static final String PROPERTY_DESIGNATION = "designation";
-        public static final String PROPERTY_PROPERTY = "property";
-        public static final String PROPERTY_CONCEPT = "concept";
 
         public static Builder create() {
             return new Builder();
@@ -588,7 +546,7 @@ public class CodeSystem extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -600,7 +558,7 @@ public class CodeSystem extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -621,7 +579,7 @@ public class CodeSystem extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -629,7 +587,7 @@ public class CodeSystem extends FhirResource {
          * the code system.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -637,7 +595,7 @@ public class CodeSystem extends FhirResource {
          * this concept to a user.
          */
         public String display() {
-            return getString(PROPERTY_DISPLAY);
+            return getString(FhirPropertyNames.PROPERTY_DISPLAY);
         }
 
         /**
@@ -647,7 +605,7 @@ public class CodeSystem extends FhirResource {
          * there is no formal meaning associated with the concept.
          */
         public String definition() {
-            return getString(PROPERTY_DEFINITION);
+            return getString(FhirPropertyNames.PROPERTY_DEFINITION);
         }
 
         /**
@@ -655,14 +613,14 @@ public class CodeSystem extends FhirResource {
          * specialized purposes, used for particular purposes, etc.
          */
         public java.util.List<CodeSystemDesignation> designation() {
-            return getList(CodeSystemDesignation.class, PROPERTY_DESIGNATION);
+            return getList(CodeSystemDesignation.class, FhirPropertyNames.PROPERTY_DESIGNATION);
         }
 
         /**
          * A property value for this concept.
          */
         public java.util.List<CodeSystemProperty1> property() {
-            return getList(CodeSystemProperty1.class, PROPERTY_PROPERTY);
+            return getList(CodeSystemProperty1.class, FhirPropertyNames.PROPERTY_PROPERTY);
         }
 
         /**
@@ -671,7 +629,7 @@ public class CodeSystem extends FhirResource {
          * see hierarchyMeaning.
          */
         public java.util.List<CodeSystemConcept> concept() {
-            return getList(CodeSystemConcept.class, PROPERTY_CONCEPT);
+            return getList(CodeSystemConcept.class, FhirPropertyNames.PROPERTY_CONCEPT);
         }
 
         public static class Builder {
@@ -686,47 +644,47 @@ public class CodeSystem extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder display(final String display) {
-                b.add(PROPERTY_DISPLAY, display);
+                b.add(FhirPropertyNames.PROPERTY_DISPLAY, display);
                 return this;
             }
 
             public Builder definition(final String definition) {
-                b.add(PROPERTY_DEFINITION, definition);
+                b.add(FhirPropertyNames.PROPERTY_DEFINITION, definition);
                 return this;
             }
 
             public Builder designation(final java.util.List<CodeSystemDesignation> designation) {
-                b.add(PROPERTY_DESIGNATION, FhirObject.toArray(designation));
+                b.add(FhirPropertyNames.PROPERTY_DESIGNATION, FhirObject.toArray(designation));
                 return this;
             }
 
             public Builder property(final java.util.List<CodeSystemProperty1> property) {
-                b.add(PROPERTY_PROPERTY, FhirObject.toArray(property));
+                b.add(FhirPropertyNames.PROPERTY_PROPERTY, FhirObject.toArray(property));
                 return this;
             }
 
             public Builder concept(final java.util.List<CodeSystemConcept> concept) {
-                b.add(PROPERTY_CONCEPT, FhirObject.toArray(concept));
+                b.add(FhirPropertyNames.PROPERTY_CONCEPT, FhirObject.toArray(concept));
                 return this;
             }
 
@@ -743,12 +701,6 @@ public class CodeSystem extends FhirResource {
      */
     public static class CodeSystemDesignation extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemDesignation";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_LANGUAGE = "language";
-        public static final String PROPERTY_USE = "use";
-        public static final String PROPERTY_VALUE = "value";
 
         public static Builder create() {
             return new Builder();
@@ -767,7 +719,7 @@ public class CodeSystem extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -779,7 +731,7 @@ public class CodeSystem extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -800,28 +752,28 @@ public class CodeSystem extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The language this designation is defined for.
          */
         public String language() {
-            return getString(PROPERTY_LANGUAGE);
+            return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
         }
 
         /**
          * A code that details how this designation would be used.
          */
         public Coding use() {
-            return getObject(Coding.class, PROPERTY_USE);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_USE);
         }
 
         /**
          * The text value for this designation.
          */
         public String value() {
-            return getString(PROPERTY_VALUE);
+            return getString(FhirPropertyNames.PROPERTY_VALUE);
         }
 
         public static class Builder {
@@ -836,32 +788,32 @@ public class CodeSystem extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder language(final String language) {
-                b.add(PROPERTY_LANGUAGE, language);
+                b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
                 return this;
             }
 
             public Builder use(final Coding use) {
-                b.add(PROPERTY_USE, use);
+                b.add(FhirPropertyNames.PROPERTY_USE, use);
                 return this;
             }
 
             public Builder value(final String value) {
-                b.add(PROPERTY_VALUE, value);
+                b.add(FhirPropertyNames.PROPERTY_VALUE, value);
                 return this;
             }
 
@@ -878,13 +830,6 @@ public class CodeSystem extends FhirResource {
      */
     public static class CodeSystemFilter extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemFilter";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_OPERATOR = "operator";
-        public static final String PROPERTY_VALUE = "value";
 
         public static Builder create() {
             return new Builder();
@@ -903,7 +848,7 @@ public class CodeSystem extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -915,7 +860,7 @@ public class CodeSystem extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -936,7 +881,7 @@ public class CodeSystem extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -944,28 +889,28 @@ public class CodeSystem extends FhirResource {
          * [[[ValueSet]]].compose.include.filter.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * A description of how or why the filter is used.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
          * A list of operators that can be used with the filter.
          */
         public java.util.List<String> operator() {
-            return getList(String.class, PROPERTY_OPERATOR);
+            return getList(String.class, FhirPropertyNames.PROPERTY_OPERATOR);
         }
 
         /**
          * A description of what the value for the filter should be.
          */
         public String value() {
-            return getString(PROPERTY_VALUE);
+            return getString(FhirPropertyNames.PROPERTY_VALUE);
         }
 
         public static class Builder {
@@ -980,37 +925,37 @@ public class CodeSystem extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder operator(final java.util.List<String> operator) {
-                b.add(PROPERTY_OPERATOR, FhirObject.toStringArray(operator));
+                b.add(FhirPropertyNames.PROPERTY_OPERATOR, FhirObject.toStringArray(operator));
                 return this;
             }
 
             public Builder value(final String value) {
-                b.add(PROPERTY_VALUE, value);
+                b.add(FhirPropertyNames.PROPERTY_VALUE, value);
                 return this;
             }
 
@@ -1027,13 +972,6 @@ public class CodeSystem extends FhirResource {
      */
     public static class CodeSystemProperty extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemProperty";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_URI = "uri";
-        public static final String PROPERTY_DESCRIPTION = "description";
-        public static final String PROPERTY_TYPE = "type";
 
         public static Builder create() {
             return new Builder();
@@ -1052,7 +990,7 @@ public class CodeSystem extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1064,7 +1002,7 @@ public class CodeSystem extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1085,7 +1023,7 @@ public class CodeSystem extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
@@ -1094,7 +1032,7 @@ public class CodeSystem extends FhirResource {
          * such as in property filters.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
@@ -1103,7 +1041,7 @@ public class CodeSystem extends FhirResource {
          * Properties](codesystem-concept-properties.html) code system.
          */
         public java.net.URI uri() {
-            return getUri(PROPERTY_URI);
+            return getUri(FhirPropertyNames.PROPERTY_URI);
         }
 
         /**
@@ -1111,7 +1049,7 @@ public class CodeSystem extends FhirResource {
          * might be used.
          */
         public String description() {
-            return getString(PROPERTY_DESCRIPTION);
+            return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
         /**
@@ -1120,7 +1058,7 @@ public class CodeSystem extends FhirResource {
          * concept).
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         public static class Builder {
@@ -1135,37 +1073,37 @@ public class CodeSystem extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder uri(final java.net.URI uri) {
-                b.add(PROPERTY_URI, uri.toString());
+                b.add(FhirPropertyNames.PROPERTY_URI, uri.toString());
                 return this;
             }
 
             public Builder description(final String description) {
-                b.add(PROPERTY_DESCRIPTION, description);
+                b.add(FhirPropertyNames.PROPERTY_DESCRIPTION, description);
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
@@ -1182,17 +1120,6 @@ public class CodeSystem extends FhirResource {
      */
     public static class CodeSystemProperty1 extends FhirObject {
         public static final String RESOURCE_TYPE = "CodeSystemProperty1";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_CODE = "code";
-        public static final String PROPERTY_VALUE_CODE = "valueCode";
-        public static final String PROPERTY_VALUE_CODING = "valueCoding";
-        public static final String PROPERTY_VALUE_STRING = "valueString";
-        public static final String PROPERTY_VALUE_INTEGER = "valueInteger";
-        public static final String PROPERTY_VALUE_BOOLEAN = "valueBoolean";
-        public static final String PROPERTY_VALUE_DATE_TIME = "valueDateTime";
-        public static final String PROPERTY_VALUE_DECIMAL = "valueDecimal";
 
         public static Builder create() {
             return new Builder();
@@ -1211,7 +1138,7 @@ public class CodeSystem extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -1223,7 +1150,7 @@ public class CodeSystem extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -1244,63 +1171,63 @@ public class CodeSystem extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * A code that is a reference to CodeSystem.property.code.
          */
         public String code() {
-            return getString(PROPERTY_CODE);
+            return getString(FhirPropertyNames.PROPERTY_CODE);
         }
 
         /**
          * The value of this property.
          */
         public String valueCode() {
-            return getString(PROPERTY_VALUE_CODE);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_CODE);
         }
 
         /**
          * The value of this property.
          */
         public Coding valueCoding() {
-            return getObject(Coding.class, PROPERTY_VALUE_CODING);
+            return getObject(Coding.class, FhirPropertyNames.PROPERTY_VALUE_CODING);
         }
 
         /**
          * The value of this property.
          */
         public String valueString() {
-            return getString(PROPERTY_VALUE_STRING);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_STRING);
         }
 
         /**
          * The value of this property.
          */
         public Integer valueInteger() {
-            return data.getInt(PROPERTY_VALUE_INTEGER);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_INTEGER);
         }
 
         /**
          * The value of this property.
          */
         public Boolean valueBoolean() {
-            return data.getBoolean(PROPERTY_VALUE_BOOLEAN);
+            return data.getBoolean(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN);
         }
 
         /**
          * The value of this property.
          */
         public String valueDateTime() {
-            return getString(PROPERTY_VALUE_DATE_TIME);
+            return getString(FhirPropertyNames.PROPERTY_VALUE_DATE_TIME);
         }
 
         /**
          * The value of this property.
          */
         public Integer valueDecimal() {
-            return data.getInt(PROPERTY_VALUE_DECIMAL);
+            return data.getInt(FhirPropertyNames.PROPERTY_VALUE_DECIMAL);
         }
 
         public static class Builder {
@@ -1315,57 +1242,57 @@ public class CodeSystem extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder code(final String code) {
-                b.add(PROPERTY_CODE, code);
+                b.add(FhirPropertyNames.PROPERTY_CODE, code);
                 return this;
             }
 
             public Builder valueCode(final String valueCode) {
-                b.add(PROPERTY_VALUE_CODE, valueCode);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CODE, valueCode);
                 return this;
             }
 
             public Builder valueCoding(final Coding valueCoding) {
-                b.add(PROPERTY_VALUE_CODING, valueCoding);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_CODING, valueCoding);
                 return this;
             }
 
             public Builder valueString(final String valueString) {
-                b.add(PROPERTY_VALUE_STRING, valueString);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_STRING, valueString);
                 return this;
             }
 
             public Builder valueInteger(final Integer valueInteger) {
-                b.add(PROPERTY_VALUE_INTEGER, valueInteger);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_INTEGER, valueInteger);
                 return this;
             }
 
             public Builder valueBoolean(final Boolean valueBoolean) {
-                b.add(PROPERTY_VALUE_BOOLEAN, valueBoolean);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_BOOLEAN, valueBoolean);
                 return this;
             }
 
             public Builder valueDateTime(final String valueDateTime) {
-                b.add(PROPERTY_VALUE_DATE_TIME, valueDateTime);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DATE_TIME, valueDateTime);
                 return this;
             }
 
             public Builder valueDecimal(final Integer valueDecimal) {
-                b.add(PROPERTY_VALUE_DECIMAL, valueDecimal);
+                b.add(FhirPropertyNames.PROPERTY_VALUE_DECIMAL, valueDecimal);
                 return this;
             }
 

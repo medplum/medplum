@@ -7,36 +7,14 @@ package com.medplum.fhir.r4.types;
 
 import jakarta.json.JsonObject;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * A record of a device being used by a patient where the record is the
  * result of a report from the patient or another clinician.
  */
 public class DeviceUseStatement extends FhirResource {
     public static final String RESOURCE_TYPE = "DeviceUseStatement";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_IDENTIFIER = "identifier";
-    public static final String PROPERTY_BASED_ON = "basedOn";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_SUBJECT = "subject";
-    public static final String PROPERTY_DERIVED_FROM = "derivedFrom";
-    public static final String PROPERTY_TIMING_TIMING = "timingTiming";
-    public static final String PROPERTY_TIMING_PERIOD = "timingPeriod";
-    public static final String PROPERTY_TIMING_DATE_TIME = "timingDateTime";
-    public static final String PROPERTY_RECORDED_ON = "recordedOn";
-    public static final String PROPERTY_SOURCE = "source";
-    public static final String PROPERTY_DEVICE = "device";
-    public static final String PROPERTY_REASON_CODE = "reasonCode";
-    public static final String PROPERTY_REASON_REFERENCE = "reasonReference";
-    public static final String PROPERTY_BODY_SITE = "bodySite";
-    public static final String PROPERTY_NOTE = "note";
 
     public static Builder create() {
         return new Builder();
@@ -57,14 +35,14 @@ public class DeviceUseStatement extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -76,7 +54,7 @@ public class DeviceUseStatement extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -85,7 +63,7 @@ public class DeviceUseStatement extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -97,7 +75,7 @@ public class DeviceUseStatement extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -117,14 +95,14 @@ public class DeviceUseStatement extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
      * An external identifier for this statement such as an IRI.
      */
     public java.util.List<Identifier> identifier() {
-        return getList(Identifier.class, PROPERTY_IDENTIFIER);
+        return getList(Identifier.class, FhirPropertyNames.PROPERTY_IDENTIFIER);
     }
 
     /**
@@ -132,7 +110,7 @@ public class DeviceUseStatement extends FhirResource {
      * this DeviceUseStatement.
      */
     public java.util.List<Reference> basedOn() {
-        return getList(Reference.class, PROPERTY_BASED_ON);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_BASED_ON);
     }
 
     /**
@@ -141,14 +119,14 @@ public class DeviceUseStatement extends FhirResource {
      * will be active or completed.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
      * The patient who used the device.
      */
     public Reference subject() {
-        return getObject(Reference.class, PROPERTY_SUBJECT);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SUBJECT);
     }
 
     /**
@@ -157,56 +135,56 @@ public class DeviceUseStatement extends FhirResource {
      * DeviceUseStatement.
      */
     public java.util.List<Reference> derivedFrom() {
-        return getList(Reference.class, PROPERTY_DERIVED_FROM);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_DERIVED_FROM);
     }
 
     /**
      * How often the device was used.
      */
     public Timing timingTiming() {
-        return getObject(Timing.class, PROPERTY_TIMING_TIMING);
+        return getObject(Timing.class, FhirPropertyNames.PROPERTY_TIMING_TIMING);
     }
 
     /**
      * How often the device was used.
      */
     public Period timingPeriod() {
-        return getObject(Period.class, PROPERTY_TIMING_PERIOD);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_TIMING_PERIOD);
     }
 
     /**
      * How often the device was used.
      */
     public String timingDateTime() {
-        return getString(PROPERTY_TIMING_DATE_TIME);
+        return getString(FhirPropertyNames.PROPERTY_TIMING_DATE_TIME);
     }
 
     /**
      * The time at which the statement was made/recorded.
      */
     public java.time.Instant recordedOn() {
-        return getInstant(PROPERTY_RECORDED_ON);
+        return getInstant(FhirPropertyNames.PROPERTY_RECORDED_ON);
     }
 
     /**
      * Who reported the device was being used by the patient.
      */
     public Reference source() {
-        return getObject(Reference.class, PROPERTY_SOURCE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
     }
 
     /**
      * The details of the device used.
      */
     public Reference device() {
-        return getObject(Reference.class, PROPERTY_DEVICE);
+        return getObject(Reference.class, FhirPropertyNames.PROPERTY_DEVICE);
     }
 
     /**
      * Reason or justification for the use of the device.
      */
     public java.util.List<CodeableConcept> reasonCode() {
-        return getList(CodeableConcept.class, PROPERTY_REASON_CODE);
+        return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_REASON_CODE);
     }
 
     /**
@@ -214,7 +192,7 @@ public class DeviceUseStatement extends FhirResource {
      * DeviceUseStatement.
      */
     public java.util.List<Reference> reasonReference() {
-        return getList(Reference.class, PROPERTY_REASON_REFERENCE);
+        return getList(Reference.class, FhirPropertyNames.PROPERTY_REASON_REFERENCE);
     }
 
     /**
@@ -222,7 +200,7 @@ public class DeviceUseStatement extends FhirResource {
      * was used ( i.e. the target).
      */
     public CodeableConcept bodySite() {
-        return getObject(CodeableConcept.class, PROPERTY_BODY_SITE);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_BODY_SITE);
     }
 
     /**
@@ -232,7 +210,7 @@ public class DeviceUseStatement extends FhirResource {
      * with the statement.
      */
     public java.util.List<Annotation> note() {
-        return getList(Annotation.class, PROPERTY_NOTE);
+        return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -246,122 +224,122 @@ public class DeviceUseStatement extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder identifier(final java.util.List<Identifier> identifier) {
-            b.add(PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
+            b.add(FhirPropertyNames.PROPERTY_IDENTIFIER, FhirObject.toArray(identifier));
             return this;
         }
 
         public Builder basedOn(final java.util.List<Reference> basedOn) {
-            b.add(PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
+            b.add(FhirPropertyNames.PROPERTY_BASED_ON, FhirObject.toArray(basedOn));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder subject(final Reference subject) {
-            b.add(PROPERTY_SUBJECT, subject);
+            b.add(FhirPropertyNames.PROPERTY_SUBJECT, subject);
             return this;
         }
 
         public Builder derivedFrom(final java.util.List<Reference> derivedFrom) {
-            b.add(PROPERTY_DERIVED_FROM, FhirObject.toArray(derivedFrom));
+            b.add(FhirPropertyNames.PROPERTY_DERIVED_FROM, FhirObject.toArray(derivedFrom));
             return this;
         }
 
         public Builder timingTiming(final Timing timingTiming) {
-            b.add(PROPERTY_TIMING_TIMING, timingTiming);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_TIMING, timingTiming);
             return this;
         }
 
         public Builder timingPeriod(final Period timingPeriod) {
-            b.add(PROPERTY_TIMING_PERIOD, timingPeriod);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_PERIOD, timingPeriod);
             return this;
         }
 
         public Builder timingDateTime(final String timingDateTime) {
-            b.add(PROPERTY_TIMING_DATE_TIME, timingDateTime);
+            b.add(FhirPropertyNames.PROPERTY_TIMING_DATE_TIME, timingDateTime);
             return this;
         }
 
         public Builder recordedOn(final java.time.Instant recordedOn) {
-            b.add(PROPERTY_RECORDED_ON, recordedOn.toString());
+            b.add(FhirPropertyNames.PROPERTY_RECORDED_ON, recordedOn.toString());
             return this;
         }
 
         public Builder source(final Reference source) {
-            b.add(PROPERTY_SOURCE, source);
+            b.add(FhirPropertyNames.PROPERTY_SOURCE, source);
             return this;
         }
 
         public Builder device(final Reference device) {
-            b.add(PROPERTY_DEVICE, device);
+            b.add(FhirPropertyNames.PROPERTY_DEVICE, device);
             return this;
         }
 
         public Builder reasonCode(final java.util.List<CodeableConcept> reasonCode) {
-            b.add(PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
+            b.add(FhirPropertyNames.PROPERTY_REASON_CODE, FhirObject.toArray(reasonCode));
             return this;
         }
 
         public Builder reasonReference(final java.util.List<Reference> reasonReference) {
-            b.add(PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
+            b.add(FhirPropertyNames.PROPERTY_REASON_REFERENCE, FhirObject.toArray(reasonReference));
             return this;
         }
 
         public Builder bodySite(final CodeableConcept bodySite) {
-            b.add(PROPERTY_BODY_SITE, bodySite);
+            b.add(FhirPropertyNames.PROPERTY_BODY_SITE, bodySite);
             return this;
         }
 
         public Builder note(final java.util.List<Annotation> note) {
-            b.add(PROPERTY_NOTE, FhirObject.toArray(note));
+            b.add(FhirPropertyNames.PROPERTY_NOTE, FhirObject.toArray(note));
             return this;
         }
 

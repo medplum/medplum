@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The marketing status describes the date when a medicinal product is
  * actually put on the market or the date as of which it is no longer
@@ -16,14 +18,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class MarketingStatus extends FhirResource {
     public static final String RESOURCE_TYPE = "MarketingStatus";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_COUNTRY = "country";
-    public static final String PROPERTY_JURISDICTION = "jurisdiction";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_DATE_RANGE = "dateRange";
-    public static final String PROPERTY_RESTORE_DATE = "restoreDate";
 
     public static Builder create() {
         return new Builder();
@@ -42,7 +36,7 @@ public class MarketingStatus extends FhirResource {
      * This may be any string value that does not contain spaces.
      */
     public String id() {
-        return getString(PROPERTY_ID);
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -54,7 +48,7 @@ public class MarketingStatus extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -75,7 +69,7 @@ public class MarketingStatus extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -84,7 +78,7 @@ public class MarketingStatus extends FhirResource {
      * alpha-2 code elements.
      */
     public CodeableConcept country() {
-        return getObject(CodeableConcept.class, PROPERTY_COUNTRY);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_COUNTRY);
     }
 
     /**
@@ -95,7 +89,7 @@ public class MarketingStatus extends FhirResource {
      * identifier shall be specified.
      */
     public CodeableConcept jurisdiction() {
-        return getObject(CodeableConcept.class, PROPERTY_JURISDICTION);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_JURISDICTION);
     }
 
     /**
@@ -104,7 +98,7 @@ public class MarketingStatus extends FhirResource {
      * examples.
      */
     public CodeableConcept status() {
-        return getObject(CodeableConcept.class, PROPERTY_STATUS);
+        return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -117,7 +111,7 @@ public class MarketingStatus extends FhirResource {
      * chain.
      */
     public Period dateRange() {
-        return getObject(Period.class, PROPERTY_DATE_RANGE);
+        return getObject(Period.class, FhirPropertyNames.PROPERTY_DATE_RANGE);
     }
 
     /**
@@ -130,7 +124,7 @@ public class MarketingStatus extends FhirResource {
      * chain.
      */
     public java.time.Instant restoreDate() {
-        return getInstant(PROPERTY_RESTORE_DATE);
+        return getInstant(FhirPropertyNames.PROPERTY_RESTORE_DATE);
     }
 
     public static class Builder {
@@ -145,42 +139,42 @@ public class MarketingStatus extends FhirResource {
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder country(final CodeableConcept country) {
-            b.add(PROPERTY_COUNTRY, country);
+            b.add(FhirPropertyNames.PROPERTY_COUNTRY, country);
             return this;
         }
 
         public Builder jurisdiction(final CodeableConcept jurisdiction) {
-            b.add(PROPERTY_JURISDICTION, jurisdiction);
+            b.add(FhirPropertyNames.PROPERTY_JURISDICTION, jurisdiction);
             return this;
         }
 
         public Builder status(final CodeableConcept status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder dateRange(final Period dateRange) {
-            b.add(PROPERTY_DATE_RANGE, dateRange);
+            b.add(FhirPropertyNames.PROPERTY_DATE_RANGE, dateRange);
             return this;
         }
 
         public Builder restoreDate(final java.time.Instant restoreDate) {
-            b.add(PROPERTY_RESTORE_DATE, restoreDate.toString());
+            b.add(FhirPropertyNames.PROPERTY_RESTORE_DATE, restoreDate.toString());
             return this;
         }
 

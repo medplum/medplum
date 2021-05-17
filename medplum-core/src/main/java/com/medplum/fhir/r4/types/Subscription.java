@@ -9,6 +9,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
+import com.medplum.fhir.r4.FhirPropertyNames;
+
 /**
  * The subscription resource is used to define a push-based subscription
  * from a server to another system. Once a subscription is registered
@@ -19,22 +21,6 @@ import jakarta.json.JsonObjectBuilder;
  */
 public class Subscription extends FhirResource {
     public static final String RESOURCE_TYPE = "Subscription";
-    public static final String PROPERTY_RESOURCE_TYPE = "resourceType";
-    public static final String PROPERTY_ID = "id";
-    public static final String PROPERTY_META = "meta";
-    public static final String PROPERTY_IMPLICIT_RULES = "implicitRules";
-    public static final String PROPERTY_LANGUAGE = "language";
-    public static final String PROPERTY_TEXT = "text";
-    public static final String PROPERTY_CONTAINED = "contained";
-    public static final String PROPERTY_EXTENSION = "extension";
-    public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-    public static final String PROPERTY_STATUS = "status";
-    public static final String PROPERTY_CONTACT = "contact";
-    public static final String PROPERTY_END = "end";
-    public static final String PROPERTY_REASON = "reason";
-    public static final String PROPERTY_CRITERIA = "criteria";
-    public static final String PROPERTY_ERROR = "error";
-    public static final String PROPERTY_CHANNEL = "channel";
 
     public static Builder create() {
         return new Builder();
@@ -55,14 +41,14 @@ public class Subscription extends FhirResource {
      * special rules along with other profiles etc.
      */
     public java.net.URI implicitRules() {
-        return getUri(PROPERTY_IMPLICIT_RULES);
+        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
     }
 
     /**
      * The base language in which the resource is written.
      */
     public String language() {
-        return getString(PROPERTY_LANGUAGE);
+        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
     }
 
     /**
@@ -74,7 +60,7 @@ public class Subscription extends FhirResource {
      * should be represented in the narrative to ensure clinical safety.
      */
     public Narrative text() {
-        return getObject(Narrative.class, PROPERTY_TEXT);
+        return getObject(Narrative.class, FhirPropertyNames.PROPERTY_TEXT);
     }
 
     /**
@@ -83,7 +69,7 @@ public class Subscription extends FhirResource {
      * and nor can they have their own independent transaction scope.
      */
     public java.util.List<FhirResource> contained() {
-        return getList(FhirResource.class, PROPERTY_CONTAINED);
+        return getList(FhirResource.class, FhirPropertyNames.PROPERTY_CONTAINED);
     }
 
     /**
@@ -95,7 +81,7 @@ public class Subscription extends FhirResource {
      * as part of the definition of the extension.
      */
     public java.util.List<Extension> extension() {
-        return getList(Extension.class, PROPERTY_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
     /**
@@ -115,7 +101,7 @@ public class Subscription extends FhirResource {
      * modifierExtension itself).
      */
     public java.util.List<Extension> modifierExtension() {
-        return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+        return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
     /**
@@ -123,7 +109,7 @@ public class Subscription extends FhirResource {
      * managing the subscription.
      */
     public String status() {
-        return getString(PROPERTY_STATUS);
+        return getString(FhirPropertyNames.PROPERTY_STATUS);
     }
 
     /**
@@ -131,21 +117,21 @@ public class Subscription extends FhirResource {
      * primary use of this for system administrator troubleshooting.
      */
     public java.util.List<ContactPoint> contact() {
-        return getList(ContactPoint.class, PROPERTY_CONTACT);
+        return getList(ContactPoint.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
     /**
      * The time for the server to turn the subscription off.
      */
     public java.time.Instant end() {
-        return getInstant(PROPERTY_END);
+        return getInstant(FhirPropertyNames.PROPERTY_END);
     }
 
     /**
      * A description of why this subscription is defined.
      */
     public String reason() {
-        return getString(PROPERTY_REASON);
+        return getString(FhirPropertyNames.PROPERTY_REASON);
     }
 
     /**
@@ -153,7 +139,7 @@ public class Subscription extends FhirResource {
      * notifications for this subscription.
      */
     public String criteria() {
-        return getString(PROPERTY_CRITERIA);
+        return getString(FhirPropertyNames.PROPERTY_CRITERIA);
     }
 
     /**
@@ -161,7 +147,7 @@ public class Subscription extends FhirResource {
      * notification.
      */
     public String error() {
-        return getString(PROPERTY_ERROR);
+        return getString(FhirPropertyNames.PROPERTY_ERROR);
     }
 
     /**
@@ -169,7 +155,7 @@ public class Subscription extends FhirResource {
      * meet the criteria.
      */
     public SubscriptionChannel channel() {
-        return getObject(SubscriptionChannel.class, PROPERTY_CHANNEL);
+        return getObject(SubscriptionChannel.class, FhirPropertyNames.PROPERTY_CHANNEL);
     }
 
     public static class Builder extends FhirResource.Builder {
@@ -183,82 +169,82 @@ public class Subscription extends FhirResource {
         }
 
         public Builder resourceType(final String resourceType) {
-            b.add(PROPERTY_RESOURCE_TYPE, resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
             return this;
         }
 
         public Builder id(final String id) {
-            b.add(PROPERTY_ID, id);
+            b.add(FhirPropertyNames.PROPERTY_ID, id);
             return this;
         }
 
         public Builder meta(final Meta meta) {
-            b.add(PROPERTY_META, meta);
+            b.add(FhirPropertyNames.PROPERTY_META, meta);
             return this;
         }
 
         public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(PROPERTY_IMPLICIT_RULES, implicitRules.toString());
+            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
             return this;
         }
 
         public Builder language(final String language) {
-            b.add(PROPERTY_LANGUAGE, language);
+            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
             return this;
         }
 
         public Builder text(final Narrative text) {
-            b.add(PROPERTY_TEXT, text);
+            b.add(FhirPropertyNames.PROPERTY_TEXT, text);
             return this;
         }
 
         public Builder contained(final java.util.List<FhirResource> contained) {
-            b.add(PROPERTY_CONTAINED, FhirObject.toArray(contained));
+            b.add(FhirPropertyNames.PROPERTY_CONTAINED, FhirObject.toArray(contained));
             return this;
         }
 
         public Builder extension(final java.util.List<Extension> extension) {
-            b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+            b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
             return this;
         }
 
         public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-            b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+            b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
             return this;
         }
 
         public Builder status(final String status) {
-            b.add(PROPERTY_STATUS, status);
+            b.add(FhirPropertyNames.PROPERTY_STATUS, status);
             return this;
         }
 
         public Builder contact(final java.util.List<ContactPoint> contact) {
-            b.add(PROPERTY_CONTACT, FhirObject.toArray(contact));
+            b.add(FhirPropertyNames.PROPERTY_CONTACT, FhirObject.toArray(contact));
             return this;
         }
 
         public Builder end(final java.time.Instant end) {
-            b.add(PROPERTY_END, end.toString());
+            b.add(FhirPropertyNames.PROPERTY_END, end.toString());
             return this;
         }
 
         public Builder reason(final String reason) {
-            b.add(PROPERTY_REASON, reason);
+            b.add(FhirPropertyNames.PROPERTY_REASON, reason);
             return this;
         }
 
         public Builder criteria(final String criteria) {
-            b.add(PROPERTY_CRITERIA, criteria);
+            b.add(FhirPropertyNames.PROPERTY_CRITERIA, criteria);
             return this;
         }
 
         public Builder error(final String error) {
-            b.add(PROPERTY_ERROR, error);
+            b.add(FhirPropertyNames.PROPERTY_ERROR, error);
             return this;
         }
 
         public Builder channel(final SubscriptionChannel channel) {
-            b.add(PROPERTY_CHANNEL, channel);
+            b.add(FhirPropertyNames.PROPERTY_CHANNEL, channel);
             return this;
         }
 
@@ -277,13 +263,6 @@ public class Subscription extends FhirResource {
      */
     public static class SubscriptionChannel extends FhirObject {
         public static final String RESOURCE_TYPE = "SubscriptionChannel";
-        public static final String PROPERTY_ID = "id";
-        public static final String PROPERTY_EXTENSION = "extension";
-        public static final String PROPERTY_MODIFIER_EXTENSION = "modifierExtension";
-        public static final String PROPERTY_TYPE = "type";
-        public static final String PROPERTY_ENDPOINT = "endpoint";
-        public static final String PROPERTY_PAYLOAD = "payload";
-        public static final String PROPERTY_HEADER = "header";
 
         public static Builder create() {
             return new Builder();
@@ -302,7 +281,7 @@ public class Subscription extends FhirResource {
          * This may be any string value that does not contain spaces.
          */
         public String id() {
-            return getString(PROPERTY_ID);
+            return getString(FhirPropertyNames.PROPERTY_ID);
         }
 
         /**
@@ -314,7 +293,7 @@ public class Subscription extends FhirResource {
          * as part of the definition of the extension.
          */
         public java.util.List<Extension> extension() {
-            return getList(Extension.class, PROPERTY_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
         }
 
         /**
@@ -335,21 +314,21 @@ public class Subscription extends FhirResource {
          * modifierExtension itself).
          */
         public java.util.List<Extension> modifierExtension() {
-            return getList(Extension.class, PROPERTY_MODIFIER_EXTENSION);
+            return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
         }
 
         /**
          * The type of channel to send notifications on.
          */
         public String type() {
-            return getString(PROPERTY_TYPE);
+            return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
         /**
          * The url that describes the actual end-point to send messages to.
          */
         public java.net.URI endpoint() {
-            return getUri(PROPERTY_ENDPOINT);
+            return getUri(FhirPropertyNames.PROPERTY_ENDPOINT);
         }
 
         /**
@@ -359,14 +338,14 @@ public class Subscription extends FhirResource {
          * &quot;text/plain&quot; may also be used for Email and SMS subscriptions.
          */
         public String payload() {
-            return getString(PROPERTY_PAYLOAD);
+            return getString(FhirPropertyNames.PROPERTY_PAYLOAD);
         }
 
         /**
          * Additional headers / information to send as part of the notification.
          */
         public java.util.List<String> header() {
-            return getList(String.class, PROPERTY_HEADER);
+            return getList(String.class, FhirPropertyNames.PROPERTY_HEADER);
         }
 
         public static class Builder {
@@ -381,37 +360,37 @@ public class Subscription extends FhirResource {
             }
 
             public Builder id(final String id) {
-                b.add(PROPERTY_ID, id);
+                b.add(FhirPropertyNames.PROPERTY_ID, id);
                 return this;
             }
 
             public Builder extension(final java.util.List<Extension> extension) {
-                b.add(PROPERTY_EXTENSION, FhirObject.toArray(extension));
+                b.add(FhirPropertyNames.PROPERTY_EXTENSION, FhirObject.toArray(extension));
                 return this;
             }
 
             public Builder modifierExtension(final java.util.List<Extension> modifierExtension) {
-                b.add(PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
+                b.add(FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION, FhirObject.toArray(modifierExtension));
                 return this;
             }
 
             public Builder type(final String type) {
-                b.add(PROPERTY_TYPE, type);
+                b.add(FhirPropertyNames.PROPERTY_TYPE, type);
                 return this;
             }
 
             public Builder endpoint(final java.net.URI endpoint) {
-                b.add(PROPERTY_ENDPOINT, endpoint.toString());
+                b.add(FhirPropertyNames.PROPERTY_ENDPOINT, endpoint.toString());
                 return this;
             }
 
             public Builder payload(final String payload) {
-                b.add(PROPERTY_PAYLOAD, payload);
+                b.add(FhirPropertyNames.PROPERTY_PAYLOAD, payload);
                 return this;
             }
 
             public Builder header(final java.util.List<String> header) {
-                b.add(PROPERTY_HEADER, FhirObject.toStringArray(header));
+                b.add(FhirPropertyNames.PROPERTY_HEADER, FhirObject.toStringArray(header));
                 return this;
             }
 
