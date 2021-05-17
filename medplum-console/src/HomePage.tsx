@@ -1,11 +1,17 @@
+import { formatSearchQuery, parseSearchDefinition } from 'medplum';
 import { Button, SearchControl } from 'medplum-ui';
 import React from 'react';
-import { useParams } from 'react-router';
+import { useLocation } from 'react-router';
 import { history } from './history';
 
 export function HomePage() {
-  const { resourceType } = useParams() as any;
-  console.log('resourceType', resourceType);
+  const location = useLocation();
+  const search = parseSearchDefinition(location);
+
+  if (!search.resourceType) {
+    search.resourceType = 'Patient';
+  }
+
   return (
     <>
       <div style={{ padding: '0 0 4px 4px' }}>
@@ -15,10 +21,12 @@ export function HomePage() {
       </div>
       <SearchControl
         checkboxesEnabled={true}
-        search={{
-          resourceType: resourceType || 'Patient'
-        }}
+        search={search}
         onClick={e => history.push(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onChange={e => history.push({
+          pathname: `/${e.definition.resourceType}`,
+          search: formatSearchQuery(e.definition)
+        })}
       />
     </>
   );
