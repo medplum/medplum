@@ -26,14 +26,15 @@
 
         result[element.name] = element.value;
 
-        // setValue(typeDef, result, element.name, element.value);
+      } else if (element instanceof HTMLTextAreaElement) {
+        result[element.name] = element.value;
 
       } else if (element instanceof HTMLSelectElement) {
         if (element.selectedOptions.length === 0) {
           // Ignore select elements with no value
           continue;
         }
-        // setValue(typeDef, result, element.name, element.value);
+
         result[element.name] = element.value;
       }
     }
