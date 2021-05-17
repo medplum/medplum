@@ -34,10 +34,10 @@ export * from './ResourceTable';
 export * from './SearchControl';
 export * from './SearchFieldEditor';
 export * from './SearchFilterEditor';
+export * from './SearchUtils';
 export * from './SignInForm';
 export * from './Tab';
 export * from './TabBar';
 export * from './TabPanel';
 export * from './TabSwitch';
 export * from './TextField';
-

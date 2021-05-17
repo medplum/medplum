@@ -5,20 +5,6 @@ import { SearchPopupMenu } from './SearchPopupMenu';
 import { buildFieldNameString, getFilterValueString, getValue, renderValue } from './SearchUtils';
 import './SearchControl.css';
 
-/**
- * @desc Message displayed when there are no orders to show.
- * @type {string}
- */
-// const MSG_NO_ORDERS = getMsg('No orders to show.');
-const MSG_NO_ORDERS = 'No orders to show.';
-
-/**
- * @desc Message displayed when there are no filters.
- * @type {string}
- */
-// const MSG_NO_FILTERS = getMsg('no filters');
-const MSG_NO_FILTERS = 'no filters';
-
 export class SearchChangeEvent extends Event {
   readonly definition: SearchDefinition;
 
@@ -48,7 +34,6 @@ export class SearchClickEvent extends Event {
   }
 }
 
-
 export interface SearchControlProps {
   search: SearchDefinition;
   checkboxesEnabled?: boolean;
@@ -58,7 +43,6 @@ export interface SearchControlProps {
 }
 
 interface SearchControlState {
-  search: SearchDefinition;
   searchResponse?: Bundle;
   allSelected: boolean;
   selected: { [id: string]: boolean };
@@ -69,15 +53,14 @@ interface SearchControlState {
 }
 
 /**
- * The SearchControl class represents the embeddable search table control.
+ * The SearchControl component represents the embeddable search table control.
  * It includes the table, rows, headers, sorting, etc.
- * It DOES NOT include the field editor, filter editor, pagination buttons.
+ * It does not include the field editor, filter editor, pagination buttons.
  */
 export function SearchControl(props: SearchControlProps) {
   const medplum = useMedplum();
 
   const [state, setState] = useState<SearchControlState>({
-    search: props.search,
     allSelected: false,
     selected: {},
     popupVisible: false,
@@ -90,10 +73,9 @@ export function SearchControl(props: SearchControlProps) {
   stateRef.current = state;
 
   function requestResources() {
-    const state = stateRef.current;
-    medplum.search(state.search)
+    medplum.search(props.search)
       .then(response => {
-        setState({ ...state, searchResponse: response as Bundle });
+        setState({ ...stateRef.current, searchResponse: response as Bundle });
         if (props.onLoad) {
           props.onLoad(new SearchLoadEvent(response));
         }
@@ -107,7 +89,7 @@ export function SearchControl(props: SearchControlProps) {
    * @return {string} The HTML snippet for a "filters" cell.
    */
   function buildFilterString_(key: string) {
-    const filters = (state.search.filters ?? []).filter(f => f.key === key);
+    const filters = (props.search.filters ?? []).filter(f => f.key === key);
     if (filters.length === 0) {
       return <span className="muted">no filters</span>;
     }
@@ -116,7 +98,6 @@ export function SearchControl(props: SearchControlProps) {
   }
 
   function handleSingleCheckboxClick(e: React.MouseEvent) {
-    // killEvent(e);
     e.stopPropagation();
 
     const el = e.currentTarget as HTMLInputElement;
@@ -135,7 +116,6 @@ export function SearchControl(props: SearchControlProps) {
   }
 
   function handleAllCheckboxClick(e: React.MouseEvent) {
-    // killEvent(e);
     e.stopPropagation();
 
     const el = e.currentTarget as HTMLInputElement;
@@ -162,9 +142,8 @@ export function SearchControl(props: SearchControlProps) {
     const el = e.currentTarget as HTMLElement;
     const key = el.dataset['key'];
     if (key) {
-      const state = stateRef.current;
       setState({
-        ...state,
+        ...stateRef.current,
         popupVisible: true,
         popupX: e.clientX,
         popupY: e.clientY,
@@ -192,11 +171,11 @@ export function SearchControl(props: SearchControlProps) {
     }
   }
 
-  useEffect(() => requestResources(), [state.search]);
+  useEffect(() => requestResources(), [props.search]);
 
   const checkboxColumn = props.checkboxesEnabled;
-  const fields = state.search.fields || ['id', 'meta.lastUpdated', 'name'];
-  const resourceType = state.search.resourceType;
+  const fields = props.search.fields || ['id', 'meta.lastUpdated', 'name'];
+  const resourceType = props.search.resourceType;
   const entries = state.searchResponse?.entry || [];
   const resources = entries.map(e => e.resource);
 
@@ -250,16 +229,16 @@ export function SearchControl(props: SearchControlProps) {
                 </td>
               }
               {fields.map(field =>
-                <td key={field}>{renderValue(state.search.resourceType, field, getValue(resource, field))}</td>
+                <td key={field}>{renderValue(props.search.resourceType, field, getValue(resource, field))}</td>
               )}
             </tr>
           ))}
         </tbody>
       </table>
       {resources.length === 0 &&
-        <div className="medplum-empty-search">{MSG_NO_ORDERS}</div>}
+        <div className="medplum-empty-search">No results</div>}
       <SearchPopupMenu
-        search={state.search}
+        search={props.search}
         visible={state.popupVisible}
         x={state.popupX}
         y={state.popupY}
@@ -268,18 +247,15 @@ export function SearchControl(props: SearchControlProps) {
           if (props.onChange) {
             props.onChange(new SearchChangeEvent(definition));
           }
-          const state = stateRef.current;
           setState({
-            ...state,
-            search: definition,
+            ...stateRef.current,
             popupVisible: false,
             popupField: ''
           });
         }}
         onClose={() => {
-          const state = stateRef.current;
           setState({
-            ...state,
+            ...stateRef.current,
             popupVisible: false,
             popupField: ''
           });

@@ -439,8 +439,6 @@ export function getDefaultSearch(): SearchDefinition {
       'status'
     ],
     filters: []
-    // 'sortField': 'receivedDateTime',
-    // 'sortDir': 'desc'
   };
 }
 

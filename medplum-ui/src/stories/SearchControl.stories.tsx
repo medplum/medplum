@@ -1,31 +1,46 @@
 import { Meta } from '@storybook/react';
-import React from 'react';
-import { SearchControl, SearchControlProps } from '../SearchControl';
+import { SearchDefinition } from 'medplum';
+import React, { useState } from 'react';
+import { SearchControl } from '../SearchControl';
 
 export default {
   title: 'Medplum/SearchControl',
   component: SearchControl,
 } as Meta;
 
-export const Checkboxes = (args: SearchControlProps) => (
-  <SearchControl
-    search={{
-      resourceType: 'Patient'
-    }}
-    onLoad={e => console.log('onLoad', e)}
-    onChange={e => console.log('onChange', e)}
-    onClick={e => console.log('onClick', e)}
-    checkboxesEnabled={true}
-  />
-);
+export const Checkboxes = () => {
+  const [search, setSearch] = useState<SearchDefinition>({
+    resourceType: 'Patient'
+  });
 
-export const NoCheckboxes = (args: SearchControlProps) => (
-  <SearchControl
-    search={{
-      resourceType: 'Patient'
-    }}
-    onLoad={e => console.log('onLoad', e)}
-    onChange={e => console.log('onChange', e)}
-    onClick={e => console.log('onClick', e)}
-  />
-);
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onLoad={e => console.log('onLoad', e)}
+      onClick={e => console.log('onClick', e)}
+      onChange={e => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};
+
+export const NoCheckboxes = () => {
+  const [search, setSearch] = useState<SearchDefinition>({
+    resourceType: 'Patient'
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      onLoad={e => console.log('onLoad', e)}
+      onClick={e => console.log('onClick', e)}
+      onChange={e => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};
