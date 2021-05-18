@@ -28,7 +28,7 @@ export function SseListener() {
             setEvents([]);
 
             const formData = parseForm(e.target as HTMLFormElement);
-            medplum.sse(formData.criteria, (resource: Resource) => {
+            medplum.subscribe(formData.criteria, (resource: Resource) => {
               setEvents([...eventsRef.current, resource]);
             });
             setConnected(true);

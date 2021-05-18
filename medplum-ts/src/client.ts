@@ -213,7 +213,7 @@ export class MedplumClient extends EventTarget {
    * Returns true if the user is signed in.
    * This may result in navigating away to the sign in page.
    */
-  signInWithOAuthRedirect(): Promise<User> | undefined {
+  signInWithRedirect(): Promise<User> | undefined {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
@@ -228,7 +228,7 @@ export class MedplumClient extends EventTarget {
    * Tries to sign out the user.
    * See: https://docs.aws.amazon.com/cognito/latest/developerguide/logout-endpoint.html
    */
-  signOutWithOAuthRedirect(): void {
+  signOutWithRedirect(): void {
     if (!this.logoutUrl) {
       throw new Error('Missing logout URL');
     }
@@ -296,7 +296,7 @@ export class MedplumClient extends EventTarget {
     return this.post(this.fhirUrl('$graphql'), gql, JSON_CONTENT_TYPE);
   }
 
-  sse(criteria: string, handler: (e: Resource) => void): Promise<EventSource> {
+  subscribe(criteria: string, handler: (e: Resource) => void): Promise<EventSource> {
     return this.create({
       resourceType: 'Subscription',
       status: 'active',

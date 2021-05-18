@@ -24,7 +24,7 @@ export function ChatControl(props: ChatControlProps) {
 
   useEffect(() => {
     let cancelled = false;
-    const result = medplum.sse(props.criteria, (resource: Resource) => {
+    const result = medplum.subscribe(props.criteria, (resource: Resource) => {
       if (!cancelled) {
         setComms([...commsRef.current, resource as Communication]);
       }

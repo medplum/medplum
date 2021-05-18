@@ -3,14 +3,14 @@ import React from 'react';
 import { Button } from '../Button';
 import { Document } from '../Document';
 import { useAuth } from '../MedplumProvider';
-import { SignInForm, SignInFormProps } from '../SignInForm';
+import { SignInForm } from '../SignInForm';
 
 export default {
   title: 'Medplum/SignInForm',
   component: SignInForm,
 } as Meta;
 
-export function Basic(args: SignInFormProps) {
+export function Basic() {
   const auth = useAuth();
   return (
     <Document>
