@@ -24,13 +24,25 @@ public class JsonWebKeyTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", JsonWebKey.create().resourceType("x").build().resourceType());
+    public void testId() {
+        assertEquals("x", JsonWebKey.create().id("x").build().id());
     }
 
     @Test
-    public void testId() {
-        assertEquals("x", JsonWebKey.create().id("x").build().id());
+    public void testMeta() {
+        final Meta value = Meta.create().build();
+        assertEquals(value, JsonWebKey.create().meta(value).build().meta());
+    }
+
+    @Test
+    public void testImplicitRules() {
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, JsonWebKey.create().implicitRules(value).build().implicitRules());
+    }
+
+    @Test
+    public void testLanguage() {
+        assertEquals("x", JsonWebKey.create().language("x").build().language());
     }
 
     @Test

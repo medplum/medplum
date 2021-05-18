@@ -142,7 +142,7 @@ public class JsonWebKey extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_QI);
     }
 
-    public static class Builder extends FhirResource.Builder {
+    public static final class Builder extends FhirResource.Builder<JsonWebKey, JsonWebKey.Builder> {
 
         private Builder() {
             super(RESOURCE_TYPE);
@@ -150,16 +150,6 @@ public class JsonWebKey extends FhirResource {
 
         private Builder(final JsonObject data) {
             super(RESOURCE_TYPE, data);
-        }
-
-        public Builder resourceType(final String resourceType) {
-            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
-            return this;
-        }
-
-        public Builder id(final String id) {
-            b.add(FhirPropertyNames.PROPERTY_ID, id);
-            return this;
         }
 
         public Builder active(final Boolean active) {
@@ -244,6 +234,10 @@ public class JsonWebKey extends FhirResource {
 
         public JsonWebKey build() {
             return new JsonWebKey(b.build());
+        }
+
+        protected Builder getBuilder() {
+            return this;
         }
     }
 }

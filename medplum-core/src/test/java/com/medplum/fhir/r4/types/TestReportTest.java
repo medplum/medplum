@@ -24,11 +24,6 @@ public class TestReportTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", TestReport.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", TestReport.create().id("x").build().id());
     }

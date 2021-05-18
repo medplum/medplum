@@ -24,11 +24,6 @@ public class MedicinalProductUndesirableEffectTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", MedicinalProductUndesirableEffect.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", MedicinalProductUndesirableEffect.create().id("x").build().id());
     }

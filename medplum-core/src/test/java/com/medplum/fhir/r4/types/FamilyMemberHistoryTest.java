@@ -24,11 +24,6 @@ public class FamilyMemberHistoryTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", FamilyMemberHistory.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", FamilyMemberHistory.create().id("x").build().id());
     }

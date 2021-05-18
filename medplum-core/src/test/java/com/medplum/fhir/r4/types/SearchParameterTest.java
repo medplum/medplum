@@ -24,11 +24,6 @@ public class SearchParameterTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", SearchParameter.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", SearchParameter.create().id("x").build().id());
     }

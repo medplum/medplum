@@ -24,11 +24,6 @@ public class SlotTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Slot.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Slot.create().id("x").build().id());
     }

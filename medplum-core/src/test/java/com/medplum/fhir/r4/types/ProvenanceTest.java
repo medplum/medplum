@@ -24,11 +24,6 @@ public class ProvenanceTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Provenance.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Provenance.create().id("x").build().id());
     }

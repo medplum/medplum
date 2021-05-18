@@ -55,7 +55,7 @@ public class User extends FhirResource {
         return getObject(Reference.class, FhirPropertyNames.PROPERTY_PRACTITIONER);
     }
 
-    public static class Builder extends FhirResource.Builder {
+    public static final class Builder extends FhirResource.Builder<User, User.Builder> {
 
         private Builder() {
             super(RESOURCE_TYPE);
@@ -63,16 +63,6 @@ public class User extends FhirResource {
 
         private Builder(final JsonObject data) {
             super(RESOURCE_TYPE, data);
-        }
-
-        public Builder resourceType(final String resourceType) {
-            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
-            return this;
-        }
-
-        public Builder id(final String id) {
-            b.add(FhirPropertyNames.PROPERTY_ID, id);
-            return this;
         }
 
         public Builder email(final String email) {
@@ -97,6 +87,10 @@ public class User extends FhirResource {
 
         public User build() {
             return new User(b.build());
+        }
+
+        protected Builder getBuilder() {
+            return this;
         }
     }
 }

@@ -24,11 +24,6 @@ public class SubstanceTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Substance.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Substance.create().id("x").build().id());
     }

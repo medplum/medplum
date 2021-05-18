@@ -16,7 +16,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * actually put on the market or the date as of which it is no longer
  * available.
  */
-public class ProdCharacteristic extends FhirResource {
+public class ProdCharacteristic extends FhirObject {
     public static final String RESOURCE_TYPE = "ProdCharacteristic";
 
     public static Builder create() {
@@ -174,7 +174,7 @@ public class ProdCharacteristic extends FhirResource {
         return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SCORING);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

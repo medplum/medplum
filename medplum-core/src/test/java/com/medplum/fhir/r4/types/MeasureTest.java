@@ -24,11 +24,6 @@ public class MeasureTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Measure.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Measure.create().id("x").build().id());
     }

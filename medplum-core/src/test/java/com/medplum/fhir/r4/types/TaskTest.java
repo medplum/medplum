@@ -24,11 +24,6 @@ public class TaskTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Task.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Task.create().id("x").build().id());
     }

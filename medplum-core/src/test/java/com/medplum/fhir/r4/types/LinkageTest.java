@@ -24,11 +24,6 @@ public class LinkageTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Linkage.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Linkage.create().id("x").build().id());
     }

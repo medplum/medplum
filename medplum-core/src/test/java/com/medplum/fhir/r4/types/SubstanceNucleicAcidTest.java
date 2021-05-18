@@ -24,11 +24,6 @@ public class SubstanceNucleicAcidTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", SubstanceNucleicAcid.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", SubstanceNucleicAcid.create().id("x").build().id());
     }

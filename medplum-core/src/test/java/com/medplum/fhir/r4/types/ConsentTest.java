@@ -24,11 +24,6 @@ public class ConsentTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Consent.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Consent.create().id("x").build().id());
     }

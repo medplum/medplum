@@ -16,7 +16,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * maintained by the infrastructure. Changes to the content might not
  * always be associated with version changes to the resource.
  */
-public class Meta extends FhirResource {
+public class Meta extends FhirObject {
     public static final String RESOURCE_TYPE = "Meta";
 
     public static Builder create() {
@@ -105,7 +105,7 @@ public class Meta extends FhirResource {
         return getList(Coding.class, FhirPropertyNames.PROPERTY_TAG);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

@@ -24,11 +24,6 @@ public class EventDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", EventDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", EventDefinition.create().id("x").build().id());
     }

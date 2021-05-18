@@ -24,11 +24,6 @@ public class PractitionerRoleTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", PractitionerRole.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", PractitionerRole.create().id("x").build().id());
     }

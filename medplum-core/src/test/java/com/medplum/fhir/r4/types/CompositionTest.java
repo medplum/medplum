@@ -24,11 +24,6 @@ public class CompositionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Composition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Composition.create().id("x").build().id());
     }

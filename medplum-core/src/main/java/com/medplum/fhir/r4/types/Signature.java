@@ -19,7 +19,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * a signature ceremony Different signature approaches have different
  * utilities.
  */
-public class Signature extends FhirResource {
+public class Signature extends FhirObject {
     public static final String RESOURCE_TYPE = "Signature";
 
     public static Builder create() {
@@ -113,7 +113,7 @@ public class Signature extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_DATA);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

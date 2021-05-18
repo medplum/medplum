@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * A time period defined by a start and end date and optionally time.
  */
-public class Period extends FhirResource {
+public class Period extends FhirObject {
     public static final String RESOURCE_TYPE = "Period";
 
     public static Builder create() {
@@ -66,7 +66,7 @@ public class Period extends FhirResource {
         return getInstant(FhirPropertyNames.PROPERTY_END);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

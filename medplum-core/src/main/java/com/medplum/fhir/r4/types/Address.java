@@ -18,7 +18,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * locations which might not be valid for mail delivery.  There are a
  * variety of postal address formats defined around the world.
  */
-public class Address extends FhirResource {
+public class Address extends FhirObject {
     public static final String RESOURCE_TYPE = "Address";
 
     public static Builder create() {
@@ -132,7 +132,7 @@ public class Address extends FhirResource {
         return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

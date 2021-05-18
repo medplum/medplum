@@ -24,11 +24,6 @@ public class DocumentManifestTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", DocumentManifest.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", DocumentManifest.create().id("x").build().id());
     }

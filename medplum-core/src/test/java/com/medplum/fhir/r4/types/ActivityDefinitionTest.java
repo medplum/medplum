@@ -24,11 +24,6 @@ public class ActivityDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ActivityDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ActivityDefinition.create().id("x").build().id());
     }

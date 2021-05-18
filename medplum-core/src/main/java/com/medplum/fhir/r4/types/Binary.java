@@ -30,23 +30,6 @@ public class Binary extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was
-     * constructed, and which must be understood when processing the content.
-     * Often, this is a reference to an implementation guide that defines the
-     * special rules along with other profiles etc.
-     */
-    public java.net.URI implicitRules() {
-        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
-    }
-
-    /**
-     * The base language in which the resource is written.
-     */
-    public String language() {
-        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
-    }
-
-    /**
      * MimeType of the binary content represented as a standard MimeType (BCP
      * 13).
      */
@@ -78,7 +61,7 @@ public class Binary extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_DATA);
     }
 
-    public static class Builder extends FhirResource.Builder {
+    public static final class Builder extends FhirResource.Builder<Binary, Binary.Builder> {
 
         private Builder() {
             super(RESOURCE_TYPE);
@@ -86,31 +69,6 @@ public class Binary extends FhirResource {
 
         private Builder(final JsonObject data) {
             super(RESOURCE_TYPE, data);
-        }
-
-        public Builder resourceType(final String resourceType) {
-            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
-            return this;
-        }
-
-        public Builder id(final String id) {
-            b.add(FhirPropertyNames.PROPERTY_ID, id);
-            return this;
-        }
-
-        public Builder meta(final Meta meta) {
-            b.add(FhirPropertyNames.PROPERTY_META, meta);
-            return this;
-        }
-
-        public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
-            return this;
-        }
-
-        public Builder language(final String language) {
-            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
-            return this;
         }
 
         public Builder contentType(final String contentType) {
@@ -130,6 +88,10 @@ public class Binary extends FhirResource {
 
         public Binary build() {
             return new Binary(b.build());
+        }
+
+        protected Builder getBuilder() {
+            return this;
         }
     }
 }

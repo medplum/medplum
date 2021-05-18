@@ -24,11 +24,6 @@ public class NutritionOrderTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", NutritionOrder.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", NutritionOrder.create().id("x").build().id());
     }

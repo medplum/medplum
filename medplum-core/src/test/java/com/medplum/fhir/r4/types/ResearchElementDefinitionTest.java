@@ -24,11 +24,6 @@ public class ResearchElementDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ResearchElementDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ResearchElementDefinition.create().id("x").build().id());
     }

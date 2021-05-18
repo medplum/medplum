@@ -24,11 +24,6 @@ public class GuidanceResponseTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", GuidanceResponse.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", GuidanceResponse.create().id("x").build().id());
     }

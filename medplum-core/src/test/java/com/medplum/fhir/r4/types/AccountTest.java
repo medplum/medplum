@@ -24,11 +24,6 @@ public class AccountTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Account.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Account.create().id("x").build().id());
     }

@@ -24,11 +24,6 @@ public class ObservationDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ObservationDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ObservationDefinition.create().id("x").build().id());
     }

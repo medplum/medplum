@@ -24,11 +24,6 @@ public class CatalogEntryTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", CatalogEntry.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", CatalogEntry.create().id("x").build().id());
     }

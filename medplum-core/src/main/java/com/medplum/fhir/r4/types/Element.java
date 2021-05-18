@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * Base definition for all elements in a resource.
  */
-public class Element extends FhirResource {
+public class Element extends FhirObject {
     public static final String RESOURCE_TYPE = "Element";
 
     public static Builder create() {
@@ -49,7 +49,7 @@ public class Element extends FhirResource {
         return getList(Extension.class, FhirPropertyNames.PROPERTY_EXTENSION);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

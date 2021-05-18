@@ -24,11 +24,6 @@ public class AuditEventTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", AuditEvent.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", AuditEvent.create().id("x").build().id());
     }

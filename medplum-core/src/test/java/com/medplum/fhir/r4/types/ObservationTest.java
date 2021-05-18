@@ -24,11 +24,6 @@ public class ObservationTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Observation.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Observation.create().id("x").build().id());
     }

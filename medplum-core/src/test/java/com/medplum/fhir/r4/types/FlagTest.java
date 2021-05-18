@@ -24,11 +24,6 @@ public class FlagTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Flag.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Flag.create().id("x").build().id());
     }

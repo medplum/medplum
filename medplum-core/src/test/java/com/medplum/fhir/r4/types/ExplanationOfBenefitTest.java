@@ -24,11 +24,6 @@ public class ExplanationOfBenefitTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ExplanationOfBenefit.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ExplanationOfBenefit.create().id("x").build().id());
     }

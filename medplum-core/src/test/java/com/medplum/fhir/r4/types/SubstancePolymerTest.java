@@ -24,11 +24,6 @@ public class SubstancePolymerTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", SubstancePolymer.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", SubstancePolymer.create().id("x").build().id());
     }

@@ -24,11 +24,6 @@ public class GroupTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Group.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Group.create().id("x").build().id());
     }

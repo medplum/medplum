@@ -24,11 +24,6 @@ public class GoalTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Goal.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Goal.create().id("x").build().id());
     }

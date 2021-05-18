@@ -24,11 +24,6 @@ public class ValueSetTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ValueSet.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ValueSet.create().id("x").build().id());
     }

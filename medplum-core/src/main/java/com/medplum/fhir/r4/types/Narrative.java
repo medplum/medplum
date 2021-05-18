@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * A human-readable summary of the resource conveying the essential
  * clinical and business information for the resource.
  */
-public class Narrative extends FhirResource {
+public class Narrative extends FhirObject {
     public static final String RESOURCE_TYPE = "Narrative";
 
     public static Builder create() {
@@ -66,7 +66,7 @@ public class Narrative extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_DIV);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

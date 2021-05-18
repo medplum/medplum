@@ -20,7 +20,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * not taken into account in the definition of a chemical substance or in
  * the assignment of a Substance ID.
  */
-public class SubstanceAmount extends FhirResource {
+public class SubstanceAmount extends FhirObject {
     public static final String RESOURCE_TYPE = "SubstanceAmount";
 
     public static Builder create() {
@@ -134,7 +134,7 @@ public class SubstanceAmount extends FhirResource {
         return getObject(SubstanceAmountReferenceRange.class, FhirPropertyNames.PROPERTY_REFERENCE_RANGE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {
@@ -274,7 +274,7 @@ public class SubstanceAmount extends FhirResource {
             return getObject(Quantity.class, FhirPropertyNames.PROPERTY_HIGH_LIMIT);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {

@@ -24,11 +24,6 @@ public class PaymentNoticeTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", PaymentNotice.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", PaymentNotice.create().id("x").build().id());
     }

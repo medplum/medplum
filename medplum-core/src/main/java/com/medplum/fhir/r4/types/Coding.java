@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * A reference to a code defined by a terminology system.
  */
-public class Coding extends FhirResource {
+public class Coding extends FhirObject {
     public static final String RESOURCE_TYPE = "Coding";
 
     public static Builder create() {
@@ -93,7 +93,7 @@ public class Coding extends FhirResource {
         return data.getBoolean(FhirPropertyNames.PROPERTY_USER_SELECTED);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

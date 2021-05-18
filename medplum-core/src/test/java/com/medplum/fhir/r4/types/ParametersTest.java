@@ -24,11 +24,6 @@ public class ParametersTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Parameters.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Parameters.create().id("x").build().id());
     }

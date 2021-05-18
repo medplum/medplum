@@ -24,11 +24,6 @@ public class SpecimenTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Specimen.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Specimen.create().id("x").build().id());
     }

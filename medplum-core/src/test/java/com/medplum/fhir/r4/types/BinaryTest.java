@@ -24,11 +24,6 @@ public class BinaryTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Binary.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Binary.create().id("x").build().id());
     }

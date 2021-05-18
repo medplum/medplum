@@ -24,11 +24,6 @@ public class EndpointTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Endpoint.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Endpoint.create().id("x").build().id());
     }

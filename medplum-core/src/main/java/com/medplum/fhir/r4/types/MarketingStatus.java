@@ -16,7 +16,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * actually put on the market or the date as of which it is no longer
  * available.
  */
-public class MarketingStatus extends FhirResource {
+public class MarketingStatus extends FhirObject {
     public static final String RESOURCE_TYPE = "MarketingStatus";
 
     public static Builder create() {
@@ -127,7 +127,7 @@ public class MarketingStatus extends FhirResource {
         return getInstant(FhirPropertyNames.PROPERTY_RESTORE_DATE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

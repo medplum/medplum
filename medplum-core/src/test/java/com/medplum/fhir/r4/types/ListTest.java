@@ -24,11 +24,6 @@ public class ListTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", List.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", List.create().id("x").build().id());
     }

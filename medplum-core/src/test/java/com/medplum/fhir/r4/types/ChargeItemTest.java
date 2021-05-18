@@ -24,11 +24,6 @@ public class ChargeItemTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ChargeItem.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ChargeItem.create().id("x").build().id());
     }

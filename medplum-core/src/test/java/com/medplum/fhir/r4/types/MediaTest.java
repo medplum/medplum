@@ -24,11 +24,6 @@ public class MediaTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Media.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Media.create().id("x").build().id());
     }

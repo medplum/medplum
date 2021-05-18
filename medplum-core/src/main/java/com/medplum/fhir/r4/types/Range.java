@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * A set of ordered Quantities defined by a low and high limit.
  */
-public class Range extends FhirResource {
+public class Range extends FhirObject {
     public static final String RESOURCE_TYPE = "Range";
 
     public static Builder create() {
@@ -63,7 +63,7 @@ public class Range extends FhirResource {
         return getObject(Quantity.class, FhirPropertyNames.PROPERTY_HIGH);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

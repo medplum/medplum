@@ -24,11 +24,6 @@ public class MessageHeaderTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", MessageHeader.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", MessageHeader.create().id("x").build().id());
     }

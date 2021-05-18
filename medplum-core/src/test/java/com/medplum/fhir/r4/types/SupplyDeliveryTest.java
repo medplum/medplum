@@ -24,11 +24,6 @@ public class SupplyDeliveryTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", SupplyDelivery.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", SupplyDelivery.create().id("x").build().id());
     }

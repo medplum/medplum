@@ -24,11 +24,6 @@ public class OrganizationAffiliationTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", OrganizationAffiliation.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", OrganizationAffiliation.create().id("x").build().id());
     }

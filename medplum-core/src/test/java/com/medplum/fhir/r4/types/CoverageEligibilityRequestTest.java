@@ -24,11 +24,6 @@ public class CoverageEligibilityRequestTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", CoverageEligibilityRequest.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", CoverageEligibilityRequest.create().id("x").build().id());
     }

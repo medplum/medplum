@@ -24,11 +24,6 @@ public class RequestGroupTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", RequestGroup.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", RequestGroup.create().id("x").build().id());
     }

@@ -24,11 +24,6 @@ public class MessageDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", MessageDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", MessageDefinition.create().id("x").build().id());
     }

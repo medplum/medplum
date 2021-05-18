@@ -17,7 +17,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * quantified, including amounts involving arbitrary units and floating
  * currencies.
  */
-public class Count extends FhirResource {
+public class Count extends FhirObject {
     public static final String RESOURCE_TYPE = "Count";
 
     public static Builder create() {
@@ -93,7 +93,7 @@ public class Count extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_CODE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

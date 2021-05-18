@@ -24,11 +24,6 @@ public class ImplementationGuideTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ImplementationGuide.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ImplementationGuide.create().id("x").build().id());
     }

@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * A contributor to the content of a knowledge asset, including authors,
  * editors, reviewers, and endorsers.
  */
-public class Contributor extends FhirResource {
+public class Contributor extends FhirObject {
     public static final String RESOURCE_TYPE = "Contributor";
 
     public static Builder create() {
@@ -73,7 +73,7 @@ public class Contributor extends FhirResource {
         return getList(ContactDetail.class, FhirPropertyNames.PROPERTY_CONTACT);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

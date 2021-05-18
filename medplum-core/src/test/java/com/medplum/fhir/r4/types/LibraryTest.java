@@ -24,11 +24,6 @@ public class LibraryTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Library.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Library.create().id("x").build().id());
     }

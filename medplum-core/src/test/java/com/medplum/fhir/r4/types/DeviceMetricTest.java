@@ -24,11 +24,6 @@ public class DeviceMetricTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", DeviceMetric.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", DeviceMetric.create().id("x").build().id());
     }

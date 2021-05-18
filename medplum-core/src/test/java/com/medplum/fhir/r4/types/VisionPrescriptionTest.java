@@ -24,11 +24,6 @@ public class VisionPrescriptionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", VisionPrescription.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", VisionPrescription.create().id("x").build().id());
     }

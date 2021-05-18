@@ -24,11 +24,6 @@ public class DocumentReferenceTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", DocumentReference.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", DocumentReference.create().id("x").build().id());
     }

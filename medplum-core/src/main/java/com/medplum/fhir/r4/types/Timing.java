@@ -19,7 +19,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * and may be used for reporting the schedule to which past regular
  * activities were carried out.
  */
-public class Timing extends FhirResource {
+public class Timing extends FhirObject {
     public static final String RESOURCE_TYPE = "Timing";
 
     public static Builder create() {
@@ -102,7 +102,7 @@ public class Timing extends FhirResource {
         return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {
@@ -357,7 +357,7 @@ public class Timing extends FhirResource {
             return data.getInt(FhirPropertyNames.PROPERTY_OFFSET);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {

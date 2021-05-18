@@ -24,11 +24,6 @@ public class MedicinalProductContraindicationTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", MedicinalProductContraindication.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", MedicinalProductContraindication.create().id("x").build().id());
     }

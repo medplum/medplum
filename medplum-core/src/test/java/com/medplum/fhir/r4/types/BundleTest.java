@@ -24,11 +24,6 @@ public class BundleTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Bundle.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Bundle.create().id("x").build().id());
     }

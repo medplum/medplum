@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * Details for all kinds of technology mediated contact points for a
  * person or organization, including telephone, email, etc.
  */
-public class ContactPoint extends FhirResource {
+public class ContactPoint extends FhirObject {
     public static final String RESOURCE_TYPE = "ContactPoint";
 
     public static Builder create() {
@@ -89,7 +89,7 @@ public class ContactPoint extends FhirResource {
         return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

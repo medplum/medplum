@@ -24,11 +24,6 @@ public class ImmunizationEvaluationTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ImmunizationEvaluation.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ImmunizationEvaluation.create().id("x").build().id());
     }

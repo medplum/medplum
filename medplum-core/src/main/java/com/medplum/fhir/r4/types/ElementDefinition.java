@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * Captures constraints on each element within the resource, profile, or
  * extension.
  */
-public class ElementDefinition extends FhirResource {
+public class ElementDefinition extends FhirObject {
     public static final String RESOURCE_TYPE = "ElementDefinition";
 
     public static Builder create() {
@@ -2703,7 +2703,7 @@ public class ElementDefinition extends FhirResource {
         return getList(ElementDefinitionMapping.class, FhirPropertyNames.PROPERTY_MAPPING);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {
@@ -3803,7 +3803,7 @@ public class ElementDefinition extends FhirResource {
             return getString(FhirPropertyNames.PROPERTY_MAX);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {
@@ -3934,7 +3934,7 @@ public class ElementDefinition extends FhirResource {
             return getString(FhirPropertyNames.PROPERTY_VALUE_SET);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {
@@ -4097,7 +4097,7 @@ public class ElementDefinition extends FhirResource {
             return getString(FhirPropertyNames.PROPERTY_SOURCE);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {
@@ -4240,7 +4240,7 @@ public class ElementDefinition extends FhirResource {
             return getString(FhirPropertyNames.PROPERTY_PATH);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {
@@ -4749,7 +4749,7 @@ public class ElementDefinition extends FhirResource {
             return getObject(Meta.class, FhirPropertyNames.PROPERTY_VALUE_META);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {
@@ -5125,7 +5125,7 @@ public class ElementDefinition extends FhirResource {
             return getString(FhirPropertyNames.PROPERTY_COMMENT);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {
@@ -5275,7 +5275,7 @@ public class ElementDefinition extends FhirResource {
             return getString(FhirPropertyNames.PROPERTY_RULES);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {
@@ -5443,7 +5443,7 @@ public class ElementDefinition extends FhirResource {
             return getString(FhirPropertyNames.PROPERTY_VERSIONING);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {

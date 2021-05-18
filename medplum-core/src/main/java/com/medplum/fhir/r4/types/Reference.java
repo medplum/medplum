@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * A reference from one resource to another.
  */
-public class Reference extends FhirResource {
+public class Reference extends FhirObject {
     public static final String RESOURCE_TYPE = "Reference";
 
     public static Builder create() {
@@ -112,7 +112,7 @@ public class Reference extends FhirResource {
         return getObject(c, FhirPropertyNames.PROPERTY_RESOURCE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

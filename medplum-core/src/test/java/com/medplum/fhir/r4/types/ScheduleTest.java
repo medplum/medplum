@@ -24,11 +24,6 @@ public class ScheduleTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Schedule.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Schedule.create().id("x").build().id());
     }

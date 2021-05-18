@@ -24,11 +24,6 @@ public class DetectedIssueTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", DetectedIssue.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", DetectedIssue.create().id("x").build().id());
     }

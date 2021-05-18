@@ -24,11 +24,6 @@ public class MolecularSequenceTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", MolecularSequence.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", MolecularSequence.create().id("x").build().id());
     }

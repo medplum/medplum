@@ -24,11 +24,6 @@ public class OperationDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", OperationDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", OperationDefinition.create().id("x").build().id());
     }

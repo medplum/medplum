@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * A description of a triggering event. Triggering events can be named
  * events, data events, or periodic, as determined by the type element.
  */
-public class TriggerDefinition extends FhirResource {
+public class TriggerDefinition extends FhirObject {
     public static final String RESOURCE_TYPE = "TriggerDefinition";
 
     public static Builder create() {
@@ -112,7 +112,7 @@ public class TriggerDefinition extends FhirResource {
         return getObject(Expression.class, FhirPropertyNames.PROPERTY_CONDITION);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

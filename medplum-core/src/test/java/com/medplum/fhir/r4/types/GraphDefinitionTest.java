@@ -24,11 +24,6 @@ public class GraphDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", GraphDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", GraphDefinition.create().id("x").build().id());
     }

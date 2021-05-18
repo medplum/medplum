@@ -24,11 +24,6 @@ public class PaymentReconciliationTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", PaymentReconciliation.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", PaymentReconciliation.create().id("x").build().id());
     }

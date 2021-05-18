@@ -48,7 +48,7 @@ public class RefreshToken extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_SCOPE);
     }
 
-    public static class Builder extends FhirResource.Builder {
+    public static final class Builder extends FhirResource.Builder<RefreshToken, RefreshToken.Builder> {
 
         private Builder() {
             super(RESOURCE_TYPE);
@@ -56,16 +56,6 @@ public class RefreshToken extends FhirResource {
 
         private Builder(final JsonObject data) {
             super(RESOURCE_TYPE, data);
-        }
-
-        public Builder resourceType(final String resourceType) {
-            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
-            return this;
-        }
-
-        public Builder id(final String id) {
-            b.add(FhirPropertyNames.PROPERTY_ID, id);
-            return this;
         }
 
         public Builder client(final Reference client) {
@@ -85,6 +75,10 @@ public class RefreshToken extends FhirResource {
 
         public RefreshToken build() {
             return new RefreshToken(b.build());
+        }
+
+        protected Builder getBuilder() {
+            return this;
         }
     }
 }

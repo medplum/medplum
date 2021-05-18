@@ -24,11 +24,6 @@ public class TerminologyCapabilitiesTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", TerminologyCapabilities.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", TerminologyCapabilities.create().id("x").build().id());
     }

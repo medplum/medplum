@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * A series of measurements taken by a device, with upper and lower
  * limits. There may be more than one dimension in the data.
  */
-public class SampledData extends FhirResource {
+public class SampledData extends FhirObject {
     public static final String RESOURCE_TYPE = "SampledData";
 
     public static Builder create() {
@@ -110,7 +110,7 @@ public class SampledData extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_DATA);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

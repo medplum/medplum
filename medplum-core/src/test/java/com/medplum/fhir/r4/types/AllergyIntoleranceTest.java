@@ -24,11 +24,6 @@ public class AllergyIntoleranceTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", AllergyIntolerance.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", AllergyIntolerance.create().id("x").build().id());
     }

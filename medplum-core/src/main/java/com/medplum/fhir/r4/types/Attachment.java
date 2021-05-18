@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * For referring to data content defined in other formats.
  */
-public class Attachment extends FhirResource {
+public class Attachment extends FhirObject {
     public static final String RESOURCE_TYPE = "Attachment";
 
     public static Builder create() {
@@ -110,7 +110,7 @@ public class Attachment extends FhirResource {
         return getInstant(FhirPropertyNames.PROPERTY_CREATION);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

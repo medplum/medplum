@@ -46,11 +46,6 @@ public class ExampleScenarioInstanceTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ExampleScenario.ExampleScenarioInstance.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testName() {
         assertEquals("x", ExampleScenario.ExampleScenarioInstance.create().name("x").build().name());
     }

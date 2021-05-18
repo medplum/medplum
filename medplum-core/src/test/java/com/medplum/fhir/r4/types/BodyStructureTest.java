@@ -24,11 +24,6 @@ public class BodyStructureTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", BodyStructure.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", BodyStructure.create().id("x").build().id());
     }

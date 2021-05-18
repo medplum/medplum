@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * Related artifacts such as additional documentation, justification, or
  * bibliographic references.
  */
-public class RelatedArtifact extends FhirResource {
+public class RelatedArtifact extends FhirObject {
     public static final String RESOURCE_TYPE = "RelatedArtifact";
 
     public static Builder create() {
@@ -105,7 +105,7 @@ public class RelatedArtifact extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_RESOURCE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

@@ -24,11 +24,6 @@ public class LocationTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Location.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Location.create().id("x").build().id());
     }

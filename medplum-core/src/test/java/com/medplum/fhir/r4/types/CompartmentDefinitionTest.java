@@ -24,11 +24,6 @@ public class CompartmentDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", CompartmentDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", CompartmentDefinition.create().id("x").build().id());
     }

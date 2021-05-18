@@ -24,11 +24,6 @@ public class TestScriptTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", TestScript.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", TestScript.create().id("x").build().id());
     }

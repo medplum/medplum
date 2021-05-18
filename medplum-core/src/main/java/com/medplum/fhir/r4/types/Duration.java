@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * A length of time.
  */
-public class Duration extends FhirResource {
+public class Duration extends FhirObject {
     public static final String RESOURCE_TYPE = "Duration";
 
     public static Builder create() {
@@ -90,7 +90,7 @@ public class Duration extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_CODE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

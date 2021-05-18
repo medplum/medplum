@@ -24,11 +24,6 @@ public class ContractTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Contract.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Contract.create().id("x").build().id());
     }

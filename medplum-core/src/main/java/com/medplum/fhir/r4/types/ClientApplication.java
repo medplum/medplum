@@ -42,7 +42,7 @@ public class ClientApplication extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_REDIRECT_URI);
     }
 
-    public static class Builder extends FhirResource.Builder {
+    public static final class Builder extends FhirResource.Builder<ClientApplication, ClientApplication.Builder> {
 
         private Builder() {
             super(RESOURCE_TYPE);
@@ -50,16 +50,6 @@ public class ClientApplication extends FhirResource {
 
         private Builder(final JsonObject data) {
             super(RESOURCE_TYPE, data);
-        }
-
-        public Builder resourceType(final String resourceType) {
-            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
-            return this;
-        }
-
-        public Builder id(final String id) {
-            b.add(FhirPropertyNames.PROPERTY_ID, id);
-            return this;
         }
 
         public Builder secret(final String secret) {
@@ -74,6 +64,10 @@ public class ClientApplication extends FhirResource {
 
         public ClientApplication build() {
             return new ClientApplication(b.build());
+        }
+
+        protected Builder getBuilder() {
+            return this;
         }
     }
 }

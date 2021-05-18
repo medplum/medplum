@@ -24,11 +24,6 @@ public class ConceptMapTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ConceptMap.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ConceptMap.create().id("x").build().id());
     }

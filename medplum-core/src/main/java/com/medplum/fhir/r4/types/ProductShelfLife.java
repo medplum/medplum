@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * The shelf-life and storage information for a medicinal product item or
  * container can be described using this class.
  */
-public class ProductShelfLife extends FhirResource {
+public class ProductShelfLife extends FhirObject {
     public static final String RESOURCE_TYPE = "ProductShelfLife";
 
     public static Builder create() {
@@ -110,7 +110,7 @@ public class ProductShelfLife extends FhirResource {
         return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

@@ -24,11 +24,6 @@ public class ProcedureTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Procedure.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Procedure.create().id("x").build().id());
     }

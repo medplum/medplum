@@ -24,11 +24,6 @@ public class EnrollmentRequestTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", EnrollmentRequest.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", EnrollmentRequest.create().id("x").build().id());
     }

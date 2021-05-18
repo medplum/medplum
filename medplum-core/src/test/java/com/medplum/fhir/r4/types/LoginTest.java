@@ -24,13 +24,25 @@ public class LoginTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Login.create().resourceType("x").build().resourceType());
+    public void testId() {
+        assertEquals("x", Login.create().id("x").build().id());
     }
 
     @Test
-    public void testId() {
-        assertEquals("x", Login.create().id("x").build().id());
+    public void testMeta() {
+        final Meta value = Meta.create().build();
+        assertEquals(value, Login.create().meta(value).build().meta());
+    }
+
+    @Test
+    public void testImplicitRules() {
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, Login.create().implicitRules(value).build().implicitRules());
+    }
+
+    @Test
+    public void testLanguage() {
+        assertEquals("x", Login.create().language("x").build().language());
     }
 
     @Test

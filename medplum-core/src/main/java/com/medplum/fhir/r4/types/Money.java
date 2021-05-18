@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * An amount of economic utility in some recognized currency.
  */
-public class Money extends FhirResource {
+public class Money extends FhirObject {
     public static final String RESOURCE_TYPE = "Money";
 
     public static Builder create() {
@@ -63,7 +63,7 @@ public class Money extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_CURRENCY);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

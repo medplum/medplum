@@ -24,11 +24,6 @@ public class CarePlanTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", CarePlan.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", CarePlan.create().id("x").build().id());
     }

@@ -17,7 +17,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * in which the expression is evaluated, and how the result of the
  * expression is used.
  */
-public class Expression extends FhirResource {
+public class Expression extends FhirObject {
     public static final String RESOURCE_TYPE = "Expression";
 
     public static Builder create() {
@@ -89,7 +89,7 @@ public class Expression extends FhirResource {
         return getUri(FhirPropertyNames.PROPERTY_REFERENCE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

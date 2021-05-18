@@ -3,11 +3,14 @@ package com.medplum.generator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -16,6 +19,8 @@ import jakarta.json.stream.JsonParser;
 
 public class Generator {
     public static final Map<String, FhirType> FHIR_TYPES = new HashMap<>();
+    public static final List<String> BASE_RESOURCE_PROPERTIES = Arrays.asList("resourceType", "id", "meta", "implicitRules", "language");
+    public static final List<String> DOMAIN_RESOURCE_PROPERTIES = Arrays.asList("text", "contained", "extension", "modifierExtension");
 
     public static void main(final String[] args) throws IOException {
         final JsonObject schema = readJson("fhir/r4/fhir.schema.json");
@@ -98,6 +103,7 @@ public class Generator {
         }
 
         final FhirType result = new FhirType(typeDefinition, resourceType, parentType, outputName);
+        final Set<String> propertyNames = new HashSet<>();
 
         for (final Entry<String, JsonValue> propertyDefinition : propertyDefinitions.entrySet()) {
             final String inputName = propertyDefinition.getKey();
@@ -106,9 +112,14 @@ public class Generator {
             }
 
             result.getProperties().add(new Property(resourceType, inputName, propertyDefinition.getValue().asJsonObject()));
+            propertyNames.add(inputName);
+        }
 
-            if (inputName.equals("resourceType")) {
-                result.setResource(true);
+        if (propertyNames.containsAll(BASE_RESOURCE_PROPERTIES)) {
+            result.setResource(true);
+
+            if (propertyNames.containsAll(DOMAIN_RESOURCE_PROPERTIES)) {
+                result.setDomainResource(true);
             }
         }
 

@@ -24,11 +24,6 @@ public class RiskAssessmentTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", RiskAssessment.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", RiskAssessment.create().id("x").build().id());
     }

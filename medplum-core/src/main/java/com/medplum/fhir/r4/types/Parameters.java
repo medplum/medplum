@@ -32,30 +32,13 @@ public class Parameters extends FhirResource {
     }
 
     /**
-     * A reference to a set of rules that were followed when the resource was
-     * constructed, and which must be understood when processing the content.
-     * Often, this is a reference to an implementation guide that defines the
-     * special rules along with other profiles etc.
-     */
-    public java.net.URI implicitRules() {
-        return getUri(FhirPropertyNames.PROPERTY_IMPLICIT_RULES);
-    }
-
-    /**
-     * The base language in which the resource is written.
-     */
-    public String language() {
-        return getString(FhirPropertyNames.PROPERTY_LANGUAGE);
-    }
-
-    /**
      * A parameter passed to or received from the operation.
      */
     public java.util.List<ParametersParameter> parameter() {
         return getList(ParametersParameter.class, FhirPropertyNames.PROPERTY_PARAMETER);
     }
 
-    public static class Builder extends FhirResource.Builder {
+    public static final class Builder extends FhirResource.Builder<Parameters, Parameters.Builder> {
 
         private Builder() {
             super(RESOURCE_TYPE);
@@ -65,31 +48,6 @@ public class Parameters extends FhirResource {
             super(RESOURCE_TYPE, data);
         }
 
-        public Builder resourceType(final String resourceType) {
-            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
-            return this;
-        }
-
-        public Builder id(final String id) {
-            b.add(FhirPropertyNames.PROPERTY_ID, id);
-            return this;
-        }
-
-        public Builder meta(final Meta meta) {
-            b.add(FhirPropertyNames.PROPERTY_META, meta);
-            return this;
-        }
-
-        public Builder implicitRules(final java.net.URI implicitRules) {
-            b.add(FhirPropertyNames.PROPERTY_IMPLICIT_RULES, implicitRules.toString());
-            return this;
-        }
-
-        public Builder language(final String language) {
-            b.add(FhirPropertyNames.PROPERTY_LANGUAGE, language);
-            return this;
-        }
-
         public Builder parameter(final java.util.List<ParametersParameter> parameter) {
             b.add(FhirPropertyNames.PROPERTY_PARAMETER, FhirObject.toArray(parameter));
             return this;
@@ -97,6 +55,10 @@ public class Parameters extends FhirResource {
 
         public Parameters build() {
             return new Parameters(b.build());
+        }
+
+        protected Builder getBuilder() {
+            return this;
         }
     }
 
@@ -536,7 +498,7 @@ public class Parameters extends FhirResource {
             return getList(ParametersParameter.class, FhirPropertyNames.PROPERTY_PART);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {

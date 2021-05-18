@@ -24,11 +24,6 @@ public class ServiceRequestTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ServiceRequest.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ServiceRequest.create().id("x").build().id());
     }

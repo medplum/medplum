@@ -24,11 +24,6 @@ public class CodeSystemTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", CodeSystem.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", CodeSystem.create().id("x").build().id());
     }

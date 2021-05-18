@@ -24,11 +24,6 @@ public class StructureMapTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", StructureMap.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", StructureMap.create().id("x").build().id());
     }

@@ -24,11 +24,6 @@ public class StructureDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", StructureDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", StructureDefinition.create().id("x").build().id());
     }

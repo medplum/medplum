@@ -24,11 +24,6 @@ public class CommunicationRequestTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", CommunicationRequest.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", CommunicationRequest.create().id("x").build().id());
     }

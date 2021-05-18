@@ -24,11 +24,6 @@ public class ImagingStudyTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ImagingStudy.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ImagingStudy.create().id("x").build().id());
     }

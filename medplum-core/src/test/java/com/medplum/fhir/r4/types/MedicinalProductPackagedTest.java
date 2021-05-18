@@ -24,11 +24,6 @@ public class MedicinalProductPackagedTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", MedicinalProductPackaged.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", MedicinalProductPackaged.create().id("x").build().id());
     }

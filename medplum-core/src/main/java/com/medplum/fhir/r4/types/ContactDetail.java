@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * Specifies contact information for a person or organization.
  */
-public class ContactDetail extends FhirResource {
+public class ContactDetail extends FhirObject {
     public static final String RESOURCE_TYPE = "ContactDetail";
 
     public static Builder create() {
@@ -64,7 +64,7 @@ public class ContactDetail extends FhirResource {
         return getList(ContactPoint.class, FhirPropertyNames.PROPERTY_TELECOM);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

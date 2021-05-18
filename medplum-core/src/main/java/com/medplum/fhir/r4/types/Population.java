@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * A populatioof people with some set of grouping criteria.
  */
-public class Population extends FhirResource {
+public class Population extends FhirObject {
     public static final String RESOURCE_TYPE = "Population";
 
     public static Builder create() {
@@ -106,7 +106,7 @@ public class Population extends FhirResource {
         return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PHYSIOLOGICAL_CONDITION);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

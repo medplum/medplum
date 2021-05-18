@@ -17,7 +17,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * part of the $evaluate operation. Output parameters are included in the
  * GuidanceResponse.
  */
-public class ParameterDefinition extends FhirResource {
+public class ParameterDefinition extends FhirObject {
     public static final String RESOURCE_TYPE = "ParameterDefinition";
 
     public static Builder create() {
@@ -106,7 +106,7 @@ public class ParameterDefinition extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_PROFILE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

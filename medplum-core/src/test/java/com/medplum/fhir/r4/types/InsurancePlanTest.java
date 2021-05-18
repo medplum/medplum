@@ -24,11 +24,6 @@ public class InsurancePlanTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", InsurancePlan.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", InsurancePlan.create().id("x").build().id());
     }

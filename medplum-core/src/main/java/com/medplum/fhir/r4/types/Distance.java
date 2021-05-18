@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * A length - a value with a unit that is a physical distance.
  */
-public class Distance extends FhirResource {
+public class Distance extends FhirObject {
     public static final String RESOURCE_TYPE = "Distance";
 
     public static Builder create() {
@@ -90,7 +90,7 @@ public class Distance extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_CODE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

@@ -24,11 +24,6 @@ public class CapabilityStatementTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", CapabilityStatement.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", CapabilityStatement.create().id("x").build().id());
     }

@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * A duration of time during which an organism (or a process) has
  * existed.
  */
-public class Age extends FhirResource {
+public class Age extends FhirObject {
     public static final String RESOURCE_TYPE = "Age";
 
     public static Builder create() {
@@ -91,7 +91,7 @@ public class Age extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_CODE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

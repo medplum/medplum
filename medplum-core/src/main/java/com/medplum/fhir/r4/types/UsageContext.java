@@ -18,7 +18,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * DRG) or the specific context of care (e.g., venue, care setting,
  * provider of care).
  */
-public class UsageContext extends FhirResource {
+public class UsageContext extends FhirObject {
     public static final String RESOURCE_TYPE = "UsageContext";
 
     public static Builder create() {
@@ -93,7 +93,7 @@ public class UsageContext extends FhirResource {
         return getObject(Reference.class, FhirPropertyNames.PROPERTY_VALUE_REFERENCE);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

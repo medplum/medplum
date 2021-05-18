@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * A concept that may be defined by a formal reference to a terminology
  * or ontology or may be provided by text.
  */
-public class CodeableConcept extends FhirResource {
+public class CodeableConcept extends FhirObject {
     public static final String RESOURCE_TYPE = "CodeableConcept";
 
     public static Builder create() {
@@ -66,7 +66,7 @@ public class CodeableConcept extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_TEXT);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

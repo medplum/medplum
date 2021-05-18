@@ -24,11 +24,6 @@ public class AdverseEventTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", AdverseEvent.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", AdverseEvent.create().id("x").build().id());
     }

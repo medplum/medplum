@@ -24,11 +24,6 @@ public class ClinicalImpressionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ClinicalImpression.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ClinicalImpression.create().id("x").build().id());
     }

@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * A human's name with the ability to identify parts and usage.
  */
-public class HumanName extends FhirResource {
+public class HumanName extends FhirObject {
     public static final String RESOURCE_TYPE = "HumanName";
 
     public static Builder create() {
@@ -106,7 +106,7 @@ public class HumanName extends FhirResource {
         return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

@@ -24,11 +24,6 @@ public class SubscriptionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Subscription.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Subscription.create().id("x").build().id());
     }

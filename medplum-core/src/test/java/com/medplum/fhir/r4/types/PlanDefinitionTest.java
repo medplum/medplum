@@ -24,11 +24,6 @@ public class PlanDefinitionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", PlanDefinition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", PlanDefinition.create().id("x").build().id());
     }

@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * An identifier - identifies some entity uniquely and unambiguously.
  * Typically this is used for business identifiers.
  */
-public class Identifier extends FhirResource {
+public class Identifier extends FhirObject {
     public static final String RESOURCE_TYPE = "Identifier";
 
     public static Builder create() {
@@ -95,7 +95,7 @@ public class Identifier extends FhirResource {
         return getObject(Reference.class, FhirPropertyNames.PROPERTY_ASSIGNER);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

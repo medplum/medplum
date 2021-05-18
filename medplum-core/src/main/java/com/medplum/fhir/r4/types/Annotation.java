@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * A  text note which also  contains information about who made the
  * statement and when.
  */
-public class Annotation extends FhirResource {
+public class Annotation extends FhirObject {
     public static final String RESOURCE_TYPE = "Annotation";
 
     public static Builder create() {
@@ -78,7 +78,7 @@ public class Annotation extends FhirResource {
         return getString(FhirPropertyNames.PROPERTY_TEXT);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

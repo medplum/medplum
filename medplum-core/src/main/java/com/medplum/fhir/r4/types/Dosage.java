@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * Indicates how the medication is/was taken or should be taken by the
  * patient.
  */
-public class Dosage extends FhirResource {
+public class Dosage extends FhirObject {
     public static final String RESOURCE_TYPE = "Dosage";
 
     public static Builder create() {
@@ -177,7 +177,7 @@ public class Dosage extends FhirResource {
         return getObject(Quantity.class, FhirPropertyNames.PROPERTY_MAX_DOSE_PER_LIFETIME);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {
@@ -381,7 +381,7 @@ public class Dosage extends FhirResource {
             return getObject(Quantity.class, FhirPropertyNames.PROPERTY_RATE_QUANTITY);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {

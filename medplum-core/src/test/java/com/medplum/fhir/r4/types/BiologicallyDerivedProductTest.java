@@ -24,11 +24,6 @@ public class BiologicallyDerivedProductTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", BiologicallyDerivedProduct.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", BiologicallyDerivedProduct.create().id("x").build().id());
     }

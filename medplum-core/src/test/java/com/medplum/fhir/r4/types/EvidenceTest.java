@@ -24,11 +24,6 @@ public class EvidenceTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Evidence.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Evidence.create().id("x").build().id());
     }

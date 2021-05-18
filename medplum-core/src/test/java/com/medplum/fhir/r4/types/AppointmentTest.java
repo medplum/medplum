@@ -24,11 +24,6 @@ public class AppointmentTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Appointment.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Appointment.create().id("x").build().id());
     }

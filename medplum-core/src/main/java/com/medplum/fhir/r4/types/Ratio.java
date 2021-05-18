@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * A relationship of two Quantity values - expressed as a numerator and a
  * denominator.
  */
-public class Ratio extends FhirResource {
+public class Ratio extends FhirObject {
     public static final String RESOURCE_TYPE = "Ratio";
 
     public static Builder create() {
@@ -64,7 +64,7 @@ public class Ratio extends FhirResource {
         return getObject(Quantity.class, FhirPropertyNames.PROPERTY_DENOMINATOR);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

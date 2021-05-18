@@ -15,7 +15,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
  * Describes a required data item for evaluation in terms of the type of
  * data, and optional code or date-based filters of the data.
  */
-public class DataRequirement extends FhirResource {
+public class DataRequirement extends FhirObject {
     public static final String RESOURCE_TYPE = "DataRequirement";
 
     public static Builder create() {
@@ -135,7 +135,7 @@ public class DataRequirement extends FhirResource {
         return getList(DataRequirementSort.class, FhirPropertyNames.PROPERTY_SORT);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {
@@ -311,7 +311,7 @@ public class DataRequirement extends FhirResource {
             return getList(Coding.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {
@@ -483,7 +483,7 @@ public class DataRequirement extends FhirResource {
             return getObject(Duration.class, FhirPropertyNames.PROPERTY_VALUE_DURATION);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {
@@ -618,7 +618,7 @@ public class DataRequirement extends FhirResource {
             return getString(FhirPropertyNames.PROPERTY_DIRECTION);
         }
 
-        public static class Builder {
+        public static final class Builder {
             private final JsonObjectBuilder b;
 
             private Builder() {

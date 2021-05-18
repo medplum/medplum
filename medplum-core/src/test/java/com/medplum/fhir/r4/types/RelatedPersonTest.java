@@ -24,11 +24,6 @@ public class RelatedPersonTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", RelatedPerson.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", RelatedPerson.create().id("x").build().id());
     }

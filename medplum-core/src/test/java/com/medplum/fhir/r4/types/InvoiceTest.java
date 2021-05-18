@@ -24,11 +24,6 @@ public class InvoiceTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Invoice.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Invoice.create().id("x").build().id());
     }

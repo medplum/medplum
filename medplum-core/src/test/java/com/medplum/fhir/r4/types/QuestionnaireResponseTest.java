@@ -24,11 +24,6 @@ public class QuestionnaireResponseTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", QuestionnaireResponse.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", QuestionnaireResponse.create().id("x").build().id());
     }

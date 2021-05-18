@@ -24,11 +24,6 @@ public class OperationOutcomeTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", OperationOutcome.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", OperationOutcome.create().id("x").build().id());
     }

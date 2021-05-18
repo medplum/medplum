@@ -24,11 +24,6 @@ public class MedicationStatementTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", MedicationStatement.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", MedicationStatement.create().id("x").build().id());
     }

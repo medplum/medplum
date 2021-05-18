@@ -24,11 +24,6 @@ public class EffectEvidenceSynthesisTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", EffectEvidenceSynthesis.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", EffectEvidenceSynthesis.create().id("x").build().id());
     }

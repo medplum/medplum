@@ -24,11 +24,6 @@ public class EncounterTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Encounter.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Encounter.create().id("x").build().id());
     }

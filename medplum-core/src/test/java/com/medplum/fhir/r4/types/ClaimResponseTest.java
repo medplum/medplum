@@ -24,11 +24,6 @@ public class ClaimResponseTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ClaimResponse.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ClaimResponse.create().id("x").build().id());
     }

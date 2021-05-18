@@ -14,7 +14,7 @@ import com.medplum.fhir.r4.FhirPropertyNames;
 /**
  * Optional Extension Element - found in all resources.
  */
-public class Extension extends FhirResource {
+public class Extension extends FhirObject {
     public static final String RESOURCE_TYPE = "Extension";
 
     public static Builder create() {
@@ -457,7 +457,7 @@ public class Extension extends FhirResource {
         return getObject(Meta.class, FhirPropertyNames.PROPERTY_VALUE_META);
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final JsonObjectBuilder b;
 
         private Builder() {

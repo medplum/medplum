@@ -24,11 +24,6 @@ public class ConditionTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", Condition.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", Condition.create().id("x").build().id());
     }

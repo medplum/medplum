@@ -13,6 +13,7 @@ public class FhirType {
     private final List<Property> properties;
     private final List<FhirType> subTypes;
     private boolean resource;
+    private boolean domainResource;
 
     public FhirType(
             final JsonObject typeDef,
@@ -62,5 +63,13 @@ public class FhirType {
 
     public void setResource(final boolean resource) {
         this.resource = resource;
+    }
+
+    public boolean isDomainResource() {
+        return domainResource;
+    }
+
+    public void setDomainResource(final boolean domainResource) {
+        this.domainResource = domainResource;
     }
 }

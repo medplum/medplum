@@ -24,11 +24,6 @@ public class VerificationResultTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", VerificationResult.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", VerificationResult.create().id("x").build().id());
     }

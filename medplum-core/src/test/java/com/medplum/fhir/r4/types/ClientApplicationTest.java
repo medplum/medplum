@@ -24,13 +24,25 @@ public class ClientApplicationTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ClientApplication.create().resourceType("x").build().resourceType());
+    public void testId() {
+        assertEquals("x", ClientApplication.create().id("x").build().id());
     }
 
     @Test
-    public void testId() {
-        assertEquals("x", ClientApplication.create().id("x").build().id());
+    public void testMeta() {
+        final Meta value = Meta.create().build();
+        assertEquals(value, ClientApplication.create().meta(value).build().meta());
+    }
+
+    @Test
+    public void testImplicitRules() {
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, ClientApplication.create().implicitRules(value).build().implicitRules());
+    }
+
+    @Test
+    public void testLanguage() {
+        assertEquals("x", ClientApplication.create().language("x").build().language());
     }
 
     @Test

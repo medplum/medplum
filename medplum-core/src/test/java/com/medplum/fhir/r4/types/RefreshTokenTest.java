@@ -24,13 +24,25 @@ public class RefreshTokenTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", RefreshToken.create().resourceType("x").build().resourceType());
+    public void testId() {
+        assertEquals("x", RefreshToken.create().id("x").build().id());
     }
 
     @Test
-    public void testId() {
-        assertEquals("x", RefreshToken.create().id("x").build().id());
+    public void testMeta() {
+        final Meta value = Meta.create().build();
+        assertEquals(value, RefreshToken.create().meta(value).build().meta());
+    }
+
+    @Test
+    public void testImplicitRules() {
+        final java.net.URI value = java.net.URI.create("https://www.example.com");
+        assertEquals(value, RefreshToken.create().implicitRules(value).build().implicitRules());
+    }
+
+    @Test
+    public void testLanguage() {
+        assertEquals("x", RefreshToken.create().language("x").build().language());
     }
 
     @Test

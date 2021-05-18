@@ -24,11 +24,6 @@ public class ResearchSubjectTest {
     }
 
     @Test
-    public void testResourceType() {
-        assertEquals("x", ResearchSubject.create().resourceType("x").build().resourceType());
-    }
-
-    @Test
     public void testId() {
         assertEquals("x", ResearchSubject.create().id("x").build().id());
     }
