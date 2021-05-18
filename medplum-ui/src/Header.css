@@ -25,7 +25,7 @@ header svg {
 header a {
   text-decoration: none;
   padding: 0 8px 0 4px;
-  color: var(--medplum-gray-800);
+  color: var(--medplum-gray-700);
   font-weight: bold;
 }
 

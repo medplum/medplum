@@ -9,10 +9,11 @@ article {
   background-color: var(--medplum-surface);
   max-width: 900px;
   margin: auto;
-  padding: 20px;
+  padding: 15px 25px;
   text-align: left;
-  border: 1px solid var(--medplum-gray-200);
+  border: 1px solid var(--medplum-gray-300);
   border-radius: 8px;
+  box-shadow: 0 1px 3px 0 var(--medplum-gray-300);
 }
 
 article h1, article h2, article h3 {
