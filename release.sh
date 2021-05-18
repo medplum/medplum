@@ -27,27 +27,49 @@ set -e
 # Echo commands
 set -x
 
-# Configure git
-git config --global user.name 'Medplum'
-git config --global user.email 'medplum@users.noreply.github.com'
-
-# Build list of files changed in last commit
-git diff --name-only HEAD HEAD~1
-
 # Set release version
-mvn versions:set -DnewVersion=${RELEASE_VERSION} -DgenerateBackupPoms=false
+# mvn versions:set -DnewVersion=${RELEASE_VERSION} -DgenerateBackupPoms=false
+# cd medplum-ts && npm version ${RELEASE_VERSION} && cd ..
+# cd medplum-ui && npm version ${RELEASE_VERSION} && cd ..
+# cd medplum-console && npm version ${RELEASE_VERSION} && cd ..
+# cd medplum-graphiql && npm version ${RELEASE_VERSION} && cd ..
 
 # Clean install
-mvn clean install
+# mvn clean install
+# npm run build --workspace=medplum-ts --workspace=medplum-ui --workspace=medplum-console --workspace=medplum-graphiql
+# npm run storybook --workspace=medplum-ui
+
+# At this point, all projects built successfully
 
 # Deploy libraries to Maven Central
-#mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator,-medplum-server clean deploy -P release -e
+# mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator,-medplum-server clean deploy -P release -e
 
 # Build site
-#mvn -pl -medplum-cdk,-medplum-coverage,-medplum-generator site:site site:stage
+# mvn site:site site:stage
 
 # Deploy site
-#aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --region us-east-1 --recursive --acl public-read
+aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --profile medplum --region us-east-1 --recursive --acl public-read
+
+# Deploy medplum-ts to npm
+#cd medplum-ts && npm publish && cd ..
+
+# Deploy medplum-ui to npm
+#cd medplum-ui && npm publish && cd ..
+
+# Deploy storybook to S3
+# cd medplum-ui
+# aws s3 cp storybook-static/ s3://medplum-storybook/ --profile medplum --region us-east-1 --recursive --acl public-read
+# cd ..
+
+# Deploy console to S3
+# cd medplum-console
+# aws s3 cp dist/ s3://medplum-console/ --profile medplum --region us-east-1 --recursive
+# cd ..
+
+# Deploy graphiql to S3
+# cd medplum-graphiql
+# aws s3 cp dist/ s3://medplum-graphiql/ --profile medplum --region us-east-1 --recursive
+# cd ..
 
 # Build docker image
 pushd medplum-server
@@ -60,6 +82,7 @@ popd
 
 # Update the medplum fargate service
 aws ecs update-service \
+  --profile medplum \
   --region us-east-1 \
   --cluster MedplumStack-BackEndCluster6B6DC4A8-eFbKEVFrgmMR \
   --service MedplumStack-BackEndFargateServiceD3B260C0-BAnXfRE5eGRD \
