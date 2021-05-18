@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.medplum</groupId>
         <artifactId>medplum</artifactId>
-        <version>0.0.11</version>
+        <version>0.0.12-SNAPSHOT</version>
     </parent>
     <artifactId>medplum-cdk</artifactId>
     <name>medplum-cdk</name>
