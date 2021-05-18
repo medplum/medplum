@@ -4,6 +4,12 @@
   "description": "Medplum GraphiQL",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "medplum-graphiql"
+  },
   "scripts": {
     "clean": "rimraf dist",
     "dev": "webpack serve --mode development",

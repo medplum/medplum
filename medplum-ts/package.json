@@ -4,6 +4,12 @@
   "description": "Medplum TS/JS Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "medplum-ts"
+  },
   "scripts": {
     "clean": "rimraf lib",
     "dev": "start-storybook -p 6006",
