@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -152,10 +150,6 @@ public class MedicinalProductPackaged extends DomainResource {
         public MedicinalProductPackaged build() {
             return new MedicinalProductPackaged(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -232,15 +226,15 @@ public class MedicinalProductPackaged extends DomainResource {
             return getObject(Identifier.class, FhirPropertyNames.PROPERTY_IMMEDIATE_PACKAGING);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductPackagedBatchIdentifier,
+                MedicinalProductPackagedBatchIdentifier.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -418,15 +412,14 @@ public class MedicinalProductPackaged extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_MANUFACTURER);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductPackagedPackageItem, MedicinalProductPackagedPackageItem.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

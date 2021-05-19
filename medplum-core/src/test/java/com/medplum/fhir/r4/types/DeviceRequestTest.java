@@ -24,6 +24,13 @@ public class DeviceRequestTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DeviceRequest x = DeviceRequest.create().build();
+        final DeviceRequest y = DeviceRequest.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DeviceRequest.create().id("x").build().id());
     }

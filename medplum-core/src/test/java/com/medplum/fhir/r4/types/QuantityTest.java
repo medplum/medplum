@@ -24,6 +24,13 @@ public class QuantityTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Quantity x = Quantity.create().build();
+        final Quantity y = Quantity.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Quantity.create().id("x").build().id());
     }

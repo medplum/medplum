@@ -24,6 +24,13 @@ public class ValueSetExpansionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ValueSet.ValueSetExpansion x = ValueSet.ValueSetExpansion.create().build();
+        final ValueSet.ValueSetExpansion y = ValueSet.ValueSetExpansion.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ValueSet.ValueSetExpansion.create().id("x").build().id());
     }

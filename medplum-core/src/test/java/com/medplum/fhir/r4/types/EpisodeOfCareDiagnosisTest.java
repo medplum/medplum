@@ -24,6 +24,13 @@ public class EpisodeOfCareDiagnosisTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final EpisodeOfCare.EpisodeOfCareDiagnosis x = EpisodeOfCare.EpisodeOfCareDiagnosis.create().build();
+        final EpisodeOfCare.EpisodeOfCareDiagnosis y = EpisodeOfCare.EpisodeOfCareDiagnosis.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EpisodeOfCare.EpisodeOfCareDiagnosis.create().id("x").build().id());
     }

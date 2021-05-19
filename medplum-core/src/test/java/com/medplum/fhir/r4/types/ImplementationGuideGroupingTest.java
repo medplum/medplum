@@ -24,6 +24,13 @@ public class ImplementationGuideGroupingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ImplementationGuide.ImplementationGuideGrouping x = ImplementationGuide.ImplementationGuideGrouping.create().build();
+        final ImplementationGuide.ImplementationGuideGrouping y = ImplementationGuide.ImplementationGuideGrouping.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ImplementationGuide.ImplementationGuideGrouping.create().id("x").build().id());
     }

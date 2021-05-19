@@ -24,6 +24,13 @@ public class LoginTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Login x = Login.create().build();
+        final Login y = Login.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Login.create().id("x").build().id());
     }

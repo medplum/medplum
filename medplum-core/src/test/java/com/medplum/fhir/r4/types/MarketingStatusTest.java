@@ -24,6 +24,13 @@ public class MarketingStatusTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MarketingStatus x = MarketingStatus.create().build();
+        final MarketingStatus y = MarketingStatus.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MarketingStatus.create().id("x").build().id());
     }

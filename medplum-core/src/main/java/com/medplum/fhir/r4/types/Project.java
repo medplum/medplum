@@ -77,9 +77,5 @@ public class Project extends FhirResource {
         public Project build() {
             return new Project(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

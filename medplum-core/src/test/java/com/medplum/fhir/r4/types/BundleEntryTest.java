@@ -24,6 +24,13 @@ public class BundleEntryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Bundle.BundleEntry x = Bundle.BundleEntry.create().build();
+        final Bundle.BundleEntry y = Bundle.BundleEntry.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Bundle.BundleEntry.create().id("x").build().id());
     }

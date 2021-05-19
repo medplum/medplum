@@ -24,6 +24,13 @@ public class ElementTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Element x = Element.create().build();
+        final Element y = Element.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Element.create().id("x").build().id());
     }

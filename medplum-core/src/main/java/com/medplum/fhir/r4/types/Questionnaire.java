@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -350,10 +348,6 @@ public class Questionnaire extends DomainResource {
         public Questionnaire build() {
             return new Questionnaire(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -468,15 +462,14 @@ public class Questionnaire extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_INITIAL_SELECTED);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<QuestionnaireAnswerOption, QuestionnaireAnswerOption.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -692,15 +685,14 @@ public class Questionnaire extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_ANSWER_REFERENCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<QuestionnaireEnableWhen, QuestionnaireEnableWhen.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -930,15 +922,14 @@ public class Questionnaire extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_VALUE_REFERENCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<QuestionnaireInitial, QuestionnaireInitial.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1229,15 +1220,14 @@ public class Questionnaire extends DomainResource {
             return getList(QuestionnaireItem.class, FhirPropertyNames.PROPERTY_ITEM);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<QuestionnaireItem, QuestionnaireItem.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

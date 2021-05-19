@@ -142,9 +142,5 @@ public class BodyStructure extends DomainResource {
         public BodyStructure build() {
             return new BodyStructure(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

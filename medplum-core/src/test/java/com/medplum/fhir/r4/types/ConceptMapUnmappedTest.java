@@ -24,6 +24,13 @@ public class ConceptMapUnmappedTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ConceptMap.ConceptMapUnmapped x = ConceptMap.ConceptMapUnmapped.create().build();
+        final ConceptMap.ConceptMapUnmapped y = ConceptMap.ConceptMapUnmapped.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ConceptMap.ConceptMapUnmapped.create().id("x").build().id());
     }

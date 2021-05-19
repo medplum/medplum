@@ -24,6 +24,13 @@ public class DeviceDefinitionPropertyTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DeviceDefinition.DeviceDefinitionProperty x = DeviceDefinition.DeviceDefinitionProperty.create().build();
+        final DeviceDefinition.DeviceDefinitionProperty y = DeviceDefinition.DeviceDefinitionProperty.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DeviceDefinition.DeviceDefinitionProperty.create().id("x").build().id());
     }

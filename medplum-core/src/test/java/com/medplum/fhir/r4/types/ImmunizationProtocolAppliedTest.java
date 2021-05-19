@@ -24,6 +24,13 @@ public class ImmunizationProtocolAppliedTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Immunization.ImmunizationProtocolApplied x = Immunization.ImmunizationProtocolApplied.create().build();
+        final Immunization.ImmunizationProtocolApplied y = Immunization.ImmunizationProtocolApplied.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Immunization.ImmunizationProtocolApplied.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class RatioTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Ratio x = Ratio.create().build();
+        final Ratio y = Ratio.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Ratio.create().id("x").build().id());
     }

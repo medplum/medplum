@@ -24,6 +24,13 @@ public class TimingRepeatTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Timing.TimingRepeat x = Timing.TimingRepeat.create().build();
+        final Timing.TimingRepeat y = Timing.TimingRepeat.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Timing.TimingRepeat.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class MedicinalProductIngredientTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicinalProductIngredient x = MedicinalProductIngredient.create().build();
+        final MedicinalProductIngredient y = MedicinalProductIngredient.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductIngredient.create().id("x").build().id());
     }
@@ -100,7 +107,8 @@ public class MedicinalProductIngredientTest {
 
     @Test
     public void testSubstance() {
-        final MedicinalProductIngredient.MedicinalProductIngredientSubstance value = MedicinalProductIngredient.MedicinalProductIngredientSubstance.create().build();
+    final MedicinalProductIngredient.MedicinalProductIngredientSubstance value =
+            MedicinalProductIngredient.MedicinalProductIngredientSubstance.create().build();
         assertEquals(value, MedicinalProductIngredient.create().substance(value).build().substance());
     }
 }

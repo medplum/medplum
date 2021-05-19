@@ -24,6 +24,15 @@ public class SubstanceReferenceInformationGeneElementTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final SubstanceReferenceInformation.SubstanceReferenceInformationGeneElement x =
+            SubstanceReferenceInformation.SubstanceReferenceInformationGeneElement.create().build();
+    final SubstanceReferenceInformation.SubstanceReferenceInformationGeneElement y =
+            SubstanceReferenceInformation.SubstanceReferenceInformationGeneElement.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceReferenceInformation.SubstanceReferenceInformationGeneElement.create().id("x").build().id());
     }
@@ -37,7 +46,8 @@ public class SubstanceReferenceInformationGeneElementTest {
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, SubstanceReferenceInformation.SubstanceReferenceInformationGeneElement.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            SubstanceReferenceInformation.SubstanceReferenceInformationGeneElement.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test

@@ -24,6 +24,13 @@ public class SubstancePolymerMonomerSetTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstancePolymer.SubstancePolymerMonomerSet x = SubstancePolymer.SubstancePolymerMonomerSet.create().build();
+        final SubstancePolymer.SubstancePolymerMonomerSet y = SubstancePolymer.SubstancePolymerMonomerSet.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstancePolymer.SubstancePolymerMonomerSet.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class MessageDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MessageDefinition x = MessageDefinition.create().build();
+        final MessageDefinition y = MessageDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MessageDefinition.create().id("x").build().id());
     }

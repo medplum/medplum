@@ -24,6 +24,13 @@ public class TestReportActionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TestReport.TestReportAction x = TestReport.TestReportAction.create().build();
+        final TestReport.TestReportAction y = TestReport.TestReportAction.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TestReport.TestReportAction.create().id("x").build().id());
     }

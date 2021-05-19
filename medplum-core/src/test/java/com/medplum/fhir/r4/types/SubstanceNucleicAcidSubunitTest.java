@@ -24,6 +24,13 @@ public class SubstanceNucleicAcidSubunitTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceNucleicAcid.SubstanceNucleicAcidSubunit x = SubstanceNucleicAcid.SubstanceNucleicAcidSubunit.create().build();
+        final SubstanceNucleicAcid.SubstanceNucleicAcidSubunit y = SubstanceNucleicAcid.SubstanceNucleicAcidSubunit.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceNucleicAcid.SubstanceNucleicAcidSubunit.create().id("x").build().id());
     }

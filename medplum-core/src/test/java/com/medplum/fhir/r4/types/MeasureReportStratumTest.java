@@ -24,6 +24,13 @@ public class MeasureReportStratumTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MeasureReport.MeasureReportStratum x = MeasureReport.MeasureReportStratum.create().build();
+        final MeasureReport.MeasureReportStratum y = MeasureReport.MeasureReportStratum.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MeasureReport.MeasureReportStratum.create().id("x").build().id());
     }

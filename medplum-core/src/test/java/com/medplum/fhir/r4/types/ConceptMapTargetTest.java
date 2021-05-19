@@ -24,6 +24,13 @@ public class ConceptMapTargetTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ConceptMap.ConceptMapTarget x = ConceptMap.ConceptMapTarget.create().build();
+        final ConceptMap.ConceptMapTarget y = ConceptMap.ConceptMapTarget.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ConceptMap.ConceptMapTarget.create().id("x").build().id());
     }

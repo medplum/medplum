@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -116,10 +114,6 @@ public class MedicinalProductIngredient extends DomainResource {
         public MedicinalProductIngredient build() {
             return new MedicinalProductIngredient(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -216,15 +210,15 @@ public class MedicinalProductIngredient extends DomainResource {
             return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_COUNTRY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductIngredientReferenceStrength,
+                MedicinalProductIngredientReferenceStrength.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -361,15 +355,15 @@ public class MedicinalProductIngredient extends DomainResource {
             return getList(MedicinalProductIngredientStrength.class, FhirPropertyNames.PROPERTY_STRENGTH);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductIngredientSpecifiedSubstance,
+                MedicinalProductIngredientSpecifiedSubstance.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -527,15 +521,14 @@ public class MedicinalProductIngredient extends DomainResource {
             return getList(MedicinalProductIngredientReferenceStrength.class, FhirPropertyNames.PROPERTY_REFERENCE_STRENGTH);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductIngredientStrength, MedicinalProductIngredientStrength.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -668,15 +661,14 @@ public class MedicinalProductIngredient extends DomainResource {
             return getList(MedicinalProductIngredientStrength.class, FhirPropertyNames.PROPERTY_STRENGTH);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductIngredientSubstance, MedicinalProductIngredientSubstance.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

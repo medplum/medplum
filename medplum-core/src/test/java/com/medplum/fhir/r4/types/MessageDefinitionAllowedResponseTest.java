@@ -24,6 +24,13 @@ public class MessageDefinitionAllowedResponseTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MessageDefinition.MessageDefinitionAllowedResponse x = MessageDefinition.MessageDefinitionAllowedResponse.create().build();
+        final MessageDefinition.MessageDefinitionAllowedResponse y = MessageDefinition.MessageDefinitionAllowedResponse.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MessageDefinition.MessageDefinitionAllowedResponse.create().id("x").build().id());
     }

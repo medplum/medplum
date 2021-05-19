@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -333,10 +331,6 @@ public class DeviceDefinition extends DomainResource {
         public DeviceDefinition build() {
             return new DeviceDefinition(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -413,15 +407,14 @@ public class DeviceDefinition extends DomainResource {
             return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<DeviceDefinitionCapability, DeviceDefinitionCapability.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -531,15 +524,14 @@ public class DeviceDefinition extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<DeviceDefinitionDeviceName, DeviceDefinitionDeviceName.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -654,15 +646,14 @@ public class DeviceDefinition extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_ALLERGENIC_INDICATOR);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<DeviceDefinitionMaterial, DeviceDefinitionMaterial.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -783,15 +774,14 @@ public class DeviceDefinition extends DomainResource {
             return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_VALUE_CODE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<DeviceDefinitionProperty, DeviceDefinitionProperty.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -904,15 +894,14 @@ public class DeviceDefinition extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VERSION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<DeviceDefinitionSpecialization, DeviceDefinitionSpecialization.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1029,15 +1018,14 @@ public class DeviceDefinition extends DomainResource {
             return getUri(FhirPropertyNames.PROPERTY_JURISDICTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<DeviceDefinitionUdiDeviceIdentifier, DeviceDefinitionUdiDeviceIdentifier.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

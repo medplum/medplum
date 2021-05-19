@@ -185,9 +185,5 @@ public class Endpoint extends DomainResource {
         public Endpoint build() {
             return new Endpoint(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

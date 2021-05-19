@@ -65,9 +65,5 @@ public class ClientApplication extends FhirResource {
         public ClientApplication build() {
             return new ClientApplication(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

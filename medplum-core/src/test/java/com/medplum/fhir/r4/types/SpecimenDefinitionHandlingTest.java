@@ -24,6 +24,13 @@ public class SpecimenDefinitionHandlingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SpecimenDefinition.SpecimenDefinitionHandling x = SpecimenDefinition.SpecimenDefinitionHandling.create().build();
+        final SpecimenDefinition.SpecimenDefinitionHandling y = SpecimenDefinition.SpecimenDefinitionHandling.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SpecimenDefinition.SpecimenDefinitionHandling.create().id("x").build().id());
     }

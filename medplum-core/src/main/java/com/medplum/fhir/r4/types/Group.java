@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -174,10 +172,6 @@ public class Group extends DomainResource {
         public Group build() {
             return new Group(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -305,15 +299,14 @@ public class Group extends DomainResource {
             return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<GroupCharacteristic, GroupCharacteristic.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -463,15 +456,14 @@ public class Group extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_INACTIVE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<GroupMember, GroupMember.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

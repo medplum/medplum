@@ -24,6 +24,13 @@ public class ConditionEvidenceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Condition.ConditionEvidence x = Condition.ConditionEvidence.create().build();
+        final Condition.ConditionEvidence y = Condition.ConditionEvidence.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Condition.ConditionEvidence.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class MolecularSequenceRocTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MolecularSequence.MolecularSequenceRoc x = MolecularSequence.MolecularSequenceRoc.create().build();
+        final MolecularSequence.MolecularSequenceRoc y = MolecularSequence.MolecularSequenceRoc.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MolecularSequence.MolecularSequenceRoc.create().id("x").build().id());
     }

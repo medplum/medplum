@@ -127,9 +127,5 @@ public class MedicinalProductManufactured extends DomainResource {
         public MedicinalProductManufactured build() {
             return new MedicinalProductManufactured(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

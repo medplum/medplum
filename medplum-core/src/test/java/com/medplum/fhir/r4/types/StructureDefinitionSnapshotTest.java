@@ -24,6 +24,13 @@ public class StructureDefinitionSnapshotTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final StructureDefinition.StructureDefinitionSnapshot x = StructureDefinition.StructureDefinitionSnapshot.create().build();
+        final StructureDefinition.StructureDefinitionSnapshot y = StructureDefinition.StructureDefinitionSnapshot.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", StructureDefinition.StructureDefinitionSnapshot.create().id("x").build().id());
     }

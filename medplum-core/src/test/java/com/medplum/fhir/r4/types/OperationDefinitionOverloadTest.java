@@ -24,6 +24,13 @@ public class OperationDefinitionOverloadTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final OperationDefinition.OperationDefinitionOverload x = OperationDefinition.OperationDefinitionOverload.create().build();
+        final OperationDefinition.OperationDefinitionOverload y = OperationDefinition.OperationDefinitionOverload.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", OperationDefinition.OperationDefinitionOverload.create().id("x").build().id());
     }

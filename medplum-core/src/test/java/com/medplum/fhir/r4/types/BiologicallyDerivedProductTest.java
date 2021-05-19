@@ -24,6 +24,13 @@ public class BiologicallyDerivedProductTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final BiologicallyDerivedProduct x = BiologicallyDerivedProduct.create().build();
+        final BiologicallyDerivedProduct y = BiologicallyDerivedProduct.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", BiologicallyDerivedProduct.create().id("x").build().id());
     }
@@ -110,7 +117,8 @@ public class BiologicallyDerivedProductTest {
 
     @Test
     public void testCollection() {
-        final BiologicallyDerivedProduct.BiologicallyDerivedProductCollection value = BiologicallyDerivedProduct.BiologicallyDerivedProductCollection.create().build();
+    final BiologicallyDerivedProduct.BiologicallyDerivedProductCollection value =
+            BiologicallyDerivedProduct.BiologicallyDerivedProductCollection.create().build();
         assertEquals(value, BiologicallyDerivedProduct.create().collection(value).build().collection());
     }
 
@@ -122,7 +130,8 @@ public class BiologicallyDerivedProductTest {
 
     @Test
     public void testManipulation() {
-        final BiologicallyDerivedProduct.BiologicallyDerivedProductManipulation value = BiologicallyDerivedProduct.BiologicallyDerivedProductManipulation.create().build();
+    final BiologicallyDerivedProduct.BiologicallyDerivedProductManipulation value =
+            BiologicallyDerivedProduct.BiologicallyDerivedProductManipulation.create().build();
         assertEquals(value, BiologicallyDerivedProduct.create().manipulation(value).build().manipulation());
     }
 

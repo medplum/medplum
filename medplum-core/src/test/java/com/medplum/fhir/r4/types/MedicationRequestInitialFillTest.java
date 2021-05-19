@@ -24,6 +24,13 @@ public class MedicationRequestInitialFillTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicationRequest.MedicationRequestInitialFill x = MedicationRequest.MedicationRequestInitialFill.create().build();
+        final MedicationRequest.MedicationRequestInitialFill y = MedicationRequest.MedicationRequestInitialFill.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicationRequest.MedicationRequestInitialFill.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class MolecularSequenceOuterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MolecularSequence.MolecularSequenceOuter x = MolecularSequence.MolecularSequenceOuter.create().build();
+        final MolecularSequence.MolecularSequenceOuter y = MolecularSequence.MolecularSequenceOuter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MolecularSequence.MolecularSequenceOuter.create().id("x").build().id());
     }

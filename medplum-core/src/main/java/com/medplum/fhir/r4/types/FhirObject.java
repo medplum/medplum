@@ -16,8 +16,11 @@ import jakarta.json.JsonArray;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
+
+import com.medplum.util.JsonUtils;
 
 public abstract class FhirObject extends AbstractMap<String, JsonValue> implements JsonObject {
     protected final JsonObject data;
@@ -298,5 +301,27 @@ public abstract class FhirObject extends AbstractMap<String, JsonValue> implemen
             final JsonValue value,
             final BiFunction<? super JsonValue, ? super JsonValue, ? extends JsonValue> remappingFunction) {
         return data.merge(key, value, remappingFunction);
+    }
+
+    public static class Builder<T extends FhirObject, B extends FhirObject.Builder<T, B>> {
+        protected final JsonObjectBuilder b;
+
+        protected Builder() {
+            b = Json.createObjectBuilder();
+        }
+
+        protected Builder(final JsonObject data) {
+            b = Json.createObjectBuilder(data);
+        }
+
+        public B copyAll(final T other) {
+            JsonUtils.copyProperties(other, b);
+            return getBuilder();
+        }
+
+        @SuppressWarnings("unchecked")
+        protected B getBuilder() {
+            return (B) this;
+        }
     }
 }

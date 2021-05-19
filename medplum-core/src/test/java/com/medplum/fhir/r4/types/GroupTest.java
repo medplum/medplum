@@ -24,6 +24,13 @@ public class GroupTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Group x = Group.create().build();
+        final Group y = Group.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Group.create().id("x").build().id());
     }

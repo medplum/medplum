@@ -24,6 +24,13 @@ public class MedicationRequestDispenseRequestTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicationRequest.MedicationRequestDispenseRequest x = MedicationRequest.MedicationRequestDispenseRequest.create().build();
+        final MedicationRequest.MedicationRequestDispenseRequest y = MedicationRequest.MedicationRequestDispenseRequest.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicationRequest.MedicationRequestDispenseRequest.create().id("x").build().id());
     }

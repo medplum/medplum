@@ -24,6 +24,13 @@ public class ValueSetComposeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ValueSet.ValueSetCompose x = ValueSet.ValueSetCompose.create().build();
+        final ValueSet.ValueSetCompose y = ValueSet.ValueSetCompose.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ValueSet.ValueSetCompose.create().id("x").build().id());
     }

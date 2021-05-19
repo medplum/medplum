@@ -24,6 +24,13 @@ public class CoverageCostToBeneficiaryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Coverage.CoverageCostToBeneficiary x = Coverage.CoverageCostToBeneficiary.create().build();
+        final Coverage.CoverageCostToBeneficiary y = Coverage.CoverageCostToBeneficiary.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Coverage.CoverageCostToBeneficiary.create().id("x").build().id());
     }

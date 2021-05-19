@@ -24,6 +24,13 @@ public class ConsentProvisionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Consent.ConsentProvision x = Consent.ConsentProvision.create().build();
+        final Consent.ConsentProvision y = Consent.ConsentProvision.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Consent.ConsentProvision.create().id("x").build().id());
     }

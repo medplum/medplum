@@ -24,6 +24,13 @@ public class MolecularSequenceRepositoryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MolecularSequence.MolecularSequenceRepository x = MolecularSequence.MolecularSequenceRepository.create().build();
+        final MolecularSequence.MolecularSequenceRepository y = MolecularSequence.MolecularSequenceRepository.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MolecularSequence.MolecularSequenceRepository.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class CodeSystemDesignationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CodeSystem.CodeSystemDesignation x = CodeSystem.CodeSystemDesignation.create().build();
+        final CodeSystem.CodeSystemDesignation y = CodeSystem.CodeSystemDesignation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CodeSystem.CodeSystemDesignation.create().id("x").build().id());
     }

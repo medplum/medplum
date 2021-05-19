@@ -24,6 +24,14 @@ public class MedicationKnowledgePatientCharacteristicsTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicationKnowledge.MedicationKnowledgePatientCharacteristics x = MedicationKnowledge.MedicationKnowledgePatientCharacteristics.create().build();
+    final MedicationKnowledge.MedicationKnowledgePatientCharacteristics y =
+            MedicationKnowledge.MedicationKnowledgePatientCharacteristics.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicationKnowledge.MedicationKnowledgePatientCharacteristics.create().id("x").build().id());
     }
@@ -43,13 +51,15 @@ public class MedicationKnowledgePatientCharacteristicsTest {
     @Test
     public void testCharacteristicCodeableConcept() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, MedicationKnowledge.MedicationKnowledgePatientCharacteristics.create().characteristicCodeableConcept(value).build().characteristicCodeableConcept());
+    assertEquals(value,
+            MedicationKnowledge.MedicationKnowledgePatientCharacteristics.create().characteristicCodeableConcept(value).build().characteristicCodeableConcept());
     }
 
     @Test
     public void testCharacteristicQuantity() {
         final Quantity value = Quantity.create().build();
-        assertEquals(value, MedicationKnowledge.MedicationKnowledgePatientCharacteristics.create().characteristicQuantity(value).build().characteristicQuantity());
+    assertEquals(value,
+            MedicationKnowledge.MedicationKnowledgePatientCharacteristics.create().characteristicQuantity(value).build().characteristicQuantity());
     }
 
     @Test

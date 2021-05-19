@@ -89,9 +89,5 @@ public class Binary extends FhirResource {
         public Binary build() {
             return new Binary(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

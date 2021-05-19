@@ -24,6 +24,13 @@ public class GraphDefinitionCompartmentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final GraphDefinition.GraphDefinitionCompartment x = GraphDefinition.GraphDefinitionCompartment.create().build();
+        final GraphDefinition.GraphDefinitionCompartment y = GraphDefinition.GraphDefinitionCompartment.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", GraphDefinition.GraphDefinitionCompartment.create().id("x").build().id());
     }

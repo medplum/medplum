@@ -24,6 +24,13 @@ public class ProjectTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Project x = Project.create().build();
+        final Project y = Project.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Project.create().id("x").build().id());
     }

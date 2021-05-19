@@ -24,6 +24,13 @@ public class AdverseEventTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final AdverseEvent x = AdverseEvent.create().build();
+        final AdverseEvent y = AdverseEvent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", AdverseEvent.create().id("x").build().id());
     }

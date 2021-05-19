@@ -24,6 +24,13 @@ public class PlanDefinitionGoalTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final PlanDefinition.PlanDefinitionGoal x = PlanDefinition.PlanDefinitionGoal.create().build();
+        final PlanDefinition.PlanDefinitionGoal y = PlanDefinition.PlanDefinitionGoal.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", PlanDefinition.PlanDefinitionGoal.create().id("x").build().id());
     }

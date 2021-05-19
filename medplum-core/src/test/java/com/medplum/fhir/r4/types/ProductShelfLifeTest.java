@@ -24,6 +24,13 @@ public class ProductShelfLifeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ProductShelfLife x = ProductShelfLife.create().build();
+        final ProductShelfLife y = ProductShelfLife.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ProductShelfLife.create().id("x").build().id());
     }

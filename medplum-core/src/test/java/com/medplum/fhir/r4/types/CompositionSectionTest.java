@@ -24,6 +24,13 @@ public class CompositionSectionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Composition.CompositionSection x = Composition.CompositionSection.create().build();
+        final Composition.CompositionSection y = Composition.CompositionSection.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Composition.CompositionSection.create().id("x").build().id());
     }

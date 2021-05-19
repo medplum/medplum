@@ -24,6 +24,13 @@ public class SampledDataTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SampledData x = SampledData.create().build();
+        final SampledData y = SampledData.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SampledData.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class SupplyRequestTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SupplyRequest x = SupplyRequest.create().build();
+        final SupplyRequest y = SupplyRequest.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SupplyRequest.create().id("x").build().id());
     }

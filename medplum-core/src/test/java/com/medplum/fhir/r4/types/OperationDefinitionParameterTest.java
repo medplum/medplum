@@ -24,6 +24,13 @@ public class OperationDefinitionParameterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final OperationDefinition.OperationDefinitionParameter x = OperationDefinition.OperationDefinitionParameter.create().build();
+        final OperationDefinition.OperationDefinitionParameter y = OperationDefinition.OperationDefinitionParameter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", OperationDefinition.OperationDefinitionParameter.create().id("x").build().id());
     }

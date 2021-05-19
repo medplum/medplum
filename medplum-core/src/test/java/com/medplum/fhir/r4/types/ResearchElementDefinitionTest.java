@@ -24,6 +24,13 @@ public class ResearchElementDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ResearchElementDefinition x = ResearchElementDefinition.create().build();
+        final ResearchElementDefinition y = ResearchElementDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ResearchElementDefinition.create().id("x").build().id());
     }

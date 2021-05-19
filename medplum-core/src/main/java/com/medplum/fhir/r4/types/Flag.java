@@ -145,9 +145,5 @@ public class Flag extends DomainResource {
         public Flag build() {
             return new Flag(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

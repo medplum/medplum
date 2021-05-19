@@ -24,6 +24,14 @@ public class MedicinalProductPackagedPackageItemTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicinalProductPackaged.MedicinalProductPackagedPackageItem x = MedicinalProductPackaged.MedicinalProductPackagedPackageItem.create().build();
+    final MedicinalProductPackaged.MedicinalProductPackagedPackageItem y =
+            MedicinalProductPackaged.MedicinalProductPackagedPackageItem.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductPackaged.MedicinalProductPackagedPackageItem.create().id("x").build().id());
     }
@@ -91,7 +99,8 @@ public class MedicinalProductPackagedPackageItemTest {
     @Test
     public void testPhysicalCharacteristics() {
         final ProdCharacteristic value = ProdCharacteristic.create().build();
-        assertEquals(value, MedicinalProductPackaged.MedicinalProductPackagedPackageItem.create().physicalCharacteristics(value).build().physicalCharacteristics());
+    assertEquals(value,
+            MedicinalProductPackaged.MedicinalProductPackagedPackageItem.create().physicalCharacteristics(value).build().physicalCharacteristics());
     }
 
     @Test

@@ -88,9 +88,5 @@ public class User extends FhirResource {
         public User build() {
             return new User(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

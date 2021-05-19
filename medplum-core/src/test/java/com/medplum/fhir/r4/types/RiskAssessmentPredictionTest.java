@@ -24,6 +24,13 @@ public class RiskAssessmentPredictionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final RiskAssessment.RiskAssessmentPrediction x = RiskAssessment.RiskAssessmentPrediction.create().build();
+        final RiskAssessment.RiskAssessmentPrediction y = RiskAssessment.RiskAssessmentPrediction.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RiskAssessment.RiskAssessmentPrediction.create().id("x").build().id());
     }

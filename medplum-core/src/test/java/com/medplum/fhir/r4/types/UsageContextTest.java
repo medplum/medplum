@@ -24,6 +24,13 @@ public class UsageContextTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final UsageContext x = UsageContext.create().build();
+        final UsageContext y = UsageContext.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", UsageContext.create().id("x").build().id());
     }

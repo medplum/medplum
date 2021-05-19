@@ -24,6 +24,13 @@ public class ProvenanceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Provenance x = Provenance.create().build();
+        final Provenance y = Provenance.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Provenance.create().id("x").build().id());
     }

@@ -24,6 +24,14 @@ public class EffectEvidenceSynthesisCertaintyTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final EffectEvidenceSynthesis.EffectEvidenceSynthesisCertainty x = EffectEvidenceSynthesis.EffectEvidenceSynthesisCertainty.create().build();
+    final EffectEvidenceSynthesis.EffectEvidenceSynthesisCertainty y =
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisCertainty.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EffectEvidenceSynthesis.EffectEvidenceSynthesisCertainty.create().id("x").build().id());
     }

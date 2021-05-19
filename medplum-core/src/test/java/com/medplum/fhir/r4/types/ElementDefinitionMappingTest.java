@@ -24,6 +24,13 @@ public class ElementDefinitionMappingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ElementDefinition.ElementDefinitionMapping x = ElementDefinition.ElementDefinitionMapping.create().build();
+        final ElementDefinition.ElementDefinitionMapping y = ElementDefinition.ElementDefinitionMapping.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ElementDefinition.ElementDefinitionMapping.create().id("x").build().id());
     }

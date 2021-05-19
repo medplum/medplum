@@ -24,6 +24,13 @@ public class CommunicationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Communication x = Communication.create().build();
+        final Communication y = Communication.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Communication.create().id("x").build().id());
     }

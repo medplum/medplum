@@ -24,6 +24,14 @@ public class TerminologyCapabilitiesCodeSystemTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TerminologyCapabilities.TerminologyCapabilitiesCodeSystem x = TerminologyCapabilities.TerminologyCapabilitiesCodeSystem.create().build();
+    final TerminologyCapabilities.TerminologyCapabilitiesCodeSystem y =
+            TerminologyCapabilities.TerminologyCapabilitiesCodeSystem.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TerminologyCapabilities.TerminologyCapabilitiesCodeSystem.create().id("x").build().id());
     }

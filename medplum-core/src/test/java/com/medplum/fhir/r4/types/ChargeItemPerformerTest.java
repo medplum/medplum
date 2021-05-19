@@ -24,6 +24,13 @@ public class ChargeItemPerformerTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ChargeItem.ChargeItemPerformer x = ChargeItem.ChargeItemPerformer.create().build();
+        final ChargeItem.ChargeItemPerformer y = ChargeItem.ChargeItemPerformer.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ChargeItem.ChargeItemPerformer.create().id("x").build().id());
     }

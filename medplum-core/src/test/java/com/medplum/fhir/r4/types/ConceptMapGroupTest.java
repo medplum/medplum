@@ -24,6 +24,13 @@ public class ConceptMapGroupTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ConceptMap.ConceptMapGroup x = ConceptMap.ConceptMapGroup.create().build();
+        final ConceptMap.ConceptMapGroup y = ConceptMap.ConceptMapGroup.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ConceptMap.ConceptMapGroup.create().id("x").build().id());
     }

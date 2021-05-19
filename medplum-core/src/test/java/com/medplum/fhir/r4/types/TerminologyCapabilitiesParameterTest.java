@@ -24,6 +24,14 @@ public class TerminologyCapabilitiesParameterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TerminologyCapabilities.TerminologyCapabilitiesParameter x = TerminologyCapabilities.TerminologyCapabilitiesParameter.create().build();
+    final TerminologyCapabilities.TerminologyCapabilitiesParameter y =
+            TerminologyCapabilities.TerminologyCapabilitiesParameter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TerminologyCapabilities.TerminologyCapabilitiesParameter.create().id("x").build().id());
     }

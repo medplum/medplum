@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -209,10 +207,6 @@ public class ObservationDefinition extends DomainResource {
         public ObservationDefinition build() {
             return new ObservationDefinition(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -337,15 +331,14 @@ public class ObservationDefinition extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_CONDITION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ObservationDefinitionQualifiedInterval, ObservationDefinitionQualifiedInterval.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -501,15 +494,15 @@ public class ObservationDefinition extends DomainResource {
             return data.getInt(FhirPropertyNames.PROPERTY_DECIMAL_PRECISION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ObservationDefinitionQuantitativeDetails,
+                ObservationDefinitionQuantitativeDetails.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

@@ -24,6 +24,13 @@ public class ClaimProcedureTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Claim.ClaimProcedure x = Claim.ClaimProcedure.create().build();
+        final Claim.ClaimProcedure y = Claim.ClaimProcedure.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Claim.ClaimProcedure.create().id("x").build().id());
     }

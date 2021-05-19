@@ -187,9 +187,5 @@ public class PaymentNotice extends DomainResource {
         public PaymentNotice build() {
             return new PaymentNotice(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

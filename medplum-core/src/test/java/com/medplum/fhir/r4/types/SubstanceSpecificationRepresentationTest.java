@@ -24,6 +24,14 @@ public class SubstanceSpecificationRepresentationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSpecification.SubstanceSpecificationRepresentation x = SubstanceSpecification.SubstanceSpecificationRepresentation.create().build();
+    final SubstanceSpecification.SubstanceSpecificationRepresentation y =
+            SubstanceSpecification.SubstanceSpecificationRepresentation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSpecification.SubstanceSpecificationRepresentation.create().id("x").build().id());
     }

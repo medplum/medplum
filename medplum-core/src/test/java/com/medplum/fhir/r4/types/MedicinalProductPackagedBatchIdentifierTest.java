@@ -24,6 +24,15 @@ public class MedicinalProductPackagedBatchIdentifierTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductPackaged.MedicinalProductPackagedBatchIdentifier x =
+            MedicinalProductPackaged.MedicinalProductPackagedBatchIdentifier.create().build();
+    final MedicinalProductPackaged.MedicinalProductPackagedBatchIdentifier y =
+            MedicinalProductPackaged.MedicinalProductPackagedBatchIdentifier.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductPackaged.MedicinalProductPackagedBatchIdentifier.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class AuditEventTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final AuditEvent x = AuditEvent.create().build();
+        final AuditEvent y = AuditEvent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", AuditEvent.create().id("x").build().id());
     }

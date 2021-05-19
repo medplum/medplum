@@ -24,6 +24,13 @@ public class CatalogEntryRelatedEntryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CatalogEntry.CatalogEntryRelatedEntry x = CatalogEntry.CatalogEntryRelatedEntry.create().build();
+        final CatalogEntry.CatalogEntryRelatedEntry y = CatalogEntry.CatalogEntryRelatedEntry.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CatalogEntry.CatalogEntryRelatedEntry.create().id("x").build().id());
     }

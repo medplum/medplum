@@ -24,6 +24,13 @@ public class TestScriptMetadataTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TestScript.TestScriptMetadata x = TestScript.TestScriptMetadata.create().build();
+        final TestScript.TestScriptMetadata y = TestScript.TestScriptMetadata.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TestScript.TestScriptMetadata.create().id("x").build().id());
     }

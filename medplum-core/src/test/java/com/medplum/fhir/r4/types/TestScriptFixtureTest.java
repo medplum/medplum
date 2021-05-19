@@ -24,6 +24,13 @@ public class TestScriptFixtureTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TestScript.TestScriptFixture x = TestScript.TestScriptFixture.create().build();
+        final TestScript.TestScriptFixture y = TestScript.TestScriptFixture.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TestScript.TestScriptFixture.create().id("x").build().id());
     }

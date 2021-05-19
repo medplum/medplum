@@ -440,9 +440,5 @@ public class EventDefinition extends DomainResource {
         public EventDefinition build() {
             return new EventDefinition(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

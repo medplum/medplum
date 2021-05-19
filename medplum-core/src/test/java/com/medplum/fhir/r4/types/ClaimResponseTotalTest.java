@@ -24,6 +24,13 @@ public class ClaimResponseTotalTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ClaimResponse.ClaimResponseTotal x = ClaimResponse.ClaimResponseTotal.create().build();
+        final ClaimResponse.ClaimResponseTotal y = ClaimResponse.ClaimResponseTotal.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ClaimResponse.ClaimResponseTotal.create().id("x").build().id());
     }

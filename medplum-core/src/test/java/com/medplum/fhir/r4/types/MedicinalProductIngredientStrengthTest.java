@@ -24,6 +24,14 @@ public class MedicinalProductIngredientStrengthTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicinalProductIngredient.MedicinalProductIngredientStrength x = MedicinalProductIngredient.MedicinalProductIngredientStrength.create().build();
+    final MedicinalProductIngredient.MedicinalProductIngredientStrength y =
+            MedicinalProductIngredient.MedicinalProductIngredientStrength.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductIngredient.MedicinalProductIngredientStrength.create().id("x").build().id());
     }
@@ -61,7 +69,8 @@ public class MedicinalProductIngredientStrengthTest {
     @Test
     public void testConcentrationLowLimit() {
         final Ratio value = Ratio.create().build();
-        assertEquals(value, MedicinalProductIngredient.MedicinalProductIngredientStrength.create().concentrationLowLimit(value).build().concentrationLowLimit());
+    assertEquals(value,
+            MedicinalProductIngredient.MedicinalProductIngredientStrength.create().concentrationLowLimit(value).build().concentrationLowLimit());
     }
 
     @Test

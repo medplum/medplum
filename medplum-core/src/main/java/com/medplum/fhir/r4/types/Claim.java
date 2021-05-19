@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -391,10 +389,6 @@ public class Claim extends DomainResource {
         public Claim build() {
             return new Claim(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -489,15 +483,14 @@ public class Claim extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_LOCATION_REFERENCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimAccident, ClaimAccident.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -640,15 +633,14 @@ public class Claim extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_QUALIFICATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimCareTeam, ClaimCareTeam.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -854,15 +846,14 @@ public class Claim extends DomainResource {
             return getList(ClaimSubDetail.class, FhirPropertyNames.PROPERTY_SUB_DETAIL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimDetail, ClaimDetail.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1054,15 +1045,14 @@ public class Claim extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PACKAGE_CODE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimDiagnosis, ClaimDiagnosis.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1236,15 +1226,14 @@ public class Claim extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_CLAIM_RESPONSE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimInsurance, ClaimInsurance.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1549,15 +1538,14 @@ public class Claim extends DomainResource {
             return getList(ClaimDetail.class, FhirPropertyNames.PROPERTY_DETAIL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimItem, ClaimItem.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1777,15 +1765,14 @@ public class Claim extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_PARTY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimPayee, ClaimPayee.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1924,15 +1911,14 @@ public class Claim extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_UDI);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimProcedure, ClaimProcedure.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2069,15 +2055,14 @@ public class Claim extends DomainResource {
             return getObject(Identifier.class, FhirPropertyNames.PROPERTY_REFERENCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimRelated, ClaimRelated.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2265,15 +2250,14 @@ public class Claim extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_UDI);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimSubDetail, ClaimSubDetail.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2504,15 +2488,14 @@ public class Claim extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_REASON);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ClaimSupportingInfo, ClaimSupportingInfo.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

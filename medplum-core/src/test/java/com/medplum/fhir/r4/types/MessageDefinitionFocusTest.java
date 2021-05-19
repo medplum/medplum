@@ -24,6 +24,13 @@ public class MessageDefinitionFocusTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MessageDefinition.MessageDefinitionFocus x = MessageDefinition.MessageDefinitionFocus.create().build();
+        final MessageDefinition.MessageDefinitionFocus y = MessageDefinition.MessageDefinitionFocus.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MessageDefinition.MessageDefinitionFocus.create().id("x").build().id());
     }

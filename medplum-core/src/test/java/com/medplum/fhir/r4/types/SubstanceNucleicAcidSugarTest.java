@@ -24,6 +24,13 @@ public class SubstanceNucleicAcidSugarTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceNucleicAcid.SubstanceNucleicAcidSugar x = SubstanceNucleicAcid.SubstanceNucleicAcidSugar.create().build();
+        final SubstanceNucleicAcid.SubstanceNucleicAcidSugar y = SubstanceNucleicAcid.SubstanceNucleicAcidSugar.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceNucleicAcid.SubstanceNucleicAcidSugar.create().id("x").build().id());
     }

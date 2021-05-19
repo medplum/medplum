@@ -24,6 +24,13 @@ public class HealthcareServiceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final HealthcareService x = HealthcareService.create().build();
+        final HealthcareService y = HealthcareService.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", HealthcareService.create().id("x").build().id());
     }

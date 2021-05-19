@@ -24,6 +24,15 @@ public class CoverageEligibilityRequestSupportingInfoTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final CoverageEligibilityRequest.CoverageEligibilityRequestSupportingInfo x =
+            CoverageEligibilityRequest.CoverageEligibilityRequestSupportingInfo.create().build();
+    final CoverageEligibilityRequest.CoverageEligibilityRequestSupportingInfo y =
+            CoverageEligibilityRequest.CoverageEligibilityRequestSupportingInfo.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CoverageEligibilityRequest.CoverageEligibilityRequestSupportingInfo.create().id("x").build().id());
     }

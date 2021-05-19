@@ -24,6 +24,13 @@ public class CompartmentDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CompartmentDefinition x = CompartmentDefinition.create().build();
+        final CompartmentDefinition y = CompartmentDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CompartmentDefinition.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class ClaimDiagnosisTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Claim.ClaimDiagnosis x = Claim.ClaimDiagnosis.create().build();
+        final Claim.ClaimDiagnosis y = Claim.ClaimDiagnosis.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Claim.ClaimDiagnosis.create().id("x").build().id());
     }

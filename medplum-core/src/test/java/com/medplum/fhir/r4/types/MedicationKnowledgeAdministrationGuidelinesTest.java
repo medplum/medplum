@@ -24,6 +24,15 @@ public class MedicationKnowledgeAdministrationGuidelinesTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicationKnowledge.MedicationKnowledgeAdministrationGuidelines x =
+            MedicationKnowledge.MedicationKnowledgeAdministrationGuidelines.create().build();
+    final MedicationKnowledge.MedicationKnowledgeAdministrationGuidelines y =
+            MedicationKnowledge.MedicationKnowledgeAdministrationGuidelines.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicationKnowledge.MedicationKnowledgeAdministrationGuidelines.create().id("x").build().id());
     }
@@ -49,7 +58,8 @@ public class MedicationKnowledgeAdministrationGuidelinesTest {
     @Test
     public void testIndicationCodeableConcept() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, MedicationKnowledge.MedicationKnowledgeAdministrationGuidelines.create().indicationCodeableConcept(value).build().indicationCodeableConcept());
+    assertEquals(value,
+            MedicationKnowledge.MedicationKnowledgeAdministrationGuidelines.create().indicationCodeableConcept(value).build().indicationCodeableConcept());
     }
 
     @Test
@@ -61,6 +71,7 @@ public class MedicationKnowledgeAdministrationGuidelinesTest {
     @Test
     public void testPatientCharacteristics() {
         final java.util.List<MedicationKnowledge.MedicationKnowledgePatientCharacteristics> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicationKnowledge.MedicationKnowledgeAdministrationGuidelines.create().patientCharacteristics(value).build().patientCharacteristics());
+    assertEquals(value,
+            MedicationKnowledge.MedicationKnowledgeAdministrationGuidelines.create().patientCharacteristics(value).build().patientCharacteristics());
     }
 }

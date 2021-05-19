@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -329,10 +327,6 @@ public class MedicationAdministration extends DomainResource {
         public MedicationAdministration build() {
             return new MedicationAdministration(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -467,15 +461,14 @@ public class MedicationAdministration extends DomainResource {
             return getObject(Quantity.class, FhirPropertyNames.PROPERTY_RATE_QUANTITY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationAdministrationDosage, MedicationAdministrationDosage.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -612,15 +605,14 @@ public class MedicationAdministration extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_ACTOR);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationAdministrationPerformer, MedicationAdministrationPerformer.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

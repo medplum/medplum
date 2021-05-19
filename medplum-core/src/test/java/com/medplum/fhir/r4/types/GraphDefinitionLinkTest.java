@@ -24,6 +24,13 @@ public class GraphDefinitionLinkTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final GraphDefinition.GraphDefinitionLink x = GraphDefinition.GraphDefinitionLink.create().build();
+        final GraphDefinition.GraphDefinitionLink y = GraphDefinition.GraphDefinitionLink.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", GraphDefinition.GraphDefinitionLink.create().id("x").build().id());
     }

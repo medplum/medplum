@@ -68,15 +68,7 @@ public class JavaGenerator {
         final FileBuilder b = new FileBuilder(INDENT);
         b.append("package " + TYPES_PACKAGE + ";");
         b.newLine();
-
-        if (fhirType.isResource() && fhirType.getSubTypes().isEmpty()) {
-            b.append("import jakarta.json.JsonObject;");
-        } else {
-            b.append("import jakarta.json.Json;");
-            b.append("import jakarta.json.JsonObject;");
-            b.append("import jakarta.json.JsonObjectBuilder;");
-        }
-
+        b.append("import jakarta.json.JsonObject;");
         b.newLine();
         b.append("import com.medplum.fhir.r4.FhirPropertyNames;");
 
@@ -221,15 +213,14 @@ public class JavaGenerator {
             b.append("        super(RESOURCE_TYPE, data);");
             b.append("    }");
         } else {
-            b.append("public static final class Builder {");
-            b.append("    private final JsonObjectBuilder b;");
+            b.append("public static final class Builder extends FhirObject.Builder<" + resourceType + ", " + resourceType + ".Builder> {");
             b.newLine();
             b.append("    private Builder() {");
-            b.append("        b = Json.createObjectBuilder();");
+            b.append("        super();");
             b.append("    }");
             b.newLine();
             b.append("    private Builder(final JsonObject data) {");
-            b.append("        b = Json.createObjectBuilder(data);");
+            b.append("        super(data);");
             b.append("    }");
         }
 
@@ -285,14 +276,6 @@ public class JavaGenerator {
         b.append("    public " + resourceType + " build() {");
         b.append("        return new " + resourceType + "(b.build());");
         b.append("    }");
-
-        if (fhirType.isResource() || fhirType.isDomainResource()) {
-            b.newLine();
-            b.append("    protected Builder getBuilder() {");
-            b.append("        return this;");
-            b.append("    }");
-        }
-
         b.append("}");
 
         Collections.sort(fhirType.getSubTypes(), (o1, o2) -> o1.getOutputName().compareTo(o2.getOutputName()));
@@ -330,6 +313,13 @@ public class JavaGenerator {
         b.append("@Test");
         b.append("public void testBuilderFromJsonObject() {");
         b.append("    assertNotNull(" + qualifiedType + ".create(Json.createObjectBuilder().build()).build());");
+        b.append("}");
+        b.newLine();
+        b.append("@Test");
+        b.append("public void testCopyAll() {");
+        b.append("    final " + qualifiedType + " x = " + qualifiedType + ".create().build();");
+        b.append("    final " + qualifiedType + " y = " + qualifiedType + ".create().copyAll(x).build();");
+        b.append("    assertEquals(x, y);");
         b.append("}");
 
         for (final Property property : fhirType.getProperties()) {

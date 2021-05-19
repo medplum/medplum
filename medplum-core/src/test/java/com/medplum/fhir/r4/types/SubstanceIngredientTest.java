@@ -24,6 +24,13 @@ public class SubstanceIngredientTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Substance.SubstanceIngredient x = Substance.SubstanceIngredient.create().build();
+        final Substance.SubstanceIngredient y = Substance.SubstanceIngredient.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Substance.SubstanceIngredient.create().id("x").build().id());
     }

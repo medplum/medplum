@@ -24,6 +24,15 @@ public class MedicinalProductContraindicationOtherTherapyTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy x =
+            MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().build();
+    final MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy y =
+            MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().id("x").build().id());
     }
@@ -37,24 +46,28 @@ public class MedicinalProductContraindicationOtherTherapyTest {
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test
     public void testTherapyRelationshipType() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().therapyRelationshipType(value).build().therapyRelationshipType());
+    assertEquals(value,
+            MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().therapyRelationshipType(value).build().therapyRelationshipType());
     }
 
     @Test
     public void testMedicationCodeableConcept() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().medicationCodeableConcept(value).build().medicationCodeableConcept());
+    assertEquals(value,
+            MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().medicationCodeableConcept(value).build().medicationCodeableConcept());
     }
 
     @Test
     public void testMedicationReference() {
         final Reference value = Reference.create().build();
-        assertEquals(value, MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().medicationReference(value).build().medicationReference());
+    assertEquals(value,
+            MedicinalProductContraindication.MedicinalProductContraindicationOtherTherapy.create().medicationReference(value).build().medicationReference());
     }
 }

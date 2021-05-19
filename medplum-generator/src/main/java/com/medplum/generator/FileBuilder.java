@@ -1,5 +1,7 @@
 package com.medplum.generator;
 
+import org.apache.commons.text.WordUtils;
+
 public class FileBuilder {
     private final String indent;
     private final StringBuilder b;
@@ -28,10 +30,30 @@ public class FileBuilder {
         b.append("\n");
     }
 
-    public void append(final String line) {
+    public void appendNoWrap(final String line) {
         b.append(indent.repeat(indentCount));
         b.append(line);
         b.append("\n");
+    }
+
+    public void append(final String line) {
+        final String nowrap = indent.repeat(indentCount) + line;
+        if (nowrap.length() < 160) {
+            b.append(nowrap);
+            b.append("\n");
+        } else {
+            boolean first = true;
+            for (final String wrappedLine : WordUtils.wrap(nowrap, 120 - indent.length() * indentCount).split("\n")) {
+                if (first) {
+                    b.append(indent.repeat(indentCount));
+                } else {
+                    b.append(indent.repeat(indentCount + 2));
+                }
+                b.append(wrappedLine.trim());
+                b.append("\n");
+                first = false;
+            }
+        }
     }
 
     @Override

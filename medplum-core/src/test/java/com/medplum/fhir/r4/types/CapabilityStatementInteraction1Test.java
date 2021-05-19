@@ -24,6 +24,13 @@ public class CapabilityStatementInteraction1Test {
     }
 
     @Test
+    public void testCopyAll() {
+        final CapabilityStatement.CapabilityStatementInteraction1 x = CapabilityStatement.CapabilityStatementInteraction1.create().build();
+        final CapabilityStatement.CapabilityStatementInteraction1 y = CapabilityStatement.CapabilityStatementInteraction1.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CapabilityStatement.CapabilityStatementInteraction1.create().id("x").build().id());
     }

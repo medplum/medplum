@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -493,10 +491,6 @@ public class EffectEvidenceSynthesis extends DomainResource {
         public EffectEvidenceSynthesis build() {
             return new EffectEvidenceSynthesis(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -582,15 +576,14 @@ public class EffectEvidenceSynthesis extends DomainResource {
             return getList(EffectEvidenceSynthesisCertaintySubcomponent.class, FhirPropertyNames.PROPERTY_CERTAINTY_SUBCOMPONENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EffectEvidenceSynthesisCertainty, EffectEvidenceSynthesisCertainty.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -712,15 +705,15 @@ public class EffectEvidenceSynthesis extends DomainResource {
             return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EffectEvidenceSynthesisCertaintySubcomponent,
+                EffectEvidenceSynthesisCertaintySubcomponent.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -862,15 +855,14 @@ public class EffectEvidenceSynthesis extends DomainResource {
             return getList(EffectEvidenceSynthesisPrecisionEstimate.class, FhirPropertyNames.PROPERTY_PRECISION_ESTIMATE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EffectEvidenceSynthesisEffectEstimate, EffectEvidenceSynthesisEffectEstimate.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1013,15 +1005,15 @@ public class EffectEvidenceSynthesis extends DomainResource {
             return data.getJsonNumber(FhirPropertyNames.PROPERTY_TO).doubleValue();
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EffectEvidenceSynthesisPrecisionEstimate,
+                EffectEvidenceSynthesisPrecisionEstimate.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1155,15 +1147,15 @@ public class EffectEvidenceSynthesis extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_RISK_EVIDENCE_SYNTHESIS);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EffectEvidenceSynthesisResultsByExposure,
+                EffectEvidenceSynthesisResultsByExposure.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1289,15 +1281,14 @@ public class EffectEvidenceSynthesis extends DomainResource {
             return data.getInt(FhirPropertyNames.PROPERTY_NUMBER_OF_PARTICIPANTS);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EffectEvidenceSynthesisSampleSize, EffectEvidenceSynthesisSampleSize.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

@@ -24,6 +24,14 @@ public class BiologicallyDerivedProductStorageTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final BiologicallyDerivedProduct.BiologicallyDerivedProductStorage x = BiologicallyDerivedProduct.BiologicallyDerivedProductStorage.create().build();
+    final BiologicallyDerivedProduct.BiologicallyDerivedProductStorage y =
+            BiologicallyDerivedProduct.BiologicallyDerivedProductStorage.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", BiologicallyDerivedProduct.BiologicallyDerivedProductStorage.create().id("x").build().id());
     }

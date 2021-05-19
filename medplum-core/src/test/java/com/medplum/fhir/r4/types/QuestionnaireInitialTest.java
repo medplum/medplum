@@ -24,6 +24,13 @@ public class QuestionnaireInitialTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Questionnaire.QuestionnaireInitial x = Questionnaire.QuestionnaireInitial.create().build();
+        final Questionnaire.QuestionnaireInitial y = Questionnaire.QuestionnaireInitial.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Questionnaire.QuestionnaireInitial.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class EncounterHospitalizationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Encounter.EncounterHospitalization x = Encounter.EncounterHospitalization.create().build();
+        final Encounter.EncounterHospitalization y = Encounter.EncounterHospitalization.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Encounter.EncounterHospitalization.create().id("x").build().id());
     }

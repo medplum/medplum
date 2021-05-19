@@ -24,6 +24,13 @@ public class PaymentNoticeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final PaymentNotice x = PaymentNotice.create().build();
+        final PaymentNotice y = PaymentNotice.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", PaymentNotice.create().id("x").build().id());
     }

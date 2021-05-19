@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -216,10 +214,6 @@ public class VerificationResult extends DomainResource {
         public VerificationResult build() {
             return new VerificationResult(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -344,15 +338,14 @@ public class VerificationResult extends DomainResource {
             return getObject(Signature.class, FhirPropertyNames.PROPERTY_SOURCE_SIGNATURE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<VerificationResultAttestation, VerificationResultAttestation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -530,15 +523,14 @@ public class VerificationResult extends DomainResource {
             return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_PUSH_TYPE_AVAILABLE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<VerificationResultPrimarySource, VerificationResultPrimarySource.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -679,15 +671,14 @@ public class VerificationResult extends DomainResource {
             return getObject(Signature.class, FhirPropertyNames.PROPERTY_ATTESTATION_SIGNATURE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<VerificationResultValidator, VerificationResultValidator.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

@@ -24,6 +24,13 @@ public class JsonWebKeyTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final JsonWebKey x = JsonWebKey.create().build();
+        final JsonWebKey y = JsonWebKey.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", JsonWebKey.create().id("x").build().id());
     }

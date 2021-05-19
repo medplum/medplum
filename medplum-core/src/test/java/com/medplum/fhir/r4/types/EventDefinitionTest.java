@@ -24,6 +24,13 @@ public class EventDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final EventDefinition x = EventDefinition.create().build();
+        final EventDefinition y = EventDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EventDefinition.create().id("x").build().id());
     }

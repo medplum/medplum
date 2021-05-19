@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -274,10 +272,6 @@ public class RequestGroup extends DomainResource {
         public RequestGroup build() {
             return new RequestGroup(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -521,15 +515,14 @@ public class RequestGroup extends DomainResource {
             return getList(RequestGroupAction.class, FhirPropertyNames.PROPERTY_ACTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<RequestGroupAction, RequestGroupAction.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -749,15 +742,14 @@ public class RequestGroup extends DomainResource {
             return getObject(Expression.class, FhirPropertyNames.PROPERTY_EXPRESSION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<RequestGroupCondition, RequestGroupCondition.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -882,15 +874,14 @@ public class RequestGroup extends DomainResource {
             return getObject(Range.class, FhirPropertyNames.PROPERTY_OFFSET_RANGE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<RequestGroupRelatedAction, RequestGroupRelatedAction.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

@@ -24,6 +24,13 @@ public class ExampleScenarioTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ExampleScenario x = ExampleScenario.create().build();
+        final ExampleScenario y = ExampleScenario.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ExampleScenario.create().id("x").build().id());
     }

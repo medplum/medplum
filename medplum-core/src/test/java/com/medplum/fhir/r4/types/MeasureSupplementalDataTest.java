@@ -24,6 +24,13 @@ public class MeasureSupplementalDataTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Measure.MeasureSupplementalData x = Measure.MeasureSupplementalData.create().build();
+        final Measure.MeasureSupplementalData y = Measure.MeasureSupplementalData.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Measure.MeasureSupplementalData.create().id("x").build().id());
     }

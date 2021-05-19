@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -222,10 +220,6 @@ public class InsurancePlan extends DomainResource {
         public InsurancePlan build() {
             return new InsurancePlan(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -310,15 +304,14 @@ public class InsurancePlan extends DomainResource {
             return getList(InsurancePlanLimit.class, FhirPropertyNames.PROPERTY_LIMIT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<InsurancePlanBenefit, InsurancePlanBenefit.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -433,15 +426,14 @@ public class InsurancePlan extends DomainResource {
             return getList(InsurancePlanCost.class, FhirPropertyNames.PROPERTY_COST);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<InsurancePlanBenefit1, InsurancePlanBenefit1.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -564,15 +556,14 @@ public class InsurancePlan extends DomainResource {
             return getObject(Address.class, FhirPropertyNames.PROPERTY_ADDRESS);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<InsurancePlanContact, InsurancePlanContact.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -708,15 +699,14 @@ public class InsurancePlan extends DomainResource {
             return getObject(Quantity.class, FhirPropertyNames.PROPERTY_VALUE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<InsurancePlanCost, InsurancePlanCost.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -842,15 +832,14 @@ public class InsurancePlan extends DomainResource {
             return getList(InsurancePlanBenefit.class, FhirPropertyNames.PROPERTY_BENEFIT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<InsurancePlanCoverage, InsurancePlanCoverage.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -978,15 +967,14 @@ public class InsurancePlan extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_COMMENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<InsurancePlanGeneralCost, InsurancePlanGeneralCost.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1105,15 +1093,14 @@ public class InsurancePlan extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<InsurancePlanLimit, InsurancePlanLimit.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1252,15 +1239,14 @@ public class InsurancePlan extends DomainResource {
             return getList(InsurancePlanSpecificCost.class, FhirPropertyNames.PROPERTY_SPECIFIC_COST);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<InsurancePlanPlan, InsurancePlanPlan.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1389,15 +1375,14 @@ public class InsurancePlan extends DomainResource {
             return getList(InsurancePlanBenefit1.class, FhirPropertyNames.PROPERTY_BENEFIT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<InsurancePlanSpecificCost, InsurancePlanSpecificCost.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

@@ -24,6 +24,13 @@ public class DetectedIssueEvidenceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DetectedIssue.DetectedIssueEvidence x = DetectedIssue.DetectedIssueEvidence.create().build();
+        final DetectedIssue.DetectedIssueEvidence y = DetectedIssue.DetectedIssueEvidence.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DetectedIssue.DetectedIssueEvidence.create().id("x").build().id());
     }

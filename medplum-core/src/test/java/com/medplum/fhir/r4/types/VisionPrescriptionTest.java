@@ -24,6 +24,13 @@ public class VisionPrescriptionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final VisionPrescription x = VisionPrescription.create().build();
+        final VisionPrescription y = VisionPrescription.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", VisionPrescription.create().id("x").build().id());
     }

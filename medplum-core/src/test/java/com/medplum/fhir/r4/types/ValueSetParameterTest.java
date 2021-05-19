@@ -24,6 +24,13 @@ public class ValueSetParameterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ValueSet.ValueSetParameter x = ValueSet.ValueSetParameter.create().build();
+        final ValueSet.ValueSetParameter y = ValueSet.ValueSetParameter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ValueSet.ValueSetParameter.create().id("x").build().id());
     }

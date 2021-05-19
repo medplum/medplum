@@ -526,9 +526,5 @@ public class ResearchDefinition extends DomainResource {
         public ResearchDefinition build() {
             return new ResearchDefinition(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

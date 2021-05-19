@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -400,10 +398,6 @@ public class OperationDefinition extends DomainResource {
         public OperationDefinition build() {
             return new OperationDefinition(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -483,15 +477,14 @@ public class OperationDefinition extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VALUE_SET);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<OperationDefinitionBinding, OperationDefinitionBinding.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -599,15 +592,14 @@ public class OperationDefinition extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_COMMENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<OperationDefinitionOverload, OperationDefinitionOverload.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -791,15 +783,14 @@ public class OperationDefinition extends DomainResource {
             return getList(OperationDefinitionParameter.class, FhirPropertyNames.PROPERTY_PART);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<OperationDefinitionParameter, OperationDefinitionParameter.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -955,15 +946,14 @@ public class OperationDefinition extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_SOURCE_ID);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<OperationDefinitionReferencedFrom, OperationDefinitionReferencedFrom.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

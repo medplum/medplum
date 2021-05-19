@@ -24,6 +24,13 @@ public class QuestionnaireEnableWhenTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Questionnaire.QuestionnaireEnableWhen x = Questionnaire.QuestionnaireEnableWhen.create().build();
+        final Questionnaire.QuestionnaireEnableWhen y = Questionnaire.QuestionnaireEnableWhen.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Questionnaire.QuestionnaireEnableWhen.create().id("x").build().id());
     }

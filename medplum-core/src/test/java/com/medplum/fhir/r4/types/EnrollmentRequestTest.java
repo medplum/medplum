@@ -24,6 +24,13 @@ public class EnrollmentRequestTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final EnrollmentRequest x = EnrollmentRequest.create().build();
+        final EnrollmentRequest y = EnrollmentRequest.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EnrollmentRequest.create().id("x").build().id());
     }

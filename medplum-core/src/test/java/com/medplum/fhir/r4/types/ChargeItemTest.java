@@ -24,6 +24,13 @@ public class ChargeItemTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ChargeItem x = ChargeItem.create().build();
+        final ChargeItem y = ChargeItem.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ChargeItem.create().id("x").build().id());
     }

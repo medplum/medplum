@@ -24,6 +24,13 @@ public class BodyStructureTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final BodyStructure x = BodyStructure.create().build();
+        final BodyStructure y = BodyStructure.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", BodyStructure.create().id("x").build().id());
     }

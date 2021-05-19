@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -307,10 +305,6 @@ public class ImagingStudy extends DomainResource {
         public ImagingStudy build() {
             return new ImagingStudy(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -405,15 +399,14 @@ public class ImagingStudy extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_TITLE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImagingStudyInstance, ImagingStudyInstance.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -535,15 +528,14 @@ public class ImagingStudy extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_ACTOR);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImagingStudyPerformer, ImagingStudyPerformer.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -739,15 +731,14 @@ public class ImagingStudy extends DomainResource {
             return getList(ImagingStudyInstance.class, FhirPropertyNames.PROPERTY_INSTANCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImagingStudySeries, ImagingStudySeries.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

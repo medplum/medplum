@@ -24,6 +24,13 @@ public class ValueSetDesignationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ValueSet.ValueSetDesignation x = ValueSet.ValueSetDesignation.create().build();
+        final ValueSet.ValueSetDesignation y = ValueSet.ValueSetDesignation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ValueSet.ValueSetDesignation.create().id("x").build().id());
     }

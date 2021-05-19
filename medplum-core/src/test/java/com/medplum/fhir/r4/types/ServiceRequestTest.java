@@ -24,6 +24,13 @@ public class ServiceRequestTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ServiceRequest x = ServiceRequest.create().build();
+        final ServiceRequest y = ServiceRequest.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ServiceRequest.create().id("x").build().id());
     }

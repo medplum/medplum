@@ -333,9 +333,5 @@ public class Media extends DomainResource {
         public Media build() {
             return new Media(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

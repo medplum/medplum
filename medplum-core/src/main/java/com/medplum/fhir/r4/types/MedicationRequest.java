@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -509,10 +507,6 @@ public class MedicationRequest extends DomainResource {
         public MedicationRequest build() {
             return new MedicationRequest(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -640,15 +634,14 @@ public class MedicationRequest extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_PERFORMER);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationRequestDispenseRequest, MedicationRequestDispenseRequest.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -785,15 +778,14 @@ public class MedicationRequest extends DomainResource {
             return getObject(Duration.class, FhirPropertyNames.PROPERTY_DURATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationRequestInitialFill, MedicationRequestInitialFill.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -915,15 +907,14 @@ public class MedicationRequest extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_REASON);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationRequestSubstitution, MedicationRequestSubstitution.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

@@ -24,6 +24,13 @@ public class MolecularSequenceReferenceSeqTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MolecularSequence.MolecularSequenceReferenceSeq x = MolecularSequence.MolecularSequenceReferenceSeq.create().build();
+        final MolecularSequence.MolecularSequenceReferenceSeq y = MolecularSequence.MolecularSequenceReferenceSeq.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MolecularSequence.MolecularSequenceReferenceSeq.create().id("x").build().id());
     }

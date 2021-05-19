@@ -24,6 +24,13 @@ public class CommunicationRequestPayloadTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CommunicationRequest.CommunicationRequestPayload x = CommunicationRequest.CommunicationRequestPayload.create().build();
+        final CommunicationRequest.CommunicationRequestPayload y = CommunicationRequest.CommunicationRequestPayload.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CommunicationRequest.CommunicationRequestPayload.create().id("x").build().id());
     }

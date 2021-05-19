@@ -24,6 +24,13 @@ public class StructureMapDependentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final StructureMap.StructureMapDependent x = StructureMap.StructureMapDependent.create().build();
+        final StructureMap.StructureMapDependent y = StructureMap.StructureMapDependent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", StructureMap.StructureMapDependent.create().id("x").build().id());
     }

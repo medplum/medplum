@@ -24,6 +24,13 @@ public class ContractSignerTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Contract.ContractSigner x = Contract.ContractSigner.create().build();
+        final Contract.ContractSigner y = Contract.ContractSigner.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Contract.ContractSigner.create().id("x").build().id());
     }

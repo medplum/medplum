@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -280,10 +278,6 @@ public class ExampleScenario extends DomainResource {
         public ExampleScenario build() {
             return new ExampleScenario(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -373,15 +367,14 @@ public class ExampleScenario extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ExampleScenarioActor, ExampleScenarioActor.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -507,15 +500,14 @@ public class ExampleScenario extends DomainResource {
             return getList(ExampleScenarioStep.class, FhirPropertyNames.PROPERTY_STEP);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ExampleScenarioAlternative, ExampleScenarioAlternative.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -627,15 +619,14 @@ public class ExampleScenario extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VERSION_ID);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ExampleScenarioContainedInstance, ExampleScenarioContainedInstance.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -771,15 +762,14 @@ public class ExampleScenario extends DomainResource {
             return getList(ExampleScenarioContainedInstance.class, FhirPropertyNames.PROPERTY_CONTAINED_INSTANCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ExampleScenarioInstance, ExampleScenarioInstance.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -962,15 +952,14 @@ public class ExampleScenario extends DomainResource {
             return getObject(ExampleScenarioContainedInstance.class, FhirPropertyNames.PROPERTY_RESPONSE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ExampleScenarioOperation, ExampleScenarioOperation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1138,15 +1127,14 @@ public class ExampleScenario extends DomainResource {
             return getList(ExampleScenarioStep.class, FhirPropertyNames.PROPERTY_STEP);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ExampleScenarioProcess, ExampleScenarioProcess.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1283,15 +1271,14 @@ public class ExampleScenario extends DomainResource {
             return getList(ExampleScenarioAlternative.class, FhirPropertyNames.PROPERTY_ALTERNATIVE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ExampleScenarioStep, ExampleScenarioStep.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1408,15 +1395,14 @@ public class ExampleScenario extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ExampleScenarioVersion, ExampleScenarioVersion.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

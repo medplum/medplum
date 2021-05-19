@@ -24,6 +24,13 @@ public class OperationDefinitionReferencedFromTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final OperationDefinition.OperationDefinitionReferencedFrom x = OperationDefinition.OperationDefinitionReferencedFrom.create().build();
+        final OperationDefinition.OperationDefinitionReferencedFrom y = OperationDefinition.OperationDefinitionReferencedFrom.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", OperationDefinition.OperationDefinitionReferencedFrom.create().id("x").build().id());
     }

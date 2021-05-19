@@ -24,6 +24,13 @@ public class ActivityDefinitionParticipantTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ActivityDefinition.ActivityDefinitionParticipant x = ActivityDefinition.ActivityDefinitionParticipant.create().build();
+        final ActivityDefinition.ActivityDefinitionParticipant y = ActivityDefinition.ActivityDefinitionParticipant.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ActivityDefinition.ActivityDefinitionParticipant.create().id("x").build().id());
     }

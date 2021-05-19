@@ -24,6 +24,13 @@ public class MeasureComponentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Measure.MeasureComponent x = Measure.MeasureComponent.create().build();
+        final Measure.MeasureComponent y = Measure.MeasureComponent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Measure.MeasureComponent.create().id("x").build().id());
     }

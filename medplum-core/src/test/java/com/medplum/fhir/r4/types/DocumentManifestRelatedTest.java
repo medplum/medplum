@@ -24,6 +24,13 @@ public class DocumentManifestRelatedTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DocumentManifest.DocumentManifestRelated x = DocumentManifest.DocumentManifestRelated.create().build();
+        final DocumentManifest.DocumentManifestRelated y = DocumentManifest.DocumentManifestRelated.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DocumentManifest.DocumentManifestRelated.create().id("x").build().id());
     }

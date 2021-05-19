@@ -24,6 +24,13 @@ public class CompositionAttesterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Composition.CompositionAttester x = Composition.CompositionAttester.create().build();
+        final Composition.CompositionAttester y = Composition.CompositionAttester.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Composition.CompositionAttester.create().id("x").build().id());
     }

@@ -24,6 +24,14 @@ public class EffectEvidenceSynthesisSampleSizeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final EffectEvidenceSynthesis.EffectEvidenceSynthesisSampleSize x = EffectEvidenceSynthesis.EffectEvidenceSynthesisSampleSize.create().build();
+    final EffectEvidenceSynthesis.EffectEvidenceSynthesisSampleSize y =
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisSampleSize.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EffectEvidenceSynthesis.EffectEvidenceSynthesisSampleSize.create().id("x").build().id());
     }

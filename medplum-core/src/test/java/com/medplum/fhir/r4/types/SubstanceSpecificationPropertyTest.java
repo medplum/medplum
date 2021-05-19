@@ -24,6 +24,13 @@ public class SubstanceSpecificationPropertyTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSpecification.SubstanceSpecificationProperty x = SubstanceSpecification.SubstanceSpecificationProperty.create().build();
+        final SubstanceSpecification.SubstanceSpecificationProperty y = SubstanceSpecification.SubstanceSpecificationProperty.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSpecification.SubstanceSpecificationProperty.create().id("x").build().id());
     }
@@ -60,13 +67,15 @@ public class SubstanceSpecificationPropertyTest {
     @Test
     public void testDefiningSubstanceReference() {
         final Reference value = Reference.create().build();
-        assertEquals(value, SubstanceSpecification.SubstanceSpecificationProperty.create().definingSubstanceReference(value).build().definingSubstanceReference());
+    assertEquals(value,
+            SubstanceSpecification.SubstanceSpecificationProperty.create().definingSubstanceReference(value).build().definingSubstanceReference());
     }
 
     @Test
     public void testDefiningSubstanceCodeableConcept() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, SubstanceSpecification.SubstanceSpecificationProperty.create().definingSubstanceCodeableConcept(value).build().definingSubstanceCodeableConcept());
+    assertEquals(value,
+            SubstanceSpecification.SubstanceSpecificationProperty.create().definingSubstanceCodeableConcept(value).build().definingSubstanceCodeableConcept());
     }
 
     @Test

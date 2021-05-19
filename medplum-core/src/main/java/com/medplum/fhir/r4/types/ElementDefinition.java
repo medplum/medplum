@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -2703,15 +2701,14 @@ public class ElementDefinition extends FhirObject {
         return getList(ElementDefinitionMapping.class, FhirPropertyNames.PROPERTY_MAPPING);
     }
 
-    public static final class Builder {
-        private final JsonObjectBuilder b;
+    public static final class Builder extends FhirObject.Builder<ElementDefinition, ElementDefinition.Builder> {
 
         private Builder() {
-            b = Json.createObjectBuilder();
+            super();
         }
 
         private Builder(final JsonObject data) {
-            b = Json.createObjectBuilder(data);
+            super(data);
         }
 
         public Builder id(final String id) {
@@ -3803,15 +3800,14 @@ public class ElementDefinition extends FhirObject {
             return getString(FhirPropertyNames.PROPERTY_MAX);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ElementDefinitionBase, ElementDefinitionBase.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -3934,15 +3930,14 @@ public class ElementDefinition extends FhirObject {
             return getString(FhirPropertyNames.PROPERTY_VALUE_SET);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ElementDefinitionBinding, ElementDefinitionBinding.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -4097,15 +4092,14 @@ public class ElementDefinition extends FhirObject {
             return getString(FhirPropertyNames.PROPERTY_SOURCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ElementDefinitionConstraint, ElementDefinitionConstraint.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -4240,15 +4234,14 @@ public class ElementDefinition extends FhirObject {
             return getString(FhirPropertyNames.PROPERTY_PATH);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ElementDefinitionDiscriminator, ElementDefinitionDiscriminator.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -4749,15 +4742,14 @@ public class ElementDefinition extends FhirObject {
             return getObject(Meta.class, FhirPropertyNames.PROPERTY_VALUE_META);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ElementDefinitionExample, ElementDefinitionExample.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -5125,15 +5117,14 @@ public class ElementDefinition extends FhirObject {
             return getString(FhirPropertyNames.PROPERTY_COMMENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ElementDefinitionMapping, ElementDefinitionMapping.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -5275,15 +5266,14 @@ public class ElementDefinition extends FhirObject {
             return getString(FhirPropertyNames.PROPERTY_RULES);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ElementDefinitionSlicing, ElementDefinitionSlicing.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -5443,15 +5433,14 @@ public class ElementDefinition extends FhirObject {
             return getString(FhirPropertyNames.PROPERTY_VERSIONING);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ElementDefinitionType, ElementDefinitionType.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

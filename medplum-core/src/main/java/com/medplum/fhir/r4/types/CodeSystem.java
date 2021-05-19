@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -404,10 +402,6 @@ public class CodeSystem extends DomainResource {
         public CodeSystem build() {
             return new CodeSystem(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -521,15 +515,14 @@ public class CodeSystem extends DomainResource {
             return getList(CodeSystemConcept.class, FhirPropertyNames.PROPERTY_CONCEPT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CodeSystemConcept, CodeSystemConcept.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -665,15 +658,14 @@ public class CodeSystem extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VALUE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CodeSystemDesignation, CodeSystemDesignation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -802,15 +794,14 @@ public class CodeSystem extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VALUE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CodeSystemFilter, CodeSystemFilter.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -950,15 +941,14 @@ public class CodeSystem extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CodeSystemProperty, CodeSystemProperty.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1119,15 +1109,14 @@ public class CodeSystem extends DomainResource {
             return data.getInt(FhirPropertyNames.PROPERTY_VALUE_DECIMAL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CodeSystemProperty1, CodeSystemProperty1.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

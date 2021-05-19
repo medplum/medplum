@@ -24,6 +24,14 @@ public class SubstancePolymerStructuralRepresentationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstancePolymer.SubstancePolymerStructuralRepresentation x = SubstancePolymer.SubstancePolymerStructuralRepresentation.create().build();
+    final SubstancePolymer.SubstancePolymerStructuralRepresentation y =
+            SubstancePolymer.SubstancePolymerStructuralRepresentation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstancePolymer.SubstancePolymerStructuralRepresentation.create().id("x").build().id());
     }

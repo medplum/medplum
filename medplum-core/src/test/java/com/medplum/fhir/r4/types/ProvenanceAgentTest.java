@@ -24,6 +24,13 @@ public class ProvenanceAgentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Provenance.ProvenanceAgent x = Provenance.ProvenanceAgent.create().build();
+        final Provenance.ProvenanceAgent y = Provenance.ProvenanceAgent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Provenance.ProvenanceAgent.create().id("x").build().id());
     }

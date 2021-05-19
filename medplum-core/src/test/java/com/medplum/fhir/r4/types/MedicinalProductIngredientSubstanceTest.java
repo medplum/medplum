@@ -24,6 +24,15 @@ public class MedicinalProductIngredientSubstanceTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductIngredient.MedicinalProductIngredientSubstance x =
+            MedicinalProductIngredient.MedicinalProductIngredientSubstance.create().build();
+    final MedicinalProductIngredient.MedicinalProductIngredientSubstance y =
+            MedicinalProductIngredient.MedicinalProductIngredientSubstance.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductIngredient.MedicinalProductIngredientSubstance.create().id("x").build().id());
     }

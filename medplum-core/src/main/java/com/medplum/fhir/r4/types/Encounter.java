@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -351,10 +349,6 @@ public class Encounter extends DomainResource {
         public Encounter build() {
             return new Encounter(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -432,15 +426,14 @@ public class Encounter extends DomainResource {
             return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EncounterClassHistory, EncounterClassHistory.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -560,15 +553,14 @@ public class Encounter extends DomainResource {
             return data.getInt(FhirPropertyNames.PROPERTY_RANK);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EncounterDiagnosis, EncounterDiagnosis.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -734,15 +726,14 @@ public class Encounter extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_DISCHARGE_DISPOSITION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EncounterHospitalization, EncounterHospitalization.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -903,15 +894,14 @@ public class Encounter extends DomainResource {
             return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EncounterLocation, EncounterLocation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1039,15 +1029,14 @@ public class Encounter extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_INDIVIDUAL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EncounterParticipant, EncounterParticipant.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1162,15 +1151,14 @@ public class Encounter extends DomainResource {
             return getObject(Period.class, FhirPropertyNames.PROPERTY_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<EncounterStatusHistory, EncounterStatusHistory.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

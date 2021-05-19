@@ -8,6 +8,7 @@ import java.io.StringReader;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonReader;
 import jakarta.json.stream.JsonParser;
 
@@ -40,5 +41,14 @@ public class JsonUtils {
         try (final JsonReader reader = Json.createReader(new StringReader(str))) {
             return reader.readObject();
         }
+    }
+
+    /**
+     * Copies all properties from the source JsonObject to the destination JsonObjectBuilder.
+     * @param src The source JsonObject.
+     * @param dest The destination JsonObjectBuilder.
+     */
+    public static void copyProperties(final JsonObject src, final JsonObjectBuilder dest) {
+        src.entrySet().forEach(e -> dest.add(e.getKey(), e.getValue()));
     }
 }

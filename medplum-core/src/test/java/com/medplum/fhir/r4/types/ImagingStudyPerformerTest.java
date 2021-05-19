@@ -24,6 +24,13 @@ public class ImagingStudyPerformerTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ImagingStudy.ImagingStudyPerformer x = ImagingStudy.ImagingStudyPerformer.create().build();
+        final ImagingStudy.ImagingStudyPerformer y = ImagingStudy.ImagingStudyPerformer.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ImagingStudy.ImagingStudyPerformer.create().id("x").build().id());
     }

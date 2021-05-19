@@ -24,6 +24,13 @@ public class TerminologyCapabilitiesClosureTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TerminologyCapabilities.TerminologyCapabilitiesClosure x = TerminologyCapabilities.TerminologyCapabilitiesClosure.create().build();
+        final TerminologyCapabilities.TerminologyCapabilitiesClosure y = TerminologyCapabilities.TerminologyCapabilitiesClosure.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TerminologyCapabilities.TerminologyCapabilitiesClosure.create().id("x").build().id());
     }

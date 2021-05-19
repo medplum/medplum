@@ -24,6 +24,13 @@ public class GroupMemberTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Group.GroupMember x = Group.GroupMember.create().build();
+        final Group.GroupMember y = Group.GroupMember.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Group.GroupMember.create().id("x").build().id());
     }

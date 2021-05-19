@@ -24,6 +24,13 @@ public class DeviceMetricCalibrationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DeviceMetric.DeviceMetricCalibration x = DeviceMetric.DeviceMetricCalibration.create().build();
+        final DeviceMetric.DeviceMetricCalibration y = DeviceMetric.DeviceMetricCalibration.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DeviceMetric.DeviceMetricCalibration.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class PlanDefinitionConditionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final PlanDefinition.PlanDefinitionCondition x = PlanDefinition.PlanDefinitionCondition.create().build();
+        final PlanDefinition.PlanDefinitionCondition y = PlanDefinition.PlanDefinitionCondition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", PlanDefinition.PlanDefinitionCondition.create().id("x").build().id());
     }

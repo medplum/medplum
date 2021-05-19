@@ -24,6 +24,13 @@ public class BundleRequestTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Bundle.BundleRequest x = Bundle.BundleRequest.create().build();
+        final Bundle.BundleRequest y = Bundle.BundleRequest.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Bundle.BundleRequest.create().id("x").build().id());
     }

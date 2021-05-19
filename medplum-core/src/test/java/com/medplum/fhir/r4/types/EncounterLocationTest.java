@@ -24,6 +24,13 @@ public class EncounterLocationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Encounter.EncounterLocation x = Encounter.EncounterLocation.create().build();
+        final Encounter.EncounterLocation y = Encounter.EncounterLocation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Encounter.EncounterLocation.create().id("x").build().id());
     }

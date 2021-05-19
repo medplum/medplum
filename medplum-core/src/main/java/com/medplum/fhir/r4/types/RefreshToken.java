@@ -76,9 +76,5 @@ public class RefreshToken extends FhirResource {
         public RefreshToken build() {
             return new RefreshToken(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

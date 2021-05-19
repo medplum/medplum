@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -114,10 +112,6 @@ public class SubstancePolymer extends DomainResource {
         public SubstancePolymer build() {
             return new SubstancePolymer(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -193,15 +187,14 @@ public class SubstancePolymer extends DomainResource {
             return getObject(SubstanceAmount.class, FhirPropertyNames.PROPERTY_AMOUNT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstancePolymerDegreeOfPolymerisation, SubstancePolymerDegreeOfPolymerisation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -308,15 +301,14 @@ public class SubstancePolymer extends DomainResource {
             return getList(SubstancePolymerStartingMaterial.class, FhirPropertyNames.PROPERTY_STARTING_MATERIAL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstancePolymerMonomerSet, SubstancePolymerMonomerSet.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -437,15 +429,14 @@ public class SubstancePolymer extends DomainResource {
             return getList(SubstancePolymerRepeatUnit.class, FhirPropertyNames.PROPERTY_REPEAT_UNIT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstancePolymerRepeat, SubstancePolymerRepeat.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -583,15 +574,14 @@ public class SubstancePolymer extends DomainResource {
             return getList(SubstancePolymerStructuralRepresentation.class, FhirPropertyNames.PROPERTY_STRUCTURAL_REPRESENTATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstancePolymerRepeatUnit, SubstancePolymerRepeatUnit.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -727,15 +717,14 @@ public class SubstancePolymer extends DomainResource {
             return getObject(SubstanceAmount.class, FhirPropertyNames.PROPERTY_AMOUNT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstancePolymerStartingMaterial, SubstancePolymerStartingMaterial.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -859,15 +848,15 @@ public class SubstancePolymer extends DomainResource {
             return getObject(Attachment.class, FhirPropertyNames.PROPERTY_ATTACHMENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstancePolymerStructuralRepresentation,
+                SubstancePolymerStructuralRepresentation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

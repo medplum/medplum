@@ -24,6 +24,13 @@ public class SubstanceSpecificationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSpecification x = SubstanceSpecification.create().build();
+        final SubstanceSpecification y = SubstanceSpecification.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSpecification.create().id("x").build().id());
     }

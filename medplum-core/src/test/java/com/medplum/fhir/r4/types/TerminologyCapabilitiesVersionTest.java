@@ -24,6 +24,13 @@ public class TerminologyCapabilitiesVersionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TerminologyCapabilities.TerminologyCapabilitiesVersion x = TerminologyCapabilities.TerminologyCapabilitiesVersion.create().build();
+        final TerminologyCapabilities.TerminologyCapabilitiesVersion y = TerminologyCapabilities.TerminologyCapabilitiesVersion.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TerminologyCapabilities.TerminologyCapabilitiesVersion.create().id("x").build().id());
     }

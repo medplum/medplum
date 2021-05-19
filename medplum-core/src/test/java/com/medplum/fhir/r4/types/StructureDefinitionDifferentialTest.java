@@ -24,6 +24,13 @@ public class StructureDefinitionDifferentialTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final StructureDefinition.StructureDefinitionDifferential x = StructureDefinition.StructureDefinitionDifferential.create().build();
+        final StructureDefinition.StructureDefinitionDifferential y = StructureDefinition.StructureDefinitionDifferential.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", StructureDefinition.StructureDefinitionDifferential.create().id("x").build().id());
     }

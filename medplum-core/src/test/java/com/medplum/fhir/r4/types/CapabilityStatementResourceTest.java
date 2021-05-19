@@ -24,6 +24,13 @@ public class CapabilityStatementResourceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CapabilityStatement.CapabilityStatementResource x = CapabilityStatement.CapabilityStatementResource.create().build();
+        final CapabilityStatement.CapabilityStatementResource y = CapabilityStatement.CapabilityStatementResource.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CapabilityStatement.CapabilityStatementResource.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class SubscriptionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Subscription x = Subscription.create().build();
+        final Subscription y = Subscription.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Subscription.create().id("x").build().id());
     }

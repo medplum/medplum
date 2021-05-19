@@ -24,6 +24,13 @@ public class ElementDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ElementDefinition x = ElementDefinition.create().build();
+        final ElementDefinition y = ElementDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ElementDefinition.create().id("x").build().id());
     }

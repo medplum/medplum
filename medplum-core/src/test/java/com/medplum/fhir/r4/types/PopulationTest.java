@@ -24,6 +24,13 @@ public class PopulationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Population x = Population.create().build();
+        final Population y = Population.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Population.create().id("x").build().id());
     }

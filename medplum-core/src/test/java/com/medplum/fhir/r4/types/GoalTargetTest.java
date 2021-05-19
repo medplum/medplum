@@ -24,6 +24,13 @@ public class GoalTargetTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Goal.GoalTarget x = Goal.GoalTarget.create().build();
+        final Goal.GoalTarget y = Goal.GoalTarget.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Goal.GoalTarget.create().id("x").build().id());
     }

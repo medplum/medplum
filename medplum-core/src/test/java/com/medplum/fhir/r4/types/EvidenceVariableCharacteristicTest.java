@@ -24,6 +24,13 @@ public class EvidenceVariableCharacteristicTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final EvidenceVariable.EvidenceVariableCharacteristic x = EvidenceVariable.EvidenceVariableCharacteristic.create().build();
+        final EvidenceVariable.EvidenceVariableCharacteristic y = EvidenceVariable.EvidenceVariableCharacteristic.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EvidenceVariable.EvidenceVariableCharacteristic.create().id("x").build().id());
     }
@@ -105,7 +112,8 @@ public class EvidenceVariableCharacteristicTest {
     @Test
     public void testParticipantEffectiveDuration() {
         final Duration value = Duration.create().build();
-        assertEquals(value, EvidenceVariable.EvidenceVariableCharacteristic.create().participantEffectiveDuration(value).build().participantEffectiveDuration());
+    assertEquals(value,
+            EvidenceVariable.EvidenceVariableCharacteristic.create().participantEffectiveDuration(value).build().participantEffectiveDuration());
     }
 
     @Test

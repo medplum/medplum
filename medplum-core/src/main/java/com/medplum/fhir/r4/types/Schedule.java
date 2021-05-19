@@ -146,9 +146,5 @@ public class Schedule extends DomainResource {
         public Schedule build() {
             return new Schedule(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

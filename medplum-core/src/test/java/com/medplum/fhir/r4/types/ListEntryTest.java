@@ -24,6 +24,13 @@ public class ListEntryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final List.ListEntry x = List.ListEntry.create().build();
+        final List.ListEntry y = List.ListEntry.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", List.ListEntry.create().id("x").build().id());
     }

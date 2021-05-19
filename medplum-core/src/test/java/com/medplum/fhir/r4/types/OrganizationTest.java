@@ -24,6 +24,13 @@ public class OrganizationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Organization x = Organization.create().build();
+        final Organization y = Organization.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Organization.create().id("x").build().id());
     }

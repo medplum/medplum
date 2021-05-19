@@ -24,6 +24,13 @@ public class LocationHoursOfOperationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Location.LocationHoursOfOperation x = Location.LocationHoursOfOperation.create().build();
+        final Location.LocationHoursOfOperation y = Location.LocationHoursOfOperation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Location.LocationHoursOfOperation.create().id("x").build().id());
     }

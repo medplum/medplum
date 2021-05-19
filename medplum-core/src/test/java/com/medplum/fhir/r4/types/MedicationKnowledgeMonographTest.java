@@ -24,6 +24,13 @@ public class MedicationKnowledgeMonographTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicationKnowledge.MedicationKnowledgeMonograph x = MedicationKnowledge.MedicationKnowledgeMonograph.create().build();
+        final MedicationKnowledge.MedicationKnowledgeMonograph y = MedicationKnowledge.MedicationKnowledgeMonograph.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicationKnowledge.MedicationKnowledgeMonograph.create().id("x").build().id());
     }

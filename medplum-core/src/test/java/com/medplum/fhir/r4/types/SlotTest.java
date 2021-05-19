@@ -24,6 +24,13 @@ public class SlotTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Slot x = Slot.create().build();
+        final Slot y = Slot.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Slot.create().id("x").build().id());
     }

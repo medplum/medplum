@@ -24,6 +24,13 @@ public class ObservationDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ObservationDefinition x = ObservationDefinition.create().build();
+        final ObservationDefinition y = ObservationDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ObservationDefinition.create().id("x").build().id());
     }
@@ -111,7 +118,8 @@ public class ObservationDefinitionTest {
 
     @Test
     public void testQuantitativeDetails() {
-        final ObservationDefinition.ObservationDefinitionQuantitativeDetails value = ObservationDefinition.ObservationDefinitionQuantitativeDetails.create().build();
+    final ObservationDefinition.ObservationDefinitionQuantitativeDetails value =
+            ObservationDefinition.ObservationDefinitionQuantitativeDetails.create().build();
         assertEquals(value, ObservationDefinition.create().quantitativeDetails(value).build().quantitativeDetails());
     }
 

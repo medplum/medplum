@@ -24,6 +24,13 @@ public class PractitionerRoleAvailableTimeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final PractitionerRole.PractitionerRoleAvailableTime x = PractitionerRole.PractitionerRoleAvailableTime.create().build();
+        final PractitionerRole.PractitionerRoleAvailableTime y = PractitionerRole.PractitionerRoleAvailableTime.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", PractitionerRole.PractitionerRoleAvailableTime.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class SubstanceSpecificationStructureTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSpecification.SubstanceSpecificationStructure x = SubstanceSpecification.SubstanceSpecificationStructure.create().build();
+        final SubstanceSpecification.SubstanceSpecificationStructure y = SubstanceSpecification.SubstanceSpecificationStructure.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSpecification.SubstanceSpecificationStructure.create().id("x").build().id());
     }
@@ -70,7 +77,8 @@ public class SubstanceSpecificationStructureTest {
 
     @Test
     public void testMolecularWeight() {
-        final SubstanceSpecification.SubstanceSpecificationMolecularWeight value = SubstanceSpecification.SubstanceSpecificationMolecularWeight.create().build();
+    final SubstanceSpecification.SubstanceSpecificationMolecularWeight value =
+            SubstanceSpecification.SubstanceSpecificationMolecularWeight.create().build();
         assertEquals(value, SubstanceSpecification.SubstanceSpecificationStructure.create().molecularWeight(value).build().molecularWeight());
     }
 

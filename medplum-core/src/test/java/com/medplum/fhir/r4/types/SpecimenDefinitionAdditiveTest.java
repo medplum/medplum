@@ -24,6 +24,13 @@ public class SpecimenDefinitionAdditiveTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SpecimenDefinition.SpecimenDefinitionAdditive x = SpecimenDefinition.SpecimenDefinitionAdditive.create().build();
+        final SpecimenDefinition.SpecimenDefinitionAdditive y = SpecimenDefinition.SpecimenDefinitionAdditive.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SpecimenDefinition.SpecimenDefinitionAdditive.create().id("x").build().id());
     }

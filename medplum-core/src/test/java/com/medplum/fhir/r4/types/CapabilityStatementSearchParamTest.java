@@ -24,6 +24,13 @@ public class CapabilityStatementSearchParamTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CapabilityStatement.CapabilityStatementSearchParam x = CapabilityStatement.CapabilityStatementSearchParam.create().build();
+        final CapabilityStatement.CapabilityStatementSearchParam y = CapabilityStatement.CapabilityStatementSearchParam.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CapabilityStatement.CapabilityStatementSearchParam.create().id("x").build().id());
     }

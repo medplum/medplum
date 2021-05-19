@@ -24,6 +24,13 @@ public class MedicationKnowledgeDosageTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicationKnowledge.MedicationKnowledgeDosage x = MedicationKnowledge.MedicationKnowledgeDosage.create().build();
+        final MedicationKnowledge.MedicationKnowledgeDosage y = MedicationKnowledge.MedicationKnowledgeDosage.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicationKnowledge.MedicationKnowledgeDosage.create().id("x").build().id());
     }

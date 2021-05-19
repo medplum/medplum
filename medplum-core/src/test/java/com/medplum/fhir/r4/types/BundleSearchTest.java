@@ -24,6 +24,13 @@ public class BundleSearchTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Bundle.BundleSearch x = Bundle.BundleSearch.create().build();
+        final Bundle.BundleSearch y = Bundle.BundleSearch.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Bundle.BundleSearch.create().id("x").build().id());
     }

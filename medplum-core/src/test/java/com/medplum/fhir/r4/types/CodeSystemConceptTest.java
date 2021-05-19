@@ -24,6 +24,13 @@ public class CodeSystemConceptTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CodeSystem.CodeSystemConcept x = CodeSystem.CodeSystemConcept.create().build();
+        final CodeSystem.CodeSystemConcept y = CodeSystem.CodeSystemConcept.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CodeSystem.CodeSystemConcept.create().id("x").build().id());
     }

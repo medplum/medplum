@@ -24,6 +24,13 @@ public class ExpressionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Expression x = Expression.create().build();
+        final Expression y = Expression.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Expression.create().id("x").build().id());
     }

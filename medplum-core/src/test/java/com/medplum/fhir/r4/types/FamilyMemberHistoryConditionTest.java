@@ -24,6 +24,13 @@ public class FamilyMemberHistoryConditionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final FamilyMemberHistory.FamilyMemberHistoryCondition x = FamilyMemberHistory.FamilyMemberHistoryCondition.create().build();
+        final FamilyMemberHistory.FamilyMemberHistoryCondition y = FamilyMemberHistory.FamilyMemberHistoryCondition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", FamilyMemberHistory.FamilyMemberHistoryCondition.create().id("x").build().id());
     }

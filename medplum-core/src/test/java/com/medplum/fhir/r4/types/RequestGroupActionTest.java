@@ -24,6 +24,13 @@ public class RequestGroupActionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final RequestGroup.RequestGroupAction x = RequestGroup.RequestGroupAction.create().build();
+        final RequestGroup.RequestGroupAction y = RequestGroup.RequestGroupAction.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RequestGroup.RequestGroupAction.create().id("x").build().id());
     }

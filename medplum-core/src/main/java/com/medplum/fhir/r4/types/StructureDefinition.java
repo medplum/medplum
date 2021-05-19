@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -426,10 +424,6 @@ public class StructureDefinition extends DomainResource {
         public StructureDefinition build() {
             return new StructureDefinition(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -509,15 +503,14 @@ public class StructureDefinition extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_EXPRESSION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureDefinitionContext, StructureDefinitionContext.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -619,15 +612,14 @@ public class StructureDefinition extends DomainResource {
             return getList(ElementDefinition.class, FhirPropertyNames.PROPERTY_ELEMENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureDefinitionDifferential, StructureDefinitionDifferential.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -748,15 +740,14 @@ public class StructureDefinition extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_COMMENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureDefinitionMapping, StructureDefinitionMapping.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -868,15 +859,14 @@ public class StructureDefinition extends DomainResource {
             return getList(ElementDefinition.class, FhirPropertyNames.PROPERTY_ELEMENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureDefinitionSnapshot, StructureDefinitionSnapshot.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

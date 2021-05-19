@@ -24,6 +24,15 @@ public class MedicinalProductIngredientReferenceStrengthTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductIngredient.MedicinalProductIngredientReferenceStrength x =
+            MedicinalProductIngredient.MedicinalProductIngredientReferenceStrength.create().build();
+    final MedicinalProductIngredient.MedicinalProductIngredientReferenceStrength y =
+            MedicinalProductIngredient.MedicinalProductIngredientReferenceStrength.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductIngredient.MedicinalProductIngredientReferenceStrength.create().id("x").build().id());
     }
@@ -37,7 +46,8 @@ public class MedicinalProductIngredientReferenceStrengthTest {
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductIngredient.MedicinalProductIngredientReferenceStrength.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            MedicinalProductIngredient.MedicinalProductIngredientReferenceStrength.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test
@@ -55,7 +65,8 @@ public class MedicinalProductIngredientReferenceStrengthTest {
     @Test
     public void testStrengthLowLimit() {
         final Ratio value = Ratio.create().build();
-        assertEquals(value, MedicinalProductIngredient.MedicinalProductIngredientReferenceStrength.create().strengthLowLimit(value).build().strengthLowLimit());
+    assertEquals(value,
+            MedicinalProductIngredient.MedicinalProductIngredientReferenceStrength.create().strengthLowLimit(value).build().strengthLowLimit());
     }
 
     @Test

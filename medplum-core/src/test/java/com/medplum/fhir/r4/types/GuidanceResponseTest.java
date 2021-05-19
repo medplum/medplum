@@ -24,6 +24,13 @@ public class GuidanceResponseTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final GuidanceResponse x = GuidanceResponse.create().build();
+        final GuidanceResponse y = GuidanceResponse.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", GuidanceResponse.create().id("x").build().id());
     }

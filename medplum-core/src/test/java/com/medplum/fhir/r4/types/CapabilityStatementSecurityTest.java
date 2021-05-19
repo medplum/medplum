@@ -24,6 +24,13 @@ public class CapabilityStatementSecurityTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CapabilityStatement.CapabilityStatementSecurity x = CapabilityStatement.CapabilityStatementSecurity.create().build();
+        final CapabilityStatement.CapabilityStatementSecurity y = CapabilityStatement.CapabilityStatementSecurity.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CapabilityStatement.CapabilityStatementSecurity.create().id("x").build().id());
     }

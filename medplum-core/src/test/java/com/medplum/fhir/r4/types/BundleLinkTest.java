@@ -24,6 +24,13 @@ public class BundleLinkTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Bundle.BundleLink x = Bundle.BundleLink.create().build();
+        final Bundle.BundleLink y = Bundle.BundleLink.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Bundle.BundleLink.create().id("x").build().id());
     }

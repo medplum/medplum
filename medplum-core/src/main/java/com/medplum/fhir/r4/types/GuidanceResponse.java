@@ -279,9 +279,5 @@ public class GuidanceResponse extends DomainResource {
         public GuidanceResponse build() {
             return new GuidanceResponse(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

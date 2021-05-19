@@ -24,6 +24,13 @@ public class AnnotationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Annotation x = Annotation.create().build();
+        final Annotation y = Annotation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Annotation.create().id("x").build().id());
     }

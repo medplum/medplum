@@ -24,6 +24,13 @@ public class ResearchStudyObjectiveTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ResearchStudy.ResearchStudyObjective x = ResearchStudy.ResearchStudyObjective.create().build();
+        final ResearchStudy.ResearchStudyObjective y = ResearchStudy.ResearchStudyObjective.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ResearchStudy.ResearchStudyObjective.create().id("x").build().id());
     }

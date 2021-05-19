@@ -24,6 +24,13 @@ public class CompositionEventTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Composition.CompositionEvent x = Composition.CompositionEvent.create().build();
+        final Composition.CompositionEvent y = Composition.CompositionEvent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Composition.CompositionEvent.create().id("x").build().id());
     }

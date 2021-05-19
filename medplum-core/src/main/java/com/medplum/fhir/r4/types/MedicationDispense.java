@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -388,10 +386,6 @@ public class MedicationDispense extends DomainResource {
         public MedicationDispense build() {
             return new MedicationDispense(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -473,15 +467,14 @@ public class MedicationDispense extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_ACTOR);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationDispensePerformer, MedicationDispensePerformer.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -610,15 +603,14 @@ public class MedicationDispense extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_RESPONSIBLE_PARTY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationDispenseSubstitution, MedicationDispenseSubstitution.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

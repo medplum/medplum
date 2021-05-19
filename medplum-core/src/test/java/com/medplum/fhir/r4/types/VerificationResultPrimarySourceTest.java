@@ -24,6 +24,13 @@ public class VerificationResultPrimarySourceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final VerificationResult.VerificationResultPrimarySource x = VerificationResult.VerificationResultPrimarySource.create().build();
+        final VerificationResult.VerificationResultPrimarySource y = VerificationResult.VerificationResultPrimarySource.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", VerificationResult.VerificationResultPrimarySource.create().id("x").build().id());
     }

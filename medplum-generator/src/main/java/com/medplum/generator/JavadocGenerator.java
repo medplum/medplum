@@ -10,7 +10,7 @@ public class JavadocGenerator {
 
         for (final String textLine : text.split("\n")) {
             for (final String javadocLine : WordUtils.wrap(textLine, 70).split("\n")) {
-                b.append(" " + ("* " + StringEscapeUtils.escapeHtml4(javadocLine)).trim());
+                b.appendNoWrap(" " + ("* " + StringEscapeUtils.escapeHtml4(javadocLine)).trim());
             }
         }
 

@@ -24,6 +24,13 @@ public class StructureMapRuleTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final StructureMap.StructureMapRule x = StructureMap.StructureMapRule.create().build();
+        final StructureMap.StructureMapRule y = StructureMap.StructureMapRule.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", StructureMap.StructureMapRule.create().id("x").build().id());
     }

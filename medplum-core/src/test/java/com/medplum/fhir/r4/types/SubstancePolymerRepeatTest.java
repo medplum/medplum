@@ -24,6 +24,13 @@ public class SubstancePolymerRepeatTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstancePolymer.SubstancePolymerRepeat x = SubstancePolymer.SubstancePolymerRepeat.create().build();
+        final SubstancePolymer.SubstancePolymerRepeat y = SubstancePolymer.SubstancePolymerRepeat.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstancePolymer.SubstancePolymerRepeat.create().id("x").build().id());
     }

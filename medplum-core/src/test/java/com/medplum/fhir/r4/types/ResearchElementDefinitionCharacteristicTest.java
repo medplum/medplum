@@ -24,6 +24,15 @@ public class ResearchElementDefinitionCharacteristicTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final ResearchElementDefinition.ResearchElementDefinitionCharacteristic x =
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().build();
+    final ResearchElementDefinition.ResearchElementDefinitionCharacteristic y =
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().id("x").build().id());
     }
@@ -43,7 +52,8 @@ public class ResearchElementDefinitionCharacteristicTest {
     @Test
     public void testDefinitionCodeableConcept() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().definitionCodeableConcept(value).build().definitionCodeableConcept());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().definitionCodeableConcept(value).build().definitionCodeableConcept());
     }
 
     @Test
@@ -54,13 +64,15 @@ public class ResearchElementDefinitionCharacteristicTest {
     @Test
     public void testDefinitionExpression() {
         final Expression value = Expression.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().definitionExpression(value).build().definitionExpression());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().definitionExpression(value).build().definitionExpression());
     }
 
     @Test
     public void testDefinitionDataRequirement() {
         final DataRequirement value = DataRequirement.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().definitionDataRequirement(value).build().definitionDataRequirement());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().definitionDataRequirement(value).build().definitionDataRequirement());
     }
 
     @Test
@@ -82,79 +94,93 @@ public class ResearchElementDefinitionCharacteristicTest {
 
     @Test
     public void testStudyEffectiveDescription() {
-        assertEquals("x", ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveDescription("x").build().studyEffectiveDescription());
+    assertEquals("x",
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveDescription("x").build().studyEffectiveDescription());
     }
 
     @Test
     public void testStudyEffectiveDateTime() {
-        assertEquals("x", ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveDateTime("x").build().studyEffectiveDateTime());
+    assertEquals("x",
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveDateTime("x").build().studyEffectiveDateTime());
     }
 
     @Test
     public void testStudyEffectivePeriod() {
         final Period value = Period.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectivePeriod(value).build().studyEffectivePeriod());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectivePeriod(value).build().studyEffectivePeriod());
     }
 
     @Test
     public void testStudyEffectiveDuration() {
         final Duration value = Duration.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveDuration(value).build().studyEffectiveDuration());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveDuration(value).build().studyEffectiveDuration());
     }
 
     @Test
     public void testStudyEffectiveTiming() {
         final Timing value = Timing.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveTiming(value).build().studyEffectiveTiming());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveTiming(value).build().studyEffectiveTiming());
     }
 
     @Test
     public void testStudyEffectiveTimeFromStart() {
         final Duration value = Duration.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveTimeFromStart(value).build().studyEffectiveTimeFromStart());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveTimeFromStart(value).build().studyEffectiveTimeFromStart());
     }
 
     @Test
     public void testStudyEffectiveGroupMeasure() {
-        assertEquals("x", ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveGroupMeasure("x").build().studyEffectiveGroupMeasure());
+    assertEquals("x",
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().studyEffectiveGroupMeasure("x").build().studyEffectiveGroupMeasure());
     }
 
     @Test
     public void testParticipantEffectiveDescription() {
-        assertEquals("x", ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveDescription("x").build().participantEffectiveDescription());
+    assertEquals("x",
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveDescription("x").build().participantEffectiveDescription());
     }
 
     @Test
     public void testParticipantEffectiveDateTime() {
-        assertEquals("x", ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveDateTime("x").build().participantEffectiveDateTime());
+    assertEquals("x",
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveDateTime("x").build().participantEffectiveDateTime());
     }
 
     @Test
     public void testParticipantEffectivePeriod() {
         final Period value = Period.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectivePeriod(value).build().participantEffectivePeriod());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectivePeriod(value).build().participantEffectivePeriod());
     }
 
     @Test
     public void testParticipantEffectiveDuration() {
         final Duration value = Duration.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveDuration(value).build().participantEffectiveDuration());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveDuration(value).build().participantEffectiveDuration());
     }
 
     @Test
     public void testParticipantEffectiveTiming() {
         final Timing value = Timing.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveTiming(value).build().participantEffectiveTiming());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveTiming(value).build().participantEffectiveTiming());
     }
 
     @Test
     public void testParticipantEffectiveTimeFromStart() {
         final Duration value = Duration.create().build();
-        assertEquals(value, ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveTimeFromStart(value).build().participantEffectiveTimeFromStart());
+    assertEquals(value,
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveTimeFromStart(value).build().participantEffectiveTimeFromStart());
     }
 
     @Test
     public void testParticipantEffectiveGroupMeasure() {
-        assertEquals("x", ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveGroupMeasure("x").build().participantEffectiveGroupMeasure());
+    assertEquals("x",
+            ResearchElementDefinition.ResearchElementDefinitionCharacteristic.create().participantEffectiveGroupMeasure("x").build().participantEffectiveGroupMeasure());
     }
 }

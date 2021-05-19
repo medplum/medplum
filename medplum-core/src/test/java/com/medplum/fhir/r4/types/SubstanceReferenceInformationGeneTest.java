@@ -24,6 +24,15 @@ public class SubstanceReferenceInformationGeneTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final SubstanceReferenceInformation.SubstanceReferenceInformationGene x =
+            SubstanceReferenceInformation.SubstanceReferenceInformationGene.create().build();
+    final SubstanceReferenceInformation.SubstanceReferenceInformationGene y =
+            SubstanceReferenceInformation.SubstanceReferenceInformationGene.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceReferenceInformation.SubstanceReferenceInformationGene.create().id("x").build().id());
     }

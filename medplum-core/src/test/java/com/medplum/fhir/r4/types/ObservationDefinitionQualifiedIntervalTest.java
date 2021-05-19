@@ -24,6 +24,14 @@ public class ObservationDefinitionQualifiedIntervalTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ObservationDefinition.ObservationDefinitionQualifiedInterval x = ObservationDefinition.ObservationDefinitionQualifiedInterval.create().build();
+    final ObservationDefinition.ObservationDefinitionQualifiedInterval y =
+            ObservationDefinition.ObservationDefinitionQualifiedInterval.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ObservationDefinition.ObservationDefinitionQualifiedInterval.create().id("x").build().id());
     }

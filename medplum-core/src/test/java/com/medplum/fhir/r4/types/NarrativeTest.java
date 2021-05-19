@@ -24,6 +24,13 @@ public class NarrativeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Narrative x = Narrative.create().build();
+        final Narrative y = Narrative.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Narrative.create().id("x").build().id());
     }

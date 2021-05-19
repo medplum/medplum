@@ -24,6 +24,13 @@ public class DocumentManifestTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DocumentManifest x = DocumentManifest.create().build();
+        final DocumentManifest y = DocumentManifest.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DocumentManifest.create().id("x").build().id());
     }

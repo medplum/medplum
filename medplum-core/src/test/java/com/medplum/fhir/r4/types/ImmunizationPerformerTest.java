@@ -24,6 +24,13 @@ public class ImmunizationPerformerTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Immunization.ImmunizationPerformer x = Immunization.ImmunizationPerformer.create().build();
+        final Immunization.ImmunizationPerformer y = Immunization.ImmunizationPerformer.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Immunization.ImmunizationPerformer.create().id("x").build().id());
     }

@@ -24,6 +24,14 @@ public class CoverageEligibilityResponseErrorTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CoverageEligibilityResponse.CoverageEligibilityResponseError x = CoverageEligibilityResponse.CoverageEligibilityResponseError.create().build();
+    final CoverageEligibilityResponse.CoverageEligibilityResponseError y =
+            CoverageEligibilityResponse.CoverageEligibilityResponseError.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CoverageEligibilityResponse.CoverageEligibilityResponseError.create().id("x").build().id());
     }

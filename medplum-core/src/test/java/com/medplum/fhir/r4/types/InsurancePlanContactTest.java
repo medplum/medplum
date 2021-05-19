@@ -24,6 +24,13 @@ public class InsurancePlanContactTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final InsurancePlan.InsurancePlanContact x = InsurancePlan.InsurancePlanContact.create().build();
+        final InsurancePlan.InsurancePlanContact y = InsurancePlan.InsurancePlanContact.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", InsurancePlan.InsurancePlanContact.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class DeviceUseStatementTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DeviceUseStatement x = DeviceUseStatement.create().build();
+        final DeviceUseStatement y = DeviceUseStatement.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DeviceUseStatement.create().id("x").build().id());
     }

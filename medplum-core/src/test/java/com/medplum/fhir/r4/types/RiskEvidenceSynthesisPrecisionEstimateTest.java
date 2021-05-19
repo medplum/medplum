@@ -24,6 +24,14 @@ public class RiskEvidenceSynthesisPrecisionEstimateTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final RiskEvidenceSynthesis.RiskEvidenceSynthesisPrecisionEstimate x = RiskEvidenceSynthesis.RiskEvidenceSynthesisPrecisionEstimate.create().build();
+    final RiskEvidenceSynthesis.RiskEvidenceSynthesisPrecisionEstimate y =
+            RiskEvidenceSynthesis.RiskEvidenceSynthesisPrecisionEstimate.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RiskEvidenceSynthesis.RiskEvidenceSynthesisPrecisionEstimate.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class NamingSystemUniqueIdTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final NamingSystem.NamingSystemUniqueId x = NamingSystem.NamingSystemUniqueId.create().build();
+        final NamingSystem.NamingSystemUniqueId y = NamingSystem.NamingSystemUniqueId.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", NamingSystem.NamingSystemUniqueId.create().id("x").build().id());
     }

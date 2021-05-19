@@ -24,6 +24,13 @@ public class SubstanceNucleicAcidTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceNucleicAcid x = SubstanceNucleicAcid.create().build();
+        final SubstanceNucleicAcid y = SubstanceNucleicAcid.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceNucleicAcid.create().id("x").build().id());
     }

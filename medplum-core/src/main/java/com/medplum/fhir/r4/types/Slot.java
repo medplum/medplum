@@ -182,9 +182,5 @@ public class Slot extends DomainResource {
         public Slot build() {
             return new Slot(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

@@ -24,6 +24,13 @@ public class StructureMapTargetTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final StructureMap.StructureMapTarget x = StructureMap.StructureMapTarget.create().build();
+        final StructureMap.StructureMapTarget y = StructureMap.StructureMapTarget.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", StructureMap.StructureMapTarget.create().id("x").build().id());
     }

@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -245,10 +243,6 @@ public class CoverageEligibilityResponse extends DomainResource {
         public CoverageEligibilityResponse build() {
             return new CoverageEligibilityResponse(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -360,15 +354,14 @@ public class CoverageEligibilityResponse extends DomainResource {
             return getObject(Money.class, FhirPropertyNames.PROPERTY_USED_MONEY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CoverageEligibilityResponseBenefit, CoverageEligibilityResponseBenefit.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -495,15 +488,14 @@ public class CoverageEligibilityResponse extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CoverageEligibilityResponseError, CoverageEligibilityResponseError.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -626,15 +618,14 @@ public class CoverageEligibilityResponse extends DomainResource {
             return getList(CoverageEligibilityResponseItem.class, FhirPropertyNames.PROPERTY_ITEM);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CoverageEligibilityResponseInsurance, CoverageEligibilityResponseInsurance.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -847,15 +838,14 @@ public class CoverageEligibilityResponse extends DomainResource {
             return getUri(FhirPropertyNames.PROPERTY_AUTHORIZATION_URL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CoverageEligibilityResponseItem, CoverageEligibilityResponseItem.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

@@ -24,6 +24,13 @@ public class PlanDefinitionDynamicValueTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final PlanDefinition.PlanDefinitionDynamicValue x = PlanDefinition.PlanDefinitionDynamicValue.create().build();
+        final PlanDefinition.PlanDefinitionDynamicValue y = PlanDefinition.PlanDefinitionDynamicValue.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", PlanDefinition.PlanDefinitionDynamicValue.create().id("x").build().id());
     }

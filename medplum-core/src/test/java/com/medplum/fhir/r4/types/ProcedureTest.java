@@ -24,6 +24,13 @@ public class ProcedureTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Procedure x = Procedure.create().build();
+        final Procedure y = Procedure.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Procedure.create().id("x").build().id());
     }

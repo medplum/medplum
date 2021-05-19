@@ -320,9 +320,5 @@ public class MedicationStatement extends DomainResource {
         public MedicationStatement build() {
             return new MedicationStatement(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

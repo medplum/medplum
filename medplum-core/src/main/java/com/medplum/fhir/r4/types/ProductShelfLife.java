@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -110,15 +108,14 @@ public class ProductShelfLife extends FhirObject {
         return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_SPECIAL_PRECAUTIONS_FOR_STORAGE);
     }
 
-    public static final class Builder {
-        private final JsonObjectBuilder b;
+    public static final class Builder extends FhirObject.Builder<ProductShelfLife, ProductShelfLife.Builder> {
 
         private Builder() {
-            b = Json.createObjectBuilder();
+            super();
         }
 
         private Builder(final JsonObject data) {
-            b = Json.createObjectBuilder(data);
+            super(data);
         }
 
         public Builder id(final String id) {

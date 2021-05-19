@@ -24,6 +24,13 @@ public class ElementDefinitionDiscriminatorTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ElementDefinition.ElementDefinitionDiscriminator x = ElementDefinition.ElementDefinitionDiscriminator.create().build();
+        final ElementDefinition.ElementDefinitionDiscriminator y = ElementDefinition.ElementDefinitionDiscriminator.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ElementDefinition.ElementDefinitionDiscriminator.create().id("x").build().id());
     }

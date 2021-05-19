@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -304,10 +302,6 @@ public class AdverseEvent extends DomainResource {
         public AdverseEvent build() {
             return new AdverseEvent(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -400,15 +394,14 @@ public class AdverseEvent extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_METHOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<AdverseEventCausality, AdverseEventCausality.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -530,15 +523,14 @@ public class AdverseEvent extends DomainResource {
             return getList(AdverseEventCausality.class, FhirPropertyNames.PROPERTY_CAUSALITY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<AdverseEventSuspectEntity, AdverseEventSuspectEntity.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

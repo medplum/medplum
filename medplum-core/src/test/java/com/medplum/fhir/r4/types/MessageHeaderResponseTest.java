@@ -24,6 +24,13 @@ public class MessageHeaderResponseTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MessageHeader.MessageHeaderResponse x = MessageHeader.MessageHeaderResponse.create().build();
+        final MessageHeader.MessageHeaderResponse y = MessageHeader.MessageHeaderResponse.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MessageHeader.MessageHeaderResponse.create().id("x").build().id());
     }

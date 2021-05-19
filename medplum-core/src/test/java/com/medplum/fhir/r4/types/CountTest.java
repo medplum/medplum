@@ -24,6 +24,13 @@ public class CountTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Count x = Count.create().build();
+        final Count y = Count.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Count.create().id("x").build().id());
     }

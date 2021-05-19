@@ -24,6 +24,13 @@ public class OrganizationAffiliationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final OrganizationAffiliation x = OrganizationAffiliation.create().build();
+        final OrganizationAffiliation y = OrganizationAffiliation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", OrganizationAffiliation.create().id("x").build().id());
     }

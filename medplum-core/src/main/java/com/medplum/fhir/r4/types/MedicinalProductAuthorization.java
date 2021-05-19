@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -220,7 +218,8 @@ public class MedicinalProductAuthorization extends DomainResource {
             return this;
         }
 
-        public Builder jurisdictionalAuthorization(final java.util.List<MedicinalProductAuthorizationJurisdictionalAuthorization> jurisdictionalAuthorization) {
+    public Builder jurisdictionalAuthorization(final
+            java.util.List<MedicinalProductAuthorizationJurisdictionalAuthorization> jurisdictionalAuthorization) {
             b.add(FhirPropertyNames.PROPERTY_JURISDICTIONAL_AUTHORIZATION, FhirObject.toArray(jurisdictionalAuthorization));
             return this;
         }
@@ -242,10 +241,6 @@ public class MedicinalProductAuthorization extends DomainResource {
 
         public MedicinalProductAuthorization build() {
             return new MedicinalProductAuthorization(b.build());
-        }
-
-        protected Builder getBuilder() {
-            return this;
         }
     }
 
@@ -343,15 +338,16 @@ public class MedicinalProductAuthorization extends DomainResource {
             return getObject(Period.class, FhirPropertyNames.PROPERTY_VALIDITY_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends
+                FhirObject.Builder<MedicinalProductAuthorizationJurisdictionalAuthorization,
+                MedicinalProductAuthorizationJurisdictionalAuthorization.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -494,15 +490,14 @@ public class MedicinalProductAuthorization extends DomainResource {
             return getList(MedicinalProductAuthorizationProcedure.class, FhirPropertyNames.PROPERTY_APPLICATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductAuthorizationProcedure, MedicinalProductAuthorizationProcedure.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

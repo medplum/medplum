@@ -24,6 +24,13 @@ public class ContractSubjectTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Contract.ContractSubject x = Contract.ContractSubject.create().build();
+        final Contract.ContractSubject y = Contract.ContractSubject.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Contract.ContractSubject.create().id("x").build().id());
     }

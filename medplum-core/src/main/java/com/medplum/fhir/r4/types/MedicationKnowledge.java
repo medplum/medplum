@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -329,10 +327,6 @@ public class MedicationKnowledge extends DomainResource {
         public MedicationKnowledge build() {
             return new MedicationKnowledge(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -425,15 +419,15 @@ public class MedicationKnowledge extends DomainResource {
             return getList(MedicationKnowledgePatientCharacteristics.class, FhirPropertyNames.PROPERTY_PATIENT_CHARACTERISTICS);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeAdministrationGuidelines,
+                MedicationKnowledgeAdministrationGuidelines.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -558,15 +552,14 @@ public class MedicationKnowledge extends DomainResource {
             return getObject(Money.class, FhirPropertyNames.PROPERTY_COST);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeCost, MedicationKnowledgeCost.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -679,15 +672,14 @@ public class MedicationKnowledge extends DomainResource {
             return getList(Dosage.class, FhirPropertyNames.PROPERTY_DOSAGE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeDosage, MedicationKnowledgeDosage.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -816,15 +808,14 @@ public class MedicationKnowledge extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VALUE_BASE64_BINARY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeDrugCharacteristic, MedicationKnowledgeDrugCharacteristic.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -965,15 +956,14 @@ public class MedicationKnowledge extends DomainResource {
             return getObject(Ratio.class, FhirPropertyNames.PROPERTY_STRENGTH);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeIngredient, MedicationKnowledgeIngredient.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1098,15 +1088,14 @@ public class MedicationKnowledge extends DomainResource {
             return getObject(Duration.class, FhirPropertyNames.PROPERTY_HALF_LIFE_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeKinetics, MedicationKnowledgeKinetics.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1218,15 +1207,14 @@ public class MedicationKnowledge extends DomainResource {
             return getObject(Duration.class, FhirPropertyNames.PROPERTY_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeMaxDispense, MedicationKnowledgeMaxDispense.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1335,15 +1323,15 @@ public class MedicationKnowledge extends DomainResource {
             return getList(CodeableConcept.class, FhirPropertyNames.PROPERTY_CLASSIFICATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeMedicineClassification,
+                MedicationKnowledgeMedicineClassification.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1450,15 +1438,14 @@ public class MedicationKnowledge extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_NAME);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeMonitoringProgram, MedicationKnowledgeMonitoringProgram.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1566,15 +1553,14 @@ public class MedicationKnowledge extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeMonograph, MedicationKnowledgeMonograph.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1682,15 +1668,14 @@ public class MedicationKnowledge extends DomainResource {
             return getObject(Quantity.class, FhirPropertyNames.PROPERTY_QUANTITY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgePackaging, MedicationKnowledgePackaging.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1806,15 +1791,15 @@ public class MedicationKnowledge extends DomainResource {
             return getList(String.class, FhirPropertyNames.PROPERTY_VALUE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgePatientCharacteristics,
+                MedicationKnowledgePatientCharacteristics.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1942,15 +1927,14 @@ public class MedicationKnowledge extends DomainResource {
             return getObject(MedicationKnowledgeMaxDispense.class, FhirPropertyNames.PROPERTY_MAX_DISPENSE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeRegulatory, MedicationKnowledgeRegulatory.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2067,15 +2051,15 @@ public class MedicationKnowledge extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_REFERENCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeRelatedMedicationKnowledge,
+                MedicationKnowledgeRelatedMedicationKnowledge.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2175,15 +2159,14 @@ public class MedicationKnowledge extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SCHEDULE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeSchedule, MedicationKnowledgeSchedule.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2286,15 +2269,14 @@ public class MedicationKnowledge extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_ALLOWED);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicationKnowledgeSubstitution, MedicationKnowledgeSubstitution.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

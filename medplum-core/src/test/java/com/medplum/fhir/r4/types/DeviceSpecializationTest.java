@@ -24,6 +24,13 @@ public class DeviceSpecializationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Device.DeviceSpecialization x = Device.DeviceSpecialization.create().build();
+        final Device.DeviceSpecialization y = Device.DeviceSpecialization.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Device.DeviceSpecialization.create().id("x").build().id());
     }

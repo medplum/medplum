@@ -24,6 +24,15 @@ public class SubstanceSourceMaterialOrganismGeneralTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final SubstanceSourceMaterial.SubstanceSourceMaterialOrganismGeneral x =
+            SubstanceSourceMaterial.SubstanceSourceMaterialOrganismGeneral.create().build();
+    final SubstanceSourceMaterial.SubstanceSourceMaterialOrganismGeneral y =
+            SubstanceSourceMaterial.SubstanceSourceMaterialOrganismGeneral.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSourceMaterial.SubstanceSourceMaterialOrganismGeneral.create().id("x").build().id());
     }

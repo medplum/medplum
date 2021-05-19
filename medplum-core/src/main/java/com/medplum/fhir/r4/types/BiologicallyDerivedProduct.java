@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -185,10 +183,6 @@ public class BiologicallyDerivedProduct extends DomainResource {
         public BiologicallyDerivedProduct build() {
             return new BiologicallyDerivedProduct(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -281,15 +275,14 @@ public class BiologicallyDerivedProduct extends DomainResource {
             return getObject(Period.class, FhirPropertyNames.PROPERTY_COLLECTED_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<BiologicallyDerivedProductCollection, BiologicallyDerivedProductCollection.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -415,15 +408,14 @@ public class BiologicallyDerivedProduct extends DomainResource {
             return getObject(Period.class, FhirPropertyNames.PROPERTY_TIME_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<BiologicallyDerivedProductManipulation, BiologicallyDerivedProductManipulation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -558,15 +550,14 @@ public class BiologicallyDerivedProduct extends DomainResource {
             return getObject(Period.class, FhirPropertyNames.PROPERTY_TIME_PERIOD);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<BiologicallyDerivedProductProcessing, BiologicallyDerivedProductProcessing.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -704,15 +695,14 @@ public class BiologicallyDerivedProduct extends DomainResource {
             return getObject(Period.class, FhirPropertyNames.PROPERTY_DURATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<BiologicallyDerivedProductStorage, BiologicallyDerivedProductStorage.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

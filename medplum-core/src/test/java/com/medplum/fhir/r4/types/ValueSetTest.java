@@ -24,6 +24,13 @@ public class ValueSetTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ValueSet x = ValueSet.create().build();
+        final ValueSet y = ValueSet.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ValueSet.create().id("x").build().id());
     }

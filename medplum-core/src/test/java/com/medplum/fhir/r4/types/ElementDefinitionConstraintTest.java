@@ -24,6 +24,13 @@ public class ElementDefinitionConstraintTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ElementDefinition.ElementDefinitionConstraint x = ElementDefinition.ElementDefinitionConstraint.create().build();
+        final ElementDefinition.ElementDefinitionConstraint y = ElementDefinition.ElementDefinitionConstraint.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ElementDefinition.ElementDefinitionConstraint.create().id("x").build().id());
     }

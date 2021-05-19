@@ -24,6 +24,13 @@ public class IdentifierTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Identifier x = Identifier.create().build();
+        final Identifier y = Identifier.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Identifier.create().id("x").build().id());
     }

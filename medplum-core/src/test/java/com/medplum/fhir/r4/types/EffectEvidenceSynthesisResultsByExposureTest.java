@@ -24,6 +24,15 @@ public class EffectEvidenceSynthesisResultsByExposureTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final EffectEvidenceSynthesis.EffectEvidenceSynthesisResultsByExposure x =
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisResultsByExposure.create().build();
+    final EffectEvidenceSynthesis.EffectEvidenceSynthesisResultsByExposure y =
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisResultsByExposure.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EffectEvidenceSynthesis.EffectEvidenceSynthesisResultsByExposure.create().id("x").build().id());
     }
@@ -59,6 +68,7 @@ public class EffectEvidenceSynthesisResultsByExposureTest {
     @Test
     public void testRiskEvidenceSynthesis() {
         final Reference value = Reference.create().build();
-        assertEquals(value, EffectEvidenceSynthesis.EffectEvidenceSynthesisResultsByExposure.create().riskEvidenceSynthesis(value).build().riskEvidenceSynthesis());
+    assertEquals(value,
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisResultsByExposure.create().riskEvidenceSynthesis(value).build().riskEvidenceSynthesis());
     }
 }

@@ -24,6 +24,13 @@ public class DocumentReferenceContextTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DocumentReference.DocumentReferenceContext x = DocumentReference.DocumentReferenceContext.create().build();
+        final DocumentReference.DocumentReferenceContext y = DocumentReference.DocumentReferenceContext.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DocumentReference.DocumentReferenceContext.create().id("x").build().id());
     }

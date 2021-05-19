@@ -24,6 +24,13 @@ public class MetaTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Meta x = Meta.create().build();
+        final Meta y = Meta.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Meta.create().id("x").build().id());
     }

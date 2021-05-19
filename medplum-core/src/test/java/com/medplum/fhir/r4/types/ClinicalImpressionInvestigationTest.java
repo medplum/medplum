@@ -24,6 +24,13 @@ public class ClinicalImpressionInvestigationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ClinicalImpression.ClinicalImpressionInvestigation x = ClinicalImpression.ClinicalImpressionInvestigation.create().build();
+        final ClinicalImpression.ClinicalImpressionInvestigation y = ClinicalImpression.ClinicalImpressionInvestigation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ClinicalImpression.ClinicalImpressionInvestigation.create().id("x").build().id());
     }

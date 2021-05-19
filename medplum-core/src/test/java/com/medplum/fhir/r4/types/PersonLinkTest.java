@@ -24,6 +24,13 @@ public class PersonLinkTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Person.PersonLink x = Person.PersonLink.create().build();
+        final Person.PersonLink y = Person.PersonLink.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Person.PersonLink.create().id("x").build().id());
     }

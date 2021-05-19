@@ -126,9 +126,5 @@ public class EnrollmentRequest extends DomainResource {
         public EnrollmentRequest build() {
             return new EnrollmentRequest(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

@@ -24,6 +24,13 @@ public class DocumentReferenceRelatesToTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DocumentReference.DocumentReferenceRelatesTo x = DocumentReference.DocumentReferenceRelatesTo.create().build();
+        final DocumentReference.DocumentReferenceRelatesTo y = DocumentReference.DocumentReferenceRelatesTo.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DocumentReference.DocumentReferenceRelatesTo.create().id("x").build().id());
     }

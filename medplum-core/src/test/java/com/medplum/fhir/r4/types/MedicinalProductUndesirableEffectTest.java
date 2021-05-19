@@ -24,6 +24,13 @@ public class MedicinalProductUndesirableEffectTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicinalProductUndesirableEffect x = MedicinalProductUndesirableEffect.create().build();
+        final MedicinalProductUndesirableEffect y = MedicinalProductUndesirableEffect.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductUndesirableEffect.create().id("x").build().id());
     }

@@ -24,6 +24,15 @@ public class MedicinalProductInteractionInteractantTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductInteraction.MedicinalProductInteractionInteractant x =
+            MedicinalProductInteraction.MedicinalProductInteractionInteractant.create().build();
+    final MedicinalProductInteraction.MedicinalProductInteractionInteractant y =
+            MedicinalProductInteraction.MedicinalProductInteractionInteractant.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductInteraction.MedicinalProductInteractionInteractant.create().id("x").build().id());
     }
@@ -49,6 +58,7 @@ public class MedicinalProductInteractionInteractantTest {
     @Test
     public void testItemCodeableConcept() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, MedicinalProductInteraction.MedicinalProductInteractionInteractant.create().itemCodeableConcept(value).build().itemCodeableConcept());
+    assertEquals(value,
+            MedicinalProductInteraction.MedicinalProductInteractionInteractant.create().itemCodeableConcept(value).build().itemCodeableConcept());
     }
 }

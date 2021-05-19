@@ -24,6 +24,15 @@ public class BiologicallyDerivedProductManipulationTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final BiologicallyDerivedProduct.BiologicallyDerivedProductManipulation x =
+            BiologicallyDerivedProduct.BiologicallyDerivedProductManipulation.create().build();
+    final BiologicallyDerivedProduct.BiologicallyDerivedProductManipulation y =
+            BiologicallyDerivedProduct.BiologicallyDerivedProductManipulation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", BiologicallyDerivedProduct.BiologicallyDerivedProductManipulation.create().id("x").build().id());
     }

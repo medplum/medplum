@@ -24,6 +24,13 @@ public class VerificationResultValidatorTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final VerificationResult.VerificationResultValidator x = VerificationResult.VerificationResultValidator.create().build();
+        final VerificationResult.VerificationResultValidator y = VerificationResult.VerificationResultValidator.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", VerificationResult.VerificationResultValidator.create().id("x").build().id());
     }

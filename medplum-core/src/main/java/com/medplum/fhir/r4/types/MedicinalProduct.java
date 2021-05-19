@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -292,10 +290,6 @@ public class MedicinalProduct extends DomainResource {
         public MedicinalProduct build() {
             return new MedicinalProduct(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -379,15 +373,14 @@ public class MedicinalProduct extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_LANGUAGE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductCountryLanguage, MedicinalProductCountryLanguage.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -528,15 +521,15 @@ public class MedicinalProduct extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_REGULATOR);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductManufacturingBusinessOperation,
+                MedicinalProductManufacturingBusinessOperation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -671,15 +664,14 @@ public class MedicinalProduct extends DomainResource {
             return getList(MedicinalProductCountryLanguage.class, FhirPropertyNames.PROPERTY_COUNTRY_LANGUAGE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductName, MedicinalProductName.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -792,15 +784,14 @@ public class MedicinalProduct extends DomainResource {
             return getObject(Coding.class, FhirPropertyNames.PROPERTY_TYPE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductNamePart, MedicinalProductNamePart.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -950,15 +941,14 @@ public class MedicinalProduct extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_SPECIES);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MedicinalProductSpecialDesignation, MedicinalProductSpecialDesignation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

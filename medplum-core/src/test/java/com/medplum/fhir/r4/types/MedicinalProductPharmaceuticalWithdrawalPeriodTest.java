@@ -24,6 +24,15 @@ public class MedicinalProductPharmaceuticalWithdrawalPeriodTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod x =
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod.create().build();
+    final MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod y =
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod.create().id("x").build().id());
     }
@@ -37,7 +46,8 @@ public class MedicinalProductPharmaceuticalWithdrawalPeriodTest {
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test
@@ -54,6 +64,7 @@ public class MedicinalProductPharmaceuticalWithdrawalPeriodTest {
 
     @Test
     public void testSupportingInformation() {
-        assertEquals("x", MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod.create().supportingInformation("x").build().supportingInformation());
+    assertEquals("x",
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalWithdrawalPeriod.create().supportingInformation("x").build().supportingInformation());
     }
 }

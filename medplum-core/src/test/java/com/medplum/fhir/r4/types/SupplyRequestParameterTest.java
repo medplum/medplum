@@ -24,6 +24,13 @@ public class SupplyRequestParameterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SupplyRequest.SupplyRequestParameter x = SupplyRequest.SupplyRequestParameter.create().build();
+        final SupplyRequest.SupplyRequestParameter y = SupplyRequest.SupplyRequestParameter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SupplyRequest.SupplyRequestParameter.create().id("x").build().id());
     }

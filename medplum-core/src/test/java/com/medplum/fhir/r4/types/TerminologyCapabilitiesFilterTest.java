@@ -24,6 +24,13 @@ public class TerminologyCapabilitiesFilterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TerminologyCapabilities.TerminologyCapabilitiesFilter x = TerminologyCapabilities.TerminologyCapabilitiesFilter.create().build();
+        final TerminologyCapabilities.TerminologyCapabilitiesFilter y = TerminologyCapabilities.TerminologyCapabilitiesFilter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TerminologyCapabilities.TerminologyCapabilitiesFilter.create().id("x").build().id());
     }

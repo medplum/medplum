@@ -24,6 +24,13 @@ public class OperationDefinitionBindingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final OperationDefinition.OperationDefinitionBinding x = OperationDefinition.OperationDefinitionBinding.create().build();
+        final OperationDefinition.OperationDefinitionBinding y = OperationDefinition.OperationDefinitionBinding.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", OperationDefinition.OperationDefinitionBinding.create().id("x").build().id());
     }

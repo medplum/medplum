@@ -24,6 +24,13 @@ public class ContractFriendlyTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Contract.ContractFriendly x = Contract.ContractFriendly.create().build();
+        final Contract.ContractFriendly y = Contract.ContractFriendly.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Contract.ContractFriendly.create().id("x").build().id());
     }

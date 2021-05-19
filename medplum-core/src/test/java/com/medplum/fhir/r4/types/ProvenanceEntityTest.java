@@ -24,6 +24,13 @@ public class ProvenanceEntityTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Provenance.ProvenanceEntity x = Provenance.ProvenanceEntity.create().build();
+        final Provenance.ProvenanceEntity y = Provenance.ProvenanceEntity.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Provenance.ProvenanceEntity.create().id("x").build().id());
     }

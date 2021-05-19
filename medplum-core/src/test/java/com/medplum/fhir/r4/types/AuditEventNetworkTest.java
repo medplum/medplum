@@ -24,6 +24,13 @@ public class AuditEventNetworkTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final AuditEvent.AuditEventNetwork x = AuditEvent.AuditEventNetwork.create().build();
+        final AuditEvent.AuditEventNetwork y = AuditEvent.AuditEventNetwork.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", AuditEvent.AuditEventNetwork.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class ObservationComponentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Observation.ObservationComponent x = Observation.ObservationComponent.create().build();
+        final Observation.ObservationComponent y = Observation.ObservationComponent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Observation.ObservationComponent.create().id("x").build().id());
     }

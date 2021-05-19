@@ -24,6 +24,13 @@ public class ClaimResponseProcessNoteTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ClaimResponse.ClaimResponseProcessNote x = ClaimResponse.ClaimResponseProcessNote.create().build();
+        final ClaimResponse.ClaimResponseProcessNote y = ClaimResponse.ClaimResponseProcessNote.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ClaimResponse.ClaimResponseProcessNote.create().id("x").build().id());
     }

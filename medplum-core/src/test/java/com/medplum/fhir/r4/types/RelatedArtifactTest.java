@@ -24,6 +24,13 @@ public class RelatedArtifactTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final RelatedArtifact x = RelatedArtifact.create().build();
+        final RelatedArtifact y = RelatedArtifact.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RelatedArtifact.create().id("x").build().id());
     }

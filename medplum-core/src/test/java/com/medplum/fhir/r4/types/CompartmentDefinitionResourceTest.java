@@ -24,6 +24,13 @@ public class CompartmentDefinitionResourceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CompartmentDefinition.CompartmentDefinitionResource x = CompartmentDefinition.CompartmentDefinitionResource.create().build();
+        final CompartmentDefinition.CompartmentDefinitionResource y = CompartmentDefinition.CompartmentDefinitionResource.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CompartmentDefinition.CompartmentDefinitionResource.create().id("x").build().id());
     }

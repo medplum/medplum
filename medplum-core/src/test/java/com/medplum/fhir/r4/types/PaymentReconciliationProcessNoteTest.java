@@ -24,6 +24,13 @@ public class PaymentReconciliationProcessNoteTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final PaymentReconciliation.PaymentReconciliationProcessNote x = PaymentReconciliation.PaymentReconciliationProcessNote.create().build();
+        final PaymentReconciliation.PaymentReconciliationProcessNote y = PaymentReconciliation.PaymentReconciliationProcessNote.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", PaymentReconciliation.PaymentReconciliationProcessNote.create().id("x").build().id());
     }

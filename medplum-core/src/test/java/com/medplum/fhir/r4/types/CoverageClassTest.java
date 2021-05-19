@@ -24,6 +24,13 @@ public class CoverageClassTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Coverage.CoverageClass x = Coverage.CoverageClass.create().build();
+        final Coverage.CoverageClass y = Coverage.CoverageClass.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Coverage.CoverageClass.create().id("x").build().id());
     }

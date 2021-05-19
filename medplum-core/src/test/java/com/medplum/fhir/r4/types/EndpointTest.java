@@ -24,6 +24,13 @@ public class EndpointTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Endpoint x = Endpoint.create().build();
+        final Endpoint y = Endpoint.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Endpoint.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class DataRequirementTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DataRequirement x = DataRequirement.create().build();
+        final DataRequirement y = DataRequirement.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DataRequirement.create().id("x").build().id());
     }

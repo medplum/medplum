@@ -24,6 +24,15 @@ public class ObservationDefinitionQuantitativeDetailsTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final ObservationDefinition.ObservationDefinitionQuantitativeDetails x =
+            ObservationDefinition.ObservationDefinitionQuantitativeDetails.create().build();
+    final ObservationDefinition.ObservationDefinitionQuantitativeDetails y =
+            ObservationDefinition.ObservationDefinitionQuantitativeDetails.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ObservationDefinition.ObservationDefinitionQuantitativeDetails.create().id("x").build().id());
     }

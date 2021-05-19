@@ -24,6 +24,13 @@ public class NamingSystemTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final NamingSystem x = NamingSystem.create().build();
+        final NamingSystem y = NamingSystem.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", NamingSystem.create().id("x").build().id());
     }

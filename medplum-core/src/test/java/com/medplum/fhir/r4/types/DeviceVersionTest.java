@@ -24,6 +24,13 @@ public class DeviceVersionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Device.DeviceVersion x = Device.DeviceVersion.create().build();
+        final Device.DeviceVersion y = Device.DeviceVersion.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Device.DeviceVersion.create().id("x").build().id());
     }

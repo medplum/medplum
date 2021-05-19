@@ -24,6 +24,15 @@ public class CoverageEligibilityRequestDiagnosisTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final CoverageEligibilityRequest.CoverageEligibilityRequestDiagnosis x =
+            CoverageEligibilityRequest.CoverageEligibilityRequestDiagnosis.create().build();
+    final CoverageEligibilityRequest.CoverageEligibilityRequestDiagnosis y =
+            CoverageEligibilityRequest.CoverageEligibilityRequestDiagnosis.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CoverageEligibilityRequest.CoverageEligibilityRequestDiagnosis.create().id("x").build().id());
     }
@@ -43,7 +52,8 @@ public class CoverageEligibilityRequestDiagnosisTest {
     @Test
     public void testDiagnosisCodeableConcept() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, CoverageEligibilityRequest.CoverageEligibilityRequestDiagnosis.create().diagnosisCodeableConcept(value).build().diagnosisCodeableConcept());
+    assertEquals(value,
+            CoverageEligibilityRequest.CoverageEligibilityRequestDiagnosis.create().diagnosisCodeableConcept(value).build().diagnosisCodeableConcept());
     }
 
     @Test

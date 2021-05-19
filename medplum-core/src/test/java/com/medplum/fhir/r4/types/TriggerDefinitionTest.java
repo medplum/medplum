@@ -24,6 +24,13 @@ public class TriggerDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TriggerDefinition x = TriggerDefinition.create().build();
+        final TriggerDefinition y = TriggerDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TriggerDefinition.create().id("x").build().id());
     }

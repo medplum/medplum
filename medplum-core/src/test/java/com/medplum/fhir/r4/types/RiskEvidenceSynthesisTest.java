@@ -24,6 +24,13 @@ public class RiskEvidenceSynthesisTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final RiskEvidenceSynthesis x = RiskEvidenceSynthesis.create().build();
+        final RiskEvidenceSynthesis y = RiskEvidenceSynthesis.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RiskEvidenceSynthesis.create().id("x").build().id());
     }

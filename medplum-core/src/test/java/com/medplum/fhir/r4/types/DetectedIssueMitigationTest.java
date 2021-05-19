@@ -24,6 +24,13 @@ public class DetectedIssueMitigationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DetectedIssue.DetectedIssueMitigation x = DetectedIssue.DetectedIssueMitigation.create().build();
+        final DetectedIssue.DetectedIssueMitigation y = DetectedIssue.DetectedIssueMitigation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DetectedIssue.DetectedIssueMitigation.create().id("x").build().id());
     }

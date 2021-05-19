@@ -24,6 +24,13 @@ public class CodeSystemFilterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CodeSystem.CodeSystemFilter x = CodeSystem.CodeSystemFilter.create().build();
+        final CodeSystem.CodeSystemFilter y = CodeSystem.CodeSystemFilter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CodeSystem.CodeSystemFilter.create().id("x").build().id());
     }

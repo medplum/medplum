@@ -24,6 +24,13 @@ public class ContractSecurityLabelTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Contract.ContractSecurityLabel x = Contract.ContractSecurityLabel.create().build();
+        final Contract.ContractSecurityLabel y = Contract.ContractSecurityLabel.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Contract.ContractSecurityLabel.create().id("x").build().id());
     }

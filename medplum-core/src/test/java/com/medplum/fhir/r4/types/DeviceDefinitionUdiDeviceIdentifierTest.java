@@ -24,6 +24,13 @@ public class DeviceDefinitionUdiDeviceIdentifierTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DeviceDefinition.DeviceDefinitionUdiDeviceIdentifier x = DeviceDefinition.DeviceDefinitionUdiDeviceIdentifier.create().build();
+        final DeviceDefinition.DeviceDefinitionUdiDeviceIdentifier y = DeviceDefinition.DeviceDefinitionUdiDeviceIdentifier.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DeviceDefinition.DeviceDefinitionUdiDeviceIdentifier.create().id("x").build().id());
     }

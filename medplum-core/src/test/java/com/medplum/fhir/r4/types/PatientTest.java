@@ -24,6 +24,13 @@ public class PatientTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Patient x = Patient.create().build();
+        final Patient y = Patient.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Patient.create().id("x").build().id());
     }

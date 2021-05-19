@@ -24,6 +24,13 @@ public class ImplementationGuideResource1Test {
     }
 
     @Test
+    public void testCopyAll() {
+        final ImplementationGuide.ImplementationGuideResource1 x = ImplementationGuide.ImplementationGuideResource1.create().build();
+        final ImplementationGuide.ImplementationGuideResource1 y = ImplementationGuide.ImplementationGuideResource1.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ImplementationGuide.ImplementationGuideResource1.create().id("x").build().id());
     }

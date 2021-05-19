@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -331,10 +329,6 @@ public class ImplementationGuide extends DomainResource {
         public ImplementationGuide build() {
             return new ImplementationGuide(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -440,15 +434,14 @@ public class ImplementationGuide extends DomainResource {
             return getList(ImplementationGuideTemplate.class, FhirPropertyNames.PROPERTY_TEMPLATE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuideDefinition, ImplementationGuideDefinition.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -583,15 +576,14 @@ public class ImplementationGuide extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VERSION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuideDependsOn, ImplementationGuideDependsOn.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -707,15 +699,14 @@ public class ImplementationGuide extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_PROFILE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuideGlobal, ImplementationGuideGlobal.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -827,15 +818,14 @@ public class ImplementationGuide extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuideGrouping, ImplementationGuideGrouping.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -973,15 +963,14 @@ public class ImplementationGuide extends DomainResource {
             return getList(String.class, FhirPropertyNames.PROPERTY_OTHER);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuideManifest, ImplementationGuideManifest.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1129,15 +1118,14 @@ public class ImplementationGuide extends DomainResource {
             return getList(ImplementationGuidePage.class, FhirPropertyNames.PROPERTY_PAGE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuidePage, ImplementationGuidePage.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1270,15 +1258,14 @@ public class ImplementationGuide extends DomainResource {
             return getList(String.class, FhirPropertyNames.PROPERTY_ANCHOR);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuidePage1, ImplementationGuidePage1.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1396,15 +1383,14 @@ public class ImplementationGuide extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VALUE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuideParameter, ImplementationGuideParameter.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1559,15 +1545,14 @@ public class ImplementationGuide extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_GROUPING_ID);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuideResource, ImplementationGuideResource.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1721,15 +1706,14 @@ public class ImplementationGuide extends DomainResource {
             return getUri(FhirPropertyNames.PROPERTY_RELATIVE_PATH);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuideResource1, ImplementationGuideResource1.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1857,15 +1841,14 @@ public class ImplementationGuide extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_SCOPE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImplementationGuideTemplate, ImplementationGuideTemplate.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

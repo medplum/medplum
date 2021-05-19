@@ -24,6 +24,13 @@ public class ExampleScenarioActorTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ExampleScenario.ExampleScenarioActor x = ExampleScenario.ExampleScenarioActor.create().build();
+        final ExampleScenario.ExampleScenarioActor y = ExampleScenario.ExampleScenarioActor.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ExampleScenario.ExampleScenarioActor.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class ScheduleTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Schedule x = Schedule.create().build();
+        final Schedule y = Schedule.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Schedule.create().id("x").build().id());
     }

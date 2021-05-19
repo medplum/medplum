@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -295,10 +293,6 @@ public class StructureMap extends DomainResource {
         public StructureMap build() {
             return new StructureMap(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -375,15 +369,14 @@ public class StructureMap extends DomainResource {
             return getList(String.class, FhirPropertyNames.PROPERTY_VARIABLE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureMapDependent, StructureMapDependent.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -522,15 +515,14 @@ public class StructureMap extends DomainResource {
             return getList(StructureMapRule.class, FhirPropertyNames.PROPERTY_RULE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureMapGroup, StructureMapGroup.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -672,15 +664,14 @@ public class StructureMap extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureMapInput, StructureMapInput.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -819,15 +810,14 @@ public class StructureMap extends DomainResource {
             return data.getInt(FhirPropertyNames.PROPERTY_VALUE_DECIMAL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureMapParameter, StructureMapParameter.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -978,15 +968,14 @@ public class StructureMap extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureMapRule, StructureMapRule.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1526,15 +1515,14 @@ public class StructureMap extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_LOG_MESSAGE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureMapSource, StructureMapSource.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1946,15 +1934,14 @@ public class StructureMap extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureMapStructure, StructureMapStructure.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2114,15 +2101,14 @@ public class StructureMap extends DomainResource {
             return getList(StructureMapParameter.class, FhirPropertyNames.PROPERTY_PARAMETER);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<StructureMapTarget, StructureMapTarget.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

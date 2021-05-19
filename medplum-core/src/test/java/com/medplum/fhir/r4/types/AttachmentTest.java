@@ -24,6 +24,13 @@ public class AttachmentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Attachment x = Attachment.create().build();
+        final Attachment y = Attachment.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Attachment.create().id("x").build().id());
     }

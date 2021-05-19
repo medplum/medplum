@@ -24,6 +24,13 @@ public class ParametersParameterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Parameters.ParametersParameter x = Parameters.ParametersParameter.create().build();
+        final Parameters.ParametersParameter y = Parameters.ParametersParameter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Parameters.ParametersParameter.create().id("x").build().id());
     }

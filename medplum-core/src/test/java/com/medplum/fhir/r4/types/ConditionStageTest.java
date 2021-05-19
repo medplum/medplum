@@ -24,6 +24,13 @@ public class ConditionStageTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Condition.ConditionStage x = Condition.ConditionStage.create().build();
+        final Condition.ConditionStage y = Condition.ConditionStage.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Condition.ConditionStage.create().id("x").build().id());
     }

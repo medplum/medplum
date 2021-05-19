@@ -24,6 +24,13 @@ public class ContractContentDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Contract.ContractContentDefinition x = Contract.ContractContentDefinition.create().build();
+        final Contract.ContractContentDefinition y = Contract.ContractContentDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Contract.ContractContentDefinition.create().id("x").build().id());
     }

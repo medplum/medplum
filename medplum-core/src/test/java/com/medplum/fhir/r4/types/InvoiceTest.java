@@ -24,6 +24,13 @@ public class InvoiceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Invoice x = Invoice.create().build();
+        final Invoice y = Invoice.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Invoice.create().id("x").build().id());
     }

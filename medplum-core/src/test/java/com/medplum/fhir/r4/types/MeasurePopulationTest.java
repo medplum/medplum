@@ -24,6 +24,13 @@ public class MeasurePopulationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Measure.MeasurePopulation x = Measure.MeasurePopulation.create().build();
+        final Measure.MeasurePopulation y = Measure.MeasurePopulation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Measure.MeasurePopulation.create().id("x").build().id());
     }

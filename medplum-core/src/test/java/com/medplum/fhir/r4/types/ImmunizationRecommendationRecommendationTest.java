@@ -24,6 +24,15 @@ public class ImmunizationRecommendationRecommendationTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final ImmunizationRecommendation.ImmunizationRecommendationRecommendation x =
+            ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().build();
+    final ImmunizationRecommendation.ImmunizationRecommendationRecommendation y =
+            ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().id("x").build().id());
     }
@@ -55,7 +64,8 @@ public class ImmunizationRecommendationRecommendationTest {
     @Test
     public void testContraindicatedVaccineCode() {
         final java.util.List<CodeableConcept> value = java.util.Collections.emptyList();
-        assertEquals(value, ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().contraindicatedVaccineCode(value).build().contraindicatedVaccineCode());
+    assertEquals(value,
+            ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().contraindicatedVaccineCode(value).build().contraindicatedVaccineCode());
     }
 
     @Test
@@ -98,7 +108,8 @@ public class ImmunizationRecommendationRecommendationTest {
 
     @Test
     public void testSeriesDosesPositiveInt() {
-        assertEquals(1, ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().seriesDosesPositiveInt(1).build().seriesDosesPositiveInt());
+    assertEquals(1,
+            ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().seriesDosesPositiveInt(1).build().seriesDosesPositiveInt());
     }
 
     @Test
@@ -109,12 +120,14 @@ public class ImmunizationRecommendationRecommendationTest {
     @Test
     public void testSupportingImmunization() {
         final java.util.List<Reference> value = java.util.Collections.emptyList();
-        assertEquals(value, ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().supportingImmunization(value).build().supportingImmunization());
+    assertEquals(value,
+            ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().supportingImmunization(value).build().supportingImmunization());
     }
 
     @Test
     public void testSupportingPatientInformation() {
         final java.util.List<Reference> value = java.util.Collections.emptyList();
-        assertEquals(value, ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().supportingPatientInformation(value).build().supportingPatientInformation());
+    assertEquals(value,
+            ImmunizationRecommendation.ImmunizationRecommendationRecommendation.create().supportingPatientInformation(value).build().supportingPatientInformation());
     }
 }

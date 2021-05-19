@@ -24,6 +24,13 @@ public class AccountCoverageTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Account.AccountCoverage x = Account.AccountCoverage.create().build();
+        final Account.AccountCoverage y = Account.AccountCoverage.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Account.AccountCoverage.create().id("x").build().id());
     }

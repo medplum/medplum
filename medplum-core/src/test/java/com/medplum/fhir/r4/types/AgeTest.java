@@ -24,6 +24,13 @@ public class AgeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Age x = Age.create().build();
+        final Age y = Age.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Age.create().id("x").build().id());
     }

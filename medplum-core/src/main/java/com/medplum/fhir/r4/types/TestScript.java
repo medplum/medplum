@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -370,10 +368,6 @@ public class TestScript extends DomainResource {
         public TestScript build() {
             return new TestScript(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -451,15 +445,14 @@ public class TestScript extends DomainResource {
             return getObject(TestScriptAssert.class, FhirPropertyNames.PROPERTY_ASSERT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptAction, TestScriptAction.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -568,15 +561,14 @@ public class TestScript extends DomainResource {
             return getObject(TestScriptAssert.class, FhirPropertyNames.PROPERTY_ASSERT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptAction1, TestScriptAction1.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -677,15 +669,14 @@ public class TestScript extends DomainResource {
             return getObject(TestScriptOperation.class, FhirPropertyNames.PROPERTY_OPERATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptAction2, TestScriptAction2.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -946,15 +937,14 @@ public class TestScript extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_WARNING_ONLY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptAssert, TestScriptAssert.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1203,15 +1193,14 @@ public class TestScript extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_CAPABILITIES);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptCapability, TestScriptCapability.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1345,15 +1334,14 @@ public class TestScript extends DomainResource {
             return getObject(Coding.class, FhirPropertyNames.PROPERTY_PROFILE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptDestination, TestScriptDestination.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1475,15 +1463,14 @@ public class TestScript extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_RESOURCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptFixture, TestScriptFixture.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1597,15 +1584,14 @@ public class TestScript extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptLink, TestScriptLink.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1714,15 +1700,14 @@ public class TestScript extends DomainResource {
             return getList(TestScriptCapability.class, FhirPropertyNames.PROPERTY_CAPABILITY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptMetadata, TestScriptMetadata.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1946,15 +1931,14 @@ public class TestScript extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_URL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptOperation, TestScriptOperation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2138,15 +2122,14 @@ public class TestScript extends DomainResource {
             return getObject(Coding.class, FhirPropertyNames.PROPERTY_PROFILE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptOrigin, TestScriptOrigin.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2254,15 +2237,14 @@ public class TestScript extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VALUE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptRequestHeader, TestScriptRequestHeader.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2363,15 +2345,14 @@ public class TestScript extends DomainResource {
             return getList(TestScriptAction.class, FhirPropertyNames.PROPERTY_ACTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptSetup, TestScriptSetup.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2467,15 +2448,14 @@ public class TestScript extends DomainResource {
             return getList(TestScriptAction2.class, FhirPropertyNames.PROPERTY_ACTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptTeardown, TestScriptTeardown.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2587,15 +2567,14 @@ public class TestScript extends DomainResource {
             return getList(TestScriptAction1.class, FhirPropertyNames.PROPERTY_ACTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptTest, TestScriptTest.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2758,15 +2737,14 @@ public class TestScript extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_SOURCE_ID);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TestScriptVariable, TestScriptVariable.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

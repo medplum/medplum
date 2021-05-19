@@ -24,6 +24,13 @@ public class VisionPrescriptionLensSpecificationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final VisionPrescription.VisionPrescriptionLensSpecification x = VisionPrescription.VisionPrescriptionLensSpecification.create().build();
+        final VisionPrescription.VisionPrescriptionLensSpecification y = VisionPrescription.VisionPrescriptionLensSpecification.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", VisionPrescription.VisionPrescriptionLensSpecification.create().id("x").build().id());
     }

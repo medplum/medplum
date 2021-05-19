@@ -24,6 +24,13 @@ public class SubstancePolymerDegreeOfPolymerisationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstancePolymer.SubstancePolymerDegreeOfPolymerisation x = SubstancePolymer.SubstancePolymerDegreeOfPolymerisation.create().build();
+        final SubstancePolymer.SubstancePolymerDegreeOfPolymerisation y = SubstancePolymer.SubstancePolymerDegreeOfPolymerisation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstancePolymer.SubstancePolymerDegreeOfPolymerisation.create().id("x").build().id());
     }

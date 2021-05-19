@@ -24,6 +24,13 @@ public class TaskInputTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Task.TaskInput x = Task.TaskInput.create().build();
+        final Task.TaskInput y = Task.TaskInput.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Task.TaskInput.create().id("x").build().id());
     }

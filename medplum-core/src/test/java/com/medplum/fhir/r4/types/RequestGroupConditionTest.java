@@ -24,6 +24,13 @@ public class RequestGroupConditionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final RequestGroup.RequestGroupCondition x = RequestGroup.RequestGroupCondition.create().build();
+        final RequestGroup.RequestGroupCondition y = RequestGroup.RequestGroupCondition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RequestGroup.RequestGroupCondition.create().id("x").build().id());
     }

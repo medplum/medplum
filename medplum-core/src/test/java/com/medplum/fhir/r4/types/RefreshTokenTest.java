@@ -24,6 +24,13 @@ public class RefreshTokenTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final RefreshToken x = RefreshToken.create().build();
+        final RefreshToken y = RefreshToken.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RefreshToken.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class LocationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Location x = Location.create().build();
+        final Location y = Location.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Location.create().id("x").build().id());
     }

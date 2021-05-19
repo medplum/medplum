@@ -24,6 +24,13 @@ public class FlagTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Flag x = Flag.create().build();
+        final Flag y = Flag.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Flag.create().id("x").build().id());
     }

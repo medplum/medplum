@@ -24,6 +24,13 @@ public class ChargeItemDefinitionPriceComponentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ChargeItemDefinition.ChargeItemDefinitionPriceComponent x = ChargeItemDefinition.ChargeItemDefinitionPriceComponent.create().build();
+        final ChargeItemDefinition.ChargeItemDefinitionPriceComponent y = ChargeItemDefinition.ChargeItemDefinitionPriceComponent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ChargeItemDefinition.ChargeItemDefinitionPriceComponent.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class DataRequirementSortTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DataRequirement.DataRequirementSort x = DataRequirement.DataRequirementSort.create().build();
+        final DataRequirement.DataRequirementSort y = DataRequirement.DataRequirementSort.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DataRequirement.DataRequirementSort.create().id("x").build().id());
     }

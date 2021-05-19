@@ -24,6 +24,13 @@ public class AccountTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Account x = Account.create().build();
+        final Account y = Account.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Account.create().id("x").build().id());
     }

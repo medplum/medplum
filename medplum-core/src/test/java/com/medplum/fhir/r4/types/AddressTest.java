@@ -24,6 +24,13 @@ public class AddressTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Address x = Address.create().build();
+        final Address y = Address.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Address.create().id("x").build().id());
     }

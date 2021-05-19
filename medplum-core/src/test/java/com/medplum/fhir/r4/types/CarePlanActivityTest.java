@@ -24,6 +24,13 @@ public class CarePlanActivityTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CarePlan.CarePlanActivity x = CarePlan.CarePlanActivity.create().build();
+        final CarePlan.CarePlanActivity y = CarePlan.CarePlanActivity.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CarePlan.CarePlanActivity.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class StructureMapSourceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final StructureMap.StructureMapSource x = StructureMap.StructureMapSource.create().build();
+        final StructureMap.StructureMapSource y = StructureMap.StructureMapSource.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", StructureMap.StructureMapSource.create().id("x").build().id());
     }

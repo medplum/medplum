@@ -24,6 +24,13 @@ public class DosageDoseAndRateTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Dosage.DosageDoseAndRate x = Dosage.DosageDoseAndRate.create().build();
+        final Dosage.DosageDoseAndRate y = Dosage.DosageDoseAndRate.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Dosage.DosageDoseAndRate.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class EncounterParticipantTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Encounter.EncounterParticipant x = Encounter.EncounterParticipant.create().build();
+        final Encounter.EncounterParticipant y = Encounter.EncounterParticipant.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Encounter.EncounterParticipant.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class ProdCharacteristicTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ProdCharacteristic x = ProdCharacteristic.create().build();
+        final ProdCharacteristic y = ProdCharacteristic.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ProdCharacteristic.create().id("x").build().id());
     }

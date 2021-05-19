@@ -24,6 +24,14 @@ public class SubstanceSpecificationRelationshipTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSpecification.SubstanceSpecificationRelationship x = SubstanceSpecification.SubstanceSpecificationRelationship.create().build();
+    final SubstanceSpecification.SubstanceSpecificationRelationship y =
+            SubstanceSpecification.SubstanceSpecificationRelationship.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSpecification.SubstanceSpecificationRelationship.create().id("x").build().id());
     }
@@ -49,7 +57,8 @@ public class SubstanceSpecificationRelationshipTest {
     @Test
     public void testSubstanceCodeableConcept() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, SubstanceSpecification.SubstanceSpecificationRelationship.create().substanceCodeableConcept(value).build().substanceCodeableConcept());
+    assertEquals(value,
+            SubstanceSpecification.SubstanceSpecificationRelationship.create().substanceCodeableConcept(value).build().substanceCodeableConcept());
     }
 
     @Test

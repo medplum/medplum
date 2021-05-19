@@ -24,6 +24,13 @@ public class AllergyIntoleranceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final AllergyIntolerance x = AllergyIntolerance.create().build();
+        final AllergyIntolerance y = AllergyIntolerance.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", AllergyIntolerance.create().id("x").build().id());
     }

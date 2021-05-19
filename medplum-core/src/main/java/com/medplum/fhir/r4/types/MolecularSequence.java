@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -248,10 +246,6 @@ public class MolecularSequence extends DomainResource {
         public MolecularSequence build() {
             return new MolecularSequence(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -331,15 +325,14 @@ public class MolecularSequence extends DomainResource {
             return data.getInt(FhirPropertyNames.PROPERTY_END);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MolecularSequenceInner, MolecularSequenceInner.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -450,15 +443,14 @@ public class MolecularSequence extends DomainResource {
             return data.getInt(FhirPropertyNames.PROPERTY_END);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MolecularSequenceOuter, MolecularSequenceOuter.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -680,15 +672,14 @@ public class MolecularSequence extends DomainResource {
             return getObject(MolecularSequenceRoc.class, FhirPropertyNames.PROPERTY_ROC);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MolecularSequenceQuality, MolecularSequenceQuality.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -927,15 +918,14 @@ public class MolecularSequence extends DomainResource {
             return data.getInt(FhirPropertyNames.PROPERTY_WINDOW_END);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MolecularSequenceReferenceSeq, MolecularSequenceReferenceSeq.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1112,15 +1102,14 @@ public class MolecularSequence extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_READSET_ID);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MolecularSequenceRepository, MolecularSequenceRepository.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1289,15 +1278,14 @@ public class MolecularSequence extends DomainResource {
             return getList(Double.class, FhirPropertyNames.PROPERTY_F_MEASURE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MolecularSequenceRoc, MolecularSequenceRoc.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1451,15 +1439,14 @@ public class MolecularSequence extends DomainResource {
             return getObject(MolecularSequenceInner.class, FhirPropertyNames.PROPERTY_INNER);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MolecularSequenceStructureVariant, MolecularSequenceStructureVariant.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1628,15 +1615,14 @@ public class MolecularSequence extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_VARIANT_POINTER);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MolecularSequenceVariant, MolecularSequenceVariant.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

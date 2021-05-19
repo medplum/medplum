@@ -24,6 +24,13 @@ public class PaymentReconciliationDetailTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final PaymentReconciliation.PaymentReconciliationDetail x = PaymentReconciliation.PaymentReconciliationDetail.create().build();
+        final PaymentReconciliation.PaymentReconciliationDetail y = PaymentReconciliation.PaymentReconciliationDetail.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", PaymentReconciliation.PaymentReconciliationDetail.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class SupplyDeliveryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SupplyDelivery x = SupplyDelivery.create().build();
+        final SupplyDelivery y = SupplyDelivery.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SupplyDelivery.create().id("x").build().id());
     }

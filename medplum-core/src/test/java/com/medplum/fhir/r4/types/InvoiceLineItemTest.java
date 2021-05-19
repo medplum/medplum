@@ -24,6 +24,13 @@ public class InvoiceLineItemTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Invoice.InvoiceLineItem x = Invoice.InvoiceLineItem.create().build();
+        final Invoice.InvoiceLineItem y = Invoice.InvoiceLineItem.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Invoice.InvoiceLineItem.create().id("x").build().id());
     }

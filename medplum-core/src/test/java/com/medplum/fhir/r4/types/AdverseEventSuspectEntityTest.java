@@ -24,6 +24,13 @@ public class AdverseEventSuspectEntityTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final AdverseEvent.AdverseEventSuspectEntity x = AdverseEvent.AdverseEventSuspectEntity.create().build();
+        final AdverseEvent.AdverseEventSuspectEntity y = AdverseEvent.AdverseEventSuspectEntity.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", AdverseEvent.AdverseEventSuspectEntity.create().id("x").build().id());
     }

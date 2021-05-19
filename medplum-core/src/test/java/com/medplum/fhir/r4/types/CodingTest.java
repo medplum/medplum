@@ -24,6 +24,13 @@ public class CodingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Coding x = Coding.create().build();
+        final Coding y = Coding.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Coding.create().id("x").build().id());
     }

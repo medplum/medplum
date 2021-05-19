@@ -24,6 +24,13 @@ public class ClaimResponseAdjudicationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ClaimResponse.ClaimResponseAdjudication x = ClaimResponse.ClaimResponseAdjudication.create().build();
+        final ClaimResponse.ClaimResponseAdjudication y = ClaimResponse.ClaimResponseAdjudication.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ClaimResponse.ClaimResponseAdjudication.create().id("x").build().id());
     }

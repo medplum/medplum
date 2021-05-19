@@ -196,9 +196,5 @@ public class OrganizationAffiliation extends DomainResource {
         public OrganizationAffiliation build() {
             return new OrganizationAffiliation(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

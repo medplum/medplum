@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -102,10 +100,6 @@ public class SubstanceReferenceInformation extends DomainResource {
         public SubstanceReferenceInformation build() {
             return new SubstanceReferenceInformation(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -195,15 +189,15 @@ public class SubstanceReferenceInformation extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceReferenceInformationClassification,
+                SubstanceReferenceInformationClassification.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -327,15 +321,14 @@ public class SubstanceReferenceInformation extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceReferenceInformationGene, SubstanceReferenceInformationGene.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -454,15 +447,15 @@ public class SubstanceReferenceInformation extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceReferenceInformationGeneElement,
+                SubstanceReferenceInformationGeneElement.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -630,15 +623,14 @@ public class SubstanceReferenceInformation extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_SOURCE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceReferenceInformationTarget, SubstanceReferenceInformationTarget.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

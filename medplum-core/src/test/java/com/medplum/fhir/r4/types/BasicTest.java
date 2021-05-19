@@ -24,6 +24,13 @@ public class BasicTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Basic x = Basic.create().build();
+        final Basic y = Basic.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Basic.create().id("x").build().id());
     }

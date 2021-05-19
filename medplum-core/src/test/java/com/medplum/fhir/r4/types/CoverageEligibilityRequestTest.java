@@ -24,6 +24,13 @@ public class CoverageEligibilityRequestTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CoverageEligibilityRequest x = CoverageEligibilityRequest.create().build();
+        final CoverageEligibilityRequest y = CoverageEligibilityRequest.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CoverageEligibilityRequest.create().id("x").build().id());
     }

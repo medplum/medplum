@@ -24,6 +24,13 @@ public class DeviceMetricTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DeviceMetric x = DeviceMetric.create().build();
+        final DeviceMetric y = DeviceMetric.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DeviceMetric.create().id("x").build().id());
     }

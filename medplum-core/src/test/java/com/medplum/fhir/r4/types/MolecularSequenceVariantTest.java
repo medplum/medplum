@@ -24,6 +24,13 @@ public class MolecularSequenceVariantTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MolecularSequence.MolecularSequenceVariant x = MolecularSequence.MolecularSequenceVariant.create().build();
+        final MolecularSequence.MolecularSequenceVariant y = MolecularSequence.MolecularSequenceVariant.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MolecularSequence.MolecularSequenceVariant.create().id("x").build().id());
     }

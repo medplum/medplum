@@ -24,6 +24,13 @@ public class TestScriptSetupTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TestScript.TestScriptSetup x = TestScript.TestScriptSetup.create().build();
+        final TestScript.TestScriptSetup y = TestScript.TestScriptSetup.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TestScript.TestScriptSetup.create().id("x").build().id());
     }

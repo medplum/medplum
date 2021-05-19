@@ -24,6 +24,13 @@ public class NutritionOrderTextureTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final NutritionOrder.NutritionOrderTexture x = NutritionOrder.NutritionOrderTexture.create().build();
+        final NutritionOrder.NutritionOrderTexture y = NutritionOrder.NutritionOrderTexture.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", NutritionOrder.NutritionOrderTexture.create().id("x").build().id());
     }

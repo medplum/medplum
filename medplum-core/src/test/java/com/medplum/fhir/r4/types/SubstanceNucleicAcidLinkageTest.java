@@ -24,6 +24,13 @@ public class SubstanceNucleicAcidLinkageTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceNucleicAcid.SubstanceNucleicAcidLinkage x = SubstanceNucleicAcid.SubstanceNucleicAcidLinkage.create().build();
+        final SubstanceNucleicAcid.SubstanceNucleicAcidLinkage y = SubstanceNucleicAcid.SubstanceNucleicAcidLinkage.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceNucleicAcid.SubstanceNucleicAcidLinkage.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class CapabilityStatementMessagingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CapabilityStatement.CapabilityStatementMessaging x = CapabilityStatement.CapabilityStatementMessaging.create().build();
+        final CapabilityStatement.CapabilityStatementMessaging y = CapabilityStatement.CapabilityStatementMessaging.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CapabilityStatement.CapabilityStatementMessaging.create().id("x").build().id());
     }

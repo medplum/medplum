@@ -24,6 +24,13 @@ public class GraphDefinitionTargetTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final GraphDefinition.GraphDefinitionTarget x = GraphDefinition.GraphDefinitionTarget.create().build();
+        final GraphDefinition.GraphDefinitionTarget y = GraphDefinition.GraphDefinitionTarget.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", GraphDefinition.GraphDefinitionTarget.create().id("x").build().id());
     }

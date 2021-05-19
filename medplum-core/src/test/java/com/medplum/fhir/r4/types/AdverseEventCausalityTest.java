@@ -24,6 +24,13 @@ public class AdverseEventCausalityTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final AdverseEvent.AdverseEventCausality x = AdverseEvent.AdverseEventCausality.create().build();
+        final AdverseEvent.AdverseEventCausality y = AdverseEvent.AdverseEventCausality.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", AdverseEvent.AdverseEventCausality.create().id("x").build().id());
     }

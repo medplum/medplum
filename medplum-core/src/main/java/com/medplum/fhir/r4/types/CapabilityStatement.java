@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -415,10 +413,6 @@ public class CapabilityStatement extends DomainResource {
         public CapabilityStatement build() {
             return new CapabilityStatement(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -508,15 +502,14 @@ public class CapabilityStatement extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_PROFILE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementDocument, CapabilityStatementDocument.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -633,15 +626,14 @@ public class CapabilityStatement extends DomainResource {
             return getUri(FhirPropertyNames.PROPERTY_ADDRESS);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementEndpoint, CapabilityStatementEndpoint.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -761,15 +753,14 @@ public class CapabilityStatement extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_CUSTODIAN);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementImplementation, CapabilityStatementImplementation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -886,15 +877,14 @@ public class CapabilityStatement extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementInteraction, CapabilityStatementInteraction.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1006,15 +996,14 @@ public class CapabilityStatement extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementInteraction1, CapabilityStatementInteraction1.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1145,15 +1134,14 @@ public class CapabilityStatement extends DomainResource {
             return getList(CapabilityStatementSupportedMessage.class, FhirPropertyNames.PROPERTY_SUPPORTED_MESSAGE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementMessaging, CapabilityStatementMessaging.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1292,15 +1280,14 @@ public class CapabilityStatement extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementOperation, CapabilityStatementOperation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1546,15 +1533,14 @@ public class CapabilityStatement extends DomainResource {
             return getList(CapabilityStatementOperation.class, FhirPropertyNames.PROPERTY_OPERATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementResource, CapabilityStatementResource.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1791,15 +1777,14 @@ public class CapabilityStatement extends DomainResource {
             return getList(String.class, FhirPropertyNames.PROPERTY_COMPARTMENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementRest, CapabilityStatementRest.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1960,15 +1945,14 @@ public class CapabilityStatement extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementSearchParam, CapabilityStatementSearchParam.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2096,15 +2080,14 @@ public class CapabilityStatement extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DESCRIPTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementSecurity, CapabilityStatementSecurity.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2226,15 +2209,14 @@ public class CapabilityStatement extends DomainResource {
             return getInstant(FhirPropertyNames.PROPERTY_RELEASE_DATE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementSoftware, CapabilityStatementSoftware.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -2351,15 +2333,14 @@ public class CapabilityStatement extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DEFINITION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<CapabilityStatementSupportedMessage, CapabilityStatementSupportedMessage.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

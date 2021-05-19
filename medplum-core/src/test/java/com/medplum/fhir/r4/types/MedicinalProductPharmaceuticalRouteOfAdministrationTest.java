@@ -24,6 +24,15 @@ public class MedicinalProductPharmaceuticalRouteOfAdministrationTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration x =
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().build();
+    final MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration y =
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().id("x").build().id());
     }
@@ -37,7 +46,8 @@ public class MedicinalProductPharmaceuticalRouteOfAdministrationTest {
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test
@@ -55,30 +65,35 @@ public class MedicinalProductPharmaceuticalRouteOfAdministrationTest {
     @Test
     public void testMaxSingleDose() {
         final Quantity value = Quantity.create().build();
-        assertEquals(value, MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().maxSingleDose(value).build().maxSingleDose());
+    assertEquals(value,
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().maxSingleDose(value).build().maxSingleDose());
     }
 
     @Test
     public void testMaxDosePerDay() {
         final Quantity value = Quantity.create().build();
-        assertEquals(value, MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().maxDosePerDay(value).build().maxDosePerDay());
+    assertEquals(value,
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().maxDosePerDay(value).build().maxDosePerDay());
     }
 
     @Test
     public void testMaxDosePerTreatmentPeriod() {
         final Ratio value = Ratio.create().build();
-        assertEquals(value, MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().maxDosePerTreatmentPeriod(value).build().maxDosePerTreatmentPeriod());
+    assertEquals(value,
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().maxDosePerTreatmentPeriod(value).build().maxDosePerTreatmentPeriod());
     }
 
     @Test
     public void testMaxTreatmentPeriod() {
         final Duration value = Duration.create().build();
-        assertEquals(value, MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().maxTreatmentPeriod(value).build().maxTreatmentPeriod());
+    assertEquals(value,
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().maxTreatmentPeriod(value).build().maxTreatmentPeriod());
     }
 
     @Test
     public void testTargetSpecies() {
         final java.util.List<MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalTargetSpecies> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().targetSpecies(value).build().targetSpecies());
+    assertEquals(value,
+            MedicinalProductPharmaceutical.MedicinalProductPharmaceuticalRouteOfAdministration.create().targetSpecies(value).build().targetSpecies());
     }
 }

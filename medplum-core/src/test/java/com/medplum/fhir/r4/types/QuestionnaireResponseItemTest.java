@@ -24,6 +24,13 @@ public class QuestionnaireResponseItemTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final QuestionnaireResponse.QuestionnaireResponseItem x = QuestionnaireResponse.QuestionnaireResponseItem.create().build();
+        final QuestionnaireResponse.QuestionnaireResponseItem y = QuestionnaireResponse.QuestionnaireResponseItem.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", QuestionnaireResponse.QuestionnaireResponseItem.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class ResearchStudyArmTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ResearchStudy.ResearchStudyArm x = ResearchStudy.ResearchStudyArm.create().build();
+        final ResearchStudy.ResearchStudyArm y = ResearchStudy.ResearchStudyArm.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ResearchStudy.ResearchStudyArm.create().id("x").build().id());
     }

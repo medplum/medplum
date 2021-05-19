@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -467,10 +465,6 @@ public class RiskEvidenceSynthesis extends DomainResource {
         public RiskEvidenceSynthesis build() {
             return new RiskEvidenceSynthesis(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -556,15 +550,14 @@ public class RiskEvidenceSynthesis extends DomainResource {
             return getList(RiskEvidenceSynthesisCertaintySubcomponent.class, FhirPropertyNames.PROPERTY_CERTAINTY_SUBCOMPONENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<RiskEvidenceSynthesisCertainty, RiskEvidenceSynthesisCertainty.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -686,15 +679,15 @@ public class RiskEvidenceSynthesis extends DomainResource {
             return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<RiskEvidenceSynthesisCertaintySubcomponent,
+                RiskEvidenceSynthesisCertaintySubcomponent.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -822,15 +815,14 @@ public class RiskEvidenceSynthesis extends DomainResource {
             return data.getJsonNumber(FhirPropertyNames.PROPERTY_TO).doubleValue();
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<RiskEvidenceSynthesisPrecisionEstimate, RiskEvidenceSynthesisPrecisionEstimate.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -985,15 +977,14 @@ public class RiskEvidenceSynthesis extends DomainResource {
             return getList(RiskEvidenceSynthesisPrecisionEstimate.class, FhirPropertyNames.PROPERTY_PRECISION_ESTIMATE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<RiskEvidenceSynthesisRiskEstimate, RiskEvidenceSynthesisRiskEstimate.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1134,15 +1125,14 @@ public class RiskEvidenceSynthesis extends DomainResource {
             return data.getInt(FhirPropertyNames.PROPERTY_NUMBER_OF_PARTICIPANTS);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<RiskEvidenceSynthesisSampleSize, RiskEvidenceSynthesisSampleSize.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

@@ -24,6 +24,13 @@ public class NutritionOrderAdministrationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final NutritionOrder.NutritionOrderAdministration x = NutritionOrder.NutritionOrderAdministration.create().build();
+        final NutritionOrder.NutritionOrderAdministration y = NutritionOrder.NutritionOrderAdministration.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", NutritionOrder.NutritionOrderAdministration.create().id("x").build().id());
     }

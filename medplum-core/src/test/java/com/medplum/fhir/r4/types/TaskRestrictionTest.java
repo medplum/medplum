@@ -24,6 +24,13 @@ public class TaskRestrictionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Task.TaskRestriction x = Task.TaskRestriction.create().build();
+        final Task.TaskRestriction y = Task.TaskRestriction.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Task.TaskRestriction.create().id("x").build().id());
     }

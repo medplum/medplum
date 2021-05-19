@@ -24,6 +24,13 @@ public class DataRequirementCodeFilterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DataRequirement.DataRequirementCodeFilter x = DataRequirement.DataRequirementCodeFilter.create().build();
+        final DataRequirement.DataRequirementCodeFilter y = DataRequirement.DataRequirementCodeFilter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DataRequirement.DataRequirementCodeFilter.create().id("x").build().id());
     }

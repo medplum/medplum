@@ -24,6 +24,13 @@ public class SearchParameterComponentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SearchParameter.SearchParameterComponent x = SearchParameter.SearchParameterComponent.create().build();
+        final SearchParameter.SearchParameterComponent y = SearchParameter.SearchParameterComponent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SearchParameter.SearchParameterComponent.create().id("x").build().id());
     }

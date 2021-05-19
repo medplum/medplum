@@ -24,6 +24,15 @@ public class RiskEvidenceSynthesisCertaintySubcomponentTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final RiskEvidenceSynthesis.RiskEvidenceSynthesisCertaintySubcomponent x =
+            RiskEvidenceSynthesis.RiskEvidenceSynthesisCertaintySubcomponent.create().build();
+    final RiskEvidenceSynthesis.RiskEvidenceSynthesisCertaintySubcomponent y =
+            RiskEvidenceSynthesis.RiskEvidenceSynthesisCertaintySubcomponent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RiskEvidenceSynthesis.RiskEvidenceSynthesisCertaintySubcomponent.create().id("x").build().id());
     }

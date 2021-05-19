@@ -24,6 +24,13 @@ public class SubstanceSourceMaterialOrganismTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSourceMaterial.SubstanceSourceMaterialOrganism x = SubstanceSourceMaterial.SubstanceSourceMaterialOrganism.create().build();
+        final SubstanceSourceMaterial.SubstanceSourceMaterialOrganism y = SubstanceSourceMaterial.SubstanceSourceMaterialOrganism.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSourceMaterial.SubstanceSourceMaterialOrganism.create().id("x").build().id());
     }
@@ -83,7 +90,8 @@ public class SubstanceSourceMaterialOrganismTest {
 
     @Test
     public void testOrganismGeneral() {
-        final SubstanceSourceMaterial.SubstanceSourceMaterialOrganismGeneral value = SubstanceSourceMaterial.SubstanceSourceMaterialOrganismGeneral.create().build();
+    final SubstanceSourceMaterial.SubstanceSourceMaterialOrganismGeneral value =
+            SubstanceSourceMaterial.SubstanceSourceMaterialOrganismGeneral.create().build();
         assertEquals(value, SubstanceSourceMaterial.SubstanceSourceMaterialOrganism.create().organismGeneral(value).build().organismGeneral());
     }
 }

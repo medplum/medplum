@@ -24,6 +24,13 @@ public class ClaimTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Claim x = Claim.create().build();
+        final Claim y = Claim.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Claim.create().id("x").build().id());
     }

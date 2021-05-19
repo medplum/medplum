@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -620,10 +618,6 @@ public class Measure extends DomainResource {
         public Measure build() {
             return new Measure(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -712,15 +706,14 @@ public class Measure extends DomainResource {
             return getObject(Expression.class, FhirPropertyNames.PROPERTY_CRITERIA);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MeasureComponent, MeasureComponent.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -851,15 +844,14 @@ public class Measure extends DomainResource {
             return getList(MeasureStratifier.class, FhirPropertyNames.PROPERTY_STRATIFIER);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MeasureGroup, MeasureGroup.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -984,15 +976,14 @@ public class Measure extends DomainResource {
             return getObject(Expression.class, FhirPropertyNames.PROPERTY_CRITERIA);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MeasurePopulation, MeasurePopulation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1125,15 +1116,14 @@ public class Measure extends DomainResource {
             return getList(MeasureComponent.class, FhirPropertyNames.PROPERTY_COMPONENT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MeasureStratifier, MeasureStratifier.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1275,15 +1265,14 @@ public class Measure extends DomainResource {
             return getObject(Expression.class, FhirPropertyNames.PROPERTY_CRITERIA);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<MeasureSupplementalData, MeasureSupplementalData.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

@@ -24,6 +24,13 @@ public class QuestionnaireResponseTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final QuestionnaireResponse x = QuestionnaireResponse.create().build();
+        final QuestionnaireResponse y = QuestionnaireResponse.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", QuestionnaireResponse.create().id("x").build().id());
     }

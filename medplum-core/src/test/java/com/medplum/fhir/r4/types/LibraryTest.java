@@ -24,6 +24,13 @@ public class LibraryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Library x = Library.create().build();
+        final Library y = Library.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Library.create().id("x").build().id());
     }

@@ -24,6 +24,15 @@ public class MedicinalProductManufacturingBusinessOperationTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProduct.MedicinalProductManufacturingBusinessOperation x =
+            MedicinalProduct.MedicinalProductManufacturingBusinessOperation.create().build();
+    final MedicinalProduct.MedicinalProductManufacturingBusinessOperation y =
+            MedicinalProduct.MedicinalProductManufacturingBusinessOperation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProduct.MedicinalProductManufacturingBusinessOperation.create().id("x").build().id());
     }
@@ -49,7 +58,8 @@ public class MedicinalProductManufacturingBusinessOperationTest {
     @Test
     public void testAuthorisationReferenceNumber() {
         final Identifier value = Identifier.create().build();
-        assertEquals(value, MedicinalProduct.MedicinalProductManufacturingBusinessOperation.create().authorisationReferenceNumber(value).build().authorisationReferenceNumber());
+    assertEquals(value,
+            MedicinalProduct.MedicinalProductManufacturingBusinessOperation.create().authorisationReferenceNumber(value).build().authorisationReferenceNumber());
     }
 
     @Test
@@ -61,7 +71,8 @@ public class MedicinalProductManufacturingBusinessOperationTest {
     @Test
     public void testConfidentialityIndicator() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, MedicinalProduct.MedicinalProductManufacturingBusinessOperation.create().confidentialityIndicator(value).build().confidentialityIndicator());
+    assertEquals(value,
+            MedicinalProduct.MedicinalProductManufacturingBusinessOperation.create().confidentialityIndicator(value).build().confidentialityIndicator());
     }
 
     @Test

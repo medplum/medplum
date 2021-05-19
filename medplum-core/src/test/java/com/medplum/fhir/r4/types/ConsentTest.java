@@ -24,6 +24,13 @@ public class ConsentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Consent x = Consent.create().build();
+        final Consent y = Consent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Consent.create().id("x").build().id());
     }

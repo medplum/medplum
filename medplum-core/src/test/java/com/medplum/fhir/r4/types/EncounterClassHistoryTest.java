@@ -24,6 +24,13 @@ public class EncounterClassHistoryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Encounter.EncounterClassHistory x = Encounter.EncounterClassHistory.create().build();
+        final Encounter.EncounterClassHistory y = Encounter.EncounterClassHistory.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Encounter.EncounterClassHistory.create().id("x").build().id());
     }

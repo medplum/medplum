@@ -89,9 +89,5 @@ public class Login extends FhirResource {
         public Login build() {
             return new Login(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

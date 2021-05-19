@@ -227,9 +227,5 @@ public class ImmunizationEvaluation extends DomainResource {
         public ImmunizationEvaluation build() {
             return new ImmunizationEvaluation(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

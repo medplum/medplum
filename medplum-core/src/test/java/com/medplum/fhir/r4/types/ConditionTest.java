@@ -24,6 +24,13 @@ public class ConditionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Condition x = Condition.create().build();
+        final Condition y = Condition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Condition.create().id("x").build().id());
     }

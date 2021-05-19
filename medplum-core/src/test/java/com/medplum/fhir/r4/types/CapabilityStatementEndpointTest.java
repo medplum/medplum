@@ -24,6 +24,13 @@ public class CapabilityStatementEndpointTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CapabilityStatement.CapabilityStatementEndpoint x = CapabilityStatement.CapabilityStatementEndpoint.create().build();
+        final CapabilityStatement.CapabilityStatementEndpoint y = CapabilityStatement.CapabilityStatementEndpoint.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CapabilityStatement.CapabilityStatementEndpoint.create().id("x").build().id());
     }

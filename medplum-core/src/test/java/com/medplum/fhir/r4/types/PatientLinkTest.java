@@ -24,6 +24,13 @@ public class PatientLinkTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Patient.PatientLink x = Patient.PatientLink.create().build();
+        final Patient.PatientLink y = Patient.PatientLink.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Patient.PatientLink.create().id("x").build().id());
     }

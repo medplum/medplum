@@ -24,6 +24,13 @@ public class StructureMapParameterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final StructureMap.StructureMapParameter x = StructureMap.StructureMapParameter.create().build();
+        final StructureMap.StructureMapParameter y = StructureMap.StructureMapParameter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", StructureMap.StructureMapParameter.create().id("x").build().id());
     }

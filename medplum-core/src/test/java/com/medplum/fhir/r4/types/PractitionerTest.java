@@ -24,6 +24,13 @@ public class PractitionerTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Practitioner x = Practitioner.create().build();
+        final Practitioner y = Practitioner.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Practitioner.create().id("x").build().id());
     }

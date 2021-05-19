@@ -547,9 +547,5 @@ public class ServiceRequest extends DomainResource {
         public ServiceRequest build() {
             return new ServiceRequest(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

@@ -63,7 +63,7 @@ public class DomainResource extends FhirResource {
         return getList(Extension.class, FhirPropertyNames.PROPERTY_MODIFIER_EXTENSION);
     }
 
-    public abstract static class Builder<T extends DomainResource, B extends DomainResource.Builder<T, B>> extends FhirResource.Builder<T, B> {
+    public static class Builder<T extends DomainResource, B extends DomainResource.Builder<T, B>> extends FhirResource.Builder<T, B> {
 
         protected Builder(final String resourceType) {
             super(resourceType);

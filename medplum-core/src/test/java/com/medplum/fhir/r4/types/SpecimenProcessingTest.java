@@ -24,6 +24,13 @@ public class SpecimenProcessingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Specimen.SpecimenProcessing x = Specimen.SpecimenProcessing.create().build();
+        final Specimen.SpecimenProcessing y = Specimen.SpecimenProcessing.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Specimen.SpecimenProcessing.create().id("x").build().id());
     }

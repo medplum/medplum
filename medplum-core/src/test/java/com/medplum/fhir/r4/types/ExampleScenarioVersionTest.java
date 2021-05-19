@@ -24,6 +24,13 @@ public class ExampleScenarioVersionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ExampleScenario.ExampleScenarioVersion x = ExampleScenario.ExampleScenarioVersion.create().build();
+        final ExampleScenario.ExampleScenarioVersion y = ExampleScenario.ExampleScenarioVersion.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ExampleScenario.ExampleScenarioVersion.create().id("x").build().id());
     }

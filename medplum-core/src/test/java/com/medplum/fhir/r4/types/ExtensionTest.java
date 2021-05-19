@@ -24,6 +24,13 @@ public class ExtensionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Extension x = Extension.create().build();
+        final Extension y = Extension.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Extension.create().id("x").build().id());
     }

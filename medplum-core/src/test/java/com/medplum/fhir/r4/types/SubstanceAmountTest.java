@@ -24,6 +24,13 @@ public class SubstanceAmountTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceAmount x = SubstanceAmount.create().build();
+        final SubstanceAmount y = SubstanceAmount.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceAmount.create().id("x").build().id());
     }

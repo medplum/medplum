@@ -24,6 +24,13 @@ public class EvidenceVariableTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final EvidenceVariable x = EvidenceVariable.create().build();
+        final EvidenceVariable y = EvidenceVariable.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EvidenceVariable.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class AccountGuarantorTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Account.AccountGuarantor x = Account.AccountGuarantor.create().build();
+        final Account.AccountGuarantor y = Account.AccountGuarantor.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Account.AccountGuarantor.create().id("x").build().id());
     }

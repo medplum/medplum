@@ -24,6 +24,13 @@ public class BundleTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Bundle x = Bundle.create().build();
+        final Bundle y = Bundle.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Bundle.create().id("x").build().id());
     }

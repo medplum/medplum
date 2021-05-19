@@ -24,6 +24,13 @@ public class RelatedPersonCommunicationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final RelatedPerson.RelatedPersonCommunication x = RelatedPerson.RelatedPersonCommunication.create().build();
+        final RelatedPerson.RelatedPersonCommunication y = RelatedPerson.RelatedPersonCommunication.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RelatedPerson.RelatedPersonCommunication.create().id("x").build().id());
     }

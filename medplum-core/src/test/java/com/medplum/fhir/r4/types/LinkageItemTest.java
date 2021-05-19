@@ -24,6 +24,13 @@ public class LinkageItemTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Linkage.LinkageItem x = Linkage.LinkageItem.create().build();
+        final Linkage.LinkageItem y = Linkage.LinkageItem.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Linkage.LinkageItem.create().id("x").build().id());
     }

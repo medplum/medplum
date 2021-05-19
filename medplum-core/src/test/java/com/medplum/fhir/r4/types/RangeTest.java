@@ -24,6 +24,13 @@ public class RangeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Range x = Range.create().build();
+        final Range y = Range.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Range.create().id("x").build().id());
     }

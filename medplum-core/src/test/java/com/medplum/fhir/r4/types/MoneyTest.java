@@ -24,6 +24,13 @@ public class MoneyTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Money x = Money.create().build();
+        final Money y = Money.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Money.create().id("x").build().id());
     }

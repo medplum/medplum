@@ -24,6 +24,13 @@ public class PersonTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Person x = Person.create().build();
+        final Person y = Person.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Person.create().id("x").build().id());
     }

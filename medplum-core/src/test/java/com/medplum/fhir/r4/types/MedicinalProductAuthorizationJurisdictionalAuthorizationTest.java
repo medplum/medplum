@@ -20,7 +20,16 @@ public class MedicinalProductAuthorizationJurisdictionalAuthorizationTest {
 
     @Test
     public void testBuilderFromJsonObject() {
-        assertNotNull(MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create(Json.createObjectBuilder().build()).build());
+    assertNotNull(MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create(Json.createObjectBuilder().build()).build());
+    }
+
+    @Test
+    public void testCopyAll() {
+    final MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization x =
+            MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().build();
+    final MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization y =
+            MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().copyAll(x).build();
+        assertEquals(x, y);
     }
 
     @Test
@@ -31,19 +40,22 @@ public class MedicinalProductAuthorizationJurisdictionalAuthorizationTest {
     @Test
     public void testExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().extension(value).build().extension());
+    assertEquals(value,
+            MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().extension(value).build().extension());
     }
 
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test
     public void testIdentifier() {
         final java.util.List<Identifier> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().identifier(value).build().identifier());
+    assertEquals(value,
+            MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().identifier(value).build().identifier());
     }
 
     @Test
@@ -55,18 +67,21 @@ public class MedicinalProductAuthorizationJurisdictionalAuthorizationTest {
     @Test
     public void testJurisdiction() {
         final java.util.List<CodeableConcept> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().jurisdiction(value).build().jurisdiction());
+    assertEquals(value,
+            MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().jurisdiction(value).build().jurisdiction());
     }
 
     @Test
     public void testLegalStatusOfSupply() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().legalStatusOfSupply(value).build().legalStatusOfSupply());
+    assertEquals(value,
+            MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().legalStatusOfSupply(value).build().legalStatusOfSupply());
     }
 
     @Test
     public void testValidityPeriod() {
         final Period value = Period.create().build();
-        assertEquals(value, MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().validityPeriod(value).build().validityPeriod());
+    assertEquals(value,
+            MedicinalProductAuthorization.MedicinalProductAuthorizationJurisdictionalAuthorization.create().validityPeriod(value).build().validityPeriod());
     }
 }

@@ -24,6 +24,13 @@ public class MedicinalProductSpecialDesignationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicinalProduct.MedicinalProductSpecialDesignation x = MedicinalProduct.MedicinalProductSpecialDesignation.create().build();
+        final MedicinalProduct.MedicinalProductSpecialDesignation y = MedicinalProduct.MedicinalProductSpecialDesignation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProduct.MedicinalProductSpecialDesignation.create().id("x").build().id());
     }

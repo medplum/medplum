@@ -24,6 +24,15 @@ public class ImmunizationRecommendationDateCriterionTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final ImmunizationRecommendation.ImmunizationRecommendationDateCriterion x =
+            ImmunizationRecommendation.ImmunizationRecommendationDateCriterion.create().build();
+    final ImmunizationRecommendation.ImmunizationRecommendationDateCriterion y =
+            ImmunizationRecommendation.ImmunizationRecommendationDateCriterion.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ImmunizationRecommendation.ImmunizationRecommendationDateCriterion.create().id("x").build().id());
     }

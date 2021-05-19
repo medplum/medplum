@@ -235,9 +235,5 @@ public class JsonWebKey extends FhirResource {
         public JsonWebKey build() {
             return new JsonWebKey(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

@@ -24,6 +24,13 @@ public class SubstanceReferenceInformationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceReferenceInformation x = SubstanceReferenceInformation.create().build();
+        final SubstanceReferenceInformation y = SubstanceReferenceInformation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceReferenceInformation.create().id("x").build().id());
     }

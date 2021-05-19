@@ -24,6 +24,13 @@ public class ConceptMapDependsOnTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ConceptMap.ConceptMapDependsOn x = ConceptMap.ConceptMapDependsOn.create().build();
+        final ConceptMap.ConceptMapDependsOn y = ConceptMap.ConceptMapDependsOn.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ConceptMap.ConceptMapDependsOn.create().id("x").build().id());
     }

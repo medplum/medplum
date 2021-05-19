@@ -24,6 +24,13 @@ public class CapabilityStatementDocumentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CapabilityStatement.CapabilityStatementDocument x = CapabilityStatement.CapabilityStatementDocument.create().build();
+        final CapabilityStatement.CapabilityStatementDocument y = CapabilityStatement.CapabilityStatementDocument.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CapabilityStatement.CapabilityStatementDocument.create().id("x").build().id());
     }

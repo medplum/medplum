@@ -24,6 +24,13 @@ public class InvoiceParticipantTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Invoice.InvoiceParticipant x = Invoice.InvoiceParticipant.create().build();
+        final Invoice.InvoiceParticipant y = Invoice.InvoiceParticipant.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Invoice.InvoiceParticipant.create().id("x").build().id());
     }

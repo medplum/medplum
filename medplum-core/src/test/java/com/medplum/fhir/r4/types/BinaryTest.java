@@ -24,6 +24,13 @@ public class BinaryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Binary x = Binary.create().build();
+        final Binary y = Binary.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Binary.create().id("x").build().id());
     }

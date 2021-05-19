@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -135,15 +133,14 @@ public class DataRequirement extends FhirObject {
         return getList(DataRequirementSort.class, FhirPropertyNames.PROPERTY_SORT);
     }
 
-    public static final class Builder {
-        private final JsonObjectBuilder b;
+    public static final class Builder extends FhirObject.Builder<DataRequirement, DataRequirement.Builder> {
 
         private Builder() {
-            b = Json.createObjectBuilder();
+            super();
         }
 
         private Builder(final JsonObject data) {
-            b = Json.createObjectBuilder(data);
+            super(data);
         }
 
         public Builder id(final String id) {
@@ -311,15 +308,14 @@ public class DataRequirement extends FhirObject {
             return getList(Coding.class, FhirPropertyNames.PROPERTY_CODE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<DataRequirementCodeFilter, DataRequirementCodeFilter.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -483,15 +479,14 @@ public class DataRequirement extends FhirObject {
             return getObject(Duration.class, FhirPropertyNames.PROPERTY_VALUE_DURATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<DataRequirementDateFilter, DataRequirementDateFilter.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -618,15 +613,14 @@ public class DataRequirement extends FhirObject {
             return getString(FhirPropertyNames.PROPERTY_DIRECTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<DataRequirementSort, DataRequirementSort.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

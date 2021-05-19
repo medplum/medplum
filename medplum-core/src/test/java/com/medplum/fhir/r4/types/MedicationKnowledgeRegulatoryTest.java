@@ -24,6 +24,13 @@ public class MedicationKnowledgeRegulatoryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicationKnowledge.MedicationKnowledgeRegulatory x = MedicationKnowledge.MedicationKnowledgeRegulatory.create().build();
+        final MedicationKnowledge.MedicationKnowledgeRegulatory y = MedicationKnowledge.MedicationKnowledgeRegulatory.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicationKnowledge.MedicationKnowledgeRegulatory.create().id("x").build().id());
     }

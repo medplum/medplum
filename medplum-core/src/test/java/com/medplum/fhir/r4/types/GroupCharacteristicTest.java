@@ -24,6 +24,13 @@ public class GroupCharacteristicTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Group.GroupCharacteristic x = Group.GroupCharacteristic.create().build();
+        final Group.GroupCharacteristic y = Group.GroupCharacteristic.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Group.GroupCharacteristic.create().id("x").build().id());
     }

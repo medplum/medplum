@@ -24,6 +24,13 @@ public class SubstanceAmountReferenceRangeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceAmount.SubstanceAmountReferenceRange x = SubstanceAmount.SubstanceAmountReferenceRange.create().build();
+        final SubstanceAmount.SubstanceAmountReferenceRange y = SubstanceAmount.SubstanceAmountReferenceRange.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceAmount.SubstanceAmountReferenceRange.create().id("x").build().id());
     }

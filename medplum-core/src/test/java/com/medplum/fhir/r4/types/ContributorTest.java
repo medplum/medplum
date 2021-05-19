@@ -24,6 +24,13 @@ public class ContributorTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Contributor x = Contributor.create().build();
+        final Contributor y = Contributor.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Contributor.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class ElementDefinitionBindingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ElementDefinition.ElementDefinitionBinding x = ElementDefinition.ElementDefinitionBinding.create().build();
+        final ElementDefinition.ElementDefinitionBinding y = ElementDefinition.ElementDefinitionBinding.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ElementDefinition.ElementDefinitionBinding.create().id("x").build().id());
     }

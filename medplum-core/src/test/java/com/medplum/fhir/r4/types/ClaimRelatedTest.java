@@ -24,6 +24,13 @@ public class ClaimRelatedTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Claim.ClaimRelated x = Claim.ClaimRelated.create().build();
+        final Claim.ClaimRelated y = Claim.ClaimRelated.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Claim.ClaimRelated.create().id("x").build().id());
     }

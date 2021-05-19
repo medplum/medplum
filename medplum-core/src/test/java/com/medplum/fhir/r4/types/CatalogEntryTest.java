@@ -24,6 +24,13 @@ public class CatalogEntryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CatalogEntry x = CatalogEntry.create().build();
+        final CatalogEntry y = CatalogEntry.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CatalogEntry.create().id("x").build().id());
     }

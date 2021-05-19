@@ -24,6 +24,13 @@ public class ResearchSubjectTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ResearchSubject x = ResearchSubject.create().build();
+        final ResearchSubject y = ResearchSubject.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ResearchSubject.create().id("x").build().id());
     }

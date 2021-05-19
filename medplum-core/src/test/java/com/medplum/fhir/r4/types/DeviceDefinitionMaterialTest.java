@@ -24,6 +24,13 @@ public class DeviceDefinitionMaterialTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DeviceDefinition.DeviceDefinitionMaterial x = DeviceDefinition.DeviceDefinitionMaterial.create().build();
+        final DeviceDefinition.DeviceDefinitionMaterial y = DeviceDefinition.DeviceDefinitionMaterial.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DeviceDefinition.DeviceDefinitionMaterial.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class MeasureGroupTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Measure.MeasureGroup x = Measure.MeasureGroup.create().build();
+        final Measure.MeasureGroup y = Measure.MeasureGroup.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Measure.MeasureGroup.create().id("x").build().id());
     }

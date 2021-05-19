@@ -24,6 +24,13 @@ public class TestScriptRequestHeaderTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TestScript.TestScriptRequestHeader x = TestScript.TestScriptRequestHeader.create().build();
+        final TestScript.TestScriptRequestHeader y = TestScript.TestScriptRequestHeader.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TestScript.TestScriptRequestHeader.create().id("x").build().id());
     }

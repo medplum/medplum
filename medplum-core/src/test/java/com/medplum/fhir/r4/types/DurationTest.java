@@ -24,6 +24,13 @@ public class DurationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Duration x = Duration.create().build();
+        final Duration y = Duration.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Duration.create().id("x").build().id());
     }

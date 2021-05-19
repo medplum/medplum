@@ -24,6 +24,13 @@ public class ImplementationGuideTemplateTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ImplementationGuide.ImplementationGuideTemplate x = ImplementationGuide.ImplementationGuideTemplate.create().build();
+        final ImplementationGuide.ImplementationGuideTemplate y = ImplementationGuide.ImplementationGuideTemplate.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ImplementationGuide.ImplementationGuideTemplate.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class ContractLegalTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Contract.ContractLegal x = Contract.ContractLegal.create().build();
+        final Contract.ContractLegal y = Contract.ContractLegal.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Contract.ContractLegal.create().id("x").build().id());
     }

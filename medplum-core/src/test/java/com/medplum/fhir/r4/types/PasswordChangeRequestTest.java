@@ -24,6 +24,13 @@ public class PasswordChangeRequestTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final PasswordChangeRequest x = PasswordChangeRequest.create().build();
+        final PasswordChangeRequest y = PasswordChangeRequest.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", PasswordChangeRequest.create().id("x").build().id());
     }

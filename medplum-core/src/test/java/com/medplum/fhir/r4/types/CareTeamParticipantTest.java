@@ -24,6 +24,13 @@ public class CareTeamParticipantTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CareTeam.CareTeamParticipant x = CareTeam.CareTeamParticipant.create().build();
+        final CareTeam.CareTeamParticipant y = CareTeam.CareTeamParticipant.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CareTeam.CareTeamParticipant.create().id("x").build().id());
     }

@@ -231,9 +231,5 @@ public class DeviceUseStatement extends DomainResource {
         public DeviceUseStatement build() {
             return new DeviceUseStatement(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

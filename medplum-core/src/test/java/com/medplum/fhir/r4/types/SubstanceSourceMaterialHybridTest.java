@@ -24,6 +24,13 @@ public class SubstanceSourceMaterialHybridTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSourceMaterial.SubstanceSourceMaterialHybrid x = SubstanceSourceMaterial.SubstanceSourceMaterialHybrid.create().build();
+        final SubstanceSourceMaterial.SubstanceSourceMaterialHybrid y = SubstanceSourceMaterial.SubstanceSourceMaterialHybrid.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSourceMaterial.SubstanceSourceMaterialHybrid.create().id("x").build().id());
     }

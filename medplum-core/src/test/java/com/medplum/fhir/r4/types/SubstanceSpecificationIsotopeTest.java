@@ -24,6 +24,13 @@ public class SubstanceSpecificationIsotopeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSpecification.SubstanceSpecificationIsotope x = SubstanceSpecification.SubstanceSpecificationIsotope.create().build();
+        final SubstanceSpecification.SubstanceSpecificationIsotope y = SubstanceSpecification.SubstanceSpecificationIsotope.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSpecification.SubstanceSpecificationIsotope.create().id("x").build().id());
     }
@@ -66,7 +73,8 @@ public class SubstanceSpecificationIsotopeTest {
 
     @Test
     public void testMolecularWeight() {
-        final SubstanceSpecification.SubstanceSpecificationMolecularWeight value = SubstanceSpecification.SubstanceSpecificationMolecularWeight.create().build();
+    final SubstanceSpecification.SubstanceSpecificationMolecularWeight value =
+            SubstanceSpecification.SubstanceSpecificationMolecularWeight.create().build();
         assertEquals(value, SubstanceSpecification.SubstanceSpecificationIsotope.create().molecularWeight(value).build().molecularWeight());
     }
 }

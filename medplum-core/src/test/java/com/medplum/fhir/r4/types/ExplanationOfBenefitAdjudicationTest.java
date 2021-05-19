@@ -24,6 +24,13 @@ public class ExplanationOfBenefitAdjudicationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ExplanationOfBenefit.ExplanationOfBenefitAdjudication x = ExplanationOfBenefit.ExplanationOfBenefitAdjudication.create().build();
+        final ExplanationOfBenefit.ExplanationOfBenefitAdjudication y = ExplanationOfBenefit.ExplanationOfBenefitAdjudication.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ExplanationOfBenefit.ExplanationOfBenefitAdjudication.create().id("x").build().id());
     }

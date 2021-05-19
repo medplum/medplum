@@ -24,6 +24,13 @@ public class RiskEvidenceSynthesisSampleSizeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final RiskEvidenceSynthesis.RiskEvidenceSynthesisSampleSize x = RiskEvidenceSynthesis.RiskEvidenceSynthesisSampleSize.create().build();
+        final RiskEvidenceSynthesis.RiskEvidenceSynthesisSampleSize y = RiskEvidenceSynthesis.RiskEvidenceSynthesisSampleSize.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", RiskEvidenceSynthesis.RiskEvidenceSynthesisSampleSize.create().id("x").build().id());
     }

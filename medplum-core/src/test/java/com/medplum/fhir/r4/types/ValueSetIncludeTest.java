@@ -24,6 +24,13 @@ public class ValueSetIncludeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ValueSet.ValueSetInclude x = ValueSet.ValueSetInclude.create().build();
+        final ValueSet.ValueSetInclude y = ValueSet.ValueSetInclude.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ValueSet.ValueSetInclude.create().id("x").build().id());
     }

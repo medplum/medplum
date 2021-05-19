@@ -24,6 +24,13 @@ public class MedicationKnowledgeMaxDispenseTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicationKnowledge.MedicationKnowledgeMaxDispense x = MedicationKnowledge.MedicationKnowledgeMaxDispense.create().build();
+        final MedicationKnowledge.MedicationKnowledgeMaxDispense y = MedicationKnowledge.MedicationKnowledgeMaxDispense.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicationKnowledge.MedicationKnowledgeMaxDispense.create().id("x").build().id());
     }

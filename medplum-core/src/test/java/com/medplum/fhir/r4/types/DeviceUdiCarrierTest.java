@@ -24,6 +24,13 @@ public class DeviceUdiCarrierTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Device.DeviceUdiCarrier x = Device.DeviceUdiCarrier.create().build();
+        final Device.DeviceUdiCarrier y = Device.DeviceUdiCarrier.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Device.DeviceUdiCarrier.create().id("x").build().id());
     }

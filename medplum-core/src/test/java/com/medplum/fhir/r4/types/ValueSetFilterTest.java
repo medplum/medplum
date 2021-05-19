@@ -24,6 +24,13 @@ public class ValueSetFilterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ValueSet.ValueSetFilter x = ValueSet.ValueSetFilter.create().build();
+        final ValueSet.ValueSetFilter y = ValueSet.ValueSetFilter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ValueSet.ValueSetFilter.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class ClaimResponseErrorTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ClaimResponse.ClaimResponseError x = ClaimResponse.ClaimResponseError.create().build();
+        final ClaimResponse.ClaimResponseError y = ClaimResponse.ClaimResponseError.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ClaimResponse.ClaimResponseError.create().id("x").build().id());
     }

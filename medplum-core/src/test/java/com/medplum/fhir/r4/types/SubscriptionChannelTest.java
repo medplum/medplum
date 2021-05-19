@@ -24,6 +24,13 @@ public class SubscriptionChannelTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Subscription.SubscriptionChannel x = Subscription.SubscriptionChannel.create().build();
+        final Subscription.SubscriptionChannel y = Subscription.SubscriptionChannel.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Subscription.SubscriptionChannel.create().id("x").build().id());
     }

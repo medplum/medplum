@@ -24,6 +24,13 @@ public class ChargeItemDefinitionPropertyGroupTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ChargeItemDefinition.ChargeItemDefinitionPropertyGroup x = ChargeItemDefinition.ChargeItemDefinitionPropertyGroup.create().build();
+        final ChargeItemDefinition.ChargeItemDefinitionPropertyGroup y = ChargeItemDefinition.ChargeItemDefinitionPropertyGroup.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ChargeItemDefinition.ChargeItemDefinitionPropertyGroup.create().id("x").build().id());
     }

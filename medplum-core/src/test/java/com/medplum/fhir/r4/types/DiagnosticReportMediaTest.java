@@ -24,6 +24,13 @@ public class DiagnosticReportMediaTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DiagnosticReport.DiagnosticReportMedia x = DiagnosticReport.DiagnosticReportMedia.create().build();
+        final DiagnosticReport.DiagnosticReportMedia y = DiagnosticReport.DiagnosticReportMedia.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DiagnosticReport.DiagnosticReportMedia.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class MedicinalProductContraindicationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicinalProductContraindication x = MedicinalProductContraindication.create().build();
+        final MedicinalProductContraindication y = MedicinalProductContraindication.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductContraindication.create().id("x").build().id());
     }

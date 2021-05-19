@@ -24,6 +24,13 @@ public class DistanceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Distance x = Distance.create().build();
+        final Distance y = Distance.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Distance.create().id("x").build().id());
     }

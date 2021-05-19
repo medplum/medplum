@@ -24,6 +24,14 @@ public class CoverageEligibilityResponseItemTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CoverageEligibilityResponse.CoverageEligibilityResponseItem x = CoverageEligibilityResponse.CoverageEligibilityResponseItem.create().build();
+    final CoverageEligibilityResponse.CoverageEligibilityResponseItem y =
+            CoverageEligibilityResponse.CoverageEligibilityResponseItem.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CoverageEligibilityResponse.CoverageEligibilityResponseItem.create().id("x").build().id());
     }
@@ -111,7 +119,8 @@ public class CoverageEligibilityResponseItemTest {
     @Test
     public void testAuthorizationSupporting() {
         final java.util.List<CodeableConcept> value = java.util.Collections.emptyList();
-        assertEquals(value, CoverageEligibilityResponse.CoverageEligibilityResponseItem.create().authorizationSupporting(value).build().authorizationSupporting());
+    assertEquals(value,
+            CoverageEligibilityResponse.CoverageEligibilityResponseItem.create().authorizationSupporting(value).build().authorizationSupporting());
     }
 
     @Test

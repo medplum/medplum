@@ -24,6 +24,15 @@ public class SubstanceReferenceInformationClassificationTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final SubstanceReferenceInformation.SubstanceReferenceInformationClassification x =
+            SubstanceReferenceInformation.SubstanceReferenceInformationClassification.create().build();
+    final SubstanceReferenceInformation.SubstanceReferenceInformationClassification y =
+            SubstanceReferenceInformation.SubstanceReferenceInformationClassification.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceReferenceInformation.SubstanceReferenceInformationClassification.create().id("x").build().id());
     }
@@ -37,7 +46,8 @@ public class SubstanceReferenceInformationClassificationTest {
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, SubstanceReferenceInformation.SubstanceReferenceInformationClassification.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            SubstanceReferenceInformation.SubstanceReferenceInformationClassification.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test

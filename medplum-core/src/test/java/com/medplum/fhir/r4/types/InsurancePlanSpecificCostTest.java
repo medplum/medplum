@@ -24,6 +24,13 @@ public class InsurancePlanSpecificCostTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final InsurancePlan.InsurancePlanSpecificCost x = InsurancePlan.InsurancePlanSpecificCost.create().build();
+        final InsurancePlan.InsurancePlanSpecificCost y = InsurancePlan.InsurancePlanSpecificCost.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", InsurancePlan.InsurancePlanSpecificCost.create().id("x").build().id());
     }

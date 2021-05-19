@@ -24,6 +24,13 @@ public class PeriodTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Period x = Period.create().build();
+        final Period y = Period.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Period.create().id("x").build().id());
     }

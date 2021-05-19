@@ -24,6 +24,13 @@ public class ActivityDefinitionDynamicValueTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ActivityDefinition.ActivityDefinitionDynamicValue x = ActivityDefinition.ActivityDefinitionDynamicValue.create().build();
+        final ActivityDefinition.ActivityDefinitionDynamicValue y = ActivityDefinition.ActivityDefinitionDynamicValue.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ActivityDefinition.ActivityDefinitionDynamicValue.create().id("x").build().id());
     }

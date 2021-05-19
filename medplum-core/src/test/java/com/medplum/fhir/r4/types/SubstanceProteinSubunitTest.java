@@ -24,6 +24,13 @@ public class SubstanceProteinSubunitTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceProtein.SubstanceProteinSubunit x = SubstanceProtein.SubstanceProteinSubunit.create().build();
+        final SubstanceProtein.SubstanceProteinSubunit y = SubstanceProtein.SubstanceProteinSubunit.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceProtein.SubstanceProteinSubunit.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class InvoicePriceComponentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Invoice.InvoicePriceComponent x = Invoice.InvoicePriceComponent.create().build();
+        final Invoice.InvoicePriceComponent y = Invoice.InvoicePriceComponent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Invoice.InvoicePriceComponent.create().id("x").build().id());
     }

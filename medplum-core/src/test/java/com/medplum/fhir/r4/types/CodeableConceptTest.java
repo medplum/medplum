@@ -24,6 +24,13 @@ public class CodeableConceptTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CodeableConcept x = CodeableConcept.create().build();
+        final CodeableConcept y = CodeableConcept.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CodeableConcept.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class CodeSystemPropertyTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CodeSystem.CodeSystemProperty x = CodeSystem.CodeSystemProperty.create().build();
+        final CodeSystem.CodeSystemProperty y = CodeSystem.CodeSystemProperty.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CodeSystem.CodeSystemProperty.create().id("x").build().id());
     }

@@ -24,6 +24,13 @@ public class MedicinalProductCountryLanguageTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicinalProduct.MedicinalProductCountryLanguage x = MedicinalProduct.MedicinalProductCountryLanguage.create().build();
+        final MedicinalProduct.MedicinalProductCountryLanguage y = MedicinalProduct.MedicinalProductCountryLanguage.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProduct.MedicinalProductCountryLanguage.create().id("x").build().id());
     }

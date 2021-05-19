@@ -24,6 +24,13 @@ public class MedicinalProductAuthorizationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicinalProductAuthorization x = MedicinalProductAuthorization.create().build();
+        final MedicinalProductAuthorization y = MedicinalProductAuthorization.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductAuthorization.create().id("x").build().id());
     }
@@ -161,7 +168,8 @@ public class MedicinalProductAuthorizationTest {
 
     @Test
     public void testProcedure() {
-        final MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure value = MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure.create().build();
+    final MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure value =
+            MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure.create().build();
         assertEquals(value, MedicinalProductAuthorization.create().procedure(value).build().procedure());
     }
 }

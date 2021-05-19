@@ -24,6 +24,13 @@ public class StructureDefinitionMappingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final StructureDefinition.StructureDefinitionMapping x = StructureDefinition.StructureDefinitionMapping.create().build();
+        final StructureDefinition.StructureDefinitionMapping y = StructureDefinition.StructureDefinitionMapping.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", StructureDefinition.StructureDefinitionMapping.create().id("x").build().id());
     }

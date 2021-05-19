@@ -24,6 +24,13 @@ public class SignatureTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Signature x = Signature.create().build();
+        final Signature y = Signature.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Signature.create().id("x").build().id());
     }

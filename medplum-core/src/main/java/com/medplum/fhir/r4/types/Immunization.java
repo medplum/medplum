@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -408,10 +406,6 @@ public class Immunization extends DomainResource {
         public Immunization build() {
             return new Immunization(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -504,15 +498,14 @@ public class Immunization extends DomainResource {
             return getInstant(FhirPropertyNames.PROPERTY_PRESENTATION_DATE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImmunizationEducation, ImmunizationEducation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -632,15 +625,14 @@ public class Immunization extends DomainResource {
             return getObject(Reference.class, FhirPropertyNames.PROPERTY_ACTOR);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImmunizationPerformer, ImmunizationPerformer.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -787,15 +779,14 @@ public class Immunization extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_SERIES_DOSES_STRING);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImmunizationProtocolApplied, ImmunizationProtocolApplied.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -936,15 +927,14 @@ public class Immunization extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_REPORTED);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImmunizationReaction, ImmunizationReaction.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

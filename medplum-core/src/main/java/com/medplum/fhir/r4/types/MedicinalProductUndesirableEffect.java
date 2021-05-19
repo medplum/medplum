@@ -100,9 +100,5 @@ public class MedicinalProductUndesirableEffect extends DomainResource {
         public MedicinalProductUndesirableEffect build() {
             return new MedicinalProductUndesirableEffect(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

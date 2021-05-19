@@ -24,6 +24,13 @@ public class ReferenceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Reference x = Reference.create().build();
+        final Reference y = Reference.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Reference.create().id("x").build().id());
     }

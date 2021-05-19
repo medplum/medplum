@@ -24,6 +24,13 @@ public class ClaimSupportingInfoTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Claim.ClaimSupportingInfo x = Claim.ClaimSupportingInfo.create().build();
+        final Claim.ClaimSupportingInfo y = Claim.ClaimSupportingInfo.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Claim.ClaimSupportingInfo.create().id("x").build().id());
     }

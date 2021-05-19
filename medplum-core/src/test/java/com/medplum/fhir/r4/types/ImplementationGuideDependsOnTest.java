@@ -24,6 +24,13 @@ public class ImplementationGuideDependsOnTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ImplementationGuide.ImplementationGuideDependsOn x = ImplementationGuide.ImplementationGuideDependsOn.create().build();
+        final ImplementationGuide.ImplementationGuideDependsOn y = ImplementationGuide.ImplementationGuideDependsOn.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ImplementationGuide.ImplementationGuideDependsOn.create().id("x").build().id());
     }

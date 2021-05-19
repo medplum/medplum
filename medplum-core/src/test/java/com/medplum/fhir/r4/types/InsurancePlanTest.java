@@ -24,6 +24,13 @@ public class InsurancePlanTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final InsurancePlan x = InsurancePlan.create().build();
+        final InsurancePlan y = InsurancePlan.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", InsurancePlan.create().id("x").build().id());
     }

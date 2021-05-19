@@ -24,6 +24,13 @@ public class LocationPositionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Location.LocationPosition x = Location.LocationPosition.create().build();
+        final Location.LocationPosition y = Location.LocationPosition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Location.LocationPosition.create().id("x").build().id());
     }

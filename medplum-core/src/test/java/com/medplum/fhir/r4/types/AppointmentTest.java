@@ -24,6 +24,13 @@ public class AppointmentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Appointment x = Appointment.create().build();
+        final Appointment y = Appointment.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Appointment.create().id("x").build().id());
     }

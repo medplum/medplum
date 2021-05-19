@@ -24,6 +24,13 @@ public class ContactPointTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ContactPoint x = ContactPoint.create().build();
+        final ContactPoint y = ContactPoint.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ContactPoint.create().id("x").build().id());
     }

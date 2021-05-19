@@ -24,6 +24,13 @@ public class SubstancePolymerStartingMaterialTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstancePolymer.SubstancePolymerStartingMaterial x = SubstancePolymer.SubstancePolymerStartingMaterial.create().build();
+        final SubstancePolymer.SubstancePolymerStartingMaterial y = SubstancePolymer.SubstancePolymerStartingMaterial.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstancePolymer.SubstancePolymerStartingMaterial.create().id("x").build().id());
     }

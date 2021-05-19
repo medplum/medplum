@@ -24,6 +24,13 @@ public class MedicinalProductNameTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicinalProduct.MedicinalProductName x = MedicinalProduct.MedicinalProductName.create().build();
+        final MedicinalProduct.MedicinalProductName y = MedicinalProduct.MedicinalProductName.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProduct.MedicinalProductName.create().id("x").build().id());
     }

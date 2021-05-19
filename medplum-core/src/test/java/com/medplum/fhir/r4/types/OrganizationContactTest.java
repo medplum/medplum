@@ -24,6 +24,13 @@ public class OrganizationContactTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Organization.OrganizationContact x = Organization.OrganizationContact.create().build();
+        final Organization.OrganizationContact y = Organization.OrganizationContact.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Organization.OrganizationContact.create().id("x").build().id());
     }

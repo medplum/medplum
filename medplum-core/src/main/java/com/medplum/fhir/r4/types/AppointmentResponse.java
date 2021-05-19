@@ -148,9 +148,5 @@ public class AppointmentResponse extends DomainResource {
         public AppointmentResponse build() {
             return new AppointmentResponse(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

@@ -141,9 +141,5 @@ public class ResearchSubject extends DomainResource {
         public ResearchSubject build() {
             return new ResearchSubject(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

@@ -24,6 +24,15 @@ public class MedicinalProductAuthorizationProcedureTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure x =
+            MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure.create().build();
+    final MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure y =
+            MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure.create().id("x").build().id());
     }
@@ -37,7 +46,8 @@ public class MedicinalProductAuthorizationProcedureTest {
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            MedicinalProductAuthorization.MedicinalProductAuthorizationProcedure.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test

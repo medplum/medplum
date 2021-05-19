@@ -24,6 +24,13 @@ public class SubstanceSourceMaterialAuthorTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSourceMaterial.SubstanceSourceMaterialAuthor x = SubstanceSourceMaterial.SubstanceSourceMaterialAuthor.create().build();
+        final SubstanceSourceMaterial.SubstanceSourceMaterialAuthor y = SubstanceSourceMaterial.SubstanceSourceMaterialAuthor.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSourceMaterial.SubstanceSourceMaterialAuthor.create().id("x").build().id());
     }

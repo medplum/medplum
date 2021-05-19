@@ -24,6 +24,13 @@ public class SearchParameterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SearchParameter x = SearchParameter.create().build();
+        final SearchParameter y = SearchParameter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SearchParameter.create().id("x").build().id());
     }

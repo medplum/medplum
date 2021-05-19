@@ -24,6 +24,15 @@ public class MedicinalProductIndicationOtherTherapyTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductIndication.MedicinalProductIndicationOtherTherapy x =
+            MedicinalProductIndication.MedicinalProductIndicationOtherTherapy.create().build();
+    final MedicinalProductIndication.MedicinalProductIndicationOtherTherapy y =
+            MedicinalProductIndication.MedicinalProductIndicationOtherTherapy.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductIndication.MedicinalProductIndicationOtherTherapy.create().id("x").build().id());
     }
@@ -43,18 +52,21 @@ public class MedicinalProductIndicationOtherTherapyTest {
     @Test
     public void testTherapyRelationshipType() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, MedicinalProductIndication.MedicinalProductIndicationOtherTherapy.create().therapyRelationshipType(value).build().therapyRelationshipType());
+    assertEquals(value,
+            MedicinalProductIndication.MedicinalProductIndicationOtherTherapy.create().therapyRelationshipType(value).build().therapyRelationshipType());
     }
 
     @Test
     public void testMedicationCodeableConcept() {
         final CodeableConcept value = CodeableConcept.create().build();
-        assertEquals(value, MedicinalProductIndication.MedicinalProductIndicationOtherTherapy.create().medicationCodeableConcept(value).build().medicationCodeableConcept());
+    assertEquals(value,
+            MedicinalProductIndication.MedicinalProductIndicationOtherTherapy.create().medicationCodeableConcept(value).build().medicationCodeableConcept());
     }
 
     @Test
     public void testMedicationReference() {
         final Reference value = Reference.create().build();
-        assertEquals(value, MedicinalProductIndication.MedicinalProductIndicationOtherTherapy.create().medicationReference(value).build().medicationReference());
+    assertEquals(value,
+            MedicinalProductIndication.MedicinalProductIndicationOtherTherapy.create().medicationReference(value).build().medicationReference());
     }
 }

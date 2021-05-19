@@ -24,6 +24,13 @@ public class ConsentPolicyTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Consent.ConsentPolicy x = Consent.ConsentPolicy.create().build();
+        final Consent.ConsentPolicy y = Consent.ConsentPolicy.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Consent.ConsentPolicy.create().id("x").build().id());
     }

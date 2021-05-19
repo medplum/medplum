@@ -24,6 +24,13 @@ public class ExampleScenarioContainedInstanceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ExampleScenario.ExampleScenarioContainedInstance x = ExampleScenario.ExampleScenarioContainedInstance.create().build();
+        final ExampleScenario.ExampleScenarioContainedInstance y = ExampleScenario.ExampleScenarioContainedInstance.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ExampleScenario.ExampleScenarioContainedInstance.create().id("x").build().id());
     }

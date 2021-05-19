@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -104,10 +102,6 @@ public class ImmunizationRecommendation extends DomainResource {
         public ImmunizationRecommendation build() {
             return new ImmunizationRecommendation(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -186,15 +180,15 @@ public class ImmunizationRecommendation extends DomainResource {
             return getInstant(FhirPropertyNames.PROPERTY_VALUE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImmunizationRecommendationDateCriterion,
+                ImmunizationRecommendationDateCriterion.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -396,15 +390,15 @@ public class ImmunizationRecommendation extends DomainResource {
             return getList(Reference.class, FhirPropertyNames.PROPERTY_SUPPORTING_PATIENT_INFORMATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ImmunizationRecommendationRecommendation,
+                ImmunizationRecommendationRecommendation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

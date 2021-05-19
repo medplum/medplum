@@ -24,6 +24,13 @@ public class ImmunizationEvaluationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ImmunizationEvaluation x = ImmunizationEvaluation.create().build();
+        final ImmunizationEvaluation y = ImmunizationEvaluation.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ImmunizationEvaluation.create().id("x").build().id());
     }

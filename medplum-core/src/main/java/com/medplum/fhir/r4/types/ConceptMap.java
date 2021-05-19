@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -325,10 +323,6 @@ public class ConceptMap extends DomainResource {
         public ConceptMap build() {
             return new ConceptMap(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -426,15 +420,14 @@ public class ConceptMap extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DISPLAY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ConceptMapDependsOn, ConceptMapDependsOn.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -561,15 +554,14 @@ public class ConceptMap extends DomainResource {
             return getList(ConceptMapTarget.class, FhirPropertyNames.PROPERTY_TARGET);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ConceptMapElement, ConceptMapElement.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -718,15 +710,14 @@ public class ConceptMap extends DomainResource {
             return getObject(ConceptMapUnmapped.class, FhirPropertyNames.PROPERTY_UNMAPPED);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ConceptMapGroup, ConceptMapGroup.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -893,15 +884,14 @@ public class ConceptMap extends DomainResource {
             return getList(ConceptMapDependsOn.class, FhirPropertyNames.PROPERTY_PRODUCT);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ConceptMapTarget, ConceptMapTarget.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1053,15 +1043,14 @@ public class ConceptMap extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_URL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<ConceptMapUnmapped, ConceptMapUnmapped.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

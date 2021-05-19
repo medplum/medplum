@@ -24,6 +24,13 @@ public class PatientContactTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Patient.PatientContact x = Patient.PatientContact.create().build();
+        final Patient.PatientContact y = Patient.PatientContact.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Patient.PatientContact.create().id("x").build().id());
     }

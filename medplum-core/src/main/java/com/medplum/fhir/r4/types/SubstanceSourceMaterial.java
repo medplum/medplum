@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -237,10 +235,6 @@ public class SubstanceSourceMaterial extends DomainResource {
         public SubstanceSourceMaterial build() {
             return new SubstanceSourceMaterial(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -337,15 +331,14 @@ public class SubstanceSourceMaterial extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_AUTHOR_DESCRIPTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceSourceMaterialAuthor, SubstanceSourceMaterialAuthor.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -469,15 +462,15 @@ public class SubstanceSourceMaterial extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_MATERIAL_TYPE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceSourceMaterialFractionDescription,
+                SubstanceSourceMaterialFractionDescription.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -627,15 +620,14 @@ public class SubstanceSourceMaterial extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_HYBRID_TYPE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceSourceMaterialHybrid, SubstanceSourceMaterialHybrid.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -820,15 +812,14 @@ public class SubstanceSourceMaterial extends DomainResource {
             return getObject(SubstanceSourceMaterialOrganismGeneral.class, FhirPropertyNames.PROPERTY_ORGANISM_GENERAL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceSourceMaterialOrganism, SubstanceSourceMaterialOrganism.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -993,15 +984,14 @@ public class SubstanceSourceMaterial extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_ORDER);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceSourceMaterialOrganismGeneral, SubstanceSourceMaterialOrganismGeneral.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1134,15 +1124,14 @@ public class SubstanceSourceMaterial extends DomainResource {
             return getObject(CodeableConcept.class, FhirPropertyNames.PROPERTY_PART_LOCATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<SubstanceSourceMaterialPartDescription, SubstanceSourceMaterialPartDescription.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

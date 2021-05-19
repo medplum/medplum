@@ -24,6 +24,13 @@ public class NutritionOrderOralDietTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final NutritionOrder.NutritionOrderOralDiet x = NutritionOrder.NutritionOrderOralDiet.create().build();
+        final NutritionOrder.NutritionOrderOralDiet y = NutritionOrder.NutritionOrderOralDiet.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", NutritionOrder.NutritionOrderOralDiet.create().id("x").build().id());
     }

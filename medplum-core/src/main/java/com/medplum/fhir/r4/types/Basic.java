@@ -106,9 +106,5 @@ public class Basic extends DomainResource {
         public Basic build() {
             return new Basic(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

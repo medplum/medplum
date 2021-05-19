@@ -24,6 +24,13 @@ public class ValueSetContainsTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ValueSet.ValueSetContains x = ValueSet.ValueSetContains.create().build();
+        final ValueSet.ValueSetContains y = ValueSet.ValueSetContains.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ValueSet.ValueSetContains.create().id("x").build().id());
     }

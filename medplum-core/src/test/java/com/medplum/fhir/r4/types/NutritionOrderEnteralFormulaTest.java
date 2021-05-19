@@ -24,6 +24,13 @@ public class NutritionOrderEnteralFormulaTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final NutritionOrder.NutritionOrderEnteralFormula x = NutritionOrder.NutritionOrderEnteralFormula.create().build();
+        final NutritionOrder.NutritionOrderEnteralFormula y = NutritionOrder.NutritionOrderEnteralFormula.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", NutritionOrder.NutritionOrderEnteralFormula.create().id("x").build().id());
     }

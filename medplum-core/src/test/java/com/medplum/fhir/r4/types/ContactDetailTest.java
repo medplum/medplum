@@ -24,6 +24,13 @@ public class ContactDetailTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ContactDetail x = ContactDetail.create().build();
+        final ContactDetail y = ContactDetail.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ContactDetail.create().id("x").build().id());
     }

@@ -24,6 +24,15 @@ public class SubstanceSourceMaterialPartDescriptionTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final SubstanceSourceMaterial.SubstanceSourceMaterialPartDescription x =
+            SubstanceSourceMaterial.SubstanceSourceMaterialPartDescription.create().build();
+    final SubstanceSourceMaterial.SubstanceSourceMaterialPartDescription y =
+            SubstanceSourceMaterial.SubstanceSourceMaterialPartDescription.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSourceMaterial.SubstanceSourceMaterialPartDescription.create().id("x").build().id());
     }

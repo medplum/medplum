@@ -24,6 +24,13 @@ public class TerminologyCapabilitiesTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final TerminologyCapabilities x = TerminologyCapabilities.create().build();
+        final TerminologyCapabilities y = TerminologyCapabilities.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", TerminologyCapabilities.create().id("x").build().id());
     }
@@ -157,7 +164,8 @@ public class TerminologyCapabilitiesTest {
 
     @Test
     public void testImplementation() {
-        final TerminologyCapabilities.TerminologyCapabilitiesImplementation value = TerminologyCapabilities.TerminologyCapabilitiesImplementation.create().build();
+    final TerminologyCapabilities.TerminologyCapabilitiesImplementation value =
+            TerminologyCapabilities.TerminologyCapabilitiesImplementation.create().build();
         assertEquals(value, TerminologyCapabilities.create().implementation(value).build().implementation());
     }
 

@@ -24,6 +24,13 @@ public class OperationOutcomeIssueTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final OperationOutcome.OperationOutcomeIssue x = OperationOutcome.OperationOutcomeIssue.create().build();
+        final OperationOutcome.OperationOutcomeIssue y = OperationOutcome.OperationOutcomeIssue.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", OperationOutcome.OperationOutcomeIssue.create().id("x").build().id());
     }

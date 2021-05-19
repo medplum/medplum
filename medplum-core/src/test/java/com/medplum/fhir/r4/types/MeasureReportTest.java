@@ -24,6 +24,13 @@ public class MeasureReportTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MeasureReport x = MeasureReport.create().build();
+        final MeasureReport y = MeasureReport.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MeasureReport.create().id("x").build().id());
     }

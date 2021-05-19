@@ -1,12 +1,18 @@
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
 public class FhirResource extends FhirObject {
+
+    public static Builder<?, ?> create(final String resourceType) {
+        return new Builder<>(resourceType);
+    }
+
+    public static Builder<?, ?> create(final String resourceType, final JsonObject data) {
+        return new Builder<>(resourceType, data);
+    }
 
     public FhirResource(final JsonObject data) {
         super(data);
@@ -57,16 +63,15 @@ public class FhirResource extends FhirObject {
                 .build();
     }
 
-    public abstract static class Builder<T extends FhirResource, B extends FhirResource.Builder<T, B>> {
-        protected final JsonObjectBuilder b;
+    public static class Builder<T extends FhirResource, B extends FhirResource.Builder<T, B>> extends FhirObject.Builder<T, B> {
 
         protected Builder(final String resourceType) {
-            b = Json.createObjectBuilder();
+            super();
             b.add("resourceType", resourceType);
         }
 
         protected Builder(final String resourceType, final JsonObject data) {
-            b = Json.createObjectBuilder(data);
+            super(data);
             b.add("resourceType", resourceType);
         }
 
@@ -90,6 +95,14 @@ public class FhirResource extends FhirObject {
             return getBuilder();
         }
 
-        protected abstract B getBuilder();
+        public FhirResource build() {
+            return new FhirResource(b.build());
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        protected B getBuilder() {
+            return (B) this;
+        }
     }
 }

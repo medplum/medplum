@@ -24,6 +24,13 @@ public class CarePlanTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final CarePlan x = CarePlan.create().build();
+        final CarePlan y = CarePlan.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", CarePlan.create().id("x").build().id());
     }

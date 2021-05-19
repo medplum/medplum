@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -386,10 +384,6 @@ public class TerminologyCapabilities extends DomainResource {
         public TerminologyCapabilities build() {
             return new TerminologyCapabilities(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 
     /**
@@ -461,15 +455,14 @@ public class TerminologyCapabilities extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_TRANSLATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesClosure, TerminologyCapabilitiesClosure.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -582,15 +575,14 @@ public class TerminologyCapabilities extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_SUBSUMPTION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesCodeSystem, TerminologyCapabilitiesCodeSystem.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -726,15 +718,14 @@ public class TerminologyCapabilities extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_TEXT_FILTER);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesExpansion, TerminologyCapabilitiesExpansion.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -859,15 +850,14 @@ public class TerminologyCapabilities extends DomainResource {
             return getList(String.class, FhirPropertyNames.PROPERTY_OP);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesFilter, TerminologyCapabilitiesFilter.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -978,15 +968,14 @@ public class TerminologyCapabilities extends DomainResource {
             return getUri(FhirPropertyNames.PROPERTY_URL);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesImplementation, TerminologyCapabilitiesImplementation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1096,15 +1085,14 @@ public class TerminologyCapabilities extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_DOCUMENTATION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesParameter, TerminologyCapabilitiesParameter.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1214,15 +1202,14 @@ public class TerminologyCapabilities extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_VERSION);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesSoftware, TerminologyCapabilitiesSoftware.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1325,15 +1312,14 @@ public class TerminologyCapabilities extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_NEEDS_MAP);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesTranslation, TerminologyCapabilitiesTranslation.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1431,15 +1417,14 @@ public class TerminologyCapabilities extends DomainResource {
             return data.getBoolean(FhirPropertyNames.PROPERTY_TRANSLATIONS);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesValidateCode, TerminologyCapabilitiesValidateCode.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -1573,15 +1558,14 @@ public class TerminologyCapabilities extends DomainResource {
             return getList(String.class, FhirPropertyNames.PROPERTY_PROPERTY);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<TerminologyCapabilitiesVersion, TerminologyCapabilitiesVersion.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

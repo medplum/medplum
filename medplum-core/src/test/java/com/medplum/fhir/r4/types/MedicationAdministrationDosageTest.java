@@ -24,6 +24,13 @@ public class MedicationAdministrationDosageTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MedicationAdministration.MedicationAdministrationDosage x = MedicationAdministration.MedicationAdministrationDosage.create().build();
+        final MedicationAdministration.MedicationAdministrationDosage y = MedicationAdministration.MedicationAdministrationDosage.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicationAdministration.MedicationAdministrationDosage.create().id("x").build().id());
     }

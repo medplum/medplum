@@ -24,6 +24,13 @@ public class ConceptMapElementTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ConceptMap.ConceptMapElement x = ConceptMap.ConceptMapElement.create().build();
+        final ConceptMap.ConceptMapElement y = ConceptMap.ConceptMapElement.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ConceptMap.ConceptMapElement.create().id("x").build().id());
     }

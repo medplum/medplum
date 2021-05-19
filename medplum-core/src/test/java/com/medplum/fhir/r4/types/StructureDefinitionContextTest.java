@@ -24,6 +24,13 @@ public class StructureDefinitionContextTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final StructureDefinition.StructureDefinitionContext x = StructureDefinition.StructureDefinitionContext.create().build();
+        final StructureDefinition.StructureDefinitionContext y = StructureDefinition.StructureDefinitionContext.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", StructureDefinition.StructureDefinitionContext.create().id("x").build().id());
     }

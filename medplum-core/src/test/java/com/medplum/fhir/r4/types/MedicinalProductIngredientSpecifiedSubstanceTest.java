@@ -24,6 +24,15 @@ public class MedicinalProductIngredientSpecifiedSubstanceTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final MedicinalProductIngredient.MedicinalProductIngredientSpecifiedSubstance x =
+            MedicinalProductIngredient.MedicinalProductIngredientSpecifiedSubstance.create().build();
+    final MedicinalProductIngredient.MedicinalProductIngredientSpecifiedSubstance y =
+            MedicinalProductIngredient.MedicinalProductIngredientSpecifiedSubstance.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MedicinalProductIngredient.MedicinalProductIngredientSpecifiedSubstance.create().id("x").build().id());
     }
@@ -37,7 +46,8 @@ public class MedicinalProductIngredientSpecifiedSubstanceTest {
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, MedicinalProductIngredient.MedicinalProductIngredientSpecifiedSubstance.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            MedicinalProductIngredient.MedicinalProductIngredientSpecifiedSubstance.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test

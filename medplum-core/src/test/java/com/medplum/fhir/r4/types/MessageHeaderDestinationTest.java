@@ -24,6 +24,13 @@ public class MessageHeaderDestinationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MessageHeader.MessageHeaderDestination x = MessageHeader.MessageHeaderDestination.create().build();
+        final MessageHeader.MessageHeaderDestination y = MessageHeader.MessageHeaderDestination.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MessageHeader.MessageHeaderDestination.create().id("x").build().id());
     }

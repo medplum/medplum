@@ -24,6 +24,13 @@ public class ImplementationGuideParameterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ImplementationGuide.ImplementationGuideParameter x = ImplementationGuide.ImplementationGuideParameter.create().build();
+        final ImplementationGuide.ImplementationGuideParameter y = ImplementationGuide.ImplementationGuideParameter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ImplementationGuide.ImplementationGuideParameter.create().id("x").build().id());
     }

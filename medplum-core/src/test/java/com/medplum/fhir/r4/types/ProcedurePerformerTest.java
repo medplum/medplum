@@ -24,6 +24,13 @@ public class ProcedurePerformerTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Procedure.ProcedurePerformer x = Procedure.ProcedurePerformer.create().build();
+        final Procedure.ProcedurePerformer y = Procedure.ProcedurePerformer.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Procedure.ProcedurePerformer.create().id("x").build().id());
     }

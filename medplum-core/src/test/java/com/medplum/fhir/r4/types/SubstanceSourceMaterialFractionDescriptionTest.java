@@ -24,6 +24,15 @@ public class SubstanceSourceMaterialFractionDescriptionTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final SubstanceSourceMaterial.SubstanceSourceMaterialFractionDescription x =
+            SubstanceSourceMaterial.SubstanceSourceMaterialFractionDescription.create().build();
+    final SubstanceSourceMaterial.SubstanceSourceMaterialFractionDescription y =
+            SubstanceSourceMaterial.SubstanceSourceMaterialFractionDescription.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSourceMaterial.SubstanceSourceMaterialFractionDescription.create().id("x").build().id());
     }

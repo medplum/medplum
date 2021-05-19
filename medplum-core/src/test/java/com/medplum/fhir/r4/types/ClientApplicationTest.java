@@ -24,6 +24,13 @@ public class ClientApplicationTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ClientApplication x = ClientApplication.create().build();
+        final ClientApplication y = ClientApplication.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ClientApplication.create().id("x").build().id());
     }

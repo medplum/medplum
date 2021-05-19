@@ -24,6 +24,13 @@ public class PractitionerRoleNotAvailableTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final PractitionerRole.PractitionerRoleNotAvailable x = PractitionerRole.PractitionerRoleNotAvailable.create().build();
+        final PractitionerRole.PractitionerRoleNotAvailable y = PractitionerRole.PractitionerRoleNotAvailable.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", PractitionerRole.PractitionerRoleNotAvailable.create().id("x").build().id());
     }

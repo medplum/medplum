@@ -24,6 +24,13 @@ public class OperationDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final OperationDefinition x = OperationDefinition.create().build();
+        final OperationDefinition y = OperationDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", OperationDefinition.create().id("x").build().id());
     }

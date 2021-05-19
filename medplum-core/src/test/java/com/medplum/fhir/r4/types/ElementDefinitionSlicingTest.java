@@ -24,6 +24,13 @@ public class ElementDefinitionSlicingTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ElementDefinition.ElementDefinitionSlicing x = ElementDefinition.ElementDefinitionSlicing.create().build();
+        final ElementDefinition.ElementDefinitionSlicing y = ElementDefinition.ElementDefinitionSlicing.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ElementDefinition.ElementDefinitionSlicing.create().id("x").build().id());
     }

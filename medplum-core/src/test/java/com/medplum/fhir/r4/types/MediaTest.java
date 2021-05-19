@@ -24,6 +24,13 @@ public class MediaTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Media x = Media.create().build();
+        final Media y = Media.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Media.create().id("x").build().id());
     }

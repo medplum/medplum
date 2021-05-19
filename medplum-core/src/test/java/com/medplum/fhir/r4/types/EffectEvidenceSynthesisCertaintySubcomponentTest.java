@@ -24,6 +24,15 @@ public class EffectEvidenceSynthesisCertaintySubcomponentTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final EffectEvidenceSynthesis.EffectEvidenceSynthesisCertaintySubcomponent x =
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisCertaintySubcomponent.create().build();
+    final EffectEvidenceSynthesis.EffectEvidenceSynthesisCertaintySubcomponent y =
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisCertaintySubcomponent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EffectEvidenceSynthesis.EffectEvidenceSynthesisCertaintySubcomponent.create().id("x").build().id());
     }
@@ -37,7 +46,8 @@ public class EffectEvidenceSynthesisCertaintySubcomponentTest {
     @Test
     public void testModifierExtension() {
         final java.util.List<Extension> value = java.util.Collections.emptyList();
-        assertEquals(value, EffectEvidenceSynthesis.EffectEvidenceSynthesisCertaintySubcomponent.create().modifierExtension(value).build().modifierExtension());
+    assertEquals(value,
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisCertaintySubcomponent.create().modifierExtension(value).build().modifierExtension());
     }
 
     @Test

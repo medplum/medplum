@@ -24,6 +24,13 @@ public class DeviceDeviceNameTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Device.DeviceDeviceName x = Device.DeviceDeviceName.create().build();
+        final Device.DeviceDeviceName y = Device.DeviceDeviceName.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Device.DeviceDeviceName.create().id("x").build().id());
     }

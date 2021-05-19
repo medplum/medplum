@@ -24,6 +24,13 @@ public class ActivityDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ActivityDefinition x = ActivityDefinition.create().build();
+        final ActivityDefinition y = ActivityDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ActivityDefinition.create().id("x").build().id());
     }

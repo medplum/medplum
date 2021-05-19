@@ -24,6 +24,13 @@ public class MolecularSequenceInnerTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MolecularSequence.MolecularSequenceInner x = MolecularSequence.MolecularSequenceInner.create().build();
+        final MolecularSequence.MolecularSequenceInner y = MolecularSequence.MolecularSequenceInner.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MolecularSequence.MolecularSequenceInner.create().id("x").build().id());
     }

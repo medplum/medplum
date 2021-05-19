@@ -24,6 +24,13 @@ public class DeviceRequestParameterTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DeviceRequest.DeviceRequestParameter x = DeviceRequest.DeviceRequestParameter.create().build();
+        final DeviceRequest.DeviceRequestParameter y = DeviceRequest.DeviceRequestParameter.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DeviceRequest.DeviceRequestParameter.create().id("x").build().id());
     }

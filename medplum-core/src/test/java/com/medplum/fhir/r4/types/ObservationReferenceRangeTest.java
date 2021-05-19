@@ -24,6 +24,13 @@ public class ObservationReferenceRangeTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Observation.ObservationReferenceRange x = Observation.ObservationReferenceRange.create().build();
+        final Observation.ObservationReferenceRange y = Observation.ObservationReferenceRange.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Observation.ObservationReferenceRange.create().id("x").build().id());
     }

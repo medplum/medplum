@@ -24,6 +24,13 @@ public class DocumentReferenceContentTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final DocumentReference.DocumentReferenceContent x = DocumentReference.DocumentReferenceContent.create().build();
+        final DocumentReference.DocumentReferenceContent y = DocumentReference.DocumentReferenceContent.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", DocumentReference.DocumentReferenceContent.create().id("x").build().id());
     }

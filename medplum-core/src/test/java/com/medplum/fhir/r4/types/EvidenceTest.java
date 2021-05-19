@@ -24,6 +24,13 @@ public class EvidenceTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Evidence x = Evidence.create().build();
+        final Evidence y = Evidence.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Evidence.create().id("x").build().id());
     }

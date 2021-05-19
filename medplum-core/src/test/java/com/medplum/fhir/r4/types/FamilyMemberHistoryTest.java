@@ -24,6 +24,13 @@ public class FamilyMemberHistoryTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final FamilyMemberHistory x = FamilyMemberHistory.create().build();
+        final FamilyMemberHistory y = FamilyMemberHistory.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", FamilyMemberHistory.create().id("x").build().id());
     }

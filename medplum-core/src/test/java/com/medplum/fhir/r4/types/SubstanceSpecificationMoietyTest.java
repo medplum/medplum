@@ -24,6 +24,13 @@ public class SubstanceSpecificationMoietyTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final SubstanceSpecification.SubstanceSpecificationMoiety x = SubstanceSpecification.SubstanceSpecificationMoiety.create().build();
+        final SubstanceSpecification.SubstanceSpecificationMoiety y = SubstanceSpecification.SubstanceSpecificationMoiety.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", SubstanceSpecification.SubstanceSpecificationMoiety.create().id("x").build().id());
     }

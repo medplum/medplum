@@ -24,6 +24,13 @@ public class ParameterDefinitionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final ParameterDefinition x = ParameterDefinition.create().build();
+        final ParameterDefinition y = ParameterDefinition.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", ParameterDefinition.create().id("x").build().id());
     }

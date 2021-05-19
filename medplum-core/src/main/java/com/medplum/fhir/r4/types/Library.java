@@ -486,9 +486,5 @@ public class Library extends DomainResource {
         public Library build() {
             return new Library(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

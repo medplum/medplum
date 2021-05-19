@@ -65,9 +65,5 @@ public class PasswordChangeRequest extends FhirResource {
         public PasswordChangeRequest build() {
             return new PasswordChangeRequest(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }

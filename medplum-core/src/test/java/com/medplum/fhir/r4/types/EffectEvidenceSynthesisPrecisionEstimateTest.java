@@ -24,6 +24,15 @@ public class EffectEvidenceSynthesisPrecisionEstimateTest {
     }
 
     @Test
+    public void testCopyAll() {
+    final EffectEvidenceSynthesis.EffectEvidenceSynthesisPrecisionEstimate x =
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisPrecisionEstimate.create().build();
+    final EffectEvidenceSynthesis.EffectEvidenceSynthesisPrecisionEstimate y =
+            EffectEvidenceSynthesis.EffectEvidenceSynthesisPrecisionEstimate.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", EffectEvidenceSynthesis.EffectEvidenceSynthesisPrecisionEstimate.create().id("x").build().id());
     }

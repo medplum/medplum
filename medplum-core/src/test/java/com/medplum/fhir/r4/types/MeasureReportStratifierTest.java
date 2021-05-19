@@ -24,6 +24,13 @@ public class MeasureReportStratifierTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final MeasureReport.MeasureReportStratifier x = MeasureReport.MeasureReportStratifier.create().build();
+        final MeasureReport.MeasureReportStratifier y = MeasureReport.MeasureReportStratifier.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", MeasureReport.MeasureReportStratifier.create().id("x").build().id());
     }

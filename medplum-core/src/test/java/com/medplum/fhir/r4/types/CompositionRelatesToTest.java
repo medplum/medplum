@@ -24,6 +24,13 @@ public class CompositionRelatesToTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final Composition.CompositionRelatesTo x = Composition.CompositionRelatesTo.create().build();
+        final Composition.CompositionRelatesTo y = Composition.CompositionRelatesTo.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", Composition.CompositionRelatesTo.create().id("x").build().id());
     }

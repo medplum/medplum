@@ -5,9 +5,7 @@
 
 package com.medplum.fhir.r4.types;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 
 import com.medplum.fhir.r4.FhirPropertyNames;
 
@@ -143,10 +141,6 @@ public class VisionPrescription extends DomainResource {
 
         public VisionPrescription build() {
             return new VisionPrescription(b.build());
-        }
-
-        protected Builder getBuilder() {
-            return this;
         }
     }
 
@@ -310,15 +304,14 @@ public class VisionPrescription extends DomainResource {
             return getList(Annotation.class, FhirPropertyNames.PROPERTY_NOTE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<VisionPrescriptionLensSpecification, VisionPrescriptionLensSpecification.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {
@@ -486,15 +479,14 @@ public class VisionPrescription extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_BASE);
         }
 
-        public static final class Builder {
-            private final JsonObjectBuilder b;
+        public static final class Builder extends FhirObject.Builder<VisionPrescriptionPrism, VisionPrescriptionPrism.Builder> {
 
             private Builder() {
-                b = Json.createObjectBuilder();
+                super();
             }
 
             private Builder(final JsonObject data) {
-                b = Json.createObjectBuilder(data);
+                super(data);
             }
 
             public Builder id(final String id) {

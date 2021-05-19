@@ -24,6 +24,13 @@ public class AllergyIntoleranceReactionTest {
     }
 
     @Test
+    public void testCopyAll() {
+        final AllergyIntolerance.AllergyIntoleranceReaction x = AllergyIntolerance.AllergyIntoleranceReaction.create().build();
+        final AllergyIntolerance.AllergyIntoleranceReaction y = AllergyIntolerance.AllergyIntoleranceReaction.create().copyAll(x).build();
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testId() {
         assertEquals("x", AllergyIntolerance.AllergyIntoleranceReaction.create().id("x").build().id());
     }

@@ -431,9 +431,5 @@ public class Evidence extends DomainResource {
         public Evidence build() {
             return new Evidence(b.build());
         }
-
-        protected Builder getBuilder() {
-            return this;
-        }
     }
 }
