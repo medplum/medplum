@@ -86,27 +86,3 @@ docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.0.3-SN
 docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest
 ```
 
-## TODO:
-
-* Auth
-* Compartment access controls
-* Batch processing
-* Bundle transactions
-* Binary/blob storage
-* Reference integrity
-* Synthea support
-* Inferno support
-* SMART-on-FHIR
-* [UDAP](https://www.udap.org/)
-* Version Mapping
-
-## Blog posts
-
-* Naming conventions
-* Domain conventions
-* Dependencies
-* Security review
-* Pen test
-* OpenID compliance
-* FHIR/Inferno compliance
-* DICOM FDA application
