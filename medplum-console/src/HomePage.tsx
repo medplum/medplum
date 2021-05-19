@@ -14,7 +14,7 @@ export function HomePage() {
 
   return (
     <>
-      <div style={{ padding: '0 0 4px 4px' }}>
+      <div style={{ background: 'white', padding: '2px 0 4px 4px' }}>
         <Button size="small">Fields</Button>
         <Button size="small">Filters</Button>
         <Button size="small">Export</Button>

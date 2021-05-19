@@ -1,26 +1,46 @@
-import React, { useState } from 'react';
-import { PropertyDefinition } from 'medplum';
+import { PropertyDefinition, Reference } from 'medplum';
+import React, { useRef, useState } from 'react';
 
 export interface ReferenceInputProps {
-  propertyPrefix: string;
   property: PropertyDefinition;
-  value?: any;
+  name: string;
+  value?: Reference;
 }
 
 export function ReferenceInput(props: ReferenceInputProps) {
-  const [value, setValue] = useState(props.value || {});
-  const inputName = props.propertyPrefix + props.property.key;
-  const [resourceType, id] = (value.reference || '/').split('/');
+  const [value, setValue] = useState<Reference | undefined>(props.value);
+
+  const valueRef = useRef<Reference>();
+  valueRef.current = value;
+
+  const [resourceType, id] = (value?.reference || '/').split('/');
+
+  function setResourceType(resourceType: string) {
+    setValue({ ...valueRef.current, reference: resourceType + '/' + id });
+  }
+
+  function setId(id: string) {
+    setValue({ ...valueRef.current, reference: resourceType + '/' + id });
+  }
+
   return (
     <table>
       <tbody>
         <tr>
           <td>
-            <input name={inputName} type="hidden" value={JSON.stringify(value)} readOnly={true} />
-            <input type="text" defaultValue={resourceType} />
+            <input name={props.name} type="hidden" value={JSON.stringify(value) || ''} readOnly={true} />
+            <input
+              type="text"
+              defaultValue={resourceType}
+              onChange={e => setResourceType(e.currentTarget.value)}
+            />
           </td>
           <td>
-            <input type="text" defaultValue={id} />
+            <input
+              type="text"
+              defaultValue={id}
+              onChange={e => setId(e.currentTarget.value)}
+            />
           </td>
         </tr>
       </tbody>

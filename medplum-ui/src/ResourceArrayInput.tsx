@@ -1,80 +1,66 @@
-import React from 'react';
 import { PropertyDefinition } from 'medplum';
-import { FormSection } from './FormSection';
+import React, { useState } from 'react';
+import { Button } from './Button';
+import { ensureKeys, generateKey } from './FormUtils';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
-const generateKey = () => 'key' + Math.random();
-const ensureKeys = (array: any[]) => (array || []).map(obj => ({ ...obj, __key: generateKey() }));
-
 interface ResourceArrayProps {
-  propertyPrefix: string;
   property: PropertyDefinition;
+  name: string;
   values: any[];
   arrayElement?: boolean;
 }
 
-interface ResourceArrayState {
-  values: any[];
-}
-
-export class ResourceArray extends React.Component<ResourceArrayProps, ResourceArrayState> {
-
-  constructor(props: ResourceArrayProps) {
-    super(props);
-    this.state = {
-      values: ensureKeys(props.values)
-    };
-  }
-
-  render() {
-    const propertyPrefix = this.props.propertyPrefix;
-    const property = this.props.property;
-    const values = this.state.values;
-    return (
+export function ResourceArrayInput(props: ResourceArrayProps) {
+  const [values, setValues] = useState(ensureKeys(props.values));
+  const property = props.property;
+  return (
+    <div>
+      {values.map(v => v.__removed && (
+        <input key={v.__key} type="hidden" name={props.name + '.' + v.__key} value={JSON.stringify(v)} />
+      ))}
       <table>
         <colgroup>
           <col width="90%" />
           <col width="10%" />
         </colgroup>
         <tbody>
-          {values.map((v, index) => (
+          {values.map((v, index) => !v.__removed && (
             <tr key={v.__key}>
               <td>
                 <ResourcePropertyInput
-                  propertyPrefix={propertyPrefix}
                   arrayElement={true}
                   property={property}
+                  name={props.name + '.' + v.__key}
                   value={v} />
               </td>
               <td>
-                <button
-                  className="btn"
+                <Button
                   onClick={e => {
                     e.preventDefault();
                     e.stopPropagation();
                     const copy = values.slice();
-                    copy.splice(index, 1);
-                    this.setState({ values: copy });
-                  }}>Remove</button>
+                    copy[index].__removed = true;
+                    setValues(copy);
+                  }}>Remove</Button>
               </td>
             </tr>
           ))}
           <tr>
             <td></td>
             <td>
-              <button
-                className="btn"
+              <Button
                 onClick={e => {
                   e.preventDefault();
                   e.stopPropagation();
                   const copy = values.slice();
                   copy.push({ __key: generateKey() });
-                  this.setState({ values: copy });
-                }}>Add</button>
+                  setValues(copy);
+                }}>Add</Button>
             </td>
           </tr>
         </tbody>
       </table>
-    );
-  }
+    </div>
+  );
 }

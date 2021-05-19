@@ -9,6 +9,7 @@ export interface TextFieldProps {
   required?: boolean;
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLInputElement>;
+  onChange?: (e: React.ChangeEvent) => void;
 }
 
 export const TextField = (props: TextFieldProps) => {
@@ -23,6 +24,7 @@ export const TextField = (props: TextFieldProps) => {
       required={props.required}
       autoFocus={props.autoFocus}
       ref={props.inputRef}
+      onChange={props.onChange}
     />
   );
 };

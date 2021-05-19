@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
 import { PropertyDefinition } from 'medplum';
+import { TextField } from './TextField';
 
 export interface IdentifierInputProps {
-  propertyPrefix: string;
   property: PropertyDefinition;
+  name: string;
   value?: any;
 }
 
 export function IdentifierInput(props: IdentifierInputProps) {
   const [value, setValue] = useState(props.value);
-  const inputName = props.propertyPrefix + props.property.key;
   return (
     <table>
       <tbody>
         <tr>
           <td>
-            <input name={inputName} type="hidden" value={JSON.stringify(value)} readOnly={true} />
-            <input type="text" defaultValue={value.system} />
+            <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
+            <TextField
+              value={value.system}
+              onChange={e => setValue({
+                ...value,
+                system: (e.currentTarget as HTMLInputElement).value
+              })}
+            />
           </td>
           <td>
-            <input type="text" defaultValue={value.value} />
+            <TextField
+              value={value.value}
+              onChange={e => setValue({
+                ...value,
+                value: (e.currentTarget as HTMLInputElement).value
+              })}
+            />
           </td>
         </tr>
       </tbody>

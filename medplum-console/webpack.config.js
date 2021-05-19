@@ -44,6 +44,7 @@ module.exports = (env, argv) => ({
     contentBase: './dist',
     port: 3000,
     writeToDisk: true,
+    hot: true,
     historyApiFallback: {
       index: 'index.html'
     }

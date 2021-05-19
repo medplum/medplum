@@ -36,7 +36,7 @@ export function ResourceTable(props: any) {
         const property = entry[1];
         return (
           <DescriptionListEntry key={key} term={property.display}>
-            <ResourcePropertyDisplay propertyPrefix="" property={property} value={(value as any)[key]} />
+            <ResourcePropertyDisplay property={property} value={(value as any)[key]} />
           </DescriptionListEntry>
         );
       })}

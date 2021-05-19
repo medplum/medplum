@@ -1,25 +1,24 @@
-import React, { useState } from 'react';
 import { Address, PropertyDefinition } from 'medplum';
+import React, { useState } from 'react';
 
 function getLine(address: any, index: number) {
   return address && address.line && address.line.length > index ? address.line[index] : '';
 }
 
 export interface AddressInputProps {
-  propertyPrefix?: string;
   property: PropertyDefinition;
-  value?: any;
+  name: string;
+  value?: Address;
 }
 
 export function AddressInput(props: AddressInputProps) {
   const [value, setValue] = useState<Address>(props.value || {});
-  const inputName = (props.propertyPrefix ?? '') + props.property.key;
   return (
     <table>
       <tbody>
         <tr>
           <td>
-            <input name={inputName} type="hidden" value={JSON.stringify(value)} readOnly={true} />
+            <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
             <select defaultValue={value.use}>
               <option></option>
               <option>home</option>

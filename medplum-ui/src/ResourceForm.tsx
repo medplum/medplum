@@ -2,6 +2,7 @@ import { Resource, schema } from 'medplum';
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
 import { FormSection } from './FormSection';
+import { parseResourceForm } from './FormUtils';
 import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
@@ -9,7 +10,7 @@ export interface ResourceFormProps {
   resource?: Resource;
   resourceType?: string;
   id?: string;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (formData: any) => void;
 }
 
 export function ResourceForm(props: any) {
@@ -30,7 +31,13 @@ export function ResourceForm(props: any) {
   const typeSchema = schema[value.resourceType];
 
   return (
-    <form noValidate autoComplete="off" onSubmit={props.onSubmit}>
+    <form noValidate autoComplete="off" onSubmit={(e: React.FormEvent) => {
+      e.preventDefault();
+      const formData = parseResourceForm(value.resourceType, e.target as HTMLFormElement, value);
+      if (props.onSubmit) {
+        props.onSubmit(formData);
+      }
+    }}>
       <FormSection title="Resource Type">
         <input name="resourceType" type="text" defaultValue={value.resourceType} disabled={true} />
       </FormSection>
@@ -42,7 +49,7 @@ export function ResourceForm(props: any) {
         const property = entry[1];
         return (
           <FormSection key={key} title={property.display} description={property.description}>
-            <ResourcePropertyInput propertyPrefix="" property={property} value={(value as any)[key]} />
+            <ResourcePropertyInput property={property} name={property.key} value={(value as any)[key]} />
           </FormSection>
         );
       })}

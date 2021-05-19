@@ -2,35 +2,32 @@ import { PropertyDefinition, schema } from 'medplum';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
 import { AttachmentArray } from './AttachmentArray';
-import { AttachmentInput } from './AttachmentInput';
-import { BackboneElementInput } from './BackboneElementInput';
-import { CodeableConceptInput } from './CodeableConceptInput';
+import { AttachmentDisplay } from './AttachmentDisplay';
+import { BackboneElementDisplay } from './BackboneElementDisplay';
+import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { ContactPointDisplay } from './ContactPointDisplay';
-import { DeviceNameInput } from './DeviceNameInput';
+import { DeviceNameDisplay } from './DeviceNameDisplay';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { IdentifierDisplay } from './IdentifierDisplay';
-import { PatientLinkInput } from './PatientLinkInput';
-import { ReferenceInput } from './ReferenceInput';
+import { PatientLinkDisplay } from './PatientLinkDisplay';
+import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
-  propertyPrefix: string;
   property: PropertyDefinition;
   value: any;
   arrayElement?: boolean;
 }
 
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
-  const propertyPrefix = props.propertyPrefix;
   const property = props.property;
   const value = props.value;
 
   if (property.array && !props.arrayElement) {
     if (property.type === 'Attachment') {
-      // return <AttachmentArr
-      return <AttachmentArray propertyPrefix={propertyPrefix} property={property} values={value} />
+      return <AttachmentArray property={property} name="" values={value} />
     }
-    return <ResourceArrayDisplay propertyPrefix={propertyPrefix} property={property} values={value} />
+    return <ResourceArrayDisplay property={property} values={value} />
   }
 
   if (!value) {
@@ -61,27 +58,27 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     case 'Address':
       return <AddressDisplay value={value} />;
     case 'Attachment':
-      return <AttachmentInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <AttachmentDisplay value={value} />;
     case 'CodeableConcept':
-      return <CodeableConceptInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <CodeableConceptDisplay value={value} />;
     case 'ContactPoint':
       return <ContactPointDisplay value={value} />;
     case 'Device_DeviceName':
-      return <DeviceNameInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <DeviceNameDisplay value={value} />;
     case 'HumanName':
       return <HumanNameDisplay value={value} />;
     case 'Identifier':
-      return <IdentifierDisplay propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <IdentifierDisplay value={value} />;
     case 'Patient_Link':
-      return <PatientLinkInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <PatientLinkDisplay value={value} />;
     case 'Reference':
-      return <ReferenceInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <ReferenceDisplay value={value} />;
     default:
       {
         const backboneType = schema[property.type];
         if (backboneType) {
           return (
-            <BackboneElementInput propertyPrefix={propertyPrefix} property={property} backboneType={backboneType} value={value} />
+            <BackboneElementDisplay backboneType={backboneType} value={value} />
           );
         } else {
           return (

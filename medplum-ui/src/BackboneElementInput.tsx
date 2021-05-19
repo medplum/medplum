@@ -4,15 +4,14 @@ import { FormSection } from './FormSection';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
-  propertyPrefix: string;
   property: PropertyDefinition;
+  name: string;
   backboneType: TypeDefinition;
   value?: any;
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps) {
   const [value, setValue] = useState(props.value);
-  const inputName = props.propertyPrefix + props.property.key;
   const typeSchema = props.backboneType;
   return (
     <>
@@ -21,7 +20,7 @@ export function BackboneElementInput(props: BackboneElementInputProps) {
         const property = entry[1];
         return (
           <FormSection key={key} title={property.display} description={property.description}>
-            <ResourcePropertyInput propertyPrefix={inputName} property={property} value={value[key]} />
+            <ResourcePropertyInput property={property} name={props.name + '.' + property.key} value={value[key]} />
           </FormSection>
         );
       })}

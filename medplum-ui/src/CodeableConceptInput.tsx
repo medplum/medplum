@@ -1,5 +1,5 @@
+import { CodeableConcept, PropertyDefinition } from 'medplum';
 import React, { useState } from 'react';
-import { PropertyDefinition } from 'medplum';
 
 function getCoding(codeableConcept: any) {
   if (!codeableConcept || !codeableConcept.coding || codeableConcept.coding.length === 0) {
@@ -9,20 +9,19 @@ function getCoding(codeableConcept: any) {
 }
 
 export interface CodeableConceptInputProps {
-  propertyPrefix?: string;
   property: PropertyDefinition;
-  value?: any;
+  name: string;
+  value?: CodeableConcept;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps) {
   const [value, setValue] = useState(props.value);
-  const inputName = props.propertyPrefix + props.property.key;
   return (
     <table>
       <tbody>
         <tr>
           <td>
-            <input name={inputName} type="hidden" value={JSON.stringify(value)} readOnly={true} />
+            <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
             <input type="text" defaultValue={getCoding(value).system} />
           </td>
           <td>

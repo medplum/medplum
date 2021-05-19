@@ -2,20 +2,19 @@ import React, { useState } from 'react';
 import { PropertyDefinition } from 'medplum';
 
 export interface ContactPointInputProps {
-  propertyPrefix: string;
   property: PropertyDefinition;
+  name: string;
   value?: any;
 }
 
 export function ContactPointInput(props: ContactPointInputProps) {
   const [value, setValue] = useState(props.value);
-  const inputName = props.propertyPrefix + props.property.key;
   return (
     <table>
       <tbody>
         <tr>
           <td>
-            <input name={inputName} type="hidden" value={JSON.stringify(value)} readOnly={true} />
+            <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
             <select defaultValue={value.system}>
               <option></option>
               <option>email</option>

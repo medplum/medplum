@@ -26,7 +26,8 @@ export * from './Page';
 export * from './PatientLinkInput';
 export * from './PopupMenu';
 export * from './ReferenceInput';
-export * from './ResourceArray';
+export * from './ResourceArrayDisplay';
+export * from './ResourceArrayInput';
 export * from './ResourceForm';
 export * from './ResourcePropertyDisplay';
 export * from './ResourcePropertyInput';
@@ -41,3 +42,4 @@ export * from './TabBar';
 export * from './TabPanel';
 export * from './TabSwitch';
 export * from './TextField';
+

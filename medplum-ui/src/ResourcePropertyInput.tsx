@@ -12,26 +12,25 @@ import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
 import { PatientLinkInput } from './PatientLinkInput';
 import { ReferenceInput } from './ReferenceInput';
-import { ResourceArray } from './ResourceArray';
+import { ResourceArrayInput } from './ResourceArrayInput';
 
 export interface ResourcePropertyInputProps {
-  propertyPrefix: string;
   property: PropertyDefinition;
+  name: string;
   value: any;
   arrayElement?: boolean;
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
-  const propertyPrefix = props.propertyPrefix;
   const property = props.property;
+  const name = props.name;
   const value = props.value;
 
   if (property.array && !props.arrayElement) {
     if (property.type === 'Attachment') {
-      // return <AttachmentArr
-      return <AttachmentArray propertyPrefix={propertyPrefix} property={property} values={value} />
+      return <AttachmentArray property={property} name={name} values={value} />
     }
-    return <ResourceArray propertyPrefix={propertyPrefix} property={property} values={value} />
+    return <ResourceArrayInput property={property} name={name} values={value} />
   }
 
   switch (property.type) {
@@ -44,20 +43,20 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     case 'url':
     case 'http://hl7.org/fhirpath/System.String':
       return (
-        <input type="text" defaultValue={value}></input>
+        <input type="text" name={name} defaultValue={value}></input>
       );
     case 'number':
     case 'integer':
     case 'positiveInt':
     case 'unsignedInt':
       return (
-        <input type="text" defaultValue={value}></input>
+        <input type="text" name={name} defaultValue={value}></input>
       );
     case 'enum':
       return (
         <EnumInput
-          propertyPrefix={propertyPrefix}
           property={property}
+          name={name}
           label={property.display}
           options={property.enumValues}
           helperText={property.description}
@@ -65,40 +64,40 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
         />);
     case 'boolean':
       return (
-        <input type="checkbox" defaultChecked={!!value} />
+        <input type="checkbox" name={name} defaultChecked={!!value} />
       );
     case 'markdown':
       return (
-        <textarea defaultValue={value} />
+        <textarea name={name} defaultValue={value} />
       );
     case 'Address':
-      return <AddressInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <AddressInput property={property} name={name} value={value} />;
     case 'Attachment':
-      return <AttachmentInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <AttachmentInput property={property} name={name} value={value} />;
     case 'CodeableConcept':
-      return <CodeableConceptInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <CodeableConceptInput property={property} name={name} value={value} />;
     case 'ContactPoint':
-      return <ContactPointInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <ContactPointInput property={property} name={name} value={value} />;
     case 'Device_DeviceName':
-      return <DeviceNameInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <DeviceNameInput property={property} name={name} value={value} />;
     case 'HumanName':
-      return <HumanNameInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <HumanNameInput property={property} name={name} value={value} />;
     case 'Identifier':
-      return <IdentifierInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <IdentifierInput property={property} name={name} value={value} />;
     case 'Patient_Link':
-      return <PatientLinkInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <PatientLinkInput property={property} name={name} value={value} />;
     case 'Reference':
-      return <ReferenceInput propertyPrefix={propertyPrefix} property={property} value={value} />;
+      return <ReferenceInput property={property} name={name} value={value} />;
     default:
       {
         const backboneType = schema[property.type];
         if (backboneType) {
           return (
-            <BackboneElementInput propertyPrefix={propertyPrefix} property={property} backboneType={backboneType} value={value} />
+            <BackboneElementInput property={property} name={name} backboneType={backboneType} value={value} />
           );
         } else {
           return (
-            <input type="text" defaultValue={value}></input>
+            <input type="text" name={name} defaultValue={value}></input>
           );
         }
       }

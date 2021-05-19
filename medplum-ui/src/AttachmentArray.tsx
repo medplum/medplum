@@ -1,15 +1,13 @@
-import { PropertyDefinition } from 'medplum';
+import { Attachment, PropertyDefinition } from 'medplum';
 import React, { useRef, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
+import { ensureKeys, generateKey } from './FormUtils';
 import { useMedplum } from './MedplumProvider';
 
-const generateKey = () => 'key' + Math.random();
-const ensureKeys = (array: any[] | undefined) => (array || []).map(obj => ({ ...obj, __key: generateKey() }));
-
 export interface AttachmentArrayProps {
-  propertyPrefix?: string;
   property: PropertyDefinition;
-  values?: any[];
+  name: string;
+  values?: Attachment[];
   arrayElement?: boolean;
 }
 
@@ -49,13 +47,13 @@ export function AttachmentArray(props: AttachmentArrayProps) {
     const contentType = file.type || 'application/octet-stream';
     medplum.createBinary(file, contentType)
       .then((obj: any) => {
-        console.log('binary response', obj);
-        const copy = values.slice();
-        copy.push({
+        const attachment = {
           __key: generateKey(),
           contentType: obj.contentType,
           url: medplum.fhirUrl('Binary', obj.id)
-        });
+        };
+        const copy = values.slice();
+        copy.push(attachment);
         setValues(copy);
       })
   }
@@ -68,11 +66,11 @@ export function AttachmentArray(props: AttachmentArrayProps) {
       </colgroup>
       <tbody>
         {values.map((v, index) => (
-          <tr key={v.__key}>
+          <tr key={(v as any).__key}>
             <td>
               <AttachmentInput
-                propertyPrefix={props.propertyPrefix}
                 property={props.property}
+                name={props.name}
                 value={v} />
             </td>
             <td>

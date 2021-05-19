@@ -7,6 +7,7 @@ import {
 } from 'medplum-ui';
 import React from 'react';
 import { Route, Router, Switch } from 'react-router-dom';
+import { CreateResourcePage } from './CreateResourcePage';
 import { history } from './history';
 import { HomePage } from './HomePage';
 import { ProfilePage } from './ProfilePage';
@@ -35,6 +36,7 @@ export default function App() {
           <Route exact path="/test"><TestPage /></Route>
           <Route exact path="/signin"><SignInPage /></Route>
           <Route exact path="/profile"><ProfilePage /></Route>
+          <Route exact path="/:resourceType/new"><CreateResourcePage /></Route>
           <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
           <Route exact path="/:resourceType?"><HomePage /></Route>
         </Switch>

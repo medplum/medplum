@@ -1,9 +1,7 @@
-import { Identifier, PropertyDefinition } from 'medplum';
+import { Identifier } from 'medplum';
 import React from 'react';
 
 export interface IdentifierDisplayProps {
-  propertyPrefix: string;
-  property: PropertyDefinition;
   value?: Identifier;
 }
 

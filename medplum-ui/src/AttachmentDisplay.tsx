@@ -1,14 +1,12 @@
-import { Attachment, PropertyDefinition } from 'medplum';
+import { Attachment } from 'medplum';
 import React, { useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 
-export interface AttachmentInputProps {
-  property: PropertyDefinition;
-  name: string;
+export interface AttachmentDisplayProps {
   value?: Attachment;
 }
 
-export function AttachmentInput(props: AttachmentInputProps) {
+export function AttachmentDisplay(props: AttachmentDisplayProps) {
   const medplum = useMedplum();
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
 
@@ -28,7 +26,6 @@ export function AttachmentInput(props: AttachmentInputProps) {
   const value = props.value;
   return (
     <div>
-      <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
       <div>{value?.contentType}</div>
       <div>{value?.url}</div>
       {imageUrl && <img style={{ maxWidth: 100 }} src={imageUrl} />}

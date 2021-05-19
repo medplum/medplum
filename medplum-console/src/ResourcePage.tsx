@@ -50,7 +50,13 @@ export function ResourcePage() {
             <ResourceTable resource={value} />
           </TabPanel>
           <TabPanel name="edit">
-            <ResourceForm resource={value} />
+            <ResourceForm
+              resource={value}
+              onSubmit={(resource: Resource) => {
+                console.log('submit', resource);
+                medplum.update(resource).then(() => loadResource());
+              }}
+            />
           </TabPanel>
           <TabPanel name="history">
             <div>History</div>
