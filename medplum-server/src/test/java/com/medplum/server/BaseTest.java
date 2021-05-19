@@ -8,7 +8,6 @@ import java.util.Map;
 
 import jakarta.ws.rs.core.UriBuilder;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.test.JerseyTest;
@@ -25,6 +24,7 @@ import com.medplum.fhir.r4.types.User;
 import com.medplum.server.fhir.r4.repo.JdbcRepository;
 import com.medplum.server.fhir.r4.search.SearchParser;
 import com.medplum.server.security.SecurityUser;
+import com.medplum.util.IdUtils;
 
 public abstract class BaseTest extends JerseyTest {
     protected static App app;
@@ -80,7 +80,7 @@ public abstract class BaseTest extends JerseyTest {
             }
 
             testClientApp = repo.create(SecurityUser.SYSTEM_USER, ClientApplication.create()
-                    .secret(RandomStringUtils.randomAlphanumeric(64))
+                    .secret(IdUtils.generateSecret())
                     .redirectUri("https://www.example.com/redirect")
                     .build())
                     .resource(ClientApplication.class);

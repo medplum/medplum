@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.mindrot.jbcrypt.BCrypt;
 
 import com.medplum.fhir.r4.StandardOutcomes;
@@ -25,6 +24,7 @@ import com.medplum.fhir.r4.types.User;
 import com.medplum.server.fhir.r4.search.SearchParser;
 import com.medplum.server.fhir.r4.search.SearchRequest;
 import com.medplum.server.security.SecurityUser;
+import com.medplum.util.IdUtils;
 import com.medplum.util.JsonUtils;
 
 public class SetupExecutor {
@@ -150,7 +150,7 @@ public class SetupExecutor {
         }
 
         final ClientApplication clientApplication = repo.create(SecurityUser.SYSTEM_USER, ClientApplication.create()
-                .secret(RandomStringUtils.randomAlphanumeric(64))
+                .secret(IdUtils.generateSecret())
                 .redirectUri("https://example.com/redirect")
                 .build())
                 .resource(ClientApplication.class);

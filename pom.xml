@@ -79,7 +79,6 @@
         <bcrypt.version>0.4</bcrypt.version>
         <cdk.version>1.104.0</cdk.version>
         <checkstyle.version>8.42</checkstyle.version>
-        <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-text.version>1.9</commons-text.version>
         <dockerfile.version>1.4.13</dockerfile.version>
         <eclipselink.version>3.0.0</eclipselink.version>
@@ -165,11 +164,6 @@
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit4.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang3.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>

@@ -21,4 +21,11 @@ public class IdUtilsTest {
         final UUID uuid = UUID.fromString(id);
         assertNotNull(uuid);
     }
+
+    @Test
+    public void testGenerateSecret() {
+        final String secret = IdUtils.generateSecret();
+        assertNotNull(secret);
+        assertEquals(256, secret.length());
+    }
 }
