@@ -65406,33 +65406,31 @@
     }
   },
   {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/Project-name",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Project-name",
+      "url" : "https://medplum.com/fhir/SearchParameter/Project-name",
+      "version" : "4.0.1",
+      "name" : "name",
+      "publisher" : "Medplum",
+      "code" : "name",
+      "base" : ["Project"],
+      "type" : "string",
+      "expression" : "Project.name",
+      "xpath" : "f:Project/f:name",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "JsonWebKey-active",
-      "extension" : [{
-        "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
-        "valueCode" : "trial-use"
-      }],
-      "url" : "http://hl7.org/fhir/SearchParameter/JsonWebKey-active",
+      "url" : "https://medplum.com/fhir/SearchParameter/JsonWebKey-active",
       "version" : "4.0.1",
       "name" : "active",
       "status" : "draft",
-      "experimental" : false,
-      "date" : "2019-11-01T09:29:23+11:00",
       "publisher" : "Medplum",
-      "contact" : [{
-        "telecom" : [{
-          "system" : "url",
-          "value" : "http://hl7.org/fhir"
-        }]
-      },
-      {
-        "telecom" : [{
-          "system" : "url",
-          "value" : "http://www.hl7.org/Special/committees/fm/index.cfm"
-        }]
-      }],
-      "description" : "The status of the vision prescription",
       "code" : "active",
       "base" : ["JsonWebKey"],
       "type" : "token",
@@ -65445,30 +65443,10 @@
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "User-email",
-      "extension" : [{
-        "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
-        "valueCode" : "trial-use"
-      }],
-      "url" : "http://hl7.org/fhir/SearchParameter/User-email",
+      "url" : "https://medplum.com/fhir/SearchParameter/User-email",
       "version" : "4.0.1",
       "name" : "email",
-      "status" : "draft",
-      "experimental" : false,
-      "date" : "2019-11-01T09:29:23+11:00",
       "publisher" : "Medplum",
-      "contact" : [{
-        "telecom" : [{
-          "system" : "url",
-          "value" : "http://hl7.org/fhir"
-        }]
-      },
-      {
-        "telecom" : [{
-          "system" : "url",
-          "value" : "http://www.hl7.org/Special/committees/fm/index.cfm"
-        }]
-      }],
-      "description" : "The status of the vision prescription",
       "code" : "email",
       "base" : ["User"],
       "type" : "token",

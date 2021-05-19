@@ -151,6 +151,7 @@
       "ValueSet": "#/definitions/ValueSet",
       "VerificationResult": "#/definitions/VerificationResult",
       "VisionPrescription": "#/definitions/VisionPrescription",
+      "Project": "#/definitions/Project",
       "ClientApplication": "#/definitions/ClientApplication",
       "User": "#/definitions/User",
       "Login": "#/definitions/Login",
@@ -597,6 +598,9 @@
     },
     {
       "$ref": "#/definitions/VisionPrescription"
+    },
+    {
+      "$ref": "#/definitions/Project"
     },
     {
       "$ref": "#/definitions/ClientApplication"
@@ -1057,6 +1061,9 @@
         },
         {
           "$ref": "#/definitions/VisionPrescription"
+        },
+        {
+          "$ref": "#/definitions/Project"
         },
         {
           "$ref": "#/definitions/ClientApplication"
@@ -3023,6 +3030,18 @@
             "$ref": "#/definitions/Coding"
           },
           "type": "array"
+        },
+        "project": {
+          "description": "The project that contains this resource.",
+          "$ref": "#/definitions/Reference"
+        },
+        "who": {
+          "description": "The individual, device or organization who initiated the last change.",
+          "$ref": "#/definitions/Reference"
+        },
+        "onBehalfOf": {
+          "description": "The individual, device, or organization for whom the change was made.",
+          "$ref": "#/definitions/Reference"
         }
       },
       "additionalProperties": false
@@ -60972,6 +60991,47 @@
         }
       },
       "additionalProperties": false
+    },
+    "Project": {
+      "description": "Medplum project. A Medplum project is the top-level entity for Medplum. A project is an isolated set of resources.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a Project resource",
+          "const": "Project"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/id"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "name": {
+          "description": "A name associated with the organization.",
+          "$ref": "#/definitions/string"
+        },
+        "description": {
+          "description": "A summary, characterization or explanation of the Project.",
+          "$ref": "#/definitions/string"
+        },
+        "owner": {
+          "description": "Indicates the user with responsibility for managing the Project.",
+          "$ref": "#/definitions/Reference"
+        }
+      },
+      "required": [
+        "name",
+        "owner"
+      ]
     },
     "ClientApplication": {
       "description": "OAuth client application.",

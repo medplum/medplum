@@ -1251,6 +1251,7 @@ public class FhirPropertyNames {
     public static final String PROPERTY_PROGRAM_CODE = "programCode";
     public static final String PROPERTY_PROGRAM_ELIGIBILITY = "programEligibility";
     public static final String PROPERTY_PROGRESS = "progress";
+    public static final String PROPERTY_PROJECT = "project";
     public static final String PROPERTY_PROPERTY = "property";
     public static final String PROPERTY_PROPERTY_GROUP = "propertyGroup";
     public static final String PROPERTY_PROTEIN = "protein";

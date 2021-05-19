@@ -117,6 +117,7 @@ import { PlanDefinition } from './PlanDefinition';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
 import { Procedure } from './Procedure';
+import { Project } from './Project';
 import { Provenance } from './Provenance';
 import { Questionnaire } from './Questionnaire';
 import { QuestionnaireResponse } from './QuestionnaireResponse';
@@ -270,6 +271,7 @@ export type Resource = Account
   | Practitioner
   | PractitionerRole
   | Procedure
+  | Project
   | Provenance
   | Questionnaire
   | QuestionnaireResponse

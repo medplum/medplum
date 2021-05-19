@@ -146,6 +146,7 @@ export * from './PractitionerRole';
 export * from './Procedure';
 export * from './ProdCharacteristic';
 export * from './ProductShelfLife';
+export * from './Project';
 export * from './Provenance';
 export * from './Quantity';
 export * from './Questionnaire';

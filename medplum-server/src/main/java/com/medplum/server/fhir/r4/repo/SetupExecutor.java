@@ -18,6 +18,8 @@ import com.medplum.fhir.r4.types.HumanName;
 import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.fhir.r4.types.Organization;
 import com.medplum.fhir.r4.types.Practitioner;
+import com.medplum.fhir.r4.types.Project;
+import com.medplum.fhir.r4.types.Reference;
 import com.medplum.fhir.r4.types.StructureDefinition;
 import com.medplum.fhir.r4.types.User;
 import com.medplum.server.fhir.r4.search.SearchParser;
@@ -36,6 +38,7 @@ public class SetupExecutor {
 
     public OperationOutcome setup() {
         createStructureDefinitions();
+        createProject();
         createOrganization();
         createUser();
         createClientApplication();
@@ -72,6 +75,24 @@ public class SetupExecutor {
                 }
             }
         }
+    }
+
+    private void createProject() {
+        final Bundle bundle = repo.search(
+                SecurityUser.SYSTEM_USER,
+                SearchParser.parse("Project?name=Medplum")).resource(Bundle.class);
+
+        if (!bundle.entry().isEmpty()) {
+            return;
+        }
+
+        final Project organization = repo.create(SecurityUser.SYSTEM_USER, Project.create()
+                .name("Medplum")
+                .owner(Reference.create().reference("User/1").build())
+                .build())
+                .resource(Project.class);
+
+        created.add(organization);
     }
 
     private void createOrganization() {

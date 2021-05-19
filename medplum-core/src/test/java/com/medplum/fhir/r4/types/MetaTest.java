@@ -68,4 +68,22 @@ public class MetaTest {
         final java.util.List<Coding> value = java.util.Collections.emptyList();
         assertEquals(value, Meta.create().tag(value).build().tag());
     }
+
+    @Test
+    public void testProject() {
+        final Reference value = Reference.create().build();
+        assertEquals(value, Meta.create().project(value).build().project());
+    }
+
+    @Test
+    public void testWho() {
+        final Reference value = Reference.create().build();
+        assertEquals(value, Meta.create().who(value).build().who());
+    }
+
+    @Test
+    public void testOnBehalfOf() {
+        final Reference value = Reference.create().build();
+        assertEquals(value, Meta.create().onBehalfOf(value).build().onBehalfOf());
+    }
 }

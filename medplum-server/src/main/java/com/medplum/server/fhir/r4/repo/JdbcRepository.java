@@ -63,14 +63,17 @@ public class JdbcRepository implements Repository, Closeable {
     private static final String COLUMN_VERSION_ID = "VERSIONID";
     private static final String COLUMN_LAST_UPDATED = "LASTUPDATED";
     private static final String COLUMN_CONTENT = "CONTENT";
-    private static final String COLUMN_TYPE_UUID = "UUID NOT NULL";
-    private static final String COLUMN_TYPE_TIMESTAMP = "TIMESTAMP NOT NULL";
-    private static final String COLUMN_TYPE_TEXT = "TEXT NOT NULL";
+    private static final String COLUMN_TYPE_UUID = "UUID";
+    private static final String COLUMN_TYPE_TIMESTAMP = "TIMESTAMP";
+    private static final String COLUMN_TYPE_TEXT = "TEXT";
     private static final String COLUMN_TYPE_VARCHAR128 = "VARCHAR(128)";
     private static final String COLUMN_IDENTIFIER_RESOURCE_ID = "RESOURCEID";
     private static final String COLUMN_IDENTIFIER_SYSTEM = "SYSTEM";
     private static final String COLUMN_IDENTIFIER_VALUE = "VALUE";
+    private static final String COLUMN_PROJECT_COMPARTMENT_ID = "PROJECTCOMPARTMENTID";
+    private static final String COLUMN_PATIENT_COMPARTMENT_ID = "PATIENTCOMPARTMENTID";
     private static final String PRIMARY_KEY = " PRIMARY KEY";
+    private static final String NOT_NULL = " NOT NULL";
     private final Connection conn;
     private final SseService sseService;
 
@@ -95,8 +98,8 @@ public class JdbcRepository implements Repository, Closeable {
 
     private void createIdentifierTable() throws SQLException {
         executeCreateTable(new CreateTableQuery.Builder(TABLE_IDENTIFIER)
-                .column(COLUMN_ID, COLUMN_TYPE_UUID + PRIMARY_KEY)
-                .column(COLUMN_IDENTIFIER_RESOURCE_ID, COLUMN_TYPE_UUID)
+                .column(COLUMN_ID, COLUMN_TYPE_UUID + NOT_NULL + PRIMARY_KEY)
+                .column(COLUMN_IDENTIFIER_RESOURCE_ID, COLUMN_TYPE_UUID + NOT_NULL)
                 .column(COLUMN_IDENTIFIER_SYSTEM, COLUMN_TYPE_VARCHAR128)
                 .column(COLUMN_IDENTIFIER_VALUE, COLUMN_TYPE_VARCHAR128)
                 .index(COLUMN_IDENTIFIER_RESOURCE_ID)
@@ -107,9 +110,11 @@ public class JdbcRepository implements Repository, Closeable {
 
     private void createResourceTable(final String resourceType) throws SQLException {
         final CreateTableQuery.Builder builder = new CreateTableQuery.Builder(getTableName(resourceType))
-                .column(COLUMN_ID, COLUMN_TYPE_UUID + PRIMARY_KEY)
-                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_TIMESTAMP)
-                .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT);
+                .column(COLUMN_ID, COLUMN_TYPE_UUID + NOT_NULL + PRIMARY_KEY)
+                .column(COLUMN_PROJECT_COMPARTMENT_ID, COLUMN_TYPE_UUID)
+                .column(COLUMN_PATIENT_COMPARTMENT_ID, COLUMN_TYPE_UUID)
+                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_TIMESTAMP + NOT_NULL)
+                .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT + NOT_NULL);
 
         for (final SearchParameter searchParam : SearchParameters.getParameters(resourceType)) {
             if (isIndexTable(searchParam)) {
@@ -132,10 +137,12 @@ public class JdbcRepository implements Repository, Closeable {
 
     private void createHistoryTable(final String resourceType) throws SQLException {
         executeCreateTable(new CreateTableQuery.Builder(getHistoryTableName(resourceType))
-                .column(COLUMN_VERSION_ID, COLUMN_TYPE_UUID + PRIMARY_KEY)
-                .column(COLUMN_ID, COLUMN_TYPE_UUID)
-                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_TIMESTAMP)
-                .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT)
+                .column(COLUMN_VERSION_ID, COLUMN_TYPE_UUID + NOT_NULL + PRIMARY_KEY)
+                .column(COLUMN_ID, COLUMN_TYPE_UUID + NOT_NULL)
+                .column(COLUMN_PROJECT_COMPARTMENT_ID, COLUMN_TYPE_UUID)
+                .column(COLUMN_PATIENT_COMPARTMENT_ID, COLUMN_TYPE_UUID)
+                .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_TIMESTAMP + NOT_NULL)
+                .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT + NOT_NULL)
                 .build());
     }
 
