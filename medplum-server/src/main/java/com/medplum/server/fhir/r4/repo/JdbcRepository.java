@@ -18,10 +18,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 import jakarta.inject.Inject;
-import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonPatch;
 import jakarta.json.JsonValue;
 import jakarta.json.JsonValue.ValueType;
@@ -37,6 +35,7 @@ import com.medplum.fhir.r4.types.Bundle.BundleEntry;
 import com.medplum.fhir.r4.types.FhirList;
 import com.medplum.fhir.r4.types.FhirResource;
 import com.medplum.fhir.r4.types.Identifier;
+import com.medplum.fhir.r4.types.Meta;
 import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.fhir.r4.types.Reference;
 import com.medplum.fhir.r4.types.SearchParameter;
@@ -333,6 +332,7 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public OperationOutcome update(final SecurityUser user, final String id, final FhirResource data) {
         final OperationOutcome validateOutcome = FhirSchema.validate(data);
         if (!validateOutcome.isOk()) {
@@ -344,42 +344,62 @@ public class JdbcRepository implements Repository, Closeable {
             return StandardOutcomes.invalid("Invalid ID (not a UUID)");
         }
 
-        final String resourceType = data.getString("resourceType");
+        final String resourceType = data.resourceType();
         final OperationOutcome existingOutcome = read(user, resourceType, id);
         final FhirResource existing = existingOutcome.resource();
         final UUID versionId = UUID.randomUUID();
         final Instant lastUpdated = Instant.now();
 
-        final JsonObjectBuilder metaBuilder = Json.createObjectBuilder();
+        final Meta.Builder metaBuilder = Meta.create();
         if (existing != null) {
-            final JsonObject existingMeta = existing.getJsonObject("meta");
-            existingMeta.entrySet().forEach(e -> metaBuilder.add(e.getKey(), e.getValue()));
+            metaBuilder.copyAll(existing.meta());
         }
 
-        final JsonObject newMeta = data.getJsonObject("meta");
+        final Meta newMeta = data.meta();
         if (newMeta != null) {
-            newMeta.entrySet().forEach(e -> metaBuilder.add(e.getKey(), e.getValue()));
+            metaBuilder.copyAll(newMeta);
         }
 
-        metaBuilder.add("versionId", versionId.toString());
-        metaBuilder.add("lastUpdated", lastUpdated.toString());
+        metaBuilder.versionId(versionId.toString());
+        metaBuilder.lastUpdated(lastUpdated);
 
-        final JsonObjectBuilder builder = Json.createObjectBuilder();
+        @SuppressWarnings("rawtypes")
+        final FhirResource.Builder builder = FhirResource.create(resourceType);
         if (existing != null) {
-            existing.entrySet().forEach(e -> builder.add(e.getKey(), e.getValue()));
+            builder.copyAll(existing);
         }
 
-        data.entrySet().forEach(e -> builder.add(e.getKey(), e.getValue()));
+        builder.copyAll(data);
+        builder.id(id);
+        builder.meta(metaBuilder.build());
 
-        builder.add("resourceType", resourceType);
-        builder.add("id", id);
-        builder.add("meta", metaBuilder.build());
-        builder.remove("text");
+        final FhirResource resource = builder.build();
+        final OperationOutcome result;
+        if (existing == null) {
+            result = createImpl(resourceType, uuid, versionId, lastUpdated, resource);
+        } else {
+            result = updateImpl(resourceType, uuid, versionId, lastUpdated, resource);
+        }
 
-        final FhirResource resource = new FhirResource(builder.build());
-        return existing == null ?
-                createImpl(resourceType, uuid, versionId, lastUpdated, resource) :
-                updateImpl(resourceType, uuid, versionId, lastUpdated, resource);
+        if (result.isOk()) {
+            try {
+                writeIdentifiers(uuid, resource);
+            } catch (final SQLException ex) {
+                LOG.error("Error writing resource identifiers: {}", ex.getMessage(), ex);
+                return StandardOutcomes.invalid(ex.getMessage());
+            }
+
+            try {
+                writeVersion(resourceType, uuid, versionId, lastUpdated, resource);
+            } catch (final SQLException ex) {
+                LOG.error("Error writing version history: {}", ex.getMessage(), ex);
+                return StandardOutcomes.invalid(ex.getMessage());
+            }
+
+            sseService.handleUp(resource);
+        }
+
+        return result;
     }
 
     private OperationOutcome createImpl(
@@ -403,9 +423,6 @@ public class JdbcRepository implements Repository, Closeable {
 
         try {
             executeInsert(builder.build());
-            writeIdentifiers(id, resource);
-            writeVersion(resourceType, id, versionId, lastUpdated, resource);
-            sseService.handleUp(resource);
             return StandardOutcomes.created(resource);
 
         } catch (final SQLException ex) {
@@ -436,9 +453,6 @@ public class JdbcRepository implements Repository, Closeable {
 
         try {
             executeUpdate(builder.build());
-            writeIdentifiers(id, resource);
-            writeVersion(resourceType, id, versionId, lastUpdated, resource);
-            sseService.handleUp(resource);
             return StandardOutcomes.ok(resource);
 
         } catch (final SQLException ex) {
