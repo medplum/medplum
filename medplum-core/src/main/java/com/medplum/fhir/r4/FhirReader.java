@@ -7,13 +7,15 @@ import java.lang.reflect.Type;
 
 import jakarta.json.Json;
 import jakarta.json.JsonReader;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 
 import com.medplum.fhir.r4.types.FhirObject;
 
-public class FhirObjectReader<T extends FhirObject> implements MessageBodyReader<T> {
+@Consumes(FhirMediaType.APPLICATION_FHIR_JSON)
+public class FhirReader<T extends FhirObject> implements MessageBodyReader<T> {
 
     @Override
     public boolean isReadable(
@@ -22,7 +24,7 @@ public class FhirObjectReader<T extends FhirObject> implements MessageBodyReader
             final Annotation[] annotations,
             final MediaType mediaType) {
 
-        return FhirObject.class.isAssignableFrom(type);
+        return FhirObject.class.isAssignableFrom(type) && FhirMediaType.isCompatible(mediaType);
     }
 
     @Override

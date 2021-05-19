@@ -21,7 +21,7 @@ import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.medplum.fhir.r4.FhirObjectReader;
+import com.medplum.fhir.r4.FhirFeature;
 import com.medplum.server.fhir.r4.repo.BinaryStorage;
 import com.medplum.server.fhir.r4.repo.FileSystemBinaryStorage;
 import com.medplum.server.fhir.r4.repo.JdbcRepository;
@@ -63,7 +63,7 @@ public class App extends ResourceConfig {
         register(MustacheMvcFeature.class);
         register(JsonProcessingFeature.class);
         register(JsonBindingFeature.class);
-        register(FhirObjectReader.class);
+        register(FhirFeature.class);
 
         // Pass all config properties to Jersey
         addProperties(properties);

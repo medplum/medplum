@@ -29,10 +29,8 @@ public class FhirClient {
         this.client = Objects.requireNonNull(client);
         this.bearerToken = bearerToken;
 
-        if (client.getClass().getName().equals("org.glassfish.jersey.client.JerseyClient")) {
-            client.property("jersey.config.client.followRedirects", false);
-            client.register(FhirObjectReader.class);
-        }
+        client.property("jersey.config.client.followRedirects", false);
+        client.register(FhirFeature.class);
     }
 
     public FhirClient(final URI baseUri, final String auth) {
