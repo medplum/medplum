@@ -31,7 +31,12 @@ public class FhirClientTest {
         final Client innerClient = mock(Client.class);
         when(innerClient.target(any(URI.class))).thenReturn(target);
 
-        final FhirClient client = new FhirClient(URI.create("http://example.com"), "token", innerClient);
+        final FhirClient client = FhirClient.builder()
+                .baseUrl(URI.create("http://example.com"))
+                .accessToken("token")
+                .client(innerClient)
+                .build();
+
         final Response result = client.get(URI.create("foo"));
         assertNotNull(result);
         assertSame(response, result);

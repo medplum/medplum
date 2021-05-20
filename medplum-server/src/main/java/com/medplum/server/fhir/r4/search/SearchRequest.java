@@ -49,9 +49,9 @@ public class SearchRequest {
     }
 
     public URI toUri() {
-        final UriBuilder b = UriBuilder.fromPath("/fhir/R4/").path(resourceType);
+        final UriBuilder b = UriBuilder.fromPath("/fhir/R4/{resourceType}");
 
-        return b.build();
+        return b.build(resourceType);
     }
 
     @Override

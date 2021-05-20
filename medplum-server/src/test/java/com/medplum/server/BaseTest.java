@@ -1,6 +1,5 @@
 package com.medplum.server;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -104,8 +103,11 @@ public abstract class BaseTest extends JerseyTest {
     }
 
     protected FhirClient fhir() {
-        final URI uri = UriBuilder.fromUri(getBaseUri()).path("/fhir/R4").build();
-        return new FhirClient(uri, testAccessToken, client());
+        return FhirClient.builder()
+                .baseUrl(UriBuilder.fromUri(getBaseUri()).path("/fhir/R4").build())
+                .accessToken(testAccessToken)
+                .client(client())
+                .build();
     }
 
     protected JdbcRepository getRepo() {

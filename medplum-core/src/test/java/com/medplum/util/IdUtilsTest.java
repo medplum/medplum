@@ -26,6 +26,6 @@ public class IdUtilsTest {
     public void testGenerateSecret() {
         final String secret = IdUtils.generateSecret();
         assertNotNull(secret);
-        assertEquals(256, secret.length());
+        assertEquals(44, secret.length());
     }
 }

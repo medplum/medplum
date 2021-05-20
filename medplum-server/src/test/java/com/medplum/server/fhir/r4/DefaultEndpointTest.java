@@ -37,7 +37,7 @@ public class DefaultEndpointTest extends BaseTest {
     @Test
     public void testValidateCreateFailure() {
         final Response response = fhir().post(
-                UriBuilder.fromUri(fhir().getBaseUri()).path("Patient").path("$validate").build(),
+                UriBuilder.fromUri(fhir().getBaseUri()).path("Patient/$validate").build(),
                 Json.createObjectBuilder().build());
 
         assertEquals(400, response.getStatus());
@@ -56,7 +56,7 @@ public class DefaultEndpointTest extends BaseTest {
     @Test
     public void testValidateUpdateFailure() {
         final Response response = fhir().post(
-                UriBuilder.fromUri(fhir().getBaseUri()).path("Patient").path(IdUtils.generateId()).path("$validate").build(),
+                UriBuilder.fromUri(fhir().getBaseUri()).path("Patient/{id}/$validate").build(IdUtils.generateId()),
                 Json.createObjectBuilder().build());
 
         assertEquals(400, response.getStatus());

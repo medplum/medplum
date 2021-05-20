@@ -17,6 +17,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.junit.Test;
 
+import com.medplum.fhir.r4.FhirClient;
 import com.medplum.fhir.r4.FhirMediaType;
 import com.medplum.fhir.r4.types.Patient;
 import com.medplum.server.BaseTest;
@@ -229,5 +230,18 @@ public class TokenEndpointTest extends BaseTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResult.getString("access_token"))
                 .post(Entity.entity(Patient.create().build(), FhirMediaType.APPLICATION_FHIR_JSON));
         assertEquals(201, r2.getStatus());
+    }
+
+    @Test
+    public void testClientCredentialsFlowWithClient() {
+        final FhirClient client = FhirClient.builder()
+                .baseUrl(URI.create("/fhir/R4"))
+                .tokenUrl(URI.create("/oauth2/token"))
+                .client(client())
+                .clientCredentials(testClientApp.id(), testClientApp.secret())
+                .build();
+
+        final Response response = client.create(Patient.create().build());
+        assertEquals(201, response.getStatus());
     }
 }
