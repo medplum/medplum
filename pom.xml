@@ -109,7 +109,7 @@
         <site.basedir>${session.executionRootDirectory}/src/site/</site.basedir>
         <slf4j.version>1.7.30</slf4j.version>
         <sonar.coverage.jacoco.xmlReportPaths>${user.dir}/medplum-coverage/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.exclusions>medplum-examples/**/*,src/main/java/com/example/**/*</sonar.exclusions>
+        <sonar.exclusions>medplum-generator/**/*,src/main/java/com/medplum/fhir/r4/types/**/*</sonar.exclusions>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.java.source>11</sonar.java.source>
         <sonar.language>java</sonar.language>
