@@ -16,7 +16,12 @@ export function Header(props: HeaderProps) {
   return (
     <header>
       <div>
-        <a href="#" onClick={props.onLogo}><Logo width={24} height={24} />Medplum</a>
+        <a href="#" onClick={props.onLogo}>
+          <svg xmlns="http://www.w3.org/2000/svg" style={{ width: 20, height: 20, verticalAlign: 'text-top' }} viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+          </svg>
+          Medplum
+          </a>
         <div className="medplum-nav-search-container">
           <input
             name="q"

@@ -6,9 +6,9 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: var(--medplum-surface);
+  background-color: #5b2876;
   box-shadow: 0 1px 2px 0 var(--medplum-gray-200);
-  color: var(--medplum-gray-800);
+  color: white;
 }
 
 header div {
@@ -25,7 +25,7 @@ header svg {
 header a {
   text-decoration: none;
   padding: 0 8px 0 4px;
-  color: var(--medplum-gray-700);
+  color: white;
   font-weight: bold;
 }
 
@@ -39,10 +39,15 @@ div.medplum-nav-search-container {
 }
 
 input.medplum-nav-search-input {
-  border: 1px solid var(--medplum-gray-200);
+  border: 1px solid #5b2876;
+  background-color: #7a4696;
   box-shadow: none;
   padding-left: 32px;
   width: 300px;
+}
+
+input.medplum-nav-search-input::placeholder {
+  color: #ddc4eb;
 }
 
 svg.medplum-nav-search-icon {
@@ -51,8 +56,20 @@ svg.medplum-nav-search-icon {
   top: 50%;
   margin-top: -9px;
   pointer-events: none;
-  color: var(--medplum-gray-500);
+  color: #5b2876;
   vertical-align: bottom;
+}
+
+input.medplum-nav-search-input:focus {
+  background-color: var(--medplum-surface);
+}
+
+input.medplum-nav-search-input:focus::placeholder {
+  color: var(--medplum-gray-500);
+}
+
+input.medplum-nav-search-input:focus svg.medplum-nav-search-icon {
+  color: var(--medplum-gray-500);
 }
 
 .medplum-nav-search-popover {
@@ -64,8 +81,10 @@ svg.medplum-nav-search-icon {
   border: 1px solid var(--medplum-gray-400);
   border-radius: 4px;
   background-color: var(--medplum-surface);
+  color: var(--medplum-gray-600);
   padding: 6px;
   width: 600px;
+  z-index: 100;
 }
 
 .medplum-nav-search-hints {
