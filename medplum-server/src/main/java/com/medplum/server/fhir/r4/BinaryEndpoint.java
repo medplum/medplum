@@ -56,7 +56,9 @@ public class BinaryEndpoint {
         final OperationOutcome outcome = repo.create(
                 getUser(),
                 Binary.create().contentType(contentType.toString()).build());
-        binaryStorage.writeBinary(outcome.resource(Binary.class), inputStream);
+        if (outcome.isOk()) {
+            binaryStorage.writeBinary(outcome.resource(Binary.class), inputStream);
+        }
         return outcome;
     }
 
@@ -103,7 +105,9 @@ public class BinaryEndpoint {
                 getUser(),
                 id,
                 Binary.create().contentType(contentType.toString()).build());
-        binaryStorage.writeBinary(outcome.resource(Binary.class), inputStream);
+        if (outcome.isOk()) {
+            binaryStorage.writeBinary(outcome.resource(Binary.class), inputStream);
+        }
         return outcome;
     }
 
