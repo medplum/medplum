@@ -55,13 +55,9 @@ public class FhirClient {
         clientSecret = builder.clientSecret;
         accessToken = builder.accessToken;
         refreshToken = builder.refreshToken;
-
-        if (accessToken == null) {
-            getAccessToken();
-        }
     }
 
-    public URI getBaseUri() {
+    public URI getBaseUrl() {
         return baseUrl;
     }
 
@@ -146,10 +142,15 @@ public class FhirClient {
     }
 
     private Response method(final URI uri, final String method, final Entity<?> entity) {
+        if (accessToken == null) {
+            getAccessToken();
+        }
+
         final Invocation.Builder builder = client.target(uri).request().accept(APPLICATION_FHIR_JSON);
         if (accessToken != null) {
             builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         }
+
         return builder.method(method, entity);
     }
 
