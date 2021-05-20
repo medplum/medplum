@@ -1,5 +1,5 @@
 import { Resource } from 'medplum';
-import { Button, Document, parseForm, ResourceForm, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from 'medplum-ui';
+import { Button, Document, keyReplacer, parseForm, ResourceForm, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from 'medplum-ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
@@ -60,7 +60,7 @@ export function ResourcePage() {
           </TabPanel>
           <TabPanel name="history">
             <div>History</div>
-            <pre>{JSON.stringify(historyBundle, undefined, 2)}</pre>
+            <pre>{JSON.stringify(historyBundle, keyReplacer, 2)}</pre>
           </TabPanel>
           <TabPanel name="blame">
             <div>Blame</div>
@@ -72,7 +72,7 @@ export function ResourcePage() {
               const resource = JSON.parse(formData.resource);
               medplum.update(resource).then(() => loadResource());
             }}>
-              <textarea id="resource" name="resource" defaultValue={JSON.stringify(value, undefined, 2)} />
+              <textarea id="resource" name="resource" defaultValue={JSON.stringify(value, keyReplacer, 2)} />
               <Button type="submit">OK</Button>
             </form>
           </TabPanel>
