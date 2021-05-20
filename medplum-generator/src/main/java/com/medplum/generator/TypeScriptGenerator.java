@@ -274,7 +274,7 @@ public class TypeScriptGenerator {
             return "Resource";
         }
 
-        return ref.replaceAll("_", "");
+        return ref.replace("_", "");
     }
 
     private static String getDisplayName(final String inputName) {

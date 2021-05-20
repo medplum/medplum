@@ -24,6 +24,14 @@ import com.medplum.fhir.r4.types.FhirResource;
 import com.medplum.util.JsonUtils;
 
 public class FhirClient {
+    private static final String PATH_HISTORY = "_history";
+    private static final String PATH_VALIDATE = "$validate";
+    private static final String KEY_GRANT_TYPE = "grant_type";
+    private static final String KEY_CLIENT_CREDENTIALS = "client_credentials";
+    private static final String KEY_CLIENT_ID = "client_id";
+    private static final String KEY_CLIENT_SECRET = "client_secret";
+    private static final String KEY_REFRESH_TOKEN = "refresh_token";
+    private static final String KEY_ACCESS_TOKEN = "access_token";
     private final URI baseUrl;
     private final URI tokenUrl;
     private final Client client;
@@ -67,7 +75,7 @@ public class FhirClient {
     }
 
     public Response validateCreate(final FhirResource resource) {
-        return post(UriBuilder.fromUri(baseUrl).path(resource.resourceType()).path("$validate").build(), resource);
+        return post(UriBuilder.fromUri(baseUrl).path(resource.resourceType()).path(PATH_VALIDATE).build(), resource);
     }
 
     public Response readMetadata() {
@@ -79,11 +87,11 @@ public class FhirClient {
     }
 
     public Response readHistory(final String resourceType, final String id) {
-        return get(UriBuilder.fromUri(baseUrl).path(resourceType).path(id).path("_history").build());
+        return get(UriBuilder.fromUri(baseUrl).path(resourceType).path(id).path(PATH_HISTORY).build());
     }
 
     public Response readVersion(final String resourceType, final String id, final String versionId) {
-        return get(UriBuilder.fromUri(baseUrl).path(resourceType).path(id).path("_history").path(versionId).build());
+        return get(UriBuilder.fromUri(baseUrl).path(resourceType).path(id).path(PATH_HISTORY).path(versionId).build());
     }
 
     public Response update(final FhirResource resource) {
@@ -91,7 +99,7 @@ public class FhirClient {
     }
 
     public Response validateUpdate(final FhirResource resource) {
-        return post(UriBuilder.fromUri(baseUrl).path(resource.resourceType()).path(resource.id()).path("$validate").build(), resource);
+        return post(UriBuilder.fromUri(baseUrl).path(resource.resourceType()).path(resource.id()).path(PATH_VALIDATE).build(), resource);
     }
 
     public Response delete(final String resourceType, final String id) {
@@ -99,7 +107,7 @@ public class FhirClient {
     }
 
     public Response validateDelete(final String resourceType, final String id) {
-        return delete(UriBuilder.fromUri(baseUrl).path(resourceType).path(id).path("$validate").build());
+        return delete(UriBuilder.fromUri(baseUrl).path(resourceType).path(id).path(PATH_VALIDATE).build());
     }
 
     public Response search(final String resourceType, final String query) {
@@ -150,9 +158,9 @@ public class FhirClient {
 
     private void getAccessTokenWithClientCredentials() {
         final MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
-        formData.add("grant_type", "client_credentials");
-        formData.add("client_id", clientId);
-        formData.add("client_secret", clientSecret);
+        formData.add(KEY_GRANT_TYPE, KEY_CLIENT_CREDENTIALS);
+        formData.add(KEY_CLIENT_ID, clientId);
+        formData.add(KEY_CLIENT_SECRET, clientSecret);
 
         final Response response = client.target(tokenUrl)
                 .request(MediaType.APPLICATION_JSON_TYPE)
@@ -165,13 +173,13 @@ public class FhirClient {
         }
 
         final JsonObject json = JsonUtils.readJsonString(body);
-        this.accessToken = json.getString("access_token");
+        this.accessToken = json.getString(KEY_ACCESS_TOKEN);
     }
 
     private void getAccessTokenWithRefreshToken() {
         final MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
-        formData.add("grant_type", "refresh_token");
-        formData.add("refresh_token", refreshToken);
+        formData.add(KEY_GRANT_TYPE, KEY_REFRESH_TOKEN);
+        formData.add(KEY_REFRESH_TOKEN, refreshToken);
 
         final Response response = client.target(tokenUrl)
                 .request(MediaType.APPLICATION_JSON_TYPE)
@@ -183,8 +191,8 @@ public class FhirClient {
 
         final String body = response.readEntity(String.class);
         final JsonObject json = JsonUtils.readJsonString(body);
-        this.accessToken = json.getString("access_token");
-        this.refreshToken = json.getString("refresh_token");
+        this.accessToken = json.getString(KEY_ACCESS_TOKEN);
+        this.refreshToken = json.getString(KEY_REFRESH_TOKEN);
     }
 
     public static class Builder {

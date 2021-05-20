@@ -104,7 +104,7 @@ public class FhirGraphQLSchema {
                     .type(GraphQLList.list(graphQLType));
 
             for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
-                final String name = param.code().replaceAll("-", "_");
+                final String name = param.code().replace("-", "_");
                 searchBuilder.argument(GraphQLArgument.newArgument()
                         .name(name)
                         .description(param.description())

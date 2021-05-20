@@ -58,6 +58,6 @@ public class FileBuilder {
 
     @Override
     public String toString() {
-        return b.toString().replaceAll("\n\n\n", "\n\n");
+        return b.toString().replace("\n\n\n", "\n\n");
     }
 }

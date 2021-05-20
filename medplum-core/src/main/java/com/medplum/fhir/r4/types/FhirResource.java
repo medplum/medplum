@@ -19,7 +19,7 @@ public class FhirResource extends FhirObject {
     }
 
     public String resourceType() {
-        return getString("resourceType");
+        return getString(FhirPropertyNames.PROPERTY_RESOURCE_TYPE);
     }
 
     /**
@@ -27,7 +27,7 @@ public class FhirResource extends FhirObject {
      * assigned, this value never changes.
      */
     public String id() {
-        return getString("id");
+        return getString(FhirPropertyNames.PROPERTY_ID);
     }
 
     /**
@@ -36,7 +36,7 @@ public class FhirResource extends FhirObject {
      * version changes to the resource.
      */
     public Meta meta() {
-        return getObject(Meta.class, "meta");
+        return getObject(Meta.class, FhirPropertyNames.PROPERTY_META);
     }
 
     /**
@@ -67,12 +67,12 @@ public class FhirResource extends FhirObject {
 
         protected Builder(final String resourceType) {
             super();
-            b.add("resourceType", resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
         }
 
         protected Builder(final String resourceType, final JsonObject data) {
             super(data);
-            b.add("resourceType", resourceType);
+            b.add(FhirPropertyNames.PROPERTY_RESOURCE_TYPE, resourceType);
         }
 
         public B id(final String id) {
