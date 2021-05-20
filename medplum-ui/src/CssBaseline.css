@@ -24,7 +24,7 @@ h1, h2, h3, h4, h5 {
 }
 
 a {
-  color: var(--medplum-gray-900);
+  color: var(--medplum-blue-700);
   text-decoration: none;
 }
 

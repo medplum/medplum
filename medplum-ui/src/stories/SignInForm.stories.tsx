@@ -2,7 +2,7 @@ import { Meta } from '@storybook/react';
 import React from 'react';
 import { Button } from '../Button';
 import { Document } from '../Document';
-import { useAuth } from '../MedplumProvider';
+import { useMedplumContext } from '../MedplumProvider';
 import { SignInForm } from '../SignInForm';
 
 export default {
@@ -11,13 +11,13 @@ export default {
 } as Meta;
 
 export function Basic() {
-  const auth = useAuth();
+  const ctx = useMedplumContext();
   return (
     <Document>
-      {auth.user ? (
+      {ctx.user ? (
         <div>
-          <pre>User: {JSON.stringify(auth.user)}</pre>
-          <Button onClick={() => auth.medplum.signOut().then(() => alert('Signed out!'))}>
+          <pre>User: {JSON.stringify(ctx.user)}</pre>
+          <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
             Sign out
       </Button>
         </div>

@@ -3,7 +3,7 @@
 
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, Reference, Resource, Subscription, User } from './fhir';
+import { Binary, Bundle, OperationOutcome, Reference, Resource, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { formatSearchQuery, SearchDefinition } from './search';
 import { Storage } from './storage';
@@ -13,6 +13,15 @@ const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
+
+export class MedplumOperationOutcomeError extends Error {
+  readonly outcome: OperationOutcome;
+
+  constructor(outcome: OperationOutcome) {
+    super(outcome?.id);
+    this.outcome = outcome;
+  }
+}
 
 export interface MedplumClientOptions {
   /**
@@ -399,10 +408,7 @@ export class MedplumClient extends EventTarget {
         })
         .then(obj => {
           if (obj.issue && obj.issue.length > 0) {
-            const error = new Error(obj.issue[0].details.text);
-            // error.severity = 'error';
-            // error.operationOutcome = obj;
-            reject(error);
+            reject(new MedplumOperationOutcomeError(obj as OperationOutcome));
           }
           resolve(obj);
         })

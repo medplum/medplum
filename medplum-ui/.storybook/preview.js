@@ -14,6 +14,12 @@ export const parameters = {
   },
 }
 
+const mockRouter = {
+  push: (path, state) => {
+    alert('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
+  }
+}
+
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL,
   clientId: process.env.MEDPLUM_CLIENT_ID,
@@ -21,7 +27,7 @@ const medplum = new MedplumClient({
 
 export const decorators = [
   (Story) => (
-    <MedplumProvider medplum={medplum}>
+    <MedplumProvider medplum={medplum} router={mockRouter}>
       <Story />
     </MedplumProvider>
   ),

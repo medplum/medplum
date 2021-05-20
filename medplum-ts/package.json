@@ -12,7 +12,6 @@
   },
   "scripts": {
     "clean": "rimraf lib",
-    "dev": "start-storybook -p 6006",
     "build": "npm run clean && tsc",
     "test": "jest",
     "lint": "eslint src/ --ext .ts,.tsx"

@@ -1,52 +1,65 @@
 import { MedplumClient, User } from 'medplum';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-/*
- * Based on:
- * https://usehooks.com/useAuth/
- */
+interface MedplumRouter {
+  push: (path: string, state?: any) => void;
+}
 
-interface Auth {
+interface MedplumContext {
   medplum: MedplumClient;
+  router: MedplumRouter;
   user?: User;
   loading: boolean;
 }
 
-const context = createContext(undefined as Auth | undefined);
+const reactContext = createContext(undefined as MedplumContext | undefined);
 
 export interface MedplumProviderProps {
   medplum: MedplumClient;
+  router: MedplumRouter;
   children: React.ReactNode;
 }
 
 /**
- * The ProvideAuth component wraps the app,
- * providing auth context.
+ * The MedplumProvider component provides Medplum context state.
+ *
+ * Medplum context includes:
+ *   1) medplum - Medplum client library
+ *   2) router - Router for navigating links (compatible with 'history' and 'react-router')
+ *   3) user - The current user (if signed in)
  */
 export function MedplumProvider(props: MedplumProviderProps) {
-  const auth = createAuth(props.medplum);
-  return <context.Provider value={auth}>{props.children}</context.Provider>;
+  const medplumContext = createMedplumContext(props.medplum, props.router);
+  return <reactContext.Provider value={medplumContext}>{props.children}</reactContext.Provider>;
 }
 
 /**
- * Returns the auth object from the auth context.
+ * Returns the MedplumContext instance.
  */
-export function useAuth(): Auth {
-  return useContext(context) as Auth;
+export function useMedplumContext(): MedplumContext {
+  return useContext(reactContext) as MedplumContext;
 }
 
 /**
  * Returns the MedplumClient instance.
- * This is just a shortcut for useAuth().medplum.
+ * This is a shortcut for useMedplumContext().medplum.
  */
 export function useMedplum(): MedplumClient {
-  return useAuth().medplum;
+  return useMedplumContext().medplum;
+}
+
+/**
+ * Returns the MedplumRouter instance.
+ * This is a shortcut for useMedplumContext().router.
+ */
+export function useMedplumRouter(): MedplumRouter {
+  return useMedplumContext().router;
 }
 
 /**
  * Creates the auth object that handles user state.
  */
-function createAuth(medplum: MedplumClient): Auth {
+function createMedplumContext(medplum: MedplumClient, router: MedplumRouter): MedplumContext {
   const [state, setState] = useState({
     user: medplum.getUser(),
     loading: false
@@ -58,5 +71,5 @@ function createAuth(medplum: MedplumClient): Auth {
     return () => medplum.removeEventListeneer('change', eventListener);
   }, []);
 
-  return { ...state, medplum };
+  return { ...state, medplum, router };
 }

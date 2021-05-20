@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Logo } from './Logo';
-import { useAuth } from './MedplumProvider';
+import { useMedplumContext } from './MedplumProvider';
 import './Header.css';
 
 export interface HeaderProps {
@@ -11,7 +10,7 @@ export interface HeaderProps {
 }
 
 export function Header(props: HeaderProps) {
-  const auth = useAuth();
+  const auth = useMedplumContext();
   const [searchHintsVisible, setSearchHintsVisible] = useState(false);
   return (
     <header>

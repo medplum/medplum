@@ -56,7 +56,7 @@ For more details on how to setup `MedplumClient`, refer to the docs for [`medplu
 
 ```tsx
 export function SignInPage() {
-  const auth = useAuth();
+  const auth = useMedplumContext();
   return (
     <Document>
       {auth.user ? (

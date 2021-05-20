@@ -8,20 +8,39 @@ import './ResourcePage.css';
 export function ResourcePage() {
   const { resourceType, id, tab } = useParams() as any;
   const medplum = useMedplum();
+  const [loading, setLoading] = useState<boolean>(true);
   const [value, setValue] = useState<Resource | undefined>();
   const [historyBundle, setHistoryBundle] = useState<Resource | undefined>();
+  const [error, setError] = useState();
 
   function loadResource() {
-    medplum.read(resourceType, id).then(result => setValue(result));
-    medplum.readHistory(resourceType, id).then(result => setHistoryBundle(result));
+    setLoading(true);
+    medplum.read(resourceType, id)
+      .then(result => setValue(result))
+      .then(() => medplum.readHistory(resourceType, id))
+      .then(result => setHistoryBundle(result))
+      .then(() => setLoading(false))
+      .catch(reason => {
+        console.log('reason', reason);
+        setLoading(false);
+        setError(reason);
+      })
   }
 
   useEffect(() => {
     loadResource();
   }, [resourceType, id]);
 
-  if (!value) {
+  if (loading) {
     return <div>Loading...</div>
+  }
+
+  if (error) {
+    return (
+      <Document>
+        <pre>{JSON.stringify(error, undefined, 2)}</pre>
+      </Document>
+    );
   }
 
   return (

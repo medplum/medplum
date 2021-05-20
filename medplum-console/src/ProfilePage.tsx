@@ -1,8 +1,8 @@
-import { Document, useAuth } from 'medplum-ui';
+import { Document, useMedplumContext } from 'medplum-ui';
 import React from 'react';
 
 export function ProfilePage() {
-  const auth = useAuth();
+  const auth = useMedplumContext();
 
   return (
     <Document>

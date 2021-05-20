@@ -22,7 +22,7 @@ const medplum = new MedplumClient({
 
 export default function App() {
   return (
-    <MedplumProvider medplum={medplum}>
+    <MedplumProvider medplum={medplum} router={history}>
       <Router history={history}>
         <CssBaseline />
         <DefaultTheme />
