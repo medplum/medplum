@@ -46,7 +46,10 @@ public class FhirClient {
 
     private FhirClient(final Builder builder) {
         baseUrl = Objects.requireNonNull(builder.baseUrl, "Base URL must not be null");
+
         client = Objects.requireNonNull(builder.client, "Client must not be null");
+        client.register(FhirFeature.class);
+
         tokenUrl = builder.tokenUrl;
         clientId = builder.clientId;
         clientSecret = builder.clientSecret;
@@ -96,6 +99,10 @@ public class FhirClient {
 
     public Response update(final FhirResource resource) {
         return put(UriBuilder.fromUri(baseUrl).path(resource.resourceType()).path(resource.id()).build(), resource);
+    }
+
+    public Response updateBinary(final String id, final Entity<?> entity) {
+        return put(UriBuilder.fromUri(baseUrl).path(Binary.RESOURCE_TYPE).path(id).build(), entity);
     }
 
     public Response validateUpdate(final FhirResource resource) {
