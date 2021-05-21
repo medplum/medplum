@@ -1,11 +1,14 @@
-import { Attachment, HumanName, Resource } from 'medplum';
+import { Patient, Practitioner, RelatedPerson, Resource } from 'medplum';
 import React, { useEffect, useState } from 'react';
-import './Avatar.css';
 import { formatHumanName } from './HumanNameUtils';
 import { useMedplum } from './MedplumProvider';
+import './Avatar.css';
+
+type PhotoResource = Patient | Practitioner | RelatedPerson;
 
 export interface AvatarProps {
   size?: 'small' | 'medium' | 'large';
+  resource?: Patient | Practitioner | RelatedPerson;
   resourceType?: 'Patient' | 'Practitoner' | 'RelatedPerson';
   id?: string;
   src?: string;
@@ -13,45 +16,34 @@ export interface AvatarProps {
   color?: string;
 }
 
-interface PhotoResource {
-  name?: HumanName[];
-  photo?: Attachment[];
-}
-
 export const Avatar = (props: AvatarProps) => {
   const medplum = useMedplum();
-  const [loading, setLoading] = useState(!props.src);
   const [imageUrl, setImageUrl] = useState<string | undefined>(props.src);
-  const [text, setText] = useState<string | undefined>(props.alt);
+  const [text, setText] = useState<string | undefined>(props.alt || '');
+
+  function setResource(resource: PhotoResource) {
+    setText(getText(resource));
+
+    const attachmentUrl = getImageSrc(resource);
+    if (!attachmentUrl) {
+      return;
+    }
+
+    medplum.readCachedBlobAsImageUrl(attachmentUrl)
+      .then(imageUrl => setImageUrl(imageUrl));
+  }
 
   useEffect(() => {
-    if (props.resourceType && props.id) {
-      setLoading(true);
-      console.log('readCached');
-      medplum.readCached(props.resourceType, props.id)
-        .then((resource: Resource) => {
-          if (resource.resourceType !== 'Patient' && resource.resourceType !== 'Practitioner') {
-            setLoading(false);
-            return;
-          }
-          setText(getText(resource));
-          const attachmentUrl = getImageSrc(resource);
-          if (!attachmentUrl) {
-            setLoading(false);
-            return;
-          }
-          medplum.readCachedBlobAsImageUrl(attachmentUrl)
-            .then(imageUrl => {
-              setImageUrl(imageUrl);
-              setLoading(false);
-            });
-        });
+    if (props.resource) {
+      setResource(props.resource);
+      return;
     }
-  }, [props.resourceType, props.id]);
 
-  if (loading) {
-    return '...';
-  }
+    if (props.resourceType && props.id) {
+      medplum.readCached(props.resourceType, props.id)
+        .then((resource: Resource) => setResource(resource as PhotoResource));
+    }
+  }, [props.resource, props.resourceType, props.id]);
 
   const className = props.size ? 'medplum-avatar ' + props.size : 'medplum-avatar';
   const initials = text && getInitials(text);

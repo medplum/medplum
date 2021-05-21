@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMedplumContext } from './MedplumProvider';
 import './Header.css';
+import { Avatar } from './Avatar';
 
 export interface HeaderProps {
   onLogo?: () => void;
@@ -55,7 +56,9 @@ export function Header(props: HeaderProps) {
       </div>
       <div>
         {auth.user ? (
-          <a href="#" onClick={props.onProfile}>Profile</a>
+          <a href="#" onClick={props.onProfile}>
+            <Avatar resource={auth.profile as any} />
+          </a>
         ) : (
           <>
             <a href="#" onClick={props.onSignIn}>Sign in</a>

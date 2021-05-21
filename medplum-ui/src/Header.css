@@ -11,7 +11,7 @@ header {
   color: white;
 }
 
-header div {
+header>div {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -36,6 +36,12 @@ header a:hover {
 div.medplum-nav-search-container {
   position: relative;
   margin-left: 32px;
+}
+
+@media (max-width: 700px) {
+  div.medplum-nav-search-container {
+    display: none;
+  }
 }
 
 input.medplum-nav-search-input {
