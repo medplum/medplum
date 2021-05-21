@@ -1,7 +1,7 @@
 import { PropertyDefinition, schema } from 'medplum';
 import React from 'react';
 import { AddressInput } from './AddressInput';
-import { AttachmentArray } from './AttachmentArray';
+import { AttachmentArrayInput } from './AttachmentArrayInput';
 import { AttachmentInput } from './AttachmentInput';
 import { BackboneElementInput } from './BackboneElementInput';
 import { CodeableConceptInput } from './CodeableConceptInput';
@@ -28,7 +28,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
 
   if (property.array && !props.arrayElement) {
     if (property.type === 'Attachment') {
-      return <AttachmentArray property={property} name={name} values={value} />
+      return <AttachmentArrayInput property={property} name={name} values={value} />
     }
     return <ResourceArrayInput property={property} name={name} values={value} />
   }
@@ -64,7 +64,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
         />);
     case 'boolean':
       return (
-        <input type="checkbox" name={name} defaultChecked={!!value} />
+        <input type="checkbox" name={name} defaultChecked={!!value} value="true" />
       );
     case 'markdown':
       return (

@@ -8,7 +8,7 @@ export default {
   component: ResourceForm,
 } as Meta;
 
-export const Basic = () => (
+export const Patient = () => (
   <Document>
     <ResourceForm
       resourceType="Patient"
@@ -19,3 +19,17 @@ export const Basic = () => (
     />
   </Document>
 );
+
+export const Organization = () => (
+  <Document>
+    <ResourceForm
+      resourceType="Organization"
+      id="01764374-df38-34a1-7c93-3066982cd231"
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
+//Organization/01764374-df38-34a1-7c93-3066982cd231

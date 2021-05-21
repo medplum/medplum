@@ -177,7 +177,11 @@ function parseJson(str: string): any {
   if (!str) {
     return undefined;
   }
-  return JSON.parse(str, keyReplacer);
+  try {
+    return JSON.parse(str, keyReplacer);
+  } catch (err) {
+    return str;
+  }
 }
 
 function isStringProperty(fieldDef: PropertyDefinition) {

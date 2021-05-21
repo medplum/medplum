@@ -9,7 +9,6 @@ select {
   border-radius: 3px;
   background: var(--medplum-surface);
   box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
-  outline: 2px var(--medplum-surface);
   color: var(--medplum-gray-800);
   line-height: 28px;
   font-size: var(--medplum-font-normal);
@@ -48,6 +47,18 @@ select:disabled {
   background: var(--medplum-gray-100);
 }
 
+input.small,
+select.small {
+  font-size: var(--medplum-font-small);
+  line-height: 24px;
+}
+
+input.large,
+select.large {
+  font-size: var(--medplum-font-big);
+  line-height: 32px;
+}
+
 select {
   padding: 4px 8px;
   margin: 1px;
@@ -57,4 +68,12 @@ select {
 
 select:not([size]) {
   height: 32px;
+}
+
+select.small:not([size]) {
+  height: 28px;
+}
+
+select.large:not([size]) {
+  height: 36px;
 }

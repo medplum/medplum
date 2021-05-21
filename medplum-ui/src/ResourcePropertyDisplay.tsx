@@ -1,7 +1,7 @@
 import { PropertyDefinition, schema } from 'medplum';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
-import { AttachmentArray } from './AttachmentArray';
+import { AttachmentArrayDisplay } from './AttachmentArrayDisplay';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { BackboneElementDisplay } from './BackboneElementDisplay';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
@@ -25,7 +25,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
 
   if (property.array && !props.arrayElement) {
     if (property.type === 'Attachment') {
-      return <AttachmentArray property={property} name="" values={value} />
+      return <AttachmentArrayDisplay values={value} />
     }
     return <ResourceArrayDisplay property={property} values={value} />
   }

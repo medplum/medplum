@@ -1,21 +1,43 @@
-import React, { useState } from 'react';
-import { PropertyDefinition } from 'medplum';
+import { ContactPoint, PropertyDefinition } from 'medplum';
+import React, { useRef, useState } from 'react';
 
 export interface ContactPointInputProps {
   property: PropertyDefinition;
   name: string;
-  value?: any;
+  value?: ContactPoint;
 }
 
 export function ContactPointInput(props: ContactPointInputProps) {
-  const [value, setValue] = useState(props.value);
+  const [contactPoint, setContactPoint] = useState(props.value);
+
+  const ref = useRef<ContactPoint>();
+  ref.current = contactPoint;
+
+  function setSystem(system: string) {
+    setContactPoint({ ...ref.current, system });
+  }
+
+  function setUse(use: string) {
+    setContactPoint({ ...ref.current, use });
+  }
+
+  function setValue(value: string) {
+    setContactPoint({ ...ref.current, value });
+  }
+
   return (
     <table>
       <tbody>
         <tr>
           <td>
-            <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
-            <select defaultValue={value.system}>
+            <input
+              name={props.name}
+              type="hidden"
+              value={JSON.stringify(contactPoint)}
+              readOnly={true} />
+            <select
+              defaultValue={contactPoint?.system}
+              onChange={e => setSystem(e.currentTarget.value)}>
               <option></option>
               <option>email</option>
               <option>fax</option>
@@ -27,7 +49,9 @@ export function ContactPointInput(props: ContactPointInputProps) {
             </select>
           </td>
           <td>
-            <select defaultValue={value.use}>
+            <select
+              defaultValue={contactPoint?.use}
+              onChange={e => setUse(e.currentTarget.value)}>
               <option></option>
               <option>home</option>
               <option>mobile</option>
@@ -37,7 +61,10 @@ export function ContactPointInput(props: ContactPointInputProps) {
             </select>
           </td>
           <td>
-            <input type="text" defaultValue={value.value} />
+            <input
+              type="text"
+              defaultValue={contactPoint?.value}
+              onChange={e => setValue(e.currentTarget.value)} />
           </td>
         </tr>
       </tbody>

@@ -13,7 +13,7 @@ export interface TextFieldProps {
 }
 
 export const TextField = (props: TextFieldProps) => {
-  const className = '';
+  const className = props.size || '';
   return (
     <input
       id={props.id}
@@ -26,5 +26,32 @@ export const TextField = (props: TextFieldProps) => {
       ref={props.inputRef}
       onChange={props.onChange}
     />
+  );
+};
+
+export interface SelectProps {
+  id?: string;
+  size?: 'small' | 'medium' | 'large';
+  value?: string;
+  required?: boolean;
+  autoFocus?: boolean;
+  inputRef?: RefObject<HTMLSelectElement>;
+  onChange?: (e: React.ChangeEvent) => void;
+  children: React.ReactNode;
+}
+
+export const Select = (props: SelectProps) => {
+  const className = props.size || '';
+  return (
+    <select
+      id={props.id}
+      name={props.id}
+      className={className}
+      defaultValue={props.value || ''}
+      required={props.required}
+      autoFocus={props.autoFocus}
+      ref={props.inputRef}
+      onChange={props.onChange}
+    >{props.children}</select>
   );
 };

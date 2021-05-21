@@ -1,4 +1,4 @@
-import { Resource } from 'medplum';
+import { Bundle, Resource } from 'medplum';
 import { Button, Document, keyReplacer, parseForm, ResourceForm, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from 'medplum-ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -10,7 +10,7 @@ export function ResourcePage() {
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [value, setValue] = useState<Resource | undefined>();
-  const [historyBundle, setHistoryBundle] = useState<Resource | undefined>();
+  const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
   const [error, setError] = useState();
 
   function loadResource() {
@@ -78,8 +78,22 @@ export function ResourcePage() {
             />
           </TabPanel>
           <TabPanel name="history">
-            <div>History</div>
-            <pre>{JSON.stringify(historyBundle, keyReplacer, 2)}</pre>
+            <table style={{ width: '100%', lineHeight: '32px' }}>
+              <thead>
+                <tr>
+                  <th>Version ID</th>
+                  <th>Date/Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historyBundle && historyBundle.entry?.map(entry => (
+                  <tr key={entry.resource?.meta?.versionId}>
+                    <td>{entry.resource?.meta?.versionId}</td>
+                    <td>{entry.resource?.meta?.lastUpdated}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </TabPanel>
           <TabPanel name="blame">
             <div>Blame</div>
