@@ -1,6 +1,7 @@
 // PKCE auth ased on:
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
+import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Binary, Bundle, OperationOutcome, Reference, Resource, Subscription, User } from './fhir';
@@ -10,6 +11,8 @@ import { Storage } from './storage';
 import { arrayBufferToBase64 } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
+const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
+const DEFAULT_BLOB_CACHE_SIZE = 100;
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
@@ -57,6 +60,20 @@ export interface MedplumClientOptions {
    * Use this if you want to use a separate OAuth server.
    */
   logoutUrl?: string;
+
+  /**
+   * Number of resources to store in the cache.
+   * Optional.  Default value is 1000.
+   * Consider using this for performance of displaying Patient or Practitioner resources.
+   */
+  resourceCacheSize?: number;
+
+  /**
+   * Number of blob URLs to store in the cache.
+   * Optional.  Default value is 100.
+   * Consider using this for performance of displaying Patient or Practitioner resources.
+   */
+  blobCacheSize?: number;
 }
 
 interface LoginRequest {
@@ -84,6 +101,8 @@ interface TokenResponse {
 
 export class MedplumClient extends EventTarget {
   private readonly storage: Storage;
+  private readonly resourceCache: LRUCache<Resource>;
+  private readonly blobUrlCache: LRUCache<string>;
   private readonly baseUrl: string;
   private readonly clientId: string;
   private readonly authorizeUrl: string;
@@ -109,6 +128,8 @@ export class MedplumClient extends EventTarget {
     }
 
     this.storage = new Storage();
+    this.resourceCache = new LRUCache(options.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
+    this.blobUrlCache = new LRUCache(options.blobCacheSize ?? DEFAULT_BLOB_CACHE_SIZE);
     this.baseUrl = options.baseUrl || DEFAULT_BASE_URL;
     this.clientId = options.clientId;
     this.authorizeUrl = options.authorizeUrl || this.baseUrl + 'oauth2/authorize';
@@ -257,7 +278,18 @@ export class MedplumClient extends EventTarget {
   }
 
   read(resourceType: string, id: string): Promise<Resource> {
-    return this.get(this.fhirUrl(resourceType, id));
+    return this.get(this.fhirUrl(resourceType, id))
+      .then((resource: Resource) => {
+        this.resourceCache.set(resourceType + '/' + id, resource);
+        return resource;
+      });
+  }
+
+  readCached(resourceType: string, id: string): Promise<Resource> {
+    console.log('readCached resourceType=' + resourceType + ', id=' + id);
+    const cached = this.resourceCache.get(resourceType + '/' + id);
+    console.log('  cache hit? ' + !!cached);
+    return cached ? Promise.resolve(cached) : this.read(resourceType, id);
   }
 
   readHistory(resourceType: string, id: string): Promise<Bundle> {
@@ -270,6 +302,20 @@ export class MedplumClient extends EventTarget {
 
   readBlob(url: string): Promise<Blob> {
     return this.get(url, true);
+  }
+
+  readBlobAsImageUrl(url: string): Promise<string> {
+    return this.readBlob(url)
+      .then(imageBlob => {
+        const imageUrl = URL.createObjectURL(imageBlob);
+        this.blobUrlCache.set(url, imageUrl);
+        return imageUrl;
+      });
+  }
+
+  readCachedBlobAsImageUrl(url: string): Promise<string> {
+    const cached = this.blobUrlCache.get(url);
+    return cached ? Promise.resolve(cached) : this.readBlobAsImageUrl(url);
   }
 
   readBinary(resourceType: string, id: string): Promise<Blob> {

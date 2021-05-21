@@ -6,7 +6,7 @@ export function ProfilePage() {
 
   return (
     <Document>
-      <pre>{JSON.stringify(auth.user, undefined, 2)}</pre>
+      <pre>{JSON.stringify(auth.profile, undefined, 2)}</pre>
     </Document>
   );
 }

@@ -1,8 +1,10 @@
 import { HumanName } from 'medplum';
 import React from 'react';
+import { formatHumanName, HumanNameFormatOptions } from './HumanNameUtils';
 
 export interface HumanNameDisplayProps {
   value?: HumanName;
+  options?: HumanNameFormatOptions;
 }
 
 export function HumanNameDisplay(props: HumanNameDisplayProps) {
@@ -11,27 +13,5 @@ export function HumanNameDisplay(props: HumanNameDisplayProps) {
     return null;
   }
 
-  const builder = [];
-
-  if (name.prefix) {
-    builder.push(...name.prefix);
-  }
-
-  if (name.given) {
-    builder.push(...name.given);
-  }
-
-  if (name.family) {
-    builder.push(name.family);
-  }
-
-  if (name.suffix) {
-    builder.push(...name.suffix);
-  }
-
-  if (name.use) {
-    builder.push('[' + name.use + ']');
-  }
-
-  return <>{builder.join(' ').trim()}</>;
+  return <>{formatHumanName(name, props.options || { all: true })}</>
 }

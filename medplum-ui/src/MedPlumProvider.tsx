@@ -1,4 +1,4 @@
-import { MedplumClient, User } from 'medplum';
+import { MedplumClient, Resource, User } from 'medplum';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface MedplumRouter {
@@ -9,6 +9,7 @@ interface MedplumContext {
   medplum: MedplumClient;
   router: MedplumRouter;
   user?: User;
+  profile?: Resource;
   loading: boolean;
 }
 
@@ -62,11 +63,17 @@ export function useMedplumRouter(): MedplumRouter {
 function createMedplumContext(medplum: MedplumClient, router: MedplumRouter): MedplumContext {
   const [state, setState] = useState({
     user: medplum.getUser(),
+    profile: medplum.getProfile(),
     loading: false
   });
 
   useEffect(() => {
-    const eventListener = () => setState({ ...state, user: medplum.getUser() });
+    const eventListener = () => setState({
+      ...state,
+      user: medplum.getUser(),
+      profile: medplum.getProfile()
+    });
+
     medplum.addEventListener('change', eventListener);
     return () => medplum.removeEventListeneer('change', eventListener);
   }, []);

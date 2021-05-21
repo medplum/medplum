@@ -1,5 +1,6 @@
 import React from 'react';
-import { PropertyDefinition, schema, SearchDefinition, SearchFilterDefinition } from 'medplum';
+import { HumanName, PropertyDefinition, schema, SearchDefinition, SearchFilterDefinition } from 'medplum';
+import { formatHumanName } from './HumanNameUtils';
 
 /**
  * Sets the array of filters.
@@ -578,8 +579,12 @@ export function renderValue(resourceType: string, key: string, value: any): stri
     return <span className="muted">none</span>;
   }
 
-  if (key === 'id' || key === 'meta.lastUpdated' || key === 'meta.versionId') {
+  if (key === 'id' || key === 'meta.versionId') {
     return value;
+  }
+
+  if (key === 'meta.lastUpdated') {
+    return new Date(value).toLocaleString('en-US');
   }
 
   const typeDef = schema[resourceType];
@@ -593,23 +598,12 @@ export function renderValue(resourceType: string, key: string, value: any): stri
   }
 
   if (field.type === 'HumanName') {
-    let result = '';
-    if (value && value.length > 0) {
-      const name = value[0];
-      if (name.prefix) {
-        result = name.prefix;
-      }
-      if (name.given) {
-        result += ' ' + name.given.join(' ');
-      }
-      if (name.family) {
-        result += ' ' + name.family;
-      }
-      if (name.suffix) {
-        result += ' ' + name.suffix;
-      }
+    const names = value as HumanName[];
+    if (names.length > 0) {
+      return formatHumanName(names[0]);
+    } else {
+      return '';
     }
-    return result;
   }
 
   if (field['type'] === 'map') {

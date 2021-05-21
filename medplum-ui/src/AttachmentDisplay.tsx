@@ -17,8 +17,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps) {
     }
 
     if (props.value?.url) {
-      medplum.readBlob(props.value?.url)
-        .then(imageBlob => setImageUrl(URL.createObjectURL(imageBlob)));
+      medplum.readBlobAsImageUrl(props.value?.url).then(url => setImageUrl(url));
     }
 
   }, [props.value?.url]);
