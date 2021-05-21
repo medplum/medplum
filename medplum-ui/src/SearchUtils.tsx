@@ -521,6 +521,14 @@ export function getOpString(op: string) {
 }
 
 export function buildFieldNameString(resourceType: string, key: string): string {
+  if (key === 'id') {
+    return 'ID';
+  }
+
+  if (key === 'meta.lastUpdated') {
+    return 'Last Updated';
+  }
+
   const typeDef = schema[resourceType];
   if (!typeDef) {
     return key;
