@@ -1,4 +1,4 @@
-import { PropertyDefinition, schema } from 'medplum';
+import { PropertySchema } from 'medplum';
 import React from 'react';
 import { AddressInput } from './AddressInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
@@ -15,7 +15,7 @@ import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
 
 export interface ResourcePropertyInputProps {
-  property: PropertyDefinition;
+  property: PropertySchema;
   name: string;
   value: any;
   arrayElement?: boolean;
@@ -89,17 +89,6 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     case 'Reference':
       return <ReferenceInput property={property} name={name} value={value} />;
     default:
-      {
-        const backboneType = schema[property.type];
-        if (backboneType) {
-          return (
-            <BackboneElementInput property={property} name={name} backboneType={backboneType} value={value} />
-          );
-        } else {
-          return (
-            <input type="text" name={name} defaultValue={value}></input>
-          );
-        }
-      }
+      return <BackboneElementInput property={property} name={name} value={value} />;
   }
 }

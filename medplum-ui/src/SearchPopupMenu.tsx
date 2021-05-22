@@ -1,12 +1,13 @@
+import { IndexedStructureDefinition, SearchDefinition } from 'medplum';
 import React from 'react';
-import { SearchDefinition, schema } from 'medplum';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
 import { PopupMenu } from './PopupMenu';
+import { addFilter, buildFieldNameString, clearFiltersOnField, getOpString, setSort } from './SearchUtils';
 import { SubMenu } from './SubMenu';
-import { sort, clearFiltersOnField, getOpString, getFieldString, addFilter } from './SearchUtils';
 
-interface SearchPopupMenuProps {
+export interface SearchPopupMenuProps {
+  schema: IndexedStructureDefinition;
   search: SearchDefinition;
   visible: boolean,
   x: number,
@@ -16,35 +17,17 @@ interface SearchPopupMenuProps {
   onClose: () => void
 }
 
-export class SearchPopupMenu extends React.Component<SearchPopupMenuProps, {}> {
+export function SearchPopupMenu(props: SearchPopupMenuProps) {
+  const resourceType = props.search.resourceType;
 
-  render() {
-    const resourceType = this.props.search.resourceType;
-    const typeDef = schema[resourceType];
-    if (!typeDef) {
-      return null;
-    }
+  const typeDef = props.schema.types[resourceType];
+  if (!typeDef) {
+    return null;
+  }
 
-    const field = typeDef.properties[this.props.field];
-    if (!field) {
-      return null;
-    }
-
-    return (
-      <PopupMenu visible={this.props.visible} x={this.props.x} y={this.props.y} onClose={this.props.onClose}>
-        <MenuItem onClick={() => this.sort(false)}>{this.getAscSortString_(field.type)}</MenuItem>
-        <MenuItem onClick={() => this.sort(true)}>{this.getDescSortString_(field.type)}</MenuItem>
-        <MenuSeparator />
-        <MenuItem onClick={() => this.clearFilters()}>Clear filters</MenuItem>
-        {this.renderSubMenu_(field.type)}
-        {field.type === 'string' && (
-          <>
-            <MenuSeparator />
-            <MenuItem onClick={() => console.log('search')}>Search</MenuItem>
-          </>
-        )}
-      </PopupMenu>
-    );
+  const field = typeDef.properties[props.field];
+  if (!field) {
+    return null;
   }
 
   /**
@@ -53,7 +36,7 @@ export class SearchPopupMenu extends React.Component<SearchPopupMenuProps, {}> {
    * @param {string} fieldType The field type.
    * @return {string} The string that represents "sort ascending".
    */
-  private getAscSortString_(fieldType: string) {
+  function getAscSortString_(fieldType: string) {
     switch (fieldType) {
       case 'date':
       case 'datetime':
@@ -71,7 +54,7 @@ export class SearchPopupMenu extends React.Component<SearchPopupMenuProps, {}> {
    * @param {string} fieldType The field type.
    * @return {string} The string that represents "sort descending".
    */
-  private getDescSortString_(fieldType: string) {
+  function getDescSortString_(fieldType: string) {
     switch (fieldType) {
       case 'date':
       case 'datetime':
@@ -89,11 +72,11 @@ export class SearchPopupMenu extends React.Component<SearchPopupMenuProps, {}> {
    * @param {string} fieldType The field type.
    * @return {SubMenu} The new submenu.
    */
-  private renderSubMenu_(fieldType: string) {
+  function renderSubMenu_(fieldType: string) {
     switch (fieldType) {
       case 'date':
       case 'datetime':
-        return this.renderDateTimeSubMenu_();
+        return renderDateTimeSubMenu_();
 
       case 'user':
       case 'organization':
@@ -102,7 +85,7 @@ export class SearchPopupMenu extends React.Component<SearchPopupMenuProps, {}> {
         return null;
 
       default:
-        return this.renderTextSubMenu_();
+        return renderTextSubMenu_();
     }
   }
 
@@ -111,28 +94,28 @@ export class SearchPopupMenu extends React.Component<SearchPopupMenuProps, {}> {
    *
    * @return {SubMenu} The date/time submenu.
    */
-  private renderDateTimeSubMenu_() {
+  function renderDateTimeSubMenu_() {
     return (
       <SubMenu title="Date filters">
-        <MenuItem onClick={() => this.prompt_('equals')}>Equals...</MenuItem>
-        <MenuItem onClick={() => this.prompt_('equals')}>Does not equal...</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Equals...</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Does not equal...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => this.prompt_('equals')}>Before...</MenuItem>
-        <MenuItem onClick={() => this.prompt_('equals')}>After...</MenuItem>
-        <MenuItem onClick={() => this.prompt_('equals')}>Between...</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Before...</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>After...</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Between...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => this.prompt_('equals')}>Tomorrow</MenuItem>
-        <MenuItem onClick={() => this.prompt_('equals')}>Today</MenuItem>
-        <MenuItem onClick={() => this.prompt_('equals')}>Yesterday</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Tomorrow</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Today</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Yesterday</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => this.prompt_('equals')}>Next Month</MenuItem>
-        <MenuItem onClick={() => this.prompt_('equals')}>This Month</MenuItem>
-        <MenuItem onClick={() => this.prompt_('equals')}>Last Month</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Next Month</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>This Month</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Last Month</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => this.prompt_('equals')}>Year to date</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Year to date</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => this.prompt_('equals')}>Is set</MenuItem>
-        <MenuItem onClick={() => this.prompt_('equals')}>Is not set</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Is set</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Is not set</MenuItem>
       </SubMenu>
     );
   }
@@ -142,24 +125,24 @@ export class SearchPopupMenu extends React.Component<SearchPopupMenuProps, {}> {
    *
    * @return {SubMenu} The text field submenu.
    */
-  private renderTextSubMenu_() {
+  function renderTextSubMenu_() {
     return (
       <SubMenu title="Text filters">
-        <MenuItem onClick={() => this.prompt_('equals')}>Equals...</MenuItem>
-        <MenuItem onClick={() => this.prompt_('not_equals')}>Does not equal...</MenuItem>
+        <MenuItem onClick={() => prompt_('equals')}>Equals...</MenuItem>
+        <MenuItem onClick={() => prompt_('not_equals')}>Does not equal...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => this.prompt_('contains')}>Contains...</MenuItem>
-        <MenuItem onClick={() => this.prompt_('not_contains')}>Does not contain...</MenuItem>
+        <MenuItem onClick={() => prompt_('contains')}>Contains...</MenuItem>
+        <MenuItem onClick={() => prompt_('not_contains')}>Does not contain...</MenuItem>
       </SubMenu>
     );
   }
 
-  private sort(desc: boolean) {
-    this.props.onChange(sort(this.props.search, this.props.field, desc));
+  function sort(desc: boolean) {
+    props.onChange(setSort(props.search, props.field, desc));
   }
 
-  private clearFilters() {
-    this.props.onChange(clearFiltersOnField(this.props.search, this.props.field));
+  function clearFilters() {
+    props.onChange(clearFiltersOnField(props.search, props.field));
   }
 
   /**
@@ -167,14 +150,30 @@ export class SearchPopupMenu extends React.Component<SearchPopupMenuProps, {}> {
    *
    * @param {string} op The filter operation.
    */
-  private prompt_(op: string) {
-    this.setState({ visible: false });
+  function prompt_(op: string) {
+    // setState({ visible: false });
 
-    var caption = getFieldString(this.props.search.resourceType, this.props.field) + ' ' + getOpString(op) + '...';
+    const caption = buildFieldNameString(props.schema, props.search.resourceType, props.field) + ' ' + getOpString(op) + '...';
 
-    var retVal = prompt(caption, '');
+    const retVal = prompt(caption, '');
     if (retVal !== null) {
-      this.props.onChange(addFilter(this.props.search, this.props.field, op, retVal, true));
+      props.onChange(addFilter(props.search, props.field, op, retVal, true));
     }
   }
+
+  return (
+    <PopupMenu visible={props.visible} x={props.x} y={props.y} onClose={props.onClose}>
+      <MenuItem onClick={() => sort(false)}>{getAscSortString_(field.type)}</MenuItem>
+      <MenuItem onClick={() => sort(true)}>{getDescSortString_(field.type)}</MenuItem>
+      <MenuSeparator />
+      <MenuItem onClick={() => clearFilters()}>Clear filters</MenuItem>
+      {renderSubMenu_(field.type)}
+      {field.type === 'string' && (
+        <>
+          <MenuSeparator />
+          <MenuItem onClick={() => console.log('search')}>Search</MenuItem>
+        </>
+      )}
+    </PopupMenu>
+  );
 }

@@ -1,4 +1,4 @@
-import { PropertyDefinition, schema } from 'medplum';
+import { PropertySchema } from 'medplum';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
 import { AttachmentArrayDisplay } from './AttachmentArrayDisplay';
@@ -14,7 +14,7 @@ import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
-  property: PropertyDefinition;
+  property: PropertySchema;
   value: any;
   arrayElement?: boolean;
 }
@@ -74,17 +74,6 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     case 'Reference':
       return <ReferenceDisplay value={value} />;
     default:
-      {
-        const backboneType = schema[property.type];
-        if (backboneType) {
-          return (
-            <BackboneElementDisplay backboneType={backboneType} value={value} />
-          );
-        } else {
-          return (
-            <input type="text" defaultValue={value}></input>
-          );
-        }
-      }
+      return <BackboneElementDisplay property={property} value={value} />;
   }
 }

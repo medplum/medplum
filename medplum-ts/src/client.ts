@@ -4,10 +4,11 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, OperationOutcome, Reference, Resource, Subscription, User } from './fhir';
+import { Binary, Bundle, OperationOutcome, Reference, Resource, StructureDefinition, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { formatSearchQuery, SearchDefinition } from './search';
 import { Storage } from './storage';
+import { IndexedStructureDefinition, indexStructureDefinition } from './types';
 import { arrayBufferToBase64 } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
@@ -101,6 +102,7 @@ interface TokenResponse {
 
 export class MedplumClient extends EventTarget {
   private readonly storage: Storage;
+  private readonly schema: Map<string, IndexedStructureDefinition>;
   private readonly resourceCache: LRUCache<Resource>;
   private readonly blobUrlCache: LRUCache<string>;
   private readonly baseUrl: string;
@@ -128,6 +130,7 @@ export class MedplumClient extends EventTarget {
     }
 
     this.storage = new Storage();
+    this.schema = new Map();
     this.resourceCache = new LRUCache(options.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.blobUrlCache = new LRUCache(options.blobCacheSize ?? DEFAULT_BLOB_CACHE_SIZE);
     this.baseUrl = options.baseUrl || DEFAULT_BASE_URL;
@@ -273,8 +276,12 @@ export class MedplumClient extends EventTarget {
     return builder.join('');
   }
 
-  search(search: SearchDefinition): Promise<Bundle> {
-    return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search));
+  search(search: string | SearchDefinition): Promise<Bundle> {
+    if (typeof search === 'string') {
+      return this.get(search);
+    } else {
+      return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search));
+    }
   }
 
   read(resourceType: string, id: string): Promise<Resource> {
@@ -286,10 +293,31 @@ export class MedplumClient extends EventTarget {
   }
 
   readCached(resourceType: string, id: string): Promise<Resource> {
-    console.log('readCached resourceType=' + resourceType + ', id=' + id);
     const cached = this.resourceCache.get(resourceType + '/' + id);
-    console.log('  cache hit? ' + !!cached);
     return cached ? Promise.resolve(cached) : this.read(resourceType, id);
+  }
+
+  getTypeDefinition(resourceType: string): Promise<IndexedStructureDefinition> {
+    if (!resourceType) {
+      throw new Error('Missing resourceType');
+    }
+    const cached = this.schema.get(resourceType);
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+    return this.search(this.fhirUrl('StructureDefinition') + '?name=' + encodeURIComponent(resourceType))
+      .then((result: Bundle) => {
+        if (!result.entry?.length) {
+          throw new Error('StructureDefinition not found');
+        }
+        const resource = result.entry[0].resource;
+        if (!resource) {
+          throw new Error('StructureDefinition not found');
+        }
+        const typeDef = indexStructureDefinition(resource as StructureDefinition);
+        this.schema.set(resourceType, typeDef);
+        return typeDef;
+      });
   }
 
   readHistory(resourceType: string, id: string): Promise<Bundle> {

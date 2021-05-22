@@ -1,5 +1,5 @@
+import { HumanName, IndexedStructureDefinition, SearchDefinition, SearchFilterDefinition } from 'medplum';
 import React from 'react';
-import { HumanName, PropertyDefinition, schema, SearchDefinition, SearchFilterDefinition } from 'medplum';
 import { formatHumanName } from './HumanNameUtils';
 
 /**
@@ -376,7 +376,7 @@ export function movePage(definition: SearchDefinition, delta: number) {
  *
  * @param {string} sortField The sort key.
  */
-export function sort(definition: SearchDefinition, sort: string, desc?: boolean) {
+export function setSort(definition: SearchDefinition, sort: string, desc?: boolean) {
   if (sort === getSortField(definition) &&
     (desc !== undefined && desc === isSortDescending(definition))) {
     return definition;
@@ -400,7 +400,7 @@ export function toggleSort(definition: SearchDefinition, key: string) {
   if (getSortField(definition) === key) {
     desc = !isSortDescending(definition);
   }
-  return sort(definition, key, desc);
+  return setSort(definition, key, desc);
 }
 
 export function getSortField(definition: SearchDefinition) {
@@ -441,38 +441,6 @@ export function getDefaultSearch(): SearchDefinition {
     ],
     filters: []
   };
-}
-
-/**
- * Returns a search field descriptor for the specified key.
- *
- * @param {string} key The field key.
- * @return {?Object} The field descriptor object.
- */
-export function getField(resourceType: string, key: string) {
-  const typeSchema = schema[resourceType];
-  if (typeSchema) {
-    const result = typeSchema.properties[key];
-    if (result) {
-      return result;
-    }
-  }
-  // Otherwise, return surrogat field.
-  return { key: key, display: key, type: 'string' };
-}
-
-/**
- * Returns a string representing the operation.
- *
- * @param {!Object|!string} field The field object or key.
- * @return {string} A display string for the operation.
- */
-export function getFieldString(resourceType: string, field: string | PropertyDefinition): string {
-  if (typeof field === 'string') {
-    field = getField(resourceType, field);
-  }
-
-  return field['display'];
 }
 
 /**
@@ -520,7 +488,7 @@ export function getOpString(op: string) {
   return op;
 }
 
-export function buildFieldNameString(resourceType: string, key: string): string {
+export function buildFieldNameString(schema: IndexedStructureDefinition, resourceType: string, key: string): string {
   if (key === 'id') {
     return 'ID';
   }
@@ -529,7 +497,7 @@ export function buildFieldNameString(resourceType: string, key: string): string 
     return 'Last Updated';
   }
 
-  const typeDef = schema[resourceType];
+  const typeDef = schema.types[resourceType];
   if (!typeDef) {
     return key;
   }
@@ -582,7 +550,7 @@ export function getValue(resource: any, key: string) {
  * @param {*} value The filter value
  * @return {string} An HTML fragment that represents the value.
  */
-export function renderValue(resourceType: string, key: string, value: any): string | JSX.Element {
+export function renderValue(schema: IndexedStructureDefinition, resourceType: string, key: string, value: any): string | JSX.Element {
   if (!value) {
     return <span className="muted">none</span>;
   }
@@ -595,7 +563,7 @@ export function renderValue(resourceType: string, key: string, value: any): stri
     return new Date(value).toLocaleString('en-US');
   }
 
-  const typeDef = schema[resourceType];
+  const typeDef = schema.types[resourceType];
   if (!typeDef) {
     return JSON.stringify(value);
   }

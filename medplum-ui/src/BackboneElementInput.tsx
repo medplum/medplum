@@ -1,18 +1,20 @@
+import { PropertySchema } from 'medplum';
 import React, { useState } from 'react';
-import { PropertyDefinition, TypeDefinition } from 'medplum';
 import { FormSection } from './FormSection';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
-  property: PropertyDefinition;
+  property: PropertySchema;
   name: string;
-  backboneType: TypeDefinition;
   value?: any;
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps) {
   const [value, setValue] = useState(props.value);
-  const typeSchema = props.backboneType;
+  // const typeSchema = props.backboneType;
+  const typeSchema = {
+    properties: [] as PropertySchema[]
+  };
   return (
     <>
       {Object.entries(typeSchema.properties).map(entry => {

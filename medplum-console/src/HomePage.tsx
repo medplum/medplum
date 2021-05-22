@@ -23,6 +23,7 @@ export function HomePage() {
           <option>Patient</option>
           <option>Practitioner</option>
           <option>Observation</option>
+          <option>StructureDefinition</option>
         </Select>
         <Button size="small">Fields</Button>
         <Button size="small">Filters</Button>

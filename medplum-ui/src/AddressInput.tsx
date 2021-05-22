@@ -1,4 +1,4 @@
-import { Address, PropertyDefinition } from 'medplum';
+import { Address, PropertySchema } from 'medplum';
 import React, { useState } from 'react';
 
 function getLine(address: any, index: number) {
@@ -6,7 +6,7 @@ function getLine(address: any, index: number) {
 }
 
 export interface AddressInputProps {
-  property: PropertyDefinition;
+  property: PropertySchema;
   name: string;
   value?: Address;
 }

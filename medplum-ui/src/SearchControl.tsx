@@ -1,4 +1,4 @@
-import { Bundle, Resource, SearchDefinition } from 'medplum';
+import { Bundle, IndexedStructureDefinition, Resource, SearchDefinition } from 'medplum';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 import { SearchPopupMenu } from './SearchPopupMenu';
@@ -59,6 +59,7 @@ interface SearchControlState {
  */
 export function SearchControl(props: SearchControlProps) {
   const medplum = useMedplum();
+  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
 
   const [state, setState] = useState<SearchControlState>({
     allSelected: false,
@@ -171,7 +172,15 @@ export function SearchControl(props: SearchControlProps) {
     }
   }
 
+  useEffect(() => {
+    medplum.getTypeDefinition(props.search.resourceType).then(schema => setSchema(schema));
+  }, [props.search.resourceType]);
+
   useEffect(() => requestResources(), [props.search]);
+
+  if (!schema) {
+    return <div>Loading</div>
+  }
 
   const checkboxColumn = props.checkboxesEnabled;
   const fields = props.search.fields || ['id', 'meta.lastUpdated', 'name'];
@@ -199,7 +208,7 @@ export function SearchControl(props: SearchControlProps) {
                 key={field}
                 data-key={field}
                 onClick={e => handleSortClick_(e)}
-              >{buildFieldNameString(resourceType, field)}</th>
+              >{buildFieldNameString(schema, resourceType, field)}</th>
             )}
           </tr>
           <tr>
@@ -229,7 +238,7 @@ export function SearchControl(props: SearchControlProps) {
                 </td>
               }
               {fields.map(field =>
-                <td key={field}>{renderValue(props.search.resourceType, field, getValue(resource, field))}</td>
+                <td key={field}>{renderValue(schema, props.search.resourceType, field, getValue(resource, field))}</td>
               )}
             </tr>
           ))}
@@ -238,6 +247,7 @@ export function SearchControl(props: SearchControlProps) {
       {resources.length === 0 &&
         <div className="medplum-empty-search">No results</div>}
       <SearchPopupMenu
+        schema={schema}
         search={props.search}
         visible={state.popupVisible}
         x={state.popupX}

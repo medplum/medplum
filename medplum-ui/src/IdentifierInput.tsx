@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { PropertyDefinition } from 'medplum';
+import { PropertySchema } from 'medplum';
 import { TextField } from './TextField';
 
 export interface IdentifierInputProps {
-  property: PropertyDefinition;
+  property: PropertySchema;
   name: string;
   value?: any;
 }

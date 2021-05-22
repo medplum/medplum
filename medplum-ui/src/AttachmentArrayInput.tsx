@@ -1,11 +1,11 @@
-import { Attachment, PropertyDefinition } from 'medplum';
+import { Attachment, PropertySchema } from 'medplum';
 import React, { useRef, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
 import { ensureKeys, generateKey } from './FormUtils';
 import { useMedplum } from './MedplumProvider';
 
 export interface AttachmentArrayInputProps {
-  property: PropertyDefinition;
+  property: PropertySchema;
   name: string;
   values?: Attachment[];
   arrayElement?: boolean;

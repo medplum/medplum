@@ -1,8 +1,8 @@
-import { TypeDefinition } from 'medplum';
+import { PropertySchema } from 'medplum';
 import React from 'react';
 
 export interface BackboneElementDisplayProps {
-  backboneType: TypeDefinition;
+  property: PropertySchema;
   value?: any;
 }
 

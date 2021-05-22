@@ -1,8 +1,8 @@
 import React from 'react';
-import { PropertyDefinition } from 'medplum';
+import { PropertySchema } from 'medplum';
 
 export interface EnumInputProps {
-  property: PropertyDefinition;
+  property: PropertySchema;
   name: string;
   label: string;
   value?: string;

@@ -1,8 +1,8 @@
-import { DeviceDeviceName, PropertyDefinition } from 'medplum';
+import { DeviceDeviceName, PropertySchema } from 'medplum';
 import React, { useState } from 'react';
 
 export interface DeviceNameInputProps {
-  property: PropertyDefinition;
+  property: PropertySchema;
   name: string;
   value?: DeviceDeviceName;
 }

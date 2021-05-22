@@ -1,10 +1,10 @@
-import { PropertyDefinition } from 'medplum';
+import { PropertySchema } from 'medplum';
 import React from 'react';
 import { ensureKeys } from './FormUtils';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 interface ResourceArrayDisplayProps {
-  property: PropertyDefinition;
+  property: PropertySchema;
   values: any[];
   arrayElement?: boolean;
 }

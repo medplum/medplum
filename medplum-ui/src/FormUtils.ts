@@ -1,4 +1,4 @@
-import { PropertyDefinition, schema, TypeDefinition } from 'medplum';
+import { PropertySchema, Resource, TypeSchema } from 'medplum';
 
 const KEY_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const KEY_LENGTH = 6;
@@ -52,57 +52,12 @@ export function keyReplacer(k: string, v: string) {
  * Parses an HTML form and returns the result as a JavaScript object.
  * @param form The HTML form element.
  */
- export function parseForm(form: HTMLFormElement): Record<string, string> {
-     if (!form || !form.elements) {
-         throw new Error('Invalid form');
-     }
-
-    const result: Record<string, string> = {};
-
-    for (let i = 0; i < form.elements.length; i++) {
-      const element = form.elements[i] as HTMLElement;
-
-      if (element instanceof HTMLInputElement) {
-        if (element.disabled) {
-          // Ignore disabled elements
-          continue;
-        }
-
-        if ((element.type === 'checkbox' || element.type === 'radio') && !element.checked) {
-          // Ignore unchecked radio or checkbox elements
-          continue;
-        }
-
-        result[element.name] = element.value;
-
-      } else if (element instanceof HTMLTextAreaElement) {
-        result[element.name] = element.value;
-
-      } else if (element instanceof HTMLSelectElement) {
-        if (element.selectedOptions.length === 0) {
-          // Ignore select elements with no value
-          continue;
-        }
-
-        result[element.name] = element.value;
-      }
-    }
-
-    return result;
+export function parseForm(form: HTMLFormElement): Record<string, string> {
+  if (!form || !form.elements) {
+    throw new Error('Invalid form');
   }
 
-
-/**
- * Parses an HTML form and returns the result as a JavaScript object.
- * @param form The HTML form element.
- */
-export function parseResourceForm(resourceType: string, form: HTMLFormElement, initial?: any) {
-  const result = initial ? {...initial} : {};
-
-  const typeDef = schema[resourceType];
-  if (!typeDef) {
-    return result;
-  }
+  const result: Record<string, string> = {};
 
   for (let i = 0; i < form.elements.length; i++) {
     const element = form.elements[i] as HTMLElement;
@@ -118,21 +73,64 @@ export function parseResourceForm(resourceType: string, form: HTMLFormElement, i
         continue;
       }
 
-      setValue(typeDef, result, element.name, element.value);
+      result[element.name] = element.value;
+
+    } else if (element instanceof HTMLTextAreaElement) {
+      result[element.name] = element.value;
 
     } else if (element instanceof HTMLSelectElement) {
       if (element.selectedOptions.length === 0) {
         // Ignore select elements with no value
         continue;
       }
-      setValue(typeDef, result, element.name, element.value);
+
+      result[element.name] = element.value;
     }
   }
 
   return result;
 }
 
-function setValue(typeDef: TypeDefinition, result: any, fullName: string, value: string) {
+/**
+ * Parses an HTML form and returns the result as a JavaScript object.
+ * @param form The HTML form element.
+ */
+export function parseResourceForm(
+  typeSchema: TypeSchema,
+  form: HTMLFormElement,
+  initial?: Resource): Resource | undefined {
+
+  const result = (initial ? { ...initial } : {});
+
+  for (let i = 0; i < form.elements.length; i++) {
+    const element = form.elements[i] as HTMLElement;
+
+    if (element instanceof HTMLInputElement) {
+      if (element.disabled) {
+        // Ignore disabled elements
+        continue;
+      }
+
+      if ((element.type === 'checkbox' || element.type === 'radio') && !element.checked) {
+        // Ignore unchecked radio or checkbox elements
+        continue;
+      }
+
+      setValue(typeSchema, result, element.name, element.value);
+
+    } else if (element instanceof HTMLSelectElement) {
+      if (element.selectedOptions.length === 0) {
+        // Ignore select elements with no value
+        continue;
+      }
+      setValue(typeSchema, result, element.name, element.value);
+    }
+  }
+
+  return result;
+}
+
+function setValue(typeDef: TypeSchema, result: any, fullName: string, value: string) {
   if (!fullName) {
     return;
   }
@@ -168,7 +166,7 @@ function getEntryByKey(array: any[], key: string) {
   if (existing) {
     return existing;
   }
-  const created = {__key: key};
+  const created = { __key: key };
   array.push(created);
   return created;
 }
@@ -184,7 +182,7 @@ function parseJson(str: string): any {
   }
 }
 
-function isStringProperty(fieldDef: PropertyDefinition) {
+function isStringProperty(fieldDef: PropertySchema) {
   switch (fieldDef.type) {
     case 'string':
     case 'canonical':
