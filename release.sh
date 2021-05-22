@@ -28,14 +28,14 @@ set -e
 set -x
 
 # Set release version
-# mvn versions:set -DnewVersion=${RELEASE_VERSION} -DgenerateBackupPoms=false
+mvn versions:set -DnewVersion=${RELEASE_VERSION} -DgenerateBackupPoms=false
 # cd medplum-ts && npm version ${RELEASE_VERSION} && cd ..
 # cd medplum-ui && npm version ${RELEASE_VERSION} && cd ..
 # cd medplum-console && npm version ${RELEASE_VERSION} && cd ..
 # cd medplum-graphiql && npm version ${RELEASE_VERSION} && cd ..
 
 # Clean install
-# mvn clean install
+mvn clean install
 # npm run build --workspace=medplum-ts --workspace=medplum-ui --workspace=medplum-console --workspace=medplum-graphiql
 # npm run storybook --workspace=medplum-ui
 
@@ -48,7 +48,7 @@ set -x
 # mvn site:site site:stage
 
 # Deploy site
-aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --profile medplum --region us-east-1 --recursive --acl public-read
+#aws s3 cp target/staging/ s3://docs.medplum.com/maven/${RELEASE_VERSION}/ --profile medplum --region us-east-1 --recursive --acl public-read
 
 # Deploy medplum-ts to npm
 #cd medplum-ts && npm publish && cd ..
