@@ -18,12 +18,16 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.medplum.fhir.r4.types.Binary;
 import com.medplum.fhir.r4.types.Bundle;
 import com.medplum.fhir.r4.types.FhirResource;
 import com.medplum.util.JsonUtils;
 
 public class FhirClient {
+    private static final Logger LOG = LoggerFactory.getLogger(FhirClient.class);
     private static final String PATH_HISTORY = "_history";
     private static final String PATH_VALIDATE = "$validate";
     private static final String KEY_GRANT_TYPE = "grant_type";
@@ -165,6 +169,8 @@ public class FhirClient {
     }
 
     private void getAccessTokenWithClientCredentials() {
+        LOG.debug("Requesting access token with client credentials");
+
         final MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
         formData.add(KEY_GRANT_TYPE, KEY_CLIENT_CREDENTIALS);
         formData.add(KEY_CLIENT_ID, clientId);
@@ -185,6 +191,8 @@ public class FhirClient {
     }
 
     private void getAccessTokenWithRefreshToken() {
+        LOG.debug("Requesting access token with refresh token");
+
         final MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
         formData.add(KEY_GRANT_TYPE, KEY_REFRESH_TOKEN);
         formData.add(KEY_REFRESH_TOKEN, refreshToken);
