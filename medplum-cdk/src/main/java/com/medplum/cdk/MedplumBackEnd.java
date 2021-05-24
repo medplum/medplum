@@ -156,6 +156,7 @@ public class MedplumBackEnd extends Construct {
         final var fargateService = new FargateService(this, "FargateService", FargateServiceProps.builder()
                 .cluster(cluster)
                 .taskDefinition(taskDefinition)
+                .assignPublicIp(true)
                 .vpcSubnets(SubnetSelection.builder()
                         .subnetType(SubnetType.PUBLIC)
                         .build())
