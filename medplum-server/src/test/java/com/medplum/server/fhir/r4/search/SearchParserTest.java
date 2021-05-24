@@ -2,15 +2,98 @@ package com.medplum.server.fhir.r4.search;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.net.URI;
+
 import org.junit.Test;
 
 public class SearchParserTest {
+
+    @Test
+    public void testParseNullURI() {
+        assertThrows(NullPointerException.class, () -> SearchParser.parse((URI) null));
+    }
+
+    @Test
+    public void testParseNullString() {
+        assertThrows(NullPointerException.class, () -> SearchParser.parse((String) null));
+    }
+
+    @Test
+    public void testParseNullPath() {
+        assertThrows(IllegalArgumentException.class, () -> SearchParser.parse(new URI("http", "example.com", null, null)));
+    }
+
+    @Test
+    public void testParseBlankPath() {
+        assertThrows(IllegalArgumentException.class, () -> SearchParser.parse(new URI("http", "example.com", "", "")));
+    }
+
+    @Test
+    public void testParseMissingResourceType() {
+        assertThrows(IllegalArgumentException.class, () -> SearchParser.parse(new URI("http", "example.com", "/", "")));
+    }
+
+    @Test
+    public void testParseMissingResourceType2() {
+        assertThrows(IllegalArgumentException.class, () -> SearchParser.parse(new URI("http", "example.com", "//", "")));
+    }
+
+    @Test
+    public void testParseMissingResourceType3() {
+        assertThrows(IllegalArgumentException.class, () -> SearchParser.parse(new URI("http", "example.com", "/foo//", "")));
+    }
 
     @Test
     public void testParse() {
         final SearchRequest request = SearchParser.parse("Patient?_fields=id,meta.versionId,meta.lastUpdated,name,identifier&_sort=-meta.lastUpdated&identifier=foo");
         assertNotNull(request);
         assertEquals(1, request.getFilters().size());
+    }
+
+    @Test
+    public void testId1() {
+        final SearchRequest request = SearchParser.parse("Patient?id=1");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("_id", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.EQUALS, request.getFilters().get(0).getOp());
+        assertEquals("1", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testId2() {
+        final SearchRequest request = SearchParser.parse("Patient?_id=1");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("_id", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.EQUALS, request.getFilters().get(0).getOp());
+        assertEquals("1", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testPageAndCount() {
+        final SearchRequest request = SearchParser.parse("Patient?_page=3&_count=7");
+        assertNotNull(request);
+        assertEquals(3, request.getPage());
+        assertEquals(7, request.getCount());
+    }
+
+    @Test
+    public void testSortAscending() {
+        final SearchRequest request = SearchParser.parse("Patient?_sort=name");
+        assertNotNull(request);
+        assertEquals(1, request.getSortRules().size());
+        assertEquals("name", request.getSortRules().get(0).getCode());
+        assertFalse(request.getSortRules().get(0).isDescending());
+    }
+
+    @Test
+    public void testSortDescending() {
+        final SearchRequest request = SearchParser.parse("Patient?_sort=-name");
+        assertNotNull(request);
+        assertEquals(1, request.getSortRules().size());
+        assertEquals("name", request.getSortRules().get(0).getCode());
+        assertTrue(request.getSortRules().get(0).isDescending());
     }
 
     @Test

@@ -27,9 +27,9 @@ public class SearchParser {
             throw new IllegalArgumentException("Path is missing");
         }
 
-        final String[] pathComponents = path.split("/");
+        final String[] pathComponents = path.split("/", -1);
         final String resourceType = pathComponents[pathComponents.length - 1];
-        if (resourceType == null || resourceType.isBlank()) {
+        if (resourceType.isBlank()) {
             throw new IllegalArgumentException("Resource type is missing");
         }
 
