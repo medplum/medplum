@@ -2,15 +2,8 @@ package com.medplum.generator;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -55,7 +48,7 @@ public class Generator {
         }
 
         final List<FhirType> outputTypes = new ArrayList<>(parentTypes.values());
-        Collections.sort(outputTypes, (o1, o2) -> o1.getOutputName().compareTo(o2.getOutputName()));
+        outputTypes.sort(Comparator.comparing(FhirType::getOutputName));
 
         JavaGenerator.writePropertyNames(fhirTypes);
         TypeScriptGenerator.writeIndexFile(outputTypes);

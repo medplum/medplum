@@ -10,7 +10,7 @@ public class IdUtilsTest {
 
     @Test
     public void testCtor() {
-        assertThrows(UnsupportedOperationException.class, () -> new IdUtils());
+        assertThrows(UnsupportedOperationException.class, IdUtils::new);
     }
 
     @Test

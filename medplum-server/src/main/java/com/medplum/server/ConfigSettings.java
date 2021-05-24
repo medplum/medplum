@@ -124,17 +124,14 @@ public class ConfigSettings {
         final String driverClassName;
         final String url;
 
-        switch (engine) {
-        case "postgres":
+        if ("postgres".equals(engine)) {
             driverClassName = "org.postgresql.Driver";
             url = String.format(
                     "jdbc:postgresql://%s:%d/%s",
                     secret.getString(AWS_DATABASE_HOST),
                     secret.getInt(AWS_DATABASE_PORT),
                     secret.getString(AWS_DATABASE_NAME));
-            break;
-
-        default:
+        } else {
             throw new IllegalStateException("Unrecognized database engine: " + engine);
         }
 

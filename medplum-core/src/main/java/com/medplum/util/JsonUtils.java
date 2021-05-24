@@ -49,6 +49,6 @@ public class JsonUtils {
      * @param dest The destination JsonObjectBuilder.
      */
     public static void copyProperties(final JsonObject src, final JsonObjectBuilder dest) {
-        src.entrySet().forEach(e -> dest.add(e.getKey(), e.getValue()));
+        src.forEach((key, value) -> dest.add(key, value));
     }
 }

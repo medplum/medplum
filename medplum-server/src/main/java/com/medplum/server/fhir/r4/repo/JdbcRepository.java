@@ -126,12 +126,8 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     private boolean isIndexTable(final SearchParameter searchParam) {
-        if (searchParam.code().equals("identifier") && searchParam.type().equals("token")) {
-            // Identifier searches handled with the Identifier table
-            return true;
-        }
-
-        return false;
+        // Identifier searches handled with the Identifier table
+        return searchParam.code().equals("identifier") && searchParam.type().equals("token");
     }
 
     private void createHistoryTable(final String resourceType) throws SQLException {

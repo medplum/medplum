@@ -4,12 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
@@ -148,7 +143,6 @@ public class JavaGenerator {
                 b.newLine();
                 b.append("public <T extends FhirResource> T " + propertyName + "(final Class<T> c) {");
                 b.append("    return getObject(c, " + constantName + ");");
-                b.append("}");
             } else {
                 b.append("public " + javaType + " " + propertyName + "() {");
                 b.increaseIndent();
@@ -192,8 +186,8 @@ public class JavaGenerator {
                 }
 
                 b.decreaseIndent();
-                b.append("}");
             }
+            b.append("}");
         }
 
         b.newLine();
@@ -278,7 +272,7 @@ public class JavaGenerator {
         b.append("    }");
         b.append("}");
 
-        Collections.sort(fhirType.getSubTypes(), (o1, o2) -> o1.getOutputName().compareTo(o2.getOutputName()));
+        fhirType.getSubTypes().sort(Comparator.comparing(FhirType::getOutputName));
 
         for (final FhirType subType : fhirType.getSubTypes()) {
             b.newLine();

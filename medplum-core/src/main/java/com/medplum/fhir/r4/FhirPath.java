@@ -1,9 +1,6 @@
 package com.medplum.fhir.r4;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
@@ -27,17 +24,16 @@ public class FhirPath {
 
     public List<JsonValue> eval(final JsonValue jsonObject) {
         final List<JsonValue> result = new ArrayList<>();
-        for (int i = 0; i < components.length; i++) {
-            result.addAll(evalExpression(jsonObject, components[i]));
+        for (String[] component : components) {
+            result.addAll(evalExpression(jsonObject, component));
         }
         return result;
     }
 
     private List<JsonValue> evalExpression(final JsonValue jsonObject, final String[] expression) {
-        List<JsonValue> curr = Arrays.asList(jsonObject);
+        List<JsonValue> curr = Collections.singletonList(jsonObject);
 
-        for (int i = 0; i < expression.length; i++) {
-            final String token = expression[i];
+        for (final String token : expression) {
             final List<JsonValue> next = new ArrayList<>();
             for (final JsonValue jsonValue : curr) {
                 evalToken(jsonValue, token, next);

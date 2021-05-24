@@ -82,7 +82,7 @@ public class IdUtils {
         // library to generate a 256-bit value and converting it to a hexadecimal representation.
         // 256 bits = 32 bytes
         final SecureRandom random = new SecureRandom();
-        final byte bytes[] = new byte[32];
+        final byte[] bytes = new byte[32];
         random.nextBytes(bytes);
         return Base64.getEncoder().encodeToString(bytes);
     }

@@ -5,14 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -187,7 +180,7 @@ public class TypeScriptGenerator {
         b.decreaseIndent();
         b.append("}");
 
-        Collections.sort(fhirType.getSubTypes(), (o1, o2) -> o1.getOutputName().compareTo(o2.getOutputName()));
+        fhirType.getSubTypes().sort(Comparator.comparing(FhirType::getOutputName));
 
         for (final FhirType subType : fhirType.getSubTypes()) {
             b.newLine();

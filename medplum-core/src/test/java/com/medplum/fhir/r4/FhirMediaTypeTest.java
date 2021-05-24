@@ -13,7 +13,7 @@ public class FhirMediaTypeTest {
 
     @Test
     public void testContructor() {
-        assertThrows(UnsupportedOperationException.class, () -> new FhirMediaType());
+        assertThrows(UnsupportedOperationException.class, FhirMediaType::new);
     }
 
     @Test

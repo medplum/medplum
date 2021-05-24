@@ -31,7 +31,8 @@ public interface Repository {
     /**
      * Validates the content against the schema.
      * @param user The user performing the operation.
-     * @param resource The FHIR resource.
+     * @param resourceType The FHIR resource type.
+     * @param id The FHIR resource ID.
      * @return Operation outcome.
      */
     OperationOutcome validateDelete(SecurityUser user, String resourceType, String id);
