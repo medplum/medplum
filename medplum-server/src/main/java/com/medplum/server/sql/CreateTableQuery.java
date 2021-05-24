@@ -1,9 +1,16 @@
 package com.medplum.server.sql;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CreateTableQuery {
+    private static final Logger LOG = LoggerFactory.getLogger(CreateTableQuery.class);
     private final String tableName;
     private final List<ColumnDefinition> columns;
     private final List<String> indexes;
@@ -24,6 +31,48 @@ public class CreateTableQuery {
 
     public List<String> getIndexes() {
         return indexes;
+    }
+
+    public void execute(final Connection conn) throws SQLException {
+        try (final SqlBuilder sql = new SqlBuilder(conn)) {
+            sql.append("CREATE TABLE IF NOT EXISTS ");
+            sql.appendIdentifier(tableName);
+            sql.append(" (");
+
+            boolean first = true;
+            for (final ColumnDefinition column : columns) {
+                if (!first) {
+                    sql.append(",");
+                }
+                sql.appendIdentifier(column.getColumnName());
+                sql.append(" ");
+                sql.append(column.getColumnType());
+                first = false;
+            }
+
+            sql.append(")");
+            LOG.debug("{}", sql);
+
+            try (final Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(sql.toString());
+            }
+        }
+
+        for (final String index : indexes) {
+            try (final SqlBuilder sql = new SqlBuilder(conn)) {
+                sql.append("CREATE INDEX ON");
+                sql.appendIdentifier(tableName);
+                sql.append(" (");
+                sql.appendIdentifier(index);
+                sql.append(")");
+
+                LOG.debug("{}", sql);
+
+                try (final Statement stmt = conn.createStatement()) {
+                    stmt.executeUpdate(sql.toString());
+                }
+            }
+        }
     }
 
     public static class ColumnDefinition {

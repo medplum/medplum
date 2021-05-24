@@ -46,9 +46,7 @@ import com.medplum.server.fhir.r4.search.SearchUtils;
 import com.medplum.server.fhir.r4.search.SortRule;
 import com.medplum.server.security.SecurityUser;
 import com.medplum.server.sql.CreateTableQuery;
-import com.medplum.server.sql.CreateTableQuery.ColumnDefinition;
 import com.medplum.server.sql.InsertQuery;
-import com.medplum.server.sql.Parameter;
 import com.medplum.server.sql.SqlBuilder;
 import com.medplum.server.sql.UpdateQuery;
 import com.medplum.server.sse.SseService;
@@ -96,7 +94,7 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     private void createIdentifierTable() throws SQLException {
-        executeCreateTable(new CreateTableQuery.Builder(TABLE_IDENTIFIER)
+        new CreateTableQuery.Builder(TABLE_IDENTIFIER)
                 .column(COLUMN_ID, COLUMN_TYPE_UUID + NOT_NULL + PRIMARY_KEY)
                 .column(COLUMN_IDENTIFIER_RESOURCE_ID, COLUMN_TYPE_UUID + NOT_NULL)
                 .column(COLUMN_IDENTIFIER_SYSTEM, COLUMN_TYPE_VARCHAR128)
@@ -104,7 +102,8 @@ public class JdbcRepository implements Repository, Closeable {
                 .index(COLUMN_IDENTIFIER_RESOURCE_ID)
                 .index(COLUMN_IDENTIFIER_SYSTEM)
                 .index(COLUMN_IDENTIFIER_VALUE)
-                .build());
+                .build()
+                .execute(conn);
     }
 
     private void createResourceTable(final String resourceType) throws SQLException {
@@ -122,7 +121,7 @@ public class JdbcRepository implements Repository, Closeable {
             builder.column(getColumnName(searchParam.code()), COLUMN_TYPE_VARCHAR128);
         }
 
-        executeCreateTable(builder.build());
+        builder.build().execute(conn);
     }
 
     private boolean isIndexTable(final SearchParameter searchParam) {
@@ -131,14 +130,15 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     private void createHistoryTable(final String resourceType) throws SQLException {
-        executeCreateTable(new CreateTableQuery.Builder(getHistoryTableName(resourceType))
+        new CreateTableQuery.Builder(getHistoryTableName(resourceType))
                 .column(COLUMN_VERSION_ID, COLUMN_TYPE_UUID + NOT_NULL + PRIMARY_KEY)
                 .column(COLUMN_ID, COLUMN_TYPE_UUID + NOT_NULL)
                 .column(COLUMN_PROJECT_COMPARTMENT_ID, COLUMN_TYPE_UUID)
                 .column(COLUMN_PATIENT_COMPARTMENT_ID, COLUMN_TYPE_UUID)
                 .column(COLUMN_LAST_UPDATED, COLUMN_TYPE_TIMESTAMP + NOT_NULL)
                 .column(COLUMN_CONTENT, COLUMN_TYPE_TEXT + NOT_NULL)
-                .build());
+                .build()
+                .execute(conn);
     }
 
     @Override
@@ -418,7 +418,7 @@ public class JdbcRepository implements Repository, Closeable {
         }
 
         try {
-            executeInsert(builder.build());
+            builder.build().execute(conn);
             return StandardOutcomes.created(resource);
 
         } catch (final SQLException ex) {
@@ -448,7 +448,7 @@ public class JdbcRepository implements Repository, Closeable {
         builder.condition(COLUMN_ID, id, Types.BINARY);
 
         try {
-            executeUpdate(builder.build());
+            builder.build().execute(conn);
             return StandardOutcomes.ok(resource);
 
         } catch (final SQLException ex) {
@@ -487,12 +487,13 @@ public class JdbcRepository implements Repository, Closeable {
             }
 
             for (final Identifier incomingId : incoming) {
-                executeInsert(new InsertQuery.Builder(TABLE_IDENTIFIER)
+                new InsertQuery.Builder(TABLE_IDENTIFIER)
                         .value(COLUMN_ID, UUID.randomUUID(), Types.BINARY)
                         .value(COLUMN_IDENTIFIER_RESOURCE_ID, resourceId, Types.BINARY)
                         .value(COLUMN_IDENTIFIER_SYSTEM, incomingId.system().toString(), Types.VARCHAR)
                         .value(COLUMN_IDENTIFIER_VALUE, incomingId.value(), Types.VARCHAR)
-                        .build());
+                        .build()
+                        .execute(conn);
             }
         }
     }
@@ -524,12 +525,13 @@ public class JdbcRepository implements Repository, Closeable {
             final JsonObject resource)
                     throws SQLException {
 
-        executeInsert(new InsertQuery.Builder(getHistoryTableName(resourceType))
+        new InsertQuery.Builder(getHistoryTableName(resourceType))
                 .value(COLUMN_VERSION_ID, versionId, Types.BINARY)
                 .value(COLUMN_ID, id, Types.BINARY)
                 .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
                 .value(COLUMN_CONTENT, resource.toString(), Types.VARCHAR)
-                .build());
+                .build()
+                .execute(conn);
     }
 
     @Override
@@ -707,139 +709,6 @@ public class JdbcRepository implements Repository, Closeable {
             return result.substring(0, 127);
         }
         return result;
-    }
-
-    private void executeCreateTable(final CreateTableQuery createTableQuery) throws SQLException {
-        try (final SqlBuilder sql = new SqlBuilder(conn)) {
-            sql.append("CREATE TABLE IF NOT EXISTS ");
-            sql.appendIdentifier(createTableQuery.getTableName());
-            sql.append(" (");
-
-            boolean first = true;
-            for (final ColumnDefinition column : createTableQuery.getColumns()) {
-                if (!first) {
-                    sql.append(",");
-                }
-                sql.appendIdentifier(column.getColumnName());
-                sql.append(" ");
-                sql.append(column.getColumnType());
-                first = false;
-            }
-
-            sql.append(")");
-            LOG.debug("{}", sql);
-
-            try (final Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate(sql.toString());
-            }
-        }
-
-        for (final String index : createTableQuery.getIndexes()) {
-            try (final SqlBuilder sql = new SqlBuilder(conn)) {
-                sql.append("CREATE INDEX ON");
-                sql.appendIdentifier(createTableQuery.getTableName());
-                sql.append(" (");
-                sql.appendIdentifier(index);
-                sql.append(")");
-
-                LOG.debug("{}", sql);
-
-                try (final Statement stmt = conn.createStatement()) {
-                    stmt.executeUpdate(sql.toString());
-                }
-            }
-        }
-    }
-
-    private int executeInsert(final InsertQuery insertQuery) throws SQLException {
-        final List<Parameter> values = insertQuery.getValues();
-
-        try (final SqlBuilder sql = new SqlBuilder(conn)) {
-            sql.append("INSERT INTO ");
-            sql.appendIdentifier(insertQuery.getTableName());
-            sql.append(" (");
-
-            boolean first = true;
-            for (final Parameter value : values) {
-                if (!first) {
-                    sql.append(",");
-                }
-                sql.appendIdentifier(value.getColumnName());
-                first = false;
-            }
-
-            sql.append(") VALUES (");
-
-            for (int i = 0; i < values.size(); i++) {
-                if (i > 0) {
-                    sql.append(",");
-                }
-                sql.append("?");
-            }
-
-            sql.append(")");
-
-            LOG.debug("{}", sql);
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                int i = 1;
-                for (final Parameter value : values) {
-                    LOG.debug("  {} = {} (len={})", i, value.getValue(), Objects.toString(value.getValue()).length());
-                    if (value.getValueType() == Types.VARCHAR) {
-                        stmt.setString(i++, (String) value.getValue());
-                    } else {
-                        stmt.setObject(i++, value.getValue(), value.getValueType());
-                    }
-                }
-                return stmt.executeUpdate();
-            }
-        }
-    }
-
-    private int executeUpdate(final UpdateQuery updateQuery) throws SQLException {
-        final List<Parameter> values = updateQuery.getValues();
-        final List<Parameter> conditions = updateQuery.getConditions();
-
-        try (final SqlBuilder sql = new SqlBuilder(conn)) {
-            sql.append("UPDATE ");
-            sql.appendIdentifier(updateQuery.getTableName());
-            sql.append(" SET ");
-
-            boolean first = true;
-            for (final Parameter value : values) {
-                if (!first) {
-                    sql.append(",");
-                }
-                sql.appendIdentifier(value.getColumnName());
-                sql.append("=?");
-                first = false;
-            }
-
-            first = true;
-            for (final Parameter condition : conditions) {
-                if (first) {
-                    sql.append(" WHERE ");
-                } else {
-                    sql.append(" AND ");
-                }
-                sql.appendIdentifier(condition.getColumnName());
-                sql.append("=?");
-                first = false;
-            }
-
-            LOG.debug("{}", sql);
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                int i = 1;
-                for (final Parameter value : values) {
-                    stmt.setObject(i++, value.getValue(), value.getValueType());
-                }
-                for (final Parameter condition : conditions) {
-                    stmt.setObject(i++, condition.getValue(), condition.getValueType());
-                }
-                return stmt.executeUpdate();
-            }
-        }
     }
 
     private List<Identifier> getIdentifiers(final UUID resourceId) throws SQLException {
