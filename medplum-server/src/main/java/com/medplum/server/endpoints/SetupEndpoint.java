@@ -21,7 +21,6 @@ public class SetupEndpoint {
 
     @POST
     public OperationOutcome setup() {
-        final SetupExecutor exec = new SetupExecutor(repo);
-        return exec.setup();
+        return new SetupExecutor(repo).setup();
     }
 }

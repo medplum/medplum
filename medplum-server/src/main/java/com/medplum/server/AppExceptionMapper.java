@@ -1,8 +1,6 @@
 package com.medplum.server;
 
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
@@ -11,6 +9,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
 import org.glassfish.jersey.server.mvc.Viewable;
@@ -18,8 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Provider
-public class ExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<Exception> {
-    private static final Logger LOG = LoggerFactory.getLogger(ExceptionMapper.class);
+public class AppExceptionMapper implements ExceptionMapper<Exception> {
+    private static final Logger LOG = LoggerFactory.getLogger(AppExceptionMapper.class);
 
     @Context
     private HttpHeaders headers;
@@ -32,7 +31,7 @@ public class ExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<Except
             LOG.error("Unhandled exception: {}", ex.getMessage(), ex);
         }
 
-        final List<MediaType> acceptedTypes = headers.getAcceptableMediaTypes();
+        final var acceptedTypes = headers.getAcceptableMediaTypes();
         if (acceptedTypes.contains(MediaType.TEXT_HTML_TYPE)) {
            return toHtmlResponse(ex);
         } else {
@@ -55,15 +54,13 @@ public class ExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<Except
             message = "Error";
         }
 
-        final Map<String, String> model = new HashMap<>();
+        final var model = new HashMap<String, String>();
         model.put("message", message);
-
-        final Viewable viewable = new Viewable("/error.mustache", model);
 
         return Response
                 .status(status)
                 .type(MediaType.TEXT_HTML)
-                .entity(viewable)
+                .entity(new Viewable("/error.mustache", model))
                 .build();
     }
 

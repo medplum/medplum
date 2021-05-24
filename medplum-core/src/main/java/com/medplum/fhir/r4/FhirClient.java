@@ -10,11 +10,9 @@ import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 
@@ -150,7 +148,7 @@ public class FhirClient {
             getAccessToken();
         }
 
-        final Invocation.Builder builder = client.target(uri).request().accept(APPLICATION_FHIR_JSON);
+        final var builder = client.target(uri).request().accept(APPLICATION_FHIR_JSON);
         if (accessToken != null) {
             builder.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         }
@@ -171,33 +169,32 @@ public class FhirClient {
     private void getAccessTokenWithClientCredentials() {
         LOG.debug("Requesting access token with client credentials");
 
-        final MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
+        final var formData = new MultivaluedHashMap<String, String>();
         formData.add(KEY_GRANT_TYPE, KEY_CLIENT_CREDENTIALS);
         formData.add(KEY_CLIENT_ID, clientId);
         formData.add(KEY_CLIENT_SECRET, clientSecret);
 
-        final Response response = client.target(tokenUrl)
+        final var response = client.target(tokenUrl)
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .post(Entity.form(formData));
 
-        final String body = response.readEntity(String.class);
+        final var body = response.readEntity(String.class);
 
         if (response.getStatus() != 200) {
             throw new IllegalStateException("Error with client credentials: " + body + " (" + response.getStatus() + ")");
         }
 
-        final JsonObject json = JsonUtils.readJsonString(body);
-        this.accessToken = json.getString(KEY_ACCESS_TOKEN);
+        this.accessToken = JsonUtils.readJsonString(body).getString(KEY_ACCESS_TOKEN);
     }
 
     private void getAccessTokenWithRefreshToken() {
         LOG.debug("Requesting access token with refresh token");
 
-        final MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
+        final var formData = new MultivaluedHashMap<String, String>();
         formData.add(KEY_GRANT_TYPE, KEY_REFRESH_TOKEN);
         formData.add(KEY_REFRESH_TOKEN, refreshToken);
 
-        final Response response = client.target(tokenUrl)
+        final var response = client.target(tokenUrl)
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .post(Entity.form(formData));
 
@@ -205,8 +202,8 @@ public class FhirClient {
             throw new IllegalStateException("Error with client credentials");
         }
 
-        final String body = response.readEntity(String.class);
-        final JsonObject json = JsonUtils.readJsonString(body);
+        final var body = response.readEntity(String.class);
+        final var json = JsonUtils.readJsonString(body);
         this.accessToken = json.getString(KEY_ACCESS_TOKEN);
         this.refreshToken = json.getString(KEY_REFRESH_TOKEN);
     }

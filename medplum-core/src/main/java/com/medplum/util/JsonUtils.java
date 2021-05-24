@@ -9,13 +9,15 @@ import java.io.StringReader;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
-import jakarta.json.JsonReader;
-import jakarta.json.stream.JsonParser;
 
 public class JsonUtils {
 
+    JsonUtils() {
+        throw new UnsupportedOperationException();
+    }
+
     public static JsonObject readJsonFile(final File file) {
-        try (final InputStream in = new FileInputStream(file)) {
+        try (final var in = new FileInputStream(file)) {
             return readJsonInputStream(in);
         } catch (final IOException ex) {
             throw new RuntimeException(ex);
@@ -23,7 +25,7 @@ public class JsonUtils {
     }
 
     public static JsonObject readJsonResourceFile(final String resourceName) {
-        try (final InputStream in = JsonUtils.class.getClassLoader().getResourceAsStream(resourceName)) {
+        try (final var in = JsonUtils.class.getClassLoader().getResourceAsStream(resourceName)) {
             return readJsonInputStream(in);
         } catch (final IOException ex) {
             throw new RuntimeException(ex);
@@ -31,14 +33,14 @@ public class JsonUtils {
     }
 
     public static JsonObject readJsonInputStream(final InputStream inputStream) {
-        try (final JsonParser parser = Json.createParser(inputStream)) {
+        try (final var parser = Json.createParser(inputStream)) {
             parser.next();
             return parser.getObject();
         }
     }
 
     public static JsonObject readJsonString(final String str) {
-        try (final JsonReader reader = Json.createReader(new StringReader(str))) {
+        try (final var reader = Json.createReader(new StringReader(str))) {
             return reader.readObject();
         }
     }
@@ -49,6 +51,6 @@ public class JsonUtils {
      * @param dest The destination JsonObjectBuilder.
      */
     public static void copyProperties(final JsonObject src, final JsonObjectBuilder dest) {
-        src.forEach((key, value) -> dest.add(key, value));
+        src.forEach(dest::add);
     }
 }

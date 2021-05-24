@@ -75,7 +75,7 @@ public class App extends ResourceConfig {
 
         // Initialize the database
         // Initialize JWKS while we have the database open
-        try (final JdbcRepository repo = getRepo()) {
+        try (final var repo = getRepo()) {
             repo.createTables();
             jwks = JwkManager.initKeys(repo);
         }
@@ -102,25 +102,25 @@ public class App extends ResourceConfig {
     }
 
     DataSource initDataSource(final Map<String, Object> properties) throws ReflectiveOperationException {
-        final HikariConfig config = new HikariConfig();
+        final var hikariConfig = new HikariConfig();
 
-        final String driverClassName = (String) properties.get(ConfigSettings.JDBC_DRIVER_CLASS_NAME);
+        final var driverClassName = (String) properties.get(ConfigSettings.JDBC_DRIVER_CLASS_NAME);
         if (driverClassName != null && !driverClassName.isBlank()) {
             LOG.info("Force database driver class: {}", driverClassName);
             Class.forName(driverClassName);
-            config.setDriverClassName(driverClassName);
+            hikariConfig.setDriverClassName(driverClassName);
         }
 
-        config.setJdbcUrl((String) properties.get(ConfigSettings.JDBC_URL));
-        config.setUsername((String) properties.get(ConfigSettings.JDBC_USERNAME));
-        config.setPassword((String) properties.get(ConfigSettings.JDBC_PASSWORD));
-        config.setMaximumPoolSize(10);
-        config.setAutoCommit(true);
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        hikariConfig.setJdbcUrl((String) properties.get(ConfigSettings.JDBC_URL));
+        hikariConfig.setUsername((String) properties.get(ConfigSettings.JDBC_USERNAME));
+        hikariConfig.setPassword((String) properties.get(ConfigSettings.JDBC_PASSWORD));
+        hikariConfig.setMaximumPoolSize(10);
+        hikariConfig.setAutoCommit(true);
+        hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
-        return new HikariDataSource(config);
+        return new HikariDataSource(hikariConfig);
     }
 
     JdbcRepository getRepo() {

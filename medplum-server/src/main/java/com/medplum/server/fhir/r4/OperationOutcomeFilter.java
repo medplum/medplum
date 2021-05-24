@@ -13,7 +13,6 @@ import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.Provider;
 
 import com.medplum.fhir.r4.types.FhirResource;
-import com.medplum.fhir.r4.types.Meta;
 import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.server.ConfigSettings;
 
@@ -33,8 +32,8 @@ public class OperationOutcomeFilter implements ContainerResponseFilter {
             return;
         }
 
-        final OperationOutcome outcome = (OperationOutcome) entity;
-        final int status = outcome.status();
+        final var outcome = (OperationOutcome) entity;
+        final var status = outcome.status();
         responseContext.setStatus(status);
 
         final FhirResource resource = outcome.resource();
@@ -46,14 +45,14 @@ public class OperationOutcomeFilter implements ContainerResponseFilter {
 
             responseContext.setEntity(resource);
 
-            final Meta meta = resource.meta();
+            final var meta = resource.meta();
             if (meta != null) {
-                final String versionId = meta.versionId();
+                final var versionId = meta.versionId();
                 responseContext.getHeaders().add(HttpHeaders.ETAG, versionId);
 
                 if (status == Status.CREATED.getStatusCode()) {
-                    final URI baseUrl = URI.create((String) config.getProperty(ConfigSettings.BASE_URL));
-                    final URI fullUrl = UriBuilder.fromUri(baseUrl)
+                    final var baseUrl = URI.create((String) config.getProperty(ConfigSettings.BASE_URL));
+                    final var fullUrl = UriBuilder.fromUri(baseUrl)
                             .path("fhir/R4/{resourceType}/{id}/_history/{versionId}")
                             .build(resource.resourceType(), resource.id(), resource.meta().versionId());
 

@@ -44,17 +44,17 @@ public class CapabilityStatementEndpoint {
     }
 
     private CapabilityStatement build() {
-        final CapabilityStatement baseStmt = new CapabilityStatement(JsonUtils.readJsonResourceFile("CapabilityStatement.json"));
-        final CapabilityStatementRest baseRest = baseStmt.rest().get(0);
+        final var baseStmt = new CapabilityStatement(JsonUtils.readJsonResourceFile("CapabilityStatement.json"));
+        final var baseRest = baseStmt.rest().get(0);
 
-        final String name = "medplum";
-        final String version = "0.0.1";
+        final var name = "medplum";
+        final var version = "0.0.1";
 
-        final URI baseUrl = URI.create((String) config.getProperty(ConfigSettings.BASE_URL));
-        final URI tokenUrl = URI.create((String) config.getProperty(ConfigSettings.AUTH_TOKEN_URL));
-        final URI authorizeUrl = URI.create((String) config.getProperty(ConfigSettings.AUTH_AUTHORIZE_URL));
-        final URI fhirBaseUrl = UriBuilder.fromUri(baseUrl).path("fhir/R4/").build();
-        final URI metadataUrl = UriBuilder.fromUri(fhirBaseUrl).path("metadata").build();
+        final var baseUrl = URI.create((String) config.getProperty(ConfigSettings.BASE_URL));
+        final var tokenUrl = URI.create((String) config.getProperty(ConfigSettings.AUTH_TOKEN_URL));
+        final var authorizeUrl = URI.create((String) config.getProperty(ConfigSettings.AUTH_AUTHORIZE_URL));
+        final var fhirBaseUrl = UriBuilder.fromUri(baseUrl).path("fhir/R4/").build();
+        final var metadataUrl = UriBuilder.fromUri(fhirBaseUrl).path("metadata").build();
 
         return CapabilityStatement.create(baseStmt)
                 .url(metadataUrl)

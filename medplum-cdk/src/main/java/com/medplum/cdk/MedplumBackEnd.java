@@ -60,13 +60,12 @@ import software.amazon.awscdk.services.ssm.StringParameterProps;
 
 public class MedplumBackEnd extends Construct {
     private static final String API_CERTIFICATE_ARN = "arn:aws:acm:us-east-1:647991932601:certificate/08bf1daf-3a2b-4cbe-91a0-739b4364a1ec";
+    private static final String MEDPLUM_NAME = "prod";
+    private static final String DOMAIN_NAME = "medplum.com";
+    private static final String API_DOMAIN_NAME = "api." + DOMAIN_NAME;
 
     public MedplumBackEnd(final Construct scope, final String id) {
         super(scope, id);
-
-        final String medplumName = "prod";
-        final String domainName = "medplum.com";
-        final String apiDomainName = "api." + domainName;
 
         // VPC
         final var vpc = new Vpc(this, "VPC");
@@ -118,12 +117,11 @@ public class MedplumBackEnd extends Construct {
                 .memoryLimitMiB(512)
                 .cpu(256)
                 .taskRole(taskRole)
-
                 .build());
 
         // Log Group
         final var logGroup = new LogGroup(this, "LogGroup", LogGroupProps.builder()
-                .logGroupName("/ecs/medplum/" + medplumName)
+                .logGroupName("/ecs/medplum/" + MEDPLUM_NAME)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build());
 
@@ -138,7 +136,7 @@ public class MedplumBackEnd extends Construct {
         // Task Container
         final var containerDefinition = taskDefinition.addContainer("MedplumTaskDefinition", ContainerDefinitionOptions.builder()
                 .image(ContainerImage.fromEcrRepository(serviceRepo, "latest"))
-                .command(singletonList(medplumName))
+                .command(singletonList(MEDPLUM_NAME))
                 .logging(logDriver)
                 .build());
 
@@ -158,7 +156,9 @@ public class MedplumBackEnd extends Construct {
         final var fargateService = new FargateService(this, "FargateService", FargateServiceProps.builder()
                 .cluster(cluster)
                 .taskDefinition(taskDefinition)
-                .assignPublicIp(false)
+                .vpcSubnets(SubnetSelection.builder()
+                        .subnetType(SubnetType.PUBLIC)
+                        .build())
                 .desiredCount(1)
                 .securityGroups(singletonList(securityGroup))
                 .build());
@@ -198,11 +198,11 @@ public class MedplumBackEnd extends Construct {
 
         // Route53
         final var zone = HostedZone.fromLookup(scope, "Zone", HostedZoneProviderProps.builder()
-                .domainName(domainName)
+                .domainName(DOMAIN_NAME)
                 .build());
 
         new ARecord(this, "LoadBalancerAliasRecord", ARecordProps.builder()
-                .recordName(apiDomainName)
+                .recordName(API_DOMAIN_NAME)
                 .target(RecordTarget.fromAlias(new LoadBalancerTarget(loadBalancer)))
                 .zone(zone)
                 .build());
@@ -210,7 +210,7 @@ public class MedplumBackEnd extends Construct {
         // SSM Parameters
         new StringParameter(this, "DatabaseSecretsParameter", StringParameterProps.builder()
                 .tier(ParameterTier.STANDARD)
-                .parameterName("/medplum/" + medplumName + "/DatabaseSecrets")
+                .parameterName("/medplum/" + MEDPLUM_NAME + "/DatabaseSecrets")
                 .description("Database secrets ARN")
                 .stringValue(rdsCluster.getSecret().getSecretArn())
                 .build());

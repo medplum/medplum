@@ -53,7 +53,7 @@ public class BinaryEndpoint {
 
     @POST
     public OperationOutcome create(final InputStream inputStream) throws IOException {
-        final OperationOutcome outcome = repo.create(
+        final var outcome = repo.create(
                 getUser(),
                 Binary.create().contentType(contentType.toString()).build());
         if (outcome.isOk()) {
@@ -65,15 +65,15 @@ public class BinaryEndpoint {
     @GET
     @Path("/{id}")
     public Response read() throws IOException {
-        final OperationOutcome outcome = repo.read(getUser(), Binary.RESOURCE_TYPE, id);
+        final var outcome = repo.read(getUser(), Binary.RESOURCE_TYPE, id);
         if (!outcome.isOk()) {
             return Response.status(outcome.status())
                     .type(APPLICATION_FHIR_JSON)
                     .entity(outcome)
                     .build();
         }
-        final Binary binary = outcome.resource(Binary.class);
-        final InputStream inputStream = binaryStorage.readBinary(binary);
+        final var binary = outcome.resource(Binary.class);
+        final var inputStream = binaryStorage.readBinary(binary);
         return Response.ok()
                 .type(binary.contentType())
                 .entity(inputStream)
@@ -83,15 +83,15 @@ public class BinaryEndpoint {
     @GET
     @Path("/{id}/_history/{vid}")
     public Response readVersion() throws IOException {
-        final OperationOutcome outcome = repo.readVersion(getUser(), Binary.RESOURCE_TYPE, id, vid);
+        final var outcome = repo.readVersion(getUser(), Binary.RESOURCE_TYPE, id, vid);
         if (!outcome.isOk()) {
             return Response.status(outcome.status())
                     .type(APPLICATION_FHIR_JSON)
                     .entity(outcome)
                     .build();
         }
-        final Binary binary = outcome.resource(Binary.class);
-        final InputStream inputStream = binaryStorage.readBinary(binary);
+        final var binary = outcome.resource(Binary.class);
+        final var inputStream = binaryStorage.readBinary(binary);
         return Response.ok()
                 .type(binary.contentType())
                 .entity(inputStream)
@@ -101,7 +101,7 @@ public class BinaryEndpoint {
     @PUT
     @Path("/{id}")
     public OperationOutcome update(final InputStream inputStream) throws IOException {
-        final OperationOutcome outcome = repo.update(
+        final var outcome = repo.update(
                 getUser(),
                 id,
                 Binary.create().contentType(contentType.toString()).build());

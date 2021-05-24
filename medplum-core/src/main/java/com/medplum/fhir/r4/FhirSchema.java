@@ -2,12 +2,9 @@ package com.medplum.fhir.r4;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 
-import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
-import jakarta.json.JsonValue;
 
 import com.medplum.fhir.r4.types.CodeableConcept;
 import com.medplum.fhir.r4.types.OperationOutcome;
@@ -24,6 +21,10 @@ public class FhirSchema {
         schema = JsonUtils.readJsonResourceFile(FILENAME);
         definitions = schema.getJsonObject("definitions");
         resourceTypes = new ArrayList<>(schema.getJsonObject("discriminator").getJsonObject("mapping").keySet());
+    }
+
+    FhirSchema() {
+        throw new UnsupportedOperationException();
     }
 
     public static JsonObject getSchema() {
@@ -60,33 +61,52 @@ public class FhirSchema {
             return error("Resource is null");
         }
 
-        final String resourceType = resource.getString("resourceType", "");
+        final var resourceType = resource.getString("resourceType", "");
         if (resourceType.isBlank()) {
             return error("Missing resource type");
         }
 
-        final JsonObject definition = getResourceTypeSchema(resourceType);
+        final var definition = getResourceTypeSchema(resourceType);
         if (definition == null) {
             return error("Unknown resource type '" + resourceType + "'");
         }
 
-        final List<OperationOutcomeIssue> issues = new ArrayList<>();
-        final JsonObject propertyDefinitions = definition.getJsonObject("properties");
-        for (final Entry<String, JsonValue> propertyDefinition : propertyDefinitions.entrySet()) {
-            final String propertyName = propertyDefinition.getKey();
+        final var issues = new ArrayList<OperationOutcomeIssue>();
+        final var propertyDefinitions = definition.getJsonObject("properties");
+
+        checkProperties(resource, propertyDefinitions, issues);
+        checkAdditionalProperties(resource, propertyDefinitions, issues);
+        checkRequiredProperties(resource, definition, issues);
+
+        return issues.isEmpty() ? StandardOutcomes.ok() : error(issues);
+    }
+
+    private static void checkProperties(
+            final JsonObject resource,
+            final JsonObject propertyDefinitions,
+            final List<OperationOutcomeIssue> issues) {
+
+        for (final var propertyDefinition : propertyDefinitions.entrySet()) {
+            final var propertyName = propertyDefinition.getKey();
             if (!resource.containsKey(propertyName)) {
                 continue;
             }
 
-            final JsonObject propertyDetails = (JsonObject) propertyDefinition.getValue();
-            final OperationOutcomeIssue issue = validateProperty(resource, propertyName, propertyDetails);
+            final var propertyDetails = (JsonObject) propertyDefinition.getValue();
+            final var issue = validateProperty(resource, propertyName, propertyDetails);
             if (issue != null) {
                 issues.add(issue);
             }
         }
+    }
 
-        for (final Entry<String, JsonValue> actualProperty : resource.entrySet()) {
-            final String propertyName = actualProperty.getKey();
+    private static void checkAdditionalProperties(
+            final JsonObject resource,
+            final JsonObject propertyDefinitions,
+            final List<OperationOutcomeIssue> issues) {
+
+        for (final var actualProperty : resource.entrySet()) {
+            final var propertyName = actualProperty.getKey();
             if (propertyName.equals("meta")) {
                 continue;
             }
@@ -94,18 +114,22 @@ public class FhirSchema {
                 issues.add(issue("Invalid additional property '" + propertyName + "'"));
             }
         }
+    }
 
-        final JsonArray requiredProperties = definition.getJsonArray("required");
+    private static void checkRequiredProperties(
+            final JsonObject resource,
+            final JsonObject definition,
+            final List<OperationOutcomeIssue> issues) {
+
+        final var requiredProperties = definition.getJsonArray("required");
         if (requiredProperties != null) {
-            for (final JsonValue requiredProperty : requiredProperties) {
-                final String propertyName = ((JsonString) requiredProperty).getString();
+            for (final var requiredProperty : requiredProperties) {
+                final var propertyName = ((JsonString) requiredProperty).getString();
                 if (!resource.containsKey(propertyName)) {
                     issues.add(issue("Missing required property '" + propertyName + "'"));
                 }
             }
         }
-
-        return issues.isEmpty() ? StandardOutcomes.ok() : error(issues);
     }
 
     private static OperationOutcomeIssue validateProperty(final JsonObject resource, final String propertyName, final JsonObject propertyDetails) {
@@ -125,6 +149,6 @@ public class FhirSchema {
     }
 
     private static OperationOutcome error(final List<OperationOutcomeIssue> issues) {
-        return StandardOutcomes.error(StandardOutcomes.CODE_INVALID, issues);
+        return StandardOutcomes.error(issues);
     }
 }

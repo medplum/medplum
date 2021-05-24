@@ -1783,4 +1783,8 @@ public class FhirPropertyNames {
     public static final String PROPERTY_X5T = "x5t";
     public static final String PROPERTY_XPATH = "xpath";
     public static final String PROPERTY_XPATH_USAGE = "xpathUsage";
+
+    FhirPropertyNames() {
+        throw new UnsupportedOperationException();
+    }
 }

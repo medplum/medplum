@@ -1,30 +1,30 @@
 package com.medplum.fhir.r4;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
-import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import jakarta.json.JsonValue.ValueType;
 
 public class FhirPath {
-    //private final String[] components;
     private final String original;
     private final String[][] components;
 
     public FhirPath(final String str) {
         original = str;
-//        this.components = str.split("\\.");
 
         final String[] expressions = str.split(" \\| ");
         this.components = new String[expressions.length][];
-        for (int i = 0; i < expressions.length; i++) {
+        for (var i = 0; i < expressions.length; i++) {
             this.components[i] = expressions[i].split("\\.");
         }
     }
 
     public List<JsonValue> eval(final JsonValue jsonObject) {
         final List<JsonValue> result = new ArrayList<>();
-        for (String[] component : components) {
+        for (final String[] component : components) {
             result.addAll(evalExpression(jsonObject, component));
         }
         return result;
@@ -49,10 +49,10 @@ public class FhirPath {
             return;
         }
 
-        final ValueType valueType = jsonValue.getValueType();
+        final var valueType = jsonValue.getValueType();
 
         if (valueType == ValueType.OBJECT) {
-            final JsonObject obj = jsonValue.asJsonObject();
+            final var obj = jsonValue.asJsonObject();
             if (Objects.equals(obj.getString("resourceType", null), token)) {
                 next.add(obj);
             } else {
@@ -84,7 +84,7 @@ public class FhirPath {
         if (s.isEmpty()) {
             return false;
         }
-        for (int i = 0; i < s.length(); i++) {
+        for (var i = 0; i < s.length(); i++) {
             if (i == 0 && s.charAt(i) == '-') {
                 if (s.length() == 1) {
                     return false;

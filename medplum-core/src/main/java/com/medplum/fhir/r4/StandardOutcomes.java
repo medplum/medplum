@@ -29,6 +29,10 @@ public class StandardOutcomes {
     public static final String CODE_PROCESSING = "processing";
     public static final String CODE_EXCEPTION = "exception";
 
+    StandardOutcomes() {
+        throw new UnsupportedOperationException();
+    }
+
     public static OperationOutcome ok() {
         return OperationOutcome.create()
                 .id(ALL_OK_ID)
@@ -103,7 +107,7 @@ public class StandardOutcomes {
                 .build();
     }
 
-    public static OperationOutcome error(final String code, final List<OperationOutcomeIssue> issue) {
+    public static OperationOutcome error(final List<OperationOutcomeIssue> issue) {
         return OperationOutcome.create()
                 .id(generateId())
                 .status(Status.BAD_REQUEST.getStatusCode())

@@ -31,8 +31,8 @@ public class IdUtils {
             return null; // NOSONAR - Must be null for JDBC
         }
 
-        final byte[] buffer = new byte[16];
-        final ByteBuffer bb = ByteBuffer.wrap(buffer);
+        final var buffer = new byte[16];
+        final var bb = ByteBuffer.wrap(buffer);
         bb.putLong(id.getMostSignificantBits());
         bb.putLong(id.getLeastSignificantBits());
         return buffer;
@@ -49,7 +49,7 @@ public class IdUtils {
             return null;
         }
 
-        final ByteBuffer bb = ByteBuffer.wrap(b);
+        final var bb = ByteBuffer.wrap(b);
         return new UUID(bb.getLong(), bb.getLong());
     }
 
@@ -81,8 +81,8 @@ public class IdUtils {
         // A great way to generate a secure secret is to use a cryptographically-secure
         // library to generate a 256-bit value and converting it to a hexadecimal representation.
         // 256 bits = 32 bytes
-        final SecureRandom random = new SecureRandom();
-        final byte[] bytes = new byte[32];
+        final var random = new SecureRandom();
+        final var bytes = new byte[32];
         random.nextBytes(bytes);
         return Base64.getEncoder().encodeToString(bytes);
     }
