@@ -19,7 +19,6 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
-import org.jose4j.lang.JoseException;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -209,8 +208,7 @@ public class OAuthService {
     public JwtResult generateAccessToken(
             final ClientApplication client,
             final FhirResource profile,
-            final String scope)
-                    throws JoseException {
+            final String scope) {
 
         return generateJwt(Map.of(
                 "sub", profile.id(),
@@ -225,8 +223,7 @@ public class OAuthService {
     public JwtResult generateRefreshToken(
             final ClientApplication client,
             final FhirResource profile,
-            final String scope)
-                    throws JoseException {
+            final String scope) {
 
         final JwtResult result = generateJwt(Map.of(
                 "sub", profile.id(),
@@ -251,8 +248,7 @@ public class OAuthService {
 
     public JwtResult generateIdToken(
             final ClientApplication client,
-            final FhirResource profile)
-                    throws JoseException {
+            final FhirResource profile) {
 
         return generateJwt(Map.of(
                 "sub", profile.id(),
@@ -261,7 +257,7 @@ public class OAuthService {
               ), ONE_HOUR);
     }
 
-    private JwtResult generateJwt(final Map<String, Object> payload, final int expirationHours) throws JoseException {
+    private JwtResult generateJwt(final Map<String, Object> payload, final int expirationHours) {
         // Based on: https://bitbucket.org/b_c/jose4j/wiki/JWT%20Examples
         final String jwtId = UUID.randomUUID().toString();
         final RsaJsonWebKey jwk = getJwk();
@@ -291,7 +287,7 @@ public class OAuthService {
         return new JwtResult(jwtId, jwk, jws);
     }
 
-    public JwtClaims decodeAndVerifyToken(final String token) throws MalformedClaimException, InvalidJwtException {
+    public JwtClaims decodeAndVerifyToken(final String token) throws InvalidJwtException {
         // Based on: https://bitbucket.org/b_c/jose4j/wiki/JWT%20Examples
         final String issuer = getIssuer();
         final VerificationKeyResolver keyResolver = getKeyResolver();

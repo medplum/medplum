@@ -15,7 +15,6 @@ import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.Provider;
 
 import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.slf4j.Logger;
@@ -63,9 +62,6 @@ public class SecurityFilter implements ContainerRequestFilter {
         final JwtClaims jwt;
         try {
             jwt = oauth.decodeAndVerifyToken(token);
-
-        } catch (final MalformedClaimException ex) {
-            throw unauthorized("Malformed claims: " + ex.getMessage());
 
         } catch (final InvalidJwtException ex) {
             final String message;

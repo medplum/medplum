@@ -2,8 +2,6 @@ package com.medplum.cdk;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.IOException;
-
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awscdk.core.App;
@@ -13,7 +11,7 @@ import software.amazon.awscdk.core.StackProps;
 public class MedplumAppTest {
 
     @Test
-    public void testStack() throws IOException {
+    public void testStack() {
         final var app = new App();
         final var stack = new MedplumStack(app, "test", StackProps.builder()
                 .env(Environment.builder()

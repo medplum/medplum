@@ -1,6 +1,5 @@
 package com.medplum.server.fhir.r4;
 
-import java.io.IOException;
 import java.net.URI;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -27,8 +26,7 @@ public class OperationOutcomeFilter implements ContainerResponseFilter {
     @Override
     public void filter(
             final ContainerRequestContext requestContext,
-            final ContainerResponseContext responseContext)
-                    throws IOException {
+            final ContainerResponseContext responseContext) {
 
         final Object entity = responseContext.getEntity();
         if (!(entity instanceof OperationOutcome)) {

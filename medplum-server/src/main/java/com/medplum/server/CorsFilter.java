@@ -1,7 +1,5 @@
 package com.medplum.server;
 
-import java.io.IOException;
-
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -23,7 +21,7 @@ public class CorsFilter implements ContainerRequestFilter, ContainerResponseFilt
             ", If-None-Match";
 
     @Override
-    public void filter(final ContainerRequestContext request) throws IOException {
+    public void filter(final ContainerRequestContext request) {
         if (isOptionsRequest(request) && hasOriginHeader(request)) {
             request.abortWith(Response.ok().build());
         }

@@ -1,7 +1,5 @@
 package com.medplum.server;
 
-import java.io.IOException;
-
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
@@ -16,7 +14,7 @@ public class LoggingFilter implements ContainerRequestFilter {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingFilter.class);
 
     @Override
-    public void filter(final ContainerRequestContext requestContext) throws IOException {
+    public void filter(final ContainerRequestContext requestContext) {
         LOG.debug("{} {}", requestContext.getMethod(), requestContext.getUriInfo().getRequestUri());
     }
 }

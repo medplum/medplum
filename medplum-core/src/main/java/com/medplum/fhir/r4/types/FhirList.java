@@ -40,7 +40,7 @@ public class FhirList<T> extends AbstractList<T> implements List<T> {
             return (T) ((Integer) ((JsonNumber) value).intValue());
 
         } else if (c == JsonObject.class) {
-            return (T) ((JsonObject) value);
+            return (T) value;
 
         } else if (c == String.class) {
             return (T) ((JsonString) value).getString();

@@ -33,7 +33,7 @@ public class FhirGraphQLDataFetcher<T> implements DataFetcher<T> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public T get(final DataFetchingEnvironment environment) throws Exception {
+    public T get(final DataFetchingEnvironment environment) {
         final FhirGraphQLContext context = environment.getContext();
         final Field field = environment.getField();
         final Object source = environment.getSource();

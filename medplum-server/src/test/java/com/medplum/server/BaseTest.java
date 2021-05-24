@@ -99,7 +99,6 @@ public abstract class BaseTest extends JerseyTest {
     @Override
     protected void configureClient(final ClientConfig config) {
         config.property(ClientProperties.FOLLOW_REDIRECTS, false);
-        config.register(FhirObjectReader.class);
     }
 
     protected FhirClient fhir() {

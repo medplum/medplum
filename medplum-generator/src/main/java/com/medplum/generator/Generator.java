@@ -74,7 +74,7 @@ public class Generator {
         }
     }
 
-    private static FhirType buildType(final String resourceType, final JsonObject typeDefinition) throws IOException {
+    private static FhirType buildType(final String resourceType, final JsonObject typeDefinition) {
         if (typeDefinition == null) {
             throw new RuntimeException("Resource type '" + resourceType + "' type definition is null");
         }

@@ -1,6 +1,5 @@
 package com.medplum.fhir.r4;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -34,8 +33,7 @@ public class FhirReader<T extends FhirObject> implements MessageBodyReader<T> {
             final Annotation[] annotations,
             final MediaType mediaType,
             final MultivaluedMap<String, String> httpHeaders,
-            final InputStream inputStream)
-                    throws IOException {
+            final InputStream inputStream) {
 
         try (final JsonReader reader = Json.createReader(inputStream)) {
             return FhirObject.create(type, reader.readObject());

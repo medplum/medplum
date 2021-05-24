@@ -1,6 +1,5 @@
 package com.medplum.fhir.r4;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -35,8 +34,7 @@ public class FhirWriter implements MessageBodyWriter<FhirObject> {
             final Annotation[] annotations,
             final MediaType mediaType,
             final MultivaluedMap<String, Object> httpHeaders,
-            final OutputStream entityStream)
-                    throws IOException {
+            final OutputStream entityStream) {
 
         try (final JsonWriter writer = Json.createWriter(entityStream)) {
             writer.writeObject(fhirObject);
