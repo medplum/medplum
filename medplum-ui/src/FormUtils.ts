@@ -127,7 +127,7 @@ export function parseResourceForm(
     }
   }
 
-  return result;
+  return result as Resource;
 }
 
 function setValue(typeDef: TypeSchema, result: any, fullName: string, value: string) {
