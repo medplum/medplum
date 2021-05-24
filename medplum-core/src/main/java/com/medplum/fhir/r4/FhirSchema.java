@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
+import jakarta.json.JsonValue.ValueType;
 
 import com.medplum.fhir.r4.types.CodeableConcept;
 import com.medplum.fhir.r4.types.OperationOutcome;
@@ -92,11 +93,25 @@ public class FhirSchema {
                 continue;
             }
 
-            final var propertyDetails = (JsonObject) propertyDefinition.getValue();
-            final var issue = validateProperty(resource, propertyName, propertyDetails);
-            if (issue != null) {
-                issues.add(issue);
-            }
+            checkProperty(
+                    resource,
+                    propertyName,
+                    (JsonObject) propertyDefinition.getValue(),
+                    issues);
+        }
+    }
+
+    private static void checkProperty(
+            final JsonObject resource,
+            final String propertyName,
+            final JsonObject propertyDetails,
+            final List<OperationOutcomeIssue> issues) {
+
+        final var propertyType = propertyDetails.getString("type", "");
+        final var value = resource.get(propertyName);
+
+        if (propertyType.equals("array") && value.getValueType() != ValueType.ARRAY) {
+            issues.add(issue("Expected array for property '" + propertyName + "'"));
         }
     }
 
@@ -130,10 +145,6 @@ public class FhirSchema {
                 }
             }
         }
-    }
-
-    private static OperationOutcomeIssue validateProperty(final JsonObject resource, final String propertyName, final JsonObject propertyDetails) {
-        return null;
     }
 
     private static OperationOutcomeIssue issue(final String msg) {
