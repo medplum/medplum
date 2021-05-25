@@ -81,12 +81,12 @@ docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest
 popd
 
 # Update the medplum fargate service
-aws ecs update-service \
-  --profile medplum \
-  --region us-east-1 \
-  --cluster MedplumStack-BackEndCluster6B6DC4A8-eFbKEVFrgmMR \
-  --service MedplumStack-BackEndFargateServiceD3B260C0-BAnXfRE5eGRD \
-  --force-new-deployment
+#aws ecs update-service \
+#  --profile medplum \
+#  --region us-east-1 \
+#  --cluster MedplumStack-BackEndCluster6B6DC4A8-eFbKEVFrgmMR \
+#  --service MedplumStack-BackEndFargateServiceD3B260C0-BAnXfRE5eGRD \
+#  --force-new-deployment
 
 # Commit release
 git commit -am "Version ${RELEASE_VERSION}"
