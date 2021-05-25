@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.mindrot.jbcrypt.BCrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.medplum.fhir.r4.StandardOutcomes;
 import com.medplum.fhir.r4.types.Bundle;
@@ -28,6 +30,7 @@ import com.medplum.util.IdUtils;
 import com.medplum.util.JsonUtils;
 
 public class SetupExecutor {
+    private static final Logger LOG = LoggerFactory.getLogger(SetupExecutor.class);
     private final Repository repo;
     private final List<FhirResource> created;
 
@@ -69,7 +72,7 @@ public class SetupExecutor {
             if (resource.resourceType().equals(StructureDefinition.RESOURCE_TYPE)) {
                 final OperationOutcome outcome = repo.create(SecurityUser.SYSTEM_USER, resource);
                 if (!outcome.isOk()) {
-                    System.out.println(outcome);
+                    LOG.warn("Failed to create StructureDefinition: {}", outcome);
                 } else {
                     created.add(outcome.resource(StructureDefinition.class));
                 }

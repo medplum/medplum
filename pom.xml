@@ -217,7 +217,7 @@
             </dependency>
             <dependency>
                 <groupId>org.glassfish.jersey.test-framework.providers</groupId>
-                <artifactId>jersey-test-framework-provider-inmemory</artifactId>
+                <artifactId>jersey-test-framework-provider-grizzly2</artifactId>
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
@@ -249,6 +249,11 @@
                 <groupId>org.reactivestreams</groupId>
                 <artifactId>reactive-streams</artifactId>
                 <version>${reactive.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jul-to-slf4j</artifactId>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>

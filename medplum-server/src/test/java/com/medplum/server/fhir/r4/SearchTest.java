@@ -73,7 +73,6 @@ public class SearchTest extends BaseTest  {
                         .value(identifierValue)
                         .build()))
                 .build();
-        System.out.println(patientRequest);
 
         final Patient patient = fhir().create(patientRequest)
                 .readEntity(Patient.class);

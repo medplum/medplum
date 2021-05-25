@@ -20,7 +20,7 @@ public class RegisterEndpointTest extends BaseTest {
 
     @Test
     public void testNullRedirectUri() {
-        final var r = client().target("/oauth2/register")
+        final var r = target("/oauth2/register")
                 .request()
                 .post(Entity.form(new Form()
                         .param("email", "admin@example.com")));
@@ -31,7 +31,8 @@ public class RegisterEndpointTest extends BaseTest {
 
     @Test
     public void testBlankRedirectUri() {
-        final var r = client().target("/oauth2/register?redirect_uri=")
+        final var r = target("/oauth2/register")
+                .queryParam("redirect_uri", "")
                 .request()
                 .post(Entity.form(new Form()
                         .param("email", "admin@example.com")));
@@ -42,7 +43,8 @@ public class RegisterEndpointTest extends BaseTest {
 
     @Test
     public void testNullEmail() {
-        final var r = client().target("/oauth2/register?redirect_uri=x")
+        final var r = target("/oauth2/register")
+                .queryParam("redirect_uri", "x")
                 .request()
                 .post(Entity.form(new Form()));
 
@@ -52,7 +54,8 @@ public class RegisterEndpointTest extends BaseTest {
 
     @Test
     public void testBlankEmail() {
-        final var r = client().target("/oauth2/register?redirect_uri=x")
+        final var r = target("/oauth2/register")
+                .queryParam("redirect_uri", "x")
                 .request()
                 .post(Entity.form(new Form()
                         .param("email", "")));
@@ -63,7 +66,8 @@ public class RegisterEndpointTest extends BaseTest {
 
     @Test
     public void testAlreadyRegistered() {
-        final var r = client().target("/oauth2/register?redirect_uri=x")
+        final var r = target("/oauth2/register")
+                .queryParam("redirect_uri", "x")
                 .request()
                 .post(Entity.form(new Form()
                         .param("email", "admin@example.com")));
@@ -74,7 +78,8 @@ public class RegisterEndpointTest extends BaseTest {
 
     @Test
     public void testRegisterSuccess() {
-        final var r = client().target("/oauth2/register?redirect_uri=x")
+        final var r = target("/oauth2/register")
+                .queryParam("redirect_uri", "x")
                 .request()
                 .post(Entity.form(new Form()
                         .param("email", "new-user-1@example.com")));

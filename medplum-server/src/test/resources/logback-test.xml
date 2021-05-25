@@ -7,6 +7,8 @@
         </encoder>
     </appender>
     <logger name="com.medplum" level="INFO" />
+    <logger name="com.zaxxer.hikari" level="WARN" />
+    <logger name="org.glassfish" level="WARN" />
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>

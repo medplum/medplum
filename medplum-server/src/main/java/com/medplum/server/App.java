@@ -20,6 +20,7 @@ import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.medplum.fhir.r4.FhirFeature;
 import com.medplum.server.fhir.r4.repo.BinaryStorage;
@@ -56,6 +57,10 @@ public class App extends ResourceConfig {
 
         // Use UTC by default
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+
+        // Configure java.util.logging (JUL) to use SLF4J
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
 
         // Jersey config settings
         property(ServerProperties.WADL_FEATURE_DISABLE, "true");

@@ -5,6 +5,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.json.JsonObject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.medplum.fhir.r4.FhirSchema;
 import com.medplum.server.fhir.r4.search.SearchParameters;
 
@@ -35,6 +38,7 @@ import graphql.schema.GraphQLTypeReference;
  * For resource requests, the "query type" is the resource type itself.
  */
 public class FhirGraphQLSchema {
+    private static final Logger LOG = LoggerFactory.getLogger(FhirGraphQLSchema.class);
     private static final Map<String, GraphQLOutputType> typeCache;
     private static final Map<String, GraphQLSchema> schemaCache;
     private static final GraphQLSchema rootSchema;
@@ -191,7 +195,7 @@ public class FhirGraphQLSchema {
             final var property = (JsonObject) entry.getValue();
             final var propertyType = getPropertyType(resourceType, property);
             if (propertyType == null) {
-                System.out.println("WARN: missing property type for " + resourceType + "." + propertyName);
+                LOG.warn("Missing property type for {}.{}", resourceType, propertyName);
                 continue;
             }
 

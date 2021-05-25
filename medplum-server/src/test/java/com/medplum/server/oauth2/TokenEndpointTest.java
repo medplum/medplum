@@ -14,6 +14,7 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.Form;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.junit.Test;
 
@@ -235,8 +236,8 @@ public class TokenEndpointTest extends BaseTest {
     @Test
     public void testClientCredentialsFlowWithClient() {
         final FhirClient client = FhirClient.builder()
-                .baseUrl(URI.create("/fhir/R4"))
-                .tokenUrl(URI.create("/oauth2/token"))
+                .baseUrl(UriBuilder.fromUri(getBaseUri()).path("/fhir/R4").build())
+                .tokenUrl(UriBuilder.fromUri(getBaseUri()).path("/oauth2/token").build())
                 .client(client())
                 .clientCredentials(testClientApp.id(), testClientApp.secret())
                 .build();
