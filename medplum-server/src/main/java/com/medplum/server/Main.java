@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 public class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
-    private static final URI BASE_URI = URI.create("http://localhost:5000/");
+    private static final URI BASE_URI = URI.create("http://0.0.0.0:5000/");
 
     public static void main(final String[] args) throws Exception {
         LOG.info("App starting with args: {}", (Object[]) args);
