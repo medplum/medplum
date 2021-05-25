@@ -53,7 +53,7 @@ export const SmartText = (props: SmartTextProps) => {
     }
   }
 
-  function onTextChange(e: React.SyntheticEvent) {
+  function onTextChange() {
     if (ignoreInput) {
       // Ignore non-user changes
       return;
@@ -225,6 +225,8 @@ export const SmartText = (props: SmartTextProps) => {
 
   function handleEscapeKey(e: React.KeyboardEvent) {
     if (open) {
+      e.preventDefault();
+      e.stopPropagation();
       search = null;
       closeSuggestions();
     }
@@ -590,7 +592,7 @@ export const SmartText = (props: SmartTextProps) => {
       // Advance to next node
       if (element.childNodes && offset < element.childNodes.length) {
         // Search children
-        element = element.childNodes[offset] as HTMLElement
+        element = element.childNodes[offset] as HTMLElement;
         offset = 0;
 
       } else if (element === editorRef.current) {
@@ -604,7 +606,7 @@ export const SmartText = (props: SmartTextProps) => {
         if (elementIndex === -1) {
           throw 'Element not found in parent list?';
         }
-        element = element.parentNode as HTMLElement
+        element = element.parentNode as HTMLElement;
         offset = elementIndex + 1;
       } else {
         // This should not happen

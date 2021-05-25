@@ -52,7 +52,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     case 'enum':
       return value;
     case 'boolean':
-      return value === undefined ? '' : value;
+      return value;
     case 'markdown':
       return <pre>{value}</pre>
     case 'Address':

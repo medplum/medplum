@@ -179,7 +179,9 @@ export function SearchControl(props: SearchControlProps) {
   useEffect(() => requestResources(), [props.search]);
 
   if (!schema) {
-    return <div>Loading</div>
+    return (
+      <div>Loading</div>
+    );
   }
 
   const checkboxColumn = props.checkboxesEnabled;
