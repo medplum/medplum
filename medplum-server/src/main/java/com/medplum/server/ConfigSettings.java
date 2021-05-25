@@ -1,7 +1,5 @@
 package com.medplum.server;
 
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
@@ -42,19 +40,17 @@ public class ConfigSettings {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static Map<String, Object> loadConfig(final String... args) {
+    public static Map<String, Object> loadConfig(
+            final SsmClient ssmClient,
+            final SecretsManagerClient secretsClient,
+            final String... args) {
+
         final var props = new Properties();
         loadDefaultSettings(props);
         loadLocalOverrideSettings(props);
 
         if (args != null && args.length > 0) {
-            final var name = args[0];
-            final var file = new File(name);
-            if (file.exists()) {
-                loadConfigFile(props, file);
-            } else {
-                loadAwsParams(props, name);
-            }
+            loadAwsParams(ssmClient, secretsClient, props, args[0]);
         } else {
             LOG.info("Using default dev settings");
         }
@@ -80,21 +76,16 @@ public class ConfigSettings {
         }
     }
 
-    private static void loadConfigFile(final Properties props, final File file) {
-        LOG.info("Loading local config settings from \"{}\"", file);
-        try (final var reader = new FileReader(file)) {
-            props.load(reader);
-        } catch (final IOException ex) {
-            LOG.warn("Error loading config settings: {}", ex.getMessage(), ex);
-        }
-    }
+    private static void loadAwsParams(
+            final SsmClient ssmClient,
+            final SecretsManagerClient secretsClient,
+            final Properties props,
+            final String envName) {
 
-    private static void loadAwsParams(final Properties props, final String envName) {
         final var path = String.format("/medplum/%s/", envName);
         LOG.info("Loading AWS Parameter Store settings from \"{}\"", path);
 
-        final var ssm = SsmClient.builder().build();
-        for (final var response : ssm.getParametersByPathPaginator(GetParametersByPathRequest.builder()
+        for (final var response : ssmClient.getParametersByPathPaginator(GetParametersByPathRequest.builder()
                 .path(path)
                 .build())) {
 
@@ -105,16 +96,15 @@ public class ConfigSettings {
                 props.put(key, value);
 
                 if (key.equals(AWS_DATABASE_SECRETS)) {
-                    loadDatabaseSecrets(props, value);
+                    loadDatabaseSecrets(secretsClient, props, value);
                 }
             }
         }
     }
 
-    private static void loadDatabaseSecrets(final Properties props, final String secretId) {
+    private static void loadDatabaseSecrets(final SecretsManagerClient client, final Properties props, final String secretId) {
         LOG.info("Loading AWS Secrets from \"{}\"", secretId);
 
-        final var client = SecretsManagerClient.builder().build();
         final var response = client.getSecretValue(GetSecretValueRequest.builder()
                 .secretId(secretId)
                 .build());
