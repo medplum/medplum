@@ -6,7 +6,7 @@
             <pattern>%d{ISO8601} - %p - %m%n</pattern>
         </encoder>
     </appender>
-    <logger name="com.medplum" level="DEBUG" />
+    <logger name="com.medplum" level="INFO" />
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>

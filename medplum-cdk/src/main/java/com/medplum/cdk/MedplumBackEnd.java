@@ -156,9 +156,9 @@ public class MedplumBackEnd extends Construct {
         final var fargateService = new FargateService(this, "FargateService", FargateServiceProps.builder()
                 .cluster(cluster)
                 .taskDefinition(taskDefinition)
-                .assignPublicIp(true)
+                .assignPublicIp(false)
                 .vpcSubnets(SubnetSelection.builder()
-                        .subnetType(SubnetType.PUBLIC)
+                        .subnetType(SubnetType.PRIVATE)
                         .build())
                 .desiredCount(1)
                 .securityGroups(singletonList(securityGroup))
@@ -180,6 +180,7 @@ public class MedplumBackEnd extends Construct {
         final var loadBalancer = new ApplicationLoadBalancer(this, "LoadBalancer", ApplicationLoadBalancerProps.builder()
                 .vpc(vpc)
                 .internetFacing(true)
+                .http2Enabled(true)
                 .build());
 
         loadBalancer.addListener("HttpListener", BaseApplicationListenerProps.builder()
