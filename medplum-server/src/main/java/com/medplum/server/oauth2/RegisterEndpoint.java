@@ -57,6 +57,14 @@ public class RegisterEndpoint {
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response handleSubmit(@FormParam("email") final String email) {
+        if (redirectUri == null || redirectUri.isBlank()) {
+            return buildPageResponse(Status.BAD_REQUEST, "Missing redirect_uri");
+        }
+
+        if (email == null || email.isBlank()) {
+            return buildPageResponse(Status.BAD_REQUEST, "Missing email");
+        }
+
         final OperationOutcome existingOutcome = oauth.getUserByEmail(email);
         if (existingOutcome.isOk()) {
             final Bundle existingBundle = existingOutcome.resource(Bundle.class);
