@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.medplum.fhir.r4.types.Bundle;
-import com.medplum.fhir.r4.types.Bundle.BundleEntry;
 import com.medplum.fhir.r4.types.SearchParameter;
 import com.medplum.util.JsonUtils;
 
@@ -25,22 +24,26 @@ public class SearchParameters {
         mappings = buildMappings();
     }
 
+    SearchParameters() {
+        throw new UnsupportedOperationException();
+    }
+
     public static List<SearchParameter> getParameters(final String resourceType) {
-        final Map<String, SearchParameter> inner = mappings.get(resourceType);
+        final var inner = mappings.get(resourceType);
         return inner == null ? Collections.emptyList() : new ArrayList<>(inner.values());
     }
 
     public static SearchParameter getParameter(final String resourceType, final String code) {
-        final Map<String, SearchParameter> innerMap = mappings.get(resourceType);
+        final var innerMap = mappings.get(resourceType);
         return innerMap == null ? null : innerMap.get(code);
     }
 
     private static Map<String, Map<String, SearchParameter>> buildMappings() {
-        final Bundle searchParams = new Bundle(JsonUtils.readJsonResourceFile("fhir/r4/search-parameters.json"));
-        final Map<String, Map<String, SearchParameter>> table = new HashMap<>();
+        final var searchParams = new Bundle(JsonUtils.readJsonResourceFile("fhir/r4/search-parameters.json"));
+        final var table = new HashMap<String, Map<String, SearchParameter>>();
 
-        for (final BundleEntry entry : searchParams.entry()) {
-            final SearchParameter searchParam = entry.resource(SearchParameter.class);
+        for (final var entry : searchParams.entry()) {
+            final var searchParam = entry.resource(SearchParameter.class);
             if (searchParam.expression() == null) {
                 // Ignore special case search parameters
                 // "text" = "Search on the narrative of the resource"
@@ -49,15 +52,15 @@ public class SearchParameters {
                 continue;
             }
 
-            final String code = searchParam.code();
-            final String[] expressions = searchParam.expression().split("\\|");
+            final var code = searchParam.code();
+            final var expressions = searchParam.expression().split("\\|");
 
-            for (int i = 0; i < expressions.length; i++) {
+            for (var i = 0; i < expressions.length; i++) {
                 expressions[i] = expressions[i].trim();
             }
 
-            for (final String resourceType : searchParam.base()) {
-                final String expression = getExpressionForResourceType(resourceType, expressions);
+            for (final var resourceType : searchParam.base()) {
+                final var expression = getExpressionForResourceType(resourceType, expressions);
                 if (expression == null) {
                     // TODO:  Special compound cases
                     continue;
@@ -72,7 +75,7 @@ public class SearchParameters {
     }
 
     private static String getExpressionForResourceType(final String resourceType, final String[] expressions) {
-        for (final String expression : expressions) {
+        for (final var expression : expressions) {
             if (expression.startsWith(resourceType + ".") || expression.startsWith("(" + resourceType + ".") && expression.endsWith(")")) {
                 return cleanExpression(resourceType, expression);
             }
@@ -81,7 +84,7 @@ public class SearchParameters {
     }
 
     private static String cleanExpression(final String resourceType, final String expression) {
-        String str = expression;
+        var str = expression;
 
         if (str.startsWith("(") && str.endsWith(")")) {
             str = str.substring(1, str.length() - 1);
@@ -91,7 +94,7 @@ public class SearchParameters {
             str = str.substring(resourceType.length() + 1);
         }
 
-        final int whereIndex = str.indexOf(".where(");
+        final var whereIndex = str.indexOf(".where(");
         if (whereIndex >= 0) {
             // TODO: Need to preserve this information
             // For example, consider "Account.subject.where(resolve() is Patient)"

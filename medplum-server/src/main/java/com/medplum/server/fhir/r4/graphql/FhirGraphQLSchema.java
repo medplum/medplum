@@ -1,14 +1,11 @@
 package com.medplum.server.fhir.r4.graphql;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
 
 import com.medplum.fhir.r4.FhirSchema;
-import com.medplum.fhir.r4.types.SearchParameter;
 import com.medplum.server.fhir.r4.search.SearchParameters;
 
 import graphql.Scalars;
@@ -69,6 +66,10 @@ public class FhirGraphQLSchema {
         rootSchema = buildRootSchema();
     }
 
+    FhirGraphQLSchema() {
+        throw new UnsupportedOperationException();
+    }
+
     public static GraphQLSchema getRootSchema() {
         return rootSchema;
     }
@@ -78,11 +79,10 @@ public class FhirGraphQLSchema {
     }
 
     private static GraphQLSchema buildRootSchema() {
-        final GraphQLObjectType.Builder builder = GraphQLObjectType.newObject()
-                .name("QueryType");
+        final var builder = GraphQLObjectType.newObject().name("QueryType");
 
-        for (final String resourceType : FhirSchema.getResourceTypes()) {
-            final GraphQLOutputType graphQLType = getGraphQLType(resourceType);
+        for (final var resourceType : FhirSchema.getResourceTypes()) {
+            final var graphQLType = getGraphQLType(resourceType);
             if (graphQLType == null) {
                 continue;
             }
@@ -99,14 +99,13 @@ public class FhirGraphQLSchema {
                     .build());
 
             // Search resources by search parameters
-            final GraphQLFieldDefinition.Builder searchBuilder = GraphQLFieldDefinition.newFieldDefinition()
+            final var searchBuilder = GraphQLFieldDefinition.newFieldDefinition()
                     .name(resourceType + "List")
                     .type(GraphQLList.list(graphQLType));
 
-            for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
-                final String name = param.code().replace("-", "_");
+            for (final var param : SearchParameters.getParameters(resourceType)) {
                 searchBuilder.argument(GraphQLArgument.newArgument()
-                        .name(name)
+                        .name(param.code().replace("-", "_"))
                         .description(param.description())
                         .type(Scalars.GraphQLString)
                         .build());
@@ -119,7 +118,7 @@ public class FhirGraphQLSchema {
     }
 
     private static GraphQLSchema buildResourceTypeSchema(final String resourceType) {
-        final GraphQLObjectType graphQLType = (GraphQLObjectType) getGraphQLType(resourceType);
+        final var graphQLType = (GraphQLObjectType) getGraphQLType(resourceType);
         if (graphQLType == null) {
             return null;
         }
@@ -127,7 +126,7 @@ public class FhirGraphQLSchema {
     }
 
     private static GraphQLSchema buildSchema(final GraphQLObjectType queryType) {
-        final GraphQLCodeRegistry codeRegistry = GraphQLCodeRegistry.newCodeRegistry()
+        final var codeRegistry = GraphQLCodeRegistry.newCodeRegistry()
                 .defaultDataFetcher(new FhirGraphQLDataFetcherFactory<>())
                 .build();
 
@@ -146,7 +145,7 @@ public class FhirGraphQLSchema {
             return null;
         }
 
-        GraphQLOutputType result = typeCache.get(resourceType);
+        var result = typeCache.get(resourceType);
         if (result == null) {
             result = buildGraphQLType(resourceType);
             typeCache.put(resourceType, result);
@@ -160,25 +159,25 @@ public class FhirGraphQLSchema {
             return null;
         }
 
-        final JsonObject schema = FhirSchema.getResourceTypeSchema(resourceType);
+        final var schema = FhirSchema.getResourceTypeSchema(resourceType);
         if (schema == null) {
             return null;
         }
 
-        final GraphQLObjectType.Builder builder = GraphQLObjectType.newObject();
+        final var builder = GraphQLObjectType.newObject();
         builder.name(resourceType);
 
         if (schema.containsKey("description")) {
             builder.description(schema.getString("description"));
         }
 
-        final JsonObject properties = schema.getJsonObject("properties");
+        final var properties = schema.getJsonObject("properties");
         if (properties == null) {
             return null;
         }
 
-        for (final Entry<String, JsonValue> entry : properties.entrySet()) {
-            final String propertyName = entry.getKey();
+        for (final var entry : properties.entrySet()) {
+            final var propertyName = entry.getKey();
             if (propertyName.startsWith("_") ||
                     propertyName.equals("contained") ||
                     propertyName.equals("extension") ||
@@ -189,8 +188,8 @@ public class FhirGraphQLSchema {
                 continue;
             }
 
-            final JsonObject property = (JsonObject) entry.getValue();
-            final GraphQLOutputType propertyType = getPropertyType(resourceType, property);
+            final var property = (JsonObject) entry.getValue();
+            final var propertyType = getPropertyType(resourceType, property);
             if (propertyType == null) {
                 System.out.println("WARN: missing property type for " + resourceType + "." + propertyName);
                 continue;
@@ -207,7 +206,7 @@ public class FhirGraphQLSchema {
     }
 
     private static GraphQLOutputType getPropertyType(final String parentType, final JsonObject property) {
-        final String refStr = getRefString(property);
+        final var refStr = getRefString(property);
         if (refStr != null) {
             if (refStr.equals(parentType)) {
                 return GraphQLTypeReference.typeRef(parentType);
@@ -216,9 +215,9 @@ public class FhirGraphQLSchema {
         }
 
         if (property.containsKey("type")) {
-            final String typeStr = property.getString("type");
+            final var typeStr = property.getString("type");
             if (typeStr.equals("array")) {
-                final GraphQLOutputType itemType = getPropertyType(parentType, property.getJsonObject("items"));
+                final var itemType = getPropertyType(parentType, property.getJsonObject("items"));
                 if (itemType == null) {
                     return null;
                 }

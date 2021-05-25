@@ -7,13 +7,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
-import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import jakarta.ws.rs.core.Response.Status;
@@ -33,9 +30,7 @@ public class BatchExecutor {
         this.repo = repo;
     }
 
-    public OperationOutcome createBatch(final SecurityUser user, final JsonObject data) {
-        final Bundle bundle = new Bundle(data);
-
+    public OperationOutcome createBatch(final SecurityUser user, final Bundle bundle) {
         final String bundleType = bundle.type();
         if (bundleType == null || bundleType.isBlank()) {
             return StandardOutcomes.invalid("Missing bundle type");
@@ -45,23 +40,24 @@ public class BatchExecutor {
             return StandardOutcomes.invalid("Unrecognized bundle type '" + bundleType + "'");
         }
 
-        final List<BundleEntry> entries = bundle.entry();
+        final var entries = bundle.entry();
         if (entries == null) {
             return StandardOutcomes.invalid("Missing bundle entry");
         }
 
-        final Map<String, String> ids = findIds(entries);
+        final var ids = findIds(entries);
         if (!ids.isEmpty() && !bundleType.equals("transaction")) {
             return StandardOutcomes.invalid("Can only use local IDs ('urn:uuid:') in transaction");
         }
 
-        final List<BundleEntry> result = new ArrayList<>();
-        for (final BundleEntry entry : new Bundle(rewriteIdsInObject(data, ids)).entry()) {
-            final FhirResource resource = entry.resource(FhirResource.class);
-            final String providedId = resource.id();
-            final OperationOutcome entryOutcome = providedId == null || providedId.isBlank() ?
+        final var result = new ArrayList<BundleEntry>();
+        for (final var entry : new Bundle(rewriteIdsInObject(bundle, ids)).entry()) {
+            final var resource = entry.resource(FhirResource.class);
+            final var providedId = resource.id();
+            final var entryOutcome = providedId == null || providedId.isBlank() ?
                     repo.create(user, resource) :
                     repo.update(user, providedId, resource);
+
             result.add(BundleEntry.create()
                     .response(BundleResponse.create()
                             .status(Status.fromStatusCode(entryOutcome.status()).toString())
@@ -74,21 +70,21 @@ public class BatchExecutor {
     }
 
     private static Map<String, String> findIds(final List<BundleEntry> entries) {
-        final Map<String, String> result = new HashMap<>();
+        final var result = new HashMap<String, String>();
 
-        for (final BundleEntry entry : entries) {
+        for (final var entry : entries) {
             if (entry.fullUrl() == null) {
                 continue;
             }
 
-            final String fullUrl = entry.fullUrl().toString();
+            final var fullUrl = entry.fullUrl().toString();
             if (!fullUrl.startsWith("urn:uuid:")) {
                 continue;
             }
 
             // Direct ID: replace local value with generated ID
-            final String inputId = fullUrl.substring("urn:uuid:".length());
-            final String outputId = generateId();
+            final var inputId = fullUrl.substring("urn:uuid:".length());
+            final var outputId = generateId();
             result.put(inputId, outputId);
 
             // Reference: replace prefixed value with reference string
@@ -112,24 +108,24 @@ public class BatchExecutor {
     }
 
     private static JsonArray rewriteIdsInArray(final JsonArray input, final Map<String, String> ids) {
-        final JsonArrayBuilder b = Json.createArrayBuilder();
-        for (final JsonValue value : input) {
+        final var b = Json.createArrayBuilder();
+        for (final var value : input) {
             b.add(rewriteIds(value, ids));
         }
         return b.build();
     }
 
     private static JsonObject rewriteIdsInObject(final JsonObject input, final Map<String, String> ids) {
-        final JsonObjectBuilder b = Json.createObjectBuilder();
-        for (final Entry<String, JsonValue> entry : input.entrySet()) {
+        final var b = Json.createObjectBuilder();
+        for (final var entry : input.entrySet()) {
             b.add(entry.getKey(), rewriteIds(entry.getValue(), ids));
         }
         return b.build();
     }
 
     private static JsonString rewriteIdsInString(final JsonString input, final Map<String, String> ids) {
-        final String inputStr = input.getString();
-        final String outputStr = ids.get(inputStr);
+        final var inputStr = input.getString();
+        final var outputStr = ids.get(inputStr);
         return outputStr != null ? Json.createValue(outputStr) : input;
     }
 }

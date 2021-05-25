@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonNumber;
@@ -14,17 +13,11 @@ import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 
 import com.medplum.fhir.r4.types.Bundle;
-import com.medplum.fhir.r4.types.Bundle.BundleEntry;
-import com.medplum.fhir.r4.types.OperationOutcome;
-import com.medplum.server.fhir.r4.repo.Repository;
 import com.medplum.server.fhir.r4.search.SearchParser;
 import com.medplum.server.fhir.r4.search.SearchRequest;
-import com.medplum.server.security.SecurityUser;
 
-import graphql.language.Argument;
 import graphql.language.Field;
 import graphql.language.StringValue;
-import graphql.language.Value;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.PropertyDataFetcherHelper;
@@ -35,8 +28,8 @@ public class FhirGraphQLDataFetcher<T> implements DataFetcher<T> {
     @Override
     public T get(final DataFetchingEnvironment environment) {
         final FhirGraphQLContext context = environment.getContext();
-        final Field field = environment.getField();
-        final Object source = environment.getSource();
+        final var field = environment.getField();
+        final var source = environment.getSource();
 
         if (source == null) {
             // TODO: Confirm that source==null is the correct criteria
@@ -52,15 +45,15 @@ public class FhirGraphQLDataFetcher<T> implements DataFetcher<T> {
     }
 
     private Object getResource(final FhirGraphQLContext context, final Field field) {
-        final Repository repo = context.getRepo();
-        final SecurityUser user = context.getUser();
-        final SearchRequest searchRequest = convertFieldToSearchRequest(field);
-        final OperationOutcome outcome = repo.search(user, searchRequest);
-        final Bundle bundle = outcome.resource(Bundle.class);
+        final var repo = context.getRepo();
+        final var user = context.getUser();
+        final var searchRequest = convertFieldToSearchRequest(field);
+        final var outcome = repo.search(user, searchRequest);
+        final var bundle = outcome.resource(Bundle.class);
 
         if (field.getName().endsWith("List")) {
-            final List<Map<String, Object>> result = new ArrayList<>();
-            for (final BundleEntry entry : bundle.entry()) {
+            final var result = new ArrayList<>();
+            for (final var entry : bundle.entry()) {
                 result.add(convertJsonObject(entry.resource()));
             }
             return result;
@@ -74,14 +67,14 @@ public class FhirGraphQLDataFetcher<T> implements DataFetcher<T> {
     }
 
     private SearchRequest convertFieldToSearchRequest(final Field field) {
-        final String fieldName = field.getName();
-        final String resourceType = fieldName.endsWith("List") ? fieldName.substring(0, fieldName.length() - 4) : fieldName;
-        final List<Argument> arguments = field.getArguments();
-        final SearchParser parser = new SearchParser(resourceType);
+        final var fieldName = field.getName();
+        final var resourceType = fieldName.endsWith("List") ? fieldName.substring(0, fieldName.length() - 4) : fieldName;
+        final var arguments = field.getArguments();
+        final var parser = new SearchParser(resourceType);
 
-        for (final Argument arg : arguments) {
-            final String key = arg.getName();
-            final Value<?> value = arg.getValue();
+        for (final var arg : arguments) {
+            final var key = arg.getName();
+            final var value = arg.getValue();
             final String valueStr;
             if (value instanceof StringValue) {
                 valueStr = ((StringValue) value).getValue();
@@ -116,16 +109,16 @@ public class FhirGraphQLDataFetcher<T> implements DataFetcher<T> {
     }
 
     private List<Object> convertJsonArray(final JsonArray jsonArray) {
-        final List<Object> result = new ArrayList<>();
-        for (final JsonValue element : jsonArray) {
+        final var result = new ArrayList<>();
+        for (final var element : jsonArray) {
             result.add(convertJsonValue(element));
         }
         return Collections.unmodifiableList(result);
     }
 
     private Map<String, Object> convertJsonObject(final JsonObject jsonObject) {
-        final Map<String, Object> result = new HashMap<>();
-        for (final Entry<String, JsonValue> entry : jsonObject.entrySet()) {
+        final var result = new HashMap<String, Object>();
+        for (final var entry : jsonObject.entrySet()) {
             result.put(entry.getKey(), convertJsonValue(entry.getValue()));
         }
         return Collections.unmodifiableMap(result);

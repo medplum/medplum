@@ -54,7 +54,7 @@ public class SetupExecutor {
     }
 
     private void createStructureDefinitions() {
-        final Bundle bundle = repo.search(
+        final var bundle = repo.search(
                 SecurityUser.SYSTEM_USER,
                 SearchRequest.create(StructureDefinition.RESOURCE_TYPE).build()).resource(Bundle.class);
 
@@ -62,7 +62,7 @@ public class SetupExecutor {
             return;
         }
 
-        final Bundle structureDefinitions = new Bundle(JsonUtils.readJsonResourceFile("fhir/r4/profiles-resources.json"));
+        final var structureDefinitions = new Bundle(JsonUtils.readJsonResourceFile("fhir/r4/profiles-resources.json"));
 
         for (final BundleEntry entry : structureDefinitions.entry()) {
             final FhirResource resource = entry.resource();
@@ -78,7 +78,7 @@ public class SetupExecutor {
     }
 
     private void createProject() {
-        final Bundle bundle = repo.search(
+        final var bundle = repo.search(
                 SecurityUser.SYSTEM_USER,
                 SearchParser.parse("Project?name=Medplum")).resource(Bundle.class);
 
@@ -86,17 +86,17 @@ public class SetupExecutor {
             return;
         }
 
-        final Project organization = repo.create(SecurityUser.SYSTEM_USER, Project.create()
+        final var project = repo.create(SecurityUser.SYSTEM_USER, Project.create()
                 .name("Medplum")
                 .owner(Reference.create().reference("User/1").build())
                 .build())
                 .resource(Project.class);
 
-        created.add(organization);
+        created.add(project);
     }
 
     private void createOrganization() {
-        final Bundle bundle = repo.search(
+        final var bundle = repo.search(
                 SecurityUser.SYSTEM_USER,
                 SearchParser.parse("Organization?name=Medplum")).resource(Bundle.class);
 
@@ -104,7 +104,7 @@ public class SetupExecutor {
             return;
         }
 
-        final Organization organization = repo.create(SecurityUser.SYSTEM_USER, Organization.create()
+        final var organization = repo.create(SecurityUser.SYSTEM_USER, Organization.create()
                 .name("Medplum")
                 .build())
                 .resource(Organization.class);
@@ -113,7 +113,7 @@ public class SetupExecutor {
     }
 
     private void createUser() {
-        final Bundle bundle = repo.search(
+        final var bundle = repo.search(
                 SecurityUser.SYSTEM_USER,
                 SearchRequest.create(User.RESOURCE_TYPE).build()).resource(Bundle.class);
 
@@ -121,7 +121,7 @@ public class SetupExecutor {
             return;
         }
 
-        final Practitioner practitioner = repo.create(SecurityUser.SYSTEM_USER, Practitioner.create()
+        final var practitioner = repo.create(SecurityUser.SYSTEM_USER, Practitioner.create()
                 .name(singletonList(HumanName.create()
                         .given(singletonList("Admin"))
                         .family("User")
@@ -129,7 +129,7 @@ public class SetupExecutor {
                 .build())
                 .resource(Practitioner.class);
 
-        final User user = repo.create(SecurityUser.SYSTEM_USER, User.create()
+        final var user = repo.create(SecurityUser.SYSTEM_USER, User.create()
                 .email("admin@medplum.com")
                 .passwordHash(BCrypt.hashpw("admin", BCrypt.gensalt()))
                 .practitioner(practitioner.createReference())
@@ -141,7 +141,7 @@ public class SetupExecutor {
     }
 
     private void createClientApplication() {
-        final Bundle bundle = repo.search(
+        final var bundle = repo.search(
                 SecurityUser.SYSTEM_USER,
                 SearchRequest.create(ClientApplication.RESOURCE_TYPE).build()).resource(Bundle.class);
 
@@ -149,7 +149,7 @@ public class SetupExecutor {
             return;
         }
 
-        final ClientApplication clientApplication = repo.create(SecurityUser.SYSTEM_USER, ClientApplication.create()
+        final var clientApplication = repo.create(SecurityUser.SYSTEM_USER, ClientApplication.create()
                 .secret(IdUtils.generateSecret())
                 .redirectUri("https://example.com/redirect")
                 .build())

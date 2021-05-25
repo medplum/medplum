@@ -27,7 +27,7 @@ public class FileSystemBinaryStorage implements BinaryStorage {
     }
 
     private static Path binaryToPath(final Binary binary) throws IOException {
-        final Path dir = Paths.get("binary", binary.id());
+        final var dir = Paths.get("binary", binary.id());
         Files.createDirectories(dir);
         return dir.resolve(binary.meta().versionId());
     }

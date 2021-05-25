@@ -35,7 +35,7 @@ public class JdbcRepositoryFactory implements Factory<JdbcRepository> {
     @Override
     public JdbcRepository provide() {
         try {
-            final JdbcRepository repo = new JdbcRepository(dataSource.getConnection(), sseService);
+            final var repo = new JdbcRepository(dataSource.getConnection(), sseService);
             closeableService.add(repo);
             return repo;
         } catch (final SQLException e) {
