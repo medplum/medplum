@@ -22,20 +22,20 @@ public class SearchParser {
             throw new NullPointerException("URI is null");
         }
 
-        final String path = uri.getPath();
+        final var path = uri.getPath();
         if (path == null || path.isBlank()) {
             throw new IllegalArgumentException("Path is missing");
         }
 
-        final String[] pathComponents = path.split("/", -1);
-        final String resourceType = pathComponents[pathComponents.length - 1];
+        final var pathComponents = path.split("/", -1);
+        final var resourceType = pathComponents[pathComponents.length - 1];
         if (resourceType.isBlank()) {
             throw new IllegalArgumentException("Resource type is missing");
         }
 
-        final SearchParser parser = new SearchParser(resourceType);
+        final var parser = new SearchParser(resourceType);
 
-        final String query = uri.getQuery();
+        final var query = uri.getQuery();
         if (query != null && !query.isBlank()) {
             for (final String pair : query.split("&")) {
                 final int equalsIndex = pair.indexOf('=');
@@ -145,7 +145,6 @@ public class SearchParser {
         String num = value;
 
         if (value.startsWith("eq")) {
-            op = Operation.EQUALS;
             num = value.substring(2);
 
         } else if (value.startsWith("ne")) {

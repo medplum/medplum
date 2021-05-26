@@ -3,6 +3,7 @@ package com.medplum.server.fhir.r4;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.net.URI;
+import java.time.LocalDate;
 
 import jakarta.json.Json;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.junit.Test;
 
 import com.medplum.fhir.r4.FhirMediaType;
+import com.medplum.fhir.r4.types.Bundle;
 import com.medplum.fhir.r4.types.Patient;
 import com.medplum.server.BaseTest;
 import com.medplum.util.IdUtils;
@@ -151,18 +153,24 @@ public class DefaultEndpointTest extends BaseTest {
         assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response1.getHeaderString(HttpHeaders.CONTENT_TYPE));
         assertNotNull(response1.getHeaderString(HttpHeaders.LOCATION));
 
-        final String[] path = URI.create(response1.getHeaderString(HttpHeaders.LOCATION)).getPath().split("/");
-        assertEquals(7, path.length);
-        assertEquals("fhir", path[1]);
-        assertEquals("R4", path[2]);
-        assertEquals("Patient", path[3]);
-        assertEquals("_history", path[5]);
+        final Patient patient1 = response1.readEntity(Patient.class);
+        assertNotNull(patient1);
 
-        final String id = path[4];
-
-        final Response response2 = fhir().readHistory("Patient", id);
+        final Response response2 = fhir().update(Patient.create(patient1).birthDate(LocalDate.of(1980, 1, 1)).build());
         assertEquals(200, response2.getStatus());
-        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response2.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+        final Patient patient2 = response2.readEntity(Patient.class);
+        assertNotNull(patient2);
+        assertEquals(patient1.id(), patient2.id());
+        assertNotEquals(patient1.meta().versionId(), patient2.meta().versionId());
+
+        final Response response3 = fhir().readHistory("Patient", patient1.id());
+        assertEquals(200, response3.getStatus());
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response3.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+        final Bundle history = response3.readEntity(Bundle.class);
+        assertNotNull(history);
+        assertEquals(2, history.entry().size());
     }
 
     @Test

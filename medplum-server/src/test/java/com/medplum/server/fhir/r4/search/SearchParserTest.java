@@ -3,6 +3,7 @@ package com.medplum.server.fhir.r4.search;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 import org.junit.Test;
 
@@ -51,6 +52,20 @@ public class SearchParserTest {
     }
 
     @Test
+    public void testNullQuery() throws URISyntaxException {
+        final SearchRequest request = SearchParser.parse(new URI("http", "example.com", "/Patient", null, null));
+        assertNotNull(request);
+        assertTrue(request.getFilters().isEmpty());
+    }
+
+    @Test
+    public void testBlankQuery() throws URISyntaxException {
+        final SearchRequest request = SearchParser.parse(new URI("http", "example.com", "/Patient", "", null));
+        assertNotNull(request);
+        assertTrue(request.getFilters().isEmpty());
+    }
+
+    @Test
     public void testId1() {
         final SearchRequest request = SearchParser.parse("Patient?id=1");
         assertNotNull(request);
@@ -68,6 +83,16 @@ public class SearchParserTest {
         assertEquals("_id", request.getFilters().get(0).getSearchParam().code());
         assertEquals(Operation.EQUALS, request.getFilters().get(0).getOp());
         assertEquals("1", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testId3() {
+        final SearchRequest request = SearchParser.parse("Patient?id");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("_id", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.EQUALS, request.getFilters().get(0).getOp());
+        assertEquals("", request.getFilters().get(0).getValue());
     }
 
     @Test
@@ -99,6 +124,16 @@ public class SearchParserTest {
     @Test
     public void testNumberEquals() {
         final SearchRequest request = SearchParser.parse("RiskAssessment?probability=0.5");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("probability", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.EQUALS, request.getFilters().get(0).getOp());
+        assertEquals("0.5", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testNumberEquals2() {
+        final SearchRequest request = SearchParser.parse("RiskAssessment?probability=eq0.5");
         assertNotNull(request);
         assertEquals(1, request.getFilters().size());
         assertEquals("probability", request.getFilters().get(0).getSearchParam().code());
@@ -159,6 +194,16 @@ public class SearchParserTest {
     @Test
     public void testDateEquals() {
         final SearchRequest request = SearchParser.parse("Procedure?date=2020-01-01");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("date", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.EQUALS, request.getFilters().get(0).getOp());
+        assertEquals("2020-01-01", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testDateEquals2() {
+        final SearchRequest request = SearchParser.parse("Procedure?date=eq2020-01-01");
         assertNotNull(request);
         assertEquals(1, request.getFilters().size());
         assertEquals("date", request.getFilters().get(0).getSearchParam().code());
@@ -274,5 +319,85 @@ public class SearchParserTest {
         assertEquals("given", request.getFilters().get(0).getSearchParam().code());
         assertEquals(Operation.EXACT, request.getFilters().get(0).getOp());
         assertEquals("eve", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testTokenEquals() {
+        final SearchRequest request = SearchParser.parse("Patient?email=eve@example.com");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("email", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.EQUALS, request.getFilters().get(0).getOp());
+        assertEquals("eve@example.com", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testTokenText() {
+        final SearchRequest request = SearchParser.parse("Patient?email:text=eve@example.com");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("email", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.TEXT, request.getFilters().get(0).getOp());
+        assertEquals("eve@example.com", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testTokenExact() {
+        final SearchRequest request = SearchParser.parse("Patient?email:not=eve@example.com");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("email", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.NOT_EQUALS, request.getFilters().get(0).getOp());
+        assertEquals("eve@example.com", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testTokenAbove() {
+        final SearchRequest request = SearchParser.parse("Patient?email:above=eve@example.com");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("email", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.ABOVE, request.getFilters().get(0).getOp());
+        assertEquals("eve@example.com", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testTokenBelow() {
+        final SearchRequest request = SearchParser.parse("Patient?email:below=eve@example.com");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("email", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.BELOW, request.getFilters().get(0).getOp());
+        assertEquals("eve@example.com", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testTokenIn() {
+        final SearchRequest request = SearchParser.parse("Patient?email:in=eve@example.com");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("email", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.IN, request.getFilters().get(0).getOp());
+        assertEquals("eve@example.com", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testTokenNotIn() {
+        final SearchRequest request = SearchParser.parse("Patient?email:not-in=eve@example.com");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("email", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.NOT_IN, request.getFilters().get(0).getOp());
+        assertEquals("eve@example.com", request.getFilters().get(0).getValue());
+    }
+
+    @Test
+    public void testTokenOfType() {
+        final SearchRequest request = SearchParser.parse("Patient?email:of-type=eve@example.com");
+        assertNotNull(request);
+        assertEquals(1, request.getFilters().size());
+        assertEquals("email", request.getFilters().get(0).getSearchParam().code());
+        assertEquals(Operation.OF_TYPE, request.getFilters().get(0).getOp());
+        assertEquals("eve@example.com", request.getFilters().get(0).getValue());
     }
 }
