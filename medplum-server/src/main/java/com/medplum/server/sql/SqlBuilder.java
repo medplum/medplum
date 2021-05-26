@@ -28,6 +28,11 @@ public class SqlBuilder implements AutoCloseable {
         return this;
     }
 
+    public SqlBuilder where() {
+        sql.append(" WHERE ");
+        return this;
+    }
+
     @Override
     public String toString() {
         return sql.toString();

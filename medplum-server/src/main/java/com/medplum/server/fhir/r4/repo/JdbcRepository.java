@@ -46,7 +46,9 @@ import com.medplum.server.fhir.r4.search.SearchUtils;
 import com.medplum.server.fhir.r4.search.SortRule;
 import com.medplum.server.security.SecurityUser;
 import com.medplum.server.sql.CreateTableQuery;
+import com.medplum.server.sql.DeleteQuery;
 import com.medplum.server.sql.InsertQuery;
+import com.medplum.server.sql.Operator;
 import com.medplum.server.sql.SqlBuilder;
 import com.medplum.server.sql.UpdateQuery;
 import com.medplum.server.sse.SseService;
@@ -405,20 +407,20 @@ public class JdbcRepository implements Repository, Closeable {
             final Instant lastUpdated,
             final FhirResource resource) {
 
-        final InsertQuery.Builder builder = new InsertQuery.Builder(getTableName(resourceType))
-                .value(COLUMN_ID, id, Types.BINARY)
-                .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
-                .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
-
-        for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
-            if (isIndexTable(param)) {
-                continue;
-            }
-            builder.value(getColumnName(param.code()), getColumnValue(param.expression(), resource), Types.VARCHAR);
-        }
-
         try {
-            builder.build().execute(conn);
+            final InsertQuery insertQuery = new InsertQuery(getTableName(resourceType))
+                    .value(COLUMN_ID, id, Types.BINARY)
+                    .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
+                    .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
+
+            for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
+                if (isIndexTable(param)) {
+                    continue;
+                }
+                insertQuery.value(getColumnName(param.code()), getColumnValue(param.expression(), resource), Types.VARCHAR);
+            }
+
+            insertQuery.execute(conn);
             return StandardOutcomes.created(resource);
 
         } catch (final SQLException ex) {
@@ -434,21 +436,20 @@ public class JdbcRepository implements Repository, Closeable {
             final Instant lastUpdated,
             final FhirResource resource) {
 
-        final UpdateQuery.Builder builder = new UpdateQuery.Builder(getTableName(resourceType))
-                .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
-                .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
-
-        for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
-            if (isIndexTable(param)) {
-                continue;
-            }
-            builder.value(getColumnName(param.code()), getColumnValue(param.expression(), resource), Types.VARCHAR);
-        }
-
-        builder.condition(COLUMN_ID, id, Types.BINARY);
-
         try {
-            builder.build().execute(conn);
+            final var updateQuery = new UpdateQuery(getTableName(resourceType))
+                    .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
+                    .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
+
+            for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
+                if (isIndexTable(param)) {
+                    continue;
+                }
+                updateQuery.value(getColumnName(param.code()), getColumnValue(param.expression(), resource), Types.VARCHAR);
+            }
+
+            updateQuery.condition(COLUMN_ID, Operator.EQUALS, id, Types.BINARY);
+            updateQuery.execute(conn);
             return StandardOutcomes.ok(resource);
 
         } catch (final SQLException ex) {
@@ -471,28 +472,16 @@ public class JdbcRepository implements Repository, Closeable {
         final List<Identifier> existing = this.getIdentifiers(resourceId);
 
         if (!compareIdentifiers(incoming, existing)) {
-            try (final SqlBuilder sql = new SqlBuilder(conn)) {
-                sql.append("DELETE FROM ");
-                sql.appendIdentifier(TABLE_IDENTIFIER);
-                sql.append(" WHERE ");
-                sql.appendIdentifier(COLUMN_IDENTIFIER_RESOURCE_ID);
-                sql.append("=?");
-
-                LOG.debug("{}", sql);
-
-                try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                    stmt.setObject(1, resourceId, Types.BINARY);
-                    stmt.executeUpdate();
-                }
-            }
+            new DeleteQuery(TABLE_IDENTIFIER)
+                    .condition(COLUMN_IDENTIFIER_RESOURCE_ID, Operator.EQUALS, resourceId, Types.BINARY)
+                    .execute(conn);
 
             for (final Identifier incomingId : incoming) {
-                new InsertQuery.Builder(TABLE_IDENTIFIER)
+                new InsertQuery(TABLE_IDENTIFIER)
                         .value(COLUMN_ID, UUID.randomUUID(), Types.BINARY)
                         .value(COLUMN_IDENTIFIER_RESOURCE_ID, resourceId, Types.BINARY)
                         .value(COLUMN_IDENTIFIER_SYSTEM, incomingId.system().toString(), Types.VARCHAR)
                         .value(COLUMN_IDENTIFIER_VALUE, incomingId.value(), Types.VARCHAR)
-                        .build()
                         .execute(conn);
             }
         }
@@ -525,12 +514,11 @@ public class JdbcRepository implements Repository, Closeable {
             final JsonObject resource)
                     throws SQLException {
 
-        new InsertQuery.Builder(getHistoryTableName(resourceType))
+        new InsertQuery(getHistoryTableName(resourceType))
                 .value(COLUMN_VERSION_ID, versionId, Types.BINARY)
                 .value(COLUMN_ID, id, Types.BINARY)
                 .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
                 .value(COLUMN_CONTENT, resource.toString(), Types.VARCHAR)
-                .build()
                 .execute(conn);
     }
 

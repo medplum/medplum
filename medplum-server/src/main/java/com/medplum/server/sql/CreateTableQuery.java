@@ -34,13 +34,13 @@ public class CreateTableQuery {
     }
 
     public void execute(final Connection conn) throws SQLException {
-        try (final SqlBuilder sql = new SqlBuilder(conn)) {
+        try (final var sql = new SqlBuilder(conn)) {
             sql.append("CREATE TABLE IF NOT EXISTS ");
             sql.appendIdentifier(tableName);
             sql.append(" (");
 
-            boolean first = true;
-            for (final ColumnDefinition column : columns) {
+            var first = true;
+            for (final var column : columns) {
                 if (!first) {
                     sql.append(",");
                 }
@@ -53,13 +53,13 @@ public class CreateTableQuery {
             sql.append(")");
             LOG.debug("{}", sql);
 
-            try (final Statement stmt = conn.createStatement()) {
+            try (final var stmt = conn.createStatement()) {
                 stmt.executeUpdate(sql.toString());
             }
         }
 
-        for (final String index : indexes) {
-            try (final SqlBuilder sql = new SqlBuilder(conn)) {
+        for (final var index : indexes) {
+            try (final var sql = new SqlBuilder(conn)) {
                 sql.append("CREATE INDEX ON");
                 sql.appendIdentifier(tableName);
                 sql.append(" (");

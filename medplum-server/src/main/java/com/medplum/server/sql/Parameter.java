@@ -1,18 +1,12 @@
 package com.medplum.server.sql;
 
 public class Parameter {
-    private final String columnName;
     private final Object value;
     private final int valueType;
 
-    public Parameter(final String columnName, final Object value, final int valueType) {
-        this.columnName = columnName;
+    public Parameter(final Object value, final int valueType) {
         this.value = value;
         this.valueType = valueType;
-    }
-
-    public String getColumnName() {
-        return columnName;
     }
 
     public Object getValue() {
