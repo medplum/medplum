@@ -46,9 +46,6 @@ public class InsertQuery extends BaseQuery<InsertQuery> {
                 for (final var value : values) {
                     stmt.setObject(i++, value.getParameter().getValue(), value.getParameter().getValueType());
                 }
-                for (final var condition : conditions) {
-                    stmt.setObject(i++, condition.getParameter().getValue(), condition.getParameter().getValueType());
-                }
                 return stmt.executeUpdate();
             }
         }

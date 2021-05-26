@@ -1,18 +1,18 @@
 package com.medplum.server.sql;
 
 public class Condition {
-    private final String columnName;
+    private final Column column;
     private final Operator operator;
     private final Parameter parameter;
 
-    public Condition(final String columnName, final Operator operator, final Parameter parameter) {
-        this.columnName = columnName;
+    public Condition(final Column column, final Operator operator, final Parameter parameter) {
+        this.column = column;
         this.operator = operator;
         this.parameter = parameter;
     }
 
-    public String getColumnName() {
-        return columnName;
+    public Column getColumn() {
+        return column;
     }
 
     public Operator getOperator() {

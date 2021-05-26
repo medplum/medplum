@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class SqlBuilder implements AutoCloseable {
+class SqlBuilder implements AutoCloseable {
     private final Statement formatter;
     private final StringBuilder sql;
 
@@ -28,8 +28,12 @@ public class SqlBuilder implements AutoCloseable {
         return this;
     }
 
-    public SqlBuilder where() {
-        sql.append(" WHERE ");
+    public SqlBuilder appendColumn(final Column column) throws SQLException {
+        if (column.getTableName() != null) {
+            appendIdentifier(column.getTableName());
+            sql.append(".");
+        }
+        appendIdentifier(column.getColumnName());
         return this;
     }
 

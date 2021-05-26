@@ -5,10 +5,8 @@ import static com.medplum.util.IdUtils.*;
 import java.io.Closeable;
 import java.net.URI;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
@@ -43,13 +41,13 @@ import com.medplum.server.fhir.r4.search.Filter;
 import com.medplum.server.fhir.r4.search.SearchParameters;
 import com.medplum.server.fhir.r4.search.SearchRequest;
 import com.medplum.server.fhir.r4.search.SearchUtils;
-import com.medplum.server.fhir.r4.search.SortRule;
 import com.medplum.server.security.SecurityUser;
+import com.medplum.server.sql.Column;
 import com.medplum.server.sql.CreateTableQuery;
 import com.medplum.server.sql.DeleteQuery;
 import com.medplum.server.sql.InsertQuery;
 import com.medplum.server.sql.Operator;
-import com.medplum.server.sql.SqlBuilder;
+import com.medplum.server.sql.SelectQuery;
 import com.medplum.server.sql.UpdateQuery;
 import com.medplum.server.sse.SseService;
 import com.medplum.util.IdentifierComparator;
@@ -190,30 +188,16 @@ public class JdbcRepository implements Repository, Closeable {
             return StandardOutcomes.notFound();
         }
 
-        try (final Statement formatter = conn.createStatement()) {
-            final StringBuilder sql = new StringBuilder();
-            sql.append("SELECT ");
-            sql.append(formatter.enquoteIdentifier(COLUMN_CONTENT, true));
-            sql.append(" FROM ");
-            sql.append(formatter.enquoteIdentifier(getTableName(resourceType), true));
-            sql.append(" WHERE ");
-            sql.append(formatter.enquoteIdentifier(COLUMN_ID, true));
-            sql.append("=?");
+        try {
+            final var results = new SelectQuery(getTableName(resourceType))
+                    .column(COLUMN_CONTENT)
+                    .condition(COLUMN_ID, Operator.EQUALS, uuid, Types.BINARY)
+                    .execute(conn, rs -> JsonUtils.readJsonString(rs.getString(1)));
 
-            LOG.debug("{}", sql);
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                stmt.setObject(1, uuid, Types.BINARY);
-
-                try (final ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        final String content = rs.getString(1);
-                        final JsonObject data = JsonUtils.readJsonString(content);
-                        return StandardOutcomes.ok(data);
-                    } else {
-                        return StandardOutcomes.notFound();
-                    }
-                }
+            if (results.isEmpty()) {
+                return StandardOutcomes.notFound();
+            } else {
+                return StandardOutcomes.ok(results.get(0));
             }
 
         } catch (final SQLException ex) {
@@ -242,33 +226,16 @@ public class JdbcRepository implements Repository, Closeable {
             return StandardOutcomes.notFound();
         }
 
-        try (final Statement formatter = conn.createStatement()) {
-            final StringBuilder sql = new StringBuilder();
-            sql.append("SELECT ");
-            sql.append(formatter.enquoteIdentifier(COLUMN_CONTENT, true));
-            sql.append(" FROM ");
-            sql.append(formatter.enquoteIdentifier(getHistoryTableName(resourceType), true));
-            sql.append(" WHERE ");
-            sql.append(formatter.enquoteIdentifier(COLUMN_ID, true));
-            sql.append("=?");
+        try {
+            final var results = new SelectQuery(getHistoryTableName(resourceType))
+                    .column(COLUMN_CONTENT)
+                    .condition(COLUMN_ID, Operator.EQUALS, uuid, Types.BINARY)
+                    .execute(conn, JdbcRepository::mapRowToBundleEntry);
 
-            LOG.debug("{}", sql);
-
-            final List<BundleEntry> results = new ArrayList<>();
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                stmt.setObject(1, uuid, Types.BINARY);
-
-                try (final ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        final String content = rs.getString(1);
-                        final JsonObject data = JsonUtils.readJsonString(content);
-                        results.add(BundleEntry.create().resource(data).build());
-                    }
-                }
-            }
-
-            return StandardOutcomes.ok(Bundle.create().type("history").entry(results).build());
+            return StandardOutcomes.ok(Bundle.create()
+                    .type("history")
+                    .entry(results)
+                    .build());
 
         } catch (final SQLException ex) {
             LOG.error("Error reading history: {}", ex.getMessage(), ex);
@@ -293,34 +260,17 @@ public class JdbcRepository implements Repository, Closeable {
             return StandardOutcomes.notFound();
         }
 
-        try (final Statement formatter = conn.createStatement()) {
-            final StringBuilder sql = new StringBuilder();
-            sql.append("SELECT ");
-            sql.append(formatter.enquoteIdentifier(COLUMN_CONTENT, true));
-            sql.append(" FROM ");
-            sql.append(formatter.enquoteIdentifier(getHistoryTableName(resourceType), true));
-            sql.append(" WHERE ");
-            sql.append(formatter.enquoteIdentifier(COLUMN_ID, true));
-            sql.append("=?");
-            sql.append(" AND ");
-            sql.append(formatter.enquoteIdentifier(COLUMN_VERSION_ID, true));
-            sql.append("=?");
+        try {
+            final var results = new SelectQuery(getHistoryTableName(resourceType))
+                    .column(COLUMN_CONTENT)
+                    .condition(COLUMN_ID, Operator.EQUALS, uuid, Types.BINARY)
+                    .condition(COLUMN_VERSION_ID, Operator.EQUALS, versionUuid, Types.BINARY)
+                    .execute(conn, rs -> JsonUtils.readJsonString(rs.getString(1)));
 
-            LOG.debug("{}", sql);
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                stmt.setObject(1, uuid, Types.BINARY);
-                stmt.setObject(2, versionUuid, Types.BINARY);
-
-                try (final ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        final String content = rs.getString(1);
-                        final JsonObject data = JsonUtils.readJsonString(content);
-                        return StandardOutcomes.ok(data);
-                    } else {
-                        return StandardOutcomes.notFound();
-                    }
-                }
+            if (results.isEmpty()) {
+                return StandardOutcomes.notFound();
+            } else {
+                return StandardOutcomes.ok(results.get(0));
             }
 
         } catch (final SQLException ex) {
@@ -531,7 +481,7 @@ public class JdbcRepository implements Repository, Closeable {
     public OperationOutcome search(final SecurityUser user, final SearchRequest searchRequest) {
         LOG.debug("{}", searchRequest);
 
-        final OperationOutcome validateOutcome = FhirSchema.validate(searchRequest.getResourceType());
+        final var validateOutcome = FhirSchema.validate(searchRequest.getResourceType());
         if (!validateOutcome.isOk()) {
             return validateOutcome;
         }
@@ -540,15 +490,10 @@ public class JdbcRepository implements Repository, Closeable {
             return StandardOutcomes.security("Cannot read resource type");
         }
 
-        final String tableName = getTableName(searchRequest.getResourceType());
+        try {
+            final var selectQuery = new SelectQuery(getTableName(searchRequest.getResourceType())).column(COLUMN_CONTENT);
 
-        try (final SqlBuilder sql = new SqlBuilder(conn)) {
-            sql.append("SELECT ");
-            sql.appendIdentifier(COLUMN_CONTENT);
-            sql.append(" FROM ");
-            sql.appendIdentifier(tableName);
-
-            boolean joinIdentifier = false;
+            var joinIdentifier = false;
             for (final Filter filter : searchRequest.getFilters()) {
                 final SearchParameter searchParam = filter.getSearchParam();
                 if (searchParam.code().equals("identifier") && searchParam.type().equals("token")) {
@@ -557,83 +502,39 @@ public class JdbcRepository implements Repository, Closeable {
             }
 
             if (joinIdentifier) {
-                sql.append(" JOIN ");
-                sql.appendIdentifier(TABLE_IDENTIFIER);
-                sql.append(" ON ");
-                sql.appendIdentifier(tableName);
-                sql.append(".");
-                sql.appendIdentifier(COLUMN_ID);
-                sql.append("=");
-                sql.appendIdentifier(TABLE_IDENTIFIER);
-                sql.append(".");
-                sql.appendIdentifier(COLUMN_IDENTIFIER_RESOURCE_ID);
+                selectQuery.join(TABLE_IDENTIFIER, COLUMN_ID, COLUMN_IDENTIFIER_RESOURCE_ID);
             }
 
-            boolean first = true;
-            for (final Filter filter : searchRequest.getFilters()) {
-                final SearchParameter searchParam = filter.getSearchParam();
-
-                sql.append(first ? " WHERE " : " AND ");
+            for (final var filter : searchRequest.getFilters()) {
+                final var searchParam = filter.getSearchParam();
 
                 if (isIndexTable(filter.getSearchParam())) {
                     if (searchParam.code().equals("identifier") && searchParam.type().equals("token")) {
-                        sql.appendIdentifier(TABLE_IDENTIFIER);
-                        sql.append(".");
-                        sql.appendIdentifier(COLUMN_IDENTIFIER_VALUE);
-                        sql.append("=?");
+                        selectQuery.condition(new Column(TABLE_IDENTIFIER, COLUMN_IDENTIFIER_VALUE), Operator.EQUALS, filter.getValue(), Types.VARCHAR);
                     }
 
                 } else {
-                    sql.appendIdentifier(getColumnName(searchParam.code()));
                     if (filter.getSearchParam().type().equals("string")) {
-                        sql.append(" LIKE ?");
+                        selectQuery.condition(getColumnName(searchParam.code()), Operator.LIKE, filter.getValue(), Types.VARCHAR);
                     } else {
-                        sql.append("=?");
-                    }
-                }
-                first = false;
-            }
-
-            first = true;
-            for (final SortRule sortRule : searchRequest.getSortRules()) {
-                sql.append(first ? " ORDER BY " : ", ");
-                sql.appendIdentifier(getColumnName(sortRule.getCode()));
-                sql.append(sortRule.isDescending() ? " DESC" : " ASC");
-                first = false;
-            }
-
-            sql.append(" LIMIT ");
-            sql.append(searchRequest.getCount());
-            sql.append(" OFFSET ");
-            sql.append(searchRequest.getCount() * searchRequest.getPage());
-
-            LOG.debug("{}", sql);
-
-            final List<BundleEntry> results = new ArrayList<>();
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                int i = 1;
-                for (final Filter filter : searchRequest.getFilters()) {
-                    if (filter.getSearchParam().code().equals("_id")) {
-                        stmt.setObject(i, tryParseId(filter.getValue()), Types.BINARY);
-                    } else if (filter.getSearchParam().type().equals("string")) {
-                        stmt.setString(i, "%" + filter.getValue() + "%");
-                    } else {
-                        stmt.setString(i, filter.getValue());
-                    }
-                    i++;
-                }
-
-                try (final ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        final String content = rs.getString(1);
-                        final JsonObject data = JsonUtils.readJsonString(content);
-                        results.add(BundleEntry.create().resource(data).build());
+                        selectQuery.condition(getColumnName(searchParam.code()), Operator.EQUALS, filter.getValue(), Types.VARCHAR);
                     }
                 }
             }
 
-            return StandardOutcomes.ok(Bundle.create().type("searchset").entry(results).build());
+            for (final var sortRule : searchRequest.getSortRules()) {
+                selectQuery.orderBy(getColumnName(sortRule.getCode()), sortRule.isDescending());
+            }
+
+            selectQuery.limit(searchRequest.getCount());
+            selectQuery.offset(searchRequest.getCount() * searchRequest.getPage());
+
+            final var results = selectQuery.execute(conn, JdbcRepository::mapRowToBundleEntry);
+
+            return StandardOutcomes.ok(Bundle.create()
+                    .type("searchset")
+                    .entry(results)
+                    .build());
 
         } catch (final SQLException ex) {
             LOG.error("Error searching: {}", ex.getMessage(), ex);
@@ -700,35 +601,17 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     private List<Identifier> getIdentifiers(final UUID resourceId) throws SQLException {
-        try (final SqlBuilder sql = new SqlBuilder(conn)) {
-            sql.append("SELECT ");
-            sql.appendIdentifier(COLUMN_IDENTIFIER_SYSTEM);
-            sql.append(", ");
-            sql.appendIdentifier(COLUMN_IDENTIFIER_VALUE);
-            sql.append(" FROM ");
-            sql.appendIdentifier(TABLE_IDENTIFIER);
-            sql.append(" WHERE ");
-            sql.appendIdentifier(COLUMN_IDENTIFIER_RESOURCE_ID);
-            sql.append("=?");
+        return new SelectQuery(TABLE_IDENTIFIER)
+                .column(COLUMN_IDENTIFIER_SYSTEM)
+                .column(COLUMN_IDENTIFIER_VALUE)
+                .condition(COLUMN_IDENTIFIER_RESOURCE_ID, Operator.EQUALS, resourceId, Types.BINARY)
+                .execute(conn, rs -> Identifier.create()
+                        .system(URI.create(rs.getString(1)))
+                        .value(rs.getString(2))
+                        .build());
+    }
 
-            LOG.debug("{}", sql);
-
-            final List<Identifier> results = new ArrayList<>();
-
-            try (final PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                stmt.setObject(1, resourceId, Types.BINARY);
-
-                try (final ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        results.add(Identifier.create()
-                                .system(URI.create(rs.getString(1)))
-                                .value(rs.getString(2))
-                                .build());
-                    }
-                }
-            }
-
-            return results;
-        }
+    private static BundleEntry mapRowToBundleEntry(final ResultSet rs) throws SQLException {
+        return BundleEntry.create().resource(JsonUtils.readJsonString(rs.getString(1))).build();
     }
 }
