@@ -37,7 +37,6 @@ import com.medplum.fhir.r4.types.Meta;
 import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.fhir.r4.types.Reference;
 import com.medplum.fhir.r4.types.SearchParameter;
-import com.medplum.server.fhir.r4.search.Filter;
 import com.medplum.server.fhir.r4.search.SearchParameters;
 import com.medplum.server.fhir.r4.search.SearchRequest;
 import com.medplum.server.fhir.r4.search.SearchUtils;
@@ -71,6 +70,8 @@ public class JdbcRepository implements Repository, Closeable {
     private static final String COLUMN_PATIENT_COMPARTMENT_ID = "PATIENTCOMPARTMENTID";
     private static final String PRIMARY_KEY = " PRIMARY KEY";
     private static final String NOT_NULL = " NOT NULL";
+    private static final String SEARCH_PARAM_CODE_IDENTIFIER = "identifier";
+    private static final String SEARCH_PARAM_TYPE_TOKEN = "token";
     private final Connection conn;
     private final SseService sseService;
 
@@ -84,7 +85,7 @@ public class JdbcRepository implements Repository, Closeable {
         try {
             createIdentifierTable();
 
-            for (final String resourceType : FhirSchema.getResourceTypes()) {
+            for (final var resourceType : FhirSchema.getResourceTypes()) {
                 createResourceTable(resourceType);
                 createHistoryTable(resourceType);
             }
@@ -107,7 +108,7 @@ public class JdbcRepository implements Repository, Closeable {
     }
 
     private void createResourceTable(final String resourceType) throws SQLException {
-        final CreateTableQuery.Builder builder = new CreateTableQuery.Builder(getTableName(resourceType))
+        final var builder = new CreateTableQuery.Builder(getTableName(resourceType))
                 .column(COLUMN_ID, COLUMN_TYPE_UUID + NOT_NULL + PRIMARY_KEY)
                 .column(COLUMN_PROJECT_COMPARTMENT_ID, COLUMN_TYPE_UUID)
                 .column(COLUMN_PATIENT_COMPARTMENT_ID, COLUMN_TYPE_UUID)
@@ -124,9 +125,14 @@ public class JdbcRepository implements Repository, Closeable {
         builder.build().execute(conn);
     }
 
-    private boolean isIndexTable(final SearchParameter searchParam) {
+    private static boolean isIndexTable(final SearchParameter searchParam) {
         // Identifier searches handled with the Identifier table
-        return searchParam.code().equals("identifier") && searchParam.type().equals("token");
+        return isIdentifierToken(searchParam);
+    }
+
+    private static boolean isIdentifierToken(final SearchParameter searchParam) {
+        return searchParam.code().equals(SEARCH_PARAM_CODE_IDENTIFIER) &&
+                searchParam.type().equals(SEARCH_PARAM_TYPE_TOKEN);
     }
 
     private void createHistoryTable(final String resourceType) throws SQLException {
@@ -143,7 +149,7 @@ public class JdbcRepository implements Repository, Closeable {
 
     @Override
     public OperationOutcome validateCreate(final SecurityUser user, final FhirResource resource) {
-        final OperationOutcome validateOutcome = FhirSchema.validate(resource);
+        final var validateOutcome = FhirSchema.validate(resource);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
         }
@@ -153,7 +159,7 @@ public class JdbcRepository implements Repository, Closeable {
 
     @Override
     public OperationOutcome validateUpdate(final SecurityUser user, final String id, final FhirResource resource) {
-        final OperationOutcome validateOutcome = FhirSchema.validate(resource);
+        final var validateOutcome = FhirSchema.validate(resource);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
         }
@@ -168,7 +174,7 @@ public class JdbcRepository implements Repository, Closeable {
 
     @Override
     public OperationOutcome create(final SecurityUser user, final FhirResource data) {
-        final OperationOutcome validateOutcome = FhirSchema.validate(data);
+        final var validateOutcome = FhirSchema.validate(data);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
         }
@@ -178,12 +184,12 @@ public class JdbcRepository implements Repository, Closeable {
 
     @Override
     public OperationOutcome read(final SecurityUser user, final String resourceType, final String id) {
-        final OperationOutcome validateOutcome = FhirSchema.validate(resourceType);
+        final var validateOutcome = FhirSchema.validate(resourceType);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
         }
 
-        final UUID uuid = tryParseId(id);
+        final var uuid = tryParseId(id);
         if (uuid == null) {
             return StandardOutcomes.notFound();
         }
@@ -208,20 +214,20 @@ public class JdbcRepository implements Repository, Closeable {
 
     @Override
     public OperationOutcome readReference(final SecurityUser user, final Reference reference) {
-        final String[] parts = reference.reference().split("/");
-        final String resourceType = parts[0];
-        final String id = parts[1];
+        final var parts = reference.reference().split("/");
+        final var resourceType = parts[0];
+        final var id = parts[1];
         return read(user, resourceType, id);
     }
 
     @Override
     public OperationOutcome readHistory(final SecurityUser user, final String resourceType, final String id) {
-        final OperationOutcome validateOutcome = FhirSchema.validate(resourceType);
+        final var validateOutcome = FhirSchema.validate(resourceType);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
         }
 
-        final UUID uuid = tryParseId(id);
+        final var uuid = tryParseId(id);
         if (uuid == null) {
             return StandardOutcomes.notFound();
         }
@@ -245,17 +251,17 @@ public class JdbcRepository implements Repository, Closeable {
 
     @Override
     public OperationOutcome readVersion(final SecurityUser user, final String resourceType, final String id, final String vid) {
-        final OperationOutcome validateOutcome = FhirSchema.validate(resourceType);
+        final var validateOutcome = FhirSchema.validate(resourceType);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
         }
 
-        final UUID uuid = tryParseId(id);
+        final var uuid = tryParseId(id);
         if (uuid == null) {
             return StandardOutcomes.notFound();
         }
 
-        final UUID versionUuid = tryParseId(vid);
+        final var versionUuid = tryParseId(vid);
         if (versionUuid == null) {
             return StandardOutcomes.notFound();
         }
@@ -282,28 +288,28 @@ public class JdbcRepository implements Repository, Closeable {
     @Override
     @SuppressWarnings("unchecked")
     public OperationOutcome update(final SecurityUser user, final String id, final FhirResource data) {
-        final OperationOutcome validateOutcome = FhirSchema.validate(data);
+        final var validateOutcome = FhirSchema.validate(data);
         if (!validateOutcome.isOk()) {
             return validateOutcome;
         }
 
-        final UUID uuid = tryParseId(id);
+        final var uuid = tryParseId(id);
         if (uuid == null) {
             return StandardOutcomes.invalid("Invalid ID (not a UUID)");
         }
 
-        final String resourceType = data.resourceType();
-        final OperationOutcome existingOutcome = read(user, resourceType, id);
-        final FhirResource existing = existingOutcome.resource();
-        final UUID versionId = UUID.randomUUID();
-        final Instant lastUpdated = Instant.now();
+        final var resourceType = data.resourceType();
+        final var existingOutcome = read(user, resourceType, id);
+        final var existing = existingOutcome.resource();
+        final var versionId = UUID.randomUUID();
+        final var lastUpdated = Instant.now();
 
-        final Meta.Builder metaBuilder = Meta.create();
+        final var metaBuilder = Meta.create();
         if (existing != null) {
             metaBuilder.copyAll(existing.meta());
         }
 
-        final Meta newMeta = data.meta();
+        final var newMeta = data.meta();
         if (newMeta != null) {
             metaBuilder.copyAll(newMeta);
         }
@@ -321,12 +327,12 @@ public class JdbcRepository implements Repository, Closeable {
         builder.id(id);
         builder.meta(metaBuilder.build());
 
-        final FhirResource resource = builder.build();
+        final var resource = builder.build();
         final OperationOutcome result;
         if (existing == null) {
-            result = createImpl(resourceType, uuid, versionId, lastUpdated, resource);
+            result = createImpl(resourceType, uuid, lastUpdated, resource);
         } else {
-            result = updateImpl(resourceType, uuid, versionId, lastUpdated, resource);
+            result = updateImpl(resourceType, uuid, lastUpdated, resource);
         }
 
         if (result.isOk()) {
@@ -353,17 +359,16 @@ public class JdbcRepository implements Repository, Closeable {
     private OperationOutcome createImpl(
             final String resourceType,
             final UUID id,
-            final UUID versionId,
             final Instant lastUpdated,
             final FhirResource resource) {
 
         try {
-            final InsertQuery insertQuery = new InsertQuery(getTableName(resourceType))
+            final var insertQuery = new InsertQuery(getTableName(resourceType))
                     .value(COLUMN_ID, id, Types.BINARY)
                     .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
                     .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
-            for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
+            for (final var param : SearchParameters.getParameters(resourceType)) {
                 if (isIndexTable(param)) {
                     continue;
                 }
@@ -382,7 +387,6 @@ public class JdbcRepository implements Repository, Closeable {
     private OperationOutcome updateImpl(
             final String resourceType,
             final UUID id,
-            final UUID versionId,
             final Instant lastUpdated,
             final FhirResource resource) {
 
@@ -391,7 +395,7 @@ public class JdbcRepository implements Repository, Closeable {
                     .value(COLUMN_LAST_UPDATED, Timestamp.from(lastUpdated), Types.TIMESTAMP)
                     .value(COLUMN_CONTENT, resource.toString(), Types.LONGVARCHAR);
 
-            for (final SearchParameter param : SearchParameters.getParameters(resourceType)) {
+            for (final var param : SearchParameters.getParameters(resourceType)) {
                 if (isIndexTable(param)) {
                     continue;
                 }
@@ -418,8 +422,8 @@ public class JdbcRepository implements Repository, Closeable {
             return;
         }
 
-        final List<Identifier> incoming = new ArrayList<>(new FhirList<>(Identifier.class, (JsonArray) identifier));
-        final List<Identifier> existing = this.getIdentifiers(resourceId);
+        final var incoming = new ArrayList<>(new FhirList<>(Identifier.class, (JsonArray) identifier));
+        final var existing = this.getIdentifiers(resourceId);
 
         if (!compareIdentifiers(incoming, existing)) {
             new DeleteQuery(TABLE_IDENTIFIER)
@@ -445,9 +449,9 @@ public class JdbcRepository implements Repository, Closeable {
         incoming.sort(IdentifierComparator.INSTANCE);
         existing.sort(IdentifierComparator.INSTANCE);
 
-        for (int i = 0; i < incoming.size(); i++) {
-            final Identifier incomingId = incoming.get(i);
-            final Identifier existingId = existing.get(i);
+        for (var i = 0; i < incoming.size(); i++) {
+            final var incomingId = incoming.get(i);
+            final var existingId = existing.get(i);
             if (!incomingId.system().equals(existingId.system()) || !incomingId.value().equals(existingId.value())) {
                 return false;
             }
@@ -494,9 +498,9 @@ public class JdbcRepository implements Repository, Closeable {
             final var selectQuery = new SelectQuery(getTableName(searchRequest.getResourceType())).column(COLUMN_CONTENT);
 
             var joinIdentifier = false;
-            for (final Filter filter : searchRequest.getFilters()) {
-                final SearchParameter searchParam = filter.getSearchParam();
-                if (searchParam.code().equals("identifier") && searchParam.type().equals("token")) {
+            for (final var filter : searchRequest.getFilters()) {
+                final var searchParam = filter.getSearchParam();
+                if (isIdentifierToken(searchParam)) {
                     joinIdentifier = true;
                 }
             }
@@ -508,9 +512,13 @@ public class JdbcRepository implements Repository, Closeable {
             for (final var filter : searchRequest.getFilters()) {
                 final var searchParam = filter.getSearchParam();
 
-                if (isIndexTable(filter.getSearchParam())) {
-                    if (searchParam.code().equals("identifier") && searchParam.type().equals("token")) {
-                        selectQuery.condition(new Column(TABLE_IDENTIFIER, COLUMN_IDENTIFIER_VALUE), Operator.EQUALS, filter.getValue(), Types.VARCHAR);
+                if (isIndexTable(searchParam)) {
+                    if (isIdentifierToken(searchParam)) {
+                        selectQuery.condition(
+                                new Column(TABLE_IDENTIFIER, COLUMN_IDENTIFIER_VALUE),
+                                Operator.EQUALS,
+                                filter.getValue(),
+                                Types.VARCHAR);
                     }
 
                 } else {
@@ -586,11 +594,11 @@ public class JdbcRepository implements Repository, Closeable {
         if (searchParam.equals("meta.lastUpdated")) {
             return COLUMN_LAST_UPDATED;
         }
-        return searchParam.replaceAll("-", "").toUpperCase();
+        return searchParam.replace("-", "").toUpperCase();
     }
 
     private static String getColumnValue(final String expression, final JsonObject obj) {
-        final String result = SearchUtils.evalAsString(expression, obj);
+        final var result = SearchUtils.evalAsString(expression, obj);
         if (result == null) {
             return null;
         }
