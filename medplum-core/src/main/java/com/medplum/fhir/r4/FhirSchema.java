@@ -122,7 +122,7 @@ public class FhirSchema {
 
         for (final var actualProperty : resource.entrySet()) {
             final var propertyName = actualProperty.getKey();
-            if (propertyName.equals("meta")) {
+            if (propertyName.equals("meta") || propertyName.equals("_baseDefinition")) {
                 continue;
             }
             if (!propertyDefinitions.containsKey(propertyName)) {
