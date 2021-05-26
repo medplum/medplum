@@ -15,22 +15,20 @@ public class CreateTableQuery {
     private final List<ColumnDefinition> columns;
     private final List<String> indexes;
 
-    private CreateTableQuery(final Builder builder) {
-        this.tableName = builder.tableName;
-        this.columns = builder.columns;
-        this.indexes = builder.indexes;
+    public CreateTableQuery(final String tableName) {
+        this.tableName = tableName;
+        this.columns = new ArrayList<>();
+        this.indexes = new ArrayList<>();
     }
 
-    public String getTableName() {
-        return tableName;
+    public CreateTableQuery column(final String columnName, final ColumnType columnType) {
+        this.columns.add(new ColumnDefinition(columnName, columnType));
+        return this;
     }
 
-    public List<ColumnDefinition> getColumns() {
-        return columns;
-    }
-
-    public List<String> getIndexes() {
-        return indexes;
+    public CreateTableQuery index(final String columnName) {
+        this.indexes.add(columnName);
+        return this;
     }
 
     public void execute(final Connection conn) throws SQLException {
@@ -46,7 +44,7 @@ public class CreateTableQuery {
                 }
                 sql.appendIdentifier(column.getColumnName());
                 sql.append(" ");
-                sql.append(column.getColumnType());
+                sql.append(column.getColumnType().toString());
                 first = false;
             }
 
@@ -77,9 +75,9 @@ public class CreateTableQuery {
 
     public static class ColumnDefinition {
         private final String columnName;
-        private final String columnType;
+        private final ColumnType columnType;
 
-        public ColumnDefinition(final String columnName, final String columnType) {
+        public ColumnDefinition(final String columnName, final ColumnType columnType) {
             this.columnName = columnName;
             this.columnType = columnType;
         }
@@ -88,34 +86,8 @@ public class CreateTableQuery {
             return columnName;
         }
 
-        public String getColumnType() {
+        public ColumnType getColumnType() {
             return columnType;
-        }
-    }
-
-    public static class Builder {
-        private final String tableName;
-        private final List<ColumnDefinition> columns;
-        private final List<String> indexes;
-
-        public Builder(final String tableName) {
-            this.tableName = tableName;
-            this.columns = new ArrayList<>();
-            this.indexes = new ArrayList<>();
-        }
-
-        public Builder column(final String columnName, final String columnType) {
-            this.columns.add(new ColumnDefinition(columnName, columnType));
-            return this;
-        }
-
-        public Builder index(final String columnName) {
-            this.indexes.add(columnName);
-            return this;
-        }
-
-        public CreateTableQuery build() {
-            return new CreateTableQuery(this);
         }
     }
 }

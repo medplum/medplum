@@ -44,6 +44,7 @@ public class InsertQuery extends BaseQuery<InsertQuery> {
             try (final var stmt = conn.prepareStatement(sql.toString())) {
                 var i = 1;
                 for (final var value : values) {
+                    LOG.debug("  {} = {}", i, value.getParameter().getValue());
                     stmt.setObject(i++, value.getParameter().getValue(), value.getParameter().getValueType());
                 }
                 return stmt.executeUpdate();

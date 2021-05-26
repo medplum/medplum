@@ -1,4 +1,4 @@
-package com.medplum.server.fhir.r4.repo;
+package com.medplum.server.fhir.r4.repo.jdbc;
 
 import java.sql.SQLException;
 

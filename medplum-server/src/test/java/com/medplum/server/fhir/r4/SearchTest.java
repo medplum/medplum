@@ -5,6 +5,7 @@ import static java.util.Collections.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.net.URI;
+import java.util.Arrays;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -16,6 +17,7 @@ import org.junit.Test;
 
 import com.medplum.fhir.r4.FhirMediaType;
 import com.medplum.fhir.r4.types.Bundle;
+import com.medplum.fhir.r4.types.HumanName;
 import com.medplum.fhir.r4.types.Identifier;
 import com.medplum.fhir.r4.types.Patient;
 import com.medplum.server.BaseTest;
@@ -85,5 +87,74 @@ public class SearchTest extends BaseTest  {
         assertEquals("searchset", bundle.type());
         assertEquals(1, bundle.entry().size());
         assertEquals(patient.id(), bundle.entry().get(0).resource(Patient.class).id());
+    }
+
+    @Test
+    public void testSearchByName() {
+        final Patient patient = fhir().create(Patient.create()
+                .name(singletonList(HumanName.create()
+                        .given(Arrays.asList("George"))
+                        .family("Washington")
+                        .build()))
+                .build())
+                .readEntity(Patient.class);
+
+        final Response response = fhir().search("Patient", "name=Geo");
+        assertEquals(200, response.getStatus());
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+        final Bundle bundle = response.readEntity(Bundle.class);
+        assertEquals("searchset", bundle.type());
+        assertEquals(1, bundle.entry().size());
+        assertEquals(patient.id(), bundle.entry().get(0).resource(Patient.class).id());
+    }
+
+    @Test
+    public void testSearchByGivenName() {
+        final Patient patient = fhir().create(Patient.create()
+                .name(singletonList(HumanName.create()
+                        .given(Arrays.asList("Alexander"))
+                        .family("Hamilton")
+                        .build()))
+                .build())
+                .readEntity(Patient.class);
+
+        final Response response = fhir().search("Patient", "given=Alex");
+        assertEquals(200, response.getStatus());
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+        final Bundle bundle = response.readEntity(Bundle.class);
+        assertEquals("searchset", bundle.type());
+        assertEquals(1, bundle.entry().size());
+        assertEquals(patient.id(), bundle.entry().get(0).resource(Patient.class).id());
+    }
+
+    @Test
+    public void testSearchByFamilyName() {
+        final Patient homer = fhir().create(Patient.create()
+                .name(singletonList(HumanName.create()
+                        .given(Arrays.asList("Homer", "J"))
+                        .family("Simpson")
+                        .build()))
+                .build())
+                .readEntity(Patient.class);
+
+        final Patient bart = fhir().create(Patient.create()
+                .name(singletonList(HumanName.create()
+                        .given(Arrays.asList("Bart", "J"))
+                        .family("Simpson")
+                        .build()))
+                .build())
+                .readEntity(Patient.class);
+
+        final Response response = fhir().search("Patient", "family=Simp");
+        assertEquals(200, response.getStatus());
+        assertEquals(FhirMediaType.APPLICATION_FHIR_JSON, response.getHeaderString(HttpHeaders.CONTENT_TYPE));
+
+        final Bundle bundle = response.readEntity(Bundle.class);
+        assertEquals("searchset", bundle.type());
+        assertEquals(2, bundle.entry().size());
+        assertEquals(homer.id(), bundle.entry().get(0).resource(Patient.class).id());
+        assertEquals(bart.id(), bundle.entry().get(1).resource(Patient.class).id());
     }
 }

@@ -1,4 +1,4 @@
-package com.medplum.server.fhir.r4.repo;
+package com.medplum.server.fhir.r4.repo.jdbc;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -11,6 +11,7 @@ import com.medplum.fhir.r4.types.Observation;
 import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.fhir.r4.types.Patient;
 import com.medplum.server.BaseTest;
+import com.medplum.server.fhir.r4.repo.jdbc.JdbcRepository;
 import com.medplum.server.security.SecurityUser;
 
 public class JdbcRepositoryTest extends BaseTest {

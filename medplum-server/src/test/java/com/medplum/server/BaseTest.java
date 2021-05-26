@@ -20,7 +20,7 @@ import com.medplum.fhir.r4.types.HumanName;
 import com.medplum.fhir.r4.types.OperationOutcome;
 import com.medplum.fhir.r4.types.Patient;
 import com.medplum.fhir.r4.types.User;
-import com.medplum.server.fhir.r4.repo.JdbcRepository;
+import com.medplum.server.fhir.r4.repo.jdbc.JdbcRepository;
 import com.medplum.server.fhir.r4.search.SearchParser;
 import com.medplum.server.security.SecurityUser;
 import com.medplum.util.IdUtils;

@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import org.junit.Test;
 
 import com.medplum.server.BaseTest;
+import com.medplum.server.fhir.r4.repo.jdbc.JdbcRepository;
 import com.medplum.server.sse.LocalSseTransport;
 import com.medplum.server.sse.SseService;
 
