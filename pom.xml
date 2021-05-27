@@ -7,10 +7,10 @@
     <packaging>pom</packaging>
     <name>medplum</name>
     <description>Medplum</description>
-    <url>https://medplum.com/maven/${project.version}</url>
+    <url>https://www.medplum.com/</url>
     <organization>
         <name>Medplum</name>
-        <url>https://medplum.com</url>
+        <url>https://www.medplum.com/</url>
     </organization>
     <licenses>
         <license>
