@@ -120,8 +120,8 @@ public class Device extends DomainResource {
      * when the device represents one of the names available from
      * DeviceDefinition.
      */
-    public java.util.List<DeviceDeviceName> deviceName() {
-        return getList(DeviceDeviceName.class, FhirPropertyNames.PROPERTY_DEVICE_NAME);
+    public java.util.List<DeviceName> deviceName() {
+        return getList(DeviceName.class, FhirPropertyNames.PROPERTY_DEVICE_NAME);
     }
 
     /**
@@ -295,7 +295,7 @@ public class Device extends DomainResource {
             return this;
         }
 
-        public Builder deviceName(final java.util.List<DeviceDeviceName> deviceName) {
+        public Builder deviceName(final java.util.List<DeviceName> deviceName) {
             b.add(FhirPropertyNames.PROPERTY_DEVICE_NAME, FhirObject.toArray(deviceName));
             return this;
         }
@@ -380,8 +380,8 @@ public class Device extends DomainResource {
      * healthcare without being substantially changed through that activity.
      * The device may be a medical or non-medical device.
      */
-    public static class DeviceDeviceName extends FhirObject {
-        public static final String RESOURCE_TYPE = "DeviceDeviceName";
+    public static class DeviceName extends FhirObject {
+        public static final String RESOURCE_TYPE = "DeviceName";
 
         public static Builder create() {
             return new Builder();
@@ -391,7 +391,7 @@ public class Device extends DomainResource {
             return new Builder(data);
         }
 
-        public DeviceDeviceName(final JsonObject data) {
+        public DeviceName(final JsonObject data) {
             super(data);
         }
 
@@ -452,7 +452,7 @@ public class Device extends DomainResource {
             return getString(FhirPropertyNames.PROPERTY_TYPE);
         }
 
-        public static final class Builder extends FhirObject.Builder<DeviceDeviceName, DeviceDeviceName.Builder> {
+        public static final class Builder extends FhirObject.Builder<DeviceName, DeviceName.Builder> {
 
             private Builder() {
                 super();
@@ -487,8 +487,8 @@ public class Device extends DomainResource {
                 return this;
             }
 
-            public DeviceDeviceName build() {
-                return new DeviceDeviceName(b.build());
+            public DeviceName build() {
+                return new DeviceName(b.build());
             }
         }
     }

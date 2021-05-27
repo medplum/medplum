@@ -139,7 +139,7 @@ public class DeviceTest {
 
     @Test
     public void testDeviceName() {
-        final java.util.List<Device.DeviceDeviceName> value = java.util.Collections.emptyList();
+        final java.util.List<Device.DeviceName> value = java.util.Collections.emptyList();
         assertEquals(value, Device.create().deviceName(value).build().deviceName());
     }
 

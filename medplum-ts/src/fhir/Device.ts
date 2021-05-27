@@ -166,7 +166,7 @@ export interface Device {
    * when the device represents one of the names available from
    * DeviceDefinition.
    */
-  readonly deviceName?: DeviceDeviceName[];
+  readonly deviceName?: DeviceName[];
 
   /**
    * The model number for the device.
@@ -252,7 +252,7 @@ export interface Device {
  * healthcare without being substantially changed through that activity.
  * The device may be a medical or non-medical device.
  */
-export interface DeviceDeviceName {
+export interface DeviceName {
 
   /**
    * Unique id for the element within a resource (for internal references).

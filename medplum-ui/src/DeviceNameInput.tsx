@@ -1,15 +1,15 @@
-import { DeviceDeviceName } from 'medplum';
+import { DeviceName } from 'medplum';
 import React, { useRef, useState } from 'react';
 
 export interface DeviceNameInputProps {
   name: string;
-  value?: DeviceDeviceName;
+  value?: DeviceName;
 }
 
 export function DeviceNameInput(props: DeviceNameInputProps) {
   const [value, setValue] = useState(props.value);
 
-  const valueRef = useRef<DeviceDeviceName>();
+  const valueRef = useRef<DeviceName>();
   valueRef.current = value;
 
   function setType(type: string) {

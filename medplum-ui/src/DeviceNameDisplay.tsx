@@ -1,8 +1,8 @@
-import { DeviceDeviceName } from 'medplum';
+import { DeviceName } from 'medplum';
 import React from 'react';
 
 export interface DeviceNameDisplayProps {
-  value?: DeviceDeviceName;
+  value?: DeviceName;
 }
 
 export function DeviceNameDisplay(props: DeviceNameDisplayProps) {

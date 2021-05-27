@@ -2,8 +2,15 @@ package com.medplum.generator;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -89,7 +96,15 @@ public class Generator {
         if (resourceType.contains("_")) {
             final String[] parts = resourceType.split("_");
             parentType = parts[0];
-            outputName = parts[0] + parts[1];
+
+            if (parts[1].startsWith(parts[0])) {
+                // Device_DeviceName => DeviceName
+                outputName = parts[1];
+            } else {
+                // Patient_Link => PatientLink
+                outputName = parts[0] + parts[1];
+            }
+
         } else {
             parentType = null;
             outputName = resourceType;

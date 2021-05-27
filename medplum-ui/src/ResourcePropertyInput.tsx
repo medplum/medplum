@@ -28,7 +28,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
 
   if (property.array && !props.arrayElement) {
     if (property.type === 'Attachment') {
-      return <AttachmentArrayInput property={property} name={name} values={value} />
+      return <AttachmentArrayInput name={name} values={value} />
     }
     return <ResourceArrayInput property={property} name={name} values={value} />
   }
@@ -55,7 +55,6 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     case 'enum':
       return (
         <EnumInput
-          property={property}
           name={name}
           label={property.display}
           options={property.enumValues}
@@ -71,23 +70,23 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
         <textarea name={name} defaultValue={value} />
       );
     case 'Address':
-      return <AddressInput property={property} name={name} value={value} />;
+      return <AddressInput name={name} value={value} />;
     case 'Attachment':
-      return <AttachmentInput property={property} name={name} value={value} />;
+      return <AttachmentInput name={name} value={value} />;
     case 'CodeableConcept':
-      return <CodeableConceptInput property={property} name={name} value={value} />;
+      return <CodeableConceptInput name={name} value={value} />;
     case 'ContactPoint':
-      return <ContactPointInput property={property} name={name} value={value} />;
+      return <ContactPointInput name={name} value={value} />;
     case 'Device_DeviceName':
-      return <DeviceNameInput property={property} name={name} value={value} />;
+      return <DeviceNameInput name={name} value={value} />;
     case 'HumanName':
-      return <HumanNameInput property={property} name={name} value={value} />;
+      return <HumanNameInput name={name} value={value} />;
     case 'Identifier':
-      return <IdentifierInput property={property} name={name} value={value} />;
+      return <IdentifierInput name={name} value={value} />;
     case 'Patient_Link':
-      return <PatientLinkInput property={property} name={name} value={value} />;
+      return <PatientLinkInput name={name} value={value} />;
     case 'Reference':
-      return <ReferenceInput property={property} name={name} value={value} />;
+      return <ReferenceInput name={name} value={value} />;
     default:
       return <BackboneElementInput property={property} name={name} value={value} />;
   }

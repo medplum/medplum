@@ -4,7 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
@@ -53,6 +59,11 @@ public class JavaGenerator {
         for (final String name : sortedNames) {
             b.append("public static final String " + getConstantName(name) + " = \"" + name + "\";");
         }
+
+        b.newLine();
+        b.append("FhirPropertyNames() {");
+        b.append("    throw new UnsupportedOperationException();");
+        b.append("}");
 
         b.decreaseIndent();
         b.append("}");
@@ -387,6 +398,9 @@ public class JavaGenerator {
                         }
                     } else {
                         final FhirType elementType = Generator.FHIR_TYPES.get(javaType);
+                        if (elementType == null) {
+                            System.out.println("hmmm... " + javaType);
+                        }
                         valueDecl = "final " + elementType.getQualifiedName() + " value = " + elementType.getQualifiedName() + ".create().build();";
                     }
                     valueStr = "value";
@@ -501,7 +515,16 @@ public class JavaGenerator {
             return "FhirResource";
         }
 
-        return ref.replaceAll("_", "");
+        if (ref.indexOf('_') >= 0) {
+            final String[] parts = ref.split("_");
+            if (parts[1].startsWith(parts[0])) {
+                return parts[1];
+            } else {
+                return parts[0] + parts[1];
+            }
+        }
+
+        return ref;
     }
 
     private static String getOutputName(final String inputName) {

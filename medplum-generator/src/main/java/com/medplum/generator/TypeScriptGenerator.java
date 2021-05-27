@@ -276,7 +276,16 @@ public class TypeScriptGenerator {
             return "Resource";
         }
 
-        return ref.replace("_", "");
+        if (ref.indexOf('_') >= 0) {
+            final String[] parts = ref.split("_");
+            if (parts[1].startsWith(parts[0])) {
+                return parts[1];
+            } else {
+                return parts[0] + parts[1];
+            }
+        }
+
+        return ref;
     }
 
     private static String getDisplayName(final String inputName) {
