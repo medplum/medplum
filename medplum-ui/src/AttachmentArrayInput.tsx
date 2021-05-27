@@ -1,11 +1,10 @@
-import { Attachment, PropertySchema } from 'medplum';
+import { Attachment } from 'medplum';
 import React, { useRef, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
 import { ensureKeys, generateKey } from './FormUtils';
 import { useMedplum } from './MedplumProvider';
 
 export interface AttachmentArrayInputProps {
-  property: PropertySchema;
   name: string;
   values?: Attachment[];
   arrayElement?: boolean;
@@ -73,7 +72,6 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
             <tr key={v.__key}>
               <td>
                 <AttachmentInput
-                  property={props.property}
                   name={props.name + '.' + v.__key}
                   value={v} />
               </td>

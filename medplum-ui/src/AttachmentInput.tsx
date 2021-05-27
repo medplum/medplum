@@ -1,9 +1,8 @@
-import { Attachment, PropertySchema } from 'medplum';
+import { Attachment } from 'medplum';
 import React, { useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 
 export interface AttachmentInputProps {
-  property: PropertySchema;
   name: string;
   value?: Attachment;
 }

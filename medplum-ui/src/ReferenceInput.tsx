@@ -1,8 +1,7 @@
-import { PropertySchema, Reference } from 'medplum';
+import { Reference } from 'medplum';
 import React, { useRef, useState } from 'react';
 
 export interface ReferenceInputProps {
-  property: PropertySchema;
   name: string;
   value?: Reference;
 }

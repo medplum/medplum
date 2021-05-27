@@ -1,8 +1,7 @@
+import { PatientLink } from 'medplum';
 import React, { useState } from 'react';
-import { PatientLink, PropertySchema } from 'medplum';
 
 export interface PatientLinkInputProps {
-  property: PropertySchema;
   name: string;
   value?: PatientLink;
 }

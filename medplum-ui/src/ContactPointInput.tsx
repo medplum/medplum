@@ -1,8 +1,7 @@
-import { ContactPoint, PropertySchema } from 'medplum';
+import { ContactPoint } from 'medplum';
 import React, { useRef, useState } from 'react';
 
 export interface ContactPointInputProps {
-  property: PropertySchema;
   name: string;
   value?: ContactPoint;
 }

@@ -1,11 +1,10 @@
+import { Identifier } from 'medplum';
 import React, { useState } from 'react';
-import { PropertySchema } from 'medplum';
 import { TextField } from './TextField';
 
 export interface IdentifierInputProps {
-  property: PropertySchema;
   name: string;
-  value?: any;
+  value?: Identifier;
 }
 
 export function IdentifierInput(props: IdentifierInputProps) {
@@ -17,7 +16,7 @@ export function IdentifierInput(props: IdentifierInputProps) {
           <td>
             <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
             <TextField
-              value={value.system}
+              value={value?.system}
               onChange={e => setValue({
                 ...value,
                 system: (e.currentTarget as HTMLInputElement).value
@@ -26,7 +25,7 @@ export function IdentifierInput(props: IdentifierInputProps) {
           </td>
           <td>
             <TextField
-              value={value.value}
+              value={value?.value}
               onChange={e => setValue({
                 ...value,
                 value: (e.currentTarget as HTMLInputElement).value

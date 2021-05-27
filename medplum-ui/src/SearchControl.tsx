@@ -44,7 +44,6 @@ export interface SearchControlProps {
 
 interface SearchControlState {
   searchResponse?: Bundle;
-  allSelected: boolean;
   selected: { [id: string]: boolean };
   popupVisible: boolean;
   popupX: number;
@@ -62,7 +61,6 @@ export function SearchControl(props: SearchControlProps) {
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
 
   const [state, setState] = useState<SearchControlState>({
-    allSelected: false,
     selected: {},
     popupVisible: false,
     popupX: 0,
@@ -98,10 +96,10 @@ export function SearchControl(props: SearchControlProps) {
     return filters.map(f => getFilterValueString(f)).join('<br>');
   }
 
-  function handleSingleCheckboxClick(e: React.MouseEvent) {
+  function handleSingleCheckboxClick(e: React.ChangeEvent) {
     e.stopPropagation();
 
-    const el = e.currentTarget as HTMLInputElement;
+    const el = e.target as HTMLInputElement;
     const checked = el.checked;
     const id = el.dataset['id'];
     if (id) {
@@ -116,10 +114,10 @@ export function SearchControl(props: SearchControlProps) {
     }
   }
 
-  function handleAllCheckboxClick(e: React.MouseEvent) {
+  function handleAllCheckboxClick(e: React.ChangeEvent) {
     e.stopPropagation();
 
-    const el = e.currentTarget as HTMLInputElement;
+    const el = e.target as HTMLInputElement;
     const checked = el.checked;
     const newSelected = {} as { [id: string]: boolean };
     const state = stateRef.current;
@@ -130,7 +128,20 @@ export function SearchControl(props: SearchControlProps) {
         }
       });
     }
-    setState({ ...state, allSelected: checked, selected: newSelected });
+    setState({ ...state, selected: newSelected });
+    return true;
+  }
+
+  function isAllSelected() {
+    const state = stateRef.current;
+    if (!state.searchResponse?.entry) {
+      return false;
+    }
+    for (const e of state.searchResponse.entry) {
+      if (e.resource?.id && !state.selected[e.resource.id]) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -160,6 +171,11 @@ export function SearchControl(props: SearchControlProps) {
    * @param {Element} el The click target element.
    */
   function handleRowClick_(e: React.MouseEvent) {
+    if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
+      // Ignore clicks on checkboxes
+      return;
+    }
+
     killEvent(e);
 
     const el = e.currentTarget as HTMLElement;
@@ -200,8 +216,8 @@ export function SearchControl(props: SearchControlProps) {
                 <input
                   type="checkbox"
                   value="checked"
-                  defaultChecked={state.allSelected}
-                  onClick={e => handleAllCheckboxClick(e)}
+                  checked={isAllSelected()}
+                  onChange={e => handleAllCheckboxClick(e)}
                 />
               </th>
             }
@@ -234,8 +250,8 @@ export function SearchControl(props: SearchControlProps) {
                     type="checkbox"
                     value="checked"
                     data-id={resource.id}
-                    defaultChecked={!!(resource.id && state.selected[resource.id])}
-                    onClick={e => handleSingleCheckboxClick(e)}
+                    checked={!!(resource.id && state.selected[resource.id])}
+                    onChange={e => handleSingleCheckboxClick(e)}
                   />
                 </td>
               }

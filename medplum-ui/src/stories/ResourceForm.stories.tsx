@@ -12,7 +12,7 @@ export const Patient = () => (
   <Document>
     <ResourceForm
       resourceType="Patient"
-      id="24c3243a-f2ba-459a-846c-0c5f36c725e3"
+      id={process.env.SAMPLE_PATIENT_ID}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -24,7 +24,7 @@ export const Organization = () => (
   <Document>
     <ResourceForm
       resourceType="Organization"
-      id="01764374-df38-34a1-7c93-3066982cd231"
+      id={process.env.SAMPLE_ORGANIZATION_ID}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -32,4 +32,14 @@ export const Organization = () => (
   </Document>
 );
 
-//Organization/01764374-df38-34a1-7c93-3066982cd231
+export const Practitioner = () => (
+  <Document>
+    <ResourceForm
+      resourceType="Practitioner"
+      id={process.env.SAMPLE_PRACTITIONER_ID}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);

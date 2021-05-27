@@ -20,9 +20,11 @@ export function HomePage() {
           value={search.resourceType}
           onChange={e => history.push('/' + (e.currentTarget as HTMLSelectElement).value)}>
           <option></option>
+          <option>Device</option>
           <option>Patient</option>
           <option>Practitioner</option>
           <option>Observation</option>
+          <option>Organization</option>
           <option>StructureDefinition</option>
         </Select>
         <Button size="small">Fields</Button>

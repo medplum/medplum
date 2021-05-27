@@ -1,5 +1,4 @@
 import { Meta } from '@storybook/react';
-import { schema } from 'medplum';
 import React from 'react';
 import { AddressInput, AddressInputProps } from '../AddressInput';
 import { Document } from '../Document';
@@ -11,12 +10,19 @@ export default {
 
 export const Basic = (args: AddressInputProps) => (
   <Document>
-    <AddressInput property={schema.Patient.properties.address} />
+    <AddressInput name="address" />
   </Document>
 );
 
 export const DefaultValue = (args: AddressInputProps) => (
   <Document>
-    <AddressInput property={schema.Patient.properties.address} value="Hello world" />
+    <AddressInput name="address" value={{
+      use: 'home',
+      type: 'physical',
+      line: ['123 Happy St'],
+      city: 'Springfield',
+      state: 'IL',
+      postalCode: '44444'
+    }} />
   </Document>
 );

@@ -1,8 +1,7 @@
+import { HumanName } from 'medplum';
 import React, { useRef, useState } from 'react';
-import { HumanName, PropertySchema } from 'medplum';
 
 export interface HumanNameInputProps {
-  property: PropertySchema;
   name: string;
   value?: HumanName;
 }

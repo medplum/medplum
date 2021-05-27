@@ -1,4 +1,4 @@
-import { CodeableConcept, PropertySchema } from 'medplum';
+import { CodeableConcept } from 'medplum';
 import React, { useState } from 'react';
 
 function getCoding(codeableConcept: any) {
@@ -9,7 +9,6 @@ function getCoding(codeableConcept: any) {
 }
 
 export interface CodeableConceptInputProps {
-  property: PropertySchema;
   name: string;
   value?: CodeableConcept;
 }

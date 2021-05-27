@@ -1,5 +1,4 @@
 import { Meta } from '@storybook/react';
-import { schema } from 'medplum';
 import React from 'react';
 import { AttachmentInput, AttachmentInputProps } from '../AttachmentInput';
 import { Document } from '../Document';
@@ -11,12 +10,12 @@ export default {
 
 export const Basic = (args: AttachmentInputProps) => (
   <Document>
-    <AttachmentInput property={schema.Patient.properties.photo} />
+    <AttachmentInput name="attachment" />
   </Document>
 );
 
 export const DefaultValue = (args: AttachmentInputProps) => (
   <Document>
-    <AttachmentInput property={schema.Patient.properties.address} value="Hello world" />
+    <AttachmentInput name="attachment" value={{ }} />
   </Document>
 );
