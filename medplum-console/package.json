@@ -1,6 +1,6 @@
 {
   "name": "medplum-console",
-  "version": "0.0.13",
+  "version": "0.0.17",
   "description": "Medplum Console",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
