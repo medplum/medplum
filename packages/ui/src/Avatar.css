@@ -1,0 +1,33 @@
+.medplum-avatar {
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  user-select: none;
+  border-radius: 50%;
+  overflow: hidden;
+  text-align: center;
+  color: white;
+  background-color: var(--medplum-gray-500);
+  font-size: 18px;
+}
+
+.medplum-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.medplum-avatar.small {
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  font-size: 12px;
+}
+
+.medplum-avatar.large {
+  width: 56px;
+  height: 56px;
+  line-height: 56px;
+  font-size: 32px;
+}

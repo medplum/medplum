@@ -1,0 +1,67 @@
+.modal-dialog {
+  background:var(--medplum-gray-600);
+  border: 1px solid var(--medplum-gray-700);
+  color: var(--medplum-foreground);
+  padding: 0;
+  position: absolute;
+  z-index:21;
+  box-shadow: var(--medplum-shadow) 0 2px 6px;
+  outline:0;
+}
+
+.modal-dialog a,
+.modal-dialog a:link,
+.modal-dialog a:visited  {
+  color: var(--medplum-blue-800);
+  cursor: pointer;
+}
+
+.modal-dialog-bg {
+  background: rgba(0,0,0,0.5);
+  left: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index:20;
+}
+
+.modal-dialog-title {
+  background:var(--medplum-gray-800);
+  color: var(--medplum-surface);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.modal-dialog-title-close {
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.modal-dialog-title-close:hover {
+    background-color:var(--medplum-gray-700);
+}
+
+.modal-dialog-title-close > svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-dialog-content {
+  text-align: center;
+  background-color: var(--medplum-surface);
+  padding: 8px;
+}
+
+.modal-dialog-buttons {
+  text-align: right;
+  background-color: var(--medplum-gray-100);
+  border-top:1px solid var(--medplum-gray-400);
+  padding: 8px;
+}
+
+.modal-dialog-buttons button {
+  padding: 1px 6px;
+}

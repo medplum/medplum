@@ -1,0 +1,24 @@
+.medplum-tabbar {
+  background-color: var(--medplum-surface);
+  position: relative;
+  min-height: 50px;
+}
+
+.medplum-tabbar-background,
+.medplum-tabbar-foreground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.medplum-tabbar-background {
+  border-bottom: 2px solid var(--medplum-gray-200);
+  z-index: 2;
+}
+
+.medplum-tabbar-foreground {
+  padding: 0 20px;
+  z-index: 3;
+}

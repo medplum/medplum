@@ -1,0 +1,10 @@
+dl.medplum-description-list {
+  display: grid;
+  grid-template-columns: 30% 70%;
+}
+
+dl.medplum-description-list dt,
+dl.medplum-description-list dd {
+  padding: 16px 8px;
+  border-top: 1px solid var(--medplum-gray-300);
+}

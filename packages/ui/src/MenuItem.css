@@ -1,0 +1,12 @@
+
+.medplum-menu-item {
+  color: var(--medplum-foreground);
+  list-style: none;
+  margin: 0;
+  padding: 4px 7em 4px 28px;
+  white-space: nowrap;
+}
+
+.medplum-menu-item:hover {
+  background-color: var(--medplum-blue-50);
+}

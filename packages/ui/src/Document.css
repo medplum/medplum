@@ -1,0 +1,37 @@
+main {
+  margin: 20px auto 6px auto;
+  padding: 10px;
+  clear: both;
+  text-align: center;
+}
+
+article {
+  background-color: var(--medplum-surface);
+  max-width: 900px;
+  margin: auto;
+  padding: 15px 25px;
+  text-align: left;
+  border: 1px solid var(--medplum-gray-300);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 var(--medplum-gray-300);
+}
+
+article h1, article h2, article h3 {
+  margin: 12px 0;
+}
+
+article p, article li {
+  line-height: 175%;
+  margin: 8px 0 16px 0;
+}
+
+@media (max-width: 700px) {
+  main {
+    margin: 10px auto 6px auto;
+    padding: 6px;
+  }
+
+  article {
+    padding: 6px 12px;
+  }
+}

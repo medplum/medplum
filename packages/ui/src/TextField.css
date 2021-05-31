@@ -1,0 +1,79 @@
+input[type=email],
+input[type=number],
+input[type=password],
+input[type=tel],
+input[type=text],
+input[type=datetime-local],
+select {
+  border: 1px solid var(--medplum-gray-300);
+  border-radius: 3px;
+  background: var(--medplum-surface);
+  box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
+  color: var(--medplum-gray-800);
+  line-height: 28px;
+  font-size: var(--medplum-font-normal);
+}
+
+input[type=email],
+input[type=number],
+input[type=password],
+input[type=tel],
+input[type=text],
+input[type=datetime-local] {
+  padding: 1px 8px;
+  margin: 0;
+}
+
+input[type=email]:focus,
+input[type=number]:focus,
+input[type=password]:focus,
+input[type=tel]:focus,
+input[type=text]:focus,
+input[type=datetime-local]:focus,
+select:focus {
+  background: var(--medplum-surface);
+  color: var(--medplum-gray-900);
+  border: 1px solid var(--medplum-blue-300);
+  box-shadow: 0 0 0 2px var(--medplum-blue-200);
+}
+
+input[type=email]:disabled,
+input[type=number]:disabled,
+input[type=password]:disabled,
+input[type=tel]:disabled,
+input[type=text]:disabled,
+input[type=datetime-local]:disabled,
+select:disabled {
+  background: var(--medplum-gray-100);
+}
+
+input.small,
+select.small {
+  font-size: var(--medplum-font-small);
+  line-height: 24px;
+}
+
+input.large,
+select.large {
+  font-size: var(--medplum-font-big);
+  line-height: 32px;
+}
+
+select {
+  padding: 4px 8px;
+  margin: 1px;
+  line-height: 28px;
+  border-radius: 3px;
+}
+
+select:not([size]) {
+  height: 32px;
+}
+
+select.small:not([size]) {
+  height: 28px;
+}
+
+select.large:not([size]) {
+  height: 36px;
+}

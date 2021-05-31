@@ -1,0 +1,67 @@
+* {
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  outline: 0;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin: 0 0 40px 0;
+  font-size: var(--medplum-font-normal);
+  font-style: normal;
+  color: var(--medplum-foreground);
+  background: var(--medplum-background);
+}
+
+h1, h2, h3, h4, h5 {
+  font-weight: normal;
+}
+
+a {
+  color: var(--medplum-blue-700);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+  transition: background-color 100ms linear, color 100ms linear, border 100ms linear;
+}
+
+th, strong {
+  color: var(--medplum-foreground);
+}
+
+code, pre, textarea {
+  font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+  font-size: 12px;
+  width: 100%;
+  overflow-x: auto;
+}
+
+textarea {
+  min-height: 300px;
+}
+
+svg {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.medplum-clear {
+  clear: both;
+}
+
+.medplum-collapse {
+  visibility: collapse;
+  width: 0px;
+}
+
+.muted {
+  color: var(--medplum-gray-500);
+}

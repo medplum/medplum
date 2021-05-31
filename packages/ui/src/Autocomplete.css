@@ -1,0 +1,115 @@
+.medplum-autocomplete-container {
+  border: 1px solid var(--medplum-gray-400);
+  border-radius: 3px;
+  background: var(--medplum-surface);
+  outline: 2px var(--medplum-surface);
+  position: relative;
+  margin: 0;
+  cursor: text;
+  height: 32px;
+  line-height: 28px;
+}
+
+.medplum-autocomplete-container.focused {
+  background: var(--medplum-surface);
+  color: var(--medplum-gray-900);
+  border: 1px solid var(--medplum-blue-300);
+  box-shadow: 0 0 0 2px var(--medplum-blue-200);
+}
+
+.medplum-autocomplete-container>ul {
+  margin: 0;
+  list-style-type: none;
+  overflow: hidden;
+  cursor: text;
+  height: 32px;
+}
+
+.medplum-autocomplete-container>ul>li {
+  margin: 0;
+  padding: 0;
+  display: inline-block;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.medplum-autocomplete-container>ul>li.choice {
+  margin: 1px 0 1px 4px;
+  padding: 0 6px;
+  border: 1px solid var(--medplum-orange-200);
+  border-radius: 4px;
+  background-color: var(--medplum-gray-50);
+  cursor: move;
+  line-height: 22px;
+}
+
+.medplum-autocomplete-container>ul>li.unstructured {
+  border: 1px dashed var(--medplum-red-700) !important;
+}
+
+.medplum-autocomplete-container>ul>li>input {
+  display: inline-block;
+  width: 80px;
+  line-height: 26px;
+  padding: 0 0 0 6px;
+  margin: 2px 0 0 2px;
+  outline: none;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.medplum-autocomplete-container>ul>li>input::-moz-focus-inner {
+  border: 0px;
+}
+
+.medplum-autocomplete-container>ul>li>input:focus {
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.medplum-autocomplete {
+  position: absolute;
+  background: var(--medplum-surface);
+  width: 300px;
+  z-index: 1;
+  cursor: pointer;
+  box-shadow: var(--medplum-shadow) 0 2px 6px;
+  -webkit-border-radius: 0;
+  border-radius: 0;
+  -webkit-box-shadow: 0 2px 4px var(--medplum-shadow);
+  /* @alternate */
+  box-shadow: 0 2px 4px var(--medplum-shadow);
+  -webkit-transition: opacity .218s;
+  transition: opacity .218s;
+  border: 1px solid var(--medplum-gray-400);
+  /* @alternate */
+  border: 1px solid var(--medplum-foreground);
+}
+
+.medplum-autocomplete-row {
+  height: 52px;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.medplum-autocomplete-active {
+  background-color: var(--medplum-gray-200);
+}
+
+.medplum-autocomplete-icon {
+  float: left;
+  width: 40px;
+  height: 40px;
+  padding: 5px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.medplum-autocomplete-label {
+  margin: 0 0 0 50px;
+  padding: 8px 4px;
+  cursor: pointer;
+}

@@ -1,0 +1,156 @@
+.medplum-search-control {
+  max-width: 100%;
+  overflow: auto;
+  text-align: left;
+}
+
+/*
+ * Table styles
+ */
+
+.medplum-search-control table {
+  width: 100%;
+  clear: both;
+  border-top: 1px solid var(--medplum-gray-300);
+  border-collapse: collapse;
+}
+
+.medplum-search-control table tr {
+  border-bottom: 1px solid var(--medplum-gray-300);
+}
+
+.medplum-search-control table td, .medplum-search-control table th {
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.medplum-search-control table td.c {
+  text-align: center;
+}
+
+.medplum-search-control table td.r {
+  text-align: right;
+}
+
+/* Header cells */
+
+.medplum-search-control table thead th {
+  text-align: left;
+  background-color: var(--medplum-blue-50);
+  white-space: nowrap;
+  color: var(--medplum-gray-700);
+  border: 1px solid var(--medplum-gray-300);
+  position: relative;
+}
+
+.medplum-search-control table thead th.filters {
+  background-color: var(--medplum-gray-100);
+  text-align: center;
+  color: var(--medplum-gray-800);
+}
+
+.medplum-search-control table thead th.filters i {
+  color: var(--medplum-gray-600);
+}
+
+.medplum-search-control table thead th img {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  width: 17px;
+  height: 17px;
+}
+
+/* Body cells */
+
+.medplum-search-control table tbody tr {
+  background-color: var(--medplum-surface);
+}
+
+.medplum-search-control table tbody tr.high-priority {
+  background-color: var(--medplum-gray-300);
+}
+
+.medplum-search-control table tbody tr.duplicate {
+  background-color: var(--medplum-gray-100);
+}
+
+.medplum-search-control table tbody tr:hover {
+  background-color: var(--medplum-yellow-100);
+}
+
+.medplum-search-control table tbody td {
+  color: var(--medplum-gray-800);
+  border-right: 1px solid var(--medplum-gray-100);
+}
+
+.medplum-search-control .medplum-empty-search {
+  background: var(--medplum-gray-100);
+  border: 1px solid var(--medplum-gray-300);
+  color: var(--medplum-gray-500);
+  text-align: center;
+  padding: 40px;
+  font-size: var(--medplum-font-big);
+}
+
+/*
+ * Pagination
+ */
+
+a.paginate_button, a.paginate_active {
+  display: inline-block;
+  padding: 8px 12px;
+  margin-left: 2px;
+  cursor: pointer;
+  border: 1px solid var(--medplum-gray-300);
+}
+
+a.paginate_button:hover {
+  background: var(--medplum-purple-50);
+}
+
+a.paginate_active {
+  background: var(--medplum-purple-50);
+}
+
+a.paginate_button_disabled {
+  color: var(--medplum-gray-500);
+}
+
+a.paginate_button_disabled:hover {
+  background: transparent;
+}
+
+.medplum-search-control table thead th:hover {
+  background-color: var(--medplum-blue-200);
+}
+
+.medplum-search-icon-cell {
+  padding: 0 !important;
+  text-align: center !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+}
+
+.medplum-search-icon-cell input[type=checkbox] {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--medplum-gray-600);
+  outline: 0;
+}
+
+/*
+ * Filter editor
+ */
+
+.medplum-filter-editor {
+  text-align: left;
+}
+
+.goog-date-picker {
+  z-index: 1000 !important;
+}

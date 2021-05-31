@@ -1,0 +1,30 @@
+
+
+fieldset {
+  border: 0;
+  margin: 6px 0 16px 0;
+  padding: 2px 0 8px 0;
+}
+
+fieldset.bordered {
+  border: 1px solid var(--medplum-gray-300);
+  border-radius: 6px;
+  margin: 6px 0 16px 0;
+  padding: 2px 8px 8px 8px;
+}
+
+fieldset legend {
+  margin: 2px 0 4px 0;
+}
+
+fieldset small {
+  display: block;
+  margin: 2px 0 4px 0;
+  padding: 2px 0 4px 0;
+}
+
+fieldset input,
+fieldset select,
+fieldset table {
+  width: 100%;
+}

@@ -1,0 +1,90 @@
+:root {
+  --medplum-background: #F8F9FA;
+  --medplum-surface: #FFFFFF;
+  --medplum-foreground: #424242;
+  --medplum-navbar: #292961;
+  --medplum-navbar-textbox: #4b4b7e;
+  --medplum-navbar-hover: #5d5d85;
+  --medplum-shadow: rgba(0, 0, 0, 0.2);
+  /* font sizes */
+  --medplum-font-small: 12px;
+  --medplum-font-normal: 14px;
+  --medplum-font-big: 18px;
+  /* gray */
+  --medplum-gray-50: #FAFAFA;
+  --medplum-gray-100: #F5F5F5;
+  --medplum-gray-200: #EEEEEE;
+  --medplum-gray-300: #E0E0E0;
+  --medplum-gray-400: #BDBDBD;
+  --medplum-gray-500: #9E9E9E;
+  --medplum-gray-600: #757575;
+  --medplum-gray-700: #616161;
+  --medplum-gray-800: #424242;
+  --medplum-gray-900: #212121;
+  /* red */
+  --medplum-red-50: #FFEBEE;
+  --medplum-red-100: #FFCDD2;
+  --medplum-red-200: #EF9A9A;
+  --medplum-red-300: #E57373;
+  --medplum-red-400: #EF5350;
+  --medplum-red-500: #F44336;
+  --medplum-red-600: #E53935;
+  --medplum-red-700: #D32F2F;
+  --medplum-red-800: #C62828;
+  --medplum-red-900: #B71C1C;
+  /* purple */
+  --medplum-purple-50: #EDE7F6;
+  --medplum-purple-100: #D1C4E9;
+  --medplum-purple-200: #B39DDB;
+  --medplum-purple-300: #9575CD;
+  --medplum-purple-400: #7E57C2;
+  --medplum-purple-500: #673AB7;
+  --medplum-purple-600: #5E35B1;
+  --medplum-purple-700: #512DA8;
+  --medplum-purple-800: #4527A0;
+  --medplum-purple-900: #311B92;
+  /* blue */
+  --medplum-blue-50: #E3F2FD;
+  --medplum-blue-100: #BBDEFB;
+  --medplum-blue-200: #90CAF9;
+  --medplum-blue-300: #64B5F6;
+  --medplum-blue-400: #42A5F5;
+  --medplum-blue-500: #2196F3;
+  --medplum-blue-600: #1E88E5;
+  --medplum-blue-700: #1976D2;
+  --medplum-blue-800: #1565C0;
+  --medplum-blue-900: #0D47A1;
+  /* green */
+  --medplum-green-50: #E8F5E9;
+  --medplum-green-100: #C8E6C9;
+  --medplum-green-200: #A5D6A7;
+  --medplum-green-300: #81C784;
+  --medplum-green-400: #66BB6A;
+  --medplum-green-500: #4CAF50;
+  --medplum-green-600: #43A047;
+  --medplum-green-700: #388E3C;
+  --medplum-green-800: #2E7D32;
+  --medplum-green-900: #1B5E20;
+  /* yellow */
+  --medplum-yellow-50: #FFFDE7;
+  --medplum-yellow-100: #FFF9C4;
+  --medplum-yellow-200: #FFF59D;
+  --medplum-yellow-300: #FFF176;
+  --medplum-yellow-400: #FFEE58;
+  --medplum-yellow-500: #FFEB3B;
+  --medplum-yellow-600: #FDD835;
+  --medplum-yellow-700: #FBC02D;
+  --medplum-yellow-800: #F9A825;
+  --medplum-yellow-900: #F57F17;
+  /* orange */
+  --medplum-orange-50: #FFF3E0;
+  --medplum-orange-100: #FFE0B2;
+  --medplum-orange-200: #FFCC80;
+  --medplum-orange-300: #FFB74D;
+  --medplum-orange-400: #FFA726;
+  --medplum-orange-500: #FF9800;
+  --medplum-orange-600: #FB8C00;
+  --medplum-orange-700: #F57C00;
+  --medplum-orange-800: #EF6C00;
+  --medplum-orange-900: #E65100;
+}

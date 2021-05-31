@@ -1,0 +1,76 @@
+.btn {
+  border: 1px solid var(--medplum-gray-300);
+  border-radius: 4px;
+  background: var(--medplum-gray-50);
+  outline: none;
+  font-size: var(--medplum-font-normal);
+  line-height: 24px;
+  color: var(--medplum-gray-800);
+  margin: 1px 2px;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: var(--medplum-gray-200);
+}
+
+.btn:active {
+  background: var(--medplum-gray-300);
+}
+
+.btn:focus {
+  box-shadow: 0 0 0 2px var(--medplum-blue-200);
+}
+
+.btn.btn-large {
+  font-size: var(--medplum-font-big);
+  line-height: 32px;
+  padding: 4px 32px;
+}
+
+.btn.btn-small {
+  font-size: var(--medplum-font-small);
+  line-height: 24px;
+  padding: 1px 6px;
+}
+
+.btn.btn-primary {
+  background-color: var(--medplum-blue-600);
+  border-color: var(--medplum-blue-600);
+  color: var(--medplum-surface);
+}
+
+.btn.btn-primary:hover {
+  background-color: var(--medplum-blue-700);
+  border-color: var(--medplum-blue-700);
+}
+
+.btn.btn-primary:active {
+  background-color: var(--medplum-blue-800);
+  border-color: var(--medplum-blue-800);
+}
+
+.btn.btn-primary:focus {
+  box-shadow: 0 0 0 2px var(--medplum-blue-200);
+}
+
+.btn.btn-danger {
+  background-color: var(--medplum-red-700);
+  border-color: var(--medplum-red-700);
+  color: var(--medplum-surface);
+}
+
+.btn.btn-danger:hover {
+  background-color: var(--medplum-red-800);
+  border-color: var(--medplum-red-800);
+}
+
+.btn.btn-danger:active {
+  background-color: var(--medplum-red-900);
+  border-color: var(--medplum-red-900);
+}
+
+.btn.btn-danger:focus {
+  box-shadow: 0 0 0 2px var(--medplum-red-200);
+}
