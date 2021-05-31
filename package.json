@@ -1,9 +1,6 @@
 {
   "name": "root",
   "workspaces": [
-    "medplum-console",
-    "medplum-graphiql",
-    "medplum-ts",
-    "medplum-ui"
+    "packages/*"
   ]
 }
