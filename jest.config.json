@@ -12,5 +12,15 @@
   ],
   "testMatch": [
     "**/src/**/*.test.ts"
+  ],
+  "collectCoverage": true,
+  "coverageDirectory": "coverage",
+  "collectCoverageFrom": [
+    "src/**/*.ts",
+    "!src/**/*.d.ts"
+  ],
+  "projects": [
+    "packages/core",
+    "packages/server"
   ]
 }
