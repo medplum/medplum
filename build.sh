@@ -8,5 +8,8 @@ set -e
 # Echo commands
 set -x
 
+# Install
+npm ci
+
 # Test all
 npx jest
