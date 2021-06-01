@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "CommonJS",
+    "target": "esnext",
+    "module": "commonjs",
     "outDir": "dist",
     "moduleResolution": "node",
     "strict": true,
@@ -12,7 +12,7 @@
     "experimentalDecorators": true,
     "sourceMap": true,
     "lib": [
-      "ESNext"
+      "esnext"
     ]
   },
   "include": [
