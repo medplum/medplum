@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto';
-import { readFileSync } from 'fs';
+import { readJson } from '@medplum/definitions';
 import { OperationOutcome, OperationOutcomeIssue, Resource } from '@medplum/core';
 import { allOk } from './outcomes';
 
-export const schema = JSON.parse(readFileSync('./fhir.schema.json', 'utf8'));
+export const schema = readJson('./fhir/r4/fhir.schema.json');
 export const definitions = schema.definitions;
 export const resourceTypes = Object.keys(schema.discriminator.mapping);
 
