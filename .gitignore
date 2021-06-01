@@ -44,9 +44,15 @@ node_modules/
 .env
 .env.production
 
-# Webpack output
-dist/
-lib/
+# Output
+packages/console/dist/
+packages/core/lib/
+packages/definitions/lib/**/*.js
+packages/definitions/lib/**/*.js.map
+packages/definitions/lib/**/*.d.ts
+packages/graphiql/dist/
+packages/server/dist/
+packages/ui/lib/
 
 # Storybook output
 storybook-static/
