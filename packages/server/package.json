@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@medplum/core": "^0.0.18",
+    "@medplum/definitions": "^0.0.18",
     "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",

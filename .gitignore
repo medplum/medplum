@@ -51,3 +51,6 @@ lib/
 # Storybook output
 storybook-static/
 
+# Jest code coverage
+coverage/
+
