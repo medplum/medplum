@@ -29,6 +29,7 @@
     "@aws-cdk/core": "1.106.1",
     "@types/node": "15.6.1",
     "aws-cdk": "1.106.1",
+    "ts-node": "10.0.0",
     "typescript": "4.3.2"
   }
 }

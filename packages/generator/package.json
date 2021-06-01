@@ -1,0 +1,29 @@
+{
+  "name": "@medplum/generator",
+  "version": "0.0.19",
+  "description": "Medplum Code Generator",
+  "author": "Medplum <hello@medplum.com>",
+  "license": "Apache-2.0",
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "packages/generator"
+  },
+  "scripts": {
+    "clean": "rimraf lib",
+    "build": "npm run clean && tsc",
+    "lint": "eslint src/ --ext .ts,.tsx"
+  },
+  "devDependencies": {
+    "@medplum/definitions": "0.0.19",
+    "@types/jest": "26.0.23",
+    "@types/node": "15.6.1",
+    "@typescript-eslint/eslint-plugin": "4.26.0",
+    "@typescript-eslint/parser": "4.26.0",
+    "eslint": "7.27.0",
+    "rimraf": "3.0.2",
+    "ts-node": "10.0.0",
+    "typescript": "4.3.2"
+  }
+}
