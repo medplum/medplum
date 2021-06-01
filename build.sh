@@ -8,8 +8,7 @@ set -e
 # Echo commands
 set -x
 
-# Install
+node --version
+npm --version
 npm ci
-
-# Test all
 npx jest
