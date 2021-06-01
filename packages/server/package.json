@@ -11,11 +11,10 @@
     "directory": "packages/server"
   },
   "scripts": {
+    "build": "tsc",
     "prestart": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev src/index.ts",
-    "dev2": "cross-env NODE_OPTIONS=--experimental-vm-modules N ts-node-dev src/index.ts",
-    "dev3": "node --loader ts-node/esm.mjs --experimental-vm-modules --experimental-top-level-await ../../node_modules/ts-node-dev/lib/bin.js src/index.ts",
     "test": "jest"
   },
   "dependencies": {
