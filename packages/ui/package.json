@@ -1,6 +1,6 @@
 {
   "name": "@medplum/ui",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Medplum React Component Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -20,31 +20,32 @@
     "storybook": "build-storybook -s public"
   },
   "devDependencies": {
-    "@medplum/core": "^0.0.18",
-    "@storybook/addon-actions": "^6.2.9",
-    "@storybook/addon-essentials": "^6.2.9",
-    "@storybook/addon-links": "^6.2.9",
-    "@storybook/builder-webpack5": "^6.2.9",
-    "@storybook/react": "^6.2.9",
-    "@types/node": "^15.6.1",
-    "@types/react": "^17.0.8",
-    "@types/react-dom": "^17.0.5",
-    "@typescript-eslint/eslint-plugin": "^4.26.0",
-    "@typescript-eslint/parser": "^4.26.0",
-    "copyfiles": "^2.4.1",
-    "dotenv-webpack": "^7.0.2",
-    "eslint": "^7.27.0",
-    "html-webpack-plugin": "^5.3.1",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "rimraf": "^3.0.2",
-    "typescript": "^4.3.2"
+    "@medplum/core": "0.0.19",
+    "@storybook/addon-actions": "6.2.9",
+    "@storybook/addon-essentials": "6.2.9",
+    "@storybook/addon-links": "6.2.9",
+    "@storybook/builder-webpack5": "6.2.9",
+    "@storybook/react": "6.2.9",
+    "@types/node": "15.6.1",
+    "@types/react": "17.0.8",
+    "@types/react-dom": "17.0.5",
+    "@typescript-eslint/eslint-plugin": "4.26.0",
+    "@typescript-eslint/parser": "4.26.0",
+    "copyfiles": "2.4.1",
+    "cross-env": "7.0.3",
+    "dotenv-webpack": "7.0.2",
+    "eslint": "7.27.0",
+    "html-webpack-plugin": "5.3.1",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "rimraf": "3.0.2",
+    "typescript": "4.3.2"
   },
   "peerDependencies": {
-    "@medplum/core": "^0.0.18",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "typescript": "^4.3.2"
+    "@medplum/core": "0.0.19",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "typescript": "4.3.2"
   },
   "files": [
     "lib"

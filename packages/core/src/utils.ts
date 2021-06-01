@@ -27,5 +27,5 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBuffer) {
   for (let i = 0; i < bytes.length; i++) {
       result[i] = String.fromCharCode(bytes[i]);
   }
-  return window.btoa(result.join(''));
+  return btoa(result.join(''));
 }

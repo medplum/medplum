@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "esnext",
+    "module": "commonjs",
     "moduleResolution": "node",
     "outDir": "lib",
-    "lib": [ "esnext", "dom" ],
+    "lib": [
+      "esnext"
+    ],
     "strict": true,
     "sourceMap": true,
     "declaration": true,

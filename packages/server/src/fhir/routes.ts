@@ -29,6 +29,8 @@ fhirRouter.post('/:resourceType', async (req: Request, res: Response) => {
   const { resourceType } = req.params;
   const resource = req.body;
   if (resource.resourceType !== resourceType) {
+    console.log('path param', resourceType);
+    console.log('resource value', resource.resourceType);
     return res.status(400).send(badRequest('Incorrect resource type'));
   }
   const [outcome, result] = await repo.createResource(resource);

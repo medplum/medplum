@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { Bundle, BundleEntry, SearchParameter } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
 
 /**
  * Parses a FHIR search query.
@@ -57,7 +58,7 @@ export enum Operator {
 /**
  * The original search parameters bundle from the FHIR spec.
  */
-const searchParams = JSON.parse(readFileSync('./search-parameters.json', 'utf8')) as Bundle;
+const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
 
 /**
  * The pre-indexed search mappings.
