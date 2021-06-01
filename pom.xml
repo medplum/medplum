@@ -39,7 +39,6 @@
         </developer>
     </developers>
     <modules>
-        <module>medplum-cdk</module>
         <module>medplum-core</module>
         <module>medplum-coverage</module>
         <module>medplum-fhir-resources</module>
