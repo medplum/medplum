@@ -10,5 +10,5 @@ set -x
 
 node --version
 npm --version
-npm ci
+npm i
 npx jest
