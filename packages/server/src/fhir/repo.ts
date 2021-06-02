@@ -32,15 +32,15 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
-    const rows = await knex.select('CONTENT')
-      .from(resourceType.toUpperCase())
-      .where('ID', id);
+    const rows = await knex.select('content')
+      .from(resourceType)
+      .where('id', id);
 
     if (rows.length === 0) {
       return [notFound, undefined];
     }
 
-    return [allOk, JSON.parse(rows[0].CONTENT as string)];
+    return [allOk, JSON.parse(rows[0].content as string)];
   }
 
   async readReference<T extends Resource>(reference: Reference): RepositoryResult<T> {
@@ -57,9 +57,9 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
-    const builder = knex.select('CONTENT')
-      .from(resourceType.toUpperCase() + '_HISTORY')
-      .where('ID', id);
+    const builder = knex.select('content')
+      .from(resourceType + '_History')
+      .where('id', id);
 
     const rows = await builder;
 
@@ -67,7 +67,7 @@ class Repository {
       resourceType: 'Bundle',
       type: 'history',
       entry: rows.map(row => ({
-        resource: JSON.parse(row.CONTENT as string)
+        resource: JSON.parse(row.content as string)
       }))
     }];
   }
@@ -78,16 +78,16 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
-    const rows = await knex.select('CONTENT')
-      .from(resourceType.toUpperCase() + '_HISTORY')
-      .where('ID', id)
-      .andWhere('VERSIONID', vid);
+    const rows = await knex.select('content')
+      .from(resourceType + '_History')
+      .where('id', id)
+      .andWhere('versionId', vid);
 
     if (rows.length === 0) {
       return [notFound, undefined];
     }
 
-    return [allOk, JSON.parse(rows[0].CONTENT as string)];
+    return [allOk, JSON.parse(rows[0].content as string)];
   }
 
   async updateResource<T extends Resource>(resource: T): RepositoryResult<T> {
@@ -123,7 +123,7 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
-    const builder = knex.select('CONTENT').from(searchRequest.resourceType.toUpperCase());
+    const builder = knex.select('content').from(searchRequest.resourceType);
     for (const filter of searchRequest.filters) {
       const param = getSearchParameter(searchRequest.resourceType, filter.code);
       if (param) {
@@ -137,7 +137,7 @@ class Repository {
       resourceType: 'Bundle',
       type: 'searchest',
       entry: rows.map(row => ({
-        resource: JSON.parse(row.CONTENT as string)
+        resource: JSON.parse(row.content as string)
       }))
     }];
   }

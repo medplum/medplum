@@ -1,4 +1,9 @@
 import express from 'express';
 import { initApp } from './app';
 
-initApp(express()).listen(5000);
+async function main() {
+  const app = await initApp(express())
+  app.listen(5000);
+}
+
+main();
