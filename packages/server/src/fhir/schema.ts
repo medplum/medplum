@@ -14,7 +14,7 @@ export function validateResourceType(resourceType: string): OperationOutcome {
 
   const definition = definitions[resourceType];
   if (!definition) {
-    return validationError('Unknown resource type "' + resourceType + '"');
+    return validationError('Unknown resource type');
   }
 
   return allOk;
@@ -32,7 +32,7 @@ export function validateResource(resource: Resource): OperationOutcome {
 
   const definition = definitions[resourceType];
   if (!definition) {
-    return validationError('Unknown resource type "' + resourceType + '"');
+    return validationError('Unknown resource type');
   }
 
   const issues: OperationOutcomeIssue[] = [];
