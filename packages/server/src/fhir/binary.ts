@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import { Binary } from '@medplum/core';
 import { notFound } from './outcomes';
 import { repo } from './repo';
+import * as path from 'path';
 
 export const binaryRouter = Router();
 
@@ -18,5 +19,5 @@ binaryRouter.get('/:id', async (req: Request, res: Response) => {
   const binary = resource as Binary;
   res.status(200)
     .contentType(binary.contentType as string)
-    .sendFile(`C:/Users/cody/dev/medplum/medplum-server/binary/${binary.id}/${binary.meta?.versionId}`);
+    .sendFile(path.resolve(__dirname, `../../binary/${binary.id}/${binary.meta?.versionId}`));
 });

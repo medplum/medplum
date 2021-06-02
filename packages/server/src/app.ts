@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express, { Express, NextFunction, Request, Response } from 'express';
 import { authRouter } from './auth';
+import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
 import { fhirRouter } from './fhir';
 import { oauthRouter } from './oauth';
@@ -22,7 +23,8 @@ function errorHandler(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export function initApp(app: Express): Express {
+export async function initApp(app: Express): Promise<Express> {
+  await initDatabase();
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.set('json spaces', 2);
@@ -37,4 +39,8 @@ export function initApp(app: Express): Express {
   app.use('/oauth2/', oauthRouter);
   app.use('/scim/v2/', fhirRouter);
   return app;
+}
+
+export async function destroyApp(app: Express): Promise<void> {
+  await closeDatabase();
 }

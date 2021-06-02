@@ -1,9 +1,16 @@
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
+import { destroyApp, initApp } from '../app';
 
 const app = express();
-initApp(app);
+
+beforeAll(async () => {
+  await initApp(app);
+});
+
+afterAll(async () => {
+  await destroyApp(app);
+});
 
 test('Create batch', (done) => {
   request(app)
