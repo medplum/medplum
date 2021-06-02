@@ -23,7 +23,13 @@ test('Create resource', (done) => {
   request(app)
     .post('/fhir/R4/Patient')
     .send({ resourceType: 'Patient' })
-    .expect(201, done);
+    .expect(201)
+    .end((err, res) => {
+      const patient = res.body;
+      request(app)
+        .get('/fhir/R4/Patient/' + patient.id)
+        .expect(200, done);
+    });
 });
 
 test('Create resource invalid resource type', (done) => {

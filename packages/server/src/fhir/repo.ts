@@ -1,4 +1,5 @@
-import { Bundle, OperationOutcome, Reference, Resource } from '@medplum/core';
+import { Bundle, Meta, OperationOutcome, Reference, Resource } from '@medplum/core';
+import { randomUUID } from 'crypto';
 import { knex } from '../database';
 import { allOk, badRequest, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
@@ -23,7 +24,10 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
-    return [allOk, resource];
+    return this.updateResource({
+      ...resource,
+      id: randomUUID()
+    });
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
@@ -96,7 +100,31 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
-    return [allOk, resource];
+    const { resourceType, id } = resource;
+    if (!id) {
+      return [badRequest('Missing id'), undefined];
+    }
+
+    const [existingOutcome, existing] = await this.readResource(resourceType, id);
+    if (existingOutcome.id !== 'allok' && existingOutcome.id !== 'not-found') {
+      return [existingOutcome, undefined];
+    }
+
+    const result = {
+      ...existing,
+      ...resource,
+      meta: {
+        ...existing?.meta,
+        ...resource.meta,
+        versionId: randomUUID(),
+        lastUpdated: new Date()
+      }
+    };
+
+    await this.write(result);
+
+
+    return [allOk, result];
   }
 
   async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {
@@ -140,6 +168,27 @@ class Repository {
         resource: JSON.parse(row.content as string)
       }))
     }];
+  }
+
+  private async write(resource: Resource): Promise<void> {
+    const meta = resource.meta as Meta;
+    const content = JSON.stringify(resource);
+
+    const columns: Record<string, any> = {
+      id: resource.id,
+      lastUpdated: meta.lastUpdated,
+      content
+    };
+
+    await knex(resource.resourceType).insert(columns)
+      .onConflict('id').merge();
+
+    await knex(resource.resourceType + '_History').insert({
+      id: resource.id,
+      versionId: meta.versionId,
+      lastUpdated: meta.lastUpdated,
+      content
+    });
   }
 }
 
