@@ -55,6 +55,7 @@ function main() {
   writeIndexFile(Object.keys(parentTypes).sort());
   writeResourceFile(Object.entries(parentTypes).filter(e => e[1].resource).map(e => e[0]).sort());
   Object.values(parentTypes).forEach(fhirType => writeInterfaceFile(fhirType));
+  writeMigrations(parentTypes);
 }
 
 function buildType(resourceType: string, definition: any): FhirType | undefined {
@@ -176,6 +177,69 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   }
 }
 
+function writeMigrations(fhirTypes: Record<string, FhirType>): void {
+  const searchParams = readJson('fhir/r4/search-parameters.json');
+
+  const b = new FileBuilder(INDENT);
+
+  b.append('import { Knex } from \'knex\';');
+  b.newLine();
+  b.append('export async function up(knex: Knex): Promise<void> {');
+  b.indentCount++;
+
+  for (const [resourceType, fhirType] of Object.entries(fhirTypes)) {
+    if (!fhirType.resource) {
+      continue;
+    }
+
+    b.newLine();
+    b.append('await knex.schema.createTable(\'' + resourceType + '\', t => {');
+    b.indentCount++;
+    b.append('t.uuid(\'id\').notNullable().primary();');
+    b.append('t.text(\'content\').notNullable();');
+    b.append('t.dateTime(\'lastUpdated\').notNullable();');
+
+    for (const entry of searchParams.entry) {
+      const searchParam = entry.resource;
+      if (searchParam.code === 'identifier') {
+        continue;
+      }
+      if (searchParam.base?.includes(resourceType)) {
+        if (searchParam.code === 'active') {
+          b.append('t.boolean(\'' + searchParam.code + '\');');
+        } else if (searchParam.type === 'date') {
+          b.append('t.date(\'' + searchParam.code + '\');');
+        } else {
+          b.append('t.string(\'' + searchParam.code + '\', 128);');
+        }
+      }
+    }
+
+    b.indentCount--;
+    b.append('});');
+    b.newLine();
+    b.append('await knex.schema.createTable(\'' + resourceType + '_History\', t => {');
+    b.indentCount++;
+    b.append('t.uuid(\'versionId\').notNullable().primary();');
+    b.append('t.uuid(\'id\').notNullable();');
+    b.append('t.text(\'content\').notNullable();');
+    b.append('t.dateTime(\'lastUpdated\').notNullable();');
+    b.indentCount--;
+    b.append('});');
+  }
+
+  b.indentCount--;
+  b.append('}');
+  b.newLine();
+  b.append('export async function down(knex: Knex): Promise<void> {');
+  b.indentCount++;
+  b.append('// TODO');
+  b.indentCount--;
+  b.append('}');
+
+  writeFileSync('../server/src/migrations/0_init.ts', b.toString(), 'utf8');
+}
+
 function buildImports(fhirType: FhirType, includedTypes: Set<string>, referencedTypes: Set<string>): void {
   includedTypes.add(fhirType.outputName);
 
@@ -245,9 +309,9 @@ function generateJavadoc(b: FileBuilder, text: string): void {
   b.append('/**');
 
   for (const textLine of text.split('\n')) {
-      for (const javadocLine of wordWrap(textLine, 70)) {
-          b.appendNoWrap(' ' + ('* ' + escapeHtml(javadocLine)).trim());
-      }
+    for (const javadocLine of wordWrap(textLine, 70)) {
+      b.appendNoWrap(' ' + ('* ' + escapeHtml(javadocLine)).trim());
+    }
   }
 
   b.append(' */');
@@ -315,15 +379,15 @@ function isLowerCase(c: string): boolean {
 
 function escapeHtml(unsafe: string): string {
   return unsafe
-       .replace(/&/g, '&amp;')
-       .replace(/</g, '&lt;')
-       .replace(/>/g, '&gt;')
-       .replace(/"/g, '&quot;')
-       .replace(/“/g, '&ldquo;')
-       .replace(/”/g, '&rdquo;')
-       .replace(/‘/g, '&lsquo;')
-       .replace(/’/g, '&rsquo;')
-       .replace(/…/g, '&hellip;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/“/g, '&ldquo;')
+    .replace(/”/g, '&rdquo;')
+    .replace(/‘/g, '&lsquo;')
+    .replace(/’/g, '&rsquo;')
+    .replace(/…/g, '&hellip;');
 }
 
 main();
