@@ -30,6 +30,18 @@ These instructions will get you a copy of the project up and running on your loc
 * npm 7
 * Postgres 12
 
+### Database
+
+Create a "medplum" database and "medplum" user:
+
+```PLpgSQL
+CREATE DATABASE medplum;
+CREATE USER medplum WITH PASSWORD 'medplum';
+GRANT ALL PRIVILEGES ON DATABASE medplum TO medplum;
+\c medplum;
+CREATE EXTENSION "uuid-ossp";
+```
+
 ### Installing
 
 Install and build:

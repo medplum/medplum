@@ -184,7 +184,7 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
 
   b.append('import { Knex } from \'knex\';');
   b.newLine();
-  b.append('export async function up(knex: Knex): Promise<void> {');
+  b.append('export async function up(knex) {');
   b.indentCount++;
 
   for (const [resourceType, fhirType] of Object.entries(fhirTypes)) {
@@ -231,13 +231,13 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
   b.indentCount--;
   b.append('}');
   b.newLine();
-  b.append('export async function down(knex: Knex): Promise<void> {');
+  b.append('export async function down(knex) {');
   b.indentCount++;
   b.append('// TODO');
   b.indentCount--;
   b.append('}');
 
-  writeFileSync('../server/src/migrations/0_init.ts', b.toString(), 'utf8');
+  writeFileSync('../server/src/migrations/0_init.js', b.toString(), 'utf8');
 }
 
 function buildImports(fhirType: FhirType, includedTypes: Set<string>, referencedTypes: Set<string>): void {
