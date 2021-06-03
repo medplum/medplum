@@ -50,4 +50,6 @@ export async function main() {
   await closeDatabase();
 }
 
-main();
+if (process.argv[1].endsWith('setup.ts')) {
+  main();
+}
