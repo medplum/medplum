@@ -6,18 +6,26 @@
   },
   "moduleFileExtensions": [
     "ts",
+    "tsx",
     "js",
+    "jsx",
     "json",
     "node"
   ],
+  "moduleNameMapper": {
+    "\\.css$": "identity-obj-proxy"
+  },
   "testMatch": [
-    "**/src/**/*.test.ts"
+    "**/src/**/*.test.ts",
+    "**/src/**/*.test.tsx"
   ],
   "collectCoverage": true,
   "coverageDirectory": "coverage",
   "collectCoverageFrom": [
     "src/**/*.ts",
-    "!src/**/*.d.ts"
+    "src/**/*.tsx",
+    "!src/**/*.d.ts",
+    "!src/stories/**/*.tsx"
   ],
   "projects": [
     "packages/core",
