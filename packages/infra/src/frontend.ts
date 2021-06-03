@@ -55,10 +55,13 @@ export class FrontEnd extends cdk.Construct {
     });
 
     // Route53 alias record for the CloudFront distribution
-    new route53.ARecord(this, 'SiteAliasRecord', {
+    const record = new route53.ARecord(this, 'SiteAliasRecord', {
       recordName: CONSOLE_DOMAIN_NAME,
       target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
       zone
     });
+
+    // Debug
+    console.log('ARecord', record.domainName);
   }
 }

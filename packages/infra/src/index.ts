@@ -10,7 +10,7 @@ class MedplumStack extends cdk.Stack {
   }
 }
 
-function main() {
+export function main() {
   const app = new cdk.App();
 
   new MedplumStack(app, 'MedplumStack', {
@@ -20,7 +20,7 @@ function main() {
     }
   });
 
-  app.synth();
+  return app.synth();
 }
 
 main();
