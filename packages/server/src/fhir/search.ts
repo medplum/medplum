@@ -73,7 +73,7 @@ const searchMappings = buildMappings(searchParams);
  * @param searchParams Original serch parameters bundle from the FHIR spec.
  * @returns Search parameter lookup table.
  */
-function buildMappings(searchParams: Bundle) {
+function buildMappings(searchParams: Bundle): Record<string, Record<string, SearchParameter>> {
   const mappings: Record<string, Record<string, SearchParameter>> = {};
   for (const entry of (searchParams.entry as BundleEntry[])) {
     const searchParam = entry.resource as SearchParameter;
@@ -92,6 +92,15 @@ function buildMappings(searchParams: Bundle) {
     }
   }
   return mappings;
+}
+
+/**
+ * Returns a collection of SearchParameters by resource type.
+ * @param resourceType The FHIR resource type.
+ * @returns The SearchParameters.
+ */
+export function getSearchParameters(resourceType: string): Record<string, SearchParameter> {
+  return searchMappings[resourceType];
 }
 
 /**
