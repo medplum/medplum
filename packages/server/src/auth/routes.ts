@@ -1,8 +1,8 @@
-import * as jwt from 'jsonwebtoken';
+import { ClientApplication, OperationOutcome, Patient, Practitioner, User } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { body, Result, ValidationError, validationResult } from 'express-validator';
-import { ClientApplication, OperationOutcome, User } from '@medplum/core';
+import * as jwt from 'jsonwebtoken';
 import { badRequest, repo } from '../fhir';
 import { createLogin } from '../oauth/utils';
 
@@ -62,7 +62,7 @@ authRouter.post(
       return res.status(400).json(badRequest('User odes not have role: ' + req.body.role));
     }
 
-    const [profileOutcome, profile] = await repo.readReference(roleReference);
+    const [profileOutcome, profile] = await repo.readReference<Patient | Practitioner>(roleReference);
     if (profileOutcome.id !== 'allok' || !profile) {
       return res.status(400).json(profileOutcome);
     }
