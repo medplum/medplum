@@ -3,7 +3,6 @@ import { Document, ResourceForm, useMedplum } from '@medplum/ui';
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
-import './ResourcePage.css';
 
 export function CreateResourcePage() {
   const { resourceType } = useParams<{ resourceType: string }>();
