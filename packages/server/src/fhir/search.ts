@@ -1,4 +1,3 @@
-import { readFileSync } from 'fs';
 import { Bundle, BundleEntry, SearchParameter } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 

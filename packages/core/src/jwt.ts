@@ -20,6 +20,5 @@ function decodePayload(payload: string) {
  */
 export function parseJWTPayload(token: string) {
   const [_header, payload, _signature] = token.split('.');
-  const jsonPayload = decodePayload(payload);
-  return jsonPayload;
+  return decodePayload(payload);
 }

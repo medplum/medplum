@@ -169,7 +169,7 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   b.indentCount--;
   b.append('}');
 
-  fhirType.subTypes.sort((a, b) => a.outputName.localeCompare(b.outputName));
+  fhirType.subTypes.sort((t1, t2) => t1.outputName.localeCompare(t2.outputName));
 
   for (const subType of fhirType.subTypes) {
     b.newLine();

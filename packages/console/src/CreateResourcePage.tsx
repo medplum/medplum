@@ -6,7 +6,7 @@ import { history } from './history';
 import './ResourcePage.css';
 
 export function CreateResourcePage() {
-  const { resourceType } = useParams() as any;
+  const { resourceType } = useParams<{ resourceType: string }>();
   const medplum = useMedplum();
 
   return (
