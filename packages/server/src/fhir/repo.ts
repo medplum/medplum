@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { knex } from '../database';
 import { allOk, badRequest, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
-import { getSearchParameter, SearchRequest } from './search';
+import { getSearchParameter, getSearchParameters, SearchRequest } from './search';
 
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
 
@@ -123,7 +123,6 @@ class Repository {
 
     await this.write(result);
 
-
     return [allOk, result];
   }
 
@@ -155,7 +154,7 @@ class Repository {
     for (const filter of searchRequest.filters) {
       const param = getSearchParameter(searchRequest.resourceType, filter.code);
       if (param) {
-        builder.where((param.code as string).toUpperCase(), filter.value);
+        builder.where(param.code as string, filter.value);
       }
     }
 
@@ -171,6 +170,7 @@ class Repository {
   }
 
   private async write(resource: Resource): Promise<void> {
+    const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = JSON.stringify(resource);
 
@@ -180,10 +180,32 @@ class Repository {
       content
     };
 
-    await knex(resource.resourceType).insert(columns)
+    const searchParams = getSearchParameters(resourceType);
+    for (const [name, searchParam] of Object.entries(searchParams)) {
+      if (name in resource) {
+        const value = (resource as any)[name];
+        if (searchParam.type === 'date') {
+          columns[name] = new Date(value);
+        } else if (typeof value === 'string') {
+          if (value.length > 128) {
+            columns[name] = value.substr(0, 128);
+          } else {
+            columns[name] = value;
+          }
+        } else {
+          let json = JSON.stringify(value);
+          if (json.length > 128) {
+            json = json.substr(0, 128);
+          }
+          columns[name] = json;
+        }
+      }
+    }
+
+    await knex(resourceType).insert(columns)
       .onConflict('id').merge();
 
-    await knex(resource.resourceType + '_History').insert({
+    await knex(resourceType + '_History').insert({
       id: resource.id,
       versionId: meta.versionId,
       lastUpdated: meta.lastUpdated,
