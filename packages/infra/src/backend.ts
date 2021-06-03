@@ -165,18 +165,22 @@ export class BackEnd extends cdk.Construct {
     const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: DOMAIN_NAME });
 
     // Route53 alias record for the load balancer
-    new route53.ARecord(this, 'LoadBalancerAliasRecord', {
+    const record = new route53.ARecord(this, 'LoadBalancerAliasRecord', {
       recordName: API_DOMAIN_NAME,
       target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(loadBalancer)),
       zone: zone
     });
 
     // SSM Parameters
-    new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
+    const secrets = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/DatabaseSecrets`,
       description: 'Database secrets ARN',
       stringValue: rdsCluster.secret?.secretArn as string
     });
+
+    // Debug
+    console.log('ARecord', record.domainName);
+    console.log('DatabaseSecretsParameter', secrets.parameterArn);
   }
 }
