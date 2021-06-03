@@ -1,4 +1,4 @@
-import { Request, Response, Router } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
 import { binaryRouter } from './binary';
 import { badRequest } from './outcomes';
 import { repo } from './repo';
@@ -6,10 +6,44 @@ import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
 
 export const fhirRouter = Router();
+
+// JSON interceptor
+// Unlike the normal express.json() middleware, we strictly require content type
+fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
+  const oldSend = res.send;
+  res.send = (data: any) => {
+    // Restore the original send to avoid double response
+    // See: https://stackoverflow.com/a/60817116
+    res.send = oldSend;
+
+    // FHIR "Prefer" header preferences
+    // See: https://www.hl7.org/fhir/http.html#ops
+    // Prefer: return=minimal
+    // Prefer: return=representation
+    // Prefer: return=OperationOutcome
+    const prefer = req.get('Prefer');
+    if (prefer === 'return=minimal') {
+      return res.send();
+    }
+
+    // Unless already set, use the FHIR content type
+    if (!res.get('Content-Type')) {
+      res.contentType('application/fhir+json');
+    }
+
+    return res.send(data);
+  };
+  next();
+});
+
+// Binary routes
 fhirRouter.use('/Binary/', binaryRouter);
 
 // Create batch
 fhirRouter.post('/', (req: Request, res: Response) => {
+  if (!isFhirJsonContentType(req)) {
+    return res.status(400).send('Unsupported content type');
+  }
   res.sendStatus(201);
 });
 
@@ -26,11 +60,12 @@ fhirRouter.get('/:resourceType', async (req: Request, res: Response) => {
 
 // Create resource
 fhirRouter.post('/:resourceType', async (req: Request, res: Response) => {
+  if (!isFhirJsonContentType(req)) {
+    return res.status(400).send('Unsupported content type');
+  }
   const { resourceType } = req.params;
   const resource = req.body;
   if (resource.resourceType !== resourceType) {
-    console.log('path param', resourceType);
-    console.log('resource value', resource.resourceType);
     return res.status(400).send(badRequest('Incorrect resource type'));
   }
   const [outcome, result] = await repo.createResource(resource);
@@ -81,6 +116,9 @@ fhirRouter.get('/:resourceType/:id/_history/:vid', async (req: Request, res: Res
 
 // Update resource
 fhirRouter.put('/:resourceType/:id', async (req: Request, res: Response) => {
+  if (!isFhirJsonContentType(req)) {
+    return res.status(400).send('Unsupported content type');
+  }
   const { resourceType, id } = req.params;
   const resource = req.body;
   if (resource.resourceType !== resourceType) {
@@ -111,12 +149,22 @@ fhirRouter.delete('/:resourceType/:id', async (req: Request, res: Response) => {
 
 // Patch resource
 fhirRouter.patch('/:resourceType/:id', async (req: Request, res: Response) => {
+  if (!isFhirJsonContentType(req)) {
+    return res.status(400).send('Unsupported content type');
+  }
   res.status(200).send({});
 });
 
 // Validate create resource
 fhirRouter.post('/:resourceType/([$])validate', async (req: Request, res: Response) => {
+  if (!isFhirJsonContentType(req)) {
+    return res.status(400).send('Unsupported content type');
+  }
   const data = req.body as any;
   const outcome = validateResource(data);
   res.status(outcome.id === 'allok' ? 200 : 400).send(outcome);
 });
+
+function isFhirJsonContentType(req: Request) {
+  return req.is('application/json') || req.is('application/fhir+json');
+}

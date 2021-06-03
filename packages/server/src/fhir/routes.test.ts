@@ -15,6 +15,7 @@ afterAll(async () => {
 test('Create batch', (done) => {
   request(app)
     .post('/fhir/R4/')
+    .set('Content-Type', 'application/fhir+json')
     .send({ resourceType: 'Bundle', entry: [] })
     .expect(201, done);
 });
@@ -22,6 +23,7 @@ test('Create batch', (done) => {
 test('Create resource', (done) => {
   request(app)
     .post('/fhir/R4/Patient')
+    .set('Content-Type', 'application/json')
     .send({ resourceType: 'Patient' })
     .expect(201)
     .end((err, res) => {
@@ -35,6 +37,7 @@ test('Create resource', (done) => {
 test('Create resource invalid resource type', (done) => {
   request(app)
     .post('/fhir/R4/Patientx')
+    .set('Content-Type', 'application/fhir+json')
     .send({ resourceType: 'Patientx' })
     .expect(400, done);
 });
