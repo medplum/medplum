@@ -17,8 +17,11 @@ import { API_DOMAIN_NAME, DOMAIN_NAME, SSL_CERT_ARN } from './constants';
  * RDS config: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-rds-readme.html
  */
 export class BackEnd extends cdk.Construct {
+  readonly id: string;
+
   constructor(scope: cdk.Construct, id: string) {
     super(scope, id);
+    this.id = id;
 
     const name = 'prod';
 
