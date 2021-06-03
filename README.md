@@ -1,4 +1,4 @@
-# [Medplum](https://www.medplum.com) &middot; [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/medplum/medplum/blob/main/LICENSE.txt) [![Maven Central](https://img.shields.io/maven-central/v/com.medplum/medplum-core.svg?color=blue)](https://www.npmjs.com/package/medplum) [![npm version](https://img.shields.io/npm/v/medplum.svg?color=blue)](https://www.npmjs.com/package/medplum) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=medplum_medplum&metric=alert_status&token=207c95a43e7519809d6d336d8cc7837d3e057acf)](https://sonarcloud.io/dashboard?id=medplum_medplum)
+# [Medplum](https://www.medplum.com) &middot; [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/medplum/medplum/blob/main/LICENSE.txt) [![npm version](https://img.shields.io/npm/v/medplum.svg?color=blue)](https://www.npmjs.com/package/medplum) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=medplum_medplum&metric=alert_status&token=207c95a43e7519809d6d336d8cc7837d3e057acf)](https://sonarcloud.io/dashboard?id=medplum_medplum)
 
 Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.  Medplum includes a FHIR server, React component library, and developer console.
 
@@ -6,21 +6,19 @@ Medplum is a healthcare platform that helps you quickly develop high-quality com
 
 ## Projects
 
-Medplum uses a [monorepo](https://en.wikipedia.org/wiki/Monorepo) structure.
-
-Medplum uses [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspaces) to manage subprojects.  All subprojects are located in the `packages` directory.
+Medplum uses a [monorepo](https://en.wikipedia.org/wiki/Monorepo) structure via [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspaces).  All subprojects are in `packages`.
 
 Here is a quick summary of the subprojects:
 
-| Folder        | Type     | Port  | Description                            |
-| ------------- | -------- | ----- | -------------------------------------- |
-| `console`     | App      | 3000  | Developer console application          |
-| `core`        | Library  |       | Core Typescript client library         |
-| `definitons`  | Library  |       | Data definitions                       |
-| `generator`   | App      |       | Code generator                         |
-| `graphiql`    | App      | 8080  | GraphQL debug tool                     |
-| `server`      | App      | 5000  | Main server application                |
-| `ui`          | Library  | 6006  | React component library and Storybook  |
+| Folder        | Description                            | Port  |
+| ------------- | -------------------------------------- | ----- |
+| `console`     | Developer console application          | 3000  |
+| `core`        | Core Typescript client library         |       |
+| `definitons`  | Data definitions                       |       |
+| `generator`   | Code generator                         |       |
+| `graphiql`    | GraphQL debug tool                     | 8080  |
+| `server`      | Main server application                | 5000  |
+| `ui`          | React component library and Storybook  | 6006  |
 
 ## Getting Started
 
