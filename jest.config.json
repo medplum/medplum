@@ -21,6 +21,8 @@
   ],
   "projects": [
     "packages/core",
-    "packages/server"
+    "packages/infra",
+    "packages/server",
+    "packages/ui"
   ]
 }

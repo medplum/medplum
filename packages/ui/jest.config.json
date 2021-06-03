@@ -1,0 +1,22 @@
+{
+  "testEnvironment": "jsdom",
+  "testRunner": "jasmine2",
+  "transform": {
+    "^.+\\.tsx?$": "ts-jest"
+  },
+  "moduleFileExtensions": [
+    "ts",
+    "tsx",
+    "js",
+    "jsx",
+    "json",
+    "node"
+  ],
+  "moduleNameMapper": {
+    "\\.css$": "identity-obj-proxy"
+  },
+  "testMatch": [
+    "**/src/**/*.test.ts",
+    "**/src/**/*.test.tsx"
+  ]
+}
