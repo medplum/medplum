@@ -2,7 +2,7 @@
   "testEnvironment": "node",
   "testRunner": "jasmine2",
   "transform": {
-    "^.+\\.ts$": "ts-jest"
+    "^.+\\.(js|ts)$": "ts-jest"
   },
   "moduleFileExtensions": [
     "ts",
