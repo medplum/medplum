@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response, Router } from 'express';
+import { createBatch } from './batch';
 import { binaryRouter } from './binary';
 import { badRequest } from './outcomes';
 import { repo } from './repo';
@@ -40,11 +41,19 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
 fhirRouter.use('/Binary/', binaryRouter);
 
 // Create batch
-fhirRouter.post('/', (req: Request, res: Response) => {
+fhirRouter.post('/', async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
     return res.status(400).send('Unsupported content type');
   }
-  res.sendStatus(201);
+  const bundle = req.body;
+  if (bundle.resourceType !== 'Bundle') {
+    return res.status(400).send(badRequest('Not a bundle'));
+  }
+  const [outcome, result] = await createBatch(bundle);
+  if (outcome.id !== 'allok') {
+    return res.status(400).send(outcome);
+  }
+  res.status(200).send(result);
 });
 
 // Search

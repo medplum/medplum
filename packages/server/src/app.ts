@@ -29,7 +29,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.set('x-powered-by', false);
   app.set('json spaces', 2);
   app.use(cors(corsOptions));
-  app.use(express.json());
+  app.use(express.json({ type: ['application/json', 'application/fhir+json'] }));
   app.use(errorHandler);
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
   app.get('/healthcheck', (req: Request, res: Response) => res.send({ ok: true }));

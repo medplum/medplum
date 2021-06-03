@@ -16,14 +16,14 @@ test('Create batch', (done) => {
   request(app)
     .post('/fhir/R4/')
     .set('Content-Type', 'application/fhir+json')
-    .send({ resourceType: 'Bundle', entry: [] })
-    .expect(201, done);
+    .send({ resourceType: 'Bundle', type: 'batch', entry: [] })
+    .expect(200, done);
 });
 
 test('Create resource', (done) => {
   request(app)
     .post('/fhir/R4/Patient')
-    .set('Content-Type', 'application/json')
+    .set('Content-Type', 'application/fhir+json')
     .send({ resourceType: 'Patient' })
     .expect(201)
     .end((err, res) => {
