@@ -91,14 +91,14 @@ fhirRouter.get('/:resourceType/:id', async (req: Request, res: Response) => {
 // Read resource history
 fhirRouter.get('/:resourceType/:id/_history', async (req: Request, res: Response) => {
   const { resourceType, id } = req.params;
-  const [outcome, resource] = await repo.readResource(resourceType, id);
+  const [outcome, bundle] = await repo.readHistory(resourceType, id);
   if (outcome.id === 'not-found') {
     return res.status(404).send(outcome);
   }
   if (outcome.id !== 'allok') {
     return res.status(400).send(outcome);
   }
-  res.status(200).send(resource);
+  res.status(200).send(bundle);
 });
 
 // Read resource version by version ID
@@ -160,8 +160,7 @@ fhirRouter.post('/:resourceType/([$])validate', async (req: Request, res: Respon
   if (!isFhirJsonContentType(req)) {
     return res.status(400).send('Unsupported content type');
   }
-  const data = req.body as any;
-  const outcome = validateResource(data);
+  const outcome = validateResource(req.body);
   res.status(outcome.id === 'allok' ? 200 : 400).send(outcome);
 });
 

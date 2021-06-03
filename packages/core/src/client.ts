@@ -270,9 +270,7 @@ export class MedplumClient extends EventTarget {
 
   fhirUrl(...path: string[]): string {
     const builder = [this.baseUrl, 'fhir/R4'];
-    for (let i = 0; i < path.length; i++) {
-      builder.push('/', encodeURIComponent(path[i]));
-    }
+    path.forEach(p => builder.push('/', encodeURIComponent(p)))
     return builder.join('');
   }
 

@@ -124,7 +124,7 @@ function indexProperty(output: IndexedStructureDefinition, element: ElementDefin
   const path = element.path as string;
   const parts = path.split('.');
   const typeName = buildTypeName(parts.slice(0, parts.length - 1));
-  const typeSchema = output.types[typeName] as TypeSchema;
+  const typeSchema = output.types[typeName];
   const key = parts[parts.length - 1];
   const elementTypes = element.type as ElementDefinitionType[];
 
@@ -147,7 +147,7 @@ function indexProperty(output: IndexedStructureDefinition, element: ElementDefin
   if (propertySchema.type === 'Reference'
     && elementTypes[0].targetProfile
     && elementTypes[0].targetProfile.length > 0) {
-    propertySchema.targetProfile = (elementTypes[0].targetProfile as string[]).map(str => str.split('/').pop()) as string[];
+    propertySchema.targetProfile = elementTypes[0].targetProfile.map(str => str.split('/').pop()) as string[];
   }
 
   if (element.max === '*') {

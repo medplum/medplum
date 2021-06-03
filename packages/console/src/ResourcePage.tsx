@@ -3,10 +3,9 @@ import { Button, Document, keyReplacer, parseForm, ResourceForm, ResourceTable, 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
-import './ResourcePage.css';
 
 export function ResourcePage() {
-  const { resourceType, id, tab } = useParams() as any;
+  const { resourceType, id, tab } = useParams<{ resourceType: string, id: string, tab: string }>();
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [value, setValue] = useState<Resource | undefined>();
