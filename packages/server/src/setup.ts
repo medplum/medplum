@@ -1,4 +1,5 @@
-import { Bundle } from '@medplum/core';
+import bcrypt from 'bcrypt';
+import { Bundle, Organization, Project, User } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { closeDatabase, initDatabase } from './database';
 import { repo } from './fhir/repo';
@@ -6,7 +7,83 @@ import { Operator } from './fhir/search';
 
 export async function main() {
   await initDatabase();
+  await createProject();
+  await createOrganization();
+  await createUser();
+  await createStructureDefinitions();
+  await closeDatabase();
+}
 
+async function createProject() {
+  const [searchOutcome, searchResult] = await repo.search({
+    resourceType: 'Project',
+    filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Medplum' }]
+  });
+
+  if (searchOutcome.id !== 'allok') {
+    console.log(searchOutcome);
+    return;
+  }
+
+  if (searchResult?.entry && searchResult.entry.length > 0) {
+    return;
+  }
+
+  await repo.createResource<Project>({
+    resourceType: 'Project',
+    name: 'Medplum',
+    owner: {
+      reference: 'User/1'
+    }
+  });
+}
+
+async function createOrganization() {
+  const [searchOutcome, searchResult] = await repo.search({
+    resourceType: 'Organization',
+    filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Medplum' }]
+  });
+
+  if (searchOutcome.id !== 'allok') {
+    console.log(searchOutcome);
+    return;
+  }
+
+  if (searchResult?.entry && searchResult.entry.length > 0) {
+    return;
+  }
+
+  await repo.createResource<Organization>({
+    resourceType: 'Organization',
+    name: 'Medplum'
+  });
+}
+
+async function createUser() {
+  const [searchOutcome, searchResult] = await repo.search({
+    resourceType: 'User',
+    filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Medplum' }]
+  });
+
+  if (searchOutcome.id !== 'allok') {
+    console.log(searchOutcome);
+    return;
+  }
+
+  if (searchResult?.entry && searchResult.entry.length > 0) {
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash('admin', 10);
+
+  await repo.createResource<User>({
+    resourceType: 'User',
+    email: 'admin@medplum.com',
+    passwordHash
+  });
+}
+
+async function createStructureDefinitions() {
   const structureDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
   const entries = structureDefinitions.entry;
   if (!entries) {
@@ -22,11 +99,7 @@ export async function main() {
     if (resource.resourceType === 'StructureDefinition') {
       const [searchOutcome, searchResult] = await repo.search({
         resourceType: 'StructureDefinition',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: resource.name as string
-        }]
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: resource.name as string }]
       });
 
       if (searchOutcome.id !== 'allok') {
@@ -46,8 +119,6 @@ export async function main() {
       }
     }
   }
-
-  await closeDatabase();
 }
 
 if (process.argv[1].endsWith('setup.ts')) {
