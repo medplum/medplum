@@ -33,6 +33,10 @@ export async function initApp(app: Express): Promise<Express> {
     type: ['application/json', 'application/fhir+json'],
     limit: '5mb'
   }));
+  app.use(express.raw({
+    type: '*/*',
+    limit: '5mb'
+  }));
   app.use(errorHandler);
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
   app.get('/healthcheck', (req: Request, res: Response) => res.send({ ok: true }));

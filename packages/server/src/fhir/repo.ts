@@ -181,23 +181,25 @@ class Repository {
     };
 
     const searchParams = getSearchParameters(resourceType);
-    for (const [name, searchParam] of Object.entries(searchParams)) {
-      if (name in resource) {
-        const value = (resource as any)[name];
-        if (searchParam.type === 'date') {
-          columns[name] = new Date(value);
-        } else if (typeof value === 'string') {
-          if (value.length > 128) {
-            columns[name] = value.substr(0, 128);
+    if (searchParams) {
+      for (const [name, searchParam] of Object.entries(searchParams)) {
+        if (name in resource) {
+          const value = (resource as any)[name];
+          if (searchParam.type === 'date') {
+            columns[name] = new Date(value);
+          } else if (typeof value === 'string') {
+            if (value.length > 128) {
+              columns[name] = value.substr(0, 128);
+            } else {
+              columns[name] = value;
+            }
           } else {
-            columns[name] = value;
+            let json = JSON.stringify(value);
+            if (json.length > 128) {
+              json = json.substr(0, 128);
+            }
+            columns[name] = json;
           }
-        } else {
-          let json = JSON.stringify(value);
-          if (json.length > 128) {
-            json = json.substr(0, 128);
-          }
-          columns[name] = json;
         }
       }
     }

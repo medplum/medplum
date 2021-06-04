@@ -12,7 +12,7 @@ authRouter.post(
   '/login',
   body('clientId').exists().withMessage('Missing clientId'),
   body('email').isEmail().withMessage('Valid email address is required'),
-  body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
+  body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 8 characters'),
   body('scope').notEmpty().withMessage('Missing scope'),
   body('role').notEmpty().withMessage('Missing role'),
   async (req: Request, res: Response) => {
