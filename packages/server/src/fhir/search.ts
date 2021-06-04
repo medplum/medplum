@@ -15,7 +15,6 @@ export interface SearchRequest {
 }
 
 export interface Filter {
-  //param: SearchParameter;
   code: string;
   operator: Operator;
   value: string;

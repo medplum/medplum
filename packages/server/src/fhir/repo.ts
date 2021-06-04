@@ -132,6 +132,14 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
+    const [readOutcome, resource] = await this.readResource(resourceType, id);
+    if (readOutcome.id !== 'allok') {
+      return [readOutcome, undefined];
+    }
+
+    // TODO
+    console.log(`DELETE resourceType=${resource?.resourceType} / id=${resource?.id}`);
+
     return [allOk, undefined];
   }
 
