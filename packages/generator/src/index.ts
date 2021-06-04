@@ -201,9 +201,6 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
 
     for (const entry of searchParams.entry) {
       const searchParam = entry.resource;
-      if (searchParam.code === 'identifier') {
-        continue;
-      }
       if (searchParam.base?.includes(resourceType)) {
         if (searchParam.code === 'active') {
           b.append('t.boolean(\'' + searchParam.code + '\');');
