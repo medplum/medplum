@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "esnext",
+    "target": "es2020",
     "module": "commonjs",
     "outDir": "dist",
     "moduleResolution": "node",
@@ -12,12 +12,16 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
+    "incremental": true,
     "lib": [
-      "esnext"
+      "es2020"
     ]
   },
   "include": [
     "src/**/*.js",
     "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

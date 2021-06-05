@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
+    "target": "es2020",
+    "module": "commonjs",
     "outDir": "lib",
-    "lib": [ "esnext", "dom" ],
+    "lib": [ "es2020", "dom" ],
     "jsx": "react",
     "moduleResolution": "node",
     "strict": true,
@@ -12,15 +12,14 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "composite": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true
   },
-  "references": [],
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx"
   ],
   "exclude": [
-    "node_modules",
-    "src/stories"
+    "node_modules"
   ]
 }
