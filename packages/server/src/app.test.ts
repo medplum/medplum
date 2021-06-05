@@ -1,15 +1,19 @@
 import express from 'express';
 import request from 'supertest';
-import { destroyApp, initApp } from './app';
+import { initApp } from './app';
+import { loadConfig } from './config';
+import { closeDatabase, initDatabase } from './database';
 
 const app = express();
 
 beforeAll(async () => {
+  await loadConfig('file:medplum.config.json');
+  await initDatabase({ client: 'sqlite3' });
   await initApp(app);
 });
 
 afterAll(async () => {
-  await destroyApp(app);
+  await closeDatabase();
 });
 
 test('Get root', (done) => {

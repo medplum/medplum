@@ -1,5 +1,8 @@
 {
   "name": "root",
+  "scripts": {
+    "build": "sh ./scripts/build.sh"
+  },
   "workspaces": [
     "packages/*"
   ],

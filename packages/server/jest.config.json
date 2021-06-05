@@ -12,5 +12,11 @@
   ],
   "testMatch": [
     "**/src/**/*.test.ts"
-  ]
+  ],
+  "globals": {
+    "ts-jest": {
+      "babel": true,
+      "tsConfig": "tsconfig.json"
+    }
+  }
 }
