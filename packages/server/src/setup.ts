@@ -4,14 +4,20 @@ import { readJson } from '@medplum/definitions';
 import { closeDatabase, initDatabase } from './database';
 import { repo } from './fhir/repo';
 import { Operator } from './fhir/search';
+import { loadConfig } from './config';
 
 export async function main() {
-  await initDatabase();
+  const config = await loadConfig('file:medplum.config.json');
+  await initDatabase(config.database);
+  await setup();
+  await closeDatabase();
+}
+
+export async function setup() {
   await createProject();
   await createOrganization();
   await createUser();
   await createStructureDefinitions();
-  await closeDatabase();
 }
 
 async function createProject() {

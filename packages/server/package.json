@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Medplum Server",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -18,8 +18,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "0.0.19",
-    "@medplum/definitions": "0.0.19",
+    "@aws-sdk/client-ssm": "3.17.0",
+    "@aws-sdk/client-secrets-manager": "3.17.0",
+    "@medplum/core": "0.0.20",
+    "@medplum/definitions": "0.0.20",
     "bcrypt": "5.0.1",
     "cors": "2.8.5",
     "dotenv": "10.0.0",

@@ -1,6 +1,6 @@
 import { Bundle, Meta, OperationOutcome, Reference, Resource } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { knex } from '../database';
+import { getKnex } from '../database';
 import { allOk, badRequest, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters, SearchRequest } from './search';
@@ -36,6 +36,7 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
+    const knex = getKnex();
     const rows = await knex.select('content')
       .from(resourceType)
       .where('id', id);
@@ -61,6 +62,7 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
+    const knex = getKnex();
     const builder = knex.select('content')
       .from(resourceType + '_History')
       .where('id', id);
@@ -82,6 +84,7 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
+    const knex = getKnex();
     const rows = await knex.select('content')
       .from(resourceType + '_History')
       .where('id', id)
@@ -158,6 +161,7 @@ class Repository {
       return [validateOutcome, undefined];
     }
 
+    const knex = getKnex();
     const builder = knex.select('content').from(searchRequest.resourceType);
     for (const filter of searchRequest.filters) {
       const param = getSearchParameter(searchRequest.resourceType, filter.code);
@@ -178,6 +182,7 @@ class Repository {
   }
 
   private async write(resource: Resource): Promise<void> {
+    const knex = getKnex();
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = JSON.stringify(resource);

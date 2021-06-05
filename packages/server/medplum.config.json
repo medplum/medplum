@@ -1,0 +1,16 @@
+{
+  "baseUrl": "http://localhost:5000/",
+  "issuer": "http://localhost:5000/",
+  "jwksUrl": "http://localhost:5000/.well-known/jwks.json",
+  "authorizeUrl": "http://localhost:5000/oauth2/authorize",
+  "tokenUrl": "http://localhost:5000/oauth2/token",
+  "userInfoUrl": "http://localhost:5000/oauth2/userinfo",
+  "database": {
+    "client": "pg",
+    "host": "localhost",
+    "port": 5432,
+    "database": "medplum",
+    "username": "medplum",
+    "password": "medplum"
+  }
+}

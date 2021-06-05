@@ -1,7 +1,6 @@
 import cors from 'cors';
 import express, { Express, NextFunction, Request, Response } from 'express';
 import { authRouter } from './auth';
-import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
 import { fhirRouter } from './fhir';
 import { oauthRouter } from './oauth';
@@ -24,7 +23,17 @@ function errorHandler(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function initApp(app: Express): Promise<Express> {
-  await initDatabase();
+  // const envName = process.argv.length === 3 ? process.argv[2] : 'localhost';
+  // console.log('envName', envName);
+
+  // const config = await loadConfig(envName);
+  // console.log('config', config);
+
+  // // const secrets = await getSecrets('arn:aws:secretsmanager:us-east-1:647991932601:secret:MedplumStackBackEndDatabase-EGCWqzSdj8J9-MsYQit');
+  // // console.log('secrets', secrets);
+
+  // await initDatabase(config.database);
+
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.set('json spaces', 2);
@@ -46,8 +55,4 @@ export async function initApp(app: Express): Promise<Express> {
   app.use('/oauth2/', oauthRouter);
   app.use('/scim/v2/', fhirRouter);
   return app;
-}
-
-export async function destroyApp(app: Express): Promise<void> {
-  await closeDatabase();
 }
