@@ -1,18 +1,19 @@
 {
   "compilerOptions": {
-    "target": "esnext",
+    "target": "es2020",
     "module": "commonjs",
     "moduleResolution": "node",
     "outDir": "lib",
     "lib": [
-      "esnext"
+      "es2020"
     ],
     "strict": true,
     "sourceMap": true,
     "declaration": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "incremental": false
   },
   "references": [],
   "include": [

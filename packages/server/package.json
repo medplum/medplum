@@ -14,7 +14,7 @@
     "build": "tsc",
     "prestart": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node-dev src/index.ts",
+    "dev": "ts-node-dev --transpile-only src/index.ts",
     "test": "jest"
   },
   "dependencies": {
