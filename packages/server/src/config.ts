@@ -1,6 +1,7 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 const AWS_REGION = 'us-east-1';
 
@@ -82,7 +83,7 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
-  return JSON.parse(readFileSync(path, { encoding: 'utf8' }));
+  return JSON.parse(readFileSync(resolve(__dirname, '../', path), { encoding: 'utf8' }));
 }
 
 /**
