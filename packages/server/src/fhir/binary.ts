@@ -1,7 +1,7 @@
 import { Binary } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { mkdirSync, writeFileSync } from 'fs';
-import * as path from 'path';
+import path from 'path';
 import { notFound } from './outcomes';
 import { repo } from './repo';
 

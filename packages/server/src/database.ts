@@ -1,24 +1,6 @@
 import * as Knex from 'knex';
-import * as path from 'path';
+import path from 'path';
 import { MedplumDatabaseConfig } from './config';
-
-// const POSTGRES_OPTIONS: Knex.Knex.Config = {
-//   client: 'pg',
-//   connection: {
-//     host: 'localhost',
-//     database: 'medplum',
-//     user: 'medplum',
-//     password: 'medplum'
-//   }
-// };
-
-// const SQLITE_OPTIONS: Knex.Knex.Config = {
-//   client: 'sqlite3',
-//   connection: ':memory:',
-//   useNullAsDefault: true
-// };
-
-// export const knex = Knex.knex(process.env.NODE_ENV === 'test' ? SQLITE_OPTIONS : POSTGRES_OPTIONS);
 
 let knex: Knex.Knex | undefined;
 
@@ -30,7 +12,6 @@ export function getKnex(): Knex.Knex {
 }
 
 export async function initDatabase(config: MedplumDatabaseConfig): Promise<void> {
-  //knex = Knex.knex(process.env.NODE_ENV === 'test' ? SQLITE_OPTIONS : POSTGRES_OPTIONS);
   knex = Knex.knex({
     client: config.client,
     connection: config.client === 'sqlite3' ? ':memory:' : {
