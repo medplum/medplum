@@ -61,3 +61,7 @@ Run the console:
 ```
 npm run dev - packages/console
 ```
+
+## License
+
+Apache 2.0.  Copyright &copy; Medplum 2021

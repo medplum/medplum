@@ -81,3 +81,7 @@ medplum.create({
   // ...
 });
 ```
+
+## License
+
+Apache 2.0.  Copyright &copy; Medplum 2021
