@@ -12,15 +12,15 @@ node_modules/
 
 # Output
 packages/console/dist/
-packages/core/lib/
-packages/definitions/lib/**/*.js
-packages/definitions/lib/**/*.js.map
-packages/definitions/lib/**/*.d.ts
+packages/core/dist/
+packages/definitions/dist/**/*.js
+packages/definitions/dist/**/*.js.map
+packages/definitions/dist/**/*.d.ts
 packages/generator/dist/
 packages/graphiql/dist/
 packages/seeder/dist/
 packages/server/dist/
-packages/ui/lib/
+packages/ui/dist/
 
 # Storybook output
 storybook-static/

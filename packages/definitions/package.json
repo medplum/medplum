@@ -11,7 +11,7 @@
     "directory": "packages/definitions"
   },
   "scripts": {
-    "clean": "rimraf lib/index.*",
+    "clean": "rimraf dist/index.*",
     "build": "npm run clean && tsc",
     "test": "jest"
   },
@@ -26,8 +26,8 @@
     "typescript": "4.3.2"
   },
   "files": [
-    "lib"
+    "dist"
   ],
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts"
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts"
 }
