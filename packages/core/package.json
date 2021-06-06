@@ -32,5 +32,20 @@
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "sideEffects": false
+  "sideEffects": false,
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative"
+  ]
 }
