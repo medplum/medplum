@@ -289,7 +289,7 @@ export class MedplumClient extends EventTarget {
 
   search(search: string | SearchDefinition): Promise<Bundle> {
     if (typeof search === 'string') {
-      return this.get(search);
+      return this.get(this.baseUrl + 'fhir/R4/' + search);
     } else {
       return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search));
     }

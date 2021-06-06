@@ -1,0 +1,16 @@
+{
+  "testEnvironment": "node",
+  "testRunner": "jasmine2",
+  "transform": {
+    "^.+\\.ts$": "ts-jest"
+  },
+  "moduleFileExtensions": [
+    "ts",
+    "js",
+    "json",
+    "node"
+  ],
+  "testMatch": [
+    "**/src/**/*.test.ts"
+  ]
+}

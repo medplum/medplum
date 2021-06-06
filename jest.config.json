@@ -30,6 +30,7 @@
   "projects": [
     "packages/core",
     "packages/infra",
+    "packages/seeder",
     "packages/server",
     "packages/ui"
   ]
