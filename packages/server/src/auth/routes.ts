@@ -2,7 +2,7 @@ import { ClientApplication, OperationOutcome, Patient, Practitioner, User } from
 import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { body, Result, ValidationError, validationResult } from 'express-validator';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { badRequest, repo } from '../fhir';
 import { createLogin } from '../oauth/utils';
 

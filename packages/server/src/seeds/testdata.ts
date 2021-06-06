@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'fs';
 import { Knex } from 'knex';
-import * as path from 'path';
+import path from 'path';
 
 export async function seed(knex: Knex): Promise<void> {
   await knex('Binary').del();
