@@ -7,7 +7,7 @@ import { EventTarget } from './eventtarget';
 import { Binary, Bundle, OperationOutcome, Reference, Resource, StructureDefinition, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { formatSearchQuery, SearchDefinition } from './search';
-import { Storage } from './storage';
+import { LocalStorage, MemoryStorage, Storage } from './storage';
 import { IndexedStructureDefinition, indexStructureDefinition } from './types';
 import { arrayBufferToBase64 } from './utils';
 
@@ -75,6 +75,17 @@ export interface MedplumClientOptions {
    * Consider using this for performance of displaying Patient or Practitioner resources.
    */
   blobCacheSize?: number;
+
+  /**
+   * Optional fetch implementation.
+   * Optional.  Default is window.fetch.
+   * For nodejs applications, consider the 'node-fetch' package.
+   */
+  fetch?: FetchLike;
+}
+
+export interface FetchLike {
+  (url: string, options?: any): Promise<any>;
 }
 
 interface LoginRequest {
@@ -101,6 +112,7 @@ interface TokenResponse {
 }
 
 export class MedplumClient extends EventTarget {
+  private readonly fetch: FetchLike;
   private readonly storage: Storage;
   private readonly schema: Map<string, IndexedStructureDefinition>;
   private readonly resourceCache: LRUCache<Resource>;
@@ -129,7 +141,8 @@ export class MedplumClient extends EventTarget {
       throw new Error('Client ID cannot be empty');
     }
 
-    this.storage = new Storage();
+    this.fetch = options.fetch || window.fetch.bind(window);
+    this.storage = typeof localStorage !== 'undefined' ? new LocalStorage() : new MemoryStorage();
     this.schema = new Map();
     this.resourceCache = new LRUCache(options.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.blobUrlCache = new LRUCache(options.blobCacheSize ?? DEFAULT_BLOB_CACHE_SIZE);
@@ -186,15 +199,15 @@ export class MedplumClient extends EventTarget {
   }
 
   get(url: string, blob?: boolean): Promise<any> {
-    return this.fetch('GET', url, undefined, undefined, blob);
+    return this.request('GET', url, undefined, undefined, blob);
   }
 
   post(url: string, body: any, contentType?: string): Promise<any> {
-    return this.fetch('POST', url, contentType, body);
+    return this.request('POST', url, contentType, body);
   }
 
   put(url: string, body: any, contentType?: string): Promise<any> {
-    return this.fetch('PUT', url, contentType, body);
+    return this.request('PUT', url, contentType, body);
   }
 
   /**
@@ -370,7 +383,7 @@ export class MedplumClient extends EventTarget {
   }
 
   patch(resourceType: string, id: string, operations: any): Promise<any> {
-    return this.fetch('PATCH', this.fhirUrl(resourceType, id), PATCH_CONTENT_TYPE, operations);
+    return this.request('PATCH', this.fhirUrl(resourceType, id), PATCH_CONTENT_TYPE, operations);
   }
 
   graphql(gql: any): Promise<any> {
@@ -446,12 +459,18 @@ export class MedplumClient extends EventTarget {
    * @param {Object=} body
    * @param {boolean=} blob
    */
-  private fetch(method: string, url: string, contentType?: string, body?: any, blob?: boolean): Promise<any> {
+  private async request(
+    method: string,
+    url: string,
+    contentType?: string,
+    body?: any,
+    blob?: boolean): Promise<any> {
+
     if (!url.startsWith('http')) {
       url = this.baseUrl + url;
     }
 
-    const options: any = {
+    const options: RequestInit = {
       method: method,
       cache: 'no-cache',
       credentials: 'include',
@@ -462,32 +481,24 @@ export class MedplumClient extends EventTarget {
     };
 
     if (body) {
-      if (typeof body === 'string' || body instanceof File) {
+      if (typeof body === 'string' || (typeof File !== 'undefined' && body instanceof File)) {
         options.body = body;
       } else {
         options.body = JSON.stringify(body, keyReplacer);
       }
     }
 
-    return new Promise((resolve, reject) => {
-      fetch(url, options)
-        .then(response => {
-          if (response.status === 401) {
-            // Refresh and try again
-            return this.refresh().then(() => this.fetch(method, url, contentType, body, blob));
-          }
-          return blob ? response.blob() : response.json();
-        })
-        .then(obj => {
-          if (obj.issue && obj.issue.length > 0) {
-            reject(new MedplumOperationOutcomeError(obj as OperationOutcome));
-          }
-          resolve(obj);
-        })
-        .catch(error => {
-          reject(error);
-        })
-    });
+    const response = await this.fetch(url, options);
+    if (response.status === 401) {
+      // Refresh and try again
+      return this.refresh().then(() => this.request(method, url, contentType, body, blob));
+    }
+
+    const obj = blob ? await response.blob() : await response.json();
+    if (obj.issue && obj.issue.length > 0) {
+      throw new MedplumOperationOutcomeError(obj as OperationOutcome);
+    }
+    return obj;
   }
 
   /**
