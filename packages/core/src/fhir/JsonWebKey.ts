@@ -65,7 +65,7 @@ export interface JsonWebKey {
   /**
    * The operation(s) for which the key is intended to be used.
    */
-  readonly key_ops?: string;
+  readonly key_ops?: string[];
 
   /**
    * The x.509 certificate chain. The first entry in the array is the

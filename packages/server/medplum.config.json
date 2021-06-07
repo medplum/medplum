@@ -1,6 +1,7 @@
 {
   "baseUrl": "http://localhost:5000/",
   "issuer": "http://localhost:5000/",
+  "audience": "http://localhost:5000/",
   "jwksUrl": "http://localhost:5000/.well-known/jwks.json",
   "authorizeUrl": "http://localhost:5000/oauth2/authorize",
   "tokenUrl": "http://localhost:5000/oauth2/token",

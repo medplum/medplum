@@ -200,6 +200,8 @@ class Repository {
           const value = (resource as any)[name];
           if (searchParam.type === 'date') {
             columns[name] = new Date(value);
+          } else if (searchParam.type === 'boolean') {
+            columns[name] = (value === 'true');
           } else if (typeof value === 'string') {
             if (value.length > 128) {
               columns[name] = value.substr(0, 128);

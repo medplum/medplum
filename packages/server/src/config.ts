@@ -8,6 +8,7 @@ const AWS_REGION = 'us-east-1';
 export interface MedplumServerConfig {
   baseUrl: string;
   issuer: string;
+  audience: string;
   jwksUrl: string;
   authorizeUrl: string;
   tokenUrl: string;
