@@ -198,6 +198,8 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
     b.append('t.uuid(\'id\').notNullable().primary();');
     b.append('t.text(\'content\').notNullable();');
     b.append('t.dateTime(\'lastUpdated\').notNullable();');
+    b.append('t.uuid(\'projectId\');');
+    b.append('t.uuid(\'authorId\');');
 
     for (const entry of searchParams.entry) {
       const searchParam = entry.resource;
@@ -230,7 +232,16 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
   b.newLine();
   b.append('export async function down(knex) {');
   b.indentCount++;
-  b.append('// TODO');
+
+  for (const [resourceType, fhirType] of Object.entries(fhirTypes)) {
+    if (!fhirType.resource) {
+      continue;
+    }
+
+    b.append('await knex.schema.dropTable(\'' + resourceType + '\');');
+    b.append('await knex.schema.dropTable(\'' + resourceType + '_History\');');
+  }
+
   b.indentCount--;
   b.append('}');
 

@@ -470,14 +470,20 @@ export class MedplumClient extends EventTarget {
       url = this.baseUrl + url;
     }
 
+    const headers: Record<string, string> = {
+      'Content-Type': contentType || FHIR_CONTENT_TYPE
+    };
+
+    const accessToken = this.getAccessToken();
+    if (accessToken) {
+      headers['Authorization'] = accessToken;
+    }
+
     const options: RequestInit = {
       method: method,
       cache: 'no-cache',
       credentials: 'include',
-      headers: {
-        'Authorization': 'Bearer ' + this.getAccessToken(),
-        'Content-Type': contentType || FHIR_CONTENT_TYPE
-      }
+      headers
     };
 
     if (body) {

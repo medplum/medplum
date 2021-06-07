@@ -3,12 +3,16 @@
  * Do not edit manually.
  */
 
+import { Knex } from 'knex';
+
 export async function up(knex) {
 
   await knex.schema.createTable('Account', t => {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('name', 128);
     t.string('owner', 128);
@@ -30,6 +34,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -65,6 +71,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('actuality', 128);
     t.string('category', 128);
     t.date('date');
@@ -90,6 +98,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('asserter', 128);
     t.string('category', 128);
     t.string('clinical-status', 128);
@@ -119,6 +129,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('actor', 128);
     t.string('appointment-type', 128);
     t.string('based-on', 128);
@@ -149,6 +161,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('actor', 128);
     t.string('appointment', 128);
     t.string('identifier', 128);
@@ -169,6 +183,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('action', 128);
     t.string('address', 128);
     t.string('agent', 128);
@@ -200,6 +216,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('author', 128);
     t.string('code', 128);
     t.date('created');
@@ -219,6 +237,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('Binary_History', t => {
@@ -232,6 +252,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('BiologicallyDerivedProduct_History', t => {
@@ -245,6 +267,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('location', 128);
     t.string('morphology', 128);
@@ -262,6 +286,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composition', 128);
     t.string('identifier', 128);
     t.string('message', 128);
@@ -280,6 +306,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -316,6 +344,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -349,6 +379,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -370,6 +402,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('CatalogEntry_History', t => {
@@ -383,6 +417,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('account', 128);
     t.string('code', 128);
     t.string('context', 128);
@@ -413,6 +449,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -441,6 +479,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('care-team', 128);
     t.date('created');
     t.string('detail-udi', 128);
@@ -471,6 +511,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('created');
     t.string('disposition', 128);
     t.string('identifier', 128);
@@ -495,6 +537,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('patient', 128);
     t.string('assessor', 128);
@@ -521,6 +565,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -554,6 +600,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('based-on', 128);
     t.string('category', 128);
     t.string('encounter', 128);
@@ -582,6 +630,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('authored');
     t.string('based-on', 128);
     t.string('category', 128);
@@ -611,6 +661,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -638,6 +690,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -669,6 +723,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -708,6 +764,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -742,6 +800,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -770,6 +830,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('authority', 128);
     t.string('domain', 128);
     t.string('identifier', 128);
@@ -793,6 +855,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('beneficiary', 128);
     t.string('class-type', 128);
     t.string('class-value', 128);
@@ -817,6 +881,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('created');
     t.string('enterer', 128);
     t.string('facility', 128);
@@ -837,6 +903,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('created');
     t.string('disposition', 128);
     t.string('identifier', 128);
@@ -859,6 +927,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('author', 128);
@@ -878,6 +948,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('device-name', 128);
     t.string('identifier', 128);
     t.string('location', 128);
@@ -903,6 +975,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('parent', 128);
     t.string('type', 128);
@@ -919,6 +993,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('category', 128);
     t.string('identifier', 128);
     t.string('parent', 128);
@@ -937,6 +1013,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -968,6 +1046,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('patient', 128);
     t.string('device', 128);
     t.string('identifier', 128);
@@ -985,6 +1065,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
     t.string('identifier', 128);
@@ -1014,6 +1096,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('type', 128);
@@ -1040,6 +1124,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('type', 128);
@@ -1078,6 +1164,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -1107,6 +1195,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -1143,6 +1233,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('connection-type', 128);
     t.string('identifier', 128);
     t.string('name', 128);
@@ -1162,6 +1254,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('status', 128);
@@ -1179,6 +1273,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('request', 128);
     t.string('status', 128);
@@ -1195,6 +1291,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -1217,6 +1315,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -1252,6 +1352,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -1287,6 +1389,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -1322,6 +1426,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -1348,6 +1454,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('care-team', 128);
     t.string('claim', 128);
     t.string('coverage', 128);
@@ -1378,6 +1486,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
     t.string('identifier', 128);
@@ -1400,6 +1510,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('patient', 128);
     t.string('encounter', 128);
@@ -1419,6 +1531,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('achievement-status', 128);
@@ -1440,6 +1554,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -1467,6 +1583,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('actual', 128);
     t.string('characteristic', 128);
     t.string('code', 128);
@@ -1490,6 +1608,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('request', 128);
@@ -1507,6 +1627,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.boolean('active');
     t.string('characteristic', 128);
     t.string('coverage-area', 128);
@@ -1532,6 +1654,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('basedon', 128);
@@ -1562,6 +1686,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -1591,6 +1717,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('dose-status', 128);
     t.string('identifier', 128);
@@ -1611,6 +1739,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('information', 128);
@@ -1632,6 +1762,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -1663,6 +1795,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -1690,6 +1824,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('account', 128);
     t.date('date');
     t.string('identifier', 128);
@@ -1716,6 +1852,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composed-of', 128);
     t.string('content-type', 128);
     t.string('context', 128);
@@ -1753,6 +1891,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('author', 128);
     t.string('item', 128);
     t.string('source', 128);
@@ -1769,6 +1909,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
     t.string('identifier', 128);
@@ -1794,6 +1936,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -1822,6 +1966,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -1857,6 +2003,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('evaluated-resource', 128);
     t.string('identifier', 128);
@@ -1879,6 +2027,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('based-on', 128);
     t.date('created');
     t.string('device', 128);
@@ -1905,6 +2055,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.date('expiration-date');
     t.string('form', 128);
@@ -1927,6 +2079,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -1953,6 +2107,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -1981,6 +2137,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('classification', 128);
     t.string('classification-type', 128);
     t.string('code', 128);
@@ -2007,6 +2165,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -2036,6 +2196,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -2060,6 +2222,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('name', 128);
     t.string('name-language', 128);
@@ -2076,6 +2240,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('country', 128);
     t.string('holder', 128);
     t.string('identifier', 128);
@@ -2094,6 +2260,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('subject', 128);
   });
 
@@ -2108,6 +2276,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('subject', 128);
   });
 
@@ -2122,6 +2292,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('MedicinalProductIngredient_History', t => {
@@ -2135,6 +2307,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('subject', 128);
   });
 
@@ -2149,6 +2323,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('MedicinalProductManufactured_History', t => {
@@ -2162,6 +2338,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('subject', 128);
   });
@@ -2177,6 +2355,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('route', 128);
     t.string('target-species', 128);
@@ -2193,6 +2373,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('subject', 128);
   });
 
@@ -2207,6 +2389,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -2239,6 +2423,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('author', 128);
     t.string('code', 128);
     t.string('destination', 128);
@@ -2266,6 +2452,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('chromosome', 128);
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -2292,6 +2480,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -2324,6 +2514,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
@@ -2349,6 +2541,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
     t.string('identifier', 128);
@@ -2400,6 +2594,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('ObservationDefinition_History', t => {
@@ -2413,6 +2609,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -2448,6 +2646,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('OperationOutcome_History', t => {
@@ -2461,6 +2661,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.boolean('active');
     t.string('address', 128);
     t.string('address-city', 128);
@@ -2487,6 +2689,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.boolean('active');
     t.date('date');
     t.string('email', 128);
@@ -2514,6 +2718,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('Parameters_History', t => {
@@ -2527,6 +2733,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.boolean('active');
     t.string('address', 128);
     t.string('address-city', 128);
@@ -2563,6 +2771,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('created');
     t.string('identifier', 128);
     t.string('payment-status', 128);
@@ -2583,6 +2793,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('created');
     t.string('disposition', 128);
     t.string('identifier', 128);
@@ -2604,6 +2816,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -2636,6 +2850,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -2673,6 +2889,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -2703,6 +2921,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('email', 128);
     t.string('phone', 128);
     t.string('telecom', 128);
@@ -2729,6 +2949,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
     t.string('identifier', 128);
@@ -2758,6 +2980,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('agent', 128);
     t.string('agent-role', 128);
     t.string('agent-type', 128);
@@ -2781,6 +3005,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -2813,6 +3039,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('author', 128);
     t.date('authored');
     t.string('based-on', 128);
@@ -2837,6 +3065,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -2867,6 +3097,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('author', 128);
     t.date('authored');
     t.string('code', 128);
@@ -2894,6 +3126,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -2929,6 +3163,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -2964,6 +3200,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('category', 128);
     t.date('date');
     t.string('focus', 128);
@@ -2990,6 +3228,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('individual', 128);
@@ -3009,6 +3249,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -3032,6 +3274,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3061,6 +3305,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.boolean('active');
     t.string('actor', 128);
     t.date('date');
@@ -3081,6 +3327,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3113,6 +3361,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
     t.string('identifier', 128);
     t.string('patient', 128);
@@ -3147,6 +3397,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('appointment-type', 128);
     t.string('identifier', 128);
     t.string('schedule', 128);
@@ -3168,6 +3420,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('accession', 128);
     t.string('bodysite', 128);
     t.date('collected');
@@ -3193,6 +3447,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('container', 128);
     t.string('identifier', 128);
     t.string('type', 128);
@@ -3209,6 +3465,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3248,6 +3506,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3276,6 +3536,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('contact', 128);
     t.string('criteria', 128);
     t.string('payload', 128);
@@ -3295,6 +3557,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('category', 128);
     t.string('code', 128);
     t.string('container-identifier', 128);
@@ -3316,6 +3580,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('SubstanceNucleicAcid_History', t => {
@@ -3329,6 +3595,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('SubstancePolymer_History', t => {
@@ -3342,6 +3610,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('SubstanceProtein_History', t => {
@@ -3355,6 +3625,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('SubstanceReferenceInformation_History', t => {
@@ -3368,6 +3640,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('SubstanceSourceMaterial_History', t => {
@@ -3381,6 +3655,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('code', 128);
   });
 
@@ -3395,6 +3671,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('receiver', 128);
@@ -3413,6 +3691,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('date');
     t.string('identifier', 128);
     t.string('category', 128);
@@ -3433,6 +3713,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.date('authored-on');
     t.string('based-on', 128);
     t.string('business-status', 128);
@@ -3465,6 +3747,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3492,6 +3776,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.date('issued');
     t.string('participant', 128);
@@ -3511,6 +3797,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3540,6 +3828,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3571,6 +3861,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('target', 128);
   });
 
@@ -3585,6 +3877,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
@@ -3604,6 +3898,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('name', 128);
   });
 
@@ -3618,6 +3914,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('ClientApplication_History', t => {
@@ -3631,6 +3929,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.string('email', 128);
   });
 
@@ -3645,6 +3945,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('Login_History', t => {
@@ -3658,6 +3960,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('RefreshToken_History', t => {
@@ -3671,6 +3975,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
   });
 
   await knex.schema.createTable('PasswordChangeRequest_History', t => {
@@ -3684,6 +3990,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+    t.uuid('projectId');
+    t.uuid('authorId');
     t.boolean('active');
   });
 
@@ -3696,5 +4004,310 @@ export async function up(knex) {
 }
 
 export async function down(knex) {
-  // TODO
+  await knex.schema.dropTable('Account');
+  await knex.schema.dropTable('Account_History');
+  await knex.schema.dropTable('ActivityDefinition');
+  await knex.schema.dropTable('ActivityDefinition_History');
+  await knex.schema.dropTable('AdverseEvent');
+  await knex.schema.dropTable('AdverseEvent_History');
+  await knex.schema.dropTable('AllergyIntolerance');
+  await knex.schema.dropTable('AllergyIntolerance_History');
+  await knex.schema.dropTable('Appointment');
+  await knex.schema.dropTable('Appointment_History');
+  await knex.schema.dropTable('AppointmentResponse');
+  await knex.schema.dropTable('AppointmentResponse_History');
+  await knex.schema.dropTable('AuditEvent');
+  await knex.schema.dropTable('AuditEvent_History');
+  await knex.schema.dropTable('Basic');
+  await knex.schema.dropTable('Basic_History');
+  await knex.schema.dropTable('Binary');
+  await knex.schema.dropTable('Binary_History');
+  await knex.schema.dropTable('BiologicallyDerivedProduct');
+  await knex.schema.dropTable('BiologicallyDerivedProduct_History');
+  await knex.schema.dropTable('BodyStructure');
+  await knex.schema.dropTable('BodyStructure_History');
+  await knex.schema.dropTable('Bundle');
+  await knex.schema.dropTable('Bundle_History');
+  await knex.schema.dropTable('CapabilityStatement');
+  await knex.schema.dropTable('CapabilityStatement_History');
+  await knex.schema.dropTable('CarePlan');
+  await knex.schema.dropTable('CarePlan_History');
+  await knex.schema.dropTable('CareTeam');
+  await knex.schema.dropTable('CareTeam_History');
+  await knex.schema.dropTable('CatalogEntry');
+  await knex.schema.dropTable('CatalogEntry_History');
+  await knex.schema.dropTable('ChargeItem');
+  await knex.schema.dropTable('ChargeItem_History');
+  await knex.schema.dropTable('ChargeItemDefinition');
+  await knex.schema.dropTable('ChargeItemDefinition_History');
+  await knex.schema.dropTable('Claim');
+  await knex.schema.dropTable('Claim_History');
+  await knex.schema.dropTable('ClaimResponse');
+  await knex.schema.dropTable('ClaimResponse_History');
+  await knex.schema.dropTable('ClinicalImpression');
+  await knex.schema.dropTable('ClinicalImpression_History');
+  await knex.schema.dropTable('CodeSystem');
+  await knex.schema.dropTable('CodeSystem_History');
+  await knex.schema.dropTable('Communication');
+  await knex.schema.dropTable('Communication_History');
+  await knex.schema.dropTable('CommunicationRequest');
+  await knex.schema.dropTable('CommunicationRequest_History');
+  await knex.schema.dropTable('CompartmentDefinition');
+  await knex.schema.dropTable('CompartmentDefinition_History');
+  await knex.schema.dropTable('Composition');
+  await knex.schema.dropTable('Composition_History');
+  await knex.schema.dropTable('ConceptMap');
+  await knex.schema.dropTable('ConceptMap_History');
+  await knex.schema.dropTable('Condition');
+  await knex.schema.dropTable('Condition_History');
+  await knex.schema.dropTable('Consent');
+  await knex.schema.dropTable('Consent_History');
+  await knex.schema.dropTable('Contract');
+  await knex.schema.dropTable('Contract_History');
+  await knex.schema.dropTable('Coverage');
+  await knex.schema.dropTable('Coverage_History');
+  await knex.schema.dropTable('CoverageEligibilityRequest');
+  await knex.schema.dropTable('CoverageEligibilityRequest_History');
+  await knex.schema.dropTable('CoverageEligibilityResponse');
+  await knex.schema.dropTable('CoverageEligibilityResponse_History');
+  await knex.schema.dropTable('DetectedIssue');
+  await knex.schema.dropTable('DetectedIssue_History');
+  await knex.schema.dropTable('Device');
+  await knex.schema.dropTable('Device_History');
+  await knex.schema.dropTable('DeviceDefinition');
+  await knex.schema.dropTable('DeviceDefinition_History');
+  await knex.schema.dropTable('DeviceMetric');
+  await knex.schema.dropTable('DeviceMetric_History');
+  await knex.schema.dropTable('DeviceRequest');
+  await knex.schema.dropTable('DeviceRequest_History');
+  await knex.schema.dropTable('DeviceUseStatement');
+  await knex.schema.dropTable('DeviceUseStatement_History');
+  await knex.schema.dropTable('DiagnosticReport');
+  await knex.schema.dropTable('DiagnosticReport_History');
+  await knex.schema.dropTable('DocumentManifest');
+  await knex.schema.dropTable('DocumentManifest_History');
+  await knex.schema.dropTable('DocumentReference');
+  await knex.schema.dropTable('DocumentReference_History');
+  await knex.schema.dropTable('EffectEvidenceSynthesis');
+  await knex.schema.dropTable('EffectEvidenceSynthesis_History');
+  await knex.schema.dropTable('Encounter');
+  await knex.schema.dropTable('Encounter_History');
+  await knex.schema.dropTable('Endpoint');
+  await knex.schema.dropTable('Endpoint_History');
+  await knex.schema.dropTable('EnrollmentRequest');
+  await knex.schema.dropTable('EnrollmentRequest_History');
+  await knex.schema.dropTable('EnrollmentResponse');
+  await knex.schema.dropTable('EnrollmentResponse_History');
+  await knex.schema.dropTable('EpisodeOfCare');
+  await knex.schema.dropTable('EpisodeOfCare_History');
+  await knex.schema.dropTable('EventDefinition');
+  await knex.schema.dropTable('EventDefinition_History');
+  await knex.schema.dropTable('Evidence');
+  await knex.schema.dropTable('Evidence_History');
+  await knex.schema.dropTable('EvidenceVariable');
+  await knex.schema.dropTable('EvidenceVariable_History');
+  await knex.schema.dropTable('ExampleScenario');
+  await knex.schema.dropTable('ExampleScenario_History');
+  await knex.schema.dropTable('ExplanationOfBenefit');
+  await knex.schema.dropTable('ExplanationOfBenefit_History');
+  await knex.schema.dropTable('FamilyMemberHistory');
+  await knex.schema.dropTable('FamilyMemberHistory_History');
+  await knex.schema.dropTable('Flag');
+  await knex.schema.dropTable('Flag_History');
+  await knex.schema.dropTable('Goal');
+  await knex.schema.dropTable('Goal_History');
+  await knex.schema.dropTable('GraphDefinition');
+  await knex.schema.dropTable('GraphDefinition_History');
+  await knex.schema.dropTable('Group');
+  await knex.schema.dropTable('Group_History');
+  await knex.schema.dropTable('GuidanceResponse');
+  await knex.schema.dropTable('GuidanceResponse_History');
+  await knex.schema.dropTable('HealthcareService');
+  await knex.schema.dropTable('HealthcareService_History');
+  await knex.schema.dropTable('ImagingStudy');
+  await knex.schema.dropTable('ImagingStudy_History');
+  await knex.schema.dropTable('Immunization');
+  await knex.schema.dropTable('Immunization_History');
+  await knex.schema.dropTable('ImmunizationEvaluation');
+  await knex.schema.dropTable('ImmunizationEvaluation_History');
+  await knex.schema.dropTable('ImmunizationRecommendation');
+  await knex.schema.dropTable('ImmunizationRecommendation_History');
+  await knex.schema.dropTable('ImplementationGuide');
+  await knex.schema.dropTable('ImplementationGuide_History');
+  await knex.schema.dropTable('InsurancePlan');
+  await knex.schema.dropTable('InsurancePlan_History');
+  await knex.schema.dropTable('Invoice');
+  await knex.schema.dropTable('Invoice_History');
+  await knex.schema.dropTable('Library');
+  await knex.schema.dropTable('Library_History');
+  await knex.schema.dropTable('Linkage');
+  await knex.schema.dropTable('Linkage_History');
+  await knex.schema.dropTable('List');
+  await knex.schema.dropTable('List_History');
+  await knex.schema.dropTable('Location');
+  await knex.schema.dropTable('Location_History');
+  await knex.schema.dropTable('Measure');
+  await knex.schema.dropTable('Measure_History');
+  await knex.schema.dropTable('MeasureReport');
+  await knex.schema.dropTable('MeasureReport_History');
+  await knex.schema.dropTable('Media');
+  await knex.schema.dropTable('Media_History');
+  await knex.schema.dropTable('Medication');
+  await knex.schema.dropTable('Medication_History');
+  await knex.schema.dropTable('MedicationAdministration');
+  await knex.schema.dropTable('MedicationAdministration_History');
+  await knex.schema.dropTable('MedicationDispense');
+  await knex.schema.dropTable('MedicationDispense_History');
+  await knex.schema.dropTable('MedicationKnowledge');
+  await knex.schema.dropTable('MedicationKnowledge_History');
+  await knex.schema.dropTable('MedicationRequest');
+  await knex.schema.dropTable('MedicationRequest_History');
+  await knex.schema.dropTable('MedicationStatement');
+  await knex.schema.dropTable('MedicationStatement_History');
+  await knex.schema.dropTable('MedicinalProduct');
+  await knex.schema.dropTable('MedicinalProduct_History');
+  await knex.schema.dropTable('MedicinalProductAuthorization');
+  await knex.schema.dropTable('MedicinalProductAuthorization_History');
+  await knex.schema.dropTable('MedicinalProductContraindication');
+  await knex.schema.dropTable('MedicinalProductContraindication_History');
+  await knex.schema.dropTable('MedicinalProductIndication');
+  await knex.schema.dropTable('MedicinalProductIndication_History');
+  await knex.schema.dropTable('MedicinalProductIngredient');
+  await knex.schema.dropTable('MedicinalProductIngredient_History');
+  await knex.schema.dropTable('MedicinalProductInteraction');
+  await knex.schema.dropTable('MedicinalProductInteraction_History');
+  await knex.schema.dropTable('MedicinalProductManufactured');
+  await knex.schema.dropTable('MedicinalProductManufactured_History');
+  await knex.schema.dropTable('MedicinalProductPackaged');
+  await knex.schema.dropTable('MedicinalProductPackaged_History');
+  await knex.schema.dropTable('MedicinalProductPharmaceutical');
+  await knex.schema.dropTable('MedicinalProductPharmaceutical_History');
+  await knex.schema.dropTable('MedicinalProductUndesirableEffect');
+  await knex.schema.dropTable('MedicinalProductUndesirableEffect_History');
+  await knex.schema.dropTable('MessageDefinition');
+  await knex.schema.dropTable('MessageDefinition_History');
+  await knex.schema.dropTable('MessageHeader');
+  await knex.schema.dropTable('MessageHeader_History');
+  await knex.schema.dropTable('MolecularSequence');
+  await knex.schema.dropTable('MolecularSequence_History');
+  await knex.schema.dropTable('NamingSystem');
+  await knex.schema.dropTable('NamingSystem_History');
+  await knex.schema.dropTable('NutritionOrder');
+  await knex.schema.dropTable('NutritionOrder_History');
+  await knex.schema.dropTable('Observation');
+  await knex.schema.dropTable('Observation_History');
+  await knex.schema.dropTable('ObservationDefinition');
+  await knex.schema.dropTable('ObservationDefinition_History');
+  await knex.schema.dropTable('OperationDefinition');
+  await knex.schema.dropTable('OperationDefinition_History');
+  await knex.schema.dropTable('OperationOutcome');
+  await knex.schema.dropTable('OperationOutcome_History');
+  await knex.schema.dropTable('Organization');
+  await knex.schema.dropTable('Organization_History');
+  await knex.schema.dropTable('OrganizationAffiliation');
+  await knex.schema.dropTable('OrganizationAffiliation_History');
+  await knex.schema.dropTable('Parameters');
+  await knex.schema.dropTable('Parameters_History');
+  await knex.schema.dropTable('Patient');
+  await knex.schema.dropTable('Patient_History');
+  await knex.schema.dropTable('PaymentNotice');
+  await knex.schema.dropTable('PaymentNotice_History');
+  await knex.schema.dropTable('PaymentReconciliation');
+  await knex.schema.dropTable('PaymentReconciliation_History');
+  await knex.schema.dropTable('Person');
+  await knex.schema.dropTable('Person_History');
+  await knex.schema.dropTable('PlanDefinition');
+  await knex.schema.dropTable('PlanDefinition_History');
+  await knex.schema.dropTable('Practitioner');
+  await knex.schema.dropTable('Practitioner_History');
+  await knex.schema.dropTable('PractitionerRole');
+  await knex.schema.dropTable('PractitionerRole_History');
+  await knex.schema.dropTable('Procedure');
+  await knex.schema.dropTable('Procedure_History');
+  await knex.schema.dropTable('Provenance');
+  await knex.schema.dropTable('Provenance_History');
+  await knex.schema.dropTable('Questionnaire');
+  await knex.schema.dropTable('Questionnaire_History');
+  await knex.schema.dropTable('QuestionnaireResponse');
+  await knex.schema.dropTable('QuestionnaireResponse_History');
+  await knex.schema.dropTable('RelatedPerson');
+  await knex.schema.dropTable('RelatedPerson_History');
+  await knex.schema.dropTable('RequestGroup');
+  await knex.schema.dropTable('RequestGroup_History');
+  await knex.schema.dropTable('ResearchDefinition');
+  await knex.schema.dropTable('ResearchDefinition_History');
+  await knex.schema.dropTable('ResearchElementDefinition');
+  await knex.schema.dropTable('ResearchElementDefinition_History');
+  await knex.schema.dropTable('ResearchStudy');
+  await knex.schema.dropTable('ResearchStudy_History');
+  await knex.schema.dropTable('ResearchSubject');
+  await knex.schema.dropTable('ResearchSubject_History');
+  await knex.schema.dropTable('RiskAssessment');
+  await knex.schema.dropTable('RiskAssessment_History');
+  await knex.schema.dropTable('RiskEvidenceSynthesis');
+  await knex.schema.dropTable('RiskEvidenceSynthesis_History');
+  await knex.schema.dropTable('Schedule');
+  await knex.schema.dropTable('Schedule_History');
+  await knex.schema.dropTable('SearchParameter');
+  await knex.schema.dropTable('SearchParameter_History');
+  await knex.schema.dropTable('ServiceRequest');
+  await knex.schema.dropTable('ServiceRequest_History');
+  await knex.schema.dropTable('Slot');
+  await knex.schema.dropTable('Slot_History');
+  await knex.schema.dropTable('Specimen');
+  await knex.schema.dropTable('Specimen_History');
+  await knex.schema.dropTable('SpecimenDefinition');
+  await knex.schema.dropTable('SpecimenDefinition_History');
+  await knex.schema.dropTable('StructureDefinition');
+  await knex.schema.dropTable('StructureDefinition_History');
+  await knex.schema.dropTable('StructureMap');
+  await knex.schema.dropTable('StructureMap_History');
+  await knex.schema.dropTable('Subscription');
+  await knex.schema.dropTable('Subscription_History');
+  await knex.schema.dropTable('Substance');
+  await knex.schema.dropTable('Substance_History');
+  await knex.schema.dropTable('SubstanceNucleicAcid');
+  await knex.schema.dropTable('SubstanceNucleicAcid_History');
+  await knex.schema.dropTable('SubstancePolymer');
+  await knex.schema.dropTable('SubstancePolymer_History');
+  await knex.schema.dropTable('SubstanceProtein');
+  await knex.schema.dropTable('SubstanceProtein_History');
+  await knex.schema.dropTable('SubstanceReferenceInformation');
+  await knex.schema.dropTable('SubstanceReferenceInformation_History');
+  await knex.schema.dropTable('SubstanceSourceMaterial');
+  await knex.schema.dropTable('SubstanceSourceMaterial_History');
+  await knex.schema.dropTable('SubstanceSpecification');
+  await knex.schema.dropTable('SubstanceSpecification_History');
+  await knex.schema.dropTable('SupplyDelivery');
+  await knex.schema.dropTable('SupplyDelivery_History');
+  await knex.schema.dropTable('SupplyRequest');
+  await knex.schema.dropTable('SupplyRequest_History');
+  await knex.schema.dropTable('Task');
+  await knex.schema.dropTable('Task_History');
+  await knex.schema.dropTable('TerminologyCapabilities');
+  await knex.schema.dropTable('TerminologyCapabilities_History');
+  await knex.schema.dropTable('TestReport');
+  await knex.schema.dropTable('TestReport_History');
+  await knex.schema.dropTable('TestScript');
+  await knex.schema.dropTable('TestScript_History');
+  await knex.schema.dropTable('ValueSet');
+  await knex.schema.dropTable('ValueSet_History');
+  await knex.schema.dropTable('VerificationResult');
+  await knex.schema.dropTable('VerificationResult_History');
+  await knex.schema.dropTable('VisionPrescription');
+  await knex.schema.dropTable('VisionPrescription_History');
+  await knex.schema.dropTable('Project');
+  await knex.schema.dropTable('Project_History');
+  await knex.schema.dropTable('ClientApplication');
+  await knex.schema.dropTable('ClientApplication_History');
+  await knex.schema.dropTable('User');
+  await knex.schema.dropTable('User_History');
+  await knex.schema.dropTable('Login');
+  await knex.schema.dropTable('Login_History');
+  await knex.schema.dropTable('RefreshToken');
+  await knex.schema.dropTable('RefreshToken_History');
+  await knex.schema.dropTable('PasswordChangeRequest');
+  await knex.schema.dropTable('PasswordChangeRequest_History');
+  await knex.schema.dropTable('JsonWebKey');
+  await knex.schema.dropTable('JsonWebKey_History');
 }
