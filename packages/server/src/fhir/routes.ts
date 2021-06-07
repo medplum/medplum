@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response, Router } from 'express';
+import { authenticateToken } from '../oauth';
 import { createBatch } from './batch';
 import { binaryRouter } from './binary';
 import { badRequest } from './outcomes';
@@ -7,6 +8,7 @@ import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
 
 export const fhirRouter = Router();
+fhirRouter.use(authenticateToken);
 
 // JSON interceptor
 // Unlike the normal express.json() middleware, we strictly require content type

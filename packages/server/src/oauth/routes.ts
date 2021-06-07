@@ -1,6 +1,12 @@
 import { Request, Response, Router } from 'express';
+import { getJwks} from './keys';
 
 export const oauthRouter = Router();
+
+oauthRouter.get('/.well-known/jwks.json', (req: Request, res: Response) => {
+  const jwks = getJwks();
+  res.status(200).json(jwks);
+});
 
 oauthRouter.post('/authorize', (req: Request, res: Response) => {
   res.sendStatus(200);

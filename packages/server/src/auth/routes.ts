@@ -2,8 +2,8 @@ import { ClientApplication, OperationOutcome, Patient, Practitioner, User } from
 import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { body, Result, ValidationError, validationResult } from 'express-validator';
-import jwt from 'jsonwebtoken';
 import { badRequest, repo } from '../fhir';
+import { generateJwt } from '../oauth';
 import { createLogin } from '../oauth/utils';
 
 export const authRouter = Router();
@@ -75,27 +75,21 @@ authRouter.post(
       }
     });
 
-    const secret = 'secret';
-
-    const accessToken = jwt.sign({
-      token_user: 'access',
-      exp: 0,
-      sub: profile.id,
+    const accessToken = await generateJwt('1h', {
+      sub: user.id as string,
+      username: user.id as string,
       scope: req.body.scope,
-      client_id: client.id,
-      username: profile.id,
+      client_id: client.id as string,
       profile: profile.resourceType + '/' + profile.id
-    }, secret);
+    });
 
-    const refreshToken = jwt.sign({
-      token_user: 'refresh',
-      exp: 0,
-      sub: profile.id,
+    const refreshToken = await generateJwt('2w', {
+      sub: user.id as string,
+      username: user.id as string,
       scope: req.body.scope,
-      client_id: client.id,
-      username: profile.id,
+      client_id: client.id as string,
       profile: profile.resourceType + '/' + profile.id
-    }, secret);
+    });
 
     res.status(200).json({
       user,

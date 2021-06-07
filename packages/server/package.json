@@ -28,7 +28,7 @@
     "dotenv": "10.0.0",
     "express": "4.17.1",
     "express-validator": "6.11.1",
-    "jsonwebtoken": "8.5.1",
+    "jose": "3.12.3",
     "knex": "0.95.6",
     "pg": "8.6.0"
   },
@@ -44,6 +44,7 @@
     "@typescript-eslint/eslint-plugin": "4.26.0",
     "@typescript-eslint/parser": "4.26.0",
     "cross-env": "7.0.3",
+    "enhanced-resolve": "5.8.2",
     "eslint": "7.27.0",
     "jest": "27.0.4",
     "rimraf": "3.0.2",

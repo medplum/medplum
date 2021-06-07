@@ -316,7 +316,7 @@ export class MedplumClient extends EventTarget {
     if (cached) {
       return Promise.resolve(cached);
     }
-    return this.search(this.fhirUrl('StructureDefinition') + '?name=' + encodeURIComponent(resourceType))
+    return this.search('StructureDefinition?name=' + encodeURIComponent(resourceType))
       .then((result: Bundle) => {
         if (!result.entry?.length) {
           throw new Error('StructureDefinition not found');
