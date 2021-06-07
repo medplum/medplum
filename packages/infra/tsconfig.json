@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "es2021",
     "outDir": "dist",
     "module": "commonjs",
     "lib": [
-      "es2020"
+      "es2021"
     ],
     "strict": true,
     "noImplicitAny": true,
