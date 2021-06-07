@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "es2021",
     "module": "commonjs",
     "outDir": "dist",
     "moduleResolution": "node",
@@ -14,7 +14,7 @@
     "sourceMap": true,
     "incremental": true,
     "lib": [
-      "es2020"
+      "es2021"
     ]
   },
   "include": [
