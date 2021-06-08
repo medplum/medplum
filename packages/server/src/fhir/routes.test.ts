@@ -52,6 +52,12 @@ test('Read resource', (done) => {
     .expect(200, done);
 });
 
+test('Read resource invalid UUID', (done) => {
+  request(app)
+    .get('/fhir/R4/Patient/123')
+    .expect(400, done);
+});
+
 test('Read resource invalid resource type', (done) => {
   request(app)
     .get('/fhir/R4/Patientx/8a54c7db-654b-4c3d-ba85-e0909f51c12b')
@@ -70,10 +76,40 @@ test('Read resource history', (done) => {
     .expect(200, done);
 });
 
+test('Read resource history invalid UUID', (done) => {
+  request(app)
+    .get('/fhir/R4/Patient/123/_history')
+    .expect(400, done);
+});
+
+test('Read resource history invalid resource type', (done) => {
+  request(app)
+    .get('/fhir/R4/xyz/8a54c7db-654b-4c3d-ba85-e0909f51c12b/_history')
+    .expect(400, done);
+});
+
 test('Read resource version', (done) => {
   request(app)
     .get('/fhir/R4/Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12b/_history/6eef5db6-534d-4de2-b1d4-212a2df0e5cd')
     .expect(200, done);
+});
+
+test('Read resource version invalid UUID', (done) => {
+  request(app)
+    .get('/fhir/R4/Patient/123/_history/6eef5db6-534d-4de2-b1d4-212a2df0e5cd')
+    .expect(400, done);
+});
+
+test('Read resource version invalid version UUID', (done) => {
+  request(app)
+    .get('/fhir/R4/Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12b/_history/123')
+    .expect(400, done);
+});
+
+test('Read resource version invalid resource type', (done) => {
+  request(app)
+    .get('/fhir/R4/xyz/8a54c7db-654b-4c3d-ba85-e0909f51c12b/_history/6eef5db6-534d-4de2-b1d4-212a2df0e5cd')
+    .expect(400, done);
 });
 
 test('Update resource', (done) => {
@@ -87,6 +123,18 @@ test('Delete resource', (done) => {
   request(app)
     .delete('/fhir/R4/Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12b')
     .expect(200, done);
+});
+
+test('Delete resource invalid UUID', (done) => {
+  request(app)
+    .delete('/fhir/R4/Patient/123')
+    .expect(400, done);
+});
+
+test('Delete resource invalid resource type', (done) => {
+  request(app)
+    .delete('/fhir/R4/xyz/8a54c7db-654b-4c3d-ba85-e0909f51c12b')
+    .expect(400, done);
 });
 
 test('Patch resource', (done) => {

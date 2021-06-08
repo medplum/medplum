@@ -1,5 +1,6 @@
 import { Bundle, Meta, OperationOutcome, Reference, Resource } from '@medplum/core';
 import { randomUUID } from 'crypto';
+import validator from 'validator';
 import { getKnex } from '../database';
 import { allOk, badRequest, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
@@ -31,6 +32,10 @@ class Repository {
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
+    if (!validator.isUUID(id)) {
+      return [badRequest('Invalid UUID'), undefined];
+    }
+
     const validateOutcome = validateResourceType(resourceType);
     if (validateOutcome.id !== 'allok') {
       return [validateOutcome, undefined];
@@ -57,6 +62,10 @@ class Repository {
   }
 
   async readHistory(resourceType: string, id: string): RepositoryResult<Bundle> {
+    if (!validator.isUUID(id)) {
+      return [badRequest('Invalid UUID'), undefined];
+    }
+
     const validateOutcome = validateResourceType(resourceType);
     if (validateOutcome.id !== 'allok') {
       return [validateOutcome, undefined];
@@ -79,6 +88,10 @@ class Repository {
   }
 
   async readVersion(resourceType: string, id: string, vid: string): RepositoryResult<Bundle> {
+    if (!validator.isUUID(id) || !validator.isUUID(vid)) {
+      return [badRequest('Invalid UUID'), undefined];
+    }
+
     const validateOutcome = validateResourceType(resourceType);
     if (validateOutcome.id !== 'allok') {
       return [validateOutcome, undefined];
@@ -130,6 +143,10 @@ class Repository {
   }
 
   async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {
+    if (!validator.isUUID(id)) {
+      return [badRequest('Invalid UUID'), undefined];
+    }
+
     const validateOutcome = validateResourceType(resourceType);
     if (validateOutcome.id !== 'allok') {
       return [validateOutcome, undefined];
