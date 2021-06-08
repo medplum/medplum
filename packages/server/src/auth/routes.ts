@@ -2,11 +2,16 @@ import { ClientApplication, OperationOutcome, Patient, Practitioner, User } from
 import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { body, Result, ValidationError, validationResult } from 'express-validator';
+import { asyncWrap } from '../async';
 import { badRequest, repo } from '../fhir';
 import { generateJwt } from '../oauth';
 import { createLogin } from '../oauth/utils';
 
 export const authRouter = Router();
+
+authRouter.post('/loginx', asyncWrap(async (req: Request, res: Response) => {
+  res.status(200).send({ok: true});
+}));
 
 authRouter.post(
   '/login',
@@ -15,7 +20,7 @@ authRouter.post(
   body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 8 characters'),
   body('scope').notEmpty().withMessage('Missing scope'),
   body('role').notEmpty().withMessage('Missing role'),
-  async (req: Request, res: Response) => {
+  asyncWrap(async (req: Request, res: Response) => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -55,11 +60,11 @@ authRouter.post(
         break;
 
       default:
-        return res.status(400).json(badRequest('Unrecognized role: ' + req.body.role));
+        return res.status(400).json(badRequest('Unrecognized role'));
     }
 
     if (!roleReference) {
-      return res.status(400).json(badRequest('User odes not have role: ' + req.body.role));
+      return res.status(400).json(badRequest('User does not have role'));
     }
 
     const [profileOutcome, profile] = await repo.readReference<Patient | Practitioner>(roleReference);
@@ -97,8 +102,7 @@ authRouter.post(
       accessToken,
       refreshToken
     });
-  });
-
+  }));
 
 function toOutcome(errors: Result<ValidationError>): OperationOutcome {
   return {

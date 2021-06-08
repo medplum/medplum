@@ -14,13 +14,20 @@ const corsOptions: cors.CorsOptions = {
   }
 };
 
-function errorHandler(req: Request, res: Response, next: NextFunction) {
-  try {
-    next();
-  } catch (error: any) {
-    console.log('Medplum unhandled error', error);
-    res.sendStatus(500);
+/**
+ * Global error handler.
+ * See: https://expressjs.com/en/guide/error-handling.html
+ * @param err Unhandled error.
+ * @param req The request.
+ * @param res The response.
+ * @param next The next handler.
+ */
+function errorHandler(err: any, req: Request, res: Response, next: NextFunction) {
+  if (res.headersSent) {
+    return next(err)
   }
+  console.log('Unhandled error', err);
+  res.status(500).json({ msg: 'Internal Server Error' });
 }
 
 export async function initApp(app: Express): Promise<Express> {
@@ -36,7 +43,6 @@ export async function initApp(app: Express): Promise<Express> {
     type: '*/*',
     limit: '5mb'
   }));
-  app.use(errorHandler);
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
   app.get('/healthcheck', (req: Request, res: Response) => res.send({ ok: true }));
   app.use('/.well-known/', wellKnownRouter);
@@ -45,5 +51,6 @@ export async function initApp(app: Express): Promise<Express> {
   app.use('/fhir/R4/', fhirRouter);
   app.use('/oauth2/', oauthRouter);
   app.use('/scim/v2/', fhirRouter);
+  app.use(errorHandler);
   return app;
 }
