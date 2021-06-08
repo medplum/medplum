@@ -48,7 +48,7 @@ CREATE EXTENSION "uuid-ossp";
 Install and build:
 
 ```
-[./scripts/build.sh](scripts/build.sh)
+./scripts/build.sh
 ```
 
 Run the server:
