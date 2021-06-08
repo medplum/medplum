@@ -10,24 +10,6 @@ interface PopupMenuProps {
 }
 
 export function PopupMenu(props: PopupMenuProps) {
-  // private readonly clickHandler: () => void;
-
-  // constructor(props: PopupMenuProps) {
-  //   super(props);
-  //   clickHandler = handleClick.bind(this);
-  // }
-
-  function handleClick() {
-    if (!props.visible) {
-      return;
-    }
-
-    if (props.onClose) {
-      props.onClose();
-    }
-  }
-
-  // render() {
   const width = window.innerWidth;
   const height = window.innerHeight;
 
@@ -53,13 +35,3 @@ export function PopupMenu(props: PopupMenuProps) {
     </div>
   );
 }
-
-  // componentDidUpdate(prevProps: PopupMenuProps) {
-  //   if (!prevProps.visible && props.visible) {
-  //     document.removeEventListener('click', clickHandler as any);
-  //     window.setTimeout(() => document.addEventListener('click', clickHandler as any), 10);
-  //   } else if (prevProps.visible && !props.visible) {
-  //     document.removeEventListener('click', clickHandler as any);
-  //   }
-  // }
-

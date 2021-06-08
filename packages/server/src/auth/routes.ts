@@ -1,4 +1,4 @@
-import { ClientApplication, OperationOutcome, Patient, Practitioner, User } from '@medplum/core';
+import { ClientApplication, OperationOutcome, ProfileResource, User } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { body, Result, ValidationError, validationResult } from 'express-validator';
@@ -10,7 +10,7 @@ import { createLogin } from '../oauth/utils';
 export const authRouter = Router();
 
 authRouter.post('/loginx', asyncWrap(async (req: Request, res: Response) => {
-  res.status(200).send({ok: true});
+  res.status(200).send({ ok: true });
 }));
 
 authRouter.post(
@@ -67,7 +67,7 @@ authRouter.post(
       return res.status(400).json(badRequest('User does not have role'));
     }
 
-    const [profileOutcome, profile] = await repo.readReference<Patient | Practitioner>(roleReference);
+    const [profileOutcome, profile] = await repo.readReference<ProfileResource>(roleReference);
     if (profileOutcome.id !== 'allok' || !profile) {
       return res.status(400).json(profileOutcome);
     }

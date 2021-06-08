@@ -4,7 +4,7 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, OperationOutcome, Reference, Resource, StructureDefinition, Subscription, User } from './fhir';
+import { Binary, Bundle, OperationOutcome, Patient, Practitioner, Reference, Resource, StructureDefinition, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { formatSearchQuery, SearchDefinition } from './search';
 import { LocalStorage, MemoryStorage, Storage } from './storage';
@@ -17,6 +17,8 @@ const DEFAULT_BLOB_CACHE_SIZE = 100;
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
+
+export type ProfileResource = Patient | Practitioner;
 
 export class MedplumOperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
@@ -123,7 +125,7 @@ export class MedplumClient extends EventTarget {
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
   private user?: User;
-  private profile?: Resource;
+  private profile?: ProfileResource;
 
   constructor(options: MedplumClientOptions) {
     super();
@@ -423,14 +425,14 @@ export class MedplumClient extends EventTarget {
     this.user = user;
   }
 
-  getProfile(): Resource | undefined {
+  getProfile(): ProfileResource | undefined {
     if (!this.profile) {
-      this.profile = this.storage.getObject('profile') as Resource | undefined;
+      this.profile = this.storage.getObject<ProfileResource>('profile');
     }
     return this.profile;
   }
 
-  private setProfile(profile: Resource): void {
+  private setProfile(profile: ProfileResource): void {
     this.storage.setObject('profile', profile);
     this.profile = profile;
   }

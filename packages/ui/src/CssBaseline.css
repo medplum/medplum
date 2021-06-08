@@ -53,13 +53,11 @@ svg {
   vertical-align: top;
 }
 
-.medplum-clear {
-  clear: both;
-}
-
-.medplum-collapse {
-  visibility: collapse;
-  width: 0px;
+hr {
+  border: none;
+  height: 1px;
+  color: var(--medplum-gray-200);
+  background-color: var(--medplum-gray-200);
 }
 
 .muted {

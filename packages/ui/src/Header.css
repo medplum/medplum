@@ -83,7 +83,7 @@ input.medplum-nav-search-input:focus svg.medplum-nav-search-icon {
   position: absolute;
   top: 0;
   left: 0;
-  transform: translate(4px, 40px);
+  transform: translate(4px, 36px);
   border: 1px solid var(--medplum-gray-400);
   border-radius: 4px;
   background-color: var(--medplum-surface);
@@ -99,4 +99,35 @@ input.medplum-nav-search-input:focus svg.medplum-nav-search-icon {
 
 .medplum-nav-search-hints-column {
   flex: 50%;
+}
+
+div.medplum-nav-menu-container {
+  position: relative;
+}
+
+.medplum-nav-menu-popover {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(0px, 32px);
+  border: 1px solid var(--medplum-gray-400);
+  border-radius: 4px;
+  background-color: var(--medplum-surface);
+  color: var(--medplum-gray-600);
+  padding: 6px;
+  width: 300px;
+  z-index: 100;
+}
+
+.medplum-nav-menu {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  justify-content: center;
+}
+
+.medplum-nav-menu a {
+  color: var(--medplum-foreground);
+  font-weight: normal;
 }
