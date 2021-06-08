@@ -187,6 +187,11 @@ class Repository {
       }
     }
 
+    const count = searchRequest.count || 10;
+    const page = searchRequest.page || 0;
+    builder.limit(count);
+    builder.offset(count * page);
+
     const rows = await builder;
 
     return [allOk, {
