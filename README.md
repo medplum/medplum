@@ -10,16 +10,16 @@ Medplum uses a [monorepo](https://en.wikipedia.org/wiki/Monorepo) structure via 
 
 Here is a quick summary of the subprojects:
 
-| Folder                                           | Description                            | Port  |
-| ------------------------------------------------ | -------------------------------------- | ----- |
-| [`console`](packages/console/README.md)          | Developer console application          | 3000  |
-| [`core`](packages/core/README.md)                | Core Typescript client library         |       |
-| [`definitions`](packages/definiitons/README.md)  | Data definitions                       |       |
-| [`generator`](packages/generator/README.md)      | Code generator                         |       |
-| [`graphiql`](packages/graphiql/README.md)        | GraphQL debug tool                     | 8080  |
-| [`seeder`](packages/seeder/README.md)            | Seeder application                     |       |
-| [`server`](packages/server/README.md)            | Main server application                | 5000  |
-| [`ui`](packages/ui/README.md)                    | React component library and Storybook  | 6006  |
+| Folder                                 | Description                            | Port  |
+| -------------------------------------- | -------------------------------------- | ----- |
+| [`console`](packages/console)          | Developer console application          | 3000  |
+| [`core`](packages/core)                | Core Typescript client library         |       |
+| [`definitions`](packages/definiitons)  | Data definitions                       |       |
+| [`generator`](packages/generator)      | Code generator                         |       |
+| [`graphiql`](packages/graphiql)        | GraphQL debug tool                     | 8080  |
+| [`seeder`](packages/seeder)            | Seeder application                     |       |
+| [`server`](packages/server)            | Main server application                | 5000  |
+| [`ui`](packages/ui)                    | React component library and Storybook  | 6006  |
 
 ## Getting Started
 
