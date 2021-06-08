@@ -13,7 +13,6 @@ import { HomePage } from './HomePage';
 import { ProfilePage } from './ProfilePage';
 import { ResourcePage } from './ResourcePage';
 import { SignInPage } from './SignInPage';
-import { TestPage } from './TestPage';
 
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL as string,
@@ -30,10 +29,10 @@ export default function App() {
           onLogo={() => history.push('/')}
           onProfile={() => history.push('/profile')}
           onSignIn={() => history.push('/signin')}
+          onSignOut={signOut}
           onRegister={() => console.log('onCreateAccount')}
         />
         <Switch>
-          <Route exact path="/test"><TestPage /></Route>
           <Route exact path="/signin"><SignInPage /></Route>
           <Route exact path="/profile"><ProfilePage /></Route>
           <Route exact path="/:resourceType/new"><CreateResourcePage /></Route>
@@ -43,4 +42,9 @@ export default function App() {
       </Router>
     </MedplumProvider>
   );
+}
+
+function signOut() {
+  medplum.signOut();
+  history.push('/signin');
 }

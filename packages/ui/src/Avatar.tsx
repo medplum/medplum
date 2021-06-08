@@ -1,14 +1,12 @@
-import { Patient, Practitioner, RelatedPerson, Resource } from '@medplum/core';
+import { ProfileResource, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { formatHumanName } from './HumanNameUtils';
 import { useMedplum } from './MedplumProvider';
 import './Avatar.css';
 
-type PhotoResource = Patient | Practitioner | RelatedPerson;
-
 export interface AvatarProps {
   size?: 'small' | 'medium' | 'large';
-  resource?: Patient | Practitioner | RelatedPerson;
+  resource?: ProfileResource;
   resourceType?: 'Patient' | 'Practitoner' | 'RelatedPerson';
   id?: string;
   src?: string;
@@ -21,7 +19,7 @@ export const Avatar = (props: AvatarProps) => {
   const [imageUrl, setImageUrl] = useState<string | undefined>(props.src);
   const [text, setText] = useState<string | undefined>(props.alt || '');
 
-  function setResource(resource: PhotoResource) {
+  function setResource(resource: ProfileResource) {
     setText(getText(resource));
 
     const attachmentUrl = getImageSrc(resource);
@@ -41,7 +39,7 @@ export const Avatar = (props: AvatarProps) => {
 
     if (props.resourceType && props.id) {
       medplum.readCached(props.resourceType, props.id)
-        .then((resource: Resource) => setResource(resource as PhotoResource));
+        .then((resource: Resource) => setResource(resource as ProfileResource));
     }
   }, [props.resource, props.resourceType, props.id]);
 
@@ -54,7 +52,7 @@ export const Avatar = (props: AvatarProps) => {
   );
 };
 
-function getImageSrc(resource: PhotoResource | undefined): string | undefined {
+function getImageSrc(resource: ProfileResource | undefined): string | undefined {
   const photos = resource?.photo;
   if (photos) {
     for (const photo of photos) {
@@ -65,7 +63,7 @@ function getImageSrc(resource: PhotoResource | undefined): string | undefined {
   }
 }
 
-function getText(resource: PhotoResource | undefined): string {
+function getText(resource: ProfileResource | undefined): string {
   const names = resource?.name;
   if (names) {
     for (const name of names) {

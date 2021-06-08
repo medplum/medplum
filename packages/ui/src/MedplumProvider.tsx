@@ -1,4 +1,4 @@
-import { MedplumClient, Resource, User } from '@medplum/core';
+import { MedplumClient, ProfileResource, User } from '@medplum/core';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface MedplumRouter {
@@ -9,7 +9,7 @@ interface MedplumContext {
   medplum: MedplumClient;
   router: MedplumRouter;
   user?: User;
-  profile?: Resource;
+  profile?: ProfileResource;
   loading: boolean;
 }
 
