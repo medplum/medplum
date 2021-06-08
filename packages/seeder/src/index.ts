@@ -1,4 +1,4 @@
-import { Bundle, MedplumClient, Organization, Project, User } from '@medplum/core';
+import { Bundle, MedplumClient, Organization, Practitioner, Project, User } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
@@ -75,12 +75,23 @@ async function createUser(client: MedplumClient) {
     return;
   }
 
+  const practitioner = await client.create<Practitioner>({
+    resourceType: 'Practitioner',
+    name: [{
+      given: ['Medplum'],
+      family: 'Admin'
+    }]
+  });
+
   const passwordHash = await bcrypt.hash('admin', 10);
 
   const createResult = await client.create<User>({
     resourceType: 'User',
     email: 'admin@medplum.com',
-    passwordHash
+    passwordHash,
+    practitioner: {
+      reference: practitioner.resourceType + '/' + practitioner.id
+    }
   });
 
   console.log('Created', createResult.id);
