@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "es2021",
+    "target": "esnext",
     "module": "commonjs",
     "outDir": "dist",
-    "lib": [ "es2021", "dom" ],
+    "lib": [ "esnext", "dom" ],
     "jsx": "react",
     "moduleResolution": "node",
     "strict": true,
