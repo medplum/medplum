@@ -1,8 +1,10 @@
 import { NextFunction, Request, Response, Router } from 'express';
+import { graphqlHTTP } from 'express-graphql';
 import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth';
 import { createBatch } from './batch';
 import { binaryRouter } from './binary';
+import { getRootSchema } from './graphql';
 import { badRequest } from './outcomes';
 import { repo } from './repo';
 import { validateResource } from './schema';
@@ -57,6 +59,11 @@ fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
     return res.status(400).send(outcome);
   }
   res.status(200).send(result);
+}));
+
+// GraphQL
+fhirRouter.use('/([$]|%24)graphql', graphqlHTTP({
+  schema: getRootSchema()
 }));
 
 // Search
