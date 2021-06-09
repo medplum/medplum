@@ -16,7 +16,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Get GraphQL Schema', (done) => {
+test('GraphQL schema', (done) => {
   request(app)
     .post('/fhir/R4/$graphql')
     .set('Content-Type', 'application/json')
@@ -114,4 +114,46 @@ test('Get GraphQL Schema', (done) => {
     `
     })
     .expect(200, done);
+});
+
+test('GraphQL read by ID', (done) => {
+  request(app)
+    .post('/fhir/R4/$graphql')
+    .set('Content-Type', 'application/json')
+    .send({
+      query: `
+      {
+        Patient(id: "8a54c7db-654b-4c3d-ba85-e0909f51c12b") {
+          id
+          name { given }
+        }
+      }
+    `
+    })
+    .expect(200)
+    .end((err: any, res: any) => {
+      expect(res.body.Patient).not.toBeNull();
+      done();
+    });
+});
+
+test('GraphQL search', (done) => {
+  request(app)
+    .post('/fhir/R4/$graphql')
+    .set('Content-Type', 'application/json')
+    .send({
+      query: `
+      {
+        PatientList(name: "Smith") {
+          id
+          name { given }
+        }
+      }
+    `
+    })
+    .expect(200)
+    .end((err: any, res: any) => {
+      expect(res.body.PatientList).not.toBeNull();
+      done();
+    });
 });
