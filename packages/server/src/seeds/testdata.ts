@@ -23,8 +23,15 @@ export async function seed(knex: Knex): Promise<void> {
   await knex('Patient').insert([
     {
       id: '8a54c7db-654b-4c3d-ba85-e0909f51c12b',
-      content: '{}',
-      lastUpdated: '2021-06-01T00:00:00'
+      content: JSON.stringify({
+        resourceType: 'Patient',
+        name: [{
+          given: ['Alice'],
+          family: 'Smith'
+        }]
+      }),
+      lastUpdated: '2021-06-01T00:00:00',
+      name: 'Alice Smith'
     }
   ]);
 
