@@ -1,3 +1,4 @@
+import { Resource } from '@medplum/core';
 import {
   GraphQLBoolean,
   GraphQLFieldConfigArgumentMap,
@@ -8,11 +9,13 @@ import {
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLOutputType,
+  GraphQLResolveInfo,
   GraphQLSchema,
   GraphQLString
 } from 'graphql';
+import { repo } from './repo';
 import { definitions, resourceTypes } from './schema';
-import { getSearchParameters } from './search';
+import { Filter, getSearchParameters, Operator } from './search';
 
 const typeCache: Record<string, GraphQLOutputType> = {
   'base64Binary': GraphQLString,
@@ -62,7 +65,8 @@ function buildRootSchema(): GraphQLSchema {
           type: new GraphQLNonNull(GraphQLID),
           description: resourceType + ' ID'
         }
-      }
+      },
+      resolve: dataLoader
     };
 
     // Search resource by search parameters
@@ -78,7 +82,8 @@ function buildRootSchema(): GraphQLSchema {
     }
     fields[resourceType + 'List'] = {
       type: new GraphQLList(graphQLType),
-      args
+      args,
+      resolve: dataLoader
     };
   }
 
@@ -185,4 +190,45 @@ function getRefString(property: any): string | undefined {
     return undefined;
   }
   return property.$ref.replace('#/definitions/', '');
+}
+
+/**
+ * GraphQL data loader.
+ * @param source The source/root.  This should always be null for our top level readers.
+ * @param args The GraphQL search arguments.
+ * @param ctx The GraphQL context.  This is the Node IncomingMessage.
+ * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
+ * @returns Promise to read the resoure(s) for the query.
+ */
+async function dataLoader(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource[] | Resource | undefined> {
+  const fieldName = info.fieldName;
+
+  // Search by search parameters
+  if (fieldName.endsWith('List')) {
+    const resourceType = fieldName.substr(0, fieldName.length - 4);
+    const [searchOutcome, searchResult] = await repo.search({
+      resourceType,
+      filters: Object.entries(args).map(e => ({
+        code: e[0],
+        operator: Operator.EQUALS,
+        value: e[1] as string
+      } as Filter))
+    });
+    if (searchOutcome.id !== 'allok') {
+      throw new Error(searchOutcome.issue?.[0].details?.text);
+    }
+    return searchResult?.entry?.map(e => e.resource as Resource);
+  }
+
+  // Direct read by ID
+  if (args.id) {
+    const [readOutcome, readResult] = await repo.readResource(fieldName, args.id);
+    if (readOutcome.id !== 'allok') {
+      throw new Error(readOutcome.issue?.[0].details?.text);
+    }
+    return readResult;
+  }
+
+  // Unknown search
+  return undefined;
 }

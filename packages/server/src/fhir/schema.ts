@@ -7,17 +7,15 @@ export const schema = readJson('fhir/r4/fhir.schema.json');
 export const definitions = schema.definitions;
 export const resourceTypes = Object.keys(schema.discriminator.mapping);
 
+export function isResourceType(resourceType: string): boolean {
+  return resourceType in definitions;
+}
+
 export function validateResourceType(resourceType: string): OperationOutcome {
   if (!resourceType) {
     return validationError('Resource type is null');
   }
-
-  const definition = definitions[resourceType];
-  if (!definition) {
-    return validationError('Unknown resource type');
-  }
-
-  return allOk;
+  return isResourceType(resourceType) ? allOk : validationError('Unknown resource type');
 }
 
 export function validateResource(resource: Resource): OperationOutcome {
