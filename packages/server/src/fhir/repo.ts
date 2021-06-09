@@ -183,7 +183,11 @@ class Repository {
     for (const filter of searchRequest.filters) {
       const param = getSearchParameter(searchRequest.resourceType, filter.code);
       if (param) {
-        builder.where(param.code as string, filter.value);
+        if (param.type === 'string') {
+          builder.where(param.code as string, 'LIKE', '%' + filter.value + '%');
+        } else {
+          builder.where(param.code as string, filter.value);
+        }
       }
     }
 
