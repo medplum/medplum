@@ -1,62 +1,55 @@
-import React, { createRef } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useMedplumRouter } from './MedplumProvider';
 import './Popup.css';
 
 interface PopupProps {
   visible: boolean;
+  modal?: boolean;
+  autoClose?: boolean;
   onClose: () => void;
-  className?: string;
-  style?: React.CSSProperties;
+  activeClassName?: string;
+  inactiveClassName?: string;
   children?: React.ReactNode;
 }
 
-export class Popup extends React.Component<PopupProps, unknown> {
-  private readonly clickHandler: (e: Event) => void;
-  private readonly popStateHandler: (e: Event) => void;
-  private readonly ref: React.RefObject<HTMLDivElement>;
+export function Popup(props: PopupProps) {
+  const router = useMedplumRouter();
+  const ref = useRef<HTMLDivElement>(null);
 
-  constructor(props: PopupProps) {
-    super(props);
+  const propsRef = useRef<PopupProps>();
+  propsRef.current = props;
 
-    this.clickHandler = this.handleClick.bind(this);
-    this.popStateHandler = this.handlePopState.bind(this);
-    this.ref = createRef();
-  }
-
-  render() {
-    let className = 'medplum-popup';
-    if (this.props.className) {
-      className += ' ' + this.props.className;
+  useEffect(() => {
+    function handleClick(e: Event) {
+      if (propsRef.current?.visible &&
+        propsRef.current?.autoClose &&
+        ref?.current && !ref.current.contains(e.target as Node)) {
+        props.onClose();
+      }
     }
 
-    const style: React.CSSProperties = {
-      display: this.props.visible ? 'block' : 'none',
-      ...this.props.style
+    document.addEventListener('click', handleClick, true);
+
+    const unlisten = router.listen(() => props.onClose());
+
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+      unlisten();
     };
 
-    return (
-      <div ref={this.ref} className={className} style={style}>
-        {this.props.children}
+  }, []);
+
+  return (
+    <>
+      {props.modal && (
+        <div
+          className={props.visible ? 'medplum-backdrop active' : 'medplum-backdrop'}
+          onClick={props.onClose}
+        />
+      )}
+      <div ref={ref} className={props.visible ? props.activeClassName : props.inactiveClassName}>
+        {props.children}
       </div>
-    );
-  }
-
-  componentDidMount() {
-    document.addEventListener('mousedown', this.clickHandler);
-    window.addEventListener('popstate', this.popStateHandler);
-  }
-
-  componentWillUnmount() {
-    document.removeEventListener('mousedown', this.clickHandler);
-    window.removeEventListener('popstate', this.popStateHandler);
-  }
-
-  private handleClick(e: Event) {
-    if (this.ref?.current && !this.ref.current.contains(e.target as Node)) {
-      this.props.onClose();
-    }
-  }
-
-  private handlePopState() {
-    this.props.onClose();
-  }
+    </>
+  );
 }

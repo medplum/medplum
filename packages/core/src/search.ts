@@ -28,7 +28,7 @@ export interface SearchDefinition {
 export function parseSearchDefinition(location: { pathname: string, search?: string }): SearchDefinition {
   const resourceType = location.pathname.split('/').pop() as string;
   const params = new URLSearchParams(location.search);
-  const fields = params.get('_fields') || 'id,meta.versionId,meta.lastUpdated,name,identifier';
+  const fields = params.get('_fields') || 'id,meta.versionId,meta.lastUpdated,name';
   const filters = [] as SearchFilterDefinition[];
   const result: SearchDefinition = {
     resourceType: resourceType,

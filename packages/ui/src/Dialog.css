@@ -1,6 +1,6 @@
 .modal-dialog {
   background:var(--medplum-gray-600);
-  border: 1px solid var(--medplum-gray-700);
+  border: thin solid var(--medplum-gray-700);
   color: var(--medplum-foreground);
   padding: 0;
   position: absolute;

@@ -1,3 +1,25 @@
 .medplum-popup {
   box-shadow: 0 1px 3px 0 var(--medplum-gray-300);
 }
+
+.medplum-popup-hidden {
+  display: none;
+}
+
+.medplum-backdrop {
+  position: absolute;
+  overflow: hidden;
+  z-index: 30;
+  top: 50px;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  background: black;
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1), width 20ms ease;
+  opacity: 0;
+}
+
+.medplum-backdrop.active {
+  opacity: 0.5;
+  width: 100%;
+}

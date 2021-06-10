@@ -17,7 +17,7 @@ authRouter.post(
   '/login',
   body('clientId').exists().withMessage('Missing clientId'),
   body('email').isEmail().withMessage('Valid email address is required'),
-  body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 8 characters'),
+  body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
   body('scope').notEmpty().withMessage('Missing scope'),
   body('role').notEmpty().withMessage('Missing role'),
   asyncWrap(async (req: Request, res: Response) => {
@@ -46,7 +46,7 @@ authRouter.post(
     }
 
     if (!user) {
-      return res.status(400).json(badRequest('User not found'));
+      return res.status(400).json(badRequest('User not found', 'email'));
     }
 
     let roleReference;
@@ -60,11 +60,11 @@ authRouter.post(
         break;
 
       default:
-        return res.status(400).json(badRequest('Unrecognized role'));
+        return res.status(400).json(badRequest('Unrecognized role', 'role'));
     }
 
     if (!roleReference) {
-      return res.status(400).json(badRequest('User does not have role'));
+      return res.status(400).json(badRequest('User does not have role', 'role'));
     }
 
     const [profileOutcome, profile] = await repo.readReference<ProfileResource>(roleReference);

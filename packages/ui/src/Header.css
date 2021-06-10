@@ -6,7 +6,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #5b2876;
+  background-color: var(--medplum-navbar);
   box-shadow: 0 1px 2px 0 var(--medplum-gray-200);
   color: white;
 }
@@ -45,15 +45,15 @@ div.medplum-nav-search-container {
 }
 
 input.medplum-nav-search-input {
-  border: 1px solid #5b2876;
-  background-color: #7a4696;
+  border: 0;
+  background-color: var(--medplum-navbar-textbox);
   box-shadow: none;
   padding-left: 32px;
   width: 300px;
 }
 
 input.medplum-nav-search-input::placeholder {
-  color: #ddc4eb;
+  color: var(--medplum-navbar-placeholder);
 }
 
 svg.medplum-nav-search-icon {
@@ -62,7 +62,7 @@ svg.medplum-nav-search-icon {
   top: 50%;
   margin-top: -9px;
   pointer-events: none;
-  color: #5b2876;
+  color: var(--medplum-navbar-icon);
   vertical-align: bottom;
 }
 
@@ -84,7 +84,7 @@ input.medplum-nav-search-input:focus svg.medplum-nav-search-icon {
   top: 0;
   left: 0;
   transform: translate(4px, 36px);
-  border: 1px solid var(--medplum-gray-400);
+  border: thin solid var(--medplum-gray-400);
   border-radius: 4px;
   background-color: var(--medplum-surface);
   color: var(--medplum-gray-600);
@@ -111,7 +111,7 @@ div.medplum-nav-menu-container {
   top: 0;
   right: 0;
   transform: translate(0px, 32px);
-  border: 1px solid var(--medplum-gray-400);
+  border: thin solid var(--medplum-gray-400);
   border-radius: 4px;
   background-color: var(--medplum-surface);
   color: var(--medplum-gray-600);
@@ -130,4 +130,53 @@ div.medplum-nav-menu-container {
 .medplum-nav-menu a {
   color: var(--medplum-foreground);
   font-weight: normal;
+}
+
+.medplum-sidebar {
+  position: fixed;
+  overflow: auto;
+  z-index: 40;
+  top: 50px;
+  left: 0;
+  width: 200px;
+  bottom: 0;
+  background: var(--medplum-background);
+  padding: 4px 8px;
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  transform: translateX(-200px);
+  user-select: none;
+}
+
+.medplum-sidebar.active {
+  transform: translateX(0px);
+}
+
+.medplum-sidebar>h5 {
+  margin: 16px 0 4px 6px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.medplum-sidebar>ul {
+  list-style: none;
+}
+
+.medplum-sidebar>ul>li {
+  list-style: none;
+  margin: 8px 0;
+}
+
+.medplum-sidebar>ul>li>a {
+  display: flex;
+  border-radius: 4px;
+  padding: 6px;
+  text-decoration: none;
+  color: var(--medplum-gray-700);
+}
+
+.medplum-sidebar>ul>li>a:hover {
+  background: var(--medplum-gray-300);
 }

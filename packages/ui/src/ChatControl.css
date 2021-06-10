@@ -1,9 +1,9 @@
 .medplum-chat {
-  border: 1px solid var(--medplum-gray-100);
+  border: thin solid var(--medplum-gray-100);
 }
 
 .medplum-chat-history {
-  border: 1px solid var(--medplum-gray-300);
+  border: thin solid var(--medplum-gray-300);
   margin: 0 auto 8px auto;
   padding: 4px;
   min-height: 300px;

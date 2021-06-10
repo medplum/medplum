@@ -422,28 +422,6 @@ export function isSortDescending(definition: SearchDefinition) {
 }
 
 /**
- * Returns the default search. This search should be used if no search is
- * specified.
- *
- * @return {SearchDefinition} Default search JSON object.
- */
-export function getDefaultSearch(): SearchDefinition {
-  return {
-    resourceType: 'Patient',
-    fields: [
-      'patient.name',
-      'institutionName',
-      'modality',
-      'bodyPart',
-      'receivedDateTime',
-      'description',
-      'status'
-    ],
-    filters: []
-  };
-}
-
-/**
  * Returns a string representing the operation.
  *
  * @param {string} op The operation code.
@@ -491,6 +469,10 @@ export function getOpString(op: string) {
 export function buildFieldNameString(schema: IndexedStructureDefinition, resourceType: string, key: string): string {
   if (key === 'id') {
     return 'ID';
+  }
+
+  if (key === 'meta.versionId') {
+    return 'Version ID';
   }
 
   if (key === 'meta.lastUpdated') {
@@ -571,6 +553,10 @@ export function renderValue(schema: IndexedStructureDefinition, resourceType: st
   const field = typeDef.properties[key];
   if (!field) {
     return JSON.stringify(value);
+  }
+
+  if (field.type === 'string') {
+    return value.toString();
   }
 
   if (field.type === 'HumanName') {

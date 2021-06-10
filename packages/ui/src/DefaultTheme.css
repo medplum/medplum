@@ -2,8 +2,10 @@
   --medplum-background: #F8F9FA;
   --medplum-surface: #FFFFFF;
   --medplum-foreground: #424242;
-  --medplum-navbar: #292961;
-  --medplum-navbar-textbox: #4b4b7e;
+  --medplum-navbar: #5b2876;
+  --medplum-navbar-textbox: #7a4696;
+  --medplum-navbar-icon: #5b2876;
+  --medplum-navbar-placeholder: #ddc4eb;
   --medplum-navbar-hover: #5d5d85;
   --medplum-shadow: rgba(0, 0, 0, 0.2);
   /* font sizes */

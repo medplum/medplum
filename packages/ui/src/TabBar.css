@@ -2,6 +2,8 @@
   background-color: var(--medplum-surface);
   position: relative;
   min-height: 50px;
+  user-select: none;
+  white-space: nowrap;
 }
 
 .medplum-tabbar-background,
@@ -11,6 +13,8 @@
   left: 0;
   right: 0;
   bottom: 0;
+  user-select: none;
+  white-space: nowrap;
 }
 
 .medplum-tabbar-background {

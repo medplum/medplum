@@ -4,7 +4,7 @@ import { history } from './history';
 
 export function SignInPage() {
   return (
-    <Document>
+    <Document width={450}>
       <SignInForm
         onSuccess={() => history.push('/')}
       />
