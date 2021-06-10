@@ -10,5 +10,5 @@
   border-radius: 0;
   box-shadow: 0 2px 4px var(--medplum-shadow);
   transition: opacity .218s;
-  border: 1px solid var(--medplum-gray-500);
+  border: thin solid var(--medplum-gray-500);
 }

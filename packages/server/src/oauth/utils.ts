@@ -1,7 +1,7 @@
 import { ClientApplication, Login, User } from '@medplum/core';
+import bcrypt from 'bcrypt';
 import { allOk, badRequest, notFound, repo, RepositoryResult } from '../fhir';
 import { Operator } from '../fhir/search';
-import bcrypt from 'bcrypt';
 
 /**
  * Searches for user by email.
@@ -39,22 +39,22 @@ export async function getUserByEmail(email: string): RepositoryResult<User | und
  */
 export async function createLogin(client: ClientApplication, email: string, password: string): RepositoryResult<Login | undefined> {
   const [outcome, user] = await getUserByEmail(email);
-  if (outcome.id !== 'allok') {
+  if (outcome.id !== 'allok' && outcome.id !== 'not-found') {
     return [outcome, undefined];
   }
 
   if (!user) {
-    return [badRequest('User not found'), undefined];
+    return [badRequest('User not found', 'email'), undefined];
   }
 
   const passwordHash = user?.passwordHash;
   if (!passwordHash) {
-    return [badRequest('Invalid user'), undefined];
+    return [badRequest('Invalid user', 'email'), undefined];
   }
 
   const bcryptResult = await bcrypt.compare(password, passwordHash);
   if (!bcryptResult) {
-    return [badRequest('Incorrect password'), undefined];
+    return [badRequest('Incorrect password', 'password'), undefined];
   }
 
   return repo.createResource({

@@ -1,4 +1,5 @@
-import React from 'react';
+import { OperationOutcome } from '@medplum/core';
+import React, { useState } from 'react';
 import { Button } from './Button';
 import { FormSection } from "./FormSection";
 import { parseForm } from './FormUtils';
@@ -13,6 +14,9 @@ export interface SignInFormProps {
 
 export function SignInForm(props: SignInFormProps) {
   const medplum = useMedplum();
+  const [outcome, setOutcome] = useState<OperationOutcome>();
+
+
   const role = props.role || 'practitioner';
   const scope = props.scope || 'launch/patient openid fhirUser offline_access user/*.*';
 
@@ -26,15 +30,25 @@ export function SignInForm(props: SignInFormProps) {
           if (props.onSuccess) {
             props.onSuccess();
           }
-        });
+        })
+        .catch(err => {
+          if (err.outcome) {
+            setOutcome(err.outcome);
+          }
+        })
     }}>
+      <div className="center">
+        <h1>Sign in</h1>
+      </div>
       <FormSection title="Email">
-        <TextField id="email" type="email" required={true} autoFocus={true} />
+        <TextField id="email" type="email" required={true} autoFocus={true} outcome={outcome} />
       </FormSection>
       <FormSection title="Password">
-        <TextField id="password" type="password" required={true} />
+        <TextField id="password" type="password" required={true} outcome={outcome} />
       </FormSection>
-      <Button type="submit">Submit</Button>
+      <div className="right">
+        <Button type="submit">Submit</Button>
+      </div>
     </form>
   );
 }

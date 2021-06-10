@@ -13,7 +13,7 @@ export default {
 export function Basic() {
   const ctx = useMedplumContext();
   return (
-    <Document>
+    <Document width={450}>
       {ctx.user ? (
         <div>
           <pre>User: {JSON.stringify(ctx.user)}</pre>

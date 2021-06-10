@@ -1,11 +1,15 @@
 import { MedplumClient, ProfileResource, User } from '@medplum/core';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-interface MedplumRouter {
-  push: (path: string, state?: any) => void;
+const reactContext = createContext(undefined as MedplumContext | undefined);
+
+export interface MedplumProviderProps {
+  medplum: MedplumClient;
+  router: MedplumRouter;
+  children: React.ReactNode;
 }
 
-interface MedplumContext {
+export interface MedplumContext {
   medplum: MedplumClient;
   router: MedplumRouter;
   user?: User;
@@ -13,12 +17,17 @@ interface MedplumContext {
   loading: boolean;
 }
 
-const reactContext = createContext(undefined as MedplumContext | undefined);
+export interface MedplumRouter {
+  push: (path: string, state?: any) => void;
+  listen: (listener: MedplumRouterListen) => MedplumRouterUnlisten;
+}
 
-export interface MedplumProviderProps {
-  medplum: MedplumClient;
-  router: MedplumRouter;
-  children: React.ReactNode;
+export interface MedplumRouterListen {
+  (location: Location): void;
+}
+
+export interface MedplumRouterUnlisten {
+  (): void;
 }
 
 /**

@@ -6,5 +6,5 @@ dl.medplum-description-list {
 dl.medplum-description-list dt,
 dl.medplum-description-list dd {
   padding: 16px 8px;
-  border-top: 1px solid var(--medplum-gray-300);
+  border-top: thin solid var(--medplum-gray-300);
 }

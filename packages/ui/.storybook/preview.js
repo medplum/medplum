@@ -17,7 +17,8 @@ export const parameters = {
 const mockRouter = {
   push: (path, state) => {
     alert('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  }
+  },
+  listen: () => (() => undefined) // Return mock "unlisten" handler
 }
 
 const medplum = new MedplumClient({

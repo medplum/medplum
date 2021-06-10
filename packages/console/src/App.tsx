@@ -31,6 +31,19 @@ export default function App() {
           onSignIn={() => history.push('/signin')}
           onSignOut={signOut}
           onRegister={() => console.log('onCreateAccount')}
+          sidebarLinks={[
+            {
+              title: 'Favorites',
+              links: [
+                { label: 'Device', href: '/Device' },
+                { label: 'Patient', href: '/Patient' },
+                { label: 'Practitioner', href: '/Practitioner' },
+                { label: 'Observation', href: '/Observation' },
+                { label: 'Organization', href: '/Organization' },
+                { label: 'StructureDefinition', href: '/StructureDefinition' },
+              ]
+            }
+          ]}
         />
         <Switch>
           <Route exact path="/signin"><SignInPage /></Route>

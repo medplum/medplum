@@ -1,5 +1,5 @@
 .btn {
-  border: 1px solid var(--medplum-gray-300);
+  border: thin solid var(--medplum-gray-300);
   border-radius: 4px;
   background: var(--medplum-gray-50);
   outline: none;
