@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "description": "Medplum GraphiQL",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -25,8 +25,8 @@
     "@babel/preset-env": "7.14.4",
     "@babel/preset-react": "7.13.13",
     "@babel/preset-typescript": "7.13.0",
-    "@medplum/core": "0.0.22",
-    "@medplum/ui": "0.0.22",
+    "@medplum/core": "0.0.23",
+    "@medplum/ui": "0.0.23",
     "@typescript-eslint/eslint-plugin": "4.26.0",
     "@typescript-eslint/parser": "4.26.0",
     "babel-loader": "8.2.2",
