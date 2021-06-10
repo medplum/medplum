@@ -1,6 +1,6 @@
 {
   "name": "@medplum/infra",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "description": "Medplum Infra as Code",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",

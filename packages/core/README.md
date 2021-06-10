@@ -11,7 +11,8 @@ The Medplum JS Client Library is a pure TypeScript library for calling a FHIR se
 ## Key Features
 
 * FHIR validation and operations
-* SSE for server side push
+* FHIR client to create, read, update, delete, patch, and search
+* WebSockets for realtime communication
 * Evaluation of [FhirPath](https://hl7.org/fhirpath/N1/index.html)
 * No external dependencies
 
@@ -57,10 +58,25 @@ medplum.signIn(email, password, role, scope).then(user => console.log(user));
 
 ## Search
 
-Search for any resource:
+Search for any resource using a [FHIR search](https://www.hl7.org/fhir/search.html) string:
 
 ```typescript
 medplum.search('Patient?given=eve').then(bundle => {
+  bundle.entry.forEach(entry => console.log(entry.resource));
+});
+```
+
+Search using a structured object:
+
+```typescript
+medplum.search({
+  resourceType: 'Patient',
+  filters: [{
+    code: 'given',
+    operator: Operator.EQUALS,
+    value: 'eve'
+  }]
+}).then(bundle => {
   bundle.entry.forEach(entry => console.log(entry.resource));
 });
 ```
@@ -80,6 +96,26 @@ medplum.create({
   }
   // ...
 });
+```
+
+## Read
+
+Read a resource by ID:
+
+```typescript
+medplum.read('Patient', '123');
+```
+
+Read resource history:
+
+```typescript
+medplum.readHistory('Patient', '123');
+```
+
+Read a specific version:
+
+```typescript
+medplum.readVersion('Patient', '123', '456');
 ```
 
 ## License
