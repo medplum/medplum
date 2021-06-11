@@ -1,18 +1,13 @@
 import { PropertySchema, Resource, TypeSchema } from '@medplum/core';
 
-const KEY_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-const KEY_LENGTH = 6;
+let nextKeyId = 1;
 
 /**
  * Generates a short unique key that can be used for local identifiers.
- * @return A unique 6-character key.
+ * @return A unique key.
  */
 export function generateKey(): string {
-  let result = '';
-  for (let i = 0; i < KEY_LENGTH; i++) {
-    result += KEY_CHARS.charAt(Math.floor(Math.random() * KEY_CHARS.length));
-  }
-  return result;
+  return 'key' + (nextKeyId++);
 }
 
 /**
@@ -63,32 +58,51 @@ export function parseForm(form: HTMLFormElement): Record<string, string> {
     const element = form.elements[i] as HTMLElement;
 
     if (element instanceof HTMLInputElement) {
-      if (element.disabled) {
-        // Ignore disabled elements
-        continue;
-      }
-
-      if ((element.type === 'checkbox' || element.type === 'radio') && !element.checked) {
-        // Ignore unchecked radio or checkbox elements
-        continue;
-      }
-
-      result[element.name] = element.value;
+      parseInputElement(result, element);
 
     } else if (element instanceof HTMLTextAreaElement) {
       result[element.name] = element.value;
 
     } else if (element instanceof HTMLSelectElement) {
-      if (element.selectedOptions.length === 0) {
-        // Ignore select elements with no value
-        continue;
-      }
-
-      result[element.name] = element.value;
+      parseSelectElement(result, element);
     }
   }
 
   return result;
+}
+
+/**
+ * Parses an HTML input element.
+ * Sets the name/value pair in the result,
+ * but only if the element is enabled and checked.
+ * @param el The input element.
+ * @param result The result builder.
+ */
+function parseInputElement(result: Record<string, string>, el: HTMLInputElement): void {
+  if (el.disabled) {
+    // Ignore disabled elements
+    return;
+  }
+
+  if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) {
+    // Ignore unchecked radio or checkbox elements
+    return;
+  }
+
+  result[el.name] = el.value;
+}
+
+/**
+ * Parses an HTML select element.
+ * Sets the name/value pair if one is selected.
+ * @param result The result builder.
+ * @param el The select element.
+ */
+function parseSelectElement(result: Record<string, string>, el: HTMLSelectElement): void {
+  if (el.selectedOptions.length === 0) {
+    return;
+  }
+  result[el.name] = el.value;
 }
 
 /**
@@ -100,34 +114,64 @@ export function parseResourceForm(
   form: HTMLFormElement,
   initial?: Resource): Resource | undefined {
 
-  const result = (initial ? { ...initial } : {});
+  const result: Resource = (initial ? { ...initial } : {}) as Resource;
 
   for (let i = 0; i < form.elements.length; i++) {
     const element = form.elements[i] as HTMLElement;
 
     if (element instanceof HTMLInputElement) {
-      if (element.disabled) {
-        // Ignore disabled elements
-        continue;
-      }
-
-      if ((element.type === 'checkbox' || element.type === 'radio') && !element.checked) {
-        // Ignore unchecked radio or checkbox elements
-        continue;
-      }
-
-      setValue(typeSchema, result, element.name, element.value);
+      parseResourceInputElement(typeSchema, result, element);
 
     } else if (element instanceof HTMLSelectElement) {
-      if (element.selectedOptions.length === 0) {
-        // Ignore select elements with no value
-        continue;
-      }
-      setValue(typeSchema, result, element.name, element.value);
+      parseResourceSelectElement(typeSchema, result, element);
     }
   }
 
   return result as Resource;
+}
+
+/**
+ * Parses an HTML input element.
+ * Sets the name/value pair in the result,
+ * but only if the element is enabled and checked.
+ * @param typeSchema The resource type schema.
+ * @param el The input element.
+ * @param result The result builder.
+ */
+function parseResourceInputElement(
+  typeSchema: TypeSchema,
+  result: Resource,
+  el: HTMLInputElement): void {
+
+  if (el.disabled) {
+    // Ignore disabled elements
+    return;
+  }
+
+  if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) {
+    // Ignore unchecked radio or checkbox elements
+    return;
+  }
+
+  setValue(typeSchema, result, el.name, el.value);
+}
+
+/**
+ * Parses an HTML select element.
+ * Sets the name/value pair if one is selected.
+ * @param el The select element.
+ * @param result The result builder.
+ */
+function parseResourceSelectElement(
+  typeSchema: TypeSchema,
+  result: Resource,
+  el: HTMLSelectElement): void {
+
+  if (el.selectedOptions.length === 0) {
+    return;
+  }
+
+  setValue(typeSchema, result, el.name, el.value);
 }
 
 function setValue(typeDef: TypeSchema, result: any, fullName: string, value: string) {
