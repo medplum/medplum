@@ -26,6 +26,7 @@
     "@storybook/addon-links": "6.2.9",
     "@storybook/builder-webpack5": "6.2.9",
     "@storybook/react": "6.2.9",
+    "@testing-library/dom": "7.31.2",
     "@testing-library/react": "11.2.7",
     "@types/jest": "26.0.23",
     "@types/node": "15.12.2",
