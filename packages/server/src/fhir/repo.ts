@@ -1,10 +1,10 @@
-import { Bundle, Meta, OperationOutcome, Reference, Resource } from '@medplum/core';
+import { Bundle, Meta, OperationOutcome, Reference, Resource, SearchRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import validator from 'validator';
 import { getKnex } from '../database';
 import { allOk, badRequest, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
-import { getSearchParameter, getSearchParameters, SearchRequest } from './search';
+import { getSearchParameter, getSearchParameters } from './search';
 
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
 

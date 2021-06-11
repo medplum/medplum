@@ -1,4 +1,5 @@
-import { Operator, parseSearchRequest } from './search';
+import { Operator } from '@medplum/core';
+import { parseSearchRequest } from './search';
 
 test('Parse Patient search', () => {
   expect(parseSearchRequest('Patient', {})).toMatchObject({

@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, SearchDefinition } from '@medplum/core';
+import { IndexedStructureDefinition, SearchRequest } from '@medplum/core';
 import React, { useRef, useState } from 'react';
 import { Dialog } from './Dialog';
 import { buildFieldNameString } from './SearchUtils';
@@ -6,14 +6,14 @@ import { buildFieldNameString } from './SearchUtils';
 interface SearchFieldEditorProps {
   schema: IndexedStructureDefinition;
   visible: boolean;
-  definition: SearchDefinition;
-  onOk: (definition: SearchDefinition) => void;
+  definition: SearchRequest;
+  onOk: (definition: SearchRequest) => void;
   onCancel: () => void;
 }
 
 export function SearchFieldEditor(props: SearchFieldEditorProps) {
   const [state, setState] = useState({
-    definition: JSON.parse(JSON.stringify(props.definition)) as SearchDefinition
+    definition: JSON.parse(JSON.stringify(props.definition)) as SearchRequest
   });
 
   const availableRef = useRef<HTMLSelectElement>(null);

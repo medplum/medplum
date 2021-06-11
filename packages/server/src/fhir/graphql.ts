@@ -1,4 +1,4 @@
-import { Resource } from '@medplum/core';
+import { Filter, Operator, Resource } from '@medplum/core';
 import {
   GraphQLBoolean,
   GraphQLFieldConfigArgumentMap,
@@ -15,7 +15,7 @@ import {
 } from 'graphql';
 import { repo } from './repo';
 import { definitions, resourceTypes } from './schema';
-import { Filter, getSearchParameters, Operator } from './search';
+import { getSearchParameters } from './search';
 
 const typeCache: Record<string, GraphQLOutputType> = {
   'base64Binary': GraphQLString,

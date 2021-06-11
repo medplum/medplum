@@ -1,7 +1,7 @@
-import { Bundle } from '@medplum/core';
+import { Bundle, Operator } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { useMedplum } from './MedplumProvider';
 import './Autocomplete.css';
+import { useMedplum } from './MedplumProvider';
 
 interface AutocompleteResource {
   id: string,
@@ -296,8 +296,8 @@ export function Autocomplete(props: AutocompleteProps) {
     medplum.search({
       resourceType: props.resourceType,
       filters: [{
-        key: 'name',
-        op: 'eq',
+        code: 'name',
+        operator: Operator.EQUALS,
         value: value
       }]
     })

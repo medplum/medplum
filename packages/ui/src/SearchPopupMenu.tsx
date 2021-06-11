@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, SearchDefinition } from '@medplum/core';
+import { IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import React from 'react';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
@@ -8,12 +8,12 @@ import { SubMenu } from './SubMenu';
 
 export interface SearchPopupMenuProps {
   schema: IndexedStructureDefinition;
-  search: SearchDefinition;
+  search: SearchRequest;
   visible: boolean,
   x: number,
   y: number,
   field: string,
-  onChange: (definition: SearchDefinition) => void,
+  onChange: (definition: SearchRequest) => void,
   onClose: () => void
 }
 
@@ -97,25 +97,25 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   function renderDateTimeSubMenu_() {
     return (
       <SubMenu title="Date filters">
-        <MenuItem onClick={() => prompt_('equals')}>Equals...</MenuItem>
-        <MenuItem onClick={() => prompt_('equals')}>Does not equal...</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Equals...</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.NOT_EQUALS)}>Does not equal...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_('equals')}>Before...</MenuItem>
-        <MenuItem onClick={() => prompt_('equals')}>After...</MenuItem>
-        <MenuItem onClick={() => prompt_('equals')}>Between...</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.ENDS_BEFORE)}>Before...</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.STARTS_AFTER)}>After...</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Between...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_('equals')}>Tomorrow</MenuItem>
-        <MenuItem onClick={() => prompt_('equals')}>Today</MenuItem>
-        <MenuItem onClick={() => prompt_('equals')}>Yesterday</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Tomorrow</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Today</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Yesterday</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_('equals')}>Next Month</MenuItem>
-        <MenuItem onClick={() => prompt_('equals')}>This Month</MenuItem>
-        <MenuItem onClick={() => prompt_('equals')}>Last Month</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Next Month</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>This Month</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Last Month</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_('equals')}>Year to date</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Year to date</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_('equals')}>Is set</MenuItem>
-        <MenuItem onClick={() => prompt_('equals')}>Is not set</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Is set</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Is not set</MenuItem>
       </SubMenu>
     );
   }
@@ -128,11 +128,11 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   function renderTextSubMenu_() {
     return (
       <SubMenu title="Text filters">
-        <MenuItem onClick={() => prompt_('equals')}>Equals...</MenuItem>
-        <MenuItem onClick={() => prompt_('not_equals')}>Does not equal...</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Equals...</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.NOT_EQUALS)}>Does not equal...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_('contains')}>Contains...</MenuItem>
-        <MenuItem onClick={() => prompt_('not_contains')}>Does not contain...</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.CONTAINS)}>Contains...</MenuItem>
+        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Does not contain...</MenuItem>
       </SubMenu>
     );
   }
@@ -148,11 +148,9 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   /**
    * Prompts the user for a value to use in a filter.
    *
-   * @param {string} op The filter operation.
+   * @param {Operator} op The filter operation.
    */
-  function prompt_(op: string) {
-    // setState({ visible: false });
-
+  function prompt_(op: Operator) {
     const caption = buildFieldNameString(props.schema, props.search.resourceType, props.field) + ' ' + getOpString(op) + '...';
 
     const retVal = prompt(caption, '');
