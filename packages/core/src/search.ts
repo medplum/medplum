@@ -70,12 +70,16 @@ export function parseSearchDefinition(location: { pathname: string, search?: str
 
   params.forEach((value, key) => {
     if (key === '_fields') {
+      fields.length = 0;
+      fields.push(...value.split(','));
       return;
     }
     if (key === '_sort') {
-      sortRules.push({
-        code: value
-      });
+      if (value.startsWith('-')) {
+        sortRules.push({ code: value.substr(1), descending: true });
+      } else {
+        sortRules.push({ code: value });
+      }
     } else if (key === '_page') {
       page = parseInt(value);
     } else if (key === '_count') {
@@ -94,7 +98,8 @@ export function parseSearchDefinition(location: { pathname: string, search?: str
     filters,
     fields,
     page,
-    count
+    count,
+    sortRules
   };
 }
 
@@ -123,6 +128,10 @@ export function formatSearchQuery(definition: SearchRequest): string {
 
   if (definition.page && definition.page > 0) {
     params.push('_page=' + definition.page);
+  }
+
+  if (definition.count && definition.count > 0) {
+    params.push('_count=' + definition.count);
   }
 
   if (params.length === 0) {
