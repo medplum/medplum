@@ -6,6 +6,7 @@ export interface SearchRequest {
   readonly page?: number;
   readonly count?: number;
   readonly fields?: string[];
+  readonly name?: string;
 }
 
 export interface Filter {
