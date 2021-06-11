@@ -1,7 +1,6 @@
-import { ClientApplication, Login, User } from '@medplum/core';
+import { ClientApplication, Login, Operator, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { allOk, badRequest, notFound, repo, RepositoryResult } from '../fhir';
-import { Operator } from '../fhir/search';
 
 /**
  * Searches for user by email.

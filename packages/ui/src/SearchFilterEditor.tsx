@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, SearchDefinition, SearchFilterDefinition } from '@medplum/core';
+import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import React, { useRef, useState } from 'react';
 import { Autocomplete } from './Autocomplete';
 import { Dialog } from './Dialog';
@@ -7,16 +7,16 @@ import { addFilter, buildFieldNameString, deleteFilter, getOpString } from './Se
 interface FilterRowProps {
   schema: IndexedStructureDefinition;
   resourceType: string;
-  definition: SearchFilterDefinition;
-  onAdd: (filter: SearchFilterDefinition) => void;
-  onDelete: (filter: SearchFilterDefinition) => void;
+  definition: Filter;
+  onAdd: (filter: Filter) => void;
+  onDelete: (filter: Filter) => void;
 }
 
 function FilterRow(props: FilterRowProps) {
   const [state, setState] = useState({
-    editing: props.definition.key === '',
-    field: props.definition.key,
-    op: props.definition.op,
+    editing: props.definition.code === '',
+    field: props.definition.code,
+    operator: props.definition.operator,
     value: props.definition.value
   });
 
@@ -44,7 +44,7 @@ function FilterRow(props: FilterRowProps) {
     }
 
     return (
-      <select defaultValue={state.op} onChange={e => setState({ ...stateRef.current, op: e.target.value })}>
+      <select defaultValue={state.operator} onChange={e => setState({ ...stateRef.current, operator: e.target.value as Operator })}>
         {renderOperationOptions()}
       </select>
     );
@@ -142,7 +142,7 @@ function FilterRow(props: FilterRowProps) {
       return null;
     }
 
-    const op = state.op;
+    const op = state.operator;
     if (!op) {
       return null;
     }
@@ -186,22 +186,22 @@ function FilterRow(props: FilterRowProps) {
       return;
     }
 
-    const op = state.op;
+    const op = state.operator;
     if (!op) {
       return;
     }
 
     props.onAdd({
-      key: key,
-      op: op,
+      code: key,
+      operator: op,
       value: state.value
     });
 
     setState({
       ...stateRef.current,
       field: '',
-      op: '',
-      value: undefined
+      operator: Operator.EQUALS,
+      value: ''
     });
   }
 
@@ -210,16 +210,16 @@ function FilterRow(props: FilterRowProps) {
     const filter = props.definition;
     return (
       <tr>
-        <td>{buildFieldNameString(props.schema, resourceType, filter.key)}</td>
-        <td>{getOpString(filter.op)}</td>
+        <td>{buildFieldNameString(props.schema, resourceType, filter.code)}</td>
+        <td>{getOpString(filter.operator)}</td>
         <td>{filter.value}</td>
         <td>
           <button
             className="btn btn-small"
             onClick={() => setState({
               editing: true,
-              field: props.definition.key,
-              op: props.definition.op,
+              field: props.definition.code,
+              operator: props.definition.operator,
               value: props.definition.value
             })}
           >Edit</button>
@@ -255,21 +255,21 @@ function FilterRow(props: FilterRowProps) {
 export interface SearchFilterEditorProps {
   schema: IndexedStructureDefinition;
   visible: boolean;
-  definition: SearchDefinition;
-  onOk: (definition: SearchDefinition) => void;
+  definition: SearchRequest;
+  onOk: (definition: SearchRequest) => void;
   onCancel: () => void;
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps) {
   const [state, setState] = useState({
-    definition: JSON.parse(JSON.stringify(props.definition)) as SearchDefinition
+    definition: JSON.parse(JSON.stringify(props.definition)) as SearchRequest
   });
 
-  function onAddFilter(filter: SearchFilterDefinition) {
-    setState({ definition: addFilter(state.definition, filter.key, filter.op, filter.value) });
+  function onAddFilter(filter: Filter) {
+    setState({ definition: addFilter(state.definition, filter.code, filter.operator, filter.value) });
   }
 
-  function onDeleteFilter(filter: SearchFilterDefinition) {
+  function onDeleteFilter(filter: Filter) {
     if (!state.definition.filters) {
       return;
     }
@@ -299,7 +299,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
             </tr>
           </thead>
           <tbody>
-            {filters.map((filter: SearchFilterDefinition) => (
+            {filters.map((filter: Filter) => (
               <FilterRow
                 schema={props.schema}
                 resourceType={props.definition.resourceType}
@@ -312,7 +312,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
             <FilterRow
               schema={props.schema}
               resourceType={props.definition.resourceType}
-              definition={{ key: '', op: '' }}
+              definition={{ code: '', operator: Operator.EQUALS, value: '' }}
               onAdd={f => onAddFilter(f)}
               onDelete={f => onDeleteFilter(f)}
             />

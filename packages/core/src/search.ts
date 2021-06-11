@@ -1,69 +1,109 @@
 
-export interface SearchFilterDefinition {
-  key: string;
-  op: string;
-  value?: string;
+export interface SearchRequest {
+  readonly resourceType: string;
+  readonly filters: Filter[];
+  readonly sortRules?: SortRule[];
+  readonly page?: number;
+  readonly count?: number;
+  readonly fields?: string[];
 }
 
-export interface SearchDefinition {
-  resourceType: string;
-  id?: string;
-  name?: string;
-  fields?: string[];
-  filters?: SearchFilterDefinition[];
-  sort?: string;
-  countField?: string;
-  page?: number;
-  pageSize?: number;
-  folderType?: number;
-  folderEntityId?: string;
-  default?: boolean;
+export interface Filter {
+  code: string;
+  operator: Operator;
+  value: string;
+}
+
+export interface SortRule {
+  code: string;
+  descending?: boolean;
 }
 
 /**
- * Parses a URL into a SearchDefinition.
+ * Search operators.
+ * These operators represent "modifiers" and "prefixes" in FHIR search.
+ * See: https://www.hl7.org/fhir/search.html
+ */
+export enum Operator {
+  EQUALS = 'eq',
+  NOT_EQUALS = 'ne',
+
+  // Numbers
+  GREATER_THAN = 'gt',
+  LESS_THAN = 'lt',
+  GREATER_THAN_OR_EQUALS = 'ge',
+  LESS_THAN_OR_EQUALS = 'le',
+
+  // Dates
+  STARTS_AFTER = 'sa',
+  ENDS_BEFORE = 'eb',
+  APPROXIMATELY = 'ap',
+
+  // String
+  CONTAINS = 'contains',
+  EXACT = 'exact',
+
+  // Token
+  TEXT = 'text',
+  ABOVE = 'above',
+  BELOW = 'below',
+  IN = 'in',
+  NOT_IN = 'not-in',
+  OF_TYPE = 'of-type',
+}
+
+
+/**
+ * Parses a URL into a SearchRequest.
  * @param location The URL to parse.
  * @returns Parsed search definition.
  */
-export function parseSearchDefinition(location: { pathname: string, search?: string }): SearchDefinition {
+export function parseSearchDefinition(location: { pathname: string, search?: string }): SearchRequest {
   const resourceType = location.pathname.split('/').pop() as string;
   const params = new URLSearchParams(location.search);
-  const fields = params.get('_fields') || 'id,meta.versionId,meta.lastUpdated,name';
-  const filters = [] as SearchFilterDefinition[];
-  const result: SearchDefinition = {
-    resourceType: resourceType,
-    fields: fields.split(','),
-    sort: '-meta.lastUpdated'
-  }
+  const fields = ['id', 'meta.versionId', 'meta.lastUpdated', 'name'];
+  const filters: Filter[] = [];
+  const sortRules: SortRule[] = [];
+  let page = 0;
+  let count = 10;
 
   params.forEach((value, key) => {
     if (key === '_fields') {
       return;
     }
     if (key === '_sort') {
-      result.sort = value;
+      sortRules.push({
+        code: value
+      });
     } else if (key === '_page') {
-      result.page = parseInt(value);
+      page = parseInt(value);
+    } else if (key === '_count') {
+      count = parseInt(value);
     } else {
       filters.push({
-        key: key,
-        op: 'eq',
+        code: key,
+        operator: Operator.EQUALS,
         value: value
       });
     }
   });
 
-  result.filters = filters;
-  return result;
+  return {
+    resourceType,
+    filters,
+    fields,
+    page,
+    count
+  };
 }
 
 /**
  * Formats a search definition object into a query string.
  * Note: The return value does not include the resource type.
- * @param {!SearchDefinition} definition The search definition.
+ * @param {!SearchRequest} definition The search definition.
  * @returns Formatted URL.
  */
-export function formatSearchQuery(definition: SearchDefinition): string {
+export function formatSearchQuery(definition: SearchRequest): string {
   const params: string[] = [];
 
   if (definition.fields) {
@@ -72,12 +112,12 @@ export function formatSearchQuery(definition: SearchDefinition): string {
 
   if (definition.filters) {
     definition.filters.forEach(filter => {
-      params.push(filter.key + '=' + filter.value);
+      params.push(filter.code + '=' + filter.value);
     });
   }
 
-  if (definition.sort) {
-    params.push('_sort=' + definition.sort);
+  if (definition.sortRules) {
+    params.push(formatSortRules(definition.sortRules));
   }
 
   if (definition.page && definition.page > 0) {
@@ -90,4 +130,11 @@ export function formatSearchQuery(definition: SearchDefinition): string {
 
   params.sort();
   return '?' + params.join('&');
+}
+
+function formatSortRules(sortRules: SortRule[] | undefined): string {
+  if (!sortRules || sortRules.length === 0) {
+    return '';
+  }
+  return '_sort=' + sortRules.map(sr => sr.descending ? '-' + sr.code : sr.code).join(',');
 }

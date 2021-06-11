@@ -1,57 +1,10 @@
-import { Bundle, BundleEntry, SearchParameter } from '@medplum/core';
+import { Bundle, BundleEntry, Filter, Operator, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 
 /**
  * Parses a FHIR search query.
  * See: https://www.hl7.org/fhir/search.html
  */
-
-export interface SearchRequest {
-  readonly resourceType: string;
-  readonly filters: Filter[];
-  readonly sortRules?: SortRule[];
-  readonly page?: number;
-  readonly count?: number;
-}
-
-export interface Filter {
-  code: string;
-  operator: Operator;
-  value: string;
-}
-
-export interface SortRule {
-  code: string;
-  descending?: boolean;
-}
-
-export enum Operator {
-  EQUALS,
-  NOT_EQUALS,
-
-  // Numbers
-  GREATER_THAN,
-  LESS_THAN,
-  GREATER_THAN_OR_EQUALS,
-  LESS_THAN_OR_EQUALS,
-
-  // Dates
-  STARTS_AFTER,
-  ENDS_BEFORE,
-  APPROXIMATELY,
-
-  // String
-  CONTAINS,
-  EXACT,
-
-  // Token
-  TEXT,
-  ABOVE,
-  BELOW,
-  IN,
-  NOT_IN,
-  OF_TYPE,
-}
 
 /**
  * The original search parameters bundle from the FHIR spec.
@@ -152,7 +105,6 @@ class SearchParser {
       case '_id':
       case 'id':
         this.filters.push({
-          // param: getSearchParameter('Resource', '_id') as SearchParameter,
           code: '_id',
           operator: Operator.EQUALS,
           value
@@ -305,7 +257,6 @@ class SearchParser {
     }
 
     this.filters.push({
-      // param,
       code: param.code as string,
       operator: op,
       value: str

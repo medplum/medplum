@@ -1,4 +1,4 @@
-import { HumanName, IndexedStructureDefinition, SearchDefinition, SearchFilterDefinition } from '@medplum/core';
+import { Filter, HumanName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import React from 'react';
 import { formatHumanName } from './HumanNameUtils';
 
@@ -7,7 +7,7 @@ import { formatHumanName } from './HumanNameUtils';
  *
  * @param {Array} filters The new filters.
  */
-export function setFilters(definition: SearchDefinition, filters: SearchFilterDefinition[]) {
+export function setFilters(definition: SearchRequest, filters: Filter[]) {
   return {
     ...definition,
     filters: filters,
@@ -18,31 +18,31 @@ export function setFilters(definition: SearchDefinition, filters: SearchFilterDe
 /**
  * Clears all of the filters.
  */
-export function clearFilters(definition: SearchDefinition) {
+export function clearFilters(definition: SearchRequest) {
   return setFilters(definition, []);
 }
 
 /**
  * Clears all of the filters on a certain field.
  *
- * @param {string} fieldKey The field key name to clear filters.
+ * @param {string} code The field key name to clear filters.
  */
-export function clearFiltersOnField(definition: SearchDefinition, fieldKey: string) {
-  return setFilters(definition, (definition.filters || []).filter(f => f.key !== fieldKey));
+export function clearFiltersOnField(definition: SearchRequest, code: string) {
+  return setFilters(definition, (definition.filters || []).filter(f => f.code !== code));
 }
 
 /**
  * Adds a filter.
  *
  * @param {string} field The field key name.
- * @param {string} op The operation key name.
+ * @param {Operator} op The operation key name.
  * @param {?string} value The filter value.
  * @param {boolean=} opt_clear Optional flag to clear filters on the field.
  */
 export function addFilter(
-  definition: SearchDefinition,
+  definition: SearchRequest,
   field: string,
-  op: string,
+  op: Operator,
   value?: string,
   opt_clear?: boolean) {
 
@@ -50,11 +50,11 @@ export function addFilter(
     definition = clearFiltersOnField(definition, field);
   }
 
-  const nextFilters = [];
+  const nextFilters: Filter[] = [];
   if (definition.filters) {
     nextFilters.push(...definition.filters);
   }
-  nextFilters.push({ key: field, op: op, value: value });
+  nextFilters.push({ code: field, operator: op, value: value || '' });
 
   return setFilters(definition, nextFilters);
 }
@@ -64,7 +64,7 @@ export function addFilter(
  *
  * @param {string} field The field key name.
  */
-export function addField(definition: SearchDefinition, field: string) {
+export function addField(definition: SearchRequest, field: string) {
   if (definition.fields && definition.fields.includes(field)) {
     return definition;
   }
@@ -81,41 +81,11 @@ export function addField(definition: SearchDefinition, field: string) {
 }
 
 /**
- * Adds a countField.
- *
- * @param {string} countField The field key name.
- */
-export function addCountField(definition: SearchDefinition, countField: string) {
-  if (definition.countField === countField) {
-    return definition;
-  }
-  return {
-    ...definition,
-    countField: countField,
-    name: undefined
-  }
-}
-
-/**
- * Removes a countField.
- */
-export function removeCountField(definition: SearchDefinition) {
-  if (definition.countField === undefined) {
-    return definition;
-  }
-  return {
-    ...definition,
-    countField: undefined,
-    name: undefined
-  }
-}
-
-/**
  * Deletes a filter at the specified index.
  *
  * @param {number} index The filter index.
  */
-export function deleteFilter(definition: SearchDefinition, index: number) {
+export function deleteFilter(definition: SearchRequest, index: number) {
   if (!definition.filters) {
     return definition;
   }
@@ -133,7 +103,7 @@ export function deleteFilter(definition: SearchDefinition, index: number) {
  *
  * @param {string} field The field key name.
  */
-export function addYesterdayFilter(definition: SearchDefinition, field: string) {
+export function addYesterdayFilter(definition: SearchRequest, field: string) {
   return addDayFilter_(definition, field, -1);
 }
 
@@ -142,7 +112,7 @@ export function addYesterdayFilter(definition: SearchDefinition, field: string) 
  *
  * @param {string} field The field key name.
  */
-export function addTodayFilter(definition: SearchDefinition, field: string) {
+export function addTodayFilter(definition: SearchRequest, field: string) {
   return addDayFilter_(definition, field, 0);
 }
 
@@ -151,7 +121,7 @@ export function addTodayFilter(definition: SearchDefinition, field: string) {
  *
  * @param {string} field The field key name.
  */
-export function addTomorrowFilter(definition: SearchDefinition, field: string) {
+export function addTomorrowFilter(definition: SearchRequest, field: string) {
   return addDayFilter_(definition, field, 1);
 }
 
@@ -165,7 +135,7 @@ export function addTomorrowFilter(definition: SearchDefinition, field: string) {
  * @param {string} field The field key name.
  * @param {number} delta The number of days from this day.
  */
-function addDayFilter_(definition: SearchDefinition, field: string, delta: number) {
+function addDayFilter_(definition: SearchRequest, field: string, delta: number) {
   const startTime = new Date();
   startTime.setDate(startTime.getDate() + delta);
   startTime.setHours(0);
@@ -184,7 +154,7 @@ function addDayFilter_(definition: SearchDefinition, field: string, delta: numbe
  *
  * @param {string} field The field key name.
  */
-export function addLastMonthFilter(definition: SearchDefinition, field: string) {
+export function addLastMonthFilter(definition: SearchRequest, field: string) {
   return addMonthFilter_(definition, field, -1);
 }
 
@@ -193,7 +163,7 @@ export function addLastMonthFilter(definition: SearchDefinition, field: string) 
  *
  * @param {string} field The field key name.
  */
-export function addThisMonthFilter(definition: SearchDefinition, field: string) {
+export function addThisMonthFilter(definition: SearchRequest, field: string) {
   return addMonthFilter_(definition, field, 0);
 }
 
@@ -202,7 +172,7 @@ export function addThisMonthFilter(definition: SearchDefinition, field: string) 
  *
  * @param {string} field The field key name.
  */
-export function addNextMonthFilter(definition: SearchDefinition, field: string) {
+export function addNextMonthFilter(definition: SearchRequest, field: string) {
   return addMonthFilter_(definition, field, 1);
 }
 
@@ -216,7 +186,7 @@ export function addNextMonthFilter(definition: SearchDefinition, field: string) 
  * @param {string} field The field key name.
  * @param {number} delta The number of months from this month.
  */
-function addMonthFilter_(definition: SearchDefinition, field: string, delta: number) {
+function addMonthFilter_(definition: SearchRequest, field: string, delta: number) {
   const startTime = new Date();
   startTime.setMonth(startTime.getMonth() + delta);
   startTime.setDate(1);
@@ -237,7 +207,7 @@ function addMonthFilter_(definition: SearchDefinition, field: string, delta: num
  *
  * @param {string} field The field key name.
  */
-export function addYearToDateFilter(definition: SearchDefinition, field: string) {
+export function addYearToDateFilter(definition: SearchRequest, field: string) {
   const startTime = new Date();
   startTime.setMonth(0);
   startTime.setDate(1);
@@ -251,7 +221,7 @@ export function addYearToDateFilter(definition: SearchDefinition, field: string)
   return addFilter(
     definition,
     field,
-    'after_datetime',
+    Operator.STARTS_AFTER,
     startTime.toISOString());
 }
 
@@ -261,7 +231,7 @@ export function addYearToDateFilter(definition: SearchDefinition, field: string)
  * @param {string} field The field key name.
  * @param {Date} value The date.
  */
-export function addDateEqualsFilter(definition: SearchDefinition, field: string, value: Date) {
+export function addDateEqualsFilter(definition: SearchRequest, field: string, value: Date) {
   return addDateFilterBetween(definition, field, value, value);
 }
 
@@ -269,10 +239,10 @@ export function addDateEqualsFilter(definition: SearchDefinition, field: string,
  * Adds a filter for a date before a certain date/time.
  *
  * @param {string} field The field key name.
- * @param {string} op The date/time operation.
+ * @param {Operator} op The date/time operation.
  * @param {Date} value The date.
  */
-export function addDateFilter(definition: SearchDefinition, field: string, op: string, value: Date): SearchDefinition {
+export function addDateFilter(definition: SearchRequest, field: string, op: Operator, value: Date): SearchRequest {
   definition = clearFiltersOnField(definition, field);
   return addDateFilterImpl_(definition, field, op, value);
 }
@@ -285,7 +255,7 @@ export function addDateFilter(definition: SearchDefinition, field: string, op: s
  * @param {Date} d2 The end date.
  * @param {boolean=} opt_exclusive Optional flag for exclusive end date.
  */
-export function addDateFilterBetween(definition: SearchDefinition, field: string, d1: Date, d2: Date, opt_exclusive?: boolean) {
+export function addDateFilterBetween(definition: SearchRequest, field: string, d1: Date, d2: Date, opt_exclusive?: boolean) {
 
   if (!opt_exclusive) {
     // Between is inclusive.  Therefore, we need to push out the end date.
@@ -294,8 +264,8 @@ export function addDateFilterBetween(definition: SearchDefinition, field: string
   }
 
   definition = clearFiltersOnField(definition, field);
-  definition = addDateFilter(definition, field, 'after_datetime', d1);
-  definition = addDateFilter(definition, field, 'before_datetime', d2);
+  definition = addDateFilter(definition, field, Operator.STARTS_AFTER, d1);
+  definition = addDateFilter(definition, field, Operator.ENDS_BEFORE, d2);
   return definition;
 }
 
@@ -303,10 +273,10 @@ export function addDateFilterBetween(definition: SearchDefinition, field: string
  * Adds a filter for a date before a certain date/time.
  *
  * @param {string} field The field key name.
- * @param {string} op The date/time operation.
+ * @param {Operator} op The date/time operation.
  * @param {Date} value The date.
  */
-function addDateFilterImpl_(definition: SearchDefinition, field: string, op: string, value: Date) {
+function addDateFilterImpl_(definition: SearchRequest, field: string, op: Operator, value: Date) {
   const dateTime = new Date(value.getFullYear(), value.getMonth(), value.getDate());
   dateTime.setHours(0);
   dateTime.setMinutes(0);
@@ -327,7 +297,7 @@ function addDateFilterImpl_(definition: SearchDefinition, field: string, op: str
  * @param op
  * @param value
  */
-export function addUserFilter(definition: SearchDefinition, field: string, op: string, value: string) {
+export function addUserFilter(definition: SearchRequest, field: string, op: Operator, value: string) {
   definition = clearFiltersOnField(definition, field);
   return addFilter(definition, field, op, value);
 }
@@ -335,13 +305,13 @@ export function addUserFilter(definition: SearchDefinition, field: string, op: s
 /**
  * Returns true if the search has any filters on the specified field.
  *
- * @param {string} field The field key name.
+ * @param {string} code The field key name.
  */
-export function hasFilterOnField(definition: SearchDefinition, field: string) {
+export function hasFilterOnField(definition: SearchRequest, code: string) {
   if (!definition.filters) {
     return false;
   }
-  return definition.filters.find(f => f.key === field) !== undefined;
+  return definition.filters.find(f => f.code === code) !== undefined;
 }
 
 /**
@@ -349,7 +319,7 @@ export function hasFilterOnField(definition: SearchDefinition, field: string) {
  *
  * @param {number} page The page number.
  */
-export function setPage(definition: SearchDefinition, page: number) {
+export function setPage(definition: SearchRequest, page: number) {
   if (definition.page === page) {
     return definition;
   }
@@ -366,7 +336,7 @@ export function setPage(definition: SearchDefinition, page: number) {
  * @param {number} delta The delta to the page number.
  * @return {boolean} True if the page actually moved; false otherwise.
  */
-export function movePage(definition: SearchDefinition, delta: number) {
+export function movePage(definition: SearchRequest, delta: number) {
   return setPage(definition, Math.max((definition.page || 0) + (delta || 0), 0));
 }
 
@@ -376,7 +346,7 @@ export function movePage(definition: SearchDefinition, delta: number) {
  *
  * @param {string} sortField The sort key.
  */
-export function setSort(definition: SearchDefinition, sort: string, desc?: boolean) {
+export function setSort(definition: SearchRequest, sort: string, desc?: boolean) {
   if (sort === getSortField(definition) &&
     (desc !== undefined && desc === isSortDescending(definition))) {
     return definition;
@@ -395,7 +365,7 @@ export function setSort(definition: SearchDefinition, sort: string, desc?: boole
  *
  * @param {string} key The field key name.
  */
-export function toggleSort(definition: SearchDefinition, key: string) {
+export function toggleSort(definition: SearchRequest, key: string) {
   let desc = false;
   if (getSortField(definition) === key) {
     desc = !isSortDescending(definition);
@@ -403,22 +373,21 @@ export function toggleSort(definition: SearchDefinition, key: string) {
   return setSort(definition, key, desc);
 }
 
-export function getSortField(definition: SearchDefinition) {
-  const sort = definition.sort;
-  if (!sort) {
+export function getSortField(definition: SearchRequest): string | undefined {
+  const sortRules = definition.sortRules;
+  if (!sortRules || sortRules.length === 0) {
     return undefined;
   }
-  const fields = sort.split(',');
-  const field = fields[0];
+  const field = sortRules[0].code;
   return field.startsWith('-') ? field.substr(1) : field;
 }
 
-export function isSortDescending(definition: SearchDefinition) {
-  const sort = definition.sort;
-  if (!sort) {
+export function isSortDescending(definition: SearchRequest): boolean {
+  const sortRules = definition.sortRules;
+  if (!sortRules || sortRules.length === 0) {
     return false;
   }
-  return sort.startsWith('-');
+  return !!sortRules[0].descending;
 }
 
 /**
@@ -427,42 +396,12 @@ export function isSortDescending(definition: SearchDefinition) {
  * @param {string} op The operation code.
  * @return {string} A display string for the operation.
  */
-export function getOpString(op: string) {
+export function getOpString(op: Operator) {
   if (!op) {
     return '';
   }
 
-  if (op === 'before_datetime') {
-    return 'before';
-
-  } else if (op === 'after_datetime') {
-    return 'after';
-
-  } else if (op === 'newer_than_interval') {
-    return 'newer than';
-
-  } else if (op === 'older_than_interval') {
-    return 'older than';
-
-  } else if (op === 'equals') {
-    return 'equals';
-
-  } else if (op === 'not_equals') {
-    return 'does not equal';
-
-  } else if (op === 'contains') {
-    return 'contains';
-
-  } else if (op === 'not_contains') {
-    return 'does not contain';
-
-  } else if (op === 'is_set') {
-    return 'is set';
-
-  } else if (op === 'is_not_set') {
-    return 'is not set';
-  }
-
+  // TODO
   return op;
 }
 
@@ -501,7 +440,7 @@ export function buildFieldNameString(schema: IndexedStructureDefinition, resourc
  * @param {boolean=} opt_quotes Optional flag to put quotes around strings.
  * @return {string} An HTML fragment that represents the value.
  */
-export function getFilterValueString(filter: SearchFilterDefinition) {
+export function getFilterValueString(filter: Filter) {
   const value = filter.value;
   if (!value) {
     return <span className="muted">none</span>;

@@ -6,7 +6,7 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Binary, Bundle, OperationOutcome, Patient, Practitioner, Reference, Resource, StructureDefinition, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
-import { formatSearchQuery, SearchDefinition } from './search';
+import { formatSearchQuery, SearchRequest } from './search';
 import { LocalStorage, MemoryStorage, Storage } from './storage';
 import { IndexedStructureDefinition, indexStructureDefinition } from './types';
 import { arrayBufferToBase64 } from './utils';
@@ -289,7 +289,7 @@ export class MedplumClient extends EventTarget {
     return builder.join('');
   }
 
-  search(search: string | SearchDefinition): Promise<Bundle> {
+  search(search: string | SearchRequest): Promise<Bundle> {
     if (typeof search === 'string') {
       return this.get(this.baseUrl + 'fhir/R4/' + search);
     } else {

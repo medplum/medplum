@@ -1,14 +1,14 @@
-import { Bundle, IndexedStructureDefinition, Resource, SearchDefinition } from '@medplum/core';
+import { Bundle, IndexedStructureDefinition, Resource, SearchRequest } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
+import './SearchControl.css';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import { buildFieldNameString, getFilterValueString, getValue, renderValue } from './SearchUtils';
-import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
-  readonly definition: SearchDefinition;
+  readonly definition: SearchRequest;
 
-  constructor(definition: SearchDefinition) {
+  constructor(definition: SearchRequest) {
     super('change');
     this.definition = definition;
   }
@@ -35,7 +35,7 @@ export class SearchClickEvent extends Event {
 }
 
 export interface SearchControlProps {
-  search: SearchDefinition;
+  search: SearchRequest;
   checkboxesEnabled?: boolean;
   onLoad?: (e: SearchLoadEvent) => void;
   onChange?: (e: SearchChangeEvent) => void;
@@ -88,7 +88,7 @@ export function SearchControl(props: SearchControlProps) {
    * @return {string} The HTML snippet for a "filters" cell.
    */
   function buildFilterString_(key: string) {
-    const filters = (props.search.filters ?? []).filter(f => f.key === key);
+    const filters = (props.search.filters ?? []).filter(f => f.code === key);
     if (filters.length === 0) {
       return <span className="muted">no filters</span>;
     }

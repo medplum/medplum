@@ -1,4 +1,4 @@
-import { JsonWebKey } from '@medplum/core';
+import { JsonWebKey, Operator } from '@medplum/core';
 import { fromKeyLike } from 'jose/jwk/from_key_like';
 import { parseJwk } from 'jose/jwk/parse';
 import { createRemoteJWKSet } from 'jose/jwks/remote';
@@ -8,7 +8,6 @@ import { generateKeyPair } from 'jose/util/generate_key_pair';
 import { FlattenedJWSInput, GetKeyFunction, JWK, JWSHeaderParameters, JWTPayload, KeyLike } from 'jose/webcrypto/types';
 import { MedplumServerConfig } from '../config';
 import { repo } from '../fhir';
-import { Operator } from '../fhir/search';
 
 export interface MedplumClaims extends JWTPayload {
   /**
