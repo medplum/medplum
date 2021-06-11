@@ -15,17 +15,16 @@ const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
  * The pre-indexed search mappings.
  * @see buildMappings
  */
-const searchMappings = buildMappings(searchParams);
+const searchMappings = buildMappings();
 
 /**
  * Returns a search parameter lookup table indexed by resource type and search code.
  * The original FHIR spec includes all search parameter details,
  * but stored in a flat list in a bundle.
  * For runtime performance, we index by resource type and search code.
- * @param searchParams Original serch parameters bundle from the FHIR spec.
  * @returns Search parameter lookup table.
  */
-function buildMappings(searchParams: Bundle): Record<string, Record<string, SearchParameter>> {
+function buildMappings(): Record<string, Record<string, SearchParameter>> {
   const mappings: Record<string, Record<string, SearchParameter>> = {};
   for (const entry of (searchParams.entry as BundleEntry[])) {
     const searchParam = entry.resource as SearchParameter;
