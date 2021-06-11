@@ -7,7 +7,7 @@ import { formatHumanName } from './HumanNameUtils';
  *
  * @param {Array} filters The new filters.
  */
-export function setFilters(definition: SearchRequest, filters: Filter[]) {
+export function setFilters(definition: SearchRequest, filters: Filter[]): SearchRequest {
   return {
     ...definition,
     filters: filters,
@@ -18,7 +18,7 @@ export function setFilters(definition: SearchRequest, filters: Filter[]) {
 /**
  * Clears all of the filters.
  */
-export function clearFilters(definition: SearchRequest) {
+export function clearFilters(definition: SearchRequest): SearchRequest {
   return setFilters(definition, []);
 }
 
@@ -27,7 +27,7 @@ export function clearFilters(definition: SearchRequest) {
  *
  * @param {string} code The field key name to clear filters.
  */
-export function clearFiltersOnField(definition: SearchRequest, code: string) {
+export function clearFiltersOnField(definition: SearchRequest, code: string): SearchRequest {
   return setFilters(definition, (definition.filters || []).filter(f => f.code !== code));
 }
 
@@ -44,7 +44,7 @@ export function addFilter(
   field: string,
   op: Operator,
   value?: string,
-  opt_clear?: boolean) {
+  opt_clear?: boolean): SearchRequest {
 
   if (opt_clear) {
     definition = clearFiltersOnField(definition, field);
@@ -64,7 +64,7 @@ export function addFilter(
  *
  * @param {string} field The field key name.
  */
-export function addField(definition: SearchRequest, field: string) {
+export function addField(definition: SearchRequest, field: string): SearchRequest {
   if (definition.fields && definition.fields.includes(field)) {
     return definition;
   }
@@ -85,10 +85,7 @@ export function addField(definition: SearchRequest, field: string) {
  *
  * @param {number} index The filter index.
  */
-export function deleteFilter(definition: SearchRequest, index: number) {
-  if (!definition.filters) {
-    return definition;
-  }
+export function deleteFilter(definition: SearchRequest, index: number): SearchRequest {
   const newFilters = [...definition.filters];
   newFilters.splice(index, 1);
   return {
@@ -103,7 +100,7 @@ export function deleteFilter(definition: SearchRequest, index: number) {
  *
  * @param {string} field The field key name.
  */
-export function addYesterdayFilter(definition: SearchRequest, field: string) {
+export function addYesterdayFilter(definition: SearchRequest, field: string): SearchRequest {
   return addDayFilter_(definition, field, -1);
 }
 
@@ -112,7 +109,7 @@ export function addYesterdayFilter(definition: SearchRequest, field: string) {
  *
  * @param {string} field The field key name.
  */
-export function addTodayFilter(definition: SearchRequest, field: string) {
+export function addTodayFilter(definition: SearchRequest, field: string): SearchRequest {
   return addDayFilter_(definition, field, 0);
 }
 
@@ -121,7 +118,7 @@ export function addTodayFilter(definition: SearchRequest, field: string) {
  *
  * @param {string} field The field key name.
  */
-export function addTomorrowFilter(definition: SearchRequest, field: string) {
+export function addTomorrowFilter(definition: SearchRequest, field: string): SearchRequest {
   return addDayFilter_(definition, field, 1);
 }
 
@@ -135,13 +132,10 @@ export function addTomorrowFilter(definition: SearchRequest, field: string) {
  * @param {string} field The field key name.
  * @param {number} delta The number of days from this day.
  */
-function addDayFilter_(definition: SearchRequest, field: string, delta: number) {
+function addDayFilter_(definition: SearchRequest, field: string, delta: number): SearchRequest {
   const startTime = new Date();
   startTime.setDate(startTime.getDate() + delta);
-  startTime.setHours(0);
-  startTime.setMinutes(0);
-  startTime.setSeconds(0);
-  startTime.setMilliseconds(0);
+  startTime.setHours(0, 0, 0, 0);
 
   const endTime = new Date(startTime.getTime());
   endTime.setDate(endTime.getDate() + 1);
@@ -154,7 +148,7 @@ function addDayFilter_(definition: SearchRequest, field: string, delta: number) 
  *
  * @param {string} field The field key name.
  */
-export function addLastMonthFilter(definition: SearchRequest, field: string) {
+export function addLastMonthFilter(definition: SearchRequest, field: string): SearchRequest {
   return addMonthFilter_(definition, field, -1);
 }
 
@@ -163,7 +157,7 @@ export function addLastMonthFilter(definition: SearchRequest, field: string) {
  *
  * @param {string} field The field key name.
  */
-export function addThisMonthFilter(definition: SearchRequest, field: string) {
+export function addThisMonthFilter(definition: SearchRequest, field: string): SearchRequest {
   return addMonthFilter_(definition, field, 0);
 }
 
@@ -172,7 +166,7 @@ export function addThisMonthFilter(definition: SearchRequest, field: string) {
  *
  * @param {string} field The field key name.
  */
-export function addNextMonthFilter(definition: SearchRequest, field: string) {
+export function addNextMonthFilter(definition: SearchRequest, field: string): SearchRequest {
   return addMonthFilter_(definition, field, 1);
 }
 
@@ -186,14 +180,11 @@ export function addNextMonthFilter(definition: SearchRequest, field: string) {
  * @param {string} field The field key name.
  * @param {number} delta The number of months from this month.
  */
-function addMonthFilter_(definition: SearchRequest, field: string, delta: number) {
+function addMonthFilter_(definition: SearchRequest, field: string, delta: number): SearchRequest {
   const startTime = new Date();
   startTime.setMonth(startTime.getMonth() + delta);
   startTime.setDate(1);
-  startTime.setHours(0);
-  startTime.setMinutes(0);
-  startTime.setSeconds(0);
-  startTime.setMilliseconds(0);
+  startTime.setHours(0, 0, 0, 0);
 
   const endTime = new Date(startTime.getTime());
   endTime.setTime(startTime.getTime());
@@ -207,14 +198,11 @@ function addMonthFilter_(definition: SearchRequest, field: string, delta: number
  *
  * @param {string} field The field key name.
  */
-export function addYearToDateFilter(definition: SearchRequest, field: string) {
+export function addYearToDateFilter(definition: SearchRequest, field: string): SearchRequest {
   const startTime = new Date();
   startTime.setMonth(0);
   startTime.setDate(1);
-  startTime.setHours(0);
-  startTime.setMinutes(0);
-  startTime.setSeconds(0);
-  startTime.setMilliseconds(0);
+  startTime.setHours(0, 0, 0, 0);
 
   definition = clearFiltersOnField(definition, field);
 
@@ -231,7 +219,7 @@ export function addYearToDateFilter(definition: SearchRequest, field: string) {
  * @param {string} field The field key name.
  * @param {Date} value The date.
  */
-export function addDateEqualsFilter(definition: SearchRequest, field: string, value: Date) {
+export function addDateEqualsFilter(definition: SearchRequest, field: string, value: Date): SearchRequest {
   return addDateFilterBetween(definition, field, value, value);
 }
 
@@ -255,7 +243,7 @@ export function addDateFilter(definition: SearchRequest, field: string, op: Oper
  * @param {Date} d2 The end date.
  * @param {boolean=} opt_exclusive Optional flag for exclusive end date.
  */
-export function addDateFilterBetween(definition: SearchRequest, field: string, d1: Date, d2: Date, opt_exclusive?: boolean) {
+export function addDateFilterBetween(definition: SearchRequest, field: string, d1: Date, d2: Date, opt_exclusive?: boolean): SearchRequest {
 
   if (!opt_exclusive) {
     // Between is inclusive.  Therefore, we need to push out the end date.
@@ -276,12 +264,9 @@ export function addDateFilterBetween(definition: SearchRequest, field: string, d
  * @param {Operator} op The date/time operation.
  * @param {Date} value The date.
  */
-function addDateFilterImpl_(definition: SearchRequest, field: string, op: Operator, value: Date) {
+function addDateFilterImpl_(definition: SearchRequest, field: string, op: Operator, value: Date): SearchRequest {
   const dateTime = new Date(value.getFullYear(), value.getMonth(), value.getDate());
-  dateTime.setHours(0);
-  dateTime.setMinutes(0);
-  dateTime.setSeconds(0);
-  dateTime.setMilliseconds(0);
+  dateTime.setHours(0, 0, 0, 0);
 
   return addFilter(
     definition,
@@ -297,7 +282,7 @@ function addDateFilterImpl_(definition: SearchRequest, field: string, op: Operat
  * @param op
  * @param value
  */
-export function addUserFilter(definition: SearchRequest, field: string, op: Operator, value: string) {
+export function addUserFilter(definition: SearchRequest, field: string, op: Operator, value: string): SearchRequest {
   definition = clearFiltersOnField(definition, field);
   return addFilter(definition, field, op, value);
 }
@@ -307,7 +292,7 @@ export function addUserFilter(definition: SearchRequest, field: string, op: Oper
  *
  * @param {string} code The field key name.
  */
-export function hasFilterOnField(definition: SearchRequest, code: string) {
+export function hasFilterOnField(definition: SearchRequest, code: string): boolean {
   if (!definition.filters) {
     return false;
   }
@@ -319,7 +304,7 @@ export function hasFilterOnField(definition: SearchRequest, code: string) {
  *
  * @param {number} page The page number.
  */
-export function setPage(definition: SearchRequest, page: number) {
+export function setPage(definition: SearchRequest, page: number): SearchRequest {
   if (definition.page === page) {
     return definition;
   }
@@ -336,7 +321,7 @@ export function setPage(definition: SearchRequest, page: number) {
  * @param {number} delta The delta to the page number.
  * @return {boolean} True if the page actually moved; false otherwise.
  */
-export function movePage(definition: SearchRequest, delta: number) {
+export function movePage(definition: SearchRequest, delta: number): SearchRequest {
   return setPage(definition, Math.max((definition.page || 0) + (delta || 0), 0));
 }
 
@@ -346,14 +331,17 @@ export function movePage(definition: SearchRequest, delta: number) {
  *
  * @param {string} sortField The sort key.
  */
-export function setSort(definition: SearchRequest, sort: string, desc?: boolean) {
+export function setSort(definition: SearchRequest, sort: string, desc?: boolean): SearchRequest {
   if (sort === getSortField(definition) &&
     (desc !== undefined && desc === isSortDescending(definition))) {
     return definition;
   }
   return {
     ...definition,
-    sort: (desc === true ? '-' : '') + sort,
+    sortRules: [{
+      code: sort,
+      descending: !!desc
+    }],
     name: undefined
   }
 }
@@ -365,7 +353,7 @@ export function setSort(definition: SearchRequest, sort: string, desc?: boolean)
  *
  * @param {string} key The field key name.
  */
-export function toggleSort(definition: SearchRequest, key: string) {
+export function toggleSort(definition: SearchRequest, key: string): SearchRequest {
   let desc = false;
   if (getSortField(definition) === key) {
     desc = !isSortDescending(definition);
@@ -396,7 +384,7 @@ export function isSortDescending(definition: SearchRequest): boolean {
  * @param {string} op The operation code.
  * @return {string} A display string for the operation.
  */
-export function getOpString(op: Operator) {
+export function getOpString(op: Operator): string {
   if (!op) {
     return '';
   }
@@ -440,7 +428,7 @@ export function buildFieldNameString(schema: IndexedStructureDefinition, resourc
  * @param {boolean=} opt_quotes Optional flag to put quotes around strings.
  * @return {string} An HTML fragment that represents the value.
  */
-export function getFilterValueString(filter: Filter) {
+export function getFilterValueString(filter: Filter): JSX.Element | string {
   const value = filter.value;
   if (!value) {
     return <span className="muted">none</span>;
@@ -452,11 +440,12 @@ export function getFilterValueString(filter: Filter) {
 
 /**
  * Returns one of the meta fields.
+ * TODO: Replace with FHIRPath evaluation.
  *
  * @param {!string} key The field key.
  * @return {*} The value.
  */
-export function getValue(resource: any, key: string) {
+export function getValue(resource: any, key: string): string | undefined {
   try {
     return key.split('.').reduce((o, i) => o[i], resource);
   } catch (ex) {
