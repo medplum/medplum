@@ -1,9 +1,12 @@
 import { OperationOutcome } from '@medplum/core';
 import { randomUUID } from 'crypto';
 
+const OK_ID = 'ok';
+const NOT_FOUND_ID = 'not-found';
+
 export const allOk: OperationOutcome = {
   resourceType: 'OperationOutcome',
-  id: 'allok',
+  id: OK_ID,
   issue: [{
     severity: 'information',
     code: 'information',
@@ -15,7 +18,7 @@ export const allOk: OperationOutcome = {
 
 export const notFound: OperationOutcome = {
   resourceType: 'OperationOutcome',
-  id: 'not-found',
+  id: NOT_FOUND_ID,
   issue: [{
     severity: 'error',
     code: 'not-found',
@@ -38,4 +41,22 @@ export function badRequest(details: string, expression?: string): OperationOutco
       expression: (expression ? [expression] : undefined)
     }]
   };
+}
+
+export function isOk(outcome: OperationOutcome): boolean {
+  return outcome.id === OK_ID;
+}
+
+export function isNotFound(outcome: OperationOutcome): boolean {
+  return outcome.id === NOT_FOUND_ID;
+}
+
+export function getStatus(outcome: OperationOutcome): number {
+  if (isOk(outcome)) {
+    return 200;
+  } else if (isNotFound(outcome)) {
+    return 404;
+  } else {
+    return 400;
+  }
 }

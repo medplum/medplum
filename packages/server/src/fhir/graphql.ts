@@ -13,6 +13,7 @@ import {
   GraphQLSchema,
   GraphQLString
 } from 'graphql';
+import { isOk } from './outcomes';
 import { repo } from './repo';
 import { definitions, resourceTypes } from './schema';
 import { getSearchParameters } from './search';
@@ -214,7 +215,7 @@ async function dataLoader(source: any, args: any, ctx: any, info: GraphQLResolve
         value: e[1] as string
       } as Filter))
     });
-    if (searchOutcome.id !== 'allok') {
+    if (!isOk(searchOutcome)) {
       throw new Error(searchOutcome.issue?.[0].details?.text);
     }
     return searchResult?.entry?.map(e => e.resource as Resource);
@@ -223,7 +224,7 @@ async function dataLoader(source: any, args: any, ctx: any, info: GraphQLResolve
   // Direct read by ID
   if (args.id) {
     const [readOutcome, readResult] = await repo.readResource(fieldName, args.id);
-    if (readOutcome.id !== 'allok') {
+    if (!isOk(readOutcome)) {
       throw new Error(readOutcome.issue?.[0].details?.text);
     }
     return readResult;

@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { body, Result, ValidationError, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
-import { badRequest, repo } from '../fhir';
+import { badRequest, isOk, repo } from '../fhir';
 import { generateJwt } from '../oauth';
 import { createLogin } from '../oauth/utils';
 
@@ -32,7 +32,7 @@ authRouter.post(
     };
 
     const [loginOutcome, login] = await createLogin(client, req.body.email, req.body.password);
-    if (loginOutcome.id !== 'allok') {
+    if (!isOk(loginOutcome)) {
       return res.status(400).json(loginOutcome);
     }
 
@@ -41,7 +41,7 @@ authRouter.post(
     }
 
     const [userOutcome, user] = await repo.readReference<User>(login?.user);
-    if (userOutcome.id !== 'allok') {
+    if (!isOk(userOutcome)) {
       return res.status(400).json(userOutcome);
     }
 
@@ -68,7 +68,7 @@ authRouter.post(
     }
 
     const [profileOutcome, profile] = await repo.readReference<ProfileResource>(roleReference);
-    if (profileOutcome.id !== 'allok' || !profile) {
+    if (!isOk(profileOutcome) || !profile) {
       return res.status(400).json(profileOutcome);
     }
 

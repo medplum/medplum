@@ -2,7 +2,7 @@ import { Bundle, Meta, OperationOutcome, Reference, Resource, SearchRequest } fr
 import { randomUUID } from 'crypto';
 import validator from 'validator';
 import { getKnex } from '../database';
-import { allOk, badRequest, notFound } from './outcomes';
+import { allOk, badRequest, isNotFound, isOk, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
 
@@ -12,7 +12,7 @@ class Repository {
 
   async createBatch(bundle: Bundle): RepositoryResult<Bundle> {
     const validateOutcome = validateResource(bundle);
-    if (validateOutcome.id !== 'allok') {
+    if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
@@ -21,7 +21,7 @@ class Repository {
 
   async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
     const validateOutcome = validateResource(resource);
-    if (validateOutcome.id !== 'allok') {
+    if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
@@ -37,7 +37,7 @@ class Repository {
     }
 
     const validateOutcome = validateResourceType(resourceType);
-    if (validateOutcome.id !== 'allok') {
+    if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
@@ -67,7 +67,7 @@ class Repository {
     }
 
     const validateOutcome = validateResourceType(resourceType);
-    if (validateOutcome.id !== 'allok') {
+    if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
@@ -93,7 +93,7 @@ class Repository {
     }
 
     const validateOutcome = validateResourceType(resourceType);
-    if (validateOutcome.id !== 'allok') {
+    if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
@@ -112,7 +112,7 @@ class Repository {
 
   async updateResource<T extends Resource>(resource: T): RepositoryResult<T> {
     const validateOutcome = validateResource(resource);
-    if (validateOutcome.id !== 'allok') {
+    if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
@@ -122,7 +122,7 @@ class Repository {
     }
 
     const [existingOutcome, existing] = await this.readResource(resourceType, id);
-    if (existingOutcome.id !== 'allok' && existingOutcome.id !== 'not-found') {
+    if (!isOk(existingOutcome) && !isNotFound(existingOutcome)) {
       return [existingOutcome, undefined];
     }
 
@@ -148,12 +148,12 @@ class Repository {
     }
 
     const validateOutcome = validateResourceType(resourceType);
-    if (validateOutcome.id !== 'allok') {
+    if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
     const [readOutcome, resource] = await this.readResource(resourceType, id);
-    if (readOutcome.id !== 'allok') {
+    if (!isOk(readOutcome)) {
       return [readOutcome, undefined];
     }
 
@@ -165,7 +165,7 @@ class Repository {
 
   async patchResource(resource: Resource): RepositoryResult<Resource> {
     const validateOutcome = validateResource(resource);
-    if (validateOutcome.id !== 'allok') {
+    if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
@@ -174,7 +174,7 @@ class Repository {
 
   async search(searchRequest: SearchRequest): RepositoryResult<Bundle> {
     const validateOutcome = validateResourceType(searchRequest.resourceType);
-    if (validateOutcome.id !== 'allok') {
+    if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
