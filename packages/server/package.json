@@ -16,7 +16,7 @@
     "prestart": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --transpile-only src/index.ts",
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@aws-sdk/client-ssm": "3.18.0",

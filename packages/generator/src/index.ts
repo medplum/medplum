@@ -1,6 +1,6 @@
 import { readJson } from '@medplum/definitions';
-import { FileBuilder, wordWrap } from './filebuilder';
 import { writeFileSync } from 'fs';
+import { FileBuilder, wordWrap } from './filebuilder';
 
 const INDENT = ' '.repeat(2);
 
@@ -27,7 +27,7 @@ const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExt
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
 
-function main() {
+export function main() {
   const schema = readJson('fhir/r4/fhir.schema.json');
   const definitions = schema.definitions;
 
@@ -182,8 +182,6 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
 
   const b = new FileBuilder(INDENT);
 
-  b.append('import { Knex } from \'knex\';');
-  b.newLine();
   b.append('export async function up(knex) {');
   b.indentCount++;
 
@@ -204,7 +202,9 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
     for (const entry of searchParams.entry) {
       const searchParam = entry.resource;
       if (searchParam.base?.includes(resourceType)) {
-        if (searchParam.code === 'active') {
+        if (searchParam.code === 'identifier') {
+          // Ignore
+        } else if (searchParam.code === 'active') {
           b.append('t.boolean(\'' + searchParam.code + '\');');
         } else if (searchParam.type === 'date') {
           b.append('t.date(\'' + searchParam.code + '\');');
@@ -227,6 +227,16 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
     b.append('});');
   }
 
+  b.newLine();
+  b.append('await knex.schema.createTable(\'Identifier\', t => {');
+  b.indentCount++;
+  b.append('t.uuid(\'id\').notNullable().primary();');
+  b.append('t.uuid(\'resourceId\').notNullable().index();');
+  b.append('t.string(\'system\', 128).index();');
+  b.append('t.string(\'value\', 128).index();');
+  b.indentCount--;
+  b.append('});');
+
   b.indentCount--;
   b.append('}');
   b.newLine();
@@ -242,6 +252,7 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
     b.append('await knex.schema.dropTable(\'' + resourceType + '_History\');');
   }
 
+  b.append('await knex.schema.dropTable(\'Identifier\');');
   b.indentCount--;
   b.append('}');
 
@@ -398,4 +409,6 @@ function escapeHtml(unsafe: string): string {
     .replace(/…/g, '&hellip;');
 }
 
-main();
+if (process.argv[1].endsWith('index.ts')) {
+  main();
+}

@@ -3,8 +3,6 @@
  * Do not edit manually.
  */
 
-import { Knex } from 'knex';
-
 export async function up(knex) {
 
   await knex.schema.createTable('Account', t => {
@@ -13,7 +11,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('name', 128);
     t.string('owner', 128);
     t.string('patient', 128);
@@ -45,7 +42,6 @@ export async function up(knex) {
     t.string('derived-from', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('predecessor', 128);
@@ -106,7 +102,6 @@ export async function up(knex) {
     t.string('code', 128);
     t.string('criticality', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.date('last-date');
     t.string('manifestation', 128);
     t.date('onset');
@@ -135,7 +130,6 @@ export async function up(knex) {
     t.string('appointment-type', 128);
     t.string('based-on', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.string('location', 128);
     t.string('part-status', 128);
     t.string('patient', 128);
@@ -165,7 +159,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('actor', 128);
     t.string('appointment', 128);
-    t.string('identifier', 128);
     t.string('location', 128);
     t.string('part-status', 128);
     t.string('patient', 128);
@@ -221,7 +214,6 @@ export async function up(knex) {
     t.string('author', 128);
     t.string('code', 128);
     t.date('created');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('subject', 128);
   });
@@ -269,7 +261,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('location', 128);
     t.string('morphology', 128);
     t.string('patient', 128);
@@ -289,7 +280,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('composition', 128);
-    t.string('identifier', 128);
     t.string('message', 128);
     t.date('timestamp');
     t.string('type', 128);
@@ -347,7 +337,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('activity-code', 128);
     t.date('activity-date');
@@ -382,7 +371,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('category', 128);
     t.string('encounter', 128);
@@ -425,7 +413,6 @@ export async function up(knex) {
     t.date('entered-date');
     t.string('enterer', 128);
     t.string('factor-override', 128);
-    t.string('identifier', 128);
     t.date('occurrence');
     t.string('patient', 128);
     t.string('performer-actor', 128);
@@ -457,7 +444,6 @@ export async function up(knex) {
     t.date('date');
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('publisher', 128);
     t.string('status', 128);
@@ -487,7 +473,6 @@ export async function up(knex) {
     t.string('encounter', 128);
     t.string('enterer', 128);
     t.string('facility', 128);
-    t.string('identifier', 128);
     t.string('insurer', 128);
     t.string('item-udi', 128);
     t.string('patient', 128);
@@ -515,7 +500,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.date('created');
     t.string('disposition', 128);
-    t.string('identifier', 128);
     t.string('insurer', 128);
     t.string('outcome', 128);
     t.string('patient', 128);
@@ -545,7 +529,6 @@ export async function up(knex) {
     t.string('encounter', 128);
     t.string('finding-code', 128);
     t.string('finding-ref', 128);
-    t.string('identifier', 128);
     t.string('investigation', 128);
     t.string('previous', 128);
     t.string('problem', 128);
@@ -583,7 +566,6 @@ export async function up(knex) {
     t.string('context-type-value', 128);
     t.string('code', 128);
     t.string('content-mode', 128);
-    t.string('identifier', 128);
     t.string('language', 128);
     t.string('supplements', 128);
     t.string('system', 128);
@@ -605,7 +587,6 @@ export async function up(knex) {
     t.string('based-on', 128);
     t.string('category', 128);
     t.string('encounter', 128);
-    t.string('identifier', 128);
     t.string('instantiates-canonical', 128);
     t.string('instantiates-uri', 128);
     t.string('medium', 128);
@@ -637,7 +618,6 @@ export async function up(knex) {
     t.string('category', 128);
     t.string('encounter', 128);
     t.string('group-identifier', 128);
-    t.string('identifier', 128);
     t.string('medium', 128);
     t.date('occurrence');
     t.string('patient', 128);
@@ -693,7 +673,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('type', 128);
     t.string('attester', 128);
@@ -739,7 +718,6 @@ export async function up(knex) {
     t.string('version', 128);
     t.string('context-type-quantity', 128);
     t.string('context-type-value', 128);
-    t.string('identifier', 128);
     t.string('dependson', 128);
     t.string('other', 128);
     t.string('product', 128);
@@ -767,7 +745,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('code', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('abatement-age', 128);
     t.date('abatement-date');
@@ -803,7 +780,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('action', 128);
     t.string('actor', 128);
@@ -834,7 +810,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('authority', 128);
     t.string('domain', 128);
-    t.string('identifier', 128);
     t.string('instantiates', 128);
     t.date('issued');
     t.string('patient', 128);
@@ -861,7 +836,6 @@ export async function up(knex) {
     t.string('class-type', 128);
     t.string('class-value', 128);
     t.string('dependent', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('payor', 128);
     t.string('policy-holder', 128);
@@ -886,7 +860,6 @@ export async function up(knex) {
     t.date('created');
     t.string('enterer', 128);
     t.string('facility', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('provider', 128);
     t.string('status', 128);
@@ -907,7 +880,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.date('created');
     t.string('disposition', 128);
-    t.string('identifier', 128);
     t.string('insurer', 128);
     t.string('outcome', 128);
     t.string('patient', 128);
@@ -929,7 +901,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('author', 128);
     t.string('code', 128);
@@ -951,7 +922,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('device-name', 128);
-    t.string('identifier', 128);
     t.string('location', 128);
     t.string('manufacturer', 128);
     t.string('model', 128);
@@ -977,7 +947,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('parent', 128);
     t.string('type', 128);
   });
@@ -996,7 +965,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('category', 128);
-    t.string('identifier', 128);
     t.string('parent', 128);
     t.string('source', 128);
     t.string('type', 128);
@@ -1016,7 +984,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('code', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
     t.date('authored-on');
@@ -1050,7 +1017,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('patient', 128);
     t.string('device', 128);
-    t.string('identifier', 128);
     t.string('subject', 128);
   });
 
@@ -1069,7 +1035,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
     t.string('based-on', 128);
@@ -1098,7 +1063,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('type', 128);
     t.string('author', 128);
@@ -1126,7 +1090,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('type', 128);
     t.string('encounter', 128);
@@ -1172,7 +1135,6 @@ export async function up(knex) {
     t.date('date');
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('publisher', 128);
@@ -1198,7 +1160,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('type', 128);
     t.string('account', 128);
@@ -1236,7 +1197,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('connection-type', 128);
-    t.string('identifier', 128);
     t.string('name', 128);
     t.string('organization', 128);
     t.string('payload-type', 128);
@@ -1256,7 +1216,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('status', 128);
     t.string('subject', 128);
@@ -1275,7 +1234,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('request', 128);
     t.string('status', 128);
   });
@@ -1294,7 +1252,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('type', 128);
     t.string('care-manager', 128);
@@ -1326,7 +1283,6 @@ export async function up(knex) {
     t.string('derived-from', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('predecessor', 128);
@@ -1363,7 +1319,6 @@ export async function up(knex) {
     t.string('derived-from', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('predecessor', 128);
@@ -1400,7 +1355,6 @@ export async function up(knex) {
     t.string('derived-from', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('predecessor', 128);
@@ -1432,7 +1386,6 @@ export async function up(knex) {
     t.string('context-quantity', 128);
     t.string('context-type', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('publisher', 128);
@@ -1465,7 +1418,6 @@ export async function up(knex) {
     t.string('encounter', 128);
     t.string('enterer', 128);
     t.string('facility', 128);
-    t.string('identifier', 128);
     t.string('item-udi', 128);
     t.string('patient', 128);
     t.string('payee', 128);
@@ -1490,7 +1442,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('instantiates-canonical', 128);
     t.string('instantiates-uri', 128);
@@ -1516,7 +1467,6 @@ export async function up(knex) {
     t.string('patient', 128);
     t.string('encounter', 128);
     t.string('author', 128);
-    t.string('identifier', 128);
     t.string('subject', 128);
   });
 
@@ -1533,7 +1483,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('achievement-status', 128);
     t.string('category', 128);
@@ -1589,7 +1538,6 @@ export async function up(knex) {
     t.string('characteristic', 128);
     t.string('code', 128);
     t.string('exclude', 128);
-    t.string('identifier', 128);
     t.string('managing-entity', 128);
     t.string('member', 128);
     t.string('type', 128);
@@ -1610,7 +1558,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('request', 128);
     t.string('subject', 128);
@@ -1633,7 +1580,6 @@ export async function up(knex) {
     t.string('characteristic', 128);
     t.string('coverage-area', 128);
     t.string('endpoint', 128);
-    t.string('identifier', 128);
     t.string('location', 128);
     t.string('name', 128);
     t.string('organization', 128);
@@ -1656,7 +1602,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('basedon', 128);
     t.string('bodysite', 128);
@@ -1689,7 +1634,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('location', 128);
     t.string('lot-number', 128);
@@ -1721,7 +1665,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.date('date');
     t.string('dose-status', 128);
-    t.string('identifier', 128);
     t.string('immunization-event', 128);
     t.string('patient', 128);
     t.string('status', 128);
@@ -1742,7 +1685,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('information', 128);
     t.string('patient', 128);
     t.string('status', 128);
@@ -1805,7 +1747,6 @@ export async function up(knex) {
     t.string('address-use', 128);
     t.string('administered-by', 128);
     t.string('endpoint', 128);
-    t.string('identifier', 128);
     t.string('name', 128);
     t.string('owned-by', 128);
     t.string('phonetic', 128);
@@ -1828,7 +1769,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('account', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.string('issuer', 128);
     t.string('participant', 128);
     t.string('participant-role', 128);
@@ -1864,7 +1804,6 @@ export async function up(knex) {
     t.string('derived-from', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('predecessor', 128);
@@ -1913,7 +1852,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
     t.string('empty-reason', 128);
@@ -1945,7 +1883,6 @@ export async function up(knex) {
     t.string('address-state', 128);
     t.string('address-use', 128);
     t.string('endpoint', 128);
-    t.string('identifier', 128);
     t.string('name', 128);
     t.string('near', 128);
     t.string('operational-status', 128);
@@ -1977,7 +1914,6 @@ export async function up(knex) {
     t.string('derived-from', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('predecessor', 128);
@@ -2007,7 +1943,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.date('date');
     t.string('evaluated-resource', 128);
-    t.string('identifier', 128);
     t.string('measure', 128);
     t.string('patient', 128);
     t.date('period');
@@ -2033,7 +1968,6 @@ export async function up(knex) {
     t.date('created');
     t.string('device', 128);
     t.string('encounter', 128);
-    t.string('identifier', 128);
     t.string('modality', 128);
     t.string('operator', 128);
     t.string('patient', 128);
@@ -2060,7 +1994,6 @@ export async function up(knex) {
     t.string('code', 128);
     t.date('expiration-date');
     t.string('form', 128);
-    t.string('identifier', 128);
     t.string('ingredient', 128);
     t.string('ingredient-code', 128);
     t.string('lot-number', 128);
@@ -2082,7 +2015,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('code', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('context', 128);
     t.string('device', 128);
@@ -2110,7 +2042,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('code', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('medication', 128);
     t.string('status', 128);
@@ -2168,7 +2099,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('code', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('medication', 128);
     t.string('status', 128);
@@ -2199,7 +2129,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('code', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('medication', 128);
     t.string('status', 128);
@@ -2224,7 +2153,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('name', 128);
     t.string('name-language', 128);
   });
@@ -2244,7 +2172,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('country', 128);
     t.string('holder', 128);
-    t.string('identifier', 128);
     t.string('status', 128);
     t.string('subject', 128);
   });
@@ -2340,7 +2267,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('subject', 128);
   });
 
@@ -2357,7 +2283,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('route', 128);
     t.string('target-species', 128);
   });
@@ -2405,7 +2330,6 @@ export async function up(knex) {
     t.string('version', 128);
     t.string('context-type-quantity', 128);
     t.string('context-type-value', 128);
-    t.string('identifier', 128);
     t.string('category', 128);
     t.string('event', 128);
     t.string('focus', 128);
@@ -2455,7 +2379,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('chromosome', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('referenceseqid', 128);
     t.string('type', 128);
@@ -2516,7 +2439,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
     t.string('additive', 128);
@@ -2545,7 +2467,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
     t.string('based-on', 128);
@@ -2671,7 +2592,6 @@ export async function up(knex) {
     t.string('address-state', 128);
     t.string('address-use', 128);
     t.string('endpoint', 128);
-    t.string('identifier', 128);
     t.string('name', 128);
     t.string('partof', 128);
     t.string('phonetic', 128);
@@ -2695,7 +2615,6 @@ export async function up(knex) {
     t.date('date');
     t.string('email', 128);
     t.string('endpoint', 128);
-    t.string('identifier', 128);
     t.string('location', 128);
     t.string('network', 128);
     t.string('participating-organization', 128);
@@ -2750,7 +2669,6 @@ export async function up(knex) {
     t.string('gender', 128);
     t.string('general-practitioner', 128);
     t.string('given', 128);
-    t.string('identifier', 128);
     t.string('language', 128);
     t.string('link', 128);
     t.string('name', 128);
@@ -2774,7 +2692,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('created');
-    t.string('identifier', 128);
     t.string('payment-status', 128);
     t.string('provider', 128);
     t.string('request', 128);
@@ -2797,7 +2714,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.date('created');
     t.string('disposition', 128);
-    t.string('identifier', 128);
     t.string('outcome', 128);
     t.string('payment-issuer', 128);
     t.string('request', 128);
@@ -2830,7 +2746,6 @@ export async function up(knex) {
     t.string('phone', 128);
     t.string('phonetic', 128);
     t.string('telecom', 128);
-    t.string('identifier', 128);
     t.string('link', 128);
     t.string('name', 128);
     t.string('organization', 128);
@@ -2862,7 +2777,6 @@ export async function up(knex) {
     t.string('derived-from', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('predecessor', 128);
@@ -2906,7 +2820,6 @@ export async function up(knex) {
     t.string('telecom', 128);
     t.boolean('active');
     t.string('communication', 128);
-    t.string('identifier', 128);
     t.string('name', 128);
   });
 
@@ -2929,7 +2842,6 @@ export async function up(knex) {
     t.boolean('active');
     t.date('date');
     t.string('endpoint', 128);
-    t.string('identifier', 128);
     t.string('location', 128);
     t.string('organization', 128);
     t.string('practitioner', 128);
@@ -2953,7 +2865,6 @@ export async function up(knex) {
     t.uuid('authorId');
     t.string('code', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
     t.string('based-on', 128);
@@ -3015,7 +2926,6 @@ export async function up(knex) {
     t.string('definition', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('publisher', 128);
@@ -3045,7 +2955,6 @@ export async function up(knex) {
     t.date('authored');
     t.string('based-on', 128);
     t.string('encounter', 128);
-    t.string('identifier', 128);
     t.string('part-of', 128);
     t.string('patient', 128);
     t.string('questionnaire', 128);
@@ -3080,7 +2989,6 @@ export async function up(knex) {
     t.string('phonetic', 128);
     t.string('telecom', 128);
     t.boolean('active');
-    t.string('identifier', 128);
     t.string('name', 128);
     t.string('patient', 128);
     t.string('relationship', 128);
@@ -3104,7 +3012,6 @@ export async function up(knex) {
     t.string('code', 128);
     t.string('encounter', 128);
     t.string('group-identifier', 128);
-    t.string('identifier', 128);
     t.string('instantiates-canonical', 128);
     t.string('instantiates-uri', 128);
     t.string('intent', 128);
@@ -3137,7 +3044,6 @@ export async function up(knex) {
     t.string('derived-from', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('predecessor', 128);
@@ -3174,7 +3080,6 @@ export async function up(knex) {
     t.string('derived-from', 128);
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('predecessor', 128);
@@ -3205,7 +3110,6 @@ export async function up(knex) {
     t.string('category', 128);
     t.date('date');
     t.string('focus', 128);
-    t.string('identifier', 128);
     t.string('keyword', 128);
     t.string('location', 128);
     t.string('partof', 128);
@@ -3231,7 +3135,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('individual', 128);
     t.string('patient', 128);
     t.string('status', 128);
@@ -3252,7 +3155,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
     t.string('condition', 128);
@@ -3282,7 +3184,6 @@ export async function up(knex) {
     t.date('date');
     t.string('description', 128);
     t.date('effective');
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('publisher', 128);
@@ -3310,7 +3211,6 @@ export async function up(knex) {
     t.boolean('active');
     t.string('actor', 128);
     t.date('date');
-    t.string('identifier', 128);
     t.string('service-category', 128);
     t.string('service-type', 128);
     t.string('specialty', 128);
@@ -3364,7 +3264,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('code', 128);
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
     t.date('authored');
@@ -3400,7 +3299,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('appointment-type', 128);
-    t.string('identifier', 128);
     t.string('schedule', 128);
     t.string('service-category', 128);
     t.string('service-type', 128);
@@ -3428,7 +3326,6 @@ export async function up(knex) {
     t.string('collector', 128);
     t.string('container', 128);
     t.string('container-id', 128);
-    t.string('identifier', 128);
     t.string('parent', 128);
     t.string('patient', 128);
     t.string('status', 128);
@@ -3450,7 +3347,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.string('container', 128);
-    t.string('identifier', 128);
     t.string('type', 128);
   });
 
@@ -3481,7 +3377,6 @@ export async function up(knex) {
     t.string('version', 128);
     t.string('context-type-quantity', 128);
     t.string('context-type-value', 128);
-    t.string('identifier', 128);
     t.string('abstract', 128);
     t.string('base', 128);
     t.string('base-path', 128);
@@ -3522,7 +3417,6 @@ export async function up(knex) {
     t.string('version', 128);
     t.string('context-type-quantity', 128);
     t.string('context-type-value', 128);
-    t.string('identifier', 128);
   });
 
   await knex.schema.createTable('StructureMap_History', t => {
@@ -3563,7 +3457,6 @@ export async function up(knex) {
     t.string('code', 128);
     t.string('container-identifier', 128);
     t.date('expiry');
-    t.string('identifier', 128);
     t.string('quantity', 128);
     t.string('status', 128);
     t.string('substance-reference', 128);
@@ -3673,7 +3566,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('receiver', 128);
     t.string('status', 128);
@@ -3694,7 +3586,6 @@ export async function up(knex) {
     t.uuid('projectId');
     t.uuid('authorId');
     t.date('date');
-    t.string('identifier', 128);
     t.string('category', 128);
     t.string('requester', 128);
     t.string('status', 128);
@@ -3722,7 +3613,6 @@ export async function up(knex) {
     t.string('encounter', 128);
     t.string('focus', 128);
     t.string('group-identifier', 128);
-    t.string('identifier', 128);
     t.string('intent', 128);
     t.date('modified');
     t.string('owner', 128);
@@ -3778,7 +3668,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.date('issued');
     t.string('participant', 128);
     t.string('result', 128);
@@ -3804,7 +3693,6 @@ export async function up(knex) {
     t.string('context-type', 128);
     t.date('date');
     t.string('description', 128);
-    t.string('identifier', 128);
     t.string('jurisdiction', 128);
     t.string('name', 128);
     t.string('publisher', 128);
@@ -3844,7 +3732,6 @@ export async function up(knex) {
     t.string('version', 128);
     t.string('context-type-quantity', 128);
     t.string('context-type-value', 128);
-    t.string('identifier', 128);
     t.string('code', 128);
     t.string('expansion', 128);
     t.string('reference', 128);
@@ -3879,7 +3766,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('projectId');
     t.uuid('authorId');
-    t.string('identifier', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
     t.date('datewritten');
@@ -4000,6 +3886,13 @@ export async function up(knex) {
     t.uuid('id').notNullable();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
+  });
+
+  await knex.schema.createTable('Identifier', t => {
+    t.uuid('id').notNullable().primary();
+    t.uuid('resourceId').notNullable().index();
+    t.string('system', 128).index();
+    t.string('value', 128).index();
   });
 }
 
@@ -4310,4 +4203,5 @@ export async function down(knex) {
   await knex.schema.dropTable('PasswordChangeRequest_History');
   await knex.schema.dropTable('JsonWebKey');
   await knex.schema.dropTable('JsonWebKey_History');
+  await knex.schema.dropTable('Identifier');
 }

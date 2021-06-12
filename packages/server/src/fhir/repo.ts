@@ -1,7 +1,8 @@
-import { Bundle, Meta, OperationOutcome, Reference, Resource, SearchRequest } from '@medplum/core';
+import { Bundle, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import validator from 'validator';
 import { getKnex } from '../database';
+import { IdentifierTable, LookupTable } from './lookuptable';
 import { allOk, badRequest, isNotFound, isOk, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
@@ -9,6 +10,13 @@ import { getSearchParameter, getSearchParameters } from './search';
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
 
 class Repository {
+  private readonly lookupTables: LookupTable[];
+
+  constructor() {
+    this.lookupTables = [
+      new IdentifierTable()
+    ];
+  }
 
   async createBatch(bundle: Bundle): RepositoryResult<Bundle> {
     const validateOutcome = validateResource(bundle);
@@ -173,17 +181,21 @@ class Repository {
   }
 
   async search(searchRequest: SearchRequest): RepositoryResult<Bundle> {
-    const validateOutcome = validateResourceType(searchRequest.resourceType);
+    const resourceType = searchRequest.resourceType;
+    const validateOutcome = validateResourceType(resourceType);
     if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
     }
 
     const knex = getKnex();
-    const builder = knex.select('content').from(searchRequest.resourceType);
+    const builder = knex.select('content').from(resourceType);
     for (const filter of searchRequest.filters) {
-      const param = getSearchParameter(searchRequest.resourceType, filter.code);
+      const param = getSearchParameter(resourceType, filter.code);
       if (param) {
-        if (param.type === 'string') {
+        const lookupTable = this.getLookupTable(param);
+        if (lookupTable) {
+          lookupTable.addSearchConditions(resourceType, builder, filter);
+        } else if (param.type === 'string') {
           builder.where(param.code as string, 'LIKE', '%' + filter.value + '%');
         } else {
           builder.where(param.code as string, filter.value);
@@ -208,6 +220,11 @@ class Repository {
   }
 
   private async write(resource: Resource): Promise<void> {
+    await this.writeResource(resource);
+    await this.writeLookupTables(resource);
+  }
+
+  private async writeResource(resource: Resource): Promise<void> {
     const knex = getKnex();
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
@@ -221,32 +238,12 @@ class Repository {
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
-      for (const [name, searchParam] of Object.entries(searchParams)) {
-        if (name in resource) {
-          const value = (resource as any)[name];
-          if (searchParam.type === 'date') {
-            columns[name] = new Date(value);
-          } else if (searchParam.type === 'boolean') {
-            columns[name] = (value === 'true');
-          } else if (typeof value === 'string') {
-            if (value.length > 128) {
-              columns[name] = value.substr(0, 128);
-            } else {
-              columns[name] = value;
-            }
-          } else {
-            let json = JSON.stringify(value);
-            if (json.length > 128) {
-              json = json.substr(0, 128);
-            }
-            columns[name] = json;
-          }
-        }
+      for (const searchParam of Object.values(searchParams)) {
+        this.buildColumn(resource, columns, searchParam);
       }
     }
 
-    await knex(resourceType).insert(columns)
-      .onConflict('id').merge();
+    await knex(resourceType).insert(columns).onConflict('id').merge();
 
     await knex(resourceType + '_History').insert({
       id: resource.id,
@@ -254,6 +251,55 @@ class Repository {
       lastUpdated: meta.lastUpdated,
       content
     });
+  }
+
+  private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
+    if (this.isIndexTable(searchParam)) {
+      return;
+    }
+
+    const name = searchParam.name as string;
+    if (!(name in resource)) {
+      return;
+    }
+
+    const value = (resource as any)[name];
+    if (searchParam.type === 'date') {
+      columns[name] = new Date(value);
+    } else if (searchParam.type === 'boolean') {
+      columns[name] = (value === 'true');
+    } else if (typeof value === 'string') {
+      if (value.length > 128) {
+        columns[name] = value.substr(0, 128);
+      } else {
+        columns[name] = value;
+      }
+    } else {
+      let json = JSON.stringify(value);
+      if (json.length > 128) {
+        json = json.substr(0, 128);
+      }
+      columns[name] = json;
+    }
+  }
+
+  private async writeLookupTables(resource: Resource): Promise<void> {
+    for (let i = 0; i < this.lookupTables.length; i++) {
+      await this.lookupTables[i].indexResource(resource);
+    }
+  }
+
+  private isIndexTable(searchParam: SearchParameter): boolean {
+    return !!this.getLookupTable(searchParam);
+  }
+
+  private getLookupTable(searchParam: SearchParameter): LookupTable | undefined {
+    for (const lookupTable of this.lookupTables) {
+      if (lookupTable.isIndexed(searchParam)) {
+        return lookupTable;
+      }
+    }
+    return undefined;
   }
 }
 
