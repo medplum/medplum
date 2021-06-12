@@ -1,6 +1,5 @@
-import { Filter, HumanName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { Filter, formatHumanName, HumanName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import React from 'react';
-import { formatHumanName } from './HumanNameUtils';
 
 /**
  * Sets the array of filters.

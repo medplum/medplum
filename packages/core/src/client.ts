@@ -5,6 +5,7 @@ import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Binary, Bundle, OperationOutcome, Patient, Practitioner, Reference, Resource, StructureDefinition, Subscription, User } from './fhir';
+import { formatHumanName } from './format';
 import { parseJWTPayload } from './jwt';
 import { formatSearchQuery, SearchRequest } from './search';
 import { LocalStorage, MemoryStorage, Storage } from './storage';
@@ -173,24 +174,15 @@ export class MedplumClient extends EventTarget {
    */
   getDisplayString(resource: Resource): string {
     if (resource.resourceType === 'Patient' ||
-      resource.resourceType === 'Practitioner') {
+      resource.resourceType === 'Practitioner' ||
+      resource.resourceType === 'Person' ||
+      resource.resourceType === 'RelatedPerson') {
       const names = resource.name;
-      if (names) {
-        const name = names[0];
-        const builder: string[] = [];
-        if (name.prefix) {
-          builder.push(...name.prefix);
-        }
-        if (name.given) {
-          builder.push(...name.given);
-        }
-        if (name.family) {
-          builder.push(name.family);
-        }
-        return builder.join(' ').trim();
+      if (names && names.length > 0) {
+        return formatHumanName(names[0]);
       }
     }
-    return JSON.stringify(resource);
+    return resource.resourceType + '/' + resource.id;
   }
 
   createReference(resource: Resource): Reference {

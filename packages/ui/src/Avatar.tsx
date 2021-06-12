@@ -1,6 +1,5 @@
-import { ProfileResource, Resource } from '@medplum/core';
+import { formatHumanName, ProfileResource, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
-import { formatHumanName } from './HumanNameUtils';
 import { useMedplum } from './MedplumProvider';
 import './Avatar.css';
 

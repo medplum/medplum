@@ -237,6 +237,17 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
   b.indentCount--;
   b.append('});');
 
+  b.newLine();
+  b.append('await knex.schema.createTable(\'HumanName\', t => {');
+  b.indentCount++;
+  b.append('t.uuid(\'id\').notNullable().primary();');
+  b.append('t.uuid(\'resourceId\').notNullable().index();');
+  b.append('t.string(\'name\', 128).index();');
+  b.append('t.string(\'given\', 128).index();');
+  b.append('t.string(\'family\', 128).index();');
+  b.indentCount--;
+  b.append('});');
+
   b.indentCount--;
   b.append('}');
   b.newLine();

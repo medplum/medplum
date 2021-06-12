@@ -1,4 +1,4 @@
-import { HumanName } from '@medplum/core';
+import { HumanName } from './fhir';
 
 export interface HumanNameFormatOptions {
   all?: boolean;
@@ -31,4 +31,16 @@ export function formatHumanName(name: HumanName, options?: HumanNameFormatOption
   }
 
   return builder.join(' ').trim();
+}
+
+export function formatGivenName(name: HumanName): string {
+  const builder: string[] = [];
+  if (name.given) {
+    builder.push(...name.given);
+  }
+  return builder.join(' ').trim();
+}
+
+export function formatFamilyName(name: HumanName): string {
+  return name.family || '';
 }
