@@ -7,7 +7,7 @@ import { jwtVerify, JWTVerifyOptions } from 'jose/jwt/verify';
 import { generateKeyPair } from 'jose/util/generate_key_pair';
 import { FlattenedJWSInput, GetKeyFunction, JWK, JWSHeaderParameters, JWTPayload, KeyLike } from 'jose/webcrypto/types';
 import { MedplumServerConfig } from '../config';
-import { repo } from '../fhir';
+import { isOk, repo } from '../fhir';
 
 export interface MedplumClaims extends JWTPayload {
   /**
@@ -64,7 +64,7 @@ export async function initKeys(config: MedplumServerConfig) {
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }]
   });
 
-  if (searchOutcome.id !== 'allok') {
+  if (!isOk(searchOutcome)) {
     throw new Error('Failed to load keys');
   }
 
@@ -86,7 +86,7 @@ export async function initKeys(config: MedplumServerConfig) {
       ...jwk
     } as JsonWebKey);
 
-    if (createOutcome.id !== 'allok' || !createResult) {
+    if (!isOk(createOutcome) || !createResult) {
       throw new Error('Failed to create key');
     }
 

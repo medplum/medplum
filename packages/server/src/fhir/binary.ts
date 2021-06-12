@@ -3,7 +3,7 @@ import { Request, Response, Router } from 'express';
 import { mkdirSync, writeFileSync } from 'fs';
 import path from 'path';
 import { asyncWrap } from '../async';
-import { notFound } from './outcomes';
+import { getStatus, isOk } from './outcomes';
 import { repo } from './repo';
 
 export const binaryRouter = Router();
@@ -14,8 +14,8 @@ binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
     resourceType: 'Binary',
     contentType: req.get('Content-Type')
   });
-  if (outcome.id !== 'allok') {
-    return res.status(400).send(outcome);
+  if (!isOk(outcome)) {
+    return res.status(getStatus(outcome)).send(outcome);
   }
   mkdirSync(getDir(resource as Binary));
   writeFileSync(getPath(resource as Binary), req.body, { encoding: 'binary' });
@@ -26,11 +26,8 @@ binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
 binaryRouter.get('/:id', asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const [outcome, resource] = await repo.readResource('Binary', id);
-  if (outcome.id === 'not-found') {
-    return res.status(404).send(notFound);
-  }
-  if (outcome.id !== 'allok') {
-    return res.status(400).send(outcome);
+  if (!isOk(outcome)) {
+    return res.status(getStatus(outcome)).send(outcome);
   }
 
   const binary = resource as Binary;

@@ -1,6 +1,6 @@
 import { ClientApplication, Login, Operator, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
-import { allOk, badRequest, notFound, repo, RepositoryResult } from '../fhir';
+import { allOk, badRequest, isNotFound, isOk, notFound, repo, RepositoryResult } from '../fhir';
 
 /**
  * Searches for user by email.
@@ -17,7 +17,7 @@ export async function getUserByEmail(email: string): RepositoryResult<User | und
     }]
   });
 
-  if (outcome.id !== 'allok') {
+  if (!isOk(outcome)) {
     return [outcome, undefined];
   }
 
@@ -38,7 +38,7 @@ export async function getUserByEmail(email: string): RepositoryResult<User | und
  */
 export async function createLogin(client: ClientApplication, email: string, password: string): RepositoryResult<Login | undefined> {
   const [outcome, user] = await getUserByEmail(email);
-  if (outcome.id !== 'allok' && outcome.id !== 'not-found') {
+  if (!isOk(outcome) && !isNotFound(outcome)) {
     return [outcome, undefined];
   }
 
