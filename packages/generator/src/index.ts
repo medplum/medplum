@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { writeFileSync } from 'fs';
+import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
 
 const INDENT = ' '.repeat(2);
@@ -108,7 +109,7 @@ function writeIndexFile(names: string[]): void {
   for (const resourceType of [...names, 'Resource'].sort()) {
     b.append('export * from \'./' + resourceType + '\';');
   }
-  writeFileSync('../core/src/fhir/index.ts', b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../core/src/fhir/index.ts'), b.toString(), 'utf8');
 }
 
 function writeResourceFile(names: string[]): void {
@@ -127,7 +128,7 @@ function writeResourceFile(names: string[]): void {
       b.append('| ' + names[i] + ';');
     }
   }
-  writeFileSync('../core/src/fhir/Resource.ts', b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../core/src/fhir/Resource.ts'), b.toString(), 'utf8');
 }
 
 function writeInterfaceFile(fhirType: FhirType): void {
@@ -143,7 +144,7 @@ function writeInterfaceFile(fhirType: FhirType): void {
   }
 
   writeInterface(b, fhirType);
-  writeFileSync('../core/src/fhir/' + fhirType.outputName + '.ts', b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../core/src/fhir/' + fhirType.outputName + '.ts'), b.toString(), 'utf8');
 }
 
 function writeInterface(b: FileBuilder, fhirType: FhirType): void {
@@ -267,7 +268,7 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
   b.indentCount--;
   b.append('}');
 
-  writeFileSync('../server/src/migrations/0_init.js', b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/0_init.js'), b.toString(), 'utf8');
 }
 
 function buildImports(fhirType: FhirType, includedTypes: Set<string>, referencedTypes: Set<string>): void {
