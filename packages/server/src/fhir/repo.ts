@@ -2,7 +2,7 @@ import { Bundle, Meta, OperationOutcome, Reference, Resource, SearchParameter, S
 import { randomUUID } from 'crypto';
 import validator from 'validator';
 import { getKnex } from '../database';
-import { IdentifierTable, LookupTable } from './lookuptable';
+import { HumanNameTable, IdentifierTable, LookupTable } from './lookuptable';
 import { allOk, badRequest, isNotFound, isOk, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
@@ -14,6 +14,7 @@ class Repository {
 
   constructor() {
     this.lookupTables = [
+      new HumanNameTable(),
       new IdentifierTable()
     ];
   }

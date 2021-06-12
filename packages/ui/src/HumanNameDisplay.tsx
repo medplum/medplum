@@ -1,6 +1,5 @@
-import { HumanName } from '@medplum/core';
+import { formatHumanName, HumanName, HumanNameFormatOptions } from '@medplum/core';
 import React from 'react';
-import { formatHumanName, HumanNameFormatOptions } from './HumanNameUtils';
 
 export interface HumanNameDisplayProps {
   value?: HumanName;

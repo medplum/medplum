@@ -3894,6 +3894,14 @@ export async function up(knex) {
     t.string('system', 128).index();
     t.string('value', 128).index();
   });
+
+  await knex.schema.createTable('HumanName', t => {
+    t.uuid('id').notNullable().primary();
+    t.uuid('resourceId').notNullable().index();
+    t.string('name', 128).index();
+    t.string('given', 128).index();
+    t.string('family', 128).index();
+  });
 }
 
 export async function down(knex) {
