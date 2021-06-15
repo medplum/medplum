@@ -8,7 +8,7 @@ main {
 article {
   background-color: var(--medplum-surface);
   max-width: 900px;
-  margin: auto;
+  margin: 8px auto 16px auto;
   padding: 15px 25px;
   text-align: left;
   border: thin solid var(--medplum-gray-300);

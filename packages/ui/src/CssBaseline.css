@@ -48,6 +48,11 @@ textarea {
   min-height: 300px;
 }
 
+img,
+video {
+  width: 100%;
+}
+
 svg {
   display: inline-block;
   vertical-align: top;

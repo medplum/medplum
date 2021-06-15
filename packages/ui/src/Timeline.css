@@ -1,0 +1,32 @@
+article.medplum-timeline-item {
+  max-width: 700px;
+  padding: 0;
+}
+
+.medplum-timeline-item-header {
+  display: flex;
+  padding: 8px;
+}
+
+.medplum-timeline-item-avatar {
+  margin-right: 8px;
+}
+
+.medplum-timeline-item-title {
+  padding-top: 1px;
+}
+
+.medplum-timeline-item-title >a {
+  color: var(--medplum-gray-800);
+  font-weight: bold;
+}
+
+.medplum-timeline-item-subtitle {
+  font-size: 11px;
+}
+
+.medplum-timeline-item-subtitle >a,
+.medplum-timeline-item-subtitle >span {
+  margin-right: 8px;
+  color: var(--medplum-gray-500);
+}
