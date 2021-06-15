@@ -302,6 +302,16 @@ export class MedplumClient extends EventTarget {
     return cached ? Promise.resolve(cached) : this.read(resourceType, id);
   }
 
+  readReference(reference: string): Promise<Resource> {
+    const [resourceType, id] = reference.split('/');
+    return this.read(resourceType, id);
+  }
+
+  readCachedReference(reference: string): Promise<Resource> {
+    const [resourceType, id] = reference.split('/');
+    return this.readCached(resourceType, id);
+  }
+
   getTypeDefinition(resourceType: string): Promise<IndexedStructureDefinition> {
     if (!resourceType) {
       throw new Error('Missing resourceType');

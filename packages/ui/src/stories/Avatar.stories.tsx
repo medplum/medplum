@@ -40,7 +40,7 @@ export const Sizes = () => (
 
 export const Resource = () => (
   <Document>
-    <Avatar resourceType="Patient" id="24c3243a-f2ba-459a-846c-0c5f36c725e3" />
+    <Avatar reference="Patient/597f5a0c-ac0f-47a2-a4db-bd0e0496f061" />
   </Document>
 );
 

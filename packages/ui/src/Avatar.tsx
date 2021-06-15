@@ -6,8 +6,7 @@ import './Avatar.css';
 export interface AvatarProps {
   size?: 'small' | 'medium' | 'large';
   resource?: ProfileResource;
-  resourceType?: 'Patient' | 'Practitoner' | 'RelatedPerson';
-  id?: string;
+  reference?: string;
   src?: string;
   alt?: string;
   color?: string;
@@ -36,11 +35,11 @@ export const Avatar = (props: AvatarProps) => {
       return;
     }
 
-    if (props.resourceType && props.id) {
-      medplum.readCached(props.resourceType, props.id)
+    if (props.reference) {
+      medplum.readCachedReference(props.reference)
         .then((resource: Resource) => setResource(resource as ProfileResource));
     }
-  }, [props.resource, props.resourceType, props.id]);
+  }, [props.resource, props.reference]);
 
   const className = props.size ? 'medplum-avatar ' + props.size : 'medplum-avatar';
   const initials = text && getInitials(text);
