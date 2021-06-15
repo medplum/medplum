@@ -4,6 +4,7 @@ import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth';
 import { createBatch } from './batch';
 import { binaryRouter } from './binary';
+import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
 import { badRequest, getStatus, isOk } from './outcomes';
 import { repo } from './repo';
@@ -44,6 +45,14 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
 // Binary routes
 fhirRouter.use('/Binary/', binaryRouter);
 
+// ValueSet $expand operation
+fhirRouter.get('/ValueSet/([$]|%24)expand', expandOperator);
+
+// GraphQL
+fhirRouter.use('/([$]|%24)graphql', graphqlHTTP({
+  schema: getRootSchema()
+}));
+
 // Create batch
 fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
@@ -58,11 +67,6 @@ fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
     return res.status(getStatus(outcome)).send(outcome);
   }
   res.status(200).send(result);
-}));
-
-// GraphQL
-fhirRouter.use('/([$]|%24)graphql', graphqlHTTP({
-  schema: getRootSchema()
 }));
 
 // Search
