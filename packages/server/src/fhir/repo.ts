@@ -9,6 +9,38 @@ import { getSearchParameter, getSearchParameters } from './search';
 
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
 
+const PUBLIC_PROJECT_ID = '0ce0af47-cc2e-44e1-a4b3-b642d42a74a1';
+const MEDPLUM_PROJECT_ID = 'c7120c97-a266-4a90-9f91-35adc9a6efd9';
+
+/**
+ * Public resource types are in the "public" project.
+ * They are available to all users.
+ */
+const publicResourceTypes = [
+  'CapabilityStatement',
+  'CodeSystem',
+  'CompartmentDefinition',
+  'ImplementationGuide',
+  'OperationDefinition',
+  'SearchParameter',
+  'StructureDefinition',
+  'ValueSet'
+];
+
+/**
+ * Protected resource types are in the "medplum" project.
+ * Reading and writing is limited to the system account.
+ */
+const protectedResourceTypes = [
+  'ClientApplication',
+  'JsonWebKey',
+  'Login',
+  'PasswordChangeRequest',
+  'Project',
+  'RefreshToken',
+  'User',
+];
+
 class Repository {
   private readonly lookupTables: LookupTable[];
 
@@ -234,6 +266,8 @@ class Repository {
     const columns: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
+      projectId: this.getProjectId(resource),
+      patientId: this.getPatientId(resource),
       content
     };
 
@@ -299,6 +333,67 @@ class Repository {
       if (lookupTable.isIndexed(searchParam)) {
         return lookupTable;
       }
+    }
+    return undefined;
+  }
+
+  private getProjectId(resource: Resource): string | undefined {
+    if (publicResourceTypes.includes(resource.resourceType)) {
+      return PUBLIC_PROJECT_ID;
+    }
+
+    if (protectedResourceTypes.includes(resource.resourceType)) {
+      return MEDPLUM_PROJECT_ID;
+    }
+
+    return 'auth token projectId';
+  }
+
+  /**
+   * Returns the patient ID from a resource.
+   * See Patient Compatment: https://www.hl7.org/fhir/compartmentdefinition-patient.json.html
+   * @param resource The resource.
+   * @returns The patient ID if found; undefined otherwise.
+   */
+  private getPatientId(resource: Resource): string | undefined {
+    const properties = ['patient', 'subject', 'actor', 'author', 'recipient'];
+    for (const property of properties) {
+      if (property in resource) {
+        const value: Reference | Reference[] | undefined = (resource as any)[property];
+        const patientId = this.getPatientIdFromReferenceProperty(value);
+        if (patientId) {
+          return patientId;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private getPatientIdFromReferenceProperty(reference: Reference | Reference[] | undefined): string | undefined {
+    if (!reference) {
+      return undefined;
+    }
+    if (Array.isArray(reference)) {
+      return this.getPatientIdFromReferenceArray(reference);
+    } else {
+      return this.getPatientIdFromReference(reference);
+    }
+  }
+
+  private getPatientIdFromReferenceArray(references: Reference[]): string | undefined {
+    for (let i = 0; i < references.length; i++) {
+      const result = this.getPatientIdFromReference(references[i]);
+      if (result) {
+        return result;
+      }
+    }
+    return undefined;
+  }
+
+  private getPatientIdFromReference(reference: Reference): string | undefined {
+    if (reference.reference?.startsWith('Patient/')) {
+      return reference.reference.replace('Patient/', '');
     }
     return undefined;
   }

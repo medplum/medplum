@@ -25,12 +25,14 @@ interface FhirType {
 const baseResourceProperties = ['resourceType', 'id', 'meta', 'implicitRules', 'language'];
 const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
 
+const searchParams = readJson('fhir/r4/search-parameters.json');
+const schema = readJson('fhir/r4/fhir.schema.json');
+const definitions = schema.definitions;
+
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
 
 export function main() {
-  const schema = readJson('fhir/r4/fhir.schema.json');
-  const definitions = schema.definitions;
 
   for (const [resourceType, definition] of Object.entries(definitions)) {
     const fhirType = buildType(resourceType, definition);
@@ -56,7 +58,7 @@ export function main() {
   writeIndexFile(Object.keys(parentTypes).sort());
   writeResourceFile(Object.entries(parentTypes).filter(e => e[1].resource).map(e => e[0]).sort());
   Object.values(parentTypes).forEach(fhirType => writeInterfaceFile(fhirType));
-  writeMigrations(parentTypes);
+  writeMigrations();
 }
 
 function buildType(resourceType: string, definition: any): FhirType | undefined {
@@ -178,56 +180,76 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   }
 }
 
-function writeMigrations(fhirTypes: Record<string, FhirType>): void {
-  const searchParams = readJson('fhir/r4/search-parameters.json');
-
+function writeMigrations(): void {
   const b = new FileBuilder(INDENT);
+  buildMigrationUp(b);
+  b.newLine();
+  buildMigrationDown(b);
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/0_init.js'), b.toString(), 'utf8');
+}
 
+function buildMigrationUp(b: FileBuilder): void {
   b.append('export async function up(knex) {');
   b.indentCount++;
 
-  for (const [resourceType, fhirType] of Object.entries(fhirTypes)) {
-    if (!fhirType.resource) {
-      continue;
-    }
-
-    b.newLine();
-    b.append('await knex.schema.createTable(\'' + resourceType + '\', t => {');
-    b.indentCount++;
-    b.append('t.uuid(\'id\').notNullable().primary();');
-    b.append('t.text(\'content\').notNullable();');
-    b.append('t.dateTime(\'lastUpdated\').notNullable();');
-    b.append('t.uuid(\'projectId\');');
-    b.append('t.uuid(\'authorId\');');
-
-    for (const entry of searchParams.entry) {
-      const searchParam = entry.resource;
-      if (searchParam.base?.includes(resourceType)) {
-        if (searchParam.code === 'identifier') {
-          // Ignore
-        } else if (searchParam.code === 'active') {
-          b.append('t.boolean(\'' + searchParam.code + '\');');
-        } else if (searchParam.type === 'date') {
-          b.append('t.date(\'' + searchParam.code + '\');');
-        } else {
-          b.append('t.string(\'' + searchParam.code + '\', 128);');
-        }
-      }
-    }
-
-    b.indentCount--;
-    b.append('});');
-    b.newLine();
-    b.append('await knex.schema.createTable(\'' + resourceType + '_History\', t => {');
-    b.indentCount++;
-    b.append('t.uuid(\'versionId\').notNullable().primary();');
-    b.append('t.uuid(\'id\').notNullable();');
-    b.append('t.text(\'content\').notNullable();');
-    b.append('t.dateTime(\'lastUpdated\').notNullable();');
-    b.indentCount--;
-    b.append('});');
+  for (const fhirType of fhirTypes) {
+    buildCreateTables(b, fhirType);
   }
 
+  buildIdentifierTable(b);
+  buildHumanNameTable(b);
+  buildValueSetElementTable(b);
+  b.indentCount--;
+  b.append('}');
+}
+
+function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
+  if (fhirType.parentType || !fhirType.resource) {
+    // Don't create a table if fhirType is a subtype or not a resource type
+    return;
+  }
+
+  const resourceType = fhirType.outputName;
+
+  b.newLine();
+  b.append('await knex.schema.createTable(\'' + resourceType + '\', t => {');
+  b.indentCount++;
+  b.append('t.uuid(\'id\').notNullable().primary();');
+  b.append('t.text(\'content\').notNullable();');
+  b.append('t.dateTime(\'lastUpdated\').notNullable();');
+  b.append('t.uuid(\'projectId\');');
+  b.append('t.uuid(\'authorId\');');
+  b.append('t.uuid(\'patientId\');');
+
+  for (const entry of searchParams.entry) {
+    const searchParam = entry.resource;
+    if (searchParam.base?.includes(resourceType)) {
+      if (searchParam.code === 'identifier') {
+        // Ignore
+      } else if (searchParam.code === 'active') {
+        b.append('t.boolean(\'' + searchParam.code + '\');');
+      } else if (searchParam.type === 'date') {
+        b.append('t.date(\'' + searchParam.code + '\');');
+      } else {
+        b.append('t.string(\'' + searchParam.code + '\', 128);');
+      }
+    }
+  }
+
+  b.indentCount--;
+  b.append('});');
+  b.newLine();
+  b.append('await knex.schema.createTable(\'' + resourceType + '_History\', t => {');
+  b.indentCount++;
+  b.append('t.uuid(\'versionId\').notNullable().primary();');
+  b.append('t.uuid(\'id\').notNullable();');
+  b.append('t.text(\'content\').notNullable();');
+  b.append('t.dateTime(\'lastUpdated\').notNullable();');
+  b.indentCount--;
+  b.append('});');
+}
+
+function buildIdentifierTable(b: FileBuilder): void {
   b.newLine();
   b.append('await knex.schema.createTable(\'Identifier\', t => {');
   b.indentCount++;
@@ -237,7 +259,9 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
   b.append('t.string(\'value\', 128).index();');
   b.indentCount--;
   b.append('});');
+}
 
+function buildHumanNameTable(b: FileBuilder): void {
   b.newLine();
   b.append('await knex.schema.createTable(\'HumanName\', t => {');
   b.indentCount++;
@@ -248,18 +272,30 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
   b.append('t.string(\'family\', 128).index();');
   b.indentCount--;
   b.append('});');
+}
 
-  b.indentCount--;
-  b.append('}');
+function buildValueSetElementTable(b: FileBuilder): void {
   b.newLine();
+  b.append('await knex.schema.createTable(\'ValueSetElement\', t => {');
+  b.indentCount++;
+  b.append('t.uuid(\'id\').notNullable().primary();');
+  b.append('t.string(\'system\', 128).index();');
+  b.append('t.string(\'code\', 128).index();');
+  b.append('t.string(\'display\', 128).index();');
+  b.indentCount--;
+  b.append('});');
+}
+
+function buildMigrationDown(b: FileBuilder): void {
   b.append('export async function down(knex) {');
   b.indentCount++;
 
-  for (const [resourceType, fhirType] of Object.entries(fhirTypes)) {
-    if (!fhirType.resource) {
+  for (const fhirType of fhirTypes) {
+    if (fhirType.parentType || !fhirType.resource) {
       continue;
     }
 
+    const resourceType = fhirType.outputName;
     b.append('await knex.schema.dropTable(\'' + resourceType + '\');');
     b.append('await knex.schema.dropTable(\'' + resourceType + '_History\');');
   }
@@ -267,8 +303,6 @@ function writeMigrations(fhirTypes: Record<string, FhirType>): void {
   b.append('await knex.schema.dropTable(\'Identifier\');');
   b.indentCount--;
   b.append('}');
-
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/0_init.js'), b.toString(), 'utf8');
 }
 
 function buildImports(fhirType: FhirType, includedTypes: Set<string>, referencedTypes: Set<string>): void {
