@@ -56,6 +56,8 @@ export async function createLogin(client: ClientApplication, email: string, pass
     return [badRequest('Incorrect password', 'password'), undefined];
   }
 
+  // TODO: Fetch PractionerRole resources for the user
+
   return repo.createResource({
     resourceType: 'Login',
     client: {

@@ -222,7 +222,7 @@ export class HumanNameTable implements LookupTable {
       .from('HumanName')
       .where('resourceId', resourceId)
       .then(result => result.map(row => ({
-        given: row?.[0].split(' '),
+        given: row?.[0]?.split(' '),
         family: row[1]
       }) as HumanName));
   }

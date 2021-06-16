@@ -3,6 +3,7 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { initBinaryStorage } from './binary';
 
 const app = express();
 
@@ -10,16 +11,25 @@ beforeAll(async () => {
   await loadConfig('file:medplum.config.json');
   await initDatabase({ client: 'sqlite3' });
   await initApp(app);
+  await initBinaryStorage('file:../binary/');
 });
 
 afterAll(async () => {
   await closeDatabase();
 });
 
-test('Read binary', (done) => {
+test('Create and read binary', (done) => {
   request(app)
-    .get('/fhir/R4/Binary/2e9dfab6-a3af-4e5b-9324-483b4c333736')
-    .expect(200, done);
+    .post('/fhir/R4/Binary')
+    .set('Content-Type', 'text/plain')
+    .send('Hello world')
+    .expect(201)
+    .end((err, res) => {
+      const binary = res.body;
+      request(app)
+        .get('/fhir/R4/Binary/' + binary.id)
+        .expect(200, done);
+    });
 });
 
 test('Read binary not found', (done) => {
