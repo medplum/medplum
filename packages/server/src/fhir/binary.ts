@@ -65,6 +65,7 @@ class FileSystemStorage implements BinaryStorage {
   private readonly path: string;
 
   constructor(path: string) {
+    console.log('FileSystemStorage path', path);
     this.path = path;
   }
 
@@ -79,7 +80,7 @@ class FileSystemStorage implements BinaryStorage {
   }
 
   private getDir(binary: Binary): string {
-    return path.resolve(__dirname, '../', this.path, `/${binary.id}/`);
+    return path.resolve(this.path, binary.id as string);
   }
 
   private getPath(binary: Binary): string {
