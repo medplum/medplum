@@ -34,7 +34,8 @@
     "jose": "3.12.3",
     "knex": "0.95.6",
     "pg": "8.6.0",
-    "validator": "13.6.0"
+    "validator": "13.6.0",
+    "winston": "3.3.3"
   },
   "devDependencies": {
     "@types/bcrypt": "5.0.0",

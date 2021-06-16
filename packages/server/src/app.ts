@@ -3,6 +3,7 @@ import express, { Express, NextFunction, Request, Response } from 'express';
 import { authRouter } from './auth';
 import { dicomRouter } from './dicom/routes';
 import { fhirRouter } from './fhir';
+import { logger } from './logger';
 import { oauthRouter } from './oauth';
 import { wellKnownRouter } from './wellknown';
 
@@ -26,7 +27,7 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
   if (res.headersSent) {
     return next(err)
   }
-  console.log('Unhandled error', err);
+  logger.error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 

@@ -4,13 +4,16 @@ import { loadConfig } from './config';
 import { initDatabase } from './database';
 import { initKeys } from './oauth';
 import { initBinaryStorage } from './fhir';
+import { logger } from './logger';
 
 async function main() {
+  logger.info('Starting Medplum Server...');
+
   const configName = process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json';
-  console.log('configName', configName);
+  logger.info('configName: ' + configName);
 
   const config = await loadConfig(configName);
-  console.log('config', config);
+  logger.info('config: ' + JSON.stringify(config, undefined, 2));
 
   await initDatabase(config.database);
   await initKeys(config);

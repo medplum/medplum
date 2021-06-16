@@ -8,6 +8,7 @@ import { generateKeyPair } from 'jose/util/generate_key_pair';
 import { FlattenedJWSInput, GetKeyFunction, JWK, JWSHeaderParameters, JWTPayload, KeyLike } from 'jose/webcrypto/types';
 import { MedplumServerConfig } from '../config';
 import { isOk, repo } from '../fhir';
+import { logger } from '../logger';
 
 export interface MedplumClaims extends JWTPayload {
   /**
@@ -71,13 +72,13 @@ export async function initKeys(config: MedplumServerConfig) {
   let jsonWebKeys: JsonWebKey[] | undefined;
 
   if (searchResult?.entry && searchResult.entry.length > 0) {
-    console.log(`Loaded ${searchResult.entry.length} key(s) from the database`);
+    logger.info(`Loaded ${searchResult.entry.length} key(s) from the database`);
     jsonWebKeys = searchResult.entry.map(entry => entry.resource as JsonWebKey);
 
   } else {
     // Generate a key pair
     // https://github.com/panva/jose/blob/HEAD/docs/functions/util_generate_key_pair.generatekeypair.md
-    console.log('No keys found.  Creating new key...');
+    logger.info('No keys found.  Creating new key...');
     const keyResult = await generateKeyPair(ALG);
     const jwk = await fromKeyLike(keyResult.privateKey);
     const [createOutcome, createResult] = await repo.createResource<JsonWebKey>({
