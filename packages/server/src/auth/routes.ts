@@ -10,7 +10,7 @@ import { createLogin } from '../oauth/utils';
 export const authRouter = Router();
 
 authRouter.post('/loginx', asyncWrap(async (req: Request, res: Response) => {
-  res.status(200).send({ ok: true });
+  res.status(200).json({ ok: true });
 }));
 
 authRouter.post(

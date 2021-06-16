@@ -19,12 +19,12 @@ import { badRequest } from './outcomes';
 export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   const url = req.query.url as string | undefined;
   if (!url) {
-    return res.status(400).send(badRequest('Missing url'));
+    return res.status(400).json(badRequest('Missing url'));
   }
 
   const filter = req.query.filter as string | undefined;
   if (!filter) {
-    return res.status(400).send(badRequest('Missing filter'));
+    return res.status(400).json(badRequest('Missing filter'));
   }
 
   let offset = 0;
