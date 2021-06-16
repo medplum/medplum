@@ -1,6 +1,5 @@
 import express from 'express';
 import { mkdtempSync, rmSync } from 'fs';
-import { tmpdir } from 'os';
 import { sep } from 'path';
 import request from 'supertest';
 import { initApp } from '../app';
@@ -9,7 +8,7 @@ import { closeDatabase, initDatabase } from '../database';
 import { initBinaryStorage } from './binary';
 
 const app = express();
-const binaryDir = mkdtempSync(tmpdir() + sep + 'binary-');
+const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 
 beforeAll(async () => {
   await loadConfig('file:medplum.config.json');
