@@ -51,7 +51,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     })));
 
   return res.status(200)
-    .send({
+    .json({
       resourceType: 'ValueSet',
       url,
       expansion: {
