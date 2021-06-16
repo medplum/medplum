@@ -27,10 +27,10 @@ binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
     contentType: req.get('Content-Type')
   });
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).send(outcome);
+    return res.status(getStatus(outcome)).json(outcome);
   }
   await binaryStorage?.writeBinary(resource as Binary, req);
-  res.status(201).send(resource);
+  res.status(201).json(resource);
 }));
 
 // Get binary content
@@ -38,7 +38,7 @@ binaryRouter.get('/:id', asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const [outcome, resource] = await repo.readResource('Binary', id);
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).send(outcome);
+    return res.status(getStatus(outcome)).json(outcome);
   }
 
   const binary = resource as Binary;
@@ -68,6 +68,7 @@ class FileSystemStorage implements BinaryStorage {
   }
 
   async writeBinary(binary: Binary, req: Request): Promise<void> {
+    console.log('writeBinary', this.getDir(binary));
     mkdirSync(this.getDir(binary));
     writeFileSync(this.getPath(binary), req.body, { encoding: 'binary' });
   }
@@ -77,7 +78,7 @@ class FileSystemStorage implements BinaryStorage {
   }
 
   private getDir(binary: Binary): string {
-    return path.resolve(__dirname, this.path, `/${binary.id}/`);
+    return path.resolve(__dirname, '../', this.path, `/${binary.id}/`);
   }
 
   private getPath(binary: Binary): string {
