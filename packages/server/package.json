@@ -19,6 +19,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.18.0",
     "@aws-sdk/client-ssm": "3.18.0",
     "@aws-sdk/client-secrets-manager": "3.18.0",
     "@medplum/core": "0.0.24",

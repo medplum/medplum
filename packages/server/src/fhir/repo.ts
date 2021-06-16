@@ -346,7 +346,8 @@ class Repository {
       return MEDPLUM_PROJECT_ID;
     }
 
-    return 'auth token projectId';
+    // return 'auth token projectId';
+    return '00000000-0000-4000-0000-000000000000';
   }
 
   /**

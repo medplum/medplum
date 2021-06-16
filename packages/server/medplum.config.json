@@ -6,6 +6,7 @@
   "authorizeUrl": "http://localhost:5000/oauth2/authorize",
   "tokenUrl": "http://localhost:5000/oauth2/token",
   "userInfoUrl": "http://localhost:5000/oauth2/userinfo",
+  "binaryStorage": "s3:medplum-binary",
   "database": {
     "client": "pg",
     "host": "localhost",
