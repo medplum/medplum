@@ -36,3 +36,12 @@ export async function closeDatabase(): Promise<void> {
     knex = undefined;
   }
 }
+
+/**
+ *
+ * @param result The query result.
+ * @returns
+ */
+export async function executeQuery<T>(result: T): Promise<T> {
+  return result;
+}

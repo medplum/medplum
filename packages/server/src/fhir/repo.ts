@@ -1,7 +1,7 @@
 import { Bundle, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import validator from 'validator';
-import { getKnex } from '../database';
+import { executeQuery, getKnex } from '../database';
 import { logger } from '../logger';
 import { HumanNameTable, IdentifierTable, LookupTable } from './lookuptable';
 import { allOk, badRequest, isNotFound, isOk, notFound } from './outcomes';
@@ -86,7 +86,8 @@ class Repository {
     const knex = getKnex();
     const rows = await knex.select('content')
       .from(resourceType)
-      .where('id', id);
+      .where('id', id)
+      .then(executeQuery);
 
     if (rows.length === 0) {
       return [notFound, undefined];
@@ -116,7 +117,8 @@ class Repository {
     const knex = getKnex();
     const builder = knex.select('content')
       .from(resourceType + '_History')
-      .where('id', id);
+      .where('id', id)
+      .then(executeQuery);
 
     const rows = await builder;
 
@@ -143,7 +145,8 @@ class Repository {
     const rows = await knex.select('content')
       .from(resourceType + '_History')
       .where('id', id)
-      .andWhere('versionId', vid);
+      .andWhere('versionId', vid)
+      .then(executeQuery);
 
     if (rows.length === 0) {
       return [notFound, undefined];
@@ -242,7 +245,7 @@ class Repository {
     builder.limit(count);
     builder.offset(count * page);
 
-    const rows = await builder;
+    const rows = await builder.then(executeQuery);
 
     return [allOk, {
       resourceType: 'Bundle',
@@ -279,14 +282,14 @@ class Repository {
       }
     }
 
-    await knex(resourceType).insert(columns).onConflict('id').merge();
+    await knex(resourceType).insert(columns).onConflict('id').merge().then(executeQuery);
 
     await knex(resourceType + '_History').insert({
       id: resource.id,
       versionId: meta.versionId,
       lastUpdated: meta.lastUpdated,
       content
-    });
+    }).then(executeQuery);
   }
 
   private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
