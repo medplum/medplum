@@ -1,7 +1,7 @@
 import { Filter, formatFamilyName, formatGivenName, formatHumanName, HumanName, Identifier, Resource, SearchParameter } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Knex } from 'knex';
-import { getKnex } from '../database';
+import { executeQuery, getKnex } from '../database';
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -72,7 +72,7 @@ export class IdentifierTable implements LookupTable {
     if (!this.compareIdentifiers(identifiers, existing)) {
       const knex = getKnex();
 
-      await knex('Identifier').where('resourceId', resourceId).delete();
+      await knex('Identifier').where('resourceId', resourceId).delete().then(executeQuery);
 
       for (const identifier of identifiers) {
         await knex('Identifier').insert({
@@ -80,7 +80,7 @@ export class IdentifierTable implements LookupTable {
           resourceId,
           system: identifier.system,
           value: identifier.value
-        });
+        }).then(executeQuery);
       }
     }
   }
@@ -186,7 +186,7 @@ export class HumanNameTable implements LookupTable {
     if (!this.compareNames(names, existing)) {
       const knex = getKnex();
 
-      await knex('HumanName').where('resourceId', resourceId).delete();
+      await knex('HumanName').where('resourceId', resourceId).delete().then(executeQuery);
 
       for (const name of names) {
         await knex('HumanName').insert({
@@ -195,7 +195,7 @@ export class HumanNameTable implements LookupTable {
           name: formatHumanName(name),
           given: formatGivenName(name),
           family: formatFamilyName(name)
-        });
+        }).then(executeQuery);
       }
     }
   }

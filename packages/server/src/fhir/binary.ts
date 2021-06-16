@@ -11,7 +11,6 @@ import { repo } from './repo';
 let binaryStorage: BinaryStorage | undefined = undefined;
 
 export function initBinaryStorage(type: string): void {
-  console.log('initBinaryStorage: "' + type + '" (' + type.length + ')');
   if (type.startsWith('s3:')) {
     binaryStorage = new S3Storage(type.replace('s3:', ''));
   } else if (type.startsWith('file:')) {
@@ -65,12 +64,10 @@ class FileSystemStorage implements BinaryStorage {
   private readonly path: string;
 
   constructor(path: string) {
-    console.log('FileSystemStorage path', path);
     this.path = path;
   }
 
   async writeBinary(binary: Binary, req: Request): Promise<void> {
-    console.log('writeBinary', this.getDir(binary));
     mkdirSync(this.getDir(binary));
     writeFileSync(this.getPath(binary), req.body, { encoding: 'binary' });
   }
