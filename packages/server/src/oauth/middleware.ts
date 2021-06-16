@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { logger } from '../logger';
 import { verifyJwt } from './keys';
 
 export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
@@ -11,7 +12,7 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
       res.locals.user = verifyResult.username;
       res.locals.profile = verifyResult.profile;
     } catch (err) {
-      console.log('verify error', err);
+      logger.error('verify error', err);
       return res.sendStatus(403);
     }
   }

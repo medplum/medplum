@@ -2,6 +2,7 @@ import { Bundle, Meta, OperationOutcome, Reference, Resource, SearchParameter, S
 import { randomUUID } from 'crypto';
 import validator from 'validator';
 import { getKnex } from '../database';
+import { logger } from '../logger';
 import { HumanNameTable, IdentifierTable, LookupTable } from './lookuptable';
 import { allOk, badRequest, isNotFound, isOk, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
@@ -199,7 +200,7 @@ class Repository {
     }
 
     // TODO
-    console.log(`DELETE resourceType=${resource?.resourceType} / id=${resource?.id}`);
+    logger.info(`DELETE resourceType=${resource?.resourceType} / id=${resource?.id}`);
 
     return [allOk, undefined];
   }
