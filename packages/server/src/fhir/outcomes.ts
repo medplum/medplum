@@ -1,5 +1,7 @@
 import { OperationOutcome } from '@medplum/core';
 import { randomUUID } from 'crypto';
+import { Response } from 'express';
+import { Result, ValidationError } from 'express-validator';
 
 const OK_ID = 'ok';
 const NOT_FOUND_ID = 'not-found';
@@ -43,6 +45,19 @@ export function badRequest(details: string, expression?: string): OperationOutco
   };
 }
 
+export function invalidRequest(errors: Result<ValidationError>): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: randomUUID(),
+    issue: errors.array().map(error => ({
+      severity: 'error',
+      code: 'invalid',
+      expression: [error.param],
+      details: { text: error.msg }
+    }))
+  };
+}
+
 export function isOk(outcome: OperationOutcome): boolean {
   return outcome.id === OK_ID;
 }
@@ -59,4 +74,8 @@ export function getStatus(outcome: OperationOutcome): number {
   } else {
     return 400;
   }
+}
+
+export function sendOutcome(res: Response, outcome: OperationOutcome): Response<any, Record<string, any>> {
+  return res.status(getStatus(outcome)).json(outcome);
 }
