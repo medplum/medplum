@@ -5,7 +5,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { IncomingMessage } from 'http';
 import path from 'path';
 import { asyncWrap } from '../async';
-import { getStatus, isOk } from './outcomes';
+import { isOk, sendOutcome } from './outcomes';
 import { repo } from './repo';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
@@ -27,7 +27,7 @@ binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
     contentType: req.get('Content-Type')
   });
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
   await binaryStorage?.writeBinary(resource as Binary, req);
   res.status(201).json(resource);
@@ -38,7 +38,7 @@ binaryRouter.get('/:id', asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const [outcome, resource] = await repo.readResource('Binary', id);
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
 
   const binary = resource as Binary;

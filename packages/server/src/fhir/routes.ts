@@ -6,7 +6,7 @@ import { createBatch } from './batch';
 import { binaryRouter } from './binary';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
-import { badRequest, getStatus, isOk } from './outcomes';
+import { badRequest, isOk, sendOutcome } from './outcomes';
 import { repo } from './repo';
 import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
@@ -65,11 +65,11 @@ fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
   }
   const bundle = req.body;
   if (bundle.resourceType !== 'Bundle') {
-    return res.status(400).json(badRequest('Not a bundle'));
+    return sendOutcome(res, badRequest('Not a bundle'));
   }
   const [outcome, result] = await createBatch(bundle);
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
   res.status(200).json(result);
 }));
@@ -80,7 +80,7 @@ fhirRouter.get('/:resourceType', asyncWrap(async (req: Request, res: Response) =
   const query = req.query as Record<string, string | undefined>;
   const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
   res.status(200).json(bundle);
 }));
@@ -93,11 +93,11 @@ fhirRouter.post('/:resourceType', asyncWrap(async (req: Request, res: Response) 
   const { resourceType } = req.params;
   const resource = req.body;
   if (resource.resourceType !== resourceType) {
-    return res.status(400).json(badRequest('Incorrect resource type'));
+    return sendOutcome(res, badRequest('Incorrect resource type'));
   }
   const [outcome, result] = await repo.createResource(resource);
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
   res.status(201).json(result);
 }));
@@ -107,7 +107,7 @@ fhirRouter.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
   const { resourceType, id } = req.params;
   const [outcome, resource] = await repo.readResource(resourceType, id);
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
   res.status(200).json(resource);
 }));
@@ -117,7 +117,7 @@ fhirRouter.get('/:resourceType/:id/_history', asyncWrap(async (req: Request, res
   const { resourceType, id } = req.params;
   const [outcome, bundle] = await repo.readHistory(resourceType, id);
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
   res.status(200).json(bundle);
 }));
@@ -127,7 +127,7 @@ fhirRouter.get('/:resourceType/:id/_history/:vid', asyncWrap(async (req: Request
   const { resourceType, id, vid } = req.params;
   const [outcome, resource] = await repo.readVersion(resourceType, id, vid);
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
   res.status(200).json(resource);
 }));
@@ -140,14 +140,14 @@ fhirRouter.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
   const { resourceType, id } = req.params;
   const resource = req.body;
   if (resource.resourceType !== resourceType) {
-    return res.status(400).json(badRequest('Incorrect resource type'));
+    return sendOutcome(res, badRequest('Incorrect resource type'));
   }
   if (resource.id !== id) {
-    return res.status(400).json(badRequest('Incorrect ID'));
+    return sendOutcome(res, badRequest('Incorrect ID'));
   }
   const [outcome, result] = await repo.updateResource(resource);
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
   res.status(200).json(result);
 }));
@@ -157,7 +157,7 @@ fhirRouter.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Resp
   const { resourceType, id } = req.params;
   const [outcome, resource] = await repo.deleteResource(resourceType, id);
   if (!isOk(outcome)) {
-    return res.status(getStatus(outcome)).json(outcome);
+    return sendOutcome(res, outcome);
   }
   res.status(200).json(resource);
 }));
@@ -176,7 +176,7 @@ fhirRouter.post('/:resourceType/([$])validate', asyncWrap(async (req: Request, r
     return res.status(400).send('Unsupported content type');
   }
   const outcome = validateResource(req.body);
-  res.status(getStatus(outcome)).json(outcome);
+  sendOutcome(res, outcome);
 }));
 
 function isFhirJsonContentType(req: Request) {

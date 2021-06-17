@@ -1,9 +1,8 @@
-import { ClientApplication, OperationOutcome, ProfileResource, User } from '@medplum/core';
-import { randomUUID } from 'crypto';
+import { ClientApplication, ProfileResource, User } from '@medplum/core';
 import { Request, Response, Router } from 'express';
-import { body, Result, ValidationError, validationResult } from 'express-validator';
+import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
-import { badRequest, isOk, repo } from '../fhir';
+import { badRequest, invalidRequest, isOk, repo, sendOutcome } from '../fhir';
 import { generateJwt } from '../oauth';
 import { createLogin } from '../oauth/utils';
 
@@ -24,7 +23,7 @@ authRouter.post(
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json(toOutcome(errors));
+      return sendOutcome(res, invalidRequest(errors));
     }
 
     const client: ClientApplication = {
@@ -33,20 +32,20 @@ authRouter.post(
 
     const [loginOutcome, login] = await createLogin(client, req.body.email, req.body.password);
     if (!isOk(loginOutcome)) {
-      return res.status(400).json(loginOutcome);
+      return sendOutcome(res, loginOutcome);
     }
 
     if (!login?.user) {
-      return res.status(400).json(badRequest('Invalid login'));
+      return sendOutcome(res, badRequest('Invalid login'));
     }
 
     const [userOutcome, user] = await repo.readReference<User>(login?.user);
     if (!isOk(userOutcome)) {
-      return res.status(400).json(userOutcome);
+      return sendOutcome(res, userOutcome);
     }
 
     if (!user) {
-      return res.status(400).json(badRequest('User not found', 'email'));
+      return sendOutcome(res, badRequest('User not found', 'email'));
     }
 
     let roleReference;
@@ -60,16 +59,16 @@ authRouter.post(
         break;
 
       default:
-        return res.status(400).json(badRequest('Unrecognized role', 'role'));
+        return sendOutcome(res, badRequest('Unrecognized role', 'role'));
     }
 
     if (!roleReference) {
-      return res.status(400).json(badRequest('User does not have role', 'role'));
+      return sendOutcome(res, badRequest('User does not have role', 'role'));
     }
 
     const [profileOutcome, profile] = await repo.readReference<ProfileResource>(roleReference);
     if (!isOk(profileOutcome) || !profile) {
-      return res.status(400).json(profileOutcome);
+      return sendOutcome(res, profileOutcome);
     }
 
     await repo.updateResource({
@@ -103,16 +102,3 @@ authRouter.post(
       refreshToken
     });
   }));
-
-function toOutcome(errors: Result<ValidationError>): OperationOutcome {
-  return {
-    resourceType: 'OperationOutcome',
-    id: randomUUID(),
-    issue: errors.array().map(error => ({
-      severity: 'error',
-      code: 'invalid',
-      expression: [error.param],
-      details: { text: error.msg }
-    }))
-  };
-}

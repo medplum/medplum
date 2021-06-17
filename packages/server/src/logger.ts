@@ -13,5 +13,9 @@ export const logger = winston.createLogger({
 });
 
 function logFormat(info: winston.Logform.TransformableInfo): string {
-  return `[${info.level.toUpperCase()}] ${info.timestamp} ${info.message}`;
+  const {level, message, timestamp, stack} = info;
+  if (stack) {
+    return `[${level.toUpperCase()}] ${timestamp} ${message}\n${stack}`;
+  }
+  return `[${level.toUpperCase()}] ${timestamp} ${message}`;
 }
