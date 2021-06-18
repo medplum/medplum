@@ -2,6 +2,11 @@ import { NextFunction, Request, Response } from 'express';
 import { logger } from '../logger';
 import { verifyJwt } from './keys';
 
+export interface MedplumRequestContext {
+  user: string;
+  profile: string;
+}
+
 export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1]
