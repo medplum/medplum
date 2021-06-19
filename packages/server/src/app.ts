@@ -1,5 +1,6 @@
+import { json, raw, urlencoded } from 'body-parser';
 import cors from 'cors';
-import express, { Express, NextFunction, Request, Response } from 'express';
+import { Express, NextFunction, Request, Response } from 'express';
 import { authRouter } from './auth';
 import { dicomRouter } from './dicom/routes';
 import { fhirRouter } from './fhir';
@@ -36,11 +37,14 @@ export async function initApp(app: Express): Promise<Express> {
   app.set('x-powered-by', false);
   app.set('json spaces', 2);
   app.use(cors(corsOptions));
-  app.use(express.json({
+  app.use(urlencoded({
+    extended: false
+  }));
+  app.use(json({
     type: ['application/json', 'application/fhir+json'],
     limit: '5mb'
   }));
-  app.use(express.raw({
+  app.use(raw({
     type: '*/*',
     limit: '5mb'
   }));

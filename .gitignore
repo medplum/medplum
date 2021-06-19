@@ -31,3 +31,6 @@ coverage/
 # TypeScript incremental build
 tsconfig.tsbuildinfo
 
+# Sqlite test database
+test.sqlite3
+

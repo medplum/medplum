@@ -480,7 +480,7 @@ export class MedplumClient extends EventTarget {
 
     const accessToken = this.getAccessToken();
     if (accessToken) {
-      headers['Authorization'] = accessToken;
+      headers['Authorization'] = 'Bearer ' + accessToken;
     }
 
     const options: RequestInit = {

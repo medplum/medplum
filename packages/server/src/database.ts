@@ -14,7 +14,9 @@ export function getKnex(): Knex.Knex {
 export async function initDatabase(config: MedplumDatabaseConfig): Promise<void> {
   knex = Knex.knex({
     client: config.client,
-    connection: config.client === 'sqlite3' ? ':memory:' : {
+    connection: config.client === 'sqlite3' ? {
+      filename: './test.sqlite3'
+    } : {
       host: config.host,
       database: config.database,
       user: config.username,

@@ -3,13 +3,18 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { initTestAuth } from '../jest.setup';
+import { initKeys } from '../oauth';
 
 const app = express();
+let accessToken: string;
 
 beforeAll(async () => {
-  await loadConfig('file:medplum.config.json');
+  const config = await loadConfig('file:medplum.config.json');
   await initDatabase({ client: 'sqlite3' });
   await initApp(app);
+  await initKeys(config);
+  accessToken = await initTestAuth();
 });
 
 afterAll(async () => {
@@ -19,6 +24,7 @@ afterAll(async () => {
 test('GraphQL schema', (done) => {
   request(app)
     .post('/fhir/R4/$graphql')
+    .set('Authorization', 'Bearer ' + accessToken)
     .set('Content-Type', 'application/json')
     .send({
       operationName: 'IntrospectionQuery',
@@ -119,6 +125,7 @@ test('GraphQL schema', (done) => {
 test('GraphQL read by ID', (done) => {
   request(app)
     .post('/fhir/R4/$graphql')
+    .set('Authorization', 'Bearer ' + accessToken)
     .set('Content-Type', 'application/json')
     .send({
       query: `
@@ -140,6 +147,7 @@ test('GraphQL read by ID', (done) => {
 test('GraphQL search', (done) => {
   request(app)
     .post('/fhir/R4/$graphql')
+    .set('Authorization', 'Bearer ' + accessToken)
     .set('Content-Type', 'application/json')
     .send({
       query: `
