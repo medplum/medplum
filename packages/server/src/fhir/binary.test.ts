@@ -5,16 +5,21 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { initTestAuth } from '../jest.setup';
+import { initKeys } from '../oauth';
 import { initBinaryStorage } from './binary';
 
 const app = express();
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
+let accessToken: string;
 
 beforeAll(async () => {
-  await loadConfig('file:medplum.config.json');
+  const config = await loadConfig('file:medplum.config.json');
   await initDatabase({ client: 'sqlite3' });
   await initApp(app);
   await initBinaryStorage('file:' + binaryDir);
+  await initKeys(config);
+  accessToken = await initTestAuth();
 });
 
 afterAll(async () => {
@@ -25,6 +30,7 @@ afterAll(async () => {
 test('Create and read binary', (done) => {
   request(app)
     .post('/fhir/R4/Binary')
+    .set('Authorization', 'Bearer ' + accessToken)
     .set('Content-Type', 'text/plain')
     .send('Hello world')
     .expect(201)
@@ -32,6 +38,7 @@ test('Create and read binary', (done) => {
       const binary = res.body;
       request(app)
         .get('/fhir/R4/Binary/' + binary.id)
+        .set('Authorization', 'Bearer ' + accessToken)
         .expect(200, done);
     });
 });
@@ -39,5 +46,6 @@ test('Create and read binary', (done) => {
 test('Read binary not found', (done) => {
   request(app)
     .get('/fhir/R4/Binary/2e9dfab6-a3af-4e5b-9324-483b4c333737')
+    .set('Authorization', 'Bearer ' + accessToken)
     .expect(404, done);
 });

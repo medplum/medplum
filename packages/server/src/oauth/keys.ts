@@ -1,11 +1,10 @@
 import { JsonWebKey, Operator } from '@medplum/core';
 import { fromKeyLike } from 'jose/jwk/from_key_like';
 import { parseJwk } from 'jose/jwk/parse';
-import { createRemoteJWKSet } from 'jose/jwks/remote';
 import { SignJWT } from 'jose/jwt/sign';
 import { jwtVerify, JWTVerifyOptions } from 'jose/jwt/verify';
 import { generateKeyPair } from 'jose/util/generate_key_pair';
-import { FlattenedJWSInput, GetKeyFunction, JWK, JWSHeaderParameters, JWTPayload, KeyLike } from 'jose/webcrypto/types';
+import { JWK, JWSHeaderParameters, JWTPayload, KeyLike } from 'jose/webcrypto/types';
 import { MedplumServerConfig } from '../config';
 import { isOk, repo } from '../fhir';
 import { logger } from '../logger';
@@ -42,10 +41,10 @@ export interface MedplumClaims extends JWTPayload {
 const ALG = 'RS256';
 
 let serverConfig: MedplumServerConfig | undefined;
-let publicKeys: JWK[] | undefined;
+const publicKeys: Record<string, KeyLike> = {};
+const jwks: { keys: JWK[] } = { keys: [] };
 let signingKey: KeyLike | undefined;
 let signingKeyId: string | undefined;
-let remoteJwks: GetKeyFunction<JWSHeaderParameters, FlattenedJWSInput> | undefined;
 
 export async function initKeys(config: MedplumServerConfig) {
   serverConfig = config;
@@ -99,14 +98,23 @@ export async function initKeys(config: MedplumServerConfig) {
   }
 
   // Convert our JsonWebKey array to JWKS
-  publicKeys = jsonWebKeys.map(jwk => ({
-    kid: jwk.id,
-    alg: ALG,
-    kty: 'RSA',
-    use: 'sig',
-    e: jwk.e,
-    n: jwk.n
-  }));
+  for (const jwk of jsonWebKeys) {
+    const publicKey: JWK = {
+      kid: jwk.id,
+      alg: ALG,
+      kty: 'RSA',
+      use: 'sig',
+      e: jwk.e,
+      n: jwk.n
+    };
+
+    // Add to the JWKS (JSON Web Key Set)
+    // This will be publicly available at /.well-known/jwks.json
+    jwks.keys.push(publicKey);
+
+    // Convert from JWK to PKCS and add to the collection of public keys
+    publicKeys[jwk.id as string] = await parseJwk(publicKey);
+  }
 
   // Use the first key as the signing key
   signingKeyId = jsonWebKeys[0].id;
@@ -115,11 +123,6 @@ export async function initKeys(config: MedplumServerConfig) {
     alg: ALG,
     use: 'sig',
   });
-
-  // Build the remote key set
-  // By default, this points directly to our own /.well-known/jwks.json
-  // But we do support remote jwks
-  remoteJwks = await createRemoteJWKSet(new URL(config.jwksUrl));
 }
 
 /**
@@ -127,11 +130,11 @@ export async function initKeys(config: MedplumServerConfig) {
  * These keys can be used to verify a JWT.
  * @returns Array of public keys.
  */
-export function getJwks(): JWK[] {
-  if (!publicKeys) {
+export function getJwks(): { keys: JWK[] } {
+  if (!jwks) {
     throw new Error('Public keys not initialized');
   }
-  return publicKeys;
+  return jwks;
 }
 
 /**
@@ -140,19 +143,19 @@ export function getJwks(): JWK[] {
  * @param claims
  * @returns Promise to generate and sign the JWT.
  */
-export async function generateJwt(exp: '1h' | '2w', claims: MedplumClaims): Promise<string> {
+export function generateJwt(exp: '1h' | '2w', claims: MedplumClaims): Promise<string> {
   if (!signingKey) {
-    throw new Error('Signing key not initialized');
+    return Promise.reject('Signing key not initialized');
   }
 
   const issuer = serverConfig?.issuer;
   if (!issuer) {
-    throw new Error('Missing issuer');
+    return Promise.reject('Missing issuer');
   }
 
   const audience = serverConfig?.audience;
   if (!audience) {
-    throw new Error('Missing audience');
+    return Promise.reject('Missing audience');
   }
 
   return new SignJWT(claims)
@@ -169,19 +172,15 @@ export async function generateJwt(exp: '1h' | '2w', claims: MedplumClaims): Prom
  * @param jwt The jwt token / bearer token.
  * @returns Returns the decoded claims on success.
  */
-export async function verifyJwt(token: string): Promise<MedplumClaims> {
-  if (!remoteJwks) {
-    throw new Error('Remote JWKS not initialized');
-  }
-
+export function verifyJwt(token: string): Promise<MedplumClaims> {
   const issuer = serverConfig?.issuer;
   if (!issuer) {
-    throw new Error('Missing issuer');
+    return Promise.reject('Missing issuer');
   }
 
   const audience = serverConfig?.audience;
   if (!audience) {
-    throw new Error('Missing audience');
+    return Promise.reject('Missing audience');
   }
 
   const verifyOptions: JWTVerifyOptions = {
@@ -190,6 +189,26 @@ export async function verifyJwt(token: string): Promise<MedplumClaims> {
     algorithms: [ALG]
   };
 
-  const verifyResult = await jwtVerify(token, remoteJwks, verifyOptions);
-  return verifyResult.payload as MedplumClaims;
+  return jwtVerify(token, getKeyForHeader, verifyOptions)
+    .then(verifyResult => verifyResult.payload as MedplumClaims);
+}
+
+/**
+ * Returns a public key to verify a JWT.
+ * Implements the "JWTVerifyGetKey" interface for jwtVerify.
+ * @param protectedHeader The JWT protected header.
+ * @returns Promise to load the public key.
+ */
+function getKeyForHeader(protectedHeader: JWSHeaderParameters): Promise<KeyLike> {
+  const kid = protectedHeader.kid;
+  if (!kid) {
+    return Promise.reject('Missing kid header');
+  }
+
+  const result = publicKeys[kid];
+  if (!result) {
+    return Promise.reject('Key not found');
+  }
+
+  return Promise.resolve(result);
 }
