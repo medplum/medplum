@@ -33,6 +33,21 @@ binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
   res.status(201).json(resource);
 }));
 
+// Update a binary
+binaryRouter.put('/:id', asyncWrap(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const [outcome, resource] = await repo.updateResource<Binary>({
+    resourceType: 'Binary',
+    id,
+    contentType: req.get('Content-Type')
+  });
+  if (!isOk(outcome)) {
+    return sendOutcome(res, outcome);
+  }
+  await binaryStorage?.writeBinary(resource as Binary, req);
+  res.status(201).json(resource);
+}));
+
 // Get binary content
 binaryRouter.get('/:id', asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;

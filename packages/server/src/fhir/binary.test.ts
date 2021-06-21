@@ -49,3 +49,19 @@ test('Read binary not found', (done) => {
     .set('Authorization', 'Bearer ' + accessToken)
     .expect(404, done);
 });
+
+test('Update and read binary', (done) => {
+  request(app)
+    .put('/fhir/R4/Binary/4c57f787-dca0-411f-bfe2-322800208286')
+    .set('Authorization', 'Bearer ' + accessToken)
+    .set('Content-Type', 'text/plain')
+    .send('Hello world')
+    .expect(201)
+    .end((err, res) => {
+      const binary = res.body;
+      request(app)
+        .get('/fhir/R4/Binary/' + binary.id)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .expect(200, done);
+    });
+});
