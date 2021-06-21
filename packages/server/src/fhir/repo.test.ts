@@ -31,6 +31,7 @@ test('Patient resource with identifier', async (done) => {
   });
 
   expect(searchOutcome.id).toEqual('ok');
+  console.log(JSON.stringify(searchResult, undefined, 2));
   expect(searchResult?.entry?.length).toEqual(1);
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
   done();

@@ -5,6 +5,7 @@ import { loadConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
+import { repo } from './repo';
 
 const app = express();
 let accessToken: string;
@@ -15,6 +16,15 @@ beforeAll(async () => {
   await initApp(app);
   await initKeys(config);
   accessToken = await initTestAuth();
+
+  await repo.updateResource({
+    resourceType: 'Patient',
+    id: '8a54c7db-654b-4c3d-ba85-e0909f51c12b',
+    name: [{
+      given: ['Alice'],
+      family: 'Smith'
+    }]
+  });
 });
 
 afterAll(async () => {

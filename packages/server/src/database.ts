@@ -15,7 +15,7 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
   knex = Knex.knex({
     client: config.client,
     connection: config.client === 'sqlite3' ? {
-      filename: './test.sqlite3'
+      filename: ':memory:'
     } : {
       host: config.host,
       database: config.database,
@@ -26,10 +26,6 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
   });
 
   await knex.migrate.latest({ directory: path.resolve(__dirname, 'migrations') });
-
-  if (process.env.NODE_ENV === 'test') {
-    await knex.seed.run({ directory: path.resolve(__dirname, 'seeds') });
-  }
 }
 
 export async function closeDatabase(): Promise<void> {
@@ -40,7 +36,11 @@ export async function closeDatabase(): Promise<void> {
 }
 
 /**
- *
+ * Placeholder to "execute the query".
+ * This is a passthrough function, and should not be necessary.
+ * It reduces the noise in SonarJS static analysis, because SonarJS
+ * does not properly interpret Knex promises.
+ * See: https://github.com/SonarSource/SonarJS/issues/2658
  * @param result The query result.
  * @returns
  */
