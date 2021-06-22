@@ -17,6 +17,19 @@ const corsOptions: cors.CorsOptions = {
 };
 
 /**
+ * Disables all caching.
+ * @param req The request.
+ * @param res The response.
+ * @param next The next handler.
+ */
+function cacheHandler(req: Request, res: Response, next: NextFunction): void {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Expires', 'Wed, 21 Oct 2015 07:28:00 GMT');
+  res.set('Pragma', 'no-cache');
+  next();
+}
+
+/**
  * Global error handler.
  * See: https://expressjs.com/en/guide/error-handling.html
  * @param err Unhandled error.
@@ -36,6 +49,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.set('json spaces', 2);
+  app.use(cacheHandler);
   app.use(cors(corsOptions));
   app.use(urlencoded({
     extended: false
