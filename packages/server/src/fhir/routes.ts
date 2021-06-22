@@ -7,7 +7,7 @@ import { binaryRouter } from './binary';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
 import { badRequest, isOk, sendOutcome } from './outcomes';
-import { repo } from './repo';
+import { Repository } from './repo';
 import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
 
@@ -67,7 +67,8 @@ fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
   if (bundle.resourceType !== 'Bundle') {
     return sendOutcome(res, badRequest('Not a bundle'));
   }
-  const [outcome, result] = await createBatch(bundle);
+  const repo = res.locals.repo as Repository;
+  const [outcome, result] = await createBatch(repo, bundle);
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
   }
@@ -77,6 +78,7 @@ fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
 // Search
 fhirRouter.get('/:resourceType', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType } = req.params;
+  const repo = res.locals.repo as Repository;
   const query = req.query as Record<string, string | undefined>;
   const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
   if (!isOk(outcome)) {
@@ -95,6 +97,7 @@ fhirRouter.post('/:resourceType', asyncWrap(async (req: Request, res: Response) 
   if (resource.resourceType !== resourceType) {
     return sendOutcome(res, badRequest('Incorrect resource type'));
   }
+  const repo = res.locals.repo as Repository;
   const [outcome, result] = await repo.createResource(resource);
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
@@ -105,6 +108,7 @@ fhirRouter.post('/:resourceType', asyncWrap(async (req: Request, res: Response) 
 // Read resource by ID
 fhirRouter.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType, id } = req.params;
+  const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource(resourceType, id);
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
@@ -115,6 +119,7 @@ fhirRouter.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
 // Read resource history
 fhirRouter.get('/:resourceType/:id/_history', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType, id } = req.params;
+  const repo = res.locals.repo as Repository;
   const [outcome, bundle] = await repo.readHistory(resourceType, id);
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
@@ -125,6 +130,7 @@ fhirRouter.get('/:resourceType/:id/_history', asyncWrap(async (req: Request, res
 // Read resource version by version ID
 fhirRouter.get('/:resourceType/:id/_history/:vid', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType, id, vid } = req.params;
+  const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readVersion(resourceType, id, vid);
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
@@ -145,6 +151,7 @@ fhirRouter.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
   if (resource.id !== id) {
     return sendOutcome(res, badRequest('Incorrect ID'));
   }
+  const repo = res.locals.repo as Repository;
   const [outcome, result] = await repo.updateResource(resource);
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
@@ -155,6 +162,7 @@ fhirRouter.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
 // Delete resource
 fhirRouter.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType, id } = req.params;
+  const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.deleteResource(resourceType, id);
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);

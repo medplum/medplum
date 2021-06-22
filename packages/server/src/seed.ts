@@ -1,6 +1,7 @@
 import { Bundle, createReference, Organization, Practitioner, Project, StructureDefinition, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { readJson } from '../../definitions/dist';
+import { ADMIN_USER_ID, MEDPLUM_ORGANIZATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
 import { isOk, OperationOutcomeError, repo } from "./fhir";
 import { logger } from "./logger";
 
@@ -10,7 +11,8 @@ export async function seedDatabase() {
     return;
   }
 
-  await createProject();
+  await createPublicProject();
+  await createMedplumProject();
   await createOrganization();
   await createUser();
   await createStructureDefinitions();
@@ -34,16 +36,40 @@ async function isSeeded(): Promise<boolean> {
 }
 
 /**
+ * Creates the public project.
+ * This is a special project that is available to all users.
+ * It includes "implementation" resources such as CapabilityStatement.
+ */
+async function createPublicProject() {
+  logger.info('Create Public project...');
+  const [outcome, result] = await repo.updateResource<Project>({
+    resourceType: 'Project',
+    id: PUBLIC_PROJECT_ID,
+    name: 'Medplum',
+    owner: {
+      reference: 'User/' + ADMIN_USER_ID
+    }
+  });
+
+  if (!isOk(outcome)) {
+    throw new OperationOutcomeError(outcome);
+  }
+
+  logger.info('Created', (result as Project).id);
+}
+
+/**
  * Creates the Medplum project.
  * This is a special project for administrative resources.
  */
-async function createProject() {
+async function createMedplumProject() {
   logger.info('Create Medplum project...');
-  const [outcome, result] = await repo.createResource<Project>({
+  const [outcome, result] = await repo.updateResource<Project>({
     resourceType: 'Project',
+    id: MEDPLUM_PROJECT_ID,
     name: 'Medplum',
     owner: {
-      reference: 'User/1'
+      reference: 'User/' + ADMIN_USER_ID
     }
   });
 
@@ -60,8 +86,9 @@ async function createProject() {
  */
 async function createOrganization() {
   logger.info('Create Medplum project...');
-  const [outcome, result] = await repo.createResource<Organization>({
+  const [outcome, result] = await repo.updateResource<Organization>({
     resourceType: 'Organization',
+    id: MEDPLUM_ORGANIZATION_ID,
     name: 'Medplum'
   });
 
@@ -92,8 +119,9 @@ async function createUser() {
 
   const passwordHash = await bcrypt.hash('admin', 10);
 
-  const [userOutcome, user] = await repo.createResource<User>({
+  const [userOutcome, user] = await repo.updateResource<User>({
     resourceType: 'User',
+    id: ADMIN_USER_ID,
     email: 'admin@medplum.com',
     passwordHash,
     practitioner: createReference(practitioner as Practitioner)

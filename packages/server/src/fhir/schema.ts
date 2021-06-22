@@ -1,6 +1,6 @@
-import { randomUUID } from 'crypto';
-import { readJson } from '@medplum/definitions';
 import { OperationOutcome, OperationOutcomeIssue, Resource } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { randomUUID } from 'crypto';
 import { allOk } from './outcomes';
 
 export const schema = readJson('fhir/r4/fhir.schema.json');

@@ -1,6 +1,8 @@
-import { Bundle, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
+import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import validator from 'validator';
+import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { executeQuery, getKnex } from '../database';
 import { logger } from '../logger';
 import { HumanNameTable, IdentifierTable, LookupTable } from './lookuptable';
@@ -8,10 +10,33 @@ import { allOk, badRequest, isNotFound, isOk, notFound } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
 
+/**
+ * The RepositoryContext interface defines standard metadata for repository actions.
+ */
+export interface RepositoryContext {
+  /**
+   * The current author reference.
+   * This should be a FHIR reference string (i.e., "resourceType/id").
+   * Where resource type is ClientApplication, Patient, Practitioner, etc.
+   * This value will be included in every resource as meta.author.
+   */
+  author: string;
+
+  /**
+   * The current project reference.
+   * This should be the ID/UUID of the current project.
+   * This value will be included in every resource as meta.project.
+   */
+  project: string;
+}
+
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
 
-const PUBLIC_PROJECT_ID = '0ce0af47-cc2e-44e1-a4b3-b642d42a74a1';
-const MEDPLUM_PROJECT_ID = 'c7120c97-a266-4a90-9f91-35adc9a6efd9';
+/**
+ * Patient compartment definitions.
+ * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
+ */
+const patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json') as CompartmentDefinition;
 
 /**
  * Public resource types are in the "public" project.
@@ -19,13 +44,11 @@ const MEDPLUM_PROJECT_ID = 'c7120c97-a266-4a90-9f91-35adc9a6efd9';
  */
 const publicResourceTypes = [
   'CapabilityStatement',
-  'CodeSystem',
   'CompartmentDefinition',
   'ImplementationGuide',
   'OperationDefinition',
   'SearchParameter',
-  'StructureDefinition',
-  'ValueSet'
+  'StructureDefinition'
 ];
 
 /**
@@ -42,14 +65,24 @@ const protectedResourceTypes = [
   'User',
 ];
 
-class Repository {
-  private readonly lookupTables: LookupTable[];
+/**
+ * The lookup tables array includes a list of special tables for search indexing.
+ */
+const lookupTables: LookupTable[] = [
+  new HumanNameTable(),
+  new IdentifierTable()
+];
 
-  constructor() {
-    this.lookupTables = [
-      new HumanNameTable(),
-      new IdentifierTable()
-    ];
+/**
+ * The Repository class manages reading and writing to the FHIR repository.
+ * It is a thin layer on top of the database.
+ * Repository instances should be created per author and project.
+ */
+export class Repository {
+  private readonly context;
+
+  constructor(context: RepositoryContext) {
+    this.context = context;
   }
 
   async createBatch(bundle: Bundle): RepositoryResult<Bundle> {
@@ -178,7 +211,9 @@ class Repository {
         ...existing?.meta,
         ...resource.meta,
         versionId: randomUUID(),
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
+        project: this.getProjectId(resource),
+        author: this.context.author
       }
     };
 
@@ -270,10 +305,14 @@ class Repository {
     const columns: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
-      projectId: this.getProjectId(resource),
-      patientId: this.getPatientId(resource),
+      project: meta.project,
       content
     };
+
+    const patientCompartmentProperties = getPatientCompartmentProperties(resourceType);
+    if (patientCompartmentProperties) {
+      columns.patientCompartment = getPatientId(resource, patientCompartmentProperties);
+    }
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
@@ -323,8 +362,8 @@ class Repository {
   }
 
   private async writeLookupTables(resource: Resource): Promise<void> {
-    for (let i = 0; i < this.lookupTables.length; i++) {
-      await this.lookupTables[i].indexResource(resource);
+    for (let i = 0; i < lookupTables.length; i++) {
+      await lookupTables[i].indexResource(resource);
     }
   }
 
@@ -333,7 +372,7 @@ class Repository {
   }
 
   private getLookupTable(searchParam: SearchParameter): LookupTable | undefined {
-    for (const lookupTable of this.lookupTables) {
+    for (const lookupTable of lookupTables) {
       if (lookupTable.isIndexed(searchParam)) {
         return lookupTable;
       }
@@ -341,6 +380,14 @@ class Repository {
     return undefined;
   }
 
+  /**
+   * Returns the project ID for the resource.
+   * If it is a public resource type, then returns the public project ID.
+   * If it is a protected resource type, then returns the Medplum project ID.
+   * Otherwise, by default, return the current context project ID.
+   * @param resource The FHIR resource.
+   * @returns The project ID.
+   */
   private getProjectId(resource: Resource): string | undefined {
     if (publicResourceTypes.includes(resource.resourceType)) {
       return PUBLIC_PROJECT_ID;
@@ -350,58 +397,96 @@ class Repository {
       return MEDPLUM_PROJECT_ID;
     }
 
-    // return 'auth token projectId';
-    return '00000000-0000-4000-0000-000000000000';
-  }
-
-  /**
-   * Returns the patient ID from a resource.
-   * See Patient Compatment: https://www.hl7.org/fhir/compartmentdefinition-patient.json.html
-   * @param resource The resource.
-   * @returns The patient ID if found; undefined otherwise.
-   */
-  private getPatientId(resource: Resource): string | undefined {
-    const properties = ['patient', 'subject', 'actor', 'author', 'recipient'];
-    for (const property of properties) {
-      if (property in resource) {
-        const value: Reference | Reference[] | undefined = (resource as any)[property];
-        const patientId = this.getPatientIdFromReferenceProperty(value);
-        if (patientId) {
-          return patientId;
-        }
-      }
-    }
-
-    return undefined;
-  }
-
-  private getPatientIdFromReferenceProperty(reference: Reference | Reference[] | undefined): string | undefined {
-    if (!reference) {
-      return undefined;
-    }
-    if (Array.isArray(reference)) {
-      return this.getPatientIdFromReferenceArray(reference);
-    } else {
-      return this.getPatientIdFromReference(reference);
-    }
-  }
-
-  private getPatientIdFromReferenceArray(references: Reference[]): string | undefined {
-    for (let i = 0; i < references.length; i++) {
-      const result = this.getPatientIdFromReference(references[i]);
-      if (result) {
-        return result;
-      }
-    }
-    return undefined;
-  }
-
-  private getPatientIdFromReference(reference: Reference): string | undefined {
-    if (reference.reference?.startsWith('Patient/')) {
-      return reference.reference.replace('Patient/', '');
-    }
-    return undefined;
+    return this.context.project;
   }
 }
 
-export const repo = new Repository();
+/**
+ * Returns the list of patient compartment properties, if the resource type is in a patient compartment.
+ * Returns undefined otherwise.
+ * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
+ * @param resourceType The resource type.
+ * @returns List of property names if in patient compartment; undefined otherwise.
+ */
+function getPatientCompartmentProperties(resourceType: string): string[] | undefined {
+  const resourceList = patientCompartment.resource as CompartmentDefinitionResource[];
+  for (const resource of resourceList) {
+    if (resource.code === resourceType) {
+      return resource.param;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Returns the patient ID from a resource.
+ * See Patient Compatment: https://www.hl7.org/fhir/compartmentdefinition-patient.json.html
+ * @param resource The resource.
+ * @returns The patient ID if found; undefined otherwise.
+ */
+ function getPatientId(resource: Resource, properties: string[]): string | undefined {
+  if (resource.resourceType === 'Patient') {
+    return resource.id;
+  }
+
+  // const properties = ['patient', 'subject', 'actor', 'author', 'recipient'];
+  for (const property of properties) {
+    if (property in resource) {
+      const value: Reference | Reference[] | undefined = (resource as any)[property];
+      const patientId = getPatientIdFromReferenceProperty(value);
+      if (patientId) {
+        return patientId;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Tries to return a patient ID from a reference or array of references.
+ * @param reference A FHIR reference or array of references.
+ * @returns The patient ID if found; undefined otherwise.
+ */
+function getPatientIdFromReferenceProperty(reference: Reference | Reference[] | undefined): string | undefined {
+  if (!reference) {
+    return undefined;
+  }
+  if (Array.isArray(reference)) {
+    return getPatientIdFromReferenceArray(reference);
+  } else {
+    return getPatientIdFromReference(reference);
+  }
+}
+
+/**
+ * Tries to return a patient ID from an array of references.
+ * @param references Array of FHIR references.
+ * @returns The patient ID if found; undefined otherwise.
+ */
+function getPatientIdFromReferenceArray(references: Reference[]): string | undefined {
+  for (let i = 0; i < references.length; i++) {
+    const result = getPatientIdFromReference(references[i]);
+    if (result) {
+      return result;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Tries to return a patient ID from a FHIR reference.
+ * @param reference A FHIR reference.
+ * @returns The patient ID if found; undefined otherwise.
+ */
+function getPatientIdFromReference(reference: Reference): string | undefined {
+  if (reference.reference?.startsWith('Patient/')) {
+    return reference.reference.replace('Patient/', '');
+  }
+  return undefined;
+}
+
+export const repo = new Repository({
+  project: MEDPLUM_PROJECT_ID,
+  author: 'system',
+});
