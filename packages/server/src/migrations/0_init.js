@@ -9,9 +9,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('name', 128);
     t.string('owner', 128);
     t.string('patient', 128);
@@ -32,9 +31,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -69,9 +66,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('actuality', 128);
     t.string('category', 128);
     t.date('date');
@@ -97,9 +93,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('asserter', 128);
     t.string('category', 128);
     t.string('clinical-status', 128);
@@ -128,9 +123,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('actor', 128);
     t.string('appointment-type', 128);
     t.string('based-on', 128);
@@ -160,9 +154,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('actor', 128);
     t.string('appointment', 128);
     t.string('location', 128);
@@ -182,9 +175,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('action', 128);
     t.string('address', 128);
     t.string('agent', 128);
@@ -216,9 +208,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('author', 128);
     t.string('code', 128);
     t.date('created');
@@ -237,9 +228,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('Binary_History', t => {
@@ -253,9 +242,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('BiologicallyDerivedProduct_History', t => {
@@ -269,9 +256,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('location', 128);
     t.string('morphology', 128);
     t.string('patient', 128);
@@ -288,9 +274,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composition', 128);
     t.string('message', 128);
     t.date('timestamp');
@@ -308,9 +292,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -347,9 +329,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('activity-code', 128);
@@ -382,9 +363,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('category', 128);
@@ -405,9 +385,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('CatalogEntry_History', t => {
@@ -421,9 +399,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('account', 128);
     t.string('code', 128);
     t.string('context', 128);
@@ -453,9 +430,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -483,9 +458,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('care-team', 128);
     t.date('created');
     t.string('detail-udi', 128);
@@ -515,9 +489,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('created');
     t.string('disposition', 128);
     t.string('insurer', 128);
@@ -541,9 +514,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('assessor', 128);
@@ -569,9 +541,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -604,9 +574,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('based-on', 128);
     t.string('category', 128);
     t.string('encounter', 128);
@@ -634,9 +603,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('authored');
     t.string('based-on', 128);
     t.string('category', 128);
@@ -665,9 +633,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -695,9 +661,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('type', 128);
@@ -728,9 +693,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -769,9 +732,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.string('patient', 128);
     t.string('abatement-age', 128);
@@ -805,9 +767,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('action', 128);
@@ -835,9 +796,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('authority', 128);
     t.string('domain', 128);
     t.string('instantiates', 128);
@@ -860,9 +819,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('beneficiary', 128);
     t.string('class-type', 128);
     t.string('class-value', 128);
@@ -886,9 +844,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('created');
     t.string('enterer', 128);
     t.string('facility', 128);
@@ -908,9 +865,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('created');
     t.string('disposition', 128);
     t.string('insurer', 128);
@@ -932,9 +888,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('author', 128);
     t.string('code', 128);
@@ -953,9 +908,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('device-name', 128);
     t.string('location', 128);
     t.string('manufacturer', 128);
@@ -980,9 +933,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('parent', 128);
     t.string('type', 128);
   });
@@ -998,9 +949,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('category', 128);
     t.string('parent', 128);
     t.string('source', 128);
@@ -1018,9 +967,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
@@ -1051,9 +999,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('device', 128);
     t.string('subject', 128);
@@ -1070,9 +1017,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.date('date');
     t.string('patient', 128);
@@ -1101,9 +1047,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('type', 128);
     t.string('author', 128);
@@ -1129,9 +1074,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('type', 128);
     t.string('encounter', 128);
@@ -1169,9 +1113,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -1200,9 +1142,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('type', 128);
@@ -1238,9 +1179,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('connection-type', 128);
     t.string('name', 128);
     t.string('organization', 128);
@@ -1259,9 +1198,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('status', 128);
     t.string('subject', 128);
@@ -1278,9 +1216,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('request', 128);
     t.string('status', 128);
   });
@@ -1296,9 +1232,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('type', 128);
@@ -1320,9 +1255,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -1357,9 +1290,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -1394,9 +1325,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -1431,9 +1360,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -1459,9 +1386,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('care-team', 128);
     t.string('claim', 128);
     t.string('coverage', 128);
@@ -1491,9 +1417,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.date('date');
     t.string('patient', 128);
@@ -1515,9 +1440,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('encounter', 128);
@@ -1536,9 +1460,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('achievement-status', 128);
     t.string('category', 128);
@@ -1559,9 +1482,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -1589,9 +1510,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('actual', 128);
     t.string('characteristic', 128);
     t.string('code', 128);
@@ -1614,9 +1534,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('patient', 128);
     t.string('request', 128);
     t.string('subject', 128);
@@ -1633,9 +1551,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.boolean('active');
     t.string('characteristic', 128);
     t.string('coverage-area', 128);
@@ -1660,9 +1576,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('basedon', 128);
     t.string('bodysite', 128);
@@ -1692,9 +1607,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('location', 128);
@@ -1723,9 +1637,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('dose-status', 128);
     t.string('immunization-event', 128);
@@ -1745,9 +1658,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('information', 128);
     t.string('patient', 128);
@@ -1768,9 +1680,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -1802,9 +1712,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -1831,9 +1739,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('account', 128);
     t.date('date');
     t.string('issuer', 128);
@@ -1859,9 +1766,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composed-of', 128);
     t.string('content-type', 128);
     t.string('context', 128);
@@ -1898,9 +1803,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('author', 128);
     t.string('item', 128);
     t.string('source', 128);
@@ -1917,9 +1820,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.date('date');
     t.string('patient', 128);
@@ -1944,9 +1846,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -1974,9 +1874,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -2011,9 +1909,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('evaluated-resource', 128);
     t.string('measure', 128);
@@ -2035,9 +1932,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('based-on', 128);
     t.date('created');
     t.string('device', 128);
@@ -2063,9 +1959,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('code', 128);
     t.date('expiration-date');
     t.string('form', 128);
@@ -2087,9 +1981,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.string('patient', 128);
     t.string('context', 128);
@@ -2115,9 +2008,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.string('patient', 128);
     t.string('medication', 128);
@@ -2145,9 +2037,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('classification', 128);
     t.string('classification-type', 128);
     t.string('code', 128);
@@ -2174,9 +2064,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.string('patient', 128);
     t.string('medication', 128);
@@ -2205,9 +2094,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.string('patient', 128);
     t.string('medication', 128);
@@ -2231,9 +2119,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('name', 128);
     t.string('name-language', 128);
   });
@@ -2249,9 +2135,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('country', 128);
     t.string('holder', 128);
     t.string('status', 128);
@@ -2269,9 +2153,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('subject', 128);
   });
 
@@ -2286,9 +2168,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('subject', 128);
   });
 
@@ -2303,9 +2183,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('MedicinalProductIngredient_History', t => {
@@ -2319,9 +2197,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('subject', 128);
   });
 
@@ -2336,9 +2212,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('MedicinalProductManufactured_History', t => {
@@ -2352,9 +2226,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('subject', 128);
   });
 
@@ -2369,9 +2241,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('route', 128);
     t.string('target-species', 128);
   });
@@ -2387,9 +2257,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('subject', 128);
   });
 
@@ -2404,9 +2272,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -2438,9 +2304,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('author', 128);
     t.string('code', 128);
     t.string('destination', 128);
@@ -2468,9 +2332,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('chromosome', 128);
     t.string('patient', 128);
     t.string('referenceseqid', 128);
@@ -2496,9 +2359,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -2531,9 +2392,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('encounter', 128);
     t.string('additive', 128);
@@ -2558,9 +2418,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.date('date');
     t.string('patient', 128);
@@ -2611,9 +2470,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('ObservationDefinition_History', t => {
@@ -2627,9 +2484,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -2665,9 +2520,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('OperationOutcome_History', t => {
@@ -2681,9 +2534,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.boolean('active');
     t.string('address', 128);
     t.string('address-city', 128);
@@ -2709,9 +2560,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.boolean('active');
     t.date('date');
     t.string('email', 128);
@@ -2738,9 +2587,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('Parameters_History', t => {
@@ -2754,9 +2601,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.boolean('active');
     t.string('address', 128);
     t.string('address-city', 128);
@@ -2792,9 +2638,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.date('created');
     t.string('payment-status', 128);
     t.string('provider', 128);
@@ -2814,9 +2658,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.date('created');
     t.string('disposition', 128);
     t.string('outcome', 128);
@@ -2837,9 +2679,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -2871,9 +2712,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -2910,9 +2749,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -2942,9 +2779,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('email', 128);
     t.string('phone', 128);
     t.string('telecom', 128);
@@ -2970,9 +2805,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.date('date');
     t.string('patient', 128);
@@ -3001,9 +2835,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('agent', 128);
     t.string('agent-role', 128);
     t.string('agent-type', 128);
@@ -3027,9 +2860,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('code', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -3061,9 +2892,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('author', 128);
     t.date('authored');
     t.string('based-on', 128);
@@ -3087,9 +2917,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('address', 128);
     t.string('address-city', 128);
     t.string('address-country', 128);
@@ -3119,9 +2948,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('author', 128);
     t.date('authored');
     t.string('code', 128);
@@ -3148,9 +2976,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -3185,9 +3011,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('composed-of', 128);
     t.string('context', 128);
     t.string('context-quantity', 128);
@@ -3222,9 +3046,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('category', 128);
     t.date('date');
     t.string('focus', 128);
@@ -3250,9 +3072,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('individual', 128);
     t.string('patient', 128);
@@ -3271,9 +3092,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('patient', 128);
     t.string('encounter', 128);
@@ -3296,9 +3116,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3327,9 +3145,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.boolean('active');
     t.string('actor', 128);
     t.date('date');
@@ -3349,9 +3166,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3384,9 +3199,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('code', 128);
     t.string('patient', 128);
     t.string('encounter', 128);
@@ -3420,9 +3234,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('appointment-type', 128);
     t.string('schedule', 128);
     t.string('service-category', 128);
@@ -3443,9 +3255,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('accession', 128);
     t.string('bodysite', 128);
     t.date('collected');
@@ -3470,9 +3281,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('container', 128);
     t.string('type', 128);
   });
@@ -3488,9 +3297,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3529,9 +3336,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3559,9 +3364,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('contact', 128);
     t.string('criteria', 128);
     t.string('payload', 128);
@@ -3581,9 +3384,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('category', 128);
     t.string('code', 128);
     t.string('container-identifier', 128);
@@ -3604,9 +3405,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('SubstanceNucleicAcid_History', t => {
@@ -3620,9 +3419,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('SubstancePolymer_History', t => {
@@ -3636,9 +3433,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('SubstanceProtein_History', t => {
@@ -3652,9 +3447,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('SubstanceReferenceInformation_History', t => {
@@ -3668,9 +3461,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('SubstanceSourceMaterial_History', t => {
@@ -3684,9 +3475,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('code', 128);
   });
 
@@ -3701,9 +3490,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('receiver', 128);
     t.string('status', 128);
@@ -3721,9 +3509,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.date('date');
     t.string('category', 128);
     t.string('requester', 128);
@@ -3743,9 +3530,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.date('authored-on');
     t.string('based-on', 128);
     t.string('business-status', 128);
@@ -3777,9 +3562,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3807,9 +3590,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.date('issued');
     t.string('participant', 128);
     t.string('result', 128);
@@ -3828,9 +3609,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3859,9 +3638,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('context', 128);
     t.string('context-quantity', 128);
     t.string('context-type', 128);
@@ -3892,9 +3669,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('target', 128);
   });
 
@@ -3909,9 +3684,8 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
+    t.uuid('patientCompartment').notNullable();
     t.string('patient', 128);
     t.string('encounter', 128);
     t.date('datewritten');
@@ -3930,9 +3704,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('name', 128);
   });
 
@@ -3947,9 +3719,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('ClientApplication_History', t => {
@@ -3963,9 +3733,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.string('email', 128);
   });
 
@@ -3980,9 +3748,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('Login_History', t => {
@@ -3996,9 +3762,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
   });
 
   await knex.schema.createTable('PasswordChangeRequest_History', t => {
@@ -4012,9 +3776,7 @@ export async function up(knex) {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
+    t.uuid('project').notNullable();
     t.boolean('active');
   });
 

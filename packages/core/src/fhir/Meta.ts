@@ -5,7 +5,6 @@
 
 import { Coding } from './Coding';
 import { Extension } from './Extension';
-import { Reference } from './Reference';
 
 /**
  * The metadata about a resource. This is content in the resource that is
@@ -75,15 +74,10 @@ export interface Meta {
   /**
    * The project that contains this resource.
    */
-  readonly project?: Reference;
+  readonly project?: string;
 
   /**
    * The individual, device or organization who initiated the last change.
    */
-  readonly who?: Reference;
-
-  /**
-   * The individual, device, or organization for whom the change was made.
-   */
-  readonly onBehalfOf?: Reference;
+  readonly author?: string;
 }

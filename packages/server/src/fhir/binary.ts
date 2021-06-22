@@ -6,7 +6,7 @@ import { IncomingMessage } from 'http';
 import path from 'path';
 import { asyncWrap } from '../async';
 import { isOk, sendOutcome } from './outcomes';
-import { repo } from './repo';
+import { Repository } from './repo';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 
@@ -22,6 +22,7 @@ export const binaryRouter = Router();
 
 // Create a binary
 binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
+  const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.createResource<Binary>({
     resourceType: 'Binary',
     contentType: req.get('Content-Type')
@@ -36,6 +37,7 @@ binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
 // Update a binary
 binaryRouter.put('/:id', asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.updateResource<Binary>({
     resourceType: 'Binary',
     id,
@@ -51,6 +53,7 @@ binaryRouter.put('/:id', asyncWrap(async (req: Request, res: Response) => {
 // Get binary content
 binaryRouter.get('/:id', asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource('Binary', id);
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);

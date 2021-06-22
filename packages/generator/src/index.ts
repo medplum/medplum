@@ -27,6 +27,7 @@ const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExt
 
 const searchParams = readJson('fhir/r4/search-parameters.json');
 const schema = readJson('fhir/r4/fhir.schema.json');
+const patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json');
 const definitions = schema.definitions;
 
 const fhirTypes: FhirType[] = [];
@@ -217,9 +218,11 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
   b.append('t.uuid(\'id\').notNullable().primary();');
   b.append('t.text(\'content\').notNullable();');
   b.append('t.dateTime(\'lastUpdated\').notNullable();');
-  b.append('t.uuid(\'projectId\');');
-  b.append('t.uuid(\'authorId\');');
-  b.append('t.uuid(\'patientId\');');
+  b.append('t.uuid(\'project\').notNullable();');
+
+  if (isInPatientCompartment(resourceType)) {
+    b.append('t.uuid(\'patientCompartment\').notNullable();');
+  }
 
   for (const entry of searchParams.entry) {
     const searchParam = entry.resource;
@@ -303,6 +306,21 @@ function buildMigrationDown(b: FileBuilder): void {
   b.append('await knex.schema.dropTable(\'Identifier\');');
   b.indentCount--;
   b.append('}');
+}
+
+/**
+ * Returns true if the resource type can be in a patient compartment.
+ * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
+ * @param resourceType The resource type.
+ * @returns True if the resource type can be in a patient compartment.
+ */
+function isInPatientCompartment(resourceType: string): boolean {
+  for (const resource of patientCompartment.resource) {
+    if (resource.code === resourceType) {
+      return resource.param && resource.param.length > 0;
+    }
+  }
+  return false;
 }
 
 function buildImports(fhirType: FhirType, includedTypes: Set<string>, referencedTypes: Set<string>): void {

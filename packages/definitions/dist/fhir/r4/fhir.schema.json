@@ -3032,15 +3032,11 @@
         },
         "project": {
           "description": "The project that contains this resource.",
-          "$ref": "#/definitions/Reference"
+          "$ref": "#/definitions/uri"
         },
-        "who": {
+        "author": {
           "description": "The individual, device or organization who initiated the last change.",
-          "$ref": "#/definitions/Reference"
-        },
-        "onBehalfOf": {
-          "description": "The individual, device, or organization for whom the change was made.",
-          "$ref": "#/definitions/Reference"
+          "$ref": "#/definitions/uri"
         }
       },
       "additionalProperties": false

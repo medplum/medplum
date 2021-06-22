@@ -1,9 +1,9 @@
 import { Bundle, BundleEntry } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { allOk, badRequest } from './outcomes';
-import { repo, RepositoryResult } from './repo';
+import { Repository, RepositoryResult } from './repo';
 
-export async function createBatch(bundle: Bundle): RepositoryResult<Bundle> {
+export async function createBatch(repo: Repository, bundle: Bundle): RepositoryResult<Bundle> {
   const bundleType = bundle.type;
   if (!bundleType) {
     return [badRequest('Missing bundle type'), undefined];
