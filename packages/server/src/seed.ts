@@ -1,9 +1,9 @@
 import { Bundle, createReference, Organization, Practitioner, Project, StructureDefinition, User } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
 import bcrypt from 'bcrypt';
-import { readJson } from '../../definitions/dist';
 import { ADMIN_USER_ID, MEDPLUM_ORGANIZATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
-import { isOk, OperationOutcomeError, repo } from "./fhir";
-import { logger } from "./logger";
+import { isOk, OperationOutcomeError, repo } from './fhir';
+import { logger } from './logger';
 
 export async function seedDatabase() {
   if (await isSeeded()) {
@@ -38,7 +38,7 @@ async function isSeeded(): Promise<boolean> {
 /**
  * Creates the public project.
  * This is a special project that is available to all users.
- * It includes "implementation" resources such as CapabilityStatement.
+ * It includes 'implementation' resources such as CapabilityStatement.
  */
 async function createPublicProject() {
   logger.info('Create Public project...');
