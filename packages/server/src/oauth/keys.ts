@@ -1,4 +1,5 @@
 import { JsonWebKey, Operator } from '@medplum/core';
+import { randomBytes } from 'crypto';
 import { fromKeyLike } from 'jose/jwk/from_key_like';
 import { parseJwk } from 'jose/jwk/parse';
 import { SignJWT } from 'jose/jwt/sign';
@@ -9,7 +10,7 @@ import { MedplumServerConfig } from '../config';
 import { isOk, repo } from '../fhir';
 import { logger } from '../logger';
 
-export interface MedplumClaims extends JWTPayload {
+export interface MedplumAccessTokenClaims extends JWTPayload {
   /**
    * OpenID username. Same as JWTPayload.sub.
    */
@@ -22,7 +23,8 @@ export interface MedplumClaims extends JWTPayload {
   scope: string;
 
   /**
-   * Client ID.
+   * Client application ID.
+   * This is a reference a ClientApplication resource.
    */
   client_id: string;
 
@@ -32,6 +34,27 @@ export interface MedplumClaims extends JWTPayload {
    * For example, "Patient/123" or "Practitioner/456".
    */
   profile: string;
+}
+
+export interface MedplumRefreshTokenClaims extends JWTPayload {
+  /**
+   * Client application ID.
+   * This is a reference a ClientApplication resource.
+   */
+  client_id: string;
+
+  /**
+   * Login ID.
+   * This is the UUID of a Login resource.
+   */
+  login_id: string;
+
+  /**
+   * Refresh secret.
+   * Due to the powerful nature of a refresh token,
+   * we use an additional random secret for security.
+   */
+  refresh_secret: string;
 }
 
 /**
@@ -138,12 +161,38 @@ export function getJwks(): { keys: JWK[] } {
 }
 
 /**
+ * Generates a secure random string suitable for a refresh secret.
+ * @returns Secure random string for a refresh secret.
+ */
+export function generateRefreshSecret(): string {
+  return randomBytes(48).toString('hex');
+}
+
+/**
+ * Generates an access token JWT.
+ * @param claims The access token claims.
+ * @returns A well-formed JWT that can be used as an access token.
+ */
+export function generateAccessToken(claims: MedplumAccessTokenClaims): Promise<string> {
+  return generateJwt('1h', claims);
+}
+
+/**
+ * Generates a refresh token JWT.
+ * @param claims The refresh token claims.
+ * @returns A well-formed JWT that can be used as a refresh token.
+ */
+export function generateRefreshToken(claims: MedplumRefreshTokenClaims): Promise<string> {
+  return generateJwt('2w', claims);
+}
+
+/**
  * Generates a JWT.
  * @param exp Expiration time resolved to a time span.
- * @param claims
+ * @param claims The key/value pairs to include in the payload section.
  * @returns Promise to generate and sign the JWT.
  */
-export function generateJwt(exp: '1h' | '2w', claims: MedplumClaims): Promise<string> {
+function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
   if (!signingKey) {
     return Promise.reject('Signing key not initialized');
   }
@@ -172,7 +221,7 @@ export function generateJwt(exp: '1h' | '2w', claims: MedplumClaims): Promise<st
  * @param jwt The jwt token / bearer token.
  * @returns Returns the decoded claims on success.
  */
-export function verifyJwt(token: string): Promise<MedplumClaims> {
+export function verifyJwt(token: string): Promise<{ payload: JWTPayload, protectedHeader: JWSHeaderParameters }> {
   const issuer = serverConfig?.issuer;
   if (!issuer) {
     return Promise.reject('Missing issuer');
@@ -189,8 +238,7 @@ export function verifyJwt(token: string): Promise<MedplumClaims> {
     algorithms: [ALG]
   };
 
-  return jwtVerify(token, getKeyForHeader, verifyOptions)
-    .then(verifyResult => verifyResult.payload as MedplumClaims);
+  return jwtVerify(token, getKeyForHeader, verifyOptions);
 }
 
 /**

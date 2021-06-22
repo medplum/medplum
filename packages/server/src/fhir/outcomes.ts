@@ -79,3 +79,12 @@ export function getStatus(outcome: OperationOutcome): number {
 export function sendOutcome(res: Response, outcome: OperationOutcome): Response<any, Record<string, any>> {
   return res.status(getStatus(outcome)).json(outcome);
 }
+
+export class OperationOutcomeError extends Error {
+  readonly outcome: OperationOutcome;
+
+  constructor(outcome: OperationOutcome) {
+    super(outcome?.issue?.[0].details?.text);
+    this.outcome = outcome;
+  }
+}

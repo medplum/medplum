@@ -1,6 +1,7 @@
 import { ClientApplication, Login, Operator, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { allOk, badRequest, isNotFound, isOk, notFound, repo, RepositoryResult } from '../fhir';
+import { generateRefreshSecret } from './keys';
 
 /**
  * Searches for user by email.
@@ -36,7 +37,12 @@ export async function getUserByEmail(email: string): RepositoryResult<User | und
  * @param password The user's plain text password.
  * @return the user details.
  */
-export async function createLogin(client: ClientApplication, email: string, password: string): RepositoryResult<Login | undefined> {
+export async function createLogin(
+  client: ClientApplication,
+  email: string,
+  password: string,
+  remember: boolean): RepositoryResult<Login | undefined> {
+
   const [outcome, user] = await getUserByEmail(email);
   if (!isOk(outcome) && !isNotFound(outcome)) {
     return [outcome, undefined];
@@ -57,14 +63,16 @@ export async function createLogin(client: ClientApplication, email: string, pass
   }
 
   // TODO: Fetch PractionerRole resources for the user
+  const refreshSecret = remember ? generateRefreshSecret() : undefined;
 
-  return repo.createResource({
+  return repo.createResource<Login>({
     resourceType: 'Login',
     client: {
       reference: client.resourceType + '/' + client.id,
     },
     user: {
       reference: user.resourceType + '/' + user.id
-    }
-  });
+    },
+    refreshSecret
+  } as Login);
 }

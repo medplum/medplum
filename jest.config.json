@@ -31,7 +31,6 @@
     "packages/core",
     "packages/generator",
     "packages/infra",
-    "packages/seeder",
     "packages/server",
     "packages/ui"
   ]

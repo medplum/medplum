@@ -2,9 +2,10 @@ import express from 'express';
 import { initApp } from './app';
 import { loadConfig } from './config';
 import { initDatabase } from './database';
-import { initKeys } from './oauth';
 import { initBinaryStorage } from './fhir';
 import { logger } from './logger';
+import { initKeys } from './oauth';
+import { seedDatabase } from './seed';
 
 async function main() {
   logger.info('Starting Medplum Server...');
@@ -18,6 +19,7 @@ async function main() {
   await initDatabase(config.database);
   await initKeys(config);
   await initBinaryStorage(config.binaryStorage);
+  await seedDatabase();
 
   const app = await initApp(express());
   app.listen(5000);

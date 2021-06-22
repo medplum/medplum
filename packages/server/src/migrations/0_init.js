@@ -3992,22 +3992,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
   });
 
-  await knex.schema.createTable('RefreshToken', t => {
-    t.uuid('id').notNullable().primary();
-    t.text('content').notNullable();
-    t.dateTime('lastUpdated').notNullable();
-    t.uuid('projectId');
-    t.uuid('authorId');
-    t.uuid('patientId');
-  });
-
-  await knex.schema.createTable('RefreshToken_History', t => {
-    t.uuid('versionId').notNullable().primary();
-    t.uuid('id').notNullable();
-    t.text('content').notNullable();
-    t.dateTime('lastUpdated').notNullable();
-  });
-
   await knex.schema.createTable('PasswordChangeRequest', t => {
     t.uuid('id').notNullable().primary();
     t.text('content').notNullable();
@@ -4365,8 +4349,6 @@ export async function down(knex) {
   await knex.schema.dropTable('User_History');
   await knex.schema.dropTable('Login');
   await knex.schema.dropTable('Login_History');
-  await knex.schema.dropTable('RefreshToken');
-  await knex.schema.dropTable('RefreshToken_History');
   await knex.schema.dropTable('PasswordChangeRequest');
   await knex.schema.dropTable('PasswordChangeRequest_History');
   await knex.schema.dropTable('JsonWebKey');

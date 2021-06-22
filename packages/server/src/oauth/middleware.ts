@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { logger } from '../logger';
-import { verifyJwt } from './keys';
+import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 
 export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -11,11 +11,12 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
 
   try {
     const verifyResult = await verifyJwt(token);
-    res.locals.user = verifyResult.username;
-    res.locals.profile = verifyResult.profile;
+    const claims = verifyResult.payload as MedplumAccessTokenClaims;
+    res.locals.user = claims.username;
+    res.locals.profile = claims.profile;
   } catch (err) {
     logger.error('verify error', err);
-    return res.sendStatus(403);
+    return res.sendStatus(401);
   }
 
   next();

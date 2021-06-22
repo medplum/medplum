@@ -154,7 +154,6 @@ export * from './QuestionnaireResponse';
 export * from './Range';
 export * from './Ratio';
 export * from './Reference';
-export * from './RefreshToken';
 export * from './RelatedArtifact';
 export * from './RelatedPerson';
 export * from './RequestGroup';

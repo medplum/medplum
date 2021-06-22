@@ -25,7 +25,8 @@ export function SignInForm(props: SignInFormProps) {
       e.preventDefault();
 
       const formData = parseForm(e.target as HTMLFormElement);
-      medplum.signIn(formData.email, formData.password, role, scope)
+      const remember = formData.remember === 'true';
+      medplum.signIn(formData.email, formData.password, role, scope, remember)
         .then(() => {
           if (props.onSuccess) {
             props.onSuccess();
@@ -45,6 +46,9 @@ export function SignInForm(props: SignInFormProps) {
       </FormSection>
       <FormSection title="Password">
         <TextField id="password" type="password" required={true} outcome={outcome} />
+      </FormSection>
+      <FormSection title="Remember me">
+        <input type="checkbox" name="remember" value="true" />
       </FormSection>
       <div className="right">
         <Button type="submit">Submit</Button>

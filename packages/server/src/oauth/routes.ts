@@ -1,8 +1,9 @@
 import { ClientApplication } from '@medplum/core';
 import { Request, Response, Router } from 'express';
+import { JWSHeaderParameters, JWTPayload } from 'jose/webcrypto/types';
 import { asyncWrap } from '../async';
 import { badRequest, isOk, repo, sendOutcome } from '../fhir';
-import { generateJwt } from './keys';
+import { generateAccessToken, verifyJwt } from './keys';
 
 export const oauthRouter = Router();
 
@@ -21,10 +22,10 @@ oauthRouter.post('/token', asyncWrap(async (req: Request, res: Response) => {
   }
 
   switch (grantType) {
-    case 'authorization_code':
-      return handleAuthorizationCode(req, res);
     case 'client_credentials':
       return handleClientCredentials(req, res);
+    case 'authorization_code':
+      return handleAuthorizationCode(req, res);
     case 'refresh_token':
       return handleRefreshToken(req, res);
     default:
@@ -105,7 +106,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
   }
 
   const scope = req.body.scope as string;
-  const accessToken = await generateJwt('1h', {
+  const accessToken = await generateAccessToken({
     sub: client.id as string,
     username: client.id as string,
     client_id: client.id as string,
@@ -126,5 +127,21 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
 }
 
 async function handleRefreshToken(req: Request, res: Response): Promise<Response> {
+  const refreshToken = req.body.refresh_token;
+  if (!refreshToken) {
+    return sendOutcome(res, badRequest('Missing refresh_token'));
+  }
+
+  let claims: { payload: JWTPayload, protectedHeader: JWSHeaderParameters };
+  try {
+    claims = await verifyJwt(refreshToken);
+  } catch (err) {
+    return sendOutcome(res, badRequest('Invalid refresh_token'));
+  }
+
+  const { payload, protectedHeader } = claims;
+  console.log('payload', payload);
+  console.log('protectedHeaders', protectedHeader);
+
   return sendOutcome(res, badRequest('Not implemented'));
 }
