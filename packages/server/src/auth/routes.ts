@@ -1,16 +1,12 @@
-import { ClientApplication, ProfileResource, User } from '@medplum/core';
+import { ClientApplication, createReference, getReferenceString, Login, ProfileResource, User } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { badRequest, invalidRequest, isOk, repo, sendOutcome } from '../fhir';
-import { generateJwt } from '../oauth';
+import { generateAccessToken, generateRefreshToken } from '../oauth';
 import { createLogin } from '../oauth/utils';
 
 export const authRouter = Router();
-
-authRouter.post('/loginx', asyncWrap(async (req: Request, res: Response) => {
-  res.status(200).json({ ok: true });
-}));
 
 authRouter.post(
   '/login',
@@ -30,7 +26,12 @@ authRouter.post(
       resourceType: 'ClientApplication'
     };
 
-    const [loginOutcome, login] = await createLogin(client, req.body.email, req.body.password);
+    const [loginOutcome, login] = await createLogin(
+      client,
+      req.body.email,
+      req.body.password,
+      req.body.remember);
+
     if (!isOk(loginOutcome)) {
       return sendOutcome(res, loginOutcome);
     }
@@ -71,29 +72,25 @@ authRouter.post(
       return sendOutcome(res, profileOutcome);
     }
 
-    await repo.updateResource({
+    await repo.updateResource<Login>({
       ...login,
       scope: req.body.scope,
-      profile: {
-        reference: profile.resourceType + '/' + profile.id
-      }
+      profile: createReference(profile),
     });
 
-    const accessToken = await generateJwt('1h', {
+    const accessToken = await generateAccessToken({
       sub: user.id as string,
       username: user.id as string,
       scope: req.body.scope,
       client_id: client.id as string,
-      profile: profile.resourceType + '/' + profile.id
+      profile: getReferenceString(profile)
     });
 
-    const refreshToken = await generateJwt('2w', {
-      sub: user.id as string,
-      username: user.id as string,
-      scope: req.body.scope,
+    const refreshToken = req.body.remember ? await generateRefreshToken({
       client_id: client.id as string,
-      profile: profile.resourceType + '/' + profile.id
-    });
+      login_id: login.id as string,
+      refresh_secret: login.refreshSecret as string
+    }) : undefined;
 
     res.status(200).json({
       user,

@@ -121,7 +121,6 @@ import { Project } from './Project';
 import { Provenance } from './Provenance';
 import { Questionnaire } from './Questionnaire';
 import { QuestionnaireResponse } from './QuestionnaireResponse';
-import { RefreshToken } from './RefreshToken';
 import { RelatedPerson } from './RelatedPerson';
 import { RequestGroup } from './RequestGroup';
 import { ResearchDefinition } from './ResearchDefinition';
@@ -275,7 +274,6 @@ export type Resource = Account
   | Provenance
   | Questionnaire
   | QuestionnaireResponse
-  | RefreshToken
   | RelatedPerson
   | RequestGroup
   | ResearchDefinition

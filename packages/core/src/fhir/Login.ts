@@ -62,4 +62,10 @@ export interface Login {
    * OAuth scope or scopes.
    */
   readonly scope?: string;
+
+  /**
+   * Optional secure random string that can be used in an OAuth refresh
+   * token.
+   */
+  readonly refreshSecret?: string;
 }

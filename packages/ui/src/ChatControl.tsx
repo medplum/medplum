@@ -1,4 +1,4 @@
-import { Communication, Resource } from '@medplum/core';
+import { Communication, createReference, Resource } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { parseForm } from './FormUtils';
@@ -14,7 +14,7 @@ export function ChatControl(props: ChatControlProps) {
   const medplum = useMedplum();
 
   const sender = medplum.getProfile();
-  const senderRef = sender ? medplum.createReference(sender) : undefined;
+  const senderRef = sender ? createReference(sender) : undefined;
 
   const [comms, setComms] = useState<Communication[]>([]);
   const commsRef = useRef(comms);

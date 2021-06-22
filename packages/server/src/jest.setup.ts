@@ -1,10 +1,10 @@
 import { ClientApplication } from '@medplum/core';
 import { isOk, repo } from './fhir';
-import { generateJwt } from './oauth';
+import { generateAccessToken } from './oauth';
 
 export async function initTestAuth() {
   const client = await initTestClientApplication();
-  const accessToken = await generateJwt('1h', {
+  const accessToken = await generateAccessToken({
     sub: client.id as string,
     username: client.id as string,
     client_id: client.id as string,

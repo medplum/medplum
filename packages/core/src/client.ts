@@ -97,6 +97,7 @@ interface LoginRequest {
   password: string;
   role: string;
   scope: string;
+  remember: boolean;
 }
 
 interface LoginResponse {
@@ -160,36 +161,10 @@ export class MedplumClient extends EventTarget {
    * Clears all auth state including local storage and session storage.
    */
   clear(): void {
-    sessionStorage.clear();
     this.storage.clear();
     this.user = undefined;
     this.profile = undefined;
     this.dispatchEvent(new Event('change'));
-  }
-
-  /**
-   * Returns a display string for the resource.
-   * @param resource The input resource.
-   * @return Human friendly display string.
-   */
-  getDisplayString(resource: Resource): string {
-    if (resource.resourceType === 'Patient' ||
-      resource.resourceType === 'Practitioner' ||
-      resource.resourceType === 'Person' ||
-      resource.resourceType === 'RelatedPerson') {
-      const names = resource.name;
-      if (names && names.length > 0) {
-        return formatHumanName(names[0]);
-      }
-    }
-    return resource.resourceType + '/' + resource.id;
-  }
-
-  createReference(resource: Resource): Reference {
-    return {
-      reference: resource.resourceType + '/' + resource.id,
-      display: this.getDisplayString(resource)
-    };
   }
 
   get(url: string, blob?: boolean): Promise<any> {
@@ -210,13 +185,15 @@ export class MedplumClient extends EventTarget {
    * @param password
    * @param role
    * @param scope
+   * @param remember Optional flag to "remember" to generate a refresh token and persist in local storage.
    * @returns
    */
   signIn(
     email: string,
     password: string,
     role: string,
-    scope: string): Promise<User> {
+    scope: string,
+    remember?: boolean): Promise<User> {
 
     const url = this.baseUrl + 'auth/login';
 
@@ -225,7 +202,8 @@ export class MedplumClient extends EventTarget {
       email,
       password,
       role,
-      scope
+      scope,
+      remember: !!remember
     };
 
     return this.post(url, body)
@@ -526,14 +504,14 @@ export class MedplumClient extends EventTarget {
     this.clear();
 
     const pkceState = getRandomString();
-    sessionStorage.setItem('pkceState', pkceState);
+    this.storage.setString('pkceState', pkceState);
 
     const codeVerifier = getRandomString();
-    sessionStorage.setItem('codeVerifier', codeVerifier);
+    this.storage.setString('codeVerifier', codeVerifier);
 
     const arrayHash = await encryptSHA256(codeVerifier);
     const codeChallenge = arrayBufferToBase64(arrayHash);
-    sessionStorage.setItem('codeChallenge', codeChallenge);
+    this.storage.setString('codeChallenge', codeChallenge);
 
     const scope = 'launch/patient openid fhirUser offline_access user/*.*';
 
@@ -555,13 +533,13 @@ export class MedplumClient extends EventTarget {
   private processCode(code: string): Promise<User> {
     console.log('Processing authorization code...');
 
-    const pkceState = sessionStorage.getItem('pkceState');
+    const pkceState = this.storage.getString('pkceState');
     if (!pkceState) {
       this.clear();
       throw new Error('Invalid PCKE state');
     }
 
-    const codeVerifier = sessionStorage.getItem('codeVerifier');
+    const codeVerifier = this.storage.getString('codeVerifier');
     if (!codeVerifier) {
       this.clear();
       throw new Error('Invalid PCKE code verifier');
@@ -659,4 +637,43 @@ function getBaseUrl() {
  */
 export function keyReplacer(k: string, v: string) {
   return k === '__key' ? undefined : v;
+}
+
+/**
+ * Creates a reference resource.
+ * @param resource The FHIR reesource.
+ * @returns A reference resource.
+ */
+export function createReference(resource: Resource): Reference {
+  return {
+    reference: getReferenceString(resource),
+    display: getDisplayString(resource)
+  };
+}
+
+/**
+ * Returns a reference string for a resource.
+ * @param resource The FHIR resource.
+ * @returns A reference string of the form resourceType/id.
+ */
+export function getReferenceString(resource: Resource): string {
+  return resource.resourceType + '/' + resource.id;
+}
+
+/**
+ * Returns a display string for the resource.
+ * @param resource The input resource.
+ * @return Human friendly display string.
+ */
+export function getDisplayString(resource: Resource): string {
+  if (resource.resourceType === 'Patient' ||
+    resource.resourceType === 'Practitioner' ||
+    resource.resourceType === 'Person' ||
+    resource.resourceType === 'RelatedPerson') {
+    const names = resource.name;
+    if (names && names.length > 0) {
+      return formatHumanName(names[0]);
+    }
+  }
+  return getReferenceString(resource);
 }

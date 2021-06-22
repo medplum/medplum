@@ -1,7 +1,7 @@
-import { Bundle, Operator } from '@medplum/core';
+import { Bundle, getDisplayString, Operator } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import './Autocomplete.css';
 import { useMedplum } from './MedplumProvider';
+import './Autocomplete.css';
 
 interface AutocompleteResource {
   id: string,
@@ -326,7 +326,7 @@ export function Autocomplete(props: AutocompleteProps) {
         if (entry.resource) {
           resources.push({
             id: entry.resource.id,
-            name: medplum.getDisplayString(entry.resource),
+            name: getDisplayString(entry.resource),
             url: '',
           });
         }
