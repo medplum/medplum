@@ -53,3 +53,20 @@ test('Get /.well-known/jwks.json', async (done) => {
       done();
     });
 });
+
+test('Get /.well-known/openid-configuration', async (done) => {
+  request(app)
+    .get('/.well-known/openid-configuration')
+    .expect(200)
+    .end((err, res) => {
+      expect(res.body.issuer).not.toBeUndefined();
+      expect(res.body.authorization_endpoint).not.toBeUndefined();
+      expect(res.body.token_endpoint).not.toBeUndefined();
+      expect(res.body.userinfo_endpoint).not.toBeUndefined();
+      expect(res.body.jwks_uri).not.toBeUndefined();
+      expect(res.body.id_token_signing_alg_values_supported).not.toBeUndefined();
+      expect(res.body.response_types_supported).not.toBeUndefined();
+      expect(res.body.subject_types_supported).not.toBeUndefined();
+      done();
+    });
+});
