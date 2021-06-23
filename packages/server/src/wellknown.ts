@@ -19,6 +19,11 @@ wellKnownRouter.get('/openid-configuration', (req: Request, res: Response) => {
     id_token_signing_alg_values_supported: [
       'RS256'
     ],
+    grant_types_supported: [
+      'client_credentials',
+      'authorization_code',
+      'refresh_token'
+    ],
     response_types_supported: [
       'code',
       'id_token',
@@ -32,6 +37,9 @@ wellKnownRouter.get('/openid-configuration', (req: Request, res: Response) => {
       'openid',
       'profile',
       'email'
+    ],
+    request_object_signing_alg_values_supported: [
+      'none'
     ]
   });
 });

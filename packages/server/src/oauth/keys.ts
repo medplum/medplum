@@ -10,13 +10,27 @@ import { MedplumServerConfig } from '../config';
 import { isOk, repo } from '../fhir';
 import { logger } from '../logger';
 
-export interface MedplumIdTokenClaims extends JWTPayload {
+export interface MedplumBaseClaims extends JWTPayload {
+  /**
+   * Client application ID.
+   * This is a reference a ClientApplication resource.
+   */
+  client_id: string;
+
+  /**
+   * Login ID.
+   * This is the UUID of the Login resource.
+   */
+  login_id: string;
+}
+
+export interface MedplumIdTokenClaims extends MedplumBaseClaims {
   name?: string;
 
   nonce: string;
 }
 
-export interface MedplumAccessTokenClaims extends JWTPayload {
+export interface MedplumAccessTokenClaims extends MedplumBaseClaims {
   /**
    * OpenID username. Same as JWTPayload.sub.
    */
@@ -29,12 +43,6 @@ export interface MedplumAccessTokenClaims extends JWTPayload {
   scope: string;
 
   /**
-   * Client application ID.
-   * This is a reference a ClientApplication resource.
-   */
-  client_id: string;
-
-  /**
    * FHIR profile or role.
    * Qualified reference to the FHIR resource.
    * For example, "Patient/123" or "Practitioner/456".
@@ -42,19 +50,7 @@ export interface MedplumAccessTokenClaims extends JWTPayload {
   profile: string;
 }
 
-export interface MedplumRefreshTokenClaims extends JWTPayload {
-  /**
-   * Client application ID.
-   * This is a reference a ClientApplication resource.
-   */
-  client_id: string;
-
-  /**
-   * Login ID.
-   * This is the UUID of a Login resource.
-   */
-  login_id: string;
-
+export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
   /**
    * Refresh secret.
    * Due to the powerful nature of a refresh token,

@@ -1,13 +1,12 @@
 import { ClientApplication, Login, OperationOutcome } from '@medplum/core';
 import { Request, Response, Router } from 'express';
-import { JWSHeaderParameters, JWTPayload } from 'jose/webcrypto/types';
 import { asyncWrap } from '../async';
 import { badRequest, isOk, repo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
 import { renderTemplate } from '../templates';
-import { generateAccessToken, MedplumIdTokenClaims, verifyJwt } from './keys';
+import { generateAccessToken, MedplumIdTokenClaims, MedplumRefreshTokenClaims, verifyJwt } from './keys';
 import { authenticateToken } from './middleware';
-import { getAuthTokens, getJsonDate, tryLogin } from './utils';
+import { getAuthTokens, getJsonDate, getReferenceIdPart, revokeLogin, tryLogin } from './utils';
 
 export const oauthRouter = Router();
 
@@ -48,7 +47,8 @@ oauthRouter.post('/authorize', asyncWrap(async (req: Request, res: Response) => 
     return renderTemplate(res, 'login', buildView(outcome));
   }
 
-  res.cookie('medplum', login?.id as string, { httpOnly: true });
+  const cookieName = 'medplum-' + req.query.client_id;
+  res.cookie(cookieName, login?.id as string, { httpOnly: true });
 
   const redirectUrl = new URL(req.query.redirect_uri as string);
   redirectUrl.searchParams.append('code', login?.id as string);
@@ -84,7 +84,8 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
   let existingLoginId: string | undefined;
   let existingLogin: Login | undefined;
 
-  const cookieLoginId = req.cookies['medplum'];
+  const cookieName = 'medplum-' + client.id;
+  const cookieLoginId = req.cookies[cookieName];
   if (cookieLoginId) {
     existingLoginId = cookieLoginId;
   }
@@ -117,6 +118,12 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
   const responseType = req.query.response_type;
   if (responseType !== 'code') {
     sendErrorRedirect(res, client.redirectUri as string, 'unsupported_response_type', req.query.state as string);
+    return false;
+  }
+
+  const requestObject = req.query.request as string | undefined;
+  if (requestObject) {
+    sendErrorRedirect(res, client.redirectUri as string, 'request_not_supported', req.query.state as string);
     return false;
   }
 
@@ -255,12 +262,12 @@ oauthRouter.post('/scopes', (req: Request, res: Response) => {
 async function handleClientCredentials(req: Request, res: Response): Promise<Response> {
   const clientId = req.body.client_id;
   if (!clientId) {
-    return sendOutcome(res, badRequest('Missing client_id'));
+    return sendTokenError(res, 'invalid_request', 'Missing client_id');
   }
 
   const clientSecret = req.body.client_secret;
   if (!clientSecret) {
-    return sendOutcome(res, badRequest('Missing client_secret'));
+    return sendTokenError(res, 'invalid_request', 'Missing client_secret');
   }
 
   const [readOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', clientId);
@@ -269,19 +276,20 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
   }
 
   if (!client) {
-    return sendOutcome(res, badRequest('Client not found'));
+    return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
   if (!client.secret) {
-    return sendOutcome(res, badRequest('Invalid client'));
+    return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
   if (client.secret !== clientSecret) {
-    return sendOutcome(res, badRequest('Invalid secret'));
+    return sendTokenError(res, 'invalid_request', 'Invalid secret');
   }
 
   const scope = req.body.scope as string;
   const accessToken = await generateAccessToken({
+    login_id: '', // TODO
     sub: client.id as string,
     username: client.id as string,
     client_id: client.id as string,
@@ -300,25 +308,34 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
 async function handleAuthorizationCode(req: Request, res: Response): Promise<Response> {
   const code = req.body.code;
   if (!code) {
-    return sendOutcome(res, badRequest('Missing code'));
+    return sendTokenError(res, 'invalid_request', 'Missing code');
   }
 
   const [loginOutcome, login] = await repo.readResource<Login>('Login', code);
   if (!isOk(loginOutcome)) {
-    return sendOutcome(res, loginOutcome);
+    return sendTokenError(res, 'invalid_request', 'Invalid code');
   }
 
   if (!login) {
-    return sendOutcome(res, badRequest('Invalid token'));
+    return sendTokenError(res, 'invalid_request', 'Invalid code');
+  }
+
+  if (login.granted) {
+    await revokeLogin(login);
+    return sendTokenError(res, 'invalid_grant', 'Token already granted');
+  }
+
+  if (login.revoked) {
+    return sendTokenError(res, 'invalid_grant', 'Token revoked');
   }
 
   const [tokenOutcome, token] = await getAuthTokens(login);
   if (!isOk(tokenOutcome)) {
-    return sendOutcome(res, tokenOutcome);
+    return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
 
   if (!token) {
-    return sendOutcome(res, badRequest('Invalid token'));
+    return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
 
   return res.status(200).json({
@@ -334,21 +351,58 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
 async function handleRefreshToken(req: Request, res: Response): Promise<Response> {
   const refreshToken = req.body.refresh_token;
   if (!refreshToken) {
-    return sendOutcome(res, badRequest('Missing refresh_token'));
+    return sendTokenError(res, 'invalid_request', 'Invalid refresh token');
   }
 
-  let claims: { payload: JWTPayload, protectedHeader: JWSHeaderParameters };
+  let claims: MedplumRefreshTokenClaims;
   try {
-    claims = await verifyJwt(refreshToken);
+    claims = (await verifyJwt(refreshToken)).payload as MedplumRefreshTokenClaims;
   } catch (err) {
-    return sendOutcome(res, badRequest('Invalid refresh_token'));
+    return sendTokenError(res, 'invalid_request', 'Invalid refresh token');
   }
 
-  const { payload, protectedHeader } = claims;
-  console.log('payload', payload);
-  console.log('protectedHeaders', protectedHeader);
+  const [loginOutcome, login] = await repo.readResource<Login>('Login', claims.login_id);
+  if (!isOk(loginOutcome) || !login) {
+    return sendTokenError(res, 'invalid_request', 'Invalid token');
+  }
 
-  return sendOutcome(res, badRequest('Not implemented'));
+  if (login.refreshSecret !== claims.refresh_secret) {
+    return sendTokenError(res, 'invalid_request', 'Invalid token');
+  }
+
+  const authHeader = req.headers.authorization as string | undefined;
+  if (authHeader) {
+    if (!authHeader.startsWith('Basic ')) {
+      return sendTokenError(res, 'invalid_request', 'Invalid authorization header');
+    }
+    const base64Credentials = authHeader.split(' ')[1];
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+    const [clientId, clientSecret] = credentials.split(':');
+    if (clientId !== getReferenceIdPart(login.client)) {
+      return sendTokenError(res, 'invalid_grant', 'Incorrect client');
+    }
+    if (!clientSecret) {
+      return sendTokenError(res, 'invalid_grant', 'Incorrect client secret');
+    }
+  }
+
+  const [tokenOutcome, token] = await getAuthTokens(login);
+  if (!isOk(tokenOutcome)) {
+    return sendTokenError(res, 'invalid_request', 'Invalid token');
+  }
+
+  if (!token) {
+    return sendTokenError(res, 'invalid_request', 'Invalid token');
+  }
+
+  return res.status(200).json({
+    token_type: 'Bearer',
+    scope: login.scope,
+    expires_in: 3600,
+    id_token: token.idToken,
+    access_token: token.accessToken,
+    refresh_token: token.refreshToken
+  });
 }
 
 function buildView(outcome?: OperationOutcome): any {
@@ -368,4 +422,11 @@ function buildView(outcome?: OperationOutcome): any {
   }
 
   return view;
+}
+
+function sendTokenError(res: Response, error: string, description?: string): Response<any, Record<string, any>> {
+  return res.status(400).json({
+    error,
+    error_description: description
+  });
 }

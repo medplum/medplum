@@ -80,4 +80,14 @@ export interface Login {
    * Token, used to prevent token replay attacks.
    */
   readonly nonce?: string;
+
+  /**
+   * Whether a token has been granted for this login.
+   */
+  readonly granted?: boolean;
+
+  /**
+   * Whether this login has been revoked or invalidated.
+   */
+  readonly revoked?: boolean;
 }

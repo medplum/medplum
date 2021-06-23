@@ -120,6 +120,13 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
     return [badRequest('Login missing user'), undefined];
   }
 
+  if (!login.granted) {
+    await repo.updateResource<Login>({
+      ...login,
+      granted: true
+    });
+  }
+
   const idToken = await generateIdToken({
     client_id: clientId,
     login_id: login.id as string,
@@ -150,7 +157,19 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
   }];
 }
 
-function getReferenceIdPart(reference: Reference | undefined): string | undefined {
+export async function revokeLogin(login: Login): Promise<void> {
+  repo.updateResource<Login>({
+    ...login,
+    revoked: true
+  });
+}
+
+/**
+ * Returns the ID portion of a FHIR reference.
+ * @param reference A reference object.
+ * @returns The resource ID portion of the reference.
+ */
+export function getReferenceIdPart(reference: Reference | undefined): string | undefined {
   const str = reference?.reference;
   if (!str) {
     return undefined;

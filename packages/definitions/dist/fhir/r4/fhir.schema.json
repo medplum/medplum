@@ -61185,6 +61185,14 @@
         "nonce": {
           "description": "Optional cryptographically random string that your app adds to the initial request and the authorization server includes inside the ID Token, used to prevent token replay attacks.",
           "$ref": "#/definitions/string"
+        },
+        "granted": {
+          "description": "Whether a token has been granted for this login.",
+          "$ref": "#/definitions/boolean"
+        },
+        "revoked": {
+          "description": "Whether this login has been revoked or invalidated.",
+          "$ref": "#/definitions/boolean"
         }
       }
     },
