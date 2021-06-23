@@ -1,15 +1,13 @@
-import { ClientApplication } from '@medplum/core';
+import { ClientApplication, Login } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { JWSHeaderParameters, JWTPayload } from 'jose/webcrypto/types';
 import { asyncWrap } from '../async';
 import { badRequest, isOk, repo, sendOutcome } from '../fhir';
 import { generateAccessToken, verifyJwt } from './keys';
+import { getAuthTokens, tryLogin } from './login';
+import { authenticateToken } from './middleware';
 
 export const oauthRouter = Router();
-
-oauthRouter.post('/authorize', (req: Request, res: Response) => {
-  res.sendStatus(200);
-});
 
 oauthRouter.post('/token', asyncWrap(async (req: Request, res: Response) => {
   if (!req.is('application/x-www-form-urlencoded')) {
@@ -33,13 +31,111 @@ oauthRouter.post('/token', asyncWrap(async (req: Request, res: Response) => {
   }
 }));
 
-oauthRouter.post('/userinfo', (req: Request, res: Response) => {
-  res.sendStatus(200);
-});
+oauthRouter.get('/authorize', asyncWrap(async (req: Request, res: Response) => {
+  const responseType = req.query.response_type as string | undefined;
+  if (responseType !== 'code') {
+    return res.status(400).send('Unsupported response type');
+  }
 
-oauthRouter.get('/login', (req: Request, res: Response) => {
-  res.sendStatus(200);
-});
+  const clientId = req.query.client_id as string | undefined;
+  if (!clientId) {
+    return res.status(400).send('Missing client_id');
+  }
+
+  const redirectUri = req.query.redirect_uri as string | undefined;
+  if (!redirectUri) {
+    return res.status(400).send('Missing redirect_uri');
+  }
+
+  const state = req.query.state as string | undefined;
+  if (!state) {
+    return res.status(400).send('Missing state');
+  }
+
+  const scope = req.query.scope as string | undefined;
+  if (!scope) {
+    return res.status(400).send('Missing scope');
+  }
+
+  const prompt = req.query.prompt as string | undefined;
+  if (prompt === 'none') {
+    return res.redirect(redirectUri + '?' + new URLSearchParams({
+      error: 'login_required',
+      state
+    }).toString());
+  }
+
+  const [outcome, client] = await repo.readResource<ClientApplication>('ClientApplication', clientId);
+  if (!isOk(outcome)) {
+    return res.status(400).send('Error reading client');
+  }
+
+  if (!client) {
+    return res.status(400).send('Client not found');
+  }
+
+  if (client.redirectUri !== redirectUri) {
+    return res.status(400).send('Mismatched redirect_uri');
+  }
+
+  const params = new URLSearchParams({
+    response_type: responseType,
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    nonce: req.query.nonce as string,
+    state,
+    scope
+  });
+
+  res.redirect('/oauth2/login?' + params.toString());
+}));
+
+oauthRouter.get('/login', asyncWrap(async (req: Request, res: Response) => {
+  const responseType = req.query.response_type as string | undefined;
+  if (responseType !== 'code') {
+    return res.status(400).send('Unsupported response type');
+  }
+
+  const clientId = req.query.client_id as string | undefined;
+  if (!clientId) {
+    return res.status(400).send('Missing client_id');
+  }
+
+  const redirectUri = req.query.redirect_uri as string | undefined;
+  if (!redirectUri) {
+    return res.status(400).send('Missing redirect_uri');
+  }
+
+  const state = req.query.state as string | undefined;
+  if (!state) {
+    return res.status(400).send('Missing state');
+  }
+
+  const scope = req.query.scope as string | undefined;
+  if (!scope) {
+    return res.status(400).send('Missing scope');
+  }
+
+  const [outcome, result] = await tryLogin({
+    clientId,
+    email: 'admin@medplum.com',
+    password: 'admin',
+    role: 'practitioner',
+    scope,
+    nonce: req.query.nonce as string,
+    remember: true
+  });
+
+  if (!isOk(outcome)) {
+    return res.status(400).send('Login failed');
+  }
+
+  const params = new URLSearchParams({
+    code: result?.id as string,
+    state
+  });
+  res.redirect(redirectUri + '?' + params.toString());
+}));
 
 oauthRouter.post('/login', (req: Request, res: Response) => {
   res.sendStatus(200);
@@ -51,6 +147,42 @@ oauthRouter.get('/logout', (req: Request, res: Response) => {
 
 oauthRouter.post('/logout', (req: Request, res: Response) => {
   res.sendStatus(200);
+});
+
+oauthRouter.get('/userinfo', authenticateToken, (req: Request, res: Response) => {
+  const userInfo: Record<string, any> = {
+    sub: res.locals.user
+  };
+
+  if (res.locals.scope.includes('profile')) {
+    userInfo.profile = res.locals.profile;
+    userInfo.name = 'foo';
+    userInfo.website = '';
+    userInfo.zoneinfo = '';
+    userInfo.birthdate = '1990-01-01';
+    userInfo.gender = '';
+    userInfo.preferred_username = '';
+    userInfo.given_name = '';
+    userInfo.middle_name = '';
+    userInfo.family_name = '';
+    userInfo.locale = 'en-US';
+    userInfo.picture = '';
+    userInfo.updated_at = Date.now() / 1000;
+    userInfo.nickname = '';
+  }
+
+  if (res.locals.scope.includes('email')) {
+    userInfo.email = 'foo@example.com';
+    userInfo.email_verified = true;
+  }
+
+  res.status(200).json(userInfo);
+});
+
+oauthRouter.post('/userinfo', authenticateToken, (req: Request, res: Response) => {
+  res.status(200).json({
+    sub: res.locals.user
+  });
 });
 
 oauthRouter.get('/register', (req: Request, res: Response) => {
@@ -123,7 +255,37 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
 }
 
 async function handleAuthorizationCode(req: Request, res: Response): Promise<Response> {
-  return sendOutcome(res, badRequest('Not implemented'));
+  const code = req.body.code;
+  if (!code) {
+    return sendOutcome(res, badRequest('Missing code'));
+  }
+
+  const [loginOutcome, login] = await repo.readResource<Login>('Login', code);
+  if (!isOk(loginOutcome)) {
+    return sendOutcome(res, loginOutcome);
+  }
+
+  if (!login) {
+    return sendOutcome(res, badRequest('Invalid token'));
+  }
+
+  const [tokenOutcome, token] = await getAuthTokens(login);
+  if (!isOk(tokenOutcome)) {
+    return sendOutcome(res, tokenOutcome);
+  }
+
+  if (!token) {
+    return sendOutcome(res, badRequest('Invalid token'));
+  }
+
+  return res.status(200).json({
+    token_type: 'Bearer',
+    scope: login.scope,
+    expires_in: 3600,
+    id_token: token.idToken,
+    access_token: token.accessToken,
+    refresh_token: token.refreshToken
+  });
 }
 
 async function handleRefreshToken(req: Request, res: Response): Promise<Response> {

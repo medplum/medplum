@@ -68,4 +68,11 @@ export interface Login {
    * token.
    */
   readonly refreshSecret?: string;
+
+  /**
+   * Optional cryptographically random string that your app adds to the
+   * initial request and the authorization server includes inside the ID
+   * Token, used to prevent token replay attacks.
+   */
+  readonly nonce?: string;
 }

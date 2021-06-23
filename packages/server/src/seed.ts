@@ -1,9 +1,10 @@
-import { Bundle, createReference, Organization, Practitioner, Project, StructureDefinition, User } from '@medplum/core';
+import { Bundle, ClientApplication, createReference, Organization, Practitioner, Project, StructureDefinition, User } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import bcrypt from 'bcrypt';
 import { ADMIN_USER_ID, MEDPLUM_ORGANIZATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
 import { isOk, OperationOutcomeError, repo } from './fhir';
 import { logger } from './logger';
+import { generateSecret } from './oauth';
 
 export async function seedDatabase() {
   if (await isSeeded()) {
@@ -15,6 +16,7 @@ export async function seedDatabase() {
   await createMedplumProject();
   await createOrganization();
   await createUser();
+  await createClientApplication();
   await createStructureDefinitions();
 }
 
@@ -133,6 +135,28 @@ async function createUser() {
 
   logger.info('Created', (user as User).id);
 }
+
+/**
+ * Creates the initial client application.
+ */
+async function createClientApplication() {
+  logger.info('Create client application...');
+  const [outcome, result] = await repo.createResource<ClientApplication>({
+    resourceType: 'ClientApplication',
+    secret: generateSecret(),
+    redirectUri: 'https://www.certification.openid.net/test/a/medplum/callback',
+  });
+
+  if (!isOk(outcome)) {
+    throw new OperationOutcomeError(outcome);
+  }
+
+  logger.info('Created', (result as ClientApplication).id);
+  logger.info('  client_id = ' + result?.id);
+  logger.info('  client_secret = ' + result?.secret);
+  logger.info('  redirect_uri = ' + result?.redirectUri);
+}
+
 
 async function createStructureDefinitions() {
   const structureDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;

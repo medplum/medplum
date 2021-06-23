@@ -61177,6 +61177,10 @@
         "refreshSecret": {
           "description": "Optional secure random string that can be used in an OAuth refresh token.",
           "$ref": "#/definitions/string"
+        },
+        "nonce": {
+          "description": "Optional cryptographically random string that your app adds to the initial request and the authorization server includes inside the ID Token, used to prevent token replay attacks.",
+          "$ref": "#/definitions/string"
         }
       }
     },

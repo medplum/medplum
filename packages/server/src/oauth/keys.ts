@@ -10,6 +10,12 @@ import { MedplumServerConfig } from '../config';
 import { isOk, repo } from '../fhir';
 import { logger } from '../logger';
 
+export interface MedplumIdTokenClaims extends JWTPayload {
+  name?: string;
+
+  nonce: string;
+}
+
 export interface MedplumAccessTokenClaims extends JWTPayload {
   /**
    * OpenID username. Same as JWTPayload.sub.
@@ -161,11 +167,20 @@ export function getJwks(): { keys: JWK[] } {
 }
 
 /**
- * Generates a secure random string suitable for a refresh secret.
- * @returns Secure random string for a refresh secret.
+ * Generates a secure random string suitable for a client secret or refresh secret.
+ * @returns Secure random string.
  */
-export function generateRefreshSecret(): string {
+export function generateSecret(): string {
   return randomBytes(48).toString('hex');
+}
+
+/**
+ * Generates an ID token JWT.
+ * @param claims The ID token claims.
+ * @returns A well-formed JWT that can be used as an ID token.
+ */
+export function generateIdToken(claims: MedplumIdTokenClaims): Promise<string> {
+  return generateJwt('1h', claims);
 }
 
 /**
@@ -202,7 +217,8 @@ function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
     return Promise.reject('Missing issuer');
   }
 
-  const audience = serverConfig?.audience;
+  // const audience = serverConfig?.audience;
+  const audience = claims.client_id as string;
   if (!audience) {
     return Promise.reject('Missing audience');
   }
@@ -227,14 +243,14 @@ export function verifyJwt(token: string): Promise<{ payload: JWTPayload, protect
     return Promise.reject('Missing issuer');
   }
 
-  const audience = serverConfig?.audience;
-  if (!audience) {
-    return Promise.reject('Missing audience');
-  }
+  // const audience = serverConfig?.audience;
+  // if (!audience) {
+  //   return Promise.reject('Missing audience');
+  // }
 
   const verifyOptions: JWTVerifyOptions = {
     issuer,
-    audience,
+    // audience,
     algorithms: [ALG]
   };
 

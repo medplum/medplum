@@ -16,6 +16,7 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     const claims = verifyResult.payload as MedplumAccessTokenClaims;
     res.locals.user = claims.username;
     res.locals.profile = claims.profile;
+    res.locals.scope = claims.scope;
     res.locals.repo = new Repository({
       project: MEDPLUM_PROJECT_ID,
       author: claims.profile

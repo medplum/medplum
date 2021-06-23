@@ -27,6 +27,11 @@ wellKnownRouter.get('/openid-configuration', (req: Request, res: Response) => {
     subject_types_supported: [
       'pairwise',
       'public'
+    ],
+    scopes_supported: [
+      'openid',
+      'profile',
+      'email'
     ]
   });
 });
