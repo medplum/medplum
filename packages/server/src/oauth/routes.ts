@@ -1,16 +1,118 @@
-import { ClientApplication, Login } from '@medplum/core';
+import { ClientApplication, Login, OperationOutcome } from '@medplum/core';
 import { Request, Response, Router } from 'express';
-import { body, query, Result, ValidationError, validationResult } from 'express-validator';
 import { JWSHeaderParameters, JWTPayload } from 'jose/webcrypto/types';
 import { asyncWrap } from '../async';
 import { badRequest, isOk, repo, sendOutcome } from '../fhir';
 import { renderTemplate } from '../templates';
 import { generateAccessToken, verifyJwt } from './keys';
-import { getAuthTokens, tryLogin } from './login';
 import { authenticateToken } from './middleware';
+import { getAuthTokens, tryLogin } from './utils';
 
 export const oauthRouter = Router();
 
+/**
+ * Handles the OAuth/OpenID Authorization Endpoint.
+ * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
+ */
+oauthRouter.get('/authorize', asyncWrap(async (req: Request, res: Response) => {
+  const validateResult = await validateAuthorizeRequest(req, res);
+  if (!validateResult) {
+    return;
+  }
+
+  renderTemplate(res, 'login', buildView());
+}));
+
+/**
+ * Handles the OAuth/OpenID Authorization Endpoint.
+ * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
+ */
+oauthRouter.post('/authorize', asyncWrap(async (req: Request, res: Response) => {
+  const validateResult = await validateAuthorizeRequest(req, res);
+  if (!validateResult) {
+    return;
+  }
+
+  const [outcome, result] = await tryLogin({
+    clientId: req.query.client_id as string,
+    scope: req.query.scope as string,
+    nonce: req.query.nonce as string,
+    email: req.body.email as string,
+    password: req.body.password as string,
+    role: 'practitioner',
+    remember: true
+  });
+
+  if (!isOk(outcome)) {
+    return renderTemplate(res, 'login', buildView(outcome));
+  }
+
+  const redirectUrl = new URL(req.query.redirect_uri as string);
+  redirectUrl.searchParams.append('code', result?.id as string);
+  redirectUrl.searchParams.append('state', req.query.state as string);
+  res.redirect(redirectUrl.toString());
+}));
+
+/**
+ * Validates the OAuth/OpenID Authorization Endpoint configuration.
+ * This is used for both GET and POST requests.
+ * We currently only support query string parameters.
+ * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
+ */
+async function validateAuthorizeRequest(req: Request, res: Response): Promise<boolean> {
+  // First validate the client and the redirect URI.
+  // If these are invalid, then show an error page.
+  const [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', req.query.client_id as string);
+  if (!isOk(clientOutcome)) {
+    res.status(400).send('Error reading client');
+    return false;
+  }
+
+  if (!client) {
+    res.status(400).send('Client not found');
+    return false;
+  }
+
+  if (client.redirectUri !== req.query.redirect_uri) {
+    res.status(400).send('Incorrect redirect_uri');
+    return false;
+  }
+
+  // Then, validate all other parameters.
+  // If these are invalid, redirect back to the redirect URI.
+  const responseType = req.query.response_type;
+  if (responseType !== 'code') {
+    sendErrorRedirect(res, client.redirectUri as string, 'unsupported_response_type', req.query.state as string);
+    return false;
+  }
+
+  const prompt = req.query.prompt as string | undefined;
+  if (prompt === 'none') {
+    sendErrorRedirect(res, client.redirectUri as string, 'login_required', req.query.state as string);
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Sends a redirect back to the client application with error codes and state.
+ * @param res The response.
+ * @param redirectUri The client redirect URI.  This URI may already have query string parameters.
+ * @param error The OAuth/OpenID error code.
+ * @param state The client state.
+ */
+function sendErrorRedirect(res: Response, redirectUri: string, error: string, state: string): void {
+  const url = new URL(redirectUri as string);
+  url.searchParams.append('error', error);
+  url.searchParams.append('state', state);
+  res.redirect(url.toString());
+}
+
+/**
+ * Handles the OAuth/OpenID Token Endpoint.
+ * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
+ */
 oauthRouter.post('/token', asyncWrap(async (req: Request, res: Response) => {
   if (!req.is('application/x-www-form-urlencoded')) {
     return res.status(400).send('Unsupported content type');
@@ -32,122 +134,6 @@ oauthRouter.post('/token', asyncWrap(async (req: Request, res: Response) => {
       return sendOutcome(res, badRequest('Unsupported grant_type'));
   }
 }));
-
-oauthRouter.get('/authorize', asyncWrap(async (req: Request, res: Response) => {
-  const responseType = req.query.response_type as string | undefined;
-  if (responseType !== 'code') {
-    return res.status(400).send('Unsupported response type');
-  }
-
-  const clientId = req.query.client_id as string | undefined;
-  if (!clientId) {
-    return res.status(400).send('Missing client_id');
-  }
-
-  const redirectUri = req.query.redirect_uri as string | undefined;
-  if (!redirectUri) {
-    return res.status(400).send('Missing redirect_uri');
-  }
-
-  const state = req.query.state as string | undefined;
-  if (!state) {
-    return res.status(400).send('Missing state');
-  }
-
-  const scope = req.query.scope as string | undefined;
-  if (!scope) {
-    return res.status(400).send('Missing scope');
-  }
-
-  const prompt = req.query.prompt as string | undefined;
-  if (prompt === 'none') {
-    return res.redirect(redirectUri + '?' + new URLSearchParams({
-      error: 'login_required',
-      state
-    }).toString());
-  }
-
-  const [outcome, client] = await repo.readResource<ClientApplication>('ClientApplication', clientId);
-  if (!isOk(outcome)) {
-    return res.status(400).send('Error reading client');
-  }
-
-  if (!client) {
-    return res.status(400).send('Client not found');
-  }
-
-  if (client.redirectUri !== redirectUri) {
-    return res.status(400).send('Mismatched redirect_uri');
-  }
-
-  const params = new URLSearchParams({
-    response_type: responseType,
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    nonce: req.query.nonce as string,
-    state,
-    scope
-  });
-
-  res.redirect('/oauth2/login?' + params.toString());
-}));
-
-oauthRouter.get('/login',
-  query('response_type').notEmpty().withMessage('Missing response_type'),
-  query('response_type').equals('code').withMessage('Invalid response_type'),
-  query('client_id').notEmpty().withMessage('Missing client_id'),
-  query('redirect_uri').notEmpty().withMessage('Missing redirect_uri'),
-  query('state').notEmpty().withMessage('Missing state'),
-  query('scope').notEmpty().withMessage('Missing scope'),
-  (req: Request, res: Response) => {
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return renderTemplate(res, 'login', buildView(errors));
-    }
-
-    const view = {
-      title: 'Sign In'
-    };
-
-    renderTemplate(res, 'login', view);
-  });
-
-oauthRouter.post('/login',
-  query('response_type').notEmpty().withMessage('Missing response_type'),
-  query('response_type').equals('code').withMessage('Invalid response_type'),
-  query('client_id').notEmpty().withMessage('Missing client_id'),
-  query('redirect_uri').notEmpty().withMessage('Missing redirect_uri'),
-  query('state').notEmpty().withMessage('Missing state'),
-  query('scope').notEmpty().withMessage('Missing scope'),
-  body('email').notEmpty().withMessage('Missing email'),
-  body('password').notEmpty().withMessage('Missing password'),
-  asyncWrap(async (req: Request, res: Response) => {
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return renderTemplate(res, 'login', buildView(errors));
-    }
-
-    const [outcome, result] = await tryLogin({
-      clientId: req.query.client_id as string,
-      scope: req.query.scope as string,
-      nonce: req.query.nonce as string,
-      email: req.body.email as string,
-      password: req.body.password as string,
-      role: 'practitioner',
-      remember: true
-    });
-
-    if (!isOk(outcome)) {
-      return renderTemplate(res, 'login', buildView(errors));
-    }
-
-    const redirectUrl = new URL(req.query.redirect_uri as string);
-    redirectUrl.searchParams.append('code', result?.id as string);
-    redirectUrl.searchParams.append('state', req.query.state as string);
-    res.redirect(redirectUrl.toString());
-  }));
 
 oauthRouter.get('/logout', (req: Request, res: Response) => {
   res.sendStatus(200);
@@ -316,19 +302,21 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
   return sendOutcome(res, badRequest('Not implemented'));
 }
 
-function buildView(validationResult: Result<ValidationError>): any {
+function buildView(outcome?: OperationOutcome): any {
   const view = {
     title: 'Sign In',
-    errors: {} as Record<string, ValidationError[]>
+    errors: {} as Record<string, string[]>
   };
 
-  validationResult.array().forEach(error => {
-    const param = error.location === 'query' ? 'query' : error.param as string;
-    if (!view.errors[param]) {
-      view.errors[param] = [];
-    }
-    view.errors[param].push(error);
-  });
+  if (outcome) {
+    outcome.issue?.forEach(issue => {
+      const param = issue.expression?.[0] as string;
+      if (!view.errors[param]) {
+        view.errors[param] = [];
+      }
+      view.errors[param].push(issue.details?.text as string);
+    });
+  }
 
   return view;
 }

@@ -4,7 +4,7 @@ import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { badRequest, invalidRequest, isOk, repo, sendOutcome } from '../fhir';
-import { getAuthTokens, tryLogin } from '../oauth/login';
+import { getAuthTokens, tryLogin } from '../oauth';
 
 export const authRouter = Router();
 

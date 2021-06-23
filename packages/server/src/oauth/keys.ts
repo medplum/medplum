@@ -217,7 +217,6 @@ function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
     return Promise.reject('Missing issuer');
   }
 
-  // const audience = serverConfig?.audience;
   const audience = claims.client_id as string;
   if (!audience) {
     return Promise.reject('Missing audience');
@@ -243,14 +242,8 @@ export function verifyJwt(token: string): Promise<{ payload: JWTPayload, protect
     return Promise.reject('Missing issuer');
   }
 
-  // const audience = serverConfig?.audience;
-  // if (!audience) {
-  //   return Promise.reject('Missing audience');
-  // }
-
   const verifyOptions: JWTVerifyOptions = {
     issuer,
-    // audience,
     algorithms: [ALG]
   };
 
