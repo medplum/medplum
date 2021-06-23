@@ -134,12 +134,11 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
   }
 
   if (prompt !== 'login' && existingLogin) {
-    if (req.query.nonce) {
-      await repo.updateResource<Login>({
-        ...existingLogin,
-        nonce: req.query.nonce as string
-      });
-    }
+    await repo.updateResource<Login>({
+      ...existingLogin,
+      nonce: req.query.nonce as string,
+      granted: false
+    });
 
     const redirectUrl = new URL(req.query.redirect_uri as string);
     redirectUrl.searchParams.append('code', existingLogin?.id as string);
@@ -192,6 +191,11 @@ oauthRouter.post('/token', asyncWrap(async (req: Request, res: Response) => {
 }));
 
 oauthRouter.get('/logout', (req: Request, res: Response) => {
+  for (const name of Object.keys(req.cookies)) {
+    if (name.startsWith('medplum-')) {
+      res.clearCookie(name);
+    }
+  }
   res.sendStatus(200);
 });
 

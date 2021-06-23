@@ -38,6 +38,10 @@ wellKnownRouter.get('/openid-configuration', (req: Request, res: Response) => {
       'profile',
       'email'
     ],
+    token_endpoint_auth_methods_supported: [
+      'client_secret_basic',
+      'client_secret_post'
+    ],
     request_object_signing_alg_values_supported: [
       'none'
     ]
