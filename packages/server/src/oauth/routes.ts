@@ -3,10 +3,11 @@ import { Request, Response, Router } from 'express';
 import { JWSHeaderParameters, JWTPayload } from 'jose/webcrypto/types';
 import { asyncWrap } from '../async';
 import { badRequest, isOk, repo, sendOutcome } from '../fhir';
+import { logger } from '../logger';
 import { renderTemplate } from '../templates';
-import { generateAccessToken, verifyJwt } from './keys';
+import { generateAccessToken, MedplumIdTokenClaims, verifyJwt } from './keys';
 import { authenticateToken } from './middleware';
-import { getAuthTokens, tryLogin } from './utils';
+import { getAuthTokens, getJsonDate, tryLogin } from './utils';
 
 export const oauthRouter = Router();
 
@@ -33,7 +34,7 @@ oauthRouter.post('/authorize', asyncWrap(async (req: Request, res: Response) => 
     return;
   }
 
-  const [outcome, result] = await tryLogin({
+  const [outcome, login] = await tryLogin({
     clientId: req.query.client_id as string,
     scope: req.query.scope as string,
     nonce: req.query.nonce as string,
@@ -47,8 +48,10 @@ oauthRouter.post('/authorize', asyncWrap(async (req: Request, res: Response) => 
     return renderTemplate(res, 'login', buildView(outcome));
   }
 
+  res.cookie('medplum', login?.id as string, { httpOnly: true });
+
   const redirectUrl = new URL(req.query.redirect_uri as string);
-  redirectUrl.searchParams.append('code', result?.id as string);
+  redirectUrl.searchParams.append('code', login?.id as string);
   redirectUrl.searchParams.append('state', req.query.state as string);
   res.redirect(redirectUrl.toString());
 }));
@@ -78,6 +81,37 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
     return false;
   }
 
+  let existingLoginId: string | undefined;
+  let existingLogin: Login | undefined;
+
+  const cookieLoginId = req.cookies['medplum'];
+  if (cookieLoginId) {
+    existingLoginId = cookieLoginId;
+  }
+
+  const idTokenHint = req.query.id_token_hint as string | undefined;
+  if (idTokenHint) {
+    try {
+      const verifyResult = await verifyJwt(idTokenHint);
+      const claims = verifyResult.payload as MedplumIdTokenClaims;
+      existingLoginId = claims.login_id as string | undefined;
+    } catch (err) {
+      logger.debug('Error verifying id_token_hint', err);
+    }
+  }
+
+  if (existingLoginId) {
+    const [existingOutcome, existing] = await repo.readResource<Login>('Login', existingLoginId);
+    if (isOk(existingOutcome) && existing) {
+      const authTime = getJsonDate(existing.authTime) as Date;
+      const age = (Date.now() - authTime.getTime()) / 1000;
+      const maxAge = req.query.max_age ? parseInt(req.query.max_age as string) : 3600;
+      if (age <= maxAge) {
+        existingLogin = existing as Login;
+      }
+    }
+  }
+
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
   const responseType = req.query.response_type;
@@ -87,8 +121,23 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
   }
 
   const prompt = req.query.prompt as string | undefined;
-  if (prompt === 'none') {
+  if (prompt === 'none' && !existingLogin) {
     sendErrorRedirect(res, client.redirectUri as string, 'login_required', req.query.state as string);
+    return false;
+  }
+
+  if (prompt !== 'login' && existingLogin) {
+    if (req.query.nonce) {
+      await repo.updateResource<Login>({
+        ...existingLogin,
+        nonce: req.query.nonce as string
+      });
+    }
+
+    const redirectUrl = new URL(req.query.redirect_uri as string);
+    redirectUrl.searchParams.append('code', existingLogin?.id as string);
+    redirectUrl.searchParams.append('state', req.query.state as string);
+    res.redirect(redirectUrl.toString());
     return false;
   }
 

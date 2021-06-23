@@ -64,6 +64,11 @@ export interface Login {
   readonly scope?: string;
 
   /**
+   * Time when the End-User authentication occurred.
+   */
+  readonly authTime?: Date;
+
+  /**
    * Optional secure random string that can be used in an OAuth refresh
    * token.
    */

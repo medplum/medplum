@@ -61174,6 +61174,10 @@
           "description": "OAuth scope or scopes.",
           "$ref": "#/definitions/string"
         },
+        "authTime": {
+          "description": "Time when the End-User authentication occurred.",
+          "$ref": "#/definitions/instant"
+        },
         "refreshSecret": {
           "description": "Optional secure random string that can be used in an OAuth refresh token.",
           "$ref": "#/definitions/string"

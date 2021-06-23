@@ -102,6 +102,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
       reference: user.resourceType + '/' + user.id
     },
     profile: createReference(profile),
+    authTime: new Date(),
     refreshSecret,
     scope: request.scope,
     nonce: request.nonce,
@@ -121,12 +122,15 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
 
   const idToken = await generateIdToken({
     client_id: clientId,
+    login_id: login.id as string,
     sub: userId,
-    nonce: login.nonce as string
+    nonce: login.nonce as string,
+    auth_time: (getJsonDate(login.authTime) as Date).getTime() / 1000
   });
 
   const accessToken = await generateAccessToken({
     client_id: clientId,
+    login_id: login.id as string,
     sub: userId,
     username: userId,
     scope: login.scope as string,
@@ -178,4 +182,21 @@ async function getUserByEmail(email: string): RepositoryResult<User | undefined>
   }
 
   return [allOk, bundle.entry[0].resource as User];
+}
+
+/**
+ * Returns a Date property as a Date.
+ * When working with JSON objects, Dates are often serialized as ISO-8601 strings.
+ * When that happens, we need to safely convert to a proper Date object.
+ * @param date The date property value, which could be a string or a Date object.
+ * @returns A Date object.
+ */
+export function getJsonDate(date: Date | string | undefined): Date | undefined {
+  if (date instanceof Date) {
+    return date;
+  }
+  if (typeof date === 'string') {
+    return new Date(date);
+  }
+  return undefined;
 }
