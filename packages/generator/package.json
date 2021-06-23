@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "description": "Medplum Code Generator",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -18,7 +18,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/definitions": "0.0.24",
+    "@medplum/definitions": "0.0.25",
     "@types/jest": "26.0.23",
     "@types/node": "15.12.2",
     "@typescript-eslint/eslint-plugin": "4.26.1",
