@@ -34,6 +34,7 @@
     "graphql": "15.5.0",
     "jose": "3.12.3",
     "knex": "0.95.6",
+    "mustache": "4.2.0",
     "pg": "8.6.0",
     "validator": "13.6.0",
     "winston": "3.3.3"
@@ -44,6 +45,7 @@
     "@types/cors": "2.8.10",
     "@types/express": "4.17.12",
     "@types/jest": "26.0.23",
+    "@types/mustache": "4.1.1",
     "@types/node": "15.12.2",
     "@types/pg": "8.6.0",
     "@types/supertest": "2.0.11",

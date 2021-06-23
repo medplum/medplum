@@ -1,8 +1,10 @@
 import { ClientApplication, Login } from '@medplum/core';
 import { Request, Response, Router } from 'express';
+import { body, query, Result, ValidationError, validationResult } from 'express-validator';
 import { JWSHeaderParameters, JWTPayload } from 'jose/webcrypto/types';
 import { asyncWrap } from '../async';
 import { badRequest, isOk, repo, sendOutcome } from '../fhir';
+import { renderTemplate } from '../templates';
 import { generateAccessToken, verifyJwt } from './keys';
 import { getAuthTokens, tryLogin } from './login';
 import { authenticateToken } from './middleware';
@@ -90,56 +92,62 @@ oauthRouter.get('/authorize', asyncWrap(async (req: Request, res: Response) => {
   res.redirect('/oauth2/login?' + params.toString());
 }));
 
-oauthRouter.get('/login', asyncWrap(async (req: Request, res: Response) => {
-  const responseType = req.query.response_type as string | undefined;
-  if (responseType !== 'code') {
-    return res.status(400).send('Unsupported response type');
-  }
+oauthRouter.get('/login',
+  query('response_type').notEmpty().withMessage('Missing response_type'),
+  query('response_type').equals('code').withMessage('Invalid response_type'),
+  query('client_id').notEmpty().withMessage('Missing client_id'),
+  query('redirect_uri').notEmpty().withMessage('Missing redirect_uri'),
+  query('state').notEmpty().withMessage('Missing state'),
+  query('scope').notEmpty().withMessage('Missing scope'),
+  (req: Request, res: Response) => {
 
-  const clientId = req.query.client_id as string | undefined;
-  if (!clientId) {
-    return res.status(400).send('Missing client_id');
-  }
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return renderTemplate(res, 'login', buildView(errors));
+    }
 
-  const redirectUri = req.query.redirect_uri as string | undefined;
-  if (!redirectUri) {
-    return res.status(400).send('Missing redirect_uri');
-  }
+    const view = {
+      title: 'Sign In'
+    };
 
-  const state = req.query.state as string | undefined;
-  if (!state) {
-    return res.status(400).send('Missing state');
-  }
-
-  const scope = req.query.scope as string | undefined;
-  if (!scope) {
-    return res.status(400).send('Missing scope');
-  }
-
-  const [outcome, result] = await tryLogin({
-    clientId,
-    email: 'admin@medplum.com',
-    password: 'admin',
-    role: 'practitioner',
-    scope,
-    nonce: req.query.nonce as string,
-    remember: true
+    renderTemplate(res, 'login', view);
   });
 
-  if (!isOk(outcome)) {
-    return res.status(400).send('Login failed');
-  }
+oauthRouter.post('/login',
+  query('response_type').notEmpty().withMessage('Missing response_type'),
+  query('response_type').equals('code').withMessage('Invalid response_type'),
+  query('client_id').notEmpty().withMessage('Missing client_id'),
+  query('redirect_uri').notEmpty().withMessage('Missing redirect_uri'),
+  query('state').notEmpty().withMessage('Missing state'),
+  query('scope').notEmpty().withMessage('Missing scope'),
+  body('email').notEmpty().withMessage('Missing email'),
+  body('password').notEmpty().withMessage('Missing password'),
+  asyncWrap(async (req: Request, res: Response) => {
 
-  const params = new URLSearchParams({
-    code: result?.id as string,
-    state
-  });
-  res.redirect(redirectUri + '?' + params.toString());
-}));
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return renderTemplate(res, 'login', buildView(errors));
+    }
 
-oauthRouter.post('/login', (req: Request, res: Response) => {
-  res.sendStatus(200);
-});
+    const [outcome, result] = await tryLogin({
+      clientId: req.query.client_id as string,
+      scope: req.query.scope as string,
+      nonce: req.query.nonce as string,
+      email: req.body.email as string,
+      password: req.body.password as string,
+      role: 'practitioner',
+      remember: true
+    });
+
+    if (!isOk(outcome)) {
+      return renderTemplate(res, 'login', buildView(errors));
+    }
+
+    const redirectUrl = new URL(req.query.redirect_uri as string);
+    redirectUrl.searchParams.append('code', result?.id as string);
+    redirectUrl.searchParams.append('state', req.query.state as string);
+    res.redirect(redirectUrl.toString());
+  }));
 
 oauthRouter.get('/logout', (req: Request, res: Response) => {
   res.sendStatus(200);
@@ -306,4 +314,21 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
   console.log('protectedHeaders', protectedHeader);
 
   return sendOutcome(res, badRequest('Not implemented'));
+}
+
+function buildView(validationResult: Result<ValidationError>): any {
+  const view = {
+    title: 'Sign In',
+    errors: {} as Record<string, ValidationError[]>
+  };
+
+  validationResult.array().forEach(error => {
+    const param = error.location === 'query' ? 'query' : error.param as string;
+    if (!view.errors[param]) {
+      view.errors[param] = [];
+    }
+    view.errors[param].push(error);
+  });
+
+  return view;
 }

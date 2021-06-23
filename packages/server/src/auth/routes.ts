@@ -1,9 +1,10 @@
+import { Login, Reference } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
-import { invalidRequest, isOk, sendOutcome } from '../fhir';
-import { tryLogin } from '../oauth/login';
+import { badRequest, invalidRequest, isOk, repo, sendOutcome } from '../fhir';
+import { getAuthTokens, tryLogin } from '../oauth/login';
 
 export const authRouter = Router();
 
@@ -21,7 +22,7 @@ authRouter.post(
       return sendOutcome(res, invalidRequest(errors));
     }
 
-    const [outcome, result] = await tryLogin({
+    const [loginOutcome, login] = await tryLogin({
       clientId: req.body.clientId,
       email: req.body.email,
       password: req.body.password,
@@ -31,9 +32,42 @@ authRouter.post(
       remember: true
     });
 
-    if (!isOk(outcome)) {
-      return sendOutcome(res, outcome);
+    if (!isOk(loginOutcome)) {
+      return sendOutcome(res, loginOutcome);
     }
 
-    res.status(200).json(result);
+    const [tokenOutcome, token] = await getAuthTokens(login as Login);
+    if (!isOk(tokenOutcome)) {
+      return sendOutcome(res, tokenOutcome);
+    }
+
+    if (!token) {
+      return sendOutcome(res, badRequest('Invalid token'));
+    }
+
+    const [userOutcome, user] = await repo.readReference(login?.user as Reference);
+    if (!isOk(userOutcome)) {
+      return sendOutcome(res, userOutcome);
+    }
+
+    if (!user) {
+      return sendOutcome(res, badRequest('Invalid user'));
+    }
+
+    const [profileOutcome, profile] = await repo.readReference(login?.profile as Reference);
+    if (!isOk(profileOutcome)) {
+      return sendOutcome(res, profileOutcome);
+    }
+
+    if (!profile) {
+      return sendOutcome(res, badRequest('Invalid profile'));
+    }
+
+    return res.status(200).json({
+      user,
+      profile,
+      idToken: token.idToken,
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken
+    });
   }));
