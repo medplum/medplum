@@ -61,6 +61,12 @@ export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
 
 /**
  * Signing algorithm.
+ *
+ * RS256 (RSA Signature with SHA-256): An asymmetric algorithm, which means that there are two keys:
+ * one public key and one private key that must be kept secret. The server has the private key used to
+ * generate the signature, and the consumer of the JWT retrieves a public key from the metadata
+ * endpoints provided by the server and uses it to validate the JWT signature.
+ *
  * This is the algorithm used by AWS Cognito and Auth0.
  */
 const ALG = 'RS256';
