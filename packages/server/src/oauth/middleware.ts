@@ -1,5 +1,5 @@
+import { Login } from '@medplum/core';
 import { NextFunction, Request, Response } from 'express';
-import { Login } from '../../../core/dist';
 import { MEDPLUM_PROJECT_ID } from '../constants';
 import { isOk, repo, Repository } from '../fhir';
 import { logger } from '../logger';

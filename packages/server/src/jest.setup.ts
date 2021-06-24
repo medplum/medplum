@@ -1,5 +1,4 @@
-import { ClientApplication, Login } from '@medplum/core';
-import { createReference } from '../../core/dist';
+import { ClientApplication, createReference, Login } from '@medplum/core';
 import { isOk, repo } from './fhir';
 import { generateAccessToken } from './oauth';
 

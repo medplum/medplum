@@ -57,7 +57,7 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
  * We currently only support query string parameters.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
  */
- async function validateAuthorizeRequest(req: Request, res: Response): Promise<boolean> {
+async function validateAuthorizeRequest(req: Request, res: Response): Promise<boolean> {
   // First validate the client and the redirect URI.
   // If these are invalid, then show an error page.
   const [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', req.query.client_id as string);

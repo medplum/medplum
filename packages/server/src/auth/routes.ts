@@ -1,4 +1,4 @@
-import { Login, Reference } from '@medplum/core';
+import { Login, ProfileResource, Reference, User } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -45,7 +45,7 @@ authRouter.post(
       return sendOutcome(res, badRequest('Invalid token'));
     }
 
-    const [userOutcome, user] = await repo.readReference(login?.user as Reference);
+    const [userOutcome, user] = await repo.readReference<User>(login?.user as Reference);
     if (!isOk(userOutcome)) {
       return sendOutcome(res, userOutcome);
     }
@@ -54,7 +54,7 @@ authRouter.post(
       return sendOutcome(res, badRequest('Invalid user'));
     }
 
-    const [profileOutcome, profile] = await repo.readReference(login?.profile as Reference);
+    const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
     if (!isOk(profileOutcome)) {
       return sendOutcome(res, profileOutcome);
     }
