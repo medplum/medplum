@@ -1,15 +1,30 @@
-import { ClientApplication } from '@medplum/core';
+import { ClientApplication, Login } from '@medplum/core';
+import { createReference } from '../../core/dist';
 import { isOk, repo } from './fhir';
 import { generateAccessToken } from './oauth';
 
 export async function initTestAuth() {
   const client = await initTestClientApplication();
+  const scope = 'openid';
+
+  const [loginOutcome, login] = await repo.createResource<Login>({
+    resourceType: 'Login',
+    client: createReference(client),
+    authTime: new Date(),
+    scope
+  });
+
+  if (!isOk(loginOutcome) || !login) {
+    throw new Error('Error creating login');
+  }
+
   const accessToken = await generateAccessToken({
+    login_id: login.id as string,
     sub: client.id as string,
     username: client.id as string,
     client_id: client.id as string,
     profile: client.resourceType + '/' + client.id,
-    scope: 'scope'
+    scope
   });
   return accessToken;
 }

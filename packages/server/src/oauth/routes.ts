@@ -292,8 +292,22 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
   }
 
   const scope = req.body.scope as string;
+
+  const [loginOutcome, login] = await repo.createResource<Login>({
+    resourceType: 'Login',
+    client: {
+      reference: client.resourceType + '/' + client.id,
+    },
+    authTime: new Date(),
+    scope
+  });
+
+  if (!isOk(loginOutcome) || !login) {
+    return sendTokenError(res, 'invalid_request', 'Invalid login');
+  }
+
   const accessToken = await generateAccessToken({
-    login_id: '', // TODO
+    login_id: login.id as string,
     sub: client.id as string,
     username: client.id as string,
     client_id: client.id as string,
