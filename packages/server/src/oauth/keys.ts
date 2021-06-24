@@ -79,11 +79,6 @@ export async function initKeys(config: MedplumServerConfig) {
     throw new Error('Missing issuer');
   }
 
-  const audience = serverConfig?.audience;
-  if (!audience) {
-    throw new Error('Missing audience');
-  }
-
   const [searchOutcome, searchResult] = await repo.search({
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }]
