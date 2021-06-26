@@ -1,4 +1,4 @@
-import { ClientApplication, createReference, getReferenceString, Login } from '@medplum/core';
+import { ClientApplication, createReference, getReferenceString, Login, Operator } from '@medplum/core';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { badRequest, isOk, repo, sendOutcome } from '../fhir';
@@ -74,9 +74,9 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
 
   const accessToken = await generateAccessToken({
     login_id: login.id as string,
+    client_id: client.id as string,
     sub: client.id as string,
     username: client.id as string,
-    client_id: client.id as string,
     profile: getReferenceString(client),
     scope: scope
   });
@@ -95,14 +95,23 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Missing code');
   }
 
-  const [loginOutcome, login] = await repo.readResource<Login>('Login', code);
-  if (!isOk(loginOutcome)) {
+  const [searchOutcome, searchResult] = await repo.search({
+    resourceType: 'Login',
+    filters: [{
+      code: 'code',
+      operator: Operator.EQUALS,
+      value: code
+    }]
+  });
+
+  if (!isOk(searchOutcome) ||
+    !searchResult ||
+    !searchResult.entry ||
+    searchResult.entry.length === 0) {
     return sendTokenError(res, 'invalid_request', 'Invalid code');
   }
 
-  if (!login) {
-    return sendTokenError(res, 'invalid_request', 'Invalid code');
-  }
+  const login = searchResult.entry[0].resource as Login;
 
   if (login.granted) {
     await revokeLogin(login);

@@ -91,7 +91,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [profileOutcome, undefined];
   }
 
-  const refreshSecret = request.remember ? generateSecret() : undefined;
+  const refreshSecret = request.remember ? generateSecret(48) : undefined;
 
   return repo.createResource<Login>({
     resourceType: 'Login',
@@ -103,6 +103,8 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     },
     profile: createReference(profile),
     authTime: new Date(),
+    code: generateSecret(16),
+    cookie: generateSecret(16),
     refreshSecret,
     scope: request.scope,
     nonce: request.nonce,

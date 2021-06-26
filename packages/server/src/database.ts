@@ -20,7 +20,8 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
       host: config.host,
       database: config.database,
       user: config.username,
-      password: config.password
+      password: config.password,
+      timezone: 'UTC'
     },
     useNullAsDefault: true
   });

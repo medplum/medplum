@@ -1,4 +1,4 @@
-import { ClientApplication, Login, OperationOutcome } from '@medplum/core';
+import { ClientApplication, Login, OperationOutcome, Operator } from '@medplum/core';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { isOk, repo } from '../fhir';
@@ -38,16 +38,18 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
   });
 
   if (!isOk(outcome)) {
+    console.log('login failed', JSON.stringify(outcome, undefined, 2));
     return renderTemplate(res, 'login', buildView(outcome));
   }
 
   const cookieName = 'medplum-' + req.query.client_id;
-  res.cookie(cookieName, login?.id as string, { httpOnly: true });
+  res.cookie(cookieName, (login as Login).cookie as string, { httpOnly: true });
 
   const redirectUrl = new URL(req.query.redirect_uri as string);
-  redirectUrl.searchParams.append('code', login?.id as string);
+  redirectUrl.searchParams.append('code', (login as Login).code as string);
   redirectUrl.searchParams.append('state', req.query.state as string);
   res.redirect(redirectUrl.toString());
+  console.log('login success');
 });
 
 
@@ -76,40 +78,14 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
     return false;
   }
 
-  let existingLoginId: string | undefined;
-  let existingLogin: Login | undefined;
-
-  const cookieName = 'medplum-' + client.id;
-  const cookieLoginId = req.cookies[cookieName];
-  if (cookieLoginId) {
-    existingLoginId = cookieLoginId;
-  }
-
-  const idTokenHint = req.query.id_token_hint as string | undefined;
-  if (idTokenHint) {
-    try {
-      const verifyResult = await verifyJwt(idTokenHint);
-      const claims = verifyResult.payload as MedplumIdTokenClaims;
-      existingLoginId = claims.login_id as string | undefined;
-    } catch (err) {
-      logger.debug('Error verifying id_token_hint', err);
-    }
-  }
-
-  if (existingLoginId) {
-    const [existingOutcome, existing] = await repo.readResource<Login>('Login', existingLoginId);
-    if (isOk(existingOutcome) && existing) {
-      const authTime = getJsonDate(existing.authTime) as Date;
-      const age = (Date.now() - authTime.getTime()) / 1000;
-      const maxAge = req.query.max_age ? parseInt(req.query.max_age as string) : 3600;
-      if (age <= maxAge) {
-        existingLogin = existing as Login;
-      }
-    }
-  }
-
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
+  const scope = req.query.scope as string | undefined;
+  if (!scope) {
+    sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', req.query.state as string);
+    return false;
+  }
+
   const responseType = req.query.response_type;
   if (responseType !== 'code') {
     sendErrorRedirect(res, client.redirectUri as string, 'unsupported_response_type', req.query.state as string);
@@ -121,6 +97,8 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
     sendErrorRedirect(res, client.redirectUri as string, 'request_not_supported', req.query.state as string);
     return false;
   }
+
+  const existingLogin = await getExistingLogin(req, client);
 
   const prompt = req.query.prompt as string | undefined;
   if (prompt === 'none' && !existingLogin) {
@@ -136,13 +114,100 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
     });
 
     const redirectUrl = new URL(req.query.redirect_uri as string);
-    redirectUrl.searchParams.append('code', existingLogin?.id as string);
+    redirectUrl.searchParams.append('code', existingLogin?.code as string);
     redirectUrl.searchParams.append('state', req.query.state as string);
     res.redirect(redirectUrl.toString());
     return false;
   }
 
   return true;
+}
+
+/**
+ * Tries to get an existing login for the current request.
+ * @param req The HTTP request.
+ * @param client The current client application.
+ * @returns Existing login if found; undefined otherwise.
+ */
+async function getExistingLogin(req: Request, client: ClientApplication): Promise<Login | undefined> {
+  const login = (await getExistingLoginFromIdTokenHint(req)) ||
+    (await getExistingLoginFromCookie(req, client));
+
+  if (!login) {
+    return undefined;
+  }
+
+  const authTime = getJsonDate(login.authTime) as Date;
+  const age = (Date.now() - authTime.getTime()) / 1000;
+  const maxAge = req.query.max_age ? parseInt(req.query.max_age as string) : 3600;
+  if (age > maxAge) {
+    return undefined;
+  }
+
+  return login;
+}
+
+/**
+ * Tries to get an existing login based on the "id_token_hint" query string parameter.
+ * @param req The HTTP request.
+ * @param client The current client application.
+ * @returns Existing login if found; undefined otherwise.
+ */
+async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | undefined> {
+  const idTokenHint = req.query.id_token_hint as string | undefined;
+  if (!idTokenHint) {
+    return undefined;
+  }
+
+  let verifyResult;
+  try {
+    verifyResult = await verifyJwt(idTokenHint);
+  } catch (err) {
+    logger.debug('Error verifying id_token_hint', err);
+    return undefined;
+  }
+
+  const claims = verifyResult.payload as MedplumIdTokenClaims;
+  const existingLoginId = claims.login_id as string | undefined;
+  if (!existingLoginId) {
+    return undefined;
+  }
+
+  const [existingOutcome, existing] = await repo.readResource<Login>('Login', existingLoginId);
+  if (!isOk(existingOutcome) || !existing) {
+    return undefined;
+  }
+
+  return existing;
+}
+
+/**
+ * Tries to get an existing login based on the HTTP cookies.
+ * @param req The HTTP request.
+ * @param client The current client application.
+ * @returns Existing login if found; undefined otherwise.
+ */
+async function getExistingLoginFromCookie(req: Request, client: ClientApplication): Promise<Login | undefined> {
+  const cookieName = 'medplum-' + client.id;
+  const cookieValue = req.cookies[cookieName];
+  if (!cookieValue) {
+    return undefined;
+  }
+
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Login',
+    filters: [{
+      code: 'cookie',
+      operator: Operator.EQUALS,
+      value: cookieValue
+    }]
+  });
+
+  if (!isOk(outcome) || !bundle?.entry || bundle.entry.length === 0) {
+    return undefined;
+  }
+
+  return bundle.entry[0].resource as Login;
 }
 
 /**
@@ -153,7 +218,7 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
  * @param state The client state.
  */
 function sendErrorRedirect(res: Response, redirectUri: string, error: string, state: string): void {
-  const url = new URL(redirectUri as string);
+  const url = new URL(redirectUri);
   url.searchParams.append('error', error);
   url.searchParams.append('state', state);
   res.redirect(url.toString());

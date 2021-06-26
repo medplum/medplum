@@ -143,7 +143,7 @@ async function createClientApplication() {
   logger.info('Create client application...');
   const [outcome, result] = await repo.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
-    secret: generateSecret(),
+    secret: generateSecret(48),
     redirectUri: 'https://www.certification.openid.net/test/a/medplum/callback',
   });
 

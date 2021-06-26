@@ -165,10 +165,11 @@ export function getJwks(): { keys: JWK[] } {
 
 /**
  * Generates a secure random string suitable for a client secret or refresh secret.
+ * @param size Size of the secret in bytes.  16 recommended for auth codes.  48 recommended for client and refresh secrets.
  * @returns Secure random string.
  */
-export function generateSecret(): string {
-  return randomBytes(48).toString('hex');
+export function generateSecret(size: number): string {
+  return randomBytes(size).toString('hex');
 }
 
 /**
