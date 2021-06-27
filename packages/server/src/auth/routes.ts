@@ -4,7 +4,7 @@ import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { badRequest, invalidRequest, isOk, repo, sendOutcome } from '../fhir';
-import { getAuthTokens, tryLogin } from '../oauth';
+import { getAuthTokens, TokenResult, tryLogin } from '../oauth';
 
 export const authRouter = Router();
 
@@ -41,17 +41,9 @@ authRouter.post(
       return sendOutcome(res, tokenOutcome);
     }
 
-    if (!token) {
-      return sendOutcome(res, badRequest('Invalid token'));
-    }
-
     const [userOutcome, user] = await repo.readReference<User>(login?.user as Reference);
     if (!isOk(userOutcome)) {
       return sendOutcome(res, userOutcome);
-    }
-
-    if (!user) {
-      return sendOutcome(res, badRequest('Invalid user'));
     }
 
     const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
@@ -66,8 +58,8 @@ authRouter.post(
     return res.status(200).json({
       user,
       profile,
-      idToken: token.idToken,
-      accessToken: token.accessToken,
-      refreshToken: token.refreshToken
+      idToken: (token as TokenResult).idToken,
+      accessToken: (token as TokenResult).accessToken,
+      refreshToken: (token as TokenResult).refreshToken
     });
   }));
