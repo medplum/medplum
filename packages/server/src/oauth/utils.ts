@@ -149,7 +149,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
   const refreshToken = login.refreshSecret ? await generateRefreshToken({
     client_id: clientId,
     login_id: login.id as string,
-    refresh_secret: login.refreshSecret as string
+    refresh_secret: login.refreshSecret
   }) : undefined;
 
   return [allOk, {

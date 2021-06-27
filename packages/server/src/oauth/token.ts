@@ -163,7 +163,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
 
-  const authHeader = req.headers.authorization as string | undefined;
+  const authHeader = req.headers.authorization;
   if (authHeader) {
     if (!authHeader.startsWith('Basic ')) {
       return sendTokenError(res, 'invalid_request', 'Invalid authorization header');

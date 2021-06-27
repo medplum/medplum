@@ -38,7 +38,6 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
   });
 
   if (!isOk(outcome)) {
-    console.log('login failed', JSON.stringify(outcome, undefined, 2));
     return renderTemplate(res, 'login', buildView(outcome));
   }
 
@@ -49,7 +48,6 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
   redirectUrl.searchParams.append('code', (login as Login).code as string);
   redirectUrl.searchParams.append('state', req.query.state as string);
   res.redirect(redirectUrl.toString());
-  console.log('login success');
 });
 
 

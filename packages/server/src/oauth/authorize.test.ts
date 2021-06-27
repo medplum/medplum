@@ -87,6 +87,34 @@ test('Authorize GET success', async (done) => {
     .expect(200, done);
 });
 
+test('Authorize POST client not found', async (done) => {
+  request(app)
+    .post('/oauth2/authorize?response_type=code&client_id=123&redirect_uri=https://example.com&scope=openid')
+    .type('form')
+    .send({
+      email: 'admin@medplum.com',
+      password: 'admin',
+      nonce: 'asdf'
+    })
+    .expect(400, done);
+});
+
+test('Authorize POST wrong password', async (done) => {
+  request(app)
+    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .type('form')
+    .send({
+      email: 'admin@medplum.com',
+      password: 'wrong-password',
+      nonce: 'asdf'
+    })
+    .expect(200)
+    .end((err, res) => {
+      console.log('wrong password body', res.body);
+      done();
+    });
+});
+
 test('Authorize POST success', async (done) => {
   request(app)
     .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')

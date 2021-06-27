@@ -172,14 +172,14 @@ async function createStructureDefinitions() {
     }
 
     if (resource.resourceType === 'StructureDefinition' && resource.name) {
-      logger.info('StructureDefinition', resource.name);
+      logger.debug('StructureDefinition: ' + resource.name);
       const [outcome, result] = await repo.createResource<StructureDefinition>(resource);
 
       if (!isOk(outcome)) {
         throw new OperationOutcomeError(outcome);
       }
 
-      logger.info('Created', (result as StructureDefinition).id);
+      logger.debug('Created: ' + (result as StructureDefinition).id);
     }
   }
 }
