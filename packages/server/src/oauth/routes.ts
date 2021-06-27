@@ -1,9 +1,11 @@
+import cookieParser from 'cookie-parser';
 import { Request, Response, Router } from 'express';
 import { authorizeGetHandler, authorizePostHandler } from './authorize';
 import { authenticateToken } from './middleware';
 import { tokenHandler } from './token';
 
 export const oauthRouter = Router();
+oauthRouter.use(cookieParser());
 oauthRouter.get('/authorize', authorizeGetHandler);
 oauthRouter.post('/authorize', authorizePostHandler);
 oauthRouter.post('/token', tokenHandler);

@@ -1,5 +1,4 @@
 import { json, raw, urlencoded } from 'body-parser';
-import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { Express, NextFunction, Request, Response } from 'express';
 import { authRouter } from './auth';
@@ -51,7 +50,6 @@ export async function initApp(app: Express): Promise<Express> {
   app.set('x-powered-by', false);
   app.set('json spaces', 2);
   app.use(cacheHandler);
-  app.use(cookieParser());
   app.use(cors(corsOptions));
   app.use(urlencoded({
     extended: false
