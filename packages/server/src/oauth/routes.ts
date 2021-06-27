@@ -5,7 +5,7 @@ import { authenticateToken } from './middleware';
 import { tokenHandler } from './token';
 
 export const oauthRouter = Router();
-oauthRouter.use(cookieParser());
+oauthRouter.use(cookieParser()); // lgtm [js/missing-token-validation]
 oauthRouter.get('/authorize', authorizeGetHandler);
 oauthRouter.post('/authorize', authorizePostHandler);
 oauthRouter.post('/token', tokenHandler);

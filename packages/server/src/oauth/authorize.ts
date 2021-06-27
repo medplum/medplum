@@ -42,7 +42,7 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
   }
 
   const cookieName = 'medplum-' + req.query.client_id;
-  res.cookie(cookieName, (login as Login).cookie as string, { httpOnly: true });
+  res.cookie(cookieName, (login as Login).cookie as string, { httpOnly: true }); // lgtm [js/clear-text-storage-of-sensitive-data]
 
   const redirectUrl = new URL(req.query.redirect_uri as string);
   redirectUrl.searchParams.append('code', (login as Login).code as string);
