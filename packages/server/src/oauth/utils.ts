@@ -20,33 +20,14 @@ export interface TokenResult {
 }
 
 export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome, Login | undefined]> {
-  if (!request.clientId) {
-    return [badRequest('Invalid clientId', 'clientId'), undefined];
-  }
-
-  if (!request.email) {
-    return [badRequest('Invalid email', 'email'), undefined];
-  }
-
-  if (!request.password) {
-    return [badRequest('Invalid password', 'password'), undefined];
-  }
-
-  if (!request.role) {
-    return [badRequest('Invalid role', 'role'), undefined];
-  }
-
-  if (!request.scope) {
-    return [badRequest('Invalid scope', 'scope'), undefined];
+  const validateOutcome = validateLoginRequest(request);
+  if (validateOutcome) {
+    return [validateOutcome, undefined];
   }
 
   const [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', request.clientId);
   if (!isOk(clientOutcome)) {
     return [clientOutcome, undefined];
-  }
-
-  if (!client) {
-    return [notFound, undefined];
   }
 
   const [outcome, user] = await getUserByEmail(request.email);
@@ -68,20 +49,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [badRequest('Incorrect password', 'password'), undefined];
   }
 
-  let roleReference;
-  switch (request.role) {
-    case 'patient':
-      roleReference = user.patient;
-      break;
-
-    case 'practitioner':
-      roleReference = user.practitioner;
-      break;
-
-    default:
-      return [badRequest('Unrecognized role', 'role'), undefined];
-  }
-
+  const roleReference = request.role === 'patient' ? user.patient : user.practitioner;
   if (!roleReference) {
     return [badRequest('User does not have role', 'role'), undefined];
   }
@@ -95,12 +63,8 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
 
   return repo.createResource<Login>({
     resourceType: 'Login',
-    client: {
-      reference: client.resourceType + '/' + client.id,
-    },
-    user: {
-      reference: user.resourceType + '/' + user.id
-    },
+    client: createReference(client as ClientApplication),
+    user: createReference(user),
     profile: createReference(profile),
     authTime: new Date(),
     code: generateSecret(16),
@@ -109,6 +73,30 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     scope: request.scope,
     nonce: request.nonce,
   });
+}
+
+function validateLoginRequest(request: LoginRequest): OperationOutcome | undefined {
+  if (!request.clientId) {
+    return badRequest('Invalid clientId', 'clientId');
+  }
+
+  if (!request.email) {
+    return badRequest('Invalid email', 'email');
+  }
+
+  if (!request.password) {
+    return badRequest('Invalid password', 'password');
+  }
+
+  if (request.role !== 'patient' && request.role !== 'practitioner') {
+    return badRequest('Invalid role', 'role');
+  }
+
+  if (!request.scope) {
+    return badRequest('Invalid scope', 'scope');
+  }
+
+  return undefined;
 }
 
 export async function getAuthTokens(login: Login): Promise<[OperationOutcome, TokenResult | undefined]> {
