@@ -1,7 +1,7 @@
 import { ClientApplication, createReference, getReferenceString, Login, Operator } from '@medplum/core';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { badRequest, isOk, repo, sendOutcome } from '../fhir';
+import { isOk, repo } from '../fhir';
 import { generateAccessToken, MedplumRefreshTokenClaims, verifyJwt } from './keys';
 import { getAuthTokens, getReferenceIdPart, revokeLogin } from './utils';
 
@@ -16,7 +16,7 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
 
   const grantType = req.body.grant_type;
   if (!grantType) {
-    return sendOutcome(res, badRequest('Missing grant_type'));
+    return sendTokenError(res, 'invalid_request', 'Missing grant_type');
   }
 
   switch (grantType) {
@@ -27,7 +27,7 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
     case 'refresh_token':
       return handleRefreshToken(req, res);
     default:
-      return sendOutcome(res, badRequest('Unsupported grant_type'));
+      return sendTokenError(res, 'invalid_request', 'Unsupported grant_type');
   }
 });
 
@@ -43,11 +43,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
   }
 
   const [readOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', clientId);
-  if (!isOk(readOutcome)) {
-    return sendOutcome(res, readOutcome);
-  }
-
-  if (!client) {
+  if (!isOk(readOutcome) || !client) {
     return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
@@ -123,11 +119,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
   }
 
   const [tokenOutcome, token] = await getAuthTokens(login);
-  if (!isOk(tokenOutcome)) {
-    return sendTokenError(res, 'invalid_request', 'Invalid token');
-  }
-
-  if (!token) {
+  if (!isOk(tokenOutcome) || !token) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
 
