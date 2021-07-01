@@ -164,7 +164,7 @@ export class MedplumClient extends EventTarget {
     this.storage.clear();
     this.user = undefined;
     this.profile = undefined;
-    this.dispatchEvent(new Event('change'));
+    this.dispatchEvent({ type: 'change' });
   }
 
   get(url: string, blob?: boolean): Promise<any> {
@@ -212,7 +212,7 @@ export class MedplumClient extends EventTarget {
         this.setRefreshToken(response.refreshToken);
         this.setUser(response.user);
         this.setProfile(response.profile);
-        this.dispatchEvent(new Event('change'));
+        this.dispatchEvent({ type: 'change' });
         return response.user;
       });
   }
@@ -339,8 +339,8 @@ export class MedplumClient extends EventTarget {
     return cached ? Promise.resolve(cached) : this.readBlobAsImageUrl(url);
   }
 
-  readBinary(resourceType: string, id: string): Promise<Blob> {
-    return this.readBlob(this.fhirUrl(resourceType, id));
+  readBinary(id: string): Promise<Blob> {
+    return this.readBlob(this.fhirUrl('Binary', id));
   }
 
   create<T extends Resource>(resource: T): Promise<T> {
