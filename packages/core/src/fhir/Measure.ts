@@ -181,7 +181,7 @@ export interface Measure {
    * if the status code changes. In addition, it should change when the
    * substantive content of the measure changes.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the measure.
@@ -239,14 +239,14 @@ export interface Measure {
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: Date;
+  readonly approvalDate?: Date | string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: Date;
+  readonly lastReviewDate?: Date | string;
 
   /**
    * The period during which the measure content was or is planned to be in

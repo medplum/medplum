@@ -1,6 +1,64 @@
-import { formatFamilyName, formatGivenName, formatHumanName } from './format';
+import { formatAddress, formatFamilyName, formatGivenName, formatHumanName } from './format';
+
+test('Format Address', () => {
+  expect(formatAddress({})).toEqual('');
+
+  expect(formatAddress({
+    line: ['742 Evergreen Terrace'],
+  })).toEqual('742 Evergreen Terrace');
+
+  expect(formatAddress({
+    city: 'Springfield',
+  })).toEqual('Springfield');
+
+  expect(formatAddress({
+    state: 'OR',
+  })).toEqual('OR');
+
+  expect(formatAddress({
+    postalCode: '97403'
+  })).toEqual('97403');
+
+  expect(formatAddress({
+    line: ['742 Evergreen Terrace'],
+    city: 'Springfield',
+    state: 'OR',
+    postalCode: '97403'
+  })).toEqual('742 Evergreen Terrace, Springfield, OR, 97403');
+
+  expect(formatAddress({
+    line: ['742 Evergreen Terrace'],
+    city: 'Springfield',
+    state: 'OR',
+    postalCode: '97403'
+  }, {
+    use: true
+  })).toEqual('742 Evergreen Terrace, Springfield, OR, 97403');
+
+  expect(formatAddress({
+    line: ['742 Evergreen Terrace'],
+    city: 'Springfield',
+    state: 'OR',
+    postalCode: '97403',
+    use: 'official'
+  }, {
+    use: true
+  })).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [official]');
+
+  expect(formatAddress({
+    line: ['742 Evergreen Terrace'],
+    city: 'Springfield',
+    state: 'OR',
+    postalCode: '97403',
+    use: 'official'
+  }, {
+    all: true
+  })).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [official]');
+});
 
 test('Format HumanName', () => {
+  expect(formatHumanName({})).toEqual('');
+
   expect(formatHumanName({
     given: ['Alice'],
     family: 'Smith',

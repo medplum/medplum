@@ -39,7 +39,7 @@ export interface Meta {
   /**
    * When the resource last changed - e.g. when the version changed.
    */
-  readonly lastUpdated?: Date;
+  readonly lastUpdated?: Date | string;
 
   /**
    * A uri that identifies the source system of the resource. This provides

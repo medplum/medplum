@@ -120,7 +120,7 @@ export interface Person {
   /**
    * The birth date for the person.
    */
-  readonly birthDate?: Date;
+  readonly birthDate?: Date | string;
 
   /**
    * One or more addresses for the person.

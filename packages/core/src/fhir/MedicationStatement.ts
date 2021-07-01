@@ -203,7 +203,7 @@ export interface MedicationStatement {
    * The date when the medication statement was asserted by the information
    * source.
    */
-  readonly dateAsserted?: Date;
+  readonly dateAsserted?: Date | string;
 
   /**
    * The person or organization that provided the information about the

@@ -1,4 +1,4 @@
-import { ClientApplication, createReference, Login, OperationOutcome, Operator, ProfileResource, Reference, User } from '@medplum/core';
+import { getDateProperty, ClientApplication, createReference, Login, OperationOutcome, Operator, ProfileResource, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { allOk, badRequest, isNotFound, isOk, notFound, repo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
@@ -122,7 +122,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
     login_id: login.id as string,
     sub: userId,
     nonce: login.nonce as string,
-    auth_time: (getJsonDate(login.authTime) as Date).getTime() / 1000
+    auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000
   });
 
   const accessToken = await generateAccessToken({
@@ -191,21 +191,4 @@ async function getUserByEmail(email: string): RepositoryResult<User | undefined>
   }
 
   return [allOk, bundle.entry[0].resource as User];
-}
-
-/**
- * Returns a Date property as a Date.
- * When working with JSON objects, Dates are often serialized as ISO-8601 strings.
- * When that happens, we need to safely convert to a proper Date object.
- * @param date The date property value, which could be a string or a Date object.
- * @returns A Date object.
- */
-export function getJsonDate(date: Date | string | undefined): Date | undefined {
-  if (date instanceof Date) {
-    return date;
-  }
-  if (typeof date === 'string') {
-    return new Date(date);
-  }
-  return undefined;
 }

@@ -149,7 +149,7 @@ export interface DocumentReference {
   /**
    * When the document reference was created.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * Identifies who is responsible for adding the information to the

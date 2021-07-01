@@ -138,7 +138,7 @@ export interface FamilyMemberHistory {
    * The date (and possibly time) when the family member history was
    * recorded or last updated.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * This will either be a name or a description; e.g. &quot;Aunt Susan&quot;, &quot;my

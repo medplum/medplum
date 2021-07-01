@@ -66,7 +66,7 @@ export interface Login {
   /**
    * Time when the End-User authentication occurred.
    */
-  readonly authTime?: Date;
+  readonly authTime?: Date | string;
 
   /**
    * The cookie value that can be used for session management.

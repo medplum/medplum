@@ -122,13 +122,13 @@ export interface MedicinalProductAuthorization {
   /**
    * The date at which the given status has become applicable.
    */
-  readonly statusDate?: Date;
+  readonly statusDate?: Date | string;
 
   /**
    * The date when a suspended the marketing or the marketing authorization
    * of the product is anticipated to be restored.
    */
-  readonly restoreDate?: Date;
+  readonly restoreDate?: Date | string;
 
   /**
    * The beginning of the time period in which the marketing authorization
@@ -148,13 +148,13 @@ export interface MedicinalProductAuthorization {
    * The date when the first authorization was granted by a Medicines
    * Regulatory Agency.
    */
-  readonly dateOfFirstAuthorization?: Date;
+  readonly dateOfFirstAuthorization?: Date | string;
 
   /**
    * Date of first marketing authorization for a company's new medicinal
    * product in any country in the World.
    */
-  readonly internationalBirthDate?: Date;
+  readonly internationalBirthDate?: Date | string;
 
   /**
    * The legal framework against which this authorization is granted.

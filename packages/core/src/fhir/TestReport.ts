@@ -134,7 +134,7 @@ export interface TestReport {
   /**
    * When the TestScript was executed and this TestReport was generated.
    */
-  readonly issued?: Date;
+  readonly issued?: Date | string;
 
   /**
    * A participant in the test execution, either the execution engine, a

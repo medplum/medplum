@@ -36,7 +36,9 @@ wellKnownRouter.get('/openid-configuration', (req: Request, res: Response) => {
     scopes_supported: [
       'openid',
       'profile',
-      'email'
+      'email',
+      'phone',
+      'address'
     ],
     token_endpoint_auth_methods_supported: [
       'client_secret_basic',

@@ -60,7 +60,7 @@ export interface Bundle {
    * The date/time that the bundle was assembled - i.e. when the resources
    * were placed in the bundle.
    */
-  readonly timestamp?: Date;
+  readonly timestamp?: Date | string;
 
   /**
    * If a set of search matches, this is the total number of entries of
@@ -287,7 +287,7 @@ export interface BundleRequest {
    * Only perform the operation if the last updated date matches. See the
    * API documentation for [&quot;Conditional Read&quot;](http.html#cread).
    */
-  readonly ifModifiedSince?: Date;
+  readonly ifModifiedSince?: Date | string;
 
   /**
    * Only perform the operation if the Etag value matches. For more
@@ -369,7 +369,7 @@ export interface BundleResponse {
   /**
    * The date/time that the resource was modified on the server.
    */
-  readonly lastModified?: Date;
+  readonly lastModified?: Date | string;
 
   /**
    * An OperationOutcome containing hints and warnings produced as part of

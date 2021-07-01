@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { authorizeGetHandler, authorizePostHandler } from './authorize';
 import { authenticateToken } from './middleware';
 import { tokenHandler } from './token';
+import { userInfoHandler } from './userinfo';
 
 export const oauthRouter = Router();
 oauthRouter.use(cookieParser()); // lgtm [js/missing-token-validation]
@@ -11,9 +12,12 @@ oauthRouter.use(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // limit each IP to 100 requests per windowMs
 }));
+
 oauthRouter.get('/authorize', authorizeGetHandler);
 oauthRouter.post('/authorize', authorizePostHandler);
 oauthRouter.post('/token', tokenHandler);
+oauthRouter.get('/userinfo', authenticateToken, userInfoHandler);
+oauthRouter.post('/userinfo', authenticateToken, userInfoHandler);
 
 oauthRouter.get('/logout', (req: Request, res: Response) => {
   for (const name of Object.keys(req.cookies)) {
@@ -26,42 +30,6 @@ oauthRouter.get('/logout', (req: Request, res: Response) => {
 
 oauthRouter.post('/logout', (req: Request, res: Response) => {
   res.sendStatus(200);
-});
-
-oauthRouter.get('/userinfo', authenticateToken, (req: Request, res: Response) => {
-  const userInfo: Record<string, any> = {
-    sub: res.locals.user
-  };
-
-  if (res.locals.scope.includes('profile')) {
-    userInfo.profile = res.locals.profile;
-    userInfo.name = 'foo';
-    userInfo.website = '';
-    userInfo.zoneinfo = '';
-    userInfo.birthdate = '1990-01-01';
-    userInfo.gender = '';
-    userInfo.preferred_username = '';
-    userInfo.given_name = '';
-    userInfo.middle_name = '';
-    userInfo.family_name = '';
-    userInfo.locale = 'en-US';
-    userInfo.picture = '';
-    userInfo.updated_at = Date.now() / 1000;
-    userInfo.nickname = '';
-  }
-
-  if (res.locals.scope.includes('email')) {
-    userInfo.email = 'foo@example.com';
-    userInfo.email_verified = true;
-  }
-
-  res.status(200).json(userInfo);
-});
-
-oauthRouter.post('/userinfo', authenticateToken, (req: Request, res: Response) => {
-  res.status(200).json({
-    sub: res.locals.user
-  });
 });
 
 oauthRouter.get('/register', (req: Request, res: Response) => {

@@ -1,11 +1,11 @@
-import { ClientApplication, Login, OperationOutcome, Operator } from '@medplum/core';
+import { getDateProperty, ClientApplication, Login, OperationOutcome, Operator } from '@medplum/core';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { isOk, repo } from '../fhir';
 import { logger } from '../logger';
 import { renderTemplate } from '../templates';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
-import { getJsonDate, tryLogin } from './utils';
+import { tryLogin } from './utils';
 
 /*
  * Handles the OAuth/OpenID Authorization Endpoint.
@@ -135,7 +135,7 @@ async function getExistingLogin(req: Request, client: ClientApplication): Promis
     return undefined;
   }
 
-  const authTime = getJsonDate(login.authTime) as Date;
+  const authTime = getDateProperty(login.authTime) as Date;
   const age = (Date.now() - authTime.getTime()) / 1000;
   const maxAge = req.query.max_age ? parseInt(req.query.max_age as string) : 3600;
   if (age > maxAge) {

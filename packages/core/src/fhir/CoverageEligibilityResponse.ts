@@ -135,7 +135,7 @@ export interface CoverageEligibilityResponse {
   /**
    * The date this resource was created.
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * The provider which is responsible for the request.

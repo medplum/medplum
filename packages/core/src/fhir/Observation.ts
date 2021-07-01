@@ -204,7 +204,7 @@ export interface Observation {
    * to providers, typically after the results have been reviewed and
    * verified.
    */
-  readonly issued?: Date;
+  readonly issued?: Date | string;
 
   /**
    * Who was responsible for asserting the observed value as &quot;true&quot;.

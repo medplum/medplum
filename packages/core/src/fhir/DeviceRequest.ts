@@ -205,7 +205,7 @@ export interface DeviceRequest {
   /**
    * When the request transitioned to being actionable.
    */
-  readonly authoredOn?: Date;
+  readonly authoredOn?: Date | string;
 
   /**
    * The individual who initiated the request and has responsibility for

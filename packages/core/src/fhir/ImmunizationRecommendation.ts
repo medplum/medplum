@@ -107,7 +107,7 @@ export interface ImmunizationRecommendation {
   /**
    * The date the immunization recommendation(s) were created.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * Indicates the authority who published the protocol (e.g. ACIP).
@@ -171,7 +171,7 @@ export interface ImmunizationRecommendationDateCriterion {
   /**
    * The date whose meaning is specified by dateCriterion.code.
    */
-  readonly value?: Date;
+  readonly value?: Date | string;
 }
 
 /**

@@ -92,5 +92,5 @@ export interface MarketingStatus {
    * refers to the release of the Medicinal Product into the distribution
    * chain.
    */
-  readonly restoreDate?: Date;
+  readonly restoreDate?: Date | string;
 }

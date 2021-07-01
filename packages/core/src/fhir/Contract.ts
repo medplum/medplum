@@ -154,7 +154,7 @@ export interface Contract {
   /**
    * When this  Contract was issued.
    */
-  readonly issued?: Date;
+  readonly issued?: Date | string;
 
   /**
    * Relevant time or time-period when this Contract is applicable.
@@ -843,7 +843,7 @@ export interface ContractContentDefinition {
    * if the status code changes. In addition, it should change when the
    * substantive content of the contract changes.
    */
-  readonly publicationDate?: Date;
+  readonly publicationDate?: Date | string;
 
   /**
    * amended | appended | cancelled | disputed | entered-in-error |
@@ -1456,7 +1456,7 @@ export interface ContractTerm {
   /**
    * When this Contract Provision was issued.
    */
-  readonly issued?: Date;
+  readonly issued?: Date | string;
 
   /**
    * Relevant time or time-period when this Contract Provision is
@@ -1582,7 +1582,7 @@ export interface ContractValuedItem {
    * Indicates the time during which this Contract ValuedItem information
    * is effective.
    */
-  readonly effectiveTime?: Date;
+  readonly effectiveTime?: Date | string;
 
   /**
    * Specifies the units by which the Contract Valued Item is measured or
@@ -1629,7 +1629,7 @@ export interface ContractValuedItem {
   /**
    * When payment is due.
    */
-  readonly paymentDate?: Date;
+  readonly paymentDate?: Date | string;
 
   /**
    * Who will make payment.

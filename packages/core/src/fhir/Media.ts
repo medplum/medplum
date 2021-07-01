@@ -162,7 +162,7 @@ export interface Media {
    * The date and time this version of the media was made available to
    * providers, typically after having been reviewed.
    */
-  readonly issued?: Date;
+  readonly issued?: Date | string;
 
   /**
    * The person who administered the collection of the image.

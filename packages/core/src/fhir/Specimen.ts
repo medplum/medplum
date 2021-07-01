@@ -128,7 +128,7 @@ export interface Specimen {
   /**
    * Time when specimen was received for processing or testing.
    */
-  readonly receivedTime?: Date;
+  readonly receivedTime?: Date | string;
 
   /**
    * Reference to the parent (source) specimen which is used when the

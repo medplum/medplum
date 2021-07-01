@@ -69,5 +69,5 @@ export interface Attachment {
   /**
    * The date that the attachment was first created.
    */
-  readonly creation?: Date;
+  readonly creation?: Date | string;
 }

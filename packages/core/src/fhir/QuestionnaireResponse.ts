@@ -145,7 +145,7 @@ export interface QuestionnaireResponse {
   /**
    * The date and/or time that this set of answers were last changed.
    */
-  readonly authored?: Date;
+  readonly authored?: Date | string;
 
   /**
    * Person who received the answers to the questions in the

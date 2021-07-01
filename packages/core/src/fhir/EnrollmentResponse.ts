@@ -121,7 +121,7 @@ export interface EnrollmentResponse {
    * The date when the enclosed suite of services were performed or
    * completed.
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * The Insurer who produced this adjudicated response.

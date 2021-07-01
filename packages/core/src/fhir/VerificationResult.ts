@@ -119,7 +119,7 @@ export interface VerificationResult {
   /**
    * When the validation status was updated.
    */
-  readonly statusDate?: Date;
+  readonly statusDate?: Date | string;
 
   /**
    * What the target is validated against (nothing; primary source;
@@ -142,12 +142,12 @@ export interface VerificationResult {
    * The date/time validation was last completed (including failed
    * validations).
    */
-  readonly lastPerformed?: Date;
+  readonly lastPerformed?: Date | string;
 
   /**
    * The date when target is next validated, if appropriate.
    */
-  readonly nextScheduled?: Date;
+  readonly nextScheduled?: Date | string;
 
   /**
    * The result if validation fails (fatal; warning; record only; none).
@@ -231,7 +231,7 @@ export interface VerificationResultAttestation {
   /**
    * The date the information was attested to.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * A digital identity certificate associated with the attestation source.
@@ -325,7 +325,7 @@ export interface VerificationResultPrimarySource {
   /**
    * When the target was validated against the primary source.
    */
-  readonly validationDate?: Date;
+  readonly validationDate?: Date | string;
 
   /**
    * Ability of the primary source to push updates/alerts (yes; no;

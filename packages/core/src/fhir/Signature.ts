@@ -44,7 +44,7 @@ export interface Signature {
   /**
    * When the digital signature was signed.
    */
-  readonly when?: Date;
+  readonly when?: Date | string;
 
   /**
    * A reference to an application-usable description of the identity that

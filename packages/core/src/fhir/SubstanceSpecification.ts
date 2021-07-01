@@ -251,7 +251,7 @@ export interface SubstanceSpecificationCode {
    * The date at which the code status is changed as part of the
    * terminology maintenance.
    */
-  readonly statusDate?: Date;
+  readonly statusDate?: Date | string;
 
   /**
    * Any comment can be provided in this field, if necessary.
@@ -627,7 +627,7 @@ export interface SubstanceSpecificationOfficial {
   /**
    * Date of official name change.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 }
 
 /**

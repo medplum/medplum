@@ -186,12 +186,12 @@ export interface Communication {
   /**
    * The time when this communication was sent.
    */
-  readonly sent?: Date;
+  readonly sent?: Date | string;
 
   /**
    * The time when this communication arrived at the destination.
    */
-  readonly received?: Date;
+  readonly received?: Date | string;
 
   /**
    * The entity (e.g. person, organization, clinical information system,

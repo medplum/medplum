@@ -112,7 +112,32 @@ async function createUser() {
     name: [{
       given: ['Medplum'],
       family: 'Admin'
-    }]
+    }],
+    telecom: [
+      {
+        system: 'email',
+        use: 'work',
+        value: 'admin@medplum.com'
+      },
+      {
+        system: 'phone',
+        use: 'work',
+        value: '415-867-5309'
+      }
+    ],
+    address: [
+      {
+        use: 'work',
+        type: 'both',
+        line: [
+          '742 Evergreen Terrace'
+        ],
+        city: 'Springfield',
+        state: 'OR',
+        postalCode: '97403'
+      }
+    ],
+    birthDate: '2000-01-01'
   });
 
   if (!isOk(practitionerOutcome)) {

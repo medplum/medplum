@@ -255,12 +255,12 @@ export interface LocationHoursOfOperation {
   /**
    * Time that the Location opens.
    */
-  readonly openingTime?: Date;
+  readonly openingTime?: Date | string;
 
   /**
    * Time that the Location closes.
    */
-  readonly closingTime?: Date;
+  readonly closingTime?: Date | string;
 }
 
 /**
