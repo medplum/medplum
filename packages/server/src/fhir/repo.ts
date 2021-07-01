@@ -85,15 +85,6 @@ export class Repository {
     this.context = context;
   }
 
-  async createBatch(bundle: Bundle): RepositoryResult<Bundle> {
-    const validateOutcome = validateResource(bundle);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
-    }
-
-    return [allOk, bundle];
-  }
-
   async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
     const validateOutcome = validateResource(resource);
     if (!isOk(validateOutcome)) {
@@ -362,8 +353,8 @@ export class Repository {
   }
 
   private async writeLookupTables(resource: Resource): Promise<void> {
-    for (let i = 0; i < lookupTables.length; i++) {
-      await lookupTables[i].indexResource(resource);
+    for (const lookupTable of lookupTables) {
+      await lookupTable.indexResource(resource);
     }
   }
 

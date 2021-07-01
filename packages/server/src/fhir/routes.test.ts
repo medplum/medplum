@@ -1,4 +1,5 @@
 import { Meta, Patient } from '@medplum/core';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
@@ -151,12 +152,43 @@ test('Read resource version invalid resource type', (done) => {
     .expect(400, done);
 });
 
+test('Read resource version not found', (done) => {
+  request(app)
+    .get(`/fhir/R4/Patient/${patientId}/_history/${randomUUID()}`)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .expect(404, done);
+});
+
 test('Update resource', (done) => {
   request(app)
     .put(`/fhir/R4/Patient/${patientId}`)
     .set('Authorization', 'Bearer ' + accessToken)
     .send({ resourceType: 'Patient', id: patientId })
     .expect(200, done);
+});
+
+test('Update resource invalid', (done) => {
+  request(app)
+    .put(`/fhir/R4/Patient/${patientId}`)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .send({})
+    .expect(400, done);
+});
+
+test('Update resource missing ID', (done) => {
+  request(app)
+    .put(`/fhir/R4/Patient/${patientId}`)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .send({ resourceType: 'Patient' })
+    .expect(400, done);
+});
+
+test('Update resource not found', (done) => {
+  request(app)
+    .put(`/fhir/R4/Patient/${randomUUID()}`)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .send({ resourceType: 'Patient' })
+    .expect(400, done);
 });
 
 test('Delete resource', (done) => {

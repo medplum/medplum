@@ -60,3 +60,23 @@ test('Patient resource with name', async (done) => {
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
   done();
 });
+
+test('Repo read malformed reference', async (done) => {
+  const [outcome1, resource1] = await repo.readReference({ reference: undefined });
+  expect(outcome1.id).not.toBe('ok');
+  expect(resource1).toBeUndefined();
+
+  const [outcome2, resource2] = await repo.readReference({ reference: '' });
+  expect(outcome2.id).not.toBe('ok');
+  expect(resource2).toBeUndefined();
+
+  const [outcome3, resource3] = await repo.readReference({ reference: '////' });
+  expect(outcome3.id).not.toBe('ok');
+  expect(resource3).toBeUndefined();
+
+  const [outcome4, resource4] = await repo.readReference({ reference: 'Patient/123/foo' });
+  expect(outcome4.id).not.toBe('ok');
+  expect(resource4).toBeUndefined();
+
+  done();
+});
