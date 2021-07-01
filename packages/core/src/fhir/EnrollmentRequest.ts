@@ -105,7 +105,7 @@ export interface EnrollmentRequest {
   /**
    * The date when this resource was created.
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * The Insurer who is target  of the request.

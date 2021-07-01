@@ -121,7 +121,7 @@ export interface AuditEvent {
   /**
    * The time when the event was recorded.
    */
-  readonly recorded?: Date;
+  readonly recorded?: Date | string;
 
   /**
    * Indicates whether the event succeeded or failed.

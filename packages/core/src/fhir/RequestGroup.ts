@@ -177,7 +177,7 @@ export interface RequestGroup {
   /**
    * Indicates when the request group was created.
    */
-  readonly authoredOn?: Date;
+  readonly authoredOn?: Date | string;
 
   /**
    * Provides a reference to the author of the request group.

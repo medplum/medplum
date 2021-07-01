@@ -151,7 +151,7 @@ export interface TerminologyCapabilities {
    * change when the substantive content of the terminology capabilities
    * changes.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the

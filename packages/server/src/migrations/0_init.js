@@ -3749,6 +3749,8 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
+    t.string('code', 128);
+    t.string('cookie', 128);
   });
 
   await knex.schema.createTable('Login_History', t => {

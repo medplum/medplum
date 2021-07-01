@@ -220,7 +220,7 @@ export interface ChargeItem {
   /**
    * Date the charge item was entered.
    */
-  readonly enteredDate?: Date;
+  readonly enteredDate?: Date | string;
 
   /**
    * Describes why the event occurred in coded or textual form.

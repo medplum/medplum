@@ -341,8 +341,8 @@ function buildImports(fhirType: FhirType, includedTypes: Set<string>, referenced
 function cleanReferencedType(typeName: string): string | undefined {
   if (typeName.startsWith('\'') ||
     isLowerCase(typeName.charAt(0)) ||
-    typeName === 'Date' ||
-    typeName === 'Date[]') {
+    typeName === 'Date | string' ||
+    typeName === '(Date | string)[]') {
     return undefined;
   }
 
@@ -364,7 +364,12 @@ function getTypeScriptType(property: Property): string {
     if (typeValue === 'array') {
       const itemDefinition = property.definition.items;
       if (itemDefinition && itemDefinition.$ref) {
-        return getTypeScriptTypeFromDefinition(itemDefinition.$ref) + '[]';
+        const itemType = getTypeScriptTypeFromDefinition(itemDefinition.$ref);
+        if (itemType.includes(' | ')) {
+          return '(' + itemType + ')[]';
+        } else {
+          return itemType + '[]';
+        }
       } else if (itemDefinition && itemDefinition.enum) {
         return 'string[]';
       } else {
@@ -422,7 +427,7 @@ function getTypeScriptTypeFromDefinition(ref: string): string {
     case 'dateTime':
     case 'instant':
     case 'time':
-      return 'Date';
+      return 'Date | string';
 
     case 'decimal':
     case 'integer':

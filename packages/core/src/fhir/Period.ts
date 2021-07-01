@@ -29,7 +29,7 @@ export interface Period {
   /**
    * The start of the period. The boundary is inclusive.
    */
-  readonly start?: Date;
+  readonly start?: Date | string;
 
   /**
    * The end of the period. If the end of the period is missing, it means
@@ -37,5 +37,5 @@ export interface Period {
    * start may be in the past, and the end date in the future, which means
    * that period is expected/planned to end at that time.
    */
-  readonly end?: Date;
+  readonly end?: Date | string;
 }

@@ -199,7 +199,7 @@ export interface MedicationRequest {
    * The date (and perhaps time) when the prescription was initially
    * written or authored on.
    */
-  readonly authoredOn?: Date;
+  readonly authoredOn?: Date | string;
 
   /**
    * The individual, organization, or device that initiated the request and

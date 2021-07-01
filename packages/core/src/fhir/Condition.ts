@@ -222,7 +222,7 @@ export interface Condition {
    * The recordedDate represents when this particular Condition record was
    * created in the system, which is often a system-generated date.
    */
-  readonly recordedDate?: Date;
+  readonly recordedDate?: Date | string;
 
   /**
    * Individual who recorded the record and takes responsibility for its

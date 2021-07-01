@@ -154,7 +154,7 @@ export interface OperationDefinition {
    * change when the substantive content of the operation definition
    * changes.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the

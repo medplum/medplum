@@ -41,7 +41,7 @@ export interface Annotation {
   /**
    * Indicates when this particular annotation was made.
    */
-  readonly time?: Date;
+  readonly time?: Date | string;
 
   /**
    * The text of the annotation in markdown format.

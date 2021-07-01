@@ -1,10 +1,10 @@
-import { ClientApplication, createReference, getReferenceString, Login, ProfileResource, User } from '@medplum/core';
+import { Login, ProfileResource, Reference, User } from '@medplum/core';
+import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { badRequest, invalidRequest, isOk, repo, sendOutcome } from '../fhir';
-import { generateAccessToken, generateRefreshToken } from '../oauth';
-import { createLogin } from '../oauth/utils';
+import { getAuthTokens, TokenResult, tryLogin } from '../oauth';
 
 export const authRouter = Router();
 
@@ -22,80 +22,44 @@ authRouter.post(
       return sendOutcome(res, invalidRequest(errors));
     }
 
-    const client: ClientApplication = {
-      resourceType: 'ClientApplication'
-    };
-
-    const [loginOutcome, login] = await createLogin(
-      client,
-      req.body.email,
-      req.body.password,
-      req.body.remember);
+    const [loginOutcome, login] = await tryLogin({
+      clientId: req.body.clientId,
+      email: req.body.email,
+      password: req.body.password,
+      scope: req.body.scope,
+      role: req.body.role,
+      nonce: randomUUID(),
+      remember: true
+    });
 
     if (!isOk(loginOutcome)) {
       return sendOutcome(res, loginOutcome);
     }
 
-    if (!login?.user) {
-      return sendOutcome(res, badRequest('Invalid login'));
+    const [tokenOutcome, token] = await getAuthTokens(login as Login);
+    if (!isOk(tokenOutcome)) {
+      return sendOutcome(res, tokenOutcome);
     }
 
-    const [userOutcome, user] = await repo.readReference<User>(login?.user);
+    const [userOutcome, user] = await repo.readReference<User>(login?.user as Reference);
     if (!isOk(userOutcome)) {
       return sendOutcome(res, userOutcome);
     }
 
-    if (!user) {
-      return sendOutcome(res, badRequest('User not found', 'email'));
-    }
-
-    let roleReference;
-    switch (req.body.role) {
-      case 'patient':
-        roleReference = user.patient;
-        break;
-
-      case 'practitioner':
-        roleReference = user.practitioner;
-        break;
-
-      default:
-        return sendOutcome(res, badRequest('Unrecognized role', 'role'));
-    }
-
-    if (!roleReference) {
-      return sendOutcome(res, badRequest('User does not have role', 'role'));
-    }
-
-    const [profileOutcome, profile] = await repo.readReference<ProfileResource>(roleReference);
-    if (!isOk(profileOutcome) || !profile) {
+    const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
+    if (!isOk(profileOutcome)) {
       return sendOutcome(res, profileOutcome);
     }
 
-    await repo.updateResource<Login>({
-      ...login,
-      scope: req.body.scope,
-      profile: createReference(profile),
-    });
+    if (!profile) {
+      return sendOutcome(res, badRequest('Invalid profile'));
+    }
 
-    const accessToken = await generateAccessToken({
-      sub: user.id as string,
-      username: user.id as string,
-      scope: req.body.scope,
-      client_id: client.id as string,
-      profile: getReferenceString(profile)
-    });
-
-    const refreshToken = req.body.remember ? await generateRefreshToken({
-      client_id: client.id as string,
-      login_id: login.id as string,
-      refresh_secret: login.refreshSecret as string
-    }) : undefined;
-
-    res.status(200).json({
+    return res.status(200).json({
       user,
       profile,
-      accessToken,
-      refreshToken
+      idToken: (token as TokenResult).idToken,
+      accessToken: (token as TokenResult).accessToken,
+      refreshToken: (token as TokenResult).refreshToken
     });
   }));

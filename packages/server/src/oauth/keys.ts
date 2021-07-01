@@ -10,7 +10,27 @@ import { MedplumServerConfig } from '../config';
 import { isOk, repo } from '../fhir';
 import { logger } from '../logger';
 
-export interface MedplumAccessTokenClaims extends JWTPayload {
+export interface MedplumBaseClaims extends JWTPayload {
+  /**
+   * Client application ID.
+   * This is a reference a ClientApplication resource.
+   */
+  client_id: string;
+
+  /**
+   * Login ID.
+   * This is the UUID of the Login resource.
+   */
+  login_id: string;
+}
+
+export interface MedplumIdTokenClaims extends MedplumBaseClaims {
+  name?: string;
+
+  nonce: string;
+}
+
+export interface MedplumAccessTokenClaims extends MedplumBaseClaims {
   /**
    * OpenID username. Same as JWTPayload.sub.
    */
@@ -23,12 +43,6 @@ export interface MedplumAccessTokenClaims extends JWTPayload {
   scope: string;
 
   /**
-   * Client application ID.
-   * This is a reference a ClientApplication resource.
-   */
-  client_id: string;
-
-  /**
    * FHIR profile or role.
    * Qualified reference to the FHIR resource.
    * For example, "Patient/123" or "Practitioner/456".
@@ -36,19 +50,7 @@ export interface MedplumAccessTokenClaims extends JWTPayload {
   profile: string;
 }
 
-export interface MedplumRefreshTokenClaims extends JWTPayload {
-  /**
-   * Client application ID.
-   * This is a reference a ClientApplication resource.
-   */
-  client_id: string;
-
-  /**
-   * Login ID.
-   * This is the UUID of a Login resource.
-   */
-  login_id: string;
-
+export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
   /**
    * Refresh secret.
    * Due to the powerful nature of a refresh token,
@@ -59,6 +61,12 @@ export interface MedplumRefreshTokenClaims extends JWTPayload {
 
 /**
  * Signing algorithm.
+ *
+ * RS256 (RSA Signature with SHA-256): An asymmetric algorithm, which means that there are two keys:
+ * one public key and one private key that must be kept secret. The server has the private key used to
+ * generate the signature, and the consumer of the JWT retrieves a public key from the metadata
+ * endpoints provided by the server and uses it to validate the JWT signature.
+ *
  * This is the algorithm used by AWS Cognito and Auth0.
  */
 const ALG = 'RS256';
@@ -75,11 +83,6 @@ export async function initKeys(config: MedplumServerConfig) {
   const issuer = serverConfig?.issuer;
   if (!issuer) {
     throw new Error('Missing issuer');
-  }
-
-  const audience = serverConfig?.audience;
-  if (!audience) {
-    throw new Error('Missing audience');
   }
 
   const [searchOutcome, searchResult] = await repo.search({
@@ -161,11 +164,21 @@ export function getJwks(): { keys: JWK[] } {
 }
 
 /**
- * Generates a secure random string suitable for a refresh secret.
- * @returns Secure random string for a refresh secret.
+ * Generates a secure random string suitable for a client secret or refresh secret.
+ * @param size Size of the secret in bytes.  16 recommended for auth codes.  48 recommended for client and refresh secrets.
+ * @returns Secure random string.
  */
-export function generateRefreshSecret(): string {
-  return randomBytes(48).toString('hex');
+export function generateSecret(size: number): string {
+  return randomBytes(size).toString('hex');
+}
+
+/**
+ * Generates an ID token JWT.
+ * @param claims The ID token claims.
+ * @returns A well-formed JWT that can be used as an ID token.
+ */
+export function generateIdToken(claims: MedplumIdTokenClaims): Promise<string> {
+  return generateJwt('1h', claims);
 }
 
 /**
@@ -202,7 +215,7 @@ function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
     return Promise.reject('Missing issuer');
   }
 
-  const audience = serverConfig?.audience;
+  const audience = claims.client_id as string;
   if (!audience) {
     return Promise.reject('Missing audience');
   }
@@ -227,14 +240,8 @@ export function verifyJwt(token: string): Promise<{ payload: JWTPayload, protect
     return Promise.reject('Missing issuer');
   }
 
-  const audience = serverConfig?.audience;
-  if (!audience) {
-    return Promise.reject('Missing audience');
-  }
-
   const verifyOptions: JWTVerifyOptions = {
     issuer,
-    audience,
     algorithms: [ALG]
   };
 

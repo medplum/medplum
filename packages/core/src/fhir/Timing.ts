@@ -57,7 +57,7 @@ export interface Timing {
   /**
    * Identifies specific times when the event occurs.
    */
-  readonly event?: Date[];
+  readonly event?: (Date | string)[];
 
   /**
    * A set of rules that describe when the event is scheduled.
@@ -217,7 +217,7 @@ export interface TimingRepeat {
   /**
    * Specified time of day for action to take place.
    */
-  readonly timeOfDay?: Date[];
+  readonly timeOfDay?: (Date | string)[];
 
   /**
    * An approximate time period during the day, potentially linked to an

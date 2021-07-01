@@ -131,7 +131,7 @@ export interface ImagingStudy {
   /**
    * Date and time the study started.
    */
-  readonly started?: Date;
+  readonly started?: Date | string;
 
   /**
    * A list of the diagnostic requests that resulted in this imaging study
@@ -448,7 +448,7 @@ export interface ImagingStudySeries {
   /**
    * The date and time the series was started.
    */
-  readonly started?: Date;
+  readonly started?: Date | string;
 
   /**
    * Indicates who or what performed the series and how they were involved.

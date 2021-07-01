@@ -161,7 +161,7 @@ export interface Goal {
    * Identifies when the current status.  I.e. When initially created, when
    * achieved, when cancelled, etc.
    */
-  readonly statusDate?: Date;
+  readonly statusDate?: Date | string;
 
   /**
    * Captures the reason for the current status.

@@ -140,13 +140,13 @@ export interface Device {
   /**
    * The date and time when the device was manufactured.
    */
-  readonly manufactureDate?: Date;
+  readonly manufactureDate?: Date | string;
 
   /**
    * The date and time beyond which this device is no longer valid or
    * should not be used (if applicable).
    */
-  readonly expirationDate?: Date;
+  readonly expirationDate?: Date | string;
 
   /**
    * Lot number assigned by the manufacturer.

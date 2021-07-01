@@ -233,13 +233,13 @@ export interface PractitionerRoleAvailableTime {
    * The opening time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
-  readonly availableStartTime?: Date;
+  readonly availableStartTime?: Date | string;
 
   /**
    * The closing time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
-  readonly availableEndTime?: Date;
+  readonly availableEndTime?: Date | string;
 }
 
 /**

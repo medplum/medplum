@@ -134,19 +134,19 @@ export interface AdverseEvent {
   /**
    * The date (and perhaps time) when the adverse event occurred.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * Estimated or actual date the AdverseEvent began, in the opinion of the
    * reporter.
    */
-  readonly detected?: Date;
+  readonly detected?: Date | string;
 
   /**
    * The date on which the existence of the AdverseEvent was first
    * recorded.
    */
-  readonly recordedDate?: Date;
+  readonly recordedDate?: Date | string;
 
   /**
    * Includes information about the reaction that occurred as a result of

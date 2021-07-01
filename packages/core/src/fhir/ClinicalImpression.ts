@@ -153,7 +153,7 @@ export interface ClinicalImpression {
   /**
    * Indicates when the documentation of the assessment was complete.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The clinician performing the assessment.

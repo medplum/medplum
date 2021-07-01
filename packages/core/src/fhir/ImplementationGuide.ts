@@ -153,7 +153,7 @@ export interface ImplementationGuide {
    * change when the substantive content of the implementation guide
    * changes.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the

@@ -3,3 +3,4 @@ export * from './fhir';
 export * from './format';
 export * from './search';
 export * from './types';
+export * from './utils';

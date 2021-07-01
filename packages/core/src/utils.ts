@@ -29,3 +29,20 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBuffer) {
   }
   return btoa(result.join(''));
 }
+
+/**
+ * Returns a Date property as a Date.
+ * When working with JSON objects, Dates are often serialized as ISO-8601 strings.
+ * When that happens, we need to safely convert to a proper Date object.
+ * @param date The date property value, which could be a string or a Date object.
+ * @returns A Date object.
+ */
+ export function getDateProperty(date: Date | string | undefined): Date | undefined {
+  if (date instanceof Date) {
+    return date;
+  }
+  if (typeof date === 'string') {
+    return new Date(date);
+  }
+  return undefined;
+}

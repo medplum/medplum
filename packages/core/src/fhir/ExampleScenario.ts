@@ -149,7 +149,7 @@ export interface ExampleScenario {
    * change when the substantive content of the example scenario changes.
    * (e.g. the 'content logical definition').
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the example

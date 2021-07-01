@@ -110,7 +110,7 @@ export interface Subscription {
   /**
    * The time for the server to turn the subscription off.
    */
-  readonly end?: Date;
+  readonly end?: Date | string;
 
   /**
    * A description of why this subscription is defined.

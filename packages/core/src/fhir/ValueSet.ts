@@ -157,7 +157,7 @@ export interface ValueSet {
    * The date (and optionally time) when the value set was created or
    * revised (e.g. the 'content logical definition').
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the value
@@ -279,7 +279,7 @@ export interface ValueSetCompose {
    * included in the compose that are not already tied to a specific
    * version.
    */
-  readonly lockedDate?: Date;
+  readonly lockedDate?: Date | string;
 
   /**
    * Whether inactive codes - codes that are not approved for current use -
@@ -582,7 +582,7 @@ export interface ValueSetExpansion {
   /**
    * The time at which the expansion was produced by the expanding system.
    */
-  readonly timestamp?: Date;
+  readonly timestamp?: Date | string;
 
   /**
    * The total number of concepts in the expansion. If the number of

@@ -1,10 +1,41 @@
-import { HumanName } from './fhir';
+import { Address, HumanName } from './fhir';
+
+export interface AddressFormatOptions {
+  all?: boolean;
+  use?: boolean;
+}
 
 export interface HumanNameFormatOptions {
   all?: boolean;
   prefix?: boolean;
   suffix?: boolean;
   use?: boolean;
+}
+
+export function formatAddress(address: Address, options?: AddressFormatOptions): string {
+  const builder = [];
+
+  if (address.line) {
+    builder.push(...address.line);
+  }
+
+  if (address.city) {
+    builder.push(address.city);
+  }
+
+  if (address.state) {
+    builder.push(address.state);
+  }
+
+  if (address.postalCode) {
+    builder.push(address.postalCode);
+  }
+
+  if (address.use && (options?.all || options?.use)) {
+    builder.push('[' + address.use + ']');
+  }
+
+  return builder.join(', ').trim();
 }
 
 export function formatHumanName(name: HumanName, options?: HumanNameFormatOptions): string {
