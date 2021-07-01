@@ -178,12 +178,12 @@ export interface Appointment {
   /**
    * Date/Time that the appointment is to take place.
    */
-  readonly start?: Date;
+  readonly start?: Date | string;
 
   /**
    * Date/Time that the appointment is to conclude.
    */
-  readonly end?: Date;
+  readonly end?: Date | string;
 
   /**
    * Number of minutes that the appointment is to take. This can be less
@@ -208,7 +208,7 @@ export interface Appointment {
    * could have been before the resource was created on the FHIR server,
    * and should remain unchanged over the lifespan of the appointment.
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * Additional comments about the appointment.

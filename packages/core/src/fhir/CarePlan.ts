@@ -188,7 +188,7 @@ export interface CarePlan {
    * Represents when this particular CarePlan record was created in the
    * system, which is often a system-generated date.
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * When populated, the author is responsible for the care plan.  The care

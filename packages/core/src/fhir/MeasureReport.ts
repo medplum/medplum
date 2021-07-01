@@ -134,7 +134,7 @@ export interface MeasureReport {
   /**
    * The date this measure report was generated.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The individual, location, or organization that is reporting the data.

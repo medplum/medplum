@@ -128,7 +128,7 @@ export interface Consent {
   /**
    * When this  Consent was issued / created / indexed.
    */
-  readonly dateTime?: Date;
+  readonly dateTime?: Date | string;
 
   /**
    * Either the Grantor, which is the entity responsible for granting the
@@ -522,5 +522,5 @@ export interface ConsentVerification {
   /**
    * Date verification was collected.
    */
-  readonly verificationDate?: Date;
+  readonly verificationDate?: Date | string;
 }

@@ -205,13 +205,13 @@ export interface MedicationDispense {
   /**
    * The time when the dispensed product was packaged and reviewed.
    */
-  readonly whenPrepared?: Date;
+  readonly whenPrepared?: Date | string;
 
   /**
    * The time the dispensed product was provided to the patient or their
    * representative.
    */
-  readonly whenHandedOver?: Date;
+  readonly whenHandedOver?: Date | string;
 
   /**
    * Identification of the facility/location where the medication was

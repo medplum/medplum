@@ -1,4 +1,4 @@
-import { Address } from '@medplum/core';
+import { Address, formatAddress } from '@medplum/core';
 import React from 'react';
 
 export interface AddressDisplayProps {
@@ -11,27 +11,5 @@ export function AddressDisplay(props: AddressDisplayProps) {
     return null;
   }
 
-  const builder = [];
-
-  if (address.line) {
-    builder.push(...address.line);
-  }
-
-  if (address.city) {
-    builder.push(address.city);
-  }
-
-  if (address.state) {
-    builder.push(address.state);
-  }
-
-  if (address.postalCode) {
-    builder.push(address.postalCode);
-  }
-
-  if (address.use) {
-    builder.push('[' + address.use + ']');
-  }
-
-  return <>{builder.join(', ').trim()}</>;
+  return <>{formatAddress(address)}</>;
 }

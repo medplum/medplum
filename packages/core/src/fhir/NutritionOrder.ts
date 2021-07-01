@@ -150,7 +150,7 @@ export interface NutritionOrder {
   /**
    * The date and time that this nutrition order was requested.
    */
-  readonly dateTime?: Date;
+  readonly dateTime?: Date | string;
 
   /**
    * The practitioner that holds legal responsibility for ordering the

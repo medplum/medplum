@@ -136,7 +136,7 @@ export interface Patient {
   /**
    * The date of birth for the individual.
    */
-  readonly birthDate?: Date;
+  readonly birthDate?: Date | string;
 
   /**
    * Indicates if the individual is deceased or not.

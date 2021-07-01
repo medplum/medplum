@@ -124,7 +124,7 @@ export interface Provenance {
   /**
    * The instant of time at which the activity was recorded.
    */
-  readonly recorded?: Date;
+  readonly recorded?: Date | string;
 
   /**
    * Policy or plan the activity was defined by. Typically, a single

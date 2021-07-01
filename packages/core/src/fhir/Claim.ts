@@ -146,7 +146,7 @@ export interface Claim {
   /**
    * The date this resource was created.
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * Individual who created the claim, predetermination or
@@ -304,7 +304,7 @@ export interface ClaimAccident {
    * Date of an accident event  related to the products and services
    * contained in the claim.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The type or context of the accident event for the purposes of
@@ -965,7 +965,7 @@ export interface ClaimProcedure {
   /**
    * Date and optionally time the procedure was performed.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The code or reference to a Procedure resource which identifies the

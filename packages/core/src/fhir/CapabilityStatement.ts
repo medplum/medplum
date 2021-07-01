@@ -153,7 +153,7 @@ export interface CapabilityStatement {
    * change when the substantive content of the capability statement
    * changes.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the
@@ -1157,7 +1157,7 @@ export interface CapabilityStatementSoftware {
   /**
    * Date this version of the software was released.
    */
-  readonly releaseDate?: Date;
+  readonly releaseDate?: Date | string;
 }
 
 /**

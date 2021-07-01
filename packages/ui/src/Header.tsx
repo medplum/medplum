@@ -136,14 +136,14 @@ export function Header(props: HeaderProps) {
         inactiveClassName="medplum-sidebar"
         onClose={() => setSidebarVisible(false)}>
         {props.sidebarLinks?.map(group => (
-          <>
-            <h5 key={group.title + '-header'}>{group.title}</h5>
-            <ul key={group.title + '-list'}>
+          <React.Fragment key={group.title}>
+            <h5>{group.title}</h5>
+            <ul>
               {group.links.map(link => (
                 <li key={link.href}><MedplumLink to={link.href}>{link.label}</MedplumLink></li>
               ))}
             </ul>
-          </>
+          </React.Fragment>
         ))}
       </Popup>
     </>

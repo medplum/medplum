@@ -141,7 +141,7 @@ export interface Immunization {
    * The date the occurrence of the immunization was first captured in the
    * record - potentially significantly after the occurrence of the event.
    */
-  readonly recorded?: Date;
+  readonly recorded?: Date | string;
 
   /**
    * An indication that the content of the record is based on information
@@ -175,7 +175,7 @@ export interface Immunization {
   /**
    * Date vaccine batch expires.
    */
-  readonly expirationDate?: Date;
+  readonly expirationDate?: Date | string;
 
   /**
    * Body site where vaccine was administered.
@@ -314,12 +314,12 @@ export interface ImmunizationEducation {
   /**
    * Date the educational material was published.
    */
-  readonly publicationDate?: Date;
+  readonly publicationDate?: Date | string;
 
   /**
    * Date the educational material was given to the patient.
    */
-  readonly presentationDate?: Date;
+  readonly presentationDate?: Date | string;
 }
 
 /**
@@ -502,7 +502,7 @@ export interface ImmunizationReaction {
   /**
    * Date of reaction to the immunization.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * Details of the reaction.

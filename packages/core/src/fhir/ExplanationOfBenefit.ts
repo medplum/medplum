@@ -147,7 +147,7 @@ export interface ExplanationOfBenefit {
   /**
    * The date this resource was created.
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * Individual who created the claim, predetermination or
@@ -397,7 +397,7 @@ export interface ExplanationOfBenefitAccident {
    * Date of an accident event  related to the products and services
    * contained in the claim.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The type or context of the accident event for the purposes of
@@ -1558,7 +1558,7 @@ export interface ExplanationOfBenefitPayment {
    * Estimated date the payment will be issued or the actual issue date of
    * payment.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * Benefits payable less any payment adjustment.
@@ -1626,7 +1626,7 @@ export interface ExplanationOfBenefitProcedure {
   /**
    * Date and optionally time the procedure was performed.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The code or reference to a Procedure resource which identifies the

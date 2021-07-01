@@ -164,7 +164,7 @@ export interface SupplyRequest {
   /**
    * When the request was made.
    */
-  readonly authoredOn?: Date;
+  readonly authoredOn?: Date | string;
 
   /**
    * The device, practitioner, etc. who initiated the request.

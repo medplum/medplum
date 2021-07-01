@@ -144,7 +144,7 @@ export interface CoverageEligibilityRequest {
   /**
    * The date when this resource was created.
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * Person who created the request.

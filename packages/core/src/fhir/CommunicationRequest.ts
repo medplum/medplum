@@ -193,7 +193,7 @@ export interface CommunicationRequest {
    * For draft requests, indicates the date of initial creation.  For
    * requests with other statuses, indicates the date of activation.
    */
-  readonly authoredOn?: Date;
+  readonly authoredOn?: Date | string;
 
   /**
    * The device, individual, or organization who initiated the request and

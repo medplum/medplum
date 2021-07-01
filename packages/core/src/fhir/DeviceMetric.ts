@@ -226,5 +226,5 @@ export interface DeviceMetricCalibration {
   /**
    * Describes the time last calibration has been performed.
    */
-  readonly time?: Date;
+  readonly time?: Date | string;
 }

@@ -141,7 +141,7 @@ export interface ClaimResponse {
   /**
    * The date this resource was created.
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * The party responsible for authorization, adjudication and
@@ -918,7 +918,7 @@ export interface ClaimResponsePayment {
    * Estimated date the payment will be issued or the actual issue date of
    * payment.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * Benefits payable less any payment adjustment.

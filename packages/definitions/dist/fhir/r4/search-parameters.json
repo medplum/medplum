@@ -65454,5 +65454,37 @@
       "xpath" : "f:User/f:email",
       "xpathUsage" : "normal"
     }
+  },
+  {
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Login-code",
+      "url" : "https://medplum.com/fhir/SearchParameter/Login-code",
+      "version" : "4.0.1",
+      "name" : "code",
+      "publisher" : "Medplum",
+      "code" : "code",
+      "base" : ["Login"],
+      "type" : "token",
+      "expression" : "Login.code",
+      "xpath" : "f:Login/f:code",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Login-cookie",
+      "url" : "https://medplum.com/fhir/SearchParameter/Login-cookie",
+      "version" : "4.0.1",
+      "name" : "cookie",
+      "publisher" : "Medplum",
+      "code" : "cookie",
+      "base" : ["Login"],
+      "type" : "token",
+      "expression" : "Login.cookie",
+      "xpath" : "f:Login/f:cookie",
+      "xpathUsage" : "normal"
+    }
   }]
 }

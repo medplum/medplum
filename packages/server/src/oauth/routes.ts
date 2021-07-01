@@ -1,51 +1,30 @@
-import { ClientApplication } from '@medplum/core';
+import cookieParser from 'cookie-parser';
 import { Request, Response, Router } from 'express';
-import { JWSHeaderParameters, JWTPayload } from 'jose/webcrypto/types';
-import { asyncWrap } from '../async';
-import { badRequest, isOk, repo, sendOutcome } from '../fhir';
-import { generateAccessToken, verifyJwt } from './keys';
+import rateLimit from 'express-rate-limit';
+import { authorizeGetHandler, authorizePostHandler } from './authorize';
+import { authenticateToken } from './middleware';
+import { tokenHandler } from './token';
+import { userInfoHandler } from './userinfo';
 
 export const oauthRouter = Router();
-
-oauthRouter.post('/authorize', (req: Request, res: Response) => {
-  res.sendStatus(200);
-});
-
-oauthRouter.post('/token', asyncWrap(async (req: Request, res: Response) => {
-  if (!req.is('application/x-www-form-urlencoded')) {
-    return res.status(400).send('Unsupported content type');
-  }
-
-  const grantType = req.body.grant_type;
-  if (!grantType) {
-    return sendOutcome(res, badRequest('Missing grant_type'));
-  }
-
-  switch (grantType) {
-    case 'client_credentials':
-      return handleClientCredentials(req, res);
-    case 'authorization_code':
-      return handleAuthorizationCode(req, res);
-    case 'refresh_token':
-      return handleRefreshToken(req, res);
-    default:
-      return sendOutcome(res, badRequest('Unsupported grant_type'));
-  }
+oauthRouter.use(cookieParser()); // lgtm [js/missing-token-validation]
+oauthRouter.use(rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
 }));
 
-oauthRouter.post('/userinfo', (req: Request, res: Response) => {
-  res.sendStatus(200);
-});
-
-oauthRouter.get('/login', (req: Request, res: Response) => {
-  res.sendStatus(200);
-});
-
-oauthRouter.post('/login', (req: Request, res: Response) => {
-  res.sendStatus(200);
-});
+oauthRouter.get('/authorize', authorizeGetHandler);
+oauthRouter.post('/authorize', authorizePostHandler);
+oauthRouter.post('/token', tokenHandler);
+oauthRouter.get('/userinfo', authenticateToken, userInfoHandler);
+oauthRouter.post('/userinfo', authenticateToken, userInfoHandler);
 
 oauthRouter.get('/logout', (req: Request, res: Response) => {
+  for (const name of Object.keys(req.cookies)) {
+    if (name.startsWith('medplum-')) {
+      res.clearCookie(name);
+    }
+  }
   res.sendStatus(200);
 });
 
@@ -76,72 +55,3 @@ oauthRouter.get('/scopes', (req: Request, res: Response) => {
 oauthRouter.post('/scopes', (req: Request, res: Response) => {
   res.sendStatus(200);
 });
-
-async function handleClientCredentials(req: Request, res: Response): Promise<Response> {
-  const clientId = req.body.client_id;
-  if (!clientId) {
-    return sendOutcome(res, badRequest('Missing client_id'));
-  }
-
-  const clientSecret = req.body.client_secret;
-  if (!clientSecret) {
-    return sendOutcome(res, badRequest('Missing client_secret'));
-  }
-
-  const [readOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', clientId);
-  if (!isOk(readOutcome)) {
-    return sendOutcome(res, readOutcome);
-  }
-
-  if (!client) {
-    return sendOutcome(res, badRequest('Client not found'));
-  }
-
-  if (!client.secret) {
-    return sendOutcome(res, badRequest('Invalid client'));
-  }
-
-  if (client.secret !== clientSecret) {
-    return sendOutcome(res, badRequest('Invalid secret'));
-  }
-
-  const scope = req.body.scope as string;
-  const accessToken = await generateAccessToken({
-    sub: client.id as string,
-    username: client.id as string,
-    client_id: client.id as string,
-    profile: client.resourceType + '/' + client.id,
-    scope: scope
-  });
-
-  return res.status(200).json({
-    token_type: 'Bearer',
-    access_token: accessToken,
-    expires_in: 3600,
-    scope
-  });
-}
-
-async function handleAuthorizationCode(req: Request, res: Response): Promise<Response> {
-  return sendOutcome(res, badRequest('Not implemented'));
-}
-
-async function handleRefreshToken(req: Request, res: Response): Promise<Response> {
-  const refreshToken = req.body.refresh_token;
-  if (!refreshToken) {
-    return sendOutcome(res, badRequest('Missing refresh_token'));
-  }
-
-  let claims: { payload: JWTPayload, protectedHeader: JWSHeaderParameters };
-  try {
-    claims = await verifyJwt(refreshToken);
-  } catch (err) {
-    return sendOutcome(res, badRequest('Invalid refresh_token'));
-  }
-
-  const { payload, protectedHeader } = claims;
-  console.log('payload', payload);
-  console.log('protectedHeaders', protectedHeader);
-
-  return sendOutcome(res, badRequest('Not implemented'));
-}

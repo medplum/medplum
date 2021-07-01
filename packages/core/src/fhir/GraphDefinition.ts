@@ -143,7 +143,7 @@ export interface GraphDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the graph definition changes.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the graph

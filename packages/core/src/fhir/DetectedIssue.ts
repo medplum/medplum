@@ -280,7 +280,7 @@ export interface DetectedIssueMitigation {
   /**
    * Indicates when the mitigating action was documented.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * Identifies the practitioner who determined the mitigation and takes

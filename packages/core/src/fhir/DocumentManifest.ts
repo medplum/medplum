@@ -131,7 +131,7 @@ export interface DocumentManifest {
    * (not necessarily the same thing as the actual resource last modified
    * time, since it may be modified, replicated, etc.).
    */
-  readonly created?: Date;
+  readonly created?: Date | string;
 
   /**
    * Identifies who is the author of the manifest. Manifest author is not

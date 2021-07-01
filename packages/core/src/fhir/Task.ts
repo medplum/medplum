@@ -225,12 +225,12 @@ export interface Task {
   /**
    * The date and time this task was created.
    */
-  readonly authoredOn?: Date;
+  readonly authoredOn?: Date | string;
 
   /**
    * The date and time of last modification to this task.
    */
-  readonly lastModified?: Date;
+  readonly lastModified?: Date | string;
 
   /**
    * The creator of the task.

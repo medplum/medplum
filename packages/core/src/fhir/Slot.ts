@@ -138,12 +138,12 @@ export interface Slot {
   /**
    * Date/Time that the slot is to begin.
    */
-  readonly start?: Date;
+  readonly start?: Date | string;
 
   /**
    * Date/Time that the slot is to conclude.
    */
-  readonly end?: Date;
+  readonly end?: Date | string;
 
   /**
    * This slot has already been overbooked, appointments are unlikely to be

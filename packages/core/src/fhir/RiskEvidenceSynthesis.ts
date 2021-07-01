@@ -155,7 +155,7 @@ export interface RiskEvidenceSynthesis {
    * change when the substantive content of the risk evidence synthesis
    * changes.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the risk
@@ -209,14 +209,14 @@ export interface RiskEvidenceSynthesis {
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: Date;
+  readonly approvalDate?: Date | string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: Date;
+  readonly lastReviewDate?: Date | string;
 
   /**
    * The period during which the risk evidence synthesis content was or is

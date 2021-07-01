@@ -142,7 +142,7 @@ export interface CompartmentDefinition {
    * change when the substantive content of the compartment definition
    * changes.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * The name of the organization or individual that published the

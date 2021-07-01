@@ -160,7 +160,7 @@ export interface DiagnosticReport {
    * The date and time that this version of the report was made available
    * to providers, typically after the report was reviewed and verified.
    */
-  readonly issued?: Date;
+  readonly issued?: Date | string;
 
   /**
    * The diagnostic service that is responsible for issuing the report.

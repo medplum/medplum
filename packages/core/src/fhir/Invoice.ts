@@ -133,7 +133,7 @@ export interface Invoice {
   /**
    * Date/time(s) of when this Invoice was posted.
    */
-  readonly date?: Date;
+  readonly date?: Date | string;
 
   /**
    * Indicates who or what performed or participated in the charged
