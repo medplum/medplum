@@ -2,6 +2,11 @@
  * Based on: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget
  */
 
+interface Event {
+  type: string;
+  defaultPrevented?: boolean;
+}
+
 type EventListener = (e: Event) => void;
 
 export class EventTarget {
