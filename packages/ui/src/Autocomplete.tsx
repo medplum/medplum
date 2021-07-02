@@ -44,7 +44,7 @@ export function Autocomplete(props: AutocompleteProps) {
   stateRef.current = state;
 
   useEffect(() => {
-    const interval = window.setInterval(() => handleTimer_(), 150);
+    const interval = window.setInterval(() => handleTimer(), 150);
     return () => window.clearInterval(interval);
   }, []);
 
@@ -79,53 +79,53 @@ export function Autocomplete(props: AutocompleteProps) {
     });
   }
 
-  function handleClick_() {
+  function handleClick() {
     const inputElement = inputRef.current;
     if (inputElement) {
       inputElement.focus();
     }
   }
 
-  function handleFocus_() {
+  function handleFocus() {
     const state = stateRef.current;
     setState({ ...state, focused: true });
   }
 
-  function handleBlur_() {
+  function handleBlur() {
     const state = stateRef.current;
     setState({ ...state, focused: false });
-    dismissOnDelay_();
+    dismissOnDelay();
   }
 
-  function handleKeyDown_(e: React.KeyboardEvent) {
+  function handleKeyDown(e: React.KeyboardEvent) {
     switch (e.key) {
       case 'Enter':
-        handleEnterKey_(e);
+        handleEnterKey(e);
         break;
 
       case 'ArrowUp':
-        moveSelection_(-1);
+        moveSelection(-1);
         e.preventDefault();
         e.stopPropagation();
         break;
 
       case 'ArrowDown':
-        moveSelection_(1);
+        moveSelection(1);
         e.preventDefault();
         e.stopPropagation();
         break;
 
       case 'Backspace':
-        handleBackspaceKey_(e);
+        handleBackspaceKey(e);
         break;
 
       case 'Tab':
-        handleTabKey_(e);
+        handleTabKey(e);
         break;
 
       case ',':
       case ';':
-        handleSeparatorKey_(e);
+        handleSeparatorKey(e);
     }
   }
 
@@ -136,13 +136,13 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    * @param {KeyboardEvent} e The key down event.
    */
-  function handleEnterKey_(e: React.KeyboardEvent) {
+  function handleEnterKey(e: React.KeyboardEvent) {
     const inputElement = inputRef.current;
     if (!inputElement) {
       return;
     }
 
-    if (tryAddResource_()) {
+    if (tryAddResource()) {
       e.preventDefault();
       e.stopPropagation();
       inputElement.focus();
@@ -156,7 +156,7 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    * @param {KeyboardEvent} e The key down event.
    */
-  function handleBackspaceKey_(e: React.KeyboardEvent) {
+  function handleBackspaceKey(e: React.KeyboardEvent) {
     const inputElement = inputRef.current;
     if (!inputElement) {
       return;
@@ -186,13 +186,13 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    * @param {KeyboardEvent} e The key down event.
    */
-  function handleTabKey_(e: React.KeyboardEvent) {
+  function handleTabKey(e: React.KeyboardEvent) {
     const inputElement = inputRef.current;
     if (!inputElement) {
       return;
     }
 
-    if (tryAddResource_()) {
+    if (tryAddResource()) {
       e.preventDefault();
       e.stopPropagation();
       inputElement.focus();
@@ -210,13 +210,13 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    * @param {KeyboardEvent} e The key down event.
    */
-  function handleSeparatorKey_(e: React.KeyboardEvent) {
+  function handleSeparatorKey(e: React.KeyboardEvent) {
     const inputElement = inputRef.current;
     if (!inputElement) {
       return false;
     }
 
-    tryAddResource_();
+    tryAddResource();
     e.preventDefault();
     e.stopPropagation();
     inputElement.focus();
@@ -227,7 +227,7 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    * @return {boolean} True if captured an resource; false otherwise.
    */
-  function tryAddResource_() {
+  function tryAddResource() {
     const inputElement = inputRef.current;
     if (!inputElement) {
       return false;
@@ -267,7 +267,7 @@ export function Autocomplete(props: AutocompleteProps) {
    * for updated contents.
    *
    */
-  const handleTimer_ = () => {
+  const handleTimer = () => {
     const inputElement = inputRef.current;
     if (!inputElement) {
       return;
@@ -301,7 +301,7 @@ export function Autocomplete(props: AutocompleteProps) {
         value: value
       }]
     })
-      .then((e: Bundle) => handleResponse_(e))
+      .then((e: Bundle) => handleResponse(e))
       .catch(console.log);
   };
 
@@ -310,7 +310,7 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    * @param {Object} response The HTTP response body in JSON.
    */
-  function handleResponse_(response: Bundle) {
+  function handleResponse(response: Bundle) {
     const resources = [];
 
     if (props.createNew) {
@@ -346,7 +346,7 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    * @param {number} delta The amount to move the selection, up is negative.
    */
-  function moveSelection_(delta: number) {
+  function moveSelection(delta: number) {
     const state = stateRef.current;
     const options = state.options;
     let index = state.selectedIndex + delta;
@@ -368,7 +368,7 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    * @param {MouseEvent} e The mouse event.
    */
-  function handleDropDownHover_(e: React.MouseEvent) {
+  function handleDropDownHover(e: React.MouseEvent) {
     const target = e.currentTarget as HTMLElement;
     if (!target) {
       return;
@@ -391,7 +391,7 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    * @param {MouseEvent} e The mouse event.
    */
-  function handleDropDownClick_(e: React.MouseEvent) {
+  function handleDropDownClick(e: React.MouseEvent) {
     const target = e.currentTarget as HTMLElement;
     if (!target) {
       return;
@@ -415,7 +415,7 @@ export function Autocomplete(props: AutocompleteProps) {
   /**
    * Dismisses the drop down menu after a slight delay.
    */
-  function dismissOnDelay_() {
+  function dismissOnDelay() {
     window.setTimeout(() => {
       const state = stateRef.current;
       setState({ ...state, dropDownVisible: false });
@@ -425,13 +425,13 @@ export function Autocomplete(props: AutocompleteProps) {
   return (
     <div
       className={'medplum-autocomplete-container' + (state.focused ? ' focused' : '')}
-      onClick={() => handleClick_()}>
+      onClick={() => handleClick()}>
       <input
         type="hidden"
         id={props.id}
         name={props.id}
         value={state.values.map(r => JSON.stringify(r)).join(',')} />
-      <ul onClick={() => handleClick_()}>
+      <ul onClick={() => handleClick()}>
         {state.values.map(value => (
           <li
             key={value.id}
@@ -446,9 +446,9 @@ export function Autocomplete(props: AutocompleteProps) {
             autoComplete="off"
             autoCapitalize="off"
             spellCheck="true"
-            onFocus={() => handleFocus_()}
-            onBlur={() => handleBlur_()}
-            onKeyDown={(e: React.KeyboardEvent) => handleKeyDown_(e)}
+            onFocus={() => handleFocus()}
+            onBlur={() => handleBlur()}
+            onKeyDown={(e: React.KeyboardEvent) => handleKeyDown(e)}
             ref={inputRef}
           />
         </li>
@@ -460,8 +460,8 @@ export function Autocomplete(props: AutocompleteProps) {
               key={option.id}
               data-index={index}
               className={index === state.selectedIndex ? "medplum-autocomplete-row medplum-autocomplete-active" : "medplum-autocomplete-row"}
-              onMouseOver={e => handleDropDownHover_(e)}
-              onClick={e => handleDropDownClick_(e)}
+              onMouseOver={e => handleDropDownHover(e)}
+              onClick={e => handleDropDownClick(e)}
             >
               <div className="medplum-autocomplete-icon"><img src={option.url} width="40" height="40" /></div>
               <div className="medplum-autocomplete-label"><p>{option.name}</p></div>

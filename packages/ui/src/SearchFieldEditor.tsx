@@ -25,9 +25,9 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    *
    * @param {KeyboardEvent} e The keyboard event.
    */
-   function handleAvailableKeyDown_(e: React.KeyboardEvent) {
+   function handleAvailableKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
-      onAddField_();
+      onAddField();
     }
   }
 
@@ -35,8 +35,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a double click on the "available" field.
    * If the user double clicks an entry, it is a shortcut for the "Add" button.
    */
-  function handleAvailableDoubleClick_() {
-    onAddField_();
+  function handleAvailableDoubleClick() {
+    onAddField();
   }
 
   /**
@@ -45,9 +45,9 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    *
    * @param {KeyboardEvent} e The keyboard event.
    */
-  function handleSelectedKeyDown_(e: React.KeyboardEvent) {
+  function handleSelectedKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
-      onRemoveField_();
+      onRemoveField();
     }
   }
 
@@ -55,15 +55,15 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a double click on the "available" field.
    * If the user double clicks an entry, it is a shortcut for the "Add" button.
    */
-  function handleSelectedDoubleClick_() {
-    onRemoveField_();
+  function handleSelectedDoubleClick() {
+    onRemoveField();
   }
 
   /**
    * Handles a click on the "Add" button.
    * Moves the "available" selection into the "selected" list.
    */
-  function onAddField_() {
+  function onAddField() {
     const currentField = state.definition.fields ?? [];
     const key = availableRef.current?.value;
     if (key) {
@@ -81,7 +81,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a click on the "Remove" button.
    * Moves the "selected" selection into the "available" list.
    */
-  function onRemoveField_() {
+  function onRemoveField() {
     const currentField = state.definition.fields ?? [];
     const key = selectedRef.current?.value;
     if (key) {
@@ -100,13 +100,13 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a click on the "Up" button.
    * Moves the selection up one position in the list.
    */
-  function onMoveUp_() {
+  function onMoveUp() {
     const currentField = state.definition.fields ?? [];
     const field = selectedRef.current?.value;
     if (field) {
       const newFields = [...currentField];
       const index = newFields.indexOf(field);
-      swapFields_(newFields, index, index - 1);
+      swapFields(newFields, index, index - 1);
 
       setState({
         definition: {
@@ -121,13 +121,13 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a click on the "Down" button.
    * Moves the selection down one position in the list.
    */
-  function onMoveDown_() {
+  function onMoveDown() {
     const currentField = state.definition.fields ?? [];
     const field = selectedRef.current?.value;
     if (field) {
       const newFields = [...currentField];
       const index = newFields.indexOf(field);
-      swapFields_(newFields, index, index + 1);
+      swapFields(newFields, index, index + 1);
 
       setState({
         definition: {
@@ -144,7 +144,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * @param {number} i The index of the first field.
    * @param {number} j The index of the second field.
    */
-  function swapFields_(fields: string[], i: number, j: number) {
+  function swapFields(fields: string[], i: number, j: number) {
     const temp = fields[i];
     fields[i] = fields[j];
     fields[j] = temp;
@@ -181,8 +181,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
                   size={15}
                   tabIndex={1}
                   style={{ width: '200px' }}
-                  onKeyDown={e => handleAvailableKeyDown_(e)}
-                  onDoubleClick={() => handleAvailableDoubleClick_()}
+                  onKeyDown={e => handleAvailableKeyDown(e)}
+                  onDoubleClick={() => handleAvailableDoubleClick()}
                 >
                   {available.map(key => <option key={key} value={key}>{buildFieldNameString(props.schema, resourceType, key)}</option>)}
                 </select>
@@ -193,8 +193,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
                   size={15}
                   tabIndex={4}
                   style={{ width: '200px' }}
-                  onKeyDown={e => handleSelectedKeyDown_(e)}
-                  onDoubleClick={() => handleSelectedDoubleClick_()}
+                  onKeyDown={e => handleSelectedKeyDown(e)}
+                  onDoubleClick={() => handleSelectedDoubleClick()}
                 >
                   {selected.map(key => <option key={key} value={key}>{buildFieldNameString(props.schema, resourceType, key)}</option>)}
                 </select>
@@ -204,16 +204,16 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
           <tfoot>
             <tr>
               <td align="center">
-                <button className="btn btn-small" tabIndex={2} onClick={() => onAddField_()}>Add</button>
+                <button className="btn btn-small" tabIndex={2} onClick={() => onAddField()}>Add</button>
               </td>
               <td align="center">
-                <button className="btn btn-small" tabIndex={3} onClick={() => onRemoveField_()}>Remove</button>
+                <button className="btn btn-small" tabIndex={3} onClick={() => onRemoveField()}>Remove</button>
               </td>
               <td align="center">
-                <button className="btn btn-small" tabIndex={5} onClick={() => onMoveUp_()}>Up</button>
+                <button className="btn btn-small" tabIndex={5} onClick={() => onMoveUp()}>Up</button>
               </td>
               <td align="center">
-                <button className="btn btn-small" tabIndex={6} onClick={() => onMoveDown_()}>Down</button>
+                <button className="btn btn-small" tabIndex={6} onClick={() => onMoveDown()}>Down</button>
               </td>
             </tr>
           </tfoot>

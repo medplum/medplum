@@ -103,7 +103,7 @@ export function deleteFilter(definition: SearchRequest, index: number): SearchRe
  * @param {string} field The field key name.
  */
 export function addYesterdayFilter(definition: SearchRequest, field: string): SearchRequest {
-  return addDayFilter_(definition, field, -1);
+  return addDayFilter(definition, field, -1);
 }
 
 /**
@@ -112,7 +112,7 @@ export function addYesterdayFilter(definition: SearchRequest, field: string): Se
  * @param {string} field The field key name.
  */
 export function addTodayFilter(definition: SearchRequest, field: string): SearchRequest {
-  return addDayFilter_(definition, field, 0);
+  return addDayFilter(definition, field, 0);
 }
 
 /**
@@ -121,7 +121,7 @@ export function addTodayFilter(definition: SearchRequest, field: string): Search
  * @param {string} field The field key name.
  */
 export function addTomorrowFilter(definition: SearchRequest, field: string): SearchRequest {
-  return addDayFilter_(definition, field, 1);
+  return addDayFilter(definition, field, 1);
 }
 
 /**
@@ -134,7 +134,7 @@ export function addTomorrowFilter(definition: SearchRequest, field: string): Sea
  * @param {string} field The field key name.
  * @param {number} delta The number of days from this day.
  */
-function addDayFilter_(definition: SearchRequest, field: string, delta: number): SearchRequest {
+function addDayFilter(definition: SearchRequest, field: string, delta: number): SearchRequest {
   const startTime = new Date();
   startTime.setDate(startTime.getDate() + delta);
   startTime.setHours(0, 0, 0, 0);
@@ -151,7 +151,7 @@ function addDayFilter_(definition: SearchRequest, field: string, delta: number):
  * @param {string} field The field key name.
  */
 export function addLastMonthFilter(definition: SearchRequest, field: string): SearchRequest {
-  return addMonthFilter_(definition, field, -1);
+  return addMonthFilter(definition, field, -1);
 }
 
 /**
@@ -160,7 +160,7 @@ export function addLastMonthFilter(definition: SearchRequest, field: string): Se
  * @param {string} field The field key name.
  */
 export function addThisMonthFilter(definition: SearchRequest, field: string): SearchRequest {
-  return addMonthFilter_(definition, field, 0);
+  return addMonthFilter(definition, field, 0);
 }
 
 /**
@@ -169,7 +169,7 @@ export function addThisMonthFilter(definition: SearchRequest, field: string): Se
  * @param {string} field The field key name.
  */
 export function addNextMonthFilter(definition: SearchRequest, field: string): SearchRequest {
-  return addMonthFilter_(definition, field, 1);
+  return addMonthFilter(definition, field, 1);
 }
 
 /**
@@ -182,7 +182,7 @@ export function addNextMonthFilter(definition: SearchRequest, field: string): Se
  * @param {string} field The field key name.
  * @param {number} delta The number of months from this month.
  */
-function addMonthFilter_(definition: SearchRequest, field: string, delta: number): SearchRequest {
+function addMonthFilter(definition: SearchRequest, field: string, delta: number): SearchRequest {
   const startTime = new Date();
   startTime.setMonth(startTime.getMonth() + delta);
   startTime.setDate(1);
@@ -234,7 +234,7 @@ export function addDateEqualsFilter(definition: SearchRequest, field: string, va
  */
 export function addDateFilter(definition: SearchRequest, field: string, op: Operator, value: Date): SearchRequest {
   definition = clearFiltersOnField(definition, field);
-  return addDateFilterImpl_(definition, field, op, value);
+  return addDateFilterImpl(definition, field, op, value);
 }
 
 /**
@@ -266,7 +266,7 @@ export function addDateFilterBetween(definition: SearchRequest, field: string, d
  * @param {Operator} op The date/time operation.
  * @param {Date} value The date.
  */
-function addDateFilterImpl_(definition: SearchRequest, field: string, op: Operator, value: Date): SearchRequest {
+function addDateFilterImpl(definition: SearchRequest, field: string, op: Operator, value: Date): SearchRequest {
   const dateTime = new Date(value.getFullYear(), value.getMonth(), value.getDate());
   dateTime.setHours(0, 0, 0, 0);
 
