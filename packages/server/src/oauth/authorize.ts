@@ -61,12 +61,7 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
   // First validate the client and the redirect URI.
   // If these are invalid, then show an error page.
   const [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', req.query.client_id as string);
-  if (!isOk(clientOutcome)) {
-    res.status(400).send('Error reading client');
-    return false;
-  }
-
-  if (!client) {
+  if (!isOk(clientOutcome) || !client) {
     res.status(400).send('Client not found');
     return false;
   }
