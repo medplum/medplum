@@ -87,20 +87,19 @@ export function Autocomplete(props: AutocompleteProps) {
   }
 
   function handleFocus() {
-    const state = stateRef.current;
-    setState({ ...state, focused: true });
+    setState({ ...stateRef.current, focused: true });
   }
 
   function handleBlur() {
-    const state = stateRef.current;
-    setState({ ...state, focused: false });
+    setState({ ...stateRef.current, focused: false });
     dismissOnDelay();
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     switch (e.key) {
       case 'Enter':
-        handleEnterKey(e);
+      case 'Tab':
+        handleSelectKey(e);
         break;
 
       case 'ArrowUp':
@@ -119,10 +118,6 @@ export function Autocomplete(props: AutocompleteProps) {
         handleBackspaceKey(e);
         break;
 
-      case 'Tab':
-        handleTabKey(e);
-        break;
-
       case ',':
       case ';':
         handleSeparatorKey(e);
@@ -130,13 +125,13 @@ export function Autocomplete(props: AutocompleteProps) {
   }
 
   /**
-   * Handles the "enter" key.  The enter key logic is:
+   * Handles the "enter" or "tab" keys.  The enter key logic is:
    * Try to add an resource with tryAddResource.  On success, cancel event.
    * Otherwise, let the browser handle the enter key normally.
    *
    * @param {KeyboardEvent} e The key down event.
    */
-  function handleEnterKey(e: React.KeyboardEvent) {
+  function handleSelectKey(e: React.KeyboardEvent) {
     const inputElement = inputRef.current;
     if (!inputElement) {
       return;
@@ -169,33 +164,13 @@ export function Autocomplete(props: AutocompleteProps) {
       return;
     }
 
-    const state = stateRef.current;
-    if (state.values && state.values.length > 0) {
+    const currState = stateRef.current;
+    if (currState.values && currState.values.length > 0) {
       // If there are selected items,
       // then delete the last item.
-      setState({ ...state, values: state.values.slice(0, state.values.length - 1) });
+      setState({ ...currState, values: currState.values.slice(0, currState.values.length - 1) });
       e.preventDefault();
       e.stopPropagation();
-    }
-  }
-
-  /**
-   * Handles the "tab" key.  The tab key logic is:
-   * Try to add an resource with tryAddResource.  On success, cancel event.
-   * Otherwise, let the browser handle the tab key normally.
-   *
-   * @param {KeyboardEvent} e The key down event.
-   */
-  function handleTabKey(e: React.KeyboardEvent) {
-    const inputElement = inputRef.current;
-    if (!inputElement) {
-      return;
-    }
-
-    if (tryAddResource()) {
-      e.preventDefault();
-      e.stopPropagation();
-      inputElement.focus();
     }
   }
 
@@ -235,14 +210,14 @@ export function Autocomplete(props: AutocompleteProps) {
 
     let resource;
 
-    const state = stateRef.current;
-    if (state.selectedIndex >= 0 && state.selectedIndex < state.options.length) {
+    const currState = stateRef.current;
+    if (currState.selectedIndex >= 0 && currState.selectedIndex < currState.options.length) {
       // Currently highlighted row
-      resource = state.options[state.selectedIndex];
+      resource = currState.options[currState.selectedIndex];
 
-    } else if (state.selectedIndex === -1 && state.options.length > 0) {
+    } else if (currState.selectedIndex === -1 && currState.options.length > 0) {
       // Default to first row
-      resource = state.options[0];
+      resource = currState.options[0];
 
     } else if (inputElement.value) {
       // Otherwise create an unstructured resource
@@ -274,15 +249,15 @@ export function Autocomplete(props: AutocompleteProps) {
     }
 
     const value = inputElement.value.trim();
-    const state = stateRef.current;
-    if (value === state.lastValue) {
+    const currState = stateRef.current;
+    if (value === currState.lastValue) {
       // Nothing has changed, move on
       return;
     }
 
     if (!value) {
       setState({
-        ...state,
+        ...currState,
         dropDownVisible: false,
         lastValue: '',
         options: [],
@@ -291,7 +266,7 @@ export function Autocomplete(props: AutocompleteProps) {
       return;
     }
 
-    setState({ ...state, lastValue: value });
+    setState({ ...currState, lastValue: value });
 
     medplum.search({
       resourceType: props.resourceType,
@@ -333,9 +308,8 @@ export function Autocomplete(props: AutocompleteProps) {
       });
     }
 
-    const state = stateRef.current;
     setState({
-      ...state,
+      ...stateRef.current,
       dropDownVisible: resources.length > 0,
       options: resources
     });
@@ -347,9 +321,9 @@ export function Autocomplete(props: AutocompleteProps) {
    * @param {number} delta The amount to move the selection, up is negative.
    */
   function moveSelection(delta: number) {
-    const state = stateRef.current;
-    const options = state.options;
-    let index = state.selectedIndex + delta;
+    const currState = stateRef.current;
+    const options = currState.options;
+    let index = currState.selectedIndex + delta;
 
     if (index < 0) {
       index = 0;
@@ -358,7 +332,7 @@ export function Autocomplete(props: AutocompleteProps) {
     }
 
     setState({
-      ...state,
+      ...currState,
       selectedIndex: index
     });
   }
@@ -379,9 +353,8 @@ export function Autocomplete(props: AutocompleteProps) {
       return;
     }
 
-    const state = stateRef.current;
     setState({
-      ...state,
+      ...stateRef.current,
       selectedIndex: parseInt(indexStr)
     });
   }
@@ -403,13 +376,18 @@ export function Autocomplete(props: AutocompleteProps) {
     }
 
     const index = parseInt(indexStr);
-    if (isNaN(index) || index < 0 || index >= state.options.length) {
+    if (isNaN(index) || index < 0) {
+      return;
+    }
+
+    const options = stateRef.current.options;
+    if (index >= options.length) {
       return;
     }
 
     e.preventDefault();
     e.stopPropagation();
-    addResource(state.options[index]);
+    addResource(options[index]);
   }
 
   /**
@@ -417,8 +395,7 @@ export function Autocomplete(props: AutocompleteProps) {
    */
   function dismissOnDelay() {
     window.setTimeout(() => {
-      const state = stateRef.current;
-      setState({ ...state, dropDownVisible: false });
+      setState({ ...stateRef.current, dropDownVisible: false });
     }, 200);
   }
 
