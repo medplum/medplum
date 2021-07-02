@@ -16,8 +16,8 @@ test('Set filters', () => {
     value: 'alice'
   }];
   const result = setFilters(original, filters);
-  expect(result.filters.length).toBe(1);
-  expect(result.filters[0].value).toBe('alice');
+  expect(result.filters?.length).toBe(1);
+  expect(result.filters?.[0].value).toBe('alice');
 });
 
 test('Clear filters', () => {
@@ -30,7 +30,7 @@ test('Clear filters', () => {
     }]
   };
   const result = clearFilters(original);
-  expect(result.filters.length).toBe(0);
+  expect(result.filters?.length).toBe(0);
 });
 
 test('Clear filters on field', () => {
@@ -43,7 +43,7 @@ test('Clear filters on field', () => {
     }]
   };
   const result = clearFiltersOnField(original, 'name');
-  expect(result.filters.length).toBe(0);
+  expect(result.filters?.length).toBe(0);
 });
 
 test('Add filters', () => {
@@ -56,9 +56,9 @@ test('Add filters', () => {
     }]
   };
   const result = addFilter(original, 'name', Operator.EQUALS, 'alice');
-  expect(result.filters.length).toBe(2);
-  expect(result.filters[0].value).toBe('eve');
-  expect(result.filters[1].value).toBe('alice');
+  expect(result.filters?.length).toBe(2);
+  expect(result.filters?.[0].value).toBe('eve');
+  expect(result.filters?.[1].value).toBe('alice');
 });
 
 test('Add filters with clear option', () => {
@@ -71,8 +71,8 @@ test('Add filters with clear option', () => {
     }]
   };
   const result = addFilter(original, 'name', Operator.EQUALS, 'alice', true);
-  expect(result.filters.length).toBe(1);
-  expect(result.filters[0].value).toBe('alice');
+  expect(result.filters?.length).toBe(1);
+  expect(result.filters?.[0].value).toBe('alice');
 });
 
 test('Add field', () => {
