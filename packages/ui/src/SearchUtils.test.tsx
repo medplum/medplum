@@ -1,5 +1,5 @@
 import { Filter, Operator, SearchRequest } from '@medplum/core';
-import { addField, addFilter, clearFilters, clearFiltersOnField, setFilters } from './SearchUtils';
+import { addField, addFilter, addLastMonthFilter, addNextMonthFilter, addThisMonthFilter, addTodayFilter, addTomorrowFilter, addYearToDateFilter, addYesterdayFilter, clearFilters, clearFiltersOnField, deleteFilter, getSortField, isSortDescending, setFilters, setPage, setSort, toggleSort } from './SearchUtils';
 
 test('Set filters', () => {
   const original: SearchRequest = {
@@ -93,4 +93,210 @@ test('Add existing field', () => {
   };
   const result = addField(original, 'name');
   expect(result.fields).toEqual(['id', 'name']);
+});
+
+test('Delete filter', () => {
+  expect(deleteFilter({ resourceType: 'Patient' }, 0)).toEqual({ resourceType: 'Patient' });
+
+  expect(deleteFilter({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'name',
+      operator: Operator.EQUALS,
+      value: 'eve'
+    }]
+  }, 0))
+    .toEqual({
+      resourceType: 'Patient',
+      filters: []
+    });
+});
+
+test('Add yesterday filter', () => {
+  expect(addYesterdayFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+    .toMatchObject({
+      resourceType: 'Patient',
+      filters: [{
+        code: 'meta.lastUpdated'
+      }]
+    });
+});
+
+test('Add today filter', () => {
+  expect(addTodayFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+    .toMatchObject({
+      resourceType: 'Patient',
+      filters: [{
+        code: 'meta.lastUpdated'
+      }]
+    });
+});
+
+test('Add tomorrow filter', () => {
+  expect(addTomorrowFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+    .toMatchObject({
+      resourceType: 'Patient',
+      filters: [{
+        code: 'meta.lastUpdated'
+      }]
+    });
+});
+
+test('Add last month filter', () => {
+  expect(addLastMonthFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+    .toMatchObject({
+      resourceType: 'Patient',
+      filters: [{
+        code: 'meta.lastUpdated'
+      }]
+    });
+});
+
+test('Add this month filter', () => {
+  expect(addThisMonthFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+    .toMatchObject({
+      resourceType: 'Patient',
+      filters: [{
+        code: 'meta.lastUpdated'
+      }]
+    });
+});
+
+test('Add next month filter', () => {
+  expect(addNextMonthFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+    .toMatchObject({
+      resourceType: 'Patient',
+      filters: [{
+        code: 'meta.lastUpdated'
+      }]
+    });
+});
+
+test('Add year to date filter', () => {
+  expect(addYearToDateFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+    .toMatchObject({
+      resourceType: 'Patient',
+      filters: [{
+        code: 'meta.lastUpdated'
+      }]
+    });
+});
+
+test('Set page', () => {
+  expect(setPage({ resourceType: 'Patient' }, 1)).toMatchObject({ resourceType: 'Patient', page: 1 });
+  expect(setPage({ resourceType: 'Patient', page: 2 }, 2)).toMatchObject({ resourceType: 'Patient', page: 2 });
+  expect(setPage({ resourceType: 'Patient', page: 3 }, 4)).toMatchObject({ resourceType: 'Patient', page: 4 });
+});
+
+test('Set sort', () => {
+  expect(setSort({ resourceType: 'Patient' }, 'name')).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: false
+    }]
+  });
+
+  expect(setSort({ resourceType: 'Patient', sortRules: [{ code: 'name' }] }, 'name')).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: false
+    }]
+  });
+
+  expect(setSort({ resourceType: 'Patient', sortRules: [{ code: 'name', descending: false }] }, 'name')).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: false
+    }]
+  });
+
+  expect(setSort({ resourceType: 'Patient', sortRules: [{ code: 'name', descending: true }] }, 'name')).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: false
+    }]
+  });
+
+  expect(setSort({ resourceType: 'Patient' }, 'name', true)).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: true
+    }]
+  });
+
+  expect(setSort({ resourceType: 'Patient', sortRules: [{ code: 'name' }] }, 'name', true)).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: true
+    }]
+  });
+
+  expect(setSort({ resourceType: 'Patient', sortRules: [{ code: 'name', descending: false }] }, 'name', true)).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: true
+    }]
+  });
+
+  expect(setSort({ resourceType: 'Patient', sortRules: [{ code: 'name', descending: true }] }, 'name', true)).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: true
+    }]
+  });
+});
+
+test('Toggle sort', () => {
+  expect(toggleSort({ resourceType: 'Patient' }, 'name')).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: false
+    }]
+  });
+
+  expect(toggleSort({ resourceType: 'Patient', sortRules: [{ code: 'name' }] }, 'name')).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: true
+    }]
+  });
+
+  expect(toggleSort({ resourceType: 'Patient', sortRules: [{ code: 'name', descending: false }] }, 'name')).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: true
+    }]
+  });
+
+  expect(toggleSort({ resourceType: 'Patient', sortRules: [{ code: 'name', descending: true }] }, 'name')).toMatchObject({
+    resourceType: 'Patient',
+    sortRules: [{
+      code: 'name',
+      descending: false
+    }]
+  });
+});
+
+test('Get sort field', () => {
+  expect(getSortField({ resourceType: 'Patient' })).toBeUndefined();
+  expect(getSortField({ resourceType: 'Patient', sortRules: [] })).toBeUndefined();
+  expect(getSortField({ resourceType: 'Patient', sortRules: [{ code: 'name' }] })).toBe('name');
+});
+
+test('Is sort descending', () => {
+  expect(isSortDescending({ resourceType: 'Patient' })).toBe(false);
+  expect(isSortDescending({ resourceType: 'Patient', sortRules: [] })).toBe(false);
+  expect(isSortDescending({ resourceType: 'Patient', sortRules: [{ code: 'name' }] })).toBe(false);
+  expect(isSortDescending({ resourceType: 'Patient', sortRules: [{ code: 'name', descending: true }] })).toBe(true);
 });
