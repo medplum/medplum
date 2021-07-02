@@ -1,7 +1,7 @@
 
 export interface SearchRequest {
   readonly resourceType: string;
-  readonly filters: Filter[];
+  readonly filters?: Filter[];
   readonly sortRules?: SortRule[];
   readonly page?: number;
   readonly count?: number;

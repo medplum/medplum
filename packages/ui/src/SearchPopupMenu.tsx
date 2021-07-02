@@ -41,7 +41,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
       case 'date':
       case 'datetime':
         return 'Sort Oldest to Newest';
-      case 'numeric':
+      case 'integer':
         return 'Sort Smallest to Largest';
       default:
         return 'Sort A to Z';
@@ -59,7 +59,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
       case 'date':
       case 'datetime':
         return 'Sort Newest to Oldest';
-      case 'numeric':
+      case 'integer':
         return 'Sort Largest to Smallest';
       default:
         return 'Sort Z to A';
@@ -77,12 +77,6 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
       case 'date':
       case 'datetime':
         return renderDateTimeSubMenu_();
-
-      case 'user':
-      case 'organization':
-      case 'site':
-      case 'insurer':
-        return null;
 
       default:
         return renderTextSubMenu_();

@@ -252,16 +252,18 @@ export class Repository {
 
     const knex = getKnex();
     const builder = knex.select('content').from(resourceType);
-    for (const filter of searchRequest.filters) {
-      const param = getSearchParameter(resourceType, filter.code);
-      if (param) {
-        const lookupTable = this.getLookupTable(param);
-        if (lookupTable) {
-          lookupTable.addSearchConditions(resourceType, builder, filter);
-        } else if (param.type === 'string') {
-          builder.where(param.code as string, 'LIKE', '%' + filter.value + '%');
-        } else {
-          builder.where(param.code as string, filter.value);
+    if (searchRequest.filters) {
+      for (const filter of searchRequest.filters) {
+        const param = getSearchParameter(resourceType, filter.code);
+        if (param) {
+          const lookupTable = this.getLookupTable(param);
+          if (lookupTable) {
+            lookupTable.addSearchConditions(resourceType, builder, filter);
+          } else if (param.type === 'string') {
+            builder.where(param.code as string, 'LIKE', '%' + filter.value + '%');
+          } else {
+            builder.where(param.code as string, filter.value);
+          }
         }
       }
     }

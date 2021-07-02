@@ -85,6 +85,9 @@ export function addField(definition: SearchRequest, field: string): SearchReques
  * @param {number} index The filter index.
  */
 export function deleteFilter(definition: SearchRequest, index: number): SearchRequest {
+  if (!definition.filters) {
+    return definition;
+  }
   const newFilters = [...definition.filters];
   newFilters.splice(index, 1);
   return {
