@@ -36,7 +36,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    * @param {string} fieldType The field type.
    * @return {string} The string that represents "sort ascending".
    */
-  function getAscSortString_(fieldType: string) {
+  function getAscSortString(fieldType: string) {
     switch (fieldType) {
       case 'date':
       case 'datetime':
@@ -54,7 +54,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    * @param {string} fieldType The field type.
    * @return {string} The string that represents "sort descending".
    */
-  function getDescSortString_(fieldType: string) {
+  function getDescSortString(fieldType: string) {
     switch (fieldType) {
       case 'date':
       case 'datetime':
@@ -72,14 +72,14 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    * @param {string} fieldType The field type.
    * @return {SubMenu} The new submenu.
    */
-  function renderSubMenu_(fieldType: string) {
+  function renderSubMenu(fieldType: string) {
     switch (fieldType) {
       case 'date':
       case 'datetime':
-        return renderDateTimeSubMenu_();
+        return renderDateTimeSubMenu();
 
       default:
-        return renderTextSubMenu_();
+        return renderTextSubMenu();
     }
   }
 
@@ -88,28 +88,28 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    *
    * @return {SubMenu} The date/time submenu.
    */
-  function renderDateTimeSubMenu_() {
+  function renderDateTimeSubMenu() {
     return (
       <SubMenu title="Date filters">
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Equals...</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.NOT_EQUALS)}>Does not equal...</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Equals...</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.NOT_EQUALS)}>Does not equal...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_(Operator.ENDS_BEFORE)}>Before...</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.STARTS_AFTER)}>After...</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Between...</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.ENDS_BEFORE)}>Before...</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.STARTS_AFTER)}>After...</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Between...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Tomorrow</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Today</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Yesterday</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Tomorrow</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Today</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Yesterday</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Next Month</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>This Month</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Last Month</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Next Month</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>This Month</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Last Month</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Year to date</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Year to date</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Is set</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Is not set</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Is set</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Is not set</MenuItem>
       </SubMenu>
     );
   }
@@ -119,14 +119,14 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    *
    * @return {SubMenu} The text field submenu.
    */
-  function renderTextSubMenu_() {
+  function renderTextSubMenu() {
     return (
       <SubMenu title="Text filters">
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Equals...</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.NOT_EQUALS)}>Does not equal...</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Equals...</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.NOT_EQUALS)}>Does not equal...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt_(Operator.CONTAINS)}>Contains...</MenuItem>
-        <MenuItem onClick={() => prompt_(Operator.EQUALS)}>Does not contain...</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.CONTAINS)}>Contains...</MenuItem>
+        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Does not contain...</MenuItem>
       </SubMenu>
     );
   }
@@ -144,10 +144,10 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    *
    * @param {Operator} op The filter operation.
    */
-  function prompt_(op: Operator) {
+  function prompt(op: Operator) {
     const caption = buildFieldNameString(props.schema, props.search.resourceType, props.field) + ' ' + getOpString(op) + '...';
 
-    const retVal = prompt(caption, '');
+    const retVal = window.prompt(caption, '');
     if (retVal !== null) {
       props.onChange(addFilter(props.search, props.field, op, retVal, true));
     }
@@ -155,11 +155,11 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
 
   return (
     <PopupMenu visible={props.visible} x={props.x} y={props.y} onClose={props.onClose}>
-      <MenuItem onClick={() => sort(false)}>{getAscSortString_(field.type)}</MenuItem>
-      <MenuItem onClick={() => sort(true)}>{getDescSortString_(field.type)}</MenuItem>
+      <MenuItem onClick={() => sort(false)}>{getAscSortString(field.type)}</MenuItem>
+      <MenuItem onClick={() => sort(true)}>{getDescSortString(field.type)}</MenuItem>
       <MenuSeparator />
       <MenuItem onClick={() => clearFilters()}>Clear filters</MenuItem>
-      {renderSubMenu_(field.type)}
+      {renderSubMenu(field.type)}
       {field.type === 'string' && (
         <>
           <MenuSeparator />

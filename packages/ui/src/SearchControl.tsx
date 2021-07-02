@@ -87,7 +87,7 @@ export function SearchControl(props: SearchControlProps) {
    * @param {string} key The key for the current field/column.
    * @return {string} The HTML snippet for a "filters" cell.
    */
-  function buildFilterString_(key: string) {
+  function buildFilterString(key: string) {
     const filters = (props.search.filters ?? []).filter(f => f.code === key);
     if (filters.length === 0) {
       return <span className="muted">no filters</span>;
@@ -150,7 +150,7 @@ export function SearchControl(props: SearchControlProps) {
    *
    * @param {MouseEvent} e The click event.
    */
-  function handleSortClick_(e: React.MouseEvent) {
+  function handleSortClick(e: React.MouseEvent) {
     const el = e.currentTarget as HTMLElement;
     const key = el.dataset['key'];
     if (key) {
@@ -170,7 +170,7 @@ export function SearchControl(props: SearchControlProps) {
    * @param {MouseEvent} e The click event.
    * @param {Element} el The click target element.
    */
-  function handleRowClick_(e: React.MouseEvent) {
+  function handleRowClick(e: React.MouseEvent) {
     if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
       // Ignore clicks on checkboxes
       return;
@@ -225,7 +225,7 @@ export function SearchControl(props: SearchControlProps) {
               <th
                 key={field}
                 data-key={field}
-                onClick={e => handleSortClick_(e)}
+                onClick={e => handleSortClick(e)}
               >{buildFieldNameString(schema, resourceType, field)}</th>
             )}
           </tr>
@@ -234,7 +234,7 @@ export function SearchControl(props: SearchControlProps) {
               <th className="filters medplum-search-icon-cell" />
             }
             {fields.map(field =>
-              <th key={field} data-key={field} className="filters">{buildFilterString_(field)}</th>
+              <th key={field} data-key={field} className="filters">{buildFilterString(field)}</th>
             )}
           </tr>
         </thead>
@@ -243,7 +243,7 @@ export function SearchControl(props: SearchControlProps) {
             <tr
               key={resource.id}
               data-id={resource.id}
-              onClick={e => handleRowClick_(e)}>
+              onClick={e => handleRowClick(e)}>
               {checkboxColumn &&
                 <td className="medplum-search-icon-cell">
                   <input
