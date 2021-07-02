@@ -46,8 +46,8 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     .limit(count)
     .then(result => result.map(row => ({
       system: url,
-      code: row[0],
-      display: row[1]
+      code: row.code,
+      display: row.display
     })));
 
   return res.status(200)
@@ -55,7 +55,6 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
       resourceType: 'ValueSet',
       url,
       expansion: {
-        total: 100,
         offset,
         contains: elements
       }
