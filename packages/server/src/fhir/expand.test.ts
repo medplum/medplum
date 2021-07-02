@@ -1,6 +1,6 @@
+import { OperationOutcome } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
-import { OperationOutcome } from '../../../core/dist';
 import { initApp } from '../app';
 import { loadConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';

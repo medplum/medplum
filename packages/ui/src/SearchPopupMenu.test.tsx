@@ -1,6 +1,6 @@
+import { IndexedStructureDefinition } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import { IndexedStructureDefinition } from '../../core/dist';
 import { SearchPopupMenu } from './SearchPopupMenu';
 
 const schema: IndexedStructureDefinition = {
