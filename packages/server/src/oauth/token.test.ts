@@ -273,4 +273,3 @@ test('Refresh token success', async (done) => {
         });
     });
 });
-

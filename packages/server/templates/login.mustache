@@ -4,10 +4,20 @@
   <div>
     <label for="email" class="block">Email</label>
     <input id="email" name="email" type="email" placeholder="name@example.com" value="{{email}}" autofocus required>
+    {{#errors}}
+      {{#email}}
+        {{.}}
+      {{/email}}
+    {{/errors}}
   </div>
   <div>
     <label for="password" class="block">Password</label>
     <input id="password" name="password" type="password" placeholder="Password" required>
+    {{#errors}}
+      {{#password}}
+        <div>{{.}}</div>
+      {{/password}}
+    {{/errors}}
   </div>
   <div>
     <input type="submit" value="Next">
