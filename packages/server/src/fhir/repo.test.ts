@@ -1,7 +1,7 @@
-import { Operator, Patient } from '@medplum/core';
+import { Account, Observation, Operator, Patient, Reference } from '@medplum/core';
 import { loadConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { repo } from './repo';
+import { getPatientId, repo } from './repo';
 
 beforeAll(async () => {
   await loadConfig('file:medplum.config.json');
@@ -31,7 +31,6 @@ test('Patient resource with identifier', async (done) => {
   });
 
   expect(searchOutcome.id).toEqual('ok');
-  console.log(JSON.stringify(searchResult, undefined, 2));
   expect(searchResult?.entry?.length).toEqual(1);
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
   done();
@@ -79,4 +78,16 @@ test('Repo read malformed reference', async (done) => {
   expect(resource4).toBeUndefined();
 
   done();
+});
+
+test('getPatientId', () => {
+  expect(getPatientId({ subject: [] as Reference[] } as Account, ['subject'])).toBeUndefined();
+  expect(getPatientId({ subject: [{}] } as Account, ['subject'])).toBeUndefined();
+  expect(getPatientId({ subject: [{ reference: 'Device/123' }] } as Account, ['subject'])).toBeUndefined();
+  expect(getPatientId({ subject: [{ reference: 'Patient/123' }] } as Account, ['subject'])).toBe('123');
+
+  expect(getPatientId({} as Observation, ['subject'])).toBeUndefined();
+  expect(getPatientId({ subject: {} } as Observation, ['subject'])).toBeUndefined();
+  expect(getPatientId({ subject: { reference: 'Device/123' } } as Observation, ['subject'])).toBeUndefined();
+  expect(getPatientId({ subject: { reference: 'Patient/123' } } as Observation, ['subject'])).toBe('123');
 });

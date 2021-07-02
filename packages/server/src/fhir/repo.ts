@@ -399,7 +399,7 @@ export class Repository {
  * @param resourceType The resource type.
  * @returns List of property names if in patient compartment; undefined otherwise.
  */
-function getPatientCompartmentProperties(resourceType: string): string[] | undefined {
+export function getPatientCompartmentProperties(resourceType: string): string[] | undefined {
   const resourceList = patientCompartment.resource as CompartmentDefinitionResource[];
   for (const resource of resourceList) {
     if (resource.code === resourceType) {
@@ -415,12 +415,11 @@ function getPatientCompartmentProperties(resourceType: string): string[] | undef
  * @param resource The resource.
  * @returns The patient ID if found; undefined otherwise.
  */
- function getPatientId(resource: Resource, properties: string[]): string | undefined {
+export function getPatientId(resource: Resource, properties: string[]): string | undefined {
   if (resource.resourceType === 'Patient') {
     return resource.id;
   }
 
-  // const properties = ['patient', 'subject', 'actor', 'author', 'recipient'];
   for (const property of properties) {
     if (property in resource) {
       const value: Reference | Reference[] | undefined = (resource as any)[property];
@@ -456,8 +455,8 @@ function getPatientIdFromReferenceProperty(reference: Reference | Reference[] | 
  * @returns The patient ID if found; undefined otherwise.
  */
 function getPatientIdFromReferenceArray(references: Reference[]): string | undefined {
-  for (let i = 0; i < references.length; i++) {
-    const result = getPatientIdFromReference(references[i]);
+  for (const reference of references) {
+    const result = getPatientIdFromReference(reference);
     if (result) {
       return result;
     }
