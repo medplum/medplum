@@ -18,8 +18,8 @@ async function main() {
 
   await initDatabase(config.database);
   await initKeys(config);
-  await initBinaryStorage(config.binaryStorage);
   await seedDatabase();
+  initBinaryStorage(config.binaryStorage);
 
   const app = await initApp(express());
   app.listen(5000);

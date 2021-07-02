@@ -18,10 +18,6 @@ fhirRouter.use(authenticateToken);
 fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
   const oldJson = res.json;
 
-  // res.json = (data: any) => {
-  //   return res.json(data);
-  // };
-
   res.json = (data: any) => {
     // Restore the original json to avoid double response
     // See: https://stackoverflow.com/a/60817116
