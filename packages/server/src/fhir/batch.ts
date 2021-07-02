@@ -1,6 +1,6 @@
 import { Bundle, BundleEntry } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { allOk, badRequest } from './outcomes';
+import { allOk, badRequest, isOk } from './outcomes';
 import { Repository, RepositoryResult } from './repo';
 
 export async function createBatch(repo: Repository, bundle: Bundle): RepositoryResult<Bundle> {
@@ -31,7 +31,7 @@ export async function createBatch(repo: Repository, bundle: Bundle): RepositoryR
     (result.entry as BundleEntry[]).push({
       response: {
         status: updateOutcome.id,
-        location: updateResource.resourceType + '/' + updateResource.id
+        location: isOk(updateOutcome) ? updateResource.resourceType + '/' + updateResource.id : undefined
       }
     });
   }

@@ -220,6 +220,40 @@ test('Authorization code token success', async (done) => {
     });
 });
 
+test('Refresh token without token', (done) => {
+  request(app)
+    .post('/oauth2/token')
+    .type('form')
+    .send({
+      grant_type: 'refresh_token',
+      refresh_token: ''
+    })
+    .expect(400)
+    .end((err, res) => {
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('invalid_request');
+      expect(res.body.error_description).toBe('Invalid refresh token');
+      done();
+    });
+});
+
+test('Refresh token with malformed token', (done) => {
+  request(app)
+    .post('/oauth2/token')
+    .type('form')
+    .send({
+      grant_type: 'refresh_token',
+      refresh_token: 'xyz'
+    })
+    .expect(400)
+    .end((err, res) => {
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('invalid_request');
+      expect(res.body.error_description).toBe('Invalid refresh token');
+      done();
+    });
+});
+
 test('Refresh token success', async (done) => {
   request(app)
     .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
