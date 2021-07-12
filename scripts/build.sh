@@ -13,7 +13,7 @@ node --version
 npm --version
 
 # Install
-npm i --legacy-peer-deps
+npm i --no-optional --legacy-peer-deps
 
 # Build
 npm run build --workspace=packages/definitions
