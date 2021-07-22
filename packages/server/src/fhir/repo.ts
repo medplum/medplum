@@ -6,7 +6,7 @@ import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { executeQuery, getKnex } from '../database';
 import { logger } from '../logger';
 import { HumanNameTable, IdentifierTable, LookupTable } from './lookuptable';
-import { allOk, badRequest, isNotFound, isOk, notFound } from './outcomes';
+import { allOk, badRequest, created, isNotFound, isOk, notFound, notModified } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
 
@@ -190,27 +190,38 @@ export class Repository {
       return [badRequest('Missing id'), undefined];
     }
 
-    const [existingOutcome, existing] = await this.readResource(resourceType, id);
+    const [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
     if (!isOk(existingOutcome) && !isNotFound(existingOutcome)) {
       return [existingOutcome, undefined];
     }
 
-    const result = {
+    const updated: T = {
       ...existing,
       ...resource,
       meta: {
         ...existing?.meta,
-        ...resource.meta,
+        ...resource.meta
+      }
+    };
+
+    if (JSON.stringify(existing) === JSON.stringify(updated)) {
+      return [notModified, existing as T];
+    }
+
+    const result: T = {
+      ...updated,
+      meta: {
+        ...updated?.meta,
         versionId: randomUUID(),
         lastUpdated: new Date(),
         project: this.getProjectId(resource),
         author: this.context.author
       }
-    };
+    }
 
     await this.write(result);
 
-    return [allOk, result];
+    return [existing ? allOk : created, result];
   }
 
   async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {

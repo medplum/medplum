@@ -161,10 +161,36 @@ test('Read resource version not found', (done) => {
 
 test('Update resource', (done) => {
   request(app)
-    .put(`/fhir/R4/Patient/${patientId}`)
+    .post(`/fhir/R4/Patient`)
     .set('Authorization', 'Bearer ' + accessToken)
-    .send({ resourceType: 'Patient', id: patientId })
-    .expect(200, done);
+    .set('Content-Type', 'application/fhir+json')
+    .send({ resourceType: 'Patient' })
+    .expect(201)
+    .end((err, res) => {
+      const patient = res.body;
+      request(app)
+        .put(`/fhir/R4/Patient/${patient.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ ...patient, active: true })
+        .expect(200, done);
+    });
+});
+
+test('Update resource not modified', (done) => {
+  request(app)
+    .post(`/fhir/R4/Patient`)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .set('Content-Type', 'application/fhir+json')
+    .send({ resourceType: 'Patient' })
+    .expect(201)
+    .end((err, res) => {
+      const patient = res.body;
+      request(app)
+        .put(`/fhir/R4/Patient/${patient.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(patient)
+        .expect(304, done);
+    });
 });
 
 test('Update resource invalid', (done) => {
