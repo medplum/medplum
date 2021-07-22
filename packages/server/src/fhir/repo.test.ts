@@ -19,7 +19,7 @@ test('Patient resource with identifier', async (done) => {
     identifier: [{ system: 'https://www.example.com', value: '123' }]
   });
 
-  expect(createOutcome.id).toEqual('ok');
+  expect(createOutcome.id).toEqual('created');
 
   const [searchOutcome, searchResult] = await repo.search({
     resourceType: 'Patient',
@@ -43,7 +43,7 @@ test('Patient resource with name', async (done) => {
     identifier: [{ system: 'https://www.example.com', value: '123' }]
   });
 
-  expect(createOutcome.id).toEqual('ok');
+  expect(createOutcome.id).toEqual('created');
 
   const [searchOutcome, searchResult] = await repo.search({
     resourceType: 'Patient',
@@ -90,4 +90,41 @@ test('getPatientId', () => {
   expect(getPatientId({ subject: {} } as Observation, ['subject'])).toBeUndefined();
   expect(getPatientId({ subject: { reference: 'Device/123' } } as Observation, ['subject'])).toBeUndefined();
   expect(getPatientId({ subject: { reference: 'Patient/123' } } as Observation, ['subject'])).toBe('123');
+});
+
+test('Update patient', async (done) => {
+  const [createOutcome, patient1] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Update1'], family: 'Update1' }]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+
+  const [updateOutcome, patient2] = await repo.updateResource<Patient>({
+    ...patient1 as Patient,
+    active: true
+  });
+
+  expect(updateOutcome.id).toEqual('ok');
+  expect(patient2?.id).toEqual(patient1?.id);
+  expect(patient2?.meta?.versionId).not.toEqual(patient1?.meta?.versionId);
+  done();
+});
+
+test('Update patient no changes', async (done) => {
+  const [createOutcome, patient1] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Update1'], family: 'Update1' }]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+
+  const [updateOutcome, patient2] = await repo.updateResource<Patient>({
+    ...patient1 as Patient
+  });
+
+  expect(updateOutcome.id).toEqual('not-modified');
+  expect(patient2?.id).toEqual(patient1?.id);
+  expect(patient2?.meta?.versionId).toEqual(patient1?.meta?.versionId);
+  done();
 });

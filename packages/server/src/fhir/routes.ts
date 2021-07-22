@@ -6,7 +6,7 @@ import { createBatch } from './batch';
 import { binaryRouter } from './binary';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
-import { badRequest, isOk, sendOutcome } from './outcomes';
+import { badRequest, getStatus, isOk, sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
@@ -68,7 +68,7 @@ fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
   }
-  res.status(200).json(result);
+  res.status(getStatus(outcome)).json(result);
 }));
 
 // Search
@@ -80,7 +80,7 @@ fhirRouter.get('/:resourceType', asyncWrap(async (req: Request, res: Response) =
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
   }
-  res.status(200).json(bundle);
+  res.status(getStatus(outcome)).json(bundle);
 }));
 
 // Create resource
@@ -98,7 +98,7 @@ fhirRouter.post('/:resourceType', asyncWrap(async (req: Request, res: Response) 
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
   }
-  res.status(201).json(result);
+  res.status(getStatus(outcome)).json(result);
 }));
 
 // Read resource by ID
@@ -109,7 +109,7 @@ fhirRouter.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
   }
-  res.status(200).json(resource);
+  res.status(getStatus(outcome)).json(resource);
 }));
 
 // Read resource history
@@ -120,7 +120,7 @@ fhirRouter.get('/:resourceType/:id/_history', asyncWrap(async (req: Request, res
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
   }
-  res.status(200).json(bundle);
+  res.status(getStatus(outcome)).json(bundle);
 }));
 
 // Read resource version by version ID
@@ -131,7 +131,7 @@ fhirRouter.get('/:resourceType/:id/_history/:vid', asyncWrap(async (req: Request
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
   }
-  res.status(200).json(resource);
+  res.status(getStatus(outcome)).json(resource);
 }));
 
 // Update resource
@@ -152,7 +152,7 @@ fhirRouter.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
   }
-  res.status(200).json(result);
+  res.status(getStatus(outcome)).json(result);
 }));
 
 // Delete resource
@@ -163,7 +163,7 @@ fhirRouter.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Resp
   if (!isOk(outcome)) {
     return sendOutcome(res, outcome);
   }
-  res.status(200).json(resource);
+  res.status(getStatus(outcome)).json(resource);
 }));
 
 // Patch resource
