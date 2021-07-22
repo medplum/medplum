@@ -201,7 +201,7 @@
   },
   {
     "code" : "Encounter",
-    "param" : ["patient"]
+    "param" : ["subject"]
   },
   {
     "code" : "Endpoint"
