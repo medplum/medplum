@@ -6,6 +6,7 @@ import { dicomRouter } from './dicom/routes';
 import { fhirRouter } from './fhir';
 import { logger } from './logger';
 import { oauthRouter } from './oauth';
+import { openApiHandler } from './openapi';
 import { wellKnownRouter } from './wellknown';
 
 const corsOptions: cors.CorsOptions = {
@@ -64,6 +65,7 @@ export async function initApp(app: Express): Promise<Express> {
   }));
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
   app.get('/healthcheck', (req: Request, res: Response) => res.json({ ok: true }));
+  app.get('/openapi.json', openApiHandler);
   app.use('/.well-known/', wellKnownRouter);
   app.use('/auth/', authRouter);
   app.use('/dicom/PS3/', dicomRouter);

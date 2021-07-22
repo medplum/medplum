@@ -1,10 +1,11 @@
 import { OperationOutcome, OperationOutcomeIssue, Resource } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
+import { JSONSchema4 } from 'json-schema';
 import { allOk } from './outcomes';
 
-export const schema = readJson('fhir/r4/fhir.schema.json');
-export const definitions = schema.definitions;
+export const schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema4;
+export const definitions = schema.definitions as { [k: string]: JSONSchema4; };
 export const resourceTypes = Object.keys(schema.discriminator.mapping);
 
 export function isResourceType(resourceType: string): boolean {
