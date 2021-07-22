@@ -44,8 +44,8 @@ export function Autocomplete(props: AutocompleteProps) {
   stateRef.current = state;
 
   useEffect(() => {
-    const interval = window.setInterval(() => handleTimer(), 150);
-    return () => window.clearInterval(interval);
+    const interval = setInterval(() => handleTimer(), 150);
+    return () => clearInterval(interval);
   }, []);
 
   /**
@@ -427,11 +427,12 @@ export function Autocomplete(props: AutocompleteProps) {
             onBlur={() => handleBlur()}
             onKeyDown={(e: React.KeyboardEvent) => handleKeyDown(e)}
             ref={inputRef}
+            data-testid="input-element"
           />
         </li>
       </ul>
       {state.dropDownVisible && (
-        <div className="medplum-autocomplete">
+        <div className="medplum-autocomplete" data-testid="dropdown">
           {state.options.map((option, index) => (
             <div
               key={option.id}
