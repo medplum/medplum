@@ -40,7 +40,7 @@ export const Sizes = () => (
 
 export const Resource = () => (
   <Document>
-    <Avatar reference="Patient/597f5a0c-ac0f-47a2-a4db-bd0e0496f061" />
+    <Avatar reference={'Patient/' + process.env.SAMPLE_PATIENT_ID} />
   </Document>
 );
 
@@ -49,15 +49,15 @@ export const WithText = () => (
     <a href="#">
       <div style={{ display: 'flex', width: 180, justifyContent: 'space-between' }}>
         <Avatar alt="George Washington" src="/avatars/1.jpg" />
-      George Washington
-    </div>
+        George Washington
+      </div>
     </a>
     <hr style={{ margin: '40px 0' }} />
     <a href="#">
       <div style={{ display: 'flex', width: 180, justifyContent: 'space-between' }}>
         <Avatar alt="George Washington" src="/avatars/1.jpg" />
-      George Washington<br />View profile
-    </div>
+        George Washington<br />View profile
+      </div>
     </a>
   </Document>
 );
