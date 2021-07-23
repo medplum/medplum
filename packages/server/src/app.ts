@@ -3,7 +3,7 @@ import cors from 'cors';
 import { Express, NextFunction, Request, Response } from 'express';
 import { authRouter } from './auth';
 import { dicomRouter } from './dicom/routes';
-import { fhirRouter } from './fhir';
+import { badRequest, fhirRouter, sendOutcome } from './fhir';
 import { logger } from './logger';
 import { oauthRouter } from './oauth';
 import { openApiHandler } from './openapi';
@@ -38,9 +38,13 @@ function cacheHandler(req: Request, res: Response, next: NextFunction): void {
  * @param res The response.
  * @param next The next handler.
  */
-function errorHandler(err: any, req: Request, res: Response, next: NextFunction) {
+function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
   if (res.headersSent) {
     return next(err)
+  }
+  if (err.type === 'entity.too.large') {
+    sendOutcome(res, badRequest('File too large'));
+    return;
   }
   logger.error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
