@@ -55,6 +55,9 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
         copy.push(attachment);
         setValues(copy);
       })
+      .catch((err: any) => {
+        alert(err?.outcome?.issue?.[0]?.details?.text);
+      });
   }
 
   return (

@@ -80,3 +80,13 @@ hr {
 .center {
   text-align: center;
 }
+
+table.table {
+  border-collapse: collapse;
+}
+
+table.table th,
+table.table td {
+  border: thin solid var(--medplum-gray-400);
+  padding: 4px;
+}

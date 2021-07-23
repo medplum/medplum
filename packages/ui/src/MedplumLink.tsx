@@ -12,6 +12,7 @@ export function MedplumLink(props: MedplumLinkProps) {
   return (
     <a
       href={props.to || '#'}
+      data-testid="link"
       onClick={(e: React.SyntheticEvent) => {
         e.preventDefault();
         e.stopPropagation();

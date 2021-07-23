@@ -21,7 +21,7 @@ export interface ResourceTableProps {
   id?: string;
 }
 
-export function ResourceTable(props: any) {
+export function ResourceTable(props: ResourceTableProps) {
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [value, setValue] = useState<Resource | undefined>(props.resource);
