@@ -119,8 +119,8 @@ export class MedplumClient extends EventTarget {
   private readonly fetch: FetchLike;
   private readonly storage: Storage;
   private readonly schema: Map<string, IndexedStructureDefinition>;
-  private readonly resourceCache: LRUCache<Resource>;
-  private readonly blobUrlCache: LRUCache<string>;
+  private readonly resourceCache: LRUCache<Resource | Promise<Resource>>;
+  private readonly blobUrlCache: LRUCache<string | Promise<string>>;
   private readonly baseUrl: string;
   private readonly clientId: string;
   private readonly authorizeUrl: string;
@@ -268,11 +268,14 @@ export class MedplumClient extends EventTarget {
   }
 
   read(resourceType: string, id: string): Promise<Resource> {
-    return this.get(this.fhirUrl(resourceType, id))
+    const cacheKey = resourceType + '/' + id;
+    const promise = this.get(this.fhirUrl(resourceType, id))
       .then((resource: Resource) => {
-        this.resourceCache.set(resourceType + '/' + id, resource);
+        this.resourceCache.set(cacheKey, resource);
         return resource;
       });
+    this.resourceCache.set(cacheKey, promise);
+    return promise;
   }
 
   readCached(resourceType: string, id: string): Promise<Resource> {
@@ -326,12 +329,14 @@ export class MedplumClient extends EventTarget {
   }
 
   readBlobAsImageUrl(url: string): Promise<string> {
-    return this.readBlob(url)
+    const promise = this.readBlob(url)
       .then(imageBlob => {
         const imageUrl = URL.createObjectURL(imageBlob);
         this.blobUrlCache.set(url, imageUrl);
         return imageUrl;
       });
+    this.blobUrlCache.set(url, promise);
+    return promise;
   }
 
   readCachedBlobAsImageUrl(url: string): Promise<string> {
@@ -484,7 +489,7 @@ export class MedplumClient extends EventTarget {
 
     const obj = blob ? await response.blob() : await response.json();
     if (obj.issue && obj.issue.length > 0) {
-      throw new MedplumOperationOutcomeError(obj as OperationOutcome);
+      return Promise.reject(new MedplumOperationOutcomeError(obj as OperationOutcome));
     }
     return obj;
   }
