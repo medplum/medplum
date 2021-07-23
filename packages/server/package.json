@@ -15,7 +15,7 @@
     "build": "tsc",
     "prestart": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node-dev --debug --respawn --transpile-only src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "test": "jest --runInBand"
   },
   "dependencies": {
