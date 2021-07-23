@@ -1,7 +1,9 @@
 import { Account, Observation, Operator, Patient, Reference } from '@medplum/core';
+import { randomUUID } from 'crypto';
 import { loadConfig } from '../config';
+import { ADMIN_USER_ID, MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
-import { getPatientId, repo } from './repo';
+import { getPatientId, repo, Repository } from './repo';
 
 beforeAll(async () => {
   await loadConfig('file:medplum.config.json');
@@ -126,5 +128,113 @@ test('Update patient no changes', async (done) => {
   expect(updateOutcome.id).toEqual('not-modified');
   expect(patient2?.id).toEqual(patient1?.id);
   expect(patient2?.meta?.versionId).toEqual(patient1?.meta?.versionId);
+  done();
+});
+
+test('Create Patient with no author', async (done) => {
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+  expect(patient?.meta?.author).toEqual('system');
+  done();
+});
+
+test('Create Patient as system on behalf of author', async (done) => {
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    meta: {
+      author: 'Practitioner/' + ADMIN_USER_ID
+    }
+  });
+
+  expect(createOutcome.id).toEqual('created');
+  expect(patient?.meta?.author).toEqual('Practitioner/' + ADMIN_USER_ID);
+  done();
+});
+
+test('Create Patient as ClientApplication with no author', async (done) => {
+  const clientApp = 'ClientApplication/' + randomUUID();
+
+  const repo = new Repository({
+    project: MEDPLUM_PROJECT_ID,
+    author: clientApp
+  });
+
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+  expect(patient?.meta?.author).toEqual(clientApp);
+  done();
+});
+
+test('Create Patient as ClientApplication on behalf of author', async (done) => {
+  const clientApp = 'ClientApplication/' + randomUUID();
+
+  const repo = new Repository({
+    project: MEDPLUM_PROJECT_ID,
+    author: clientApp
+  });
+
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    meta: {
+      author: 'Practitioner/' + ADMIN_USER_ID
+    }
+  });
+
+  expect(createOutcome.id).toEqual('created');
+  expect(patient?.meta?.author).toEqual('Practitioner/' + ADMIN_USER_ID);
+  done();
+});
+
+test('Create Patient as Practitioner with no author', async (done) => {
+  const author = 'Practitioner/' + ADMIN_USER_ID;
+
+  const repo = new Repository({
+    project: MEDPLUM_PROJECT_ID,
+    author
+  });
+
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+  expect(patient?.meta?.author).toEqual(author);
+  done();
+});
+
+test('Create Patient as Practitioner on behalf of author', async (done) => {
+  const author = 'Practitioner/' + ADMIN_USER_ID;
+  const fakeAuthor = 'Practitioner/' + randomUUID();
+
+  const repo = new Repository({
+    project: MEDPLUM_PROJECT_ID,
+    author: author
+  });
+
+  // We are acting as a Practitioner
+  // Practitioner does *not* have the right to set the author
+  // So even though we pass in an author,
+  // We expect the Practitioner to be in the result.
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    meta: {
+      author: fakeAuthor
+    }
+  });
+
+  expect(createOutcome.id).toEqual('created');
+  expect(patient?.meta?.author).toEqual(author);
   done();
 });

@@ -214,8 +214,8 @@ export class Repository {
         ...updated?.meta,
         versionId: randomUUID(),
         lastUpdated: new Date(),
-        project: this.getProjectId(resource),
-        author: this.context.author
+        project: this.getProjectId(updated),
+        author: this.getAuthor(updated)
       }
     }
 
@@ -392,7 +392,7 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns The project ID.
    */
-  private getProjectId(resource: Resource): string | undefined {
+  private getProjectId(resource: Resource): string {
     if (publicResourceTypes.includes(resource.resourceType)) {
       return PUBLIC_PROJECT_ID;
     }
@@ -402,6 +402,33 @@ export class Repository {
     }
 
     return this.context.project;
+  }
+
+  /**
+   * Returns the author reference string (resourceType/id).
+   * If the current context is a ClientApplication, handles "on behalf of".
+   * Otherwise uses the current context profile.
+   * @param resource The FHIR resource.
+   * @returns
+   */
+  private getAuthor(resource: Resource): string {
+    // If the resource has an author (whether provided or from existing),
+    // and the current context is a ClientApplication (i.e., OAuth client credentials),
+    // then allow the ClientApplication to act on behalf of another user.
+    const author = resource.meta?.author;
+    if (author && this.canWriteAuthor()) {
+      return author;
+    }
+
+    return this.context.author;
+  }
+
+  /**
+   * Determines if the current user can manually set the meta.author field.
+   * @returns True if the current user can manually set the author.
+   */
+  private canWriteAuthor(): boolean {
+    return this.context.author === 'system' || this.context.author.startsWith('ClientApplication/');
   }
 }
 
