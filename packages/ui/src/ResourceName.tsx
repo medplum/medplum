@@ -1,12 +1,13 @@
-import { getDisplayString, getReferenceString, ProfileResource, Resource } from '@medplum/core';
+import { getDisplayString, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 
 export interface ResourceNameProps {
-  resource?: ProfileResource;
+  resource?: Resource;
   reference?: string;
   alt?: string;
+  link?: boolean;
 }
 
 export const ResourceName = (props: ResourceNameProps) => {
@@ -25,7 +26,9 @@ export const ResourceName = (props: ResourceNameProps) => {
     }
   }, [props.resource, props.reference]);
 
-  return (
+  return props.link ? (
     <MedplumLink to={props.reference}>{text}</MedplumLink>
+  ) : (
+    <span>{text}</span>
   );
 };

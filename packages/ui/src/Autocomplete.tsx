@@ -1,20 +1,17 @@
-import { Bundle, getDisplayString, Operator } from '@medplum/core';
+import { Bundle, Operator, Resource } from '@medplum/core';
+import { create } from 'domain';
 import React, { useEffect, useRef, useState } from 'react';
-import { useMedplum } from './MedplumProvider';
 import './Autocomplete.css';
-
-interface AutocompleteResource {
-  id: string,
-  name: string,
-  url: string
-}
+import { Avatar } from './Avatar';
+import { useMedplum, useMedplumRouter } from './MedplumProvider';
+import { ResourceName } from './ResourceName';
 
 export interface AutocompleteProps {
   id: string,
   resourceType: string,
   multiple?: boolean,
   autofocus?: boolean,
-  defaultValue?: AutocompleteResource[],
+  defaultValue?: Resource[],
   createNew?: string
 }
 
@@ -22,13 +19,14 @@ interface AutocompleteState {
   focused: boolean,
   lastValue: string,
   dropDownVisible: boolean,
-  values: AutocompleteResource[],
-  options: AutocompleteResource[],
+  values: Resource[],
+  options: Resource[],
   selectedIndex: number
 }
 
 export function Autocomplete(props: AutocompleteProps) {
   const medplum = useMedplum();
+  const router = useMedplumRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [state, setState] = useState({
@@ -51,19 +49,16 @@ export function Autocomplete(props: AutocompleteProps) {
   /**
    * Adds an resource to the list of selected resources.
    *
-   * @param {!AutocompleteResource} resource The resource.
+   * @param {!Resource} resource The resource.
    */
-  function addResource(resource: AutocompleteResource) {
-    const inputElement = inputRef.current;
-    if (!inputElement) {
-      return;
-    }
+  function addResource(resource: Resource) {
+    const inputElement = inputRef.current as HTMLInputElement;
 
     if (props.createNew && resource.id === '__createNew') {
       const name = inputElement.value;
       const next = window.location.href;
       const url = props.createNew + '?name=' + encodeURIComponent(name) + '&next=' + encodeURIComponent(next);
-      window.location.href = url;
+      router.push(url);
       return true;
     }
 
@@ -80,10 +75,7 @@ export function Autocomplete(props: AutocompleteProps) {
   }
 
   function handleClick() {
-    const inputElement = inputRef.current;
-    if (inputElement) {
-      inputElement.focus();
-    }
+    inputRef.current?.focus();
   }
 
   function handleFocus() {
@@ -132,15 +124,10 @@ export function Autocomplete(props: AutocompleteProps) {
    * @param {KeyboardEvent} e The key down event.
    */
   function handleSelectKey(e: React.KeyboardEvent) {
-    const inputElement = inputRef.current;
-    if (!inputElement) {
-      return;
-    }
-
     if (tryAddResource()) {
       e.preventDefault();
       e.stopPropagation();
-      inputElement.focus();
+      inputRef.current?.focus();
     }
   }
 
@@ -152,13 +139,7 @@ export function Autocomplete(props: AutocompleteProps) {
    * @param {KeyboardEvent} e The key down event.
    */
   function handleBackspaceKey(e: React.KeyboardEvent) {
-    const inputElement = inputRef.current;
-    if (!inputElement) {
-      return;
-    }
-
-    const value = inputElement.value;
-    if (value.length > 0) {
+    if (inputRef.current?.value) {
       // If there is still text in the input,
       // then handle backspace as normal.
       return;
@@ -186,15 +167,10 @@ export function Autocomplete(props: AutocompleteProps) {
    * @param {KeyboardEvent} e The key down event.
    */
   function handleSeparatorKey(e: React.KeyboardEvent) {
-    const inputElement = inputRef.current;
-    if (!inputElement) {
-      return false;
-    }
-
     tryAddResource();
     e.preventDefault();
     e.stopPropagation();
-    inputElement.focus();
+    inputRef.current?.focus();
   }
 
   /**
@@ -203,12 +179,7 @@ export function Autocomplete(props: AutocompleteProps) {
    * @return {boolean} True if captured an resource; false otherwise.
    */
   function tryAddResource() {
-    const inputElement = inputRef.current;
-    if (!inputElement) {
-      return false;
-    }
-
-    let resource;
+    let resource: Resource | undefined;
 
     const currState = stateRef.current;
     if (currState.selectedIndex >= 0 && currState.selectedIndex < currState.options.length) {
@@ -219,13 +190,12 @@ export function Autocomplete(props: AutocompleteProps) {
       // Default to first row
       resource = currState.options[0];
 
-    } else if (inputElement.value) {
+    } else if (inputRef.current?.value) {
       // Otherwise create an unstructured resource
       resource = {
-        id: '',
-        name: inputElement.value,
-        url: ''
-      };
+        resourceType: props.resourceType,
+        name: inputRef.current?.value
+      } as Resource;
     }
 
     if (!resource) {
@@ -243,12 +213,7 @@ export function Autocomplete(props: AutocompleteProps) {
    *
    */
   const handleTimer = () => {
-    const inputElement = inputRef.current;
-    if (!inputElement) {
-      return;
-    }
-
-    const value = inputElement.value.trim();
+    const value = inputRef.current?.value?.trim() || '';
     const currState = stateRef.current;
     if (value === currState.lastValue) {
       // Nothing has changed, move on
@@ -286,24 +251,21 @@ export function Autocomplete(props: AutocompleteProps) {
    * @param {Object} response The HTTP response body in JSON.
    */
   function handleResponse(response: Bundle) {
-    const resources = [];
+    const resources: Resource[] = [];
 
     if (props.createNew) {
-      resources.push({
+      const createNewResource = {
+        resourceType: props.resourceType,
         id: '__createNew',
-        name: 'Create new...',
-        url: 'https://static.medplum.com/img/plus.png'
-      });
+        name: 'Create new...'
+      } as Resource;
+      resources.push(createNewResource);
     }
 
     if (response.entry) {
       response.entry.forEach(entry => {
         if (entry.resource) {
-          resources.push({
-            id: entry.resource.id,
-            name: getDisplayString(entry.resource),
-            url: '',
-          });
+          resources.push(entry.resource);
         }
       });
     }
@@ -401,6 +363,7 @@ export function Autocomplete(props: AutocompleteProps) {
 
   return (
     <div
+      data-testid="autocomplete"
       className={'medplum-autocomplete-container' + (state.focused ? ' focused' : '')}
       onClick={() => handleClick()}>
       <input
@@ -413,7 +376,7 @@ export function Autocomplete(props: AutocompleteProps) {
           <li
             key={value.id}
             className={value.id === '' ? 'unstructured choice' : 'choice'}>
-            {value.name}
+            <ResourceName resource={value} />
           </li>
         ))}
         <li>
@@ -441,8 +404,8 @@ export function Autocomplete(props: AutocompleteProps) {
               onMouseOver={e => handleDropDownHover(e)}
               onClick={e => handleDropDownClick(e)}
             >
-              <div className="medplum-autocomplete-icon"><img src={option.url} width="40" height="40" /></div>
-              <div className="medplum-autocomplete-label"><p>{option.name}</p></div>
+              <div className="medplum-autocomplete-icon"><Avatar resource={option} /></div>
+              <div className="medplum-autocomplete-label"><ResourceName resource={option} /></div>
             </div>
           ))}
         </div>

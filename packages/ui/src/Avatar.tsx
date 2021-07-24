@@ -1,11 +1,11 @@
-import { formatHumanName, ProfileResource, Resource } from '@medplum/core';
+import { getDisplayString, getImageSrc, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 import './Avatar.css';
 
 export interface AvatarProps {
   size?: 'small' | 'medium' | 'large';
-  resource?: ProfileResource;
+  resource?: Resource;
   reference?: string;
   src?: string;
   alt?: string;
@@ -17,8 +17,8 @@ export const Avatar = (props: AvatarProps) => {
   const [imageUrl, setImageUrl] = useState<string | undefined>(props.src);
   const [text, setText] = useState<string | undefined>(props.alt || '');
 
-  function setResource(resource: ProfileResource) {
-    setText(getText(resource));
+  function setResource(resource: Resource) {
+    setText(getDisplayString(resource));
 
     const attachmentUrl = getImageSrc(resource);
     if (!attachmentUrl) {
@@ -37,7 +37,7 @@ export const Avatar = (props: AvatarProps) => {
 
     if (props.reference) {
       medplum.readCachedReference(props.reference)
-        .then((resource: Resource) => setResource(resource as ProfileResource));
+        .then((resource: Resource) => setResource(resource as Resource));
     }
   }, [props.resource, props.reference]);
 
@@ -49,27 +49,6 @@ export const Avatar = (props: AvatarProps) => {
     </div>
   );
 };
-
-function getImageSrc(resource: ProfileResource | undefined): string | undefined {
-  const photos = resource?.photo;
-  if (photos) {
-    for (const photo of photos) {
-      if (photo.url && photo.contentType && photo.contentType.startsWith('image/')) {
-        return photo.url;
-      }
-    }
-  }
-}
-
-function getText(resource: ProfileResource | undefined): string {
-  const names = resource?.name;
-  if (names) {
-    for (const name of names) {
-      return formatHumanName(name);
-    }
-  }
-  return '';
-}
 
 function getInitials(text: string): string {
   return text.split(' ').map(n => n[0]).join('');
