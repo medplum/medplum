@@ -37,7 +37,7 @@ export const Avatar = (props: AvatarProps) => {
 
     if (props.reference) {
       medplum.readCachedReference(props.reference)
-        .then((resource: Resource) => setResource(resource as Resource));
+        .then((resource: Resource) => setResource(resource));
     }
   }, [props.resource, props.reference]);
 

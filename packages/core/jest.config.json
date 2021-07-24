@@ -1,5 +1,5 @@
 {
-  "testEnvironment": "node",
+  "testEnvironment": "jsdom",
   "testRunner": "jasmine2",
   "transform": {
     "^.+\\.ts$": "ts-jest"

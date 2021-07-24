@@ -51,7 +51,7 @@ test('Client constructor', () => {
   expect(() => new MedplumClient({
     clientId: 'xyz',
     baseUrl: 'https://x/',
-  })).toThrow('window is not defined');
+  })).toThrow('Cannot read property \'bind\' of undefined');
 
   expect(() => new MedplumClient({
     clientId: 'xyz',
