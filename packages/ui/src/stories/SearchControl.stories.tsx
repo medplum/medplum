@@ -1,5 +1,5 @@
+import { SearchRequest } from '@medplum/core';
 import { Meta } from '@storybook/react';
-import { SearchDefinition } from '@medplum/core';
 import React, { useState } from 'react';
 import { SearchControl } from '../SearchControl';
 
@@ -9,7 +9,7 @@ export default {
 } as Meta;
 
 export const Checkboxes = () => {
-  const [search, setSearch] = useState<SearchDefinition>({
+  const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient'
   });
 
@@ -28,8 +28,27 @@ export const Checkboxes = () => {
 };
 
 export const NoCheckboxes = () => {
-  const [search, setSearch] = useState<SearchDefinition>({
+  const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient'
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      onLoad={e => console.log('onLoad', e)}
+      onClick={e => console.log('onClick', e)}
+      onChange={e => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};
+
+export const ExtraFields = () => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', 'meta.lastUpdated', 'name', 'birthDate']
   });
 
   return (

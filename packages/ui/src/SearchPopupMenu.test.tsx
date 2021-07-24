@@ -1,5 +1,5 @@
-import { IndexedStructureDefinition } from '@medplum/core';
-import { render, screen } from '@testing-library/react';
+import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { SearchPopupMenu } from './SearchPopupMenu';
 
@@ -94,6 +94,35 @@ test('SearchPopupMenu renders date field', () => {
   expect(screen.getByText('After...')).not.toBeUndefined();
 });
 
+test('SearchPopupMenu renders date field submenu', async (done) => {
+  render(<SearchPopupMenu
+    schema={schema}
+    search={{
+      resourceType: 'Patient'
+    }}
+    visible={true}
+    x={0}
+    y={0}
+    field={'birthDate'}
+    onChange={e => console.log('onChange', e)}
+    onClose={() => console.log('onClose')}
+  />);
+
+  expect(screen.getByText('Before...')).not.toBeUndefined();
+  expect(screen.getByText('After...')).not.toBeUndefined();
+
+  const dateFiltersSubmenu = screen.getByText('Date filters');
+
+  await act(async () => {
+    fireEvent.click(dateFiltersSubmenu);
+  });
+
+  expect(screen.getByText('Tomorrow')).not.toBeUndefined();
+  expect(screen.getByText('Today')).not.toBeUndefined();
+  expect(screen.getByText('Yesterday')).not.toBeUndefined();
+  done();
+});
+
 test('SearchPopupMenu renders numeric field', () => {
   render(<SearchPopupMenu
     schema={schema}
@@ -110,4 +139,72 @@ test('SearchPopupMenu renders numeric field', () => {
 
   expect(screen.getByText('Sort Largest to Smallest')).not.toBeUndefined();
   expect(screen.getByText('Sort Smallest to Largest')).not.toBeUndefined();
+});
+
+test('SearchPopupMenu sort', async (done) => {
+  let currSearch: SearchRequest = {
+    resourceType: 'Patient'
+  };
+
+  render(<SearchPopupMenu
+    schema={schema}
+    search={currSearch}
+    visible={true}
+    x={0}
+    y={0}
+    field={'birthDate'}
+    onChange={e => currSearch = e}
+    onClose={() => console.log('onClose')}
+  />);
+
+  await act(async () => {
+    fireEvent.click(screen.getByText('Sort Oldest to Newest'));
+  });
+
+  expect(currSearch.sortRules).not.toBeUndefined();
+  expect(currSearch.sortRules?.length).toEqual(1);
+  expect(currSearch.sortRules?.[0].code).toEqual('birthDate');
+  expect(currSearch.sortRules?.[0].descending).toEqual(false);
+
+  await act(async () => {
+    fireEvent.click(screen.getByText('Sort Newest to Oldest'));
+  });
+
+  expect(currSearch.sortRules).not.toBeUndefined();
+  expect(currSearch.sortRules?.length).toEqual(1);
+  expect(currSearch.sortRules?.[0].code).toEqual('birthDate');
+  expect(currSearch.sortRules?.[0].descending).toEqual(true);
+  done();
+});
+
+test('SearchPopupMenu prompt', async (done) => {
+  window.prompt = jest.fn().mockImplementation(() => 'xyz');
+
+  let currSearch: SearchRequest = {
+    resourceType: 'Patient'
+  };
+
+  render(<SearchPopupMenu
+    schema={schema}
+    search={currSearch}
+    visible={true}
+    x={0}
+    y={0}
+    field={'birthDate'}
+    onChange={e => currSearch = e}
+    onClose={() => console.log('onClose')}
+  />);
+
+  await act(async () => {
+    fireEvent.click(screen.getByText('Equals...'));
+  });
+
+  expect(currSearch.filters).not.toBeUndefined();
+  expect(currSearch.filters?.length).toEqual(1);
+  expect(currSearch.filters?.[0]).toMatchObject({
+    code: 'birthDate',
+    operator: Operator.EQUALS,
+    value: 'xyz'
+  } as Filter);
+  done();
 });

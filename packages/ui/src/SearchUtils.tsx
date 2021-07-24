@@ -485,7 +485,7 @@ export function renderValue(schema: IndexedStructureDefinition, resourceType: st
     return JSON.stringify(value);
   }
 
-  if (field.type === 'string') {
+  if (field.type === 'string' || field.type === 'date') {
     return value.toString();
   }
 
