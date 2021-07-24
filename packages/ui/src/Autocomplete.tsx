@@ -1,10 +1,9 @@
 import { Bundle, Operator, Resource } from '@medplum/core';
-import { create } from 'domain';
 import React, { useEffect, useRef, useState } from 'react';
-import './Autocomplete.css';
 import { Avatar } from './Avatar';
 import { useMedplum, useMedplumRouter } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
+import './Autocomplete.css';
 
 export interface AutocompleteProps {
   id: string,
