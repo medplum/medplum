@@ -47,28 +47,33 @@ beforeAll(async () => {
 });
 
 const setup = (args: ResourceNameProps) => {
-  const utils = render(
+  return render(
     <MedplumProvider medplum={medplum} router={mockRouter}>
       <ResourceName {...args} />
     </MedplumProvider>
   );
-
-  const element = utils.getByTestId('link');
-
-  return {
-    element,
-    ...utils
-  }
 };
 
 test('ResourceName renders', () => {
-  const { element } = setup({});
-  expect(element.innerText).toBeUndefined();
+  const utils = setup({alt: 'Alice Smith'});
+  expect(utils.getByText('Alice Smith')).not.toBeUndefined();
 });
 
 test('ResourceName renders resource directly', async (done) => {
   const utils = setup({
     resource: patient
+  });
+
+  await waitFor(() => utils.getByText('Alice Smith'));
+
+  expect(utils.getByText('Alice Smith')).not.toBeUndefined();
+  done();
+});
+
+test('ResourceName renders resource directly as link', async (done) => {
+  const utils = setup({
+    resource: patient,
+    link: true
   });
 
   await waitFor(() => utils.getByText('Alice Smith'));
