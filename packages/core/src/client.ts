@@ -4,13 +4,12 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, OperationOutcome, Patient, Practitioner, Reference, Resource, StructureDefinition, Subscription, User } from './fhir';
-import { formatHumanName } from './format';
+import { Binary, Bundle, OperationOutcome, Resource, StructureDefinition, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { formatSearchQuery, SearchRequest } from './search';
 import { LocalStorage, MemoryStorage, Storage } from './storage';
 import { IndexedStructureDefinition, indexStructureDefinition } from './types';
-import { arrayBufferToBase64 } from './utils';
+import { arrayBufferToBase64, ProfileResource } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
@@ -18,8 +17,6 @@ const DEFAULT_BLOB_CACHE_SIZE = 100;
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
-
-export type ProfileResource = Patient | Practitioner;
 
 export class MedplumOperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
@@ -642,43 +639,4 @@ function getBaseUrl() {
  */
 export function keyReplacer(k: string, v: string) {
   return k === '__key' ? undefined : v;
-}
-
-/**
- * Creates a reference resource.
- * @param resource The FHIR reesource.
- * @returns A reference resource.
- */
-export function createReference(resource: Resource): Reference {
-  return {
-    reference: getReferenceString(resource),
-    display: getDisplayString(resource)
-  };
-}
-
-/**
- * Returns a reference string for a resource.
- * @param resource The FHIR resource.
- * @returns A reference string of the form resourceType/id.
- */
-export function getReferenceString(resource: Resource): string {
-  return resource.resourceType + '/' + resource.id;
-}
-
-/**
- * Returns a display string for the resource.
- * @param resource The input resource.
- * @return Human friendly display string.
- */
-export function getDisplayString(resource: Resource): string {
-  if (resource.resourceType === 'Patient' ||
-    resource.resourceType === 'Practitioner' ||
-    resource.resourceType === 'Person' ||
-    resource.resourceType === 'RelatedPerson') {
-    const names = resource.name;
-    if (names && names.length > 0) {
-      return formatHumanName(names[0]);
-    }
-  }
-  return getReferenceString(resource);
 }
