@@ -177,7 +177,49 @@ test('SearchPopupMenu sort', async (done) => {
   done();
 });
 
-test('SearchPopupMenu prompt', async (done) => {
+test('SearchPopupMenu text submenu prompt', async (done) => {
+  window.prompt = jest.fn().mockImplementation(() => 'xyz');
+
+  let currSearch: SearchRequest = {
+    resourceType: 'Patient'
+  };
+
+  render(<SearchPopupMenu
+    schema={schema}
+    search={currSearch}
+    visible={true}
+    x={0}
+    y={0}
+    field={'name'}
+    onChange={e => currSearch = e}
+    onClose={() => console.log('onClose')}
+  />);
+
+  const options = [
+    { text: 'Equals...', operator: Operator.EQUALS },
+    { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
+    { text: 'Contains...', operator: Operator.CONTAINS },
+    { text: 'Does not contain...', operator: Operator.EQUALS },
+  ];
+
+  for (const option of options) {
+    await act(async () => {
+      fireEvent.click(screen.getByText(option.text));
+    });
+
+    expect(currSearch.filters).not.toBeUndefined();
+    expect(currSearch.filters?.length).toEqual(1);
+    expect(currSearch.filters?.[0]).toMatchObject({
+      code: 'name',
+      operator: option.operator,
+      value: 'xyz'
+    } as Filter);
+  }
+
+  done();
+});
+
+test('SearchPopupMenu date submenu prompt', async (done) => {
   window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
   let currSearch: SearchRequest = {
@@ -195,16 +237,36 @@ test('SearchPopupMenu prompt', async (done) => {
     onClose={() => console.log('onClose')}
   />);
 
-  await act(async () => {
-    fireEvent.click(screen.getByText('Equals...'));
-  });
+  const options = [
+    { text: 'Equals...', operator: Operator.EQUALS },
+    { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
+    { text: 'Before...', operator: Operator.ENDS_BEFORE },
+    { text: 'After...', operator: Operator.STARTS_AFTER },
+    { text: 'Between...', operator: Operator.EQUALS },
+    { text: 'Tomorrow', operator: Operator.EQUALS },
+    { text: 'Today', operator: Operator.EQUALS },
+    { text: 'Yesterday', operator: Operator.EQUALS },
+    { text: 'Next Month', operator: Operator.EQUALS },
+    { text: 'This Month', operator: Operator.EQUALS },
+    { text: 'Last Month', operator: Operator.EQUALS },
+    { text: 'Year to date', operator: Operator.EQUALS },
+    { text: 'Is set', operator: Operator.EQUALS },
+    { text: 'Is not set', operator: Operator.EQUALS },
+  ];
 
-  expect(currSearch.filters).not.toBeUndefined();
-  expect(currSearch.filters?.length).toEqual(1);
-  expect(currSearch.filters?.[0]).toMatchObject({
-    code: 'birthDate',
-    operator: Operator.EQUALS,
-    value: 'xyz'
-  } as Filter);
+  for (const option of options) {
+    await act(async () => {
+      fireEvent.click(screen.getByText(option.text));
+    });
+
+    expect(currSearch.filters).not.toBeUndefined();
+    expect(currSearch.filters?.length).toEqual(1);
+    expect(currSearch.filters?.[0]).toMatchObject({
+      code: 'birthDate',
+      operator: option.operator,
+      value: 'xyz'
+    } as Filter);
+  }
+
   done();
 });

@@ -183,6 +183,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
                   style={{ width: '200px' }}
                   onKeyDown={e => handleAvailableKeyDown(e)}
                   onDoubleClick={() => handleAvailableDoubleClick()}
+                  data-testid="available"
                 >
                   {available.map(key => <option key={key} value={key}>{buildFieldNameString(props.schema, resourceType, key)}</option>)}
                 </select>
@@ -195,6 +196,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
                   style={{ width: '200px' }}
                   onKeyDown={e => handleSelectedKeyDown(e)}
                   onDoubleClick={() => handleSelectedDoubleClick()}
+                  data-testid="selected"
                 >
                   {selected.map(key => <option key={key} value={key}>{buildFieldNameString(props.schema, resourceType, key)}</option>)}
                 </select>
