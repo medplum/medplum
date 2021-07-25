@@ -19,12 +19,8 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
     e.preventDefault();
     e.stopPropagation();
     const files = (e.target as HTMLInputElement).files;
-    if (!files) {
-      return;
-    }
-
-    for (let i = 0; i < files.length; i++) {
-      processFile(files[i]);
+    if (files) {
+      Array.from(files).forEach(processFile);
     }
   }
 

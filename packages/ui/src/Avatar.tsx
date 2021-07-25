@@ -26,7 +26,7 @@ export const Avatar = (props: AvatarProps) => {
     }
 
     medplum.readCachedBlobAsImageUrl(attachmentUrl)
-      .then(imageUrl => setImageUrl(imageUrl));
+      .then(url => setImageUrl(url));
   }
 
   useEffect(() => {

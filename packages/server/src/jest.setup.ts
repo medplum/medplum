@@ -17,7 +17,7 @@ export async function initTestAuth() {
     throw new Error('Error creating login');
   }
 
-  const accessToken = await generateAccessToken({
+  return generateAccessToken({
     login_id: login.id as string,
     sub: client.id as string,
     username: client.id as string,
@@ -25,7 +25,6 @@ export async function initTestAuth() {
     profile: client.resourceType + '/' + client.id,
     scope
   });
-  return accessToken;
 }
 
 async function initTestClientApplication(): Promise<ClientApplication> {
