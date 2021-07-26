@@ -27,7 +27,7 @@ export const ResourceName = (props: ResourceNameProps) => {
   }, [props.resource, props.reference]);
 
   return props.link ? (
-    <MedplumLink to={props.reference}>{text}</MedplumLink>
+    <MedplumLink to={`/${props.reference}`}>{text}</MedplumLink>
   ) : (
     <span>{text}</span>
   );

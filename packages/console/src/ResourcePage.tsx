@@ -1,4 +1,4 @@
-import { Bundle, Resource } from '@medplum/core';
+import { Bundle, getDisplayString, Resource } from '@medplum/core';
 import { Button, Document, keyReplacer, Loading, parseForm, ResourceBlame, ResourceForm, ResourceHistoryTable, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -51,7 +51,7 @@ export function ResourcePage() {
         fontWeight: 'bold',
         padding: '15px 30px',
       }}>
-        {resourceType} {id}
+        {value ? getDisplayString(value) : `${resourceType} ${id}`}
       </div>
       <TabBar
         value={tab || 'details'}
