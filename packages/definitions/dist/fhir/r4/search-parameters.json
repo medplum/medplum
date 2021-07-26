@@ -65423,6 +65423,23 @@
     }
   },
   {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ClientApplication-name",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "ClientApplication-name",
+      "url" : "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
+      "version" : "4.0.1",
+      "name" : "name",
+      "publisher" : "Medplum",
+      "code" : "name",
+      "base" : ["ClientApplication"],
+      "type" : "string",
+      "expression" : "ClientApplication.name",
+      "xpath" : "f:ClientApplication/f:name",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "JsonWebKey-active",

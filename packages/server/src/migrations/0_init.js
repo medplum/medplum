@@ -3720,6 +3720,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
+    t.string('name', 128);
   });
 
   await knex.schema.createTable('ClientApplication_History', t => {

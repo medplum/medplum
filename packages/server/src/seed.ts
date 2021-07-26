@@ -60,7 +60,7 @@ async function createPublicProject() {
     throw new OperationOutcomeError(outcome);
   }
 
-  logger.info('Created', (result as Project).id);
+  logger.info('Created: ' + (result as Project).id);
 }
 
 /**
@@ -82,7 +82,7 @@ async function createMedplumProject() {
     throw new OperationOutcomeError(outcome);
   }
 
-  logger.info('Created', (result as Project).id);
+  logger.info('Created: ' + (result as Project).id);
 }
 
 /**
@@ -101,7 +101,7 @@ async function createOrganization() {
     throw new OperationOutcomeError(outcome);
   }
 
-  logger.info('Created', (result as Organization).id);
+  logger.info('Created: ' + (result as Organization).id);
 }
 
 /**
@@ -161,7 +161,7 @@ async function createUser() {
     throw new OperationOutcomeError(userOutcome);
   }
 
-  logger.info('Created', (user as User).id);
+  logger.info('Created: ' + (user as User).id);
 }
 
 /**
@@ -171,6 +171,7 @@ async function createClientApplication() {
   logger.info('Create client application...');
   const [outcome, result] = await repo.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
+    name: 'OpenID Certification',
     secret: generateSecret(48),
     redirectUri: 'https://www.certification.openid.net/test/a/medplum/callback',
   });
@@ -179,7 +180,8 @@ async function createClientApplication() {
     throw new OperationOutcomeError(outcome);
   }
 
-  logger.info('Created', (result as ClientApplication).id);
+  logger.info('Created: ' + (result as ClientApplication).id);
+  logger.info('  name = ' + result?.name);
   logger.info('  client_id = ' + result?.id);
   logger.info('  client_secret = ' + result?.secret);
   logger.info('  redirect_uri = ' + result?.redirectUri);
