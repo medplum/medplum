@@ -2,8 +2,6 @@
 
 Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.  Medplum includes a FHIR server, React component library, and developer console.
 
-**Warning: This is Alpha code and not production ready.**
-
 # Medplum JS Client Library
 
 The Medplum JS Client Library is a pure TypeScript library for calling a FHIR server from the browser.
