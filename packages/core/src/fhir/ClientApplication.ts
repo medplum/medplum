@@ -42,6 +42,11 @@ export interface ClientApplication {
   readonly language?: string;
 
   /**
+   * Human friendly display name that describes the client application.
+   */
+  readonly name?: string;
+
+  /**
    * Client secret string used to verify the identity of a client.
    */
   readonly secret?: string;
