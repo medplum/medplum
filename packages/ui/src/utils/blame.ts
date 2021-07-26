@@ -23,6 +23,17 @@ export function blame(history: Bundle): BlameRow[] {
     span: 1
   }));
 
+  compareVersions(table, versions);
+  combineSpans(table);
+  return table;
+}
+
+/**
+ * For each version, update the blame table with revisions.
+ * @param table The output blame table.
+ * @param versions The array of versions.
+ */
+function compareVersions(table: BlameRow[], versions: { meta: Meta, lines: string[] }[]): void {
   for (let i = 1; i < versions.length; i++) {
     const revisions = diff(versions[i - 1].lines, versions[i].lines);
 
@@ -50,7 +61,13 @@ export function blame(history: Bundle): BlameRow[] {
       }
     }
   }
+}
 
+/**
+ * Combine adjacent rows into spans.
+ * @param table The output blame table.
+ */
+function combineSpans(table: BlameRow[]): void {
   let start = 0;
   while (start < table.length) {
     let curr = start;
@@ -61,6 +78,4 @@ export function blame(history: Bundle): BlameRow[] {
     table[start].span = curr - start;
     start = curr;
   }
-
-  return table;
 }
