@@ -138,7 +138,7 @@ test('Create Patient with no author', async (done) => {
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author).toEqual('system');
+  expect(patient?.meta?.author?.reference).toEqual('system');
   done();
 });
 
@@ -147,12 +147,14 @@ test('Create Patient as system on behalf of author', async (done) => {
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }],
     meta: {
-      author: 'Practitioner/' + ADMIN_USER_ID
+      author: {
+        reference: 'Practitioner/' + ADMIN_USER_ID
+      }
     }
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author).toEqual('Practitioner/' + ADMIN_USER_ID);
+  expect(patient?.meta?.author?.reference).toEqual('Practitioner/' + ADMIN_USER_ID);
   done();
 });
 
@@ -161,7 +163,9 @@ test('Create Patient as ClientApplication with no author', async (done) => {
 
   const repo = new Repository({
     project: MEDPLUM_PROJECT_ID,
-    author: clientApp
+    author: {
+      reference: clientApp
+    }
   });
 
   const [createOutcome, patient] = await repo.createResource<Patient>({
@@ -170,7 +174,7 @@ test('Create Patient as ClientApplication with no author', async (done) => {
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author).toEqual(clientApp);
+  expect(patient?.meta?.author?.reference).toEqual(clientApp);
   done();
 });
 
@@ -179,19 +183,23 @@ test('Create Patient as ClientApplication on behalf of author', async (done) => 
 
   const repo = new Repository({
     project: MEDPLUM_PROJECT_ID,
-    author: clientApp
+    author: {
+      reference: clientApp
+    }
   });
 
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }],
     meta: {
-      author: 'Practitioner/' + ADMIN_USER_ID
+      author: {
+        reference: 'Practitioner/' + ADMIN_USER_ID
+      }
     }
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author).toEqual('Practitioner/' + ADMIN_USER_ID);
+  expect(patient?.meta?.author?.reference).toEqual('Practitioner/' + ADMIN_USER_ID);
   done();
 });
 
@@ -200,7 +208,9 @@ test('Create Patient as Practitioner with no author', async (done) => {
 
   const repo = new Repository({
     project: MEDPLUM_PROJECT_ID,
-    author
+    author: {
+      reference: author
+    }
   });
 
   const [createOutcome, patient] = await repo.createResource<Patient>({
@@ -209,7 +219,7 @@ test('Create Patient as Practitioner with no author', async (done) => {
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author).toEqual(author);
+  expect(patient?.meta?.author?.reference).toEqual(author);
   done();
 });
 
@@ -219,7 +229,9 @@ test('Create Patient as Practitioner on behalf of author', async (done) => {
 
   const repo = new Repository({
     project: MEDPLUM_PROJECT_ID,
-    author: author
+    author: {
+      reference: author
+    }
   });
 
   // We are acting as a Practitioner
@@ -230,11 +242,13 @@ test('Create Patient as Practitioner on behalf of author', async (done) => {
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }],
     meta: {
-      author: fakeAuthor
+      author: {
+        reference: fakeAuthor
+      }
     }
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author).toEqual(author);
+  expect(patient?.meta?.author?.reference).toEqual(author);
   done();
 });
