@@ -4,7 +4,7 @@ import { useMedplum } from './MedplumProvider';
 import './Avatar.css';
 
 export interface AvatarProps {
-  size?: 'small' | 'medium' | 'large';
+  size?: 'xsmall' | 'small' | 'medium' | 'large';
   resource?: Resource;
   reference?: string;
   src?: string;

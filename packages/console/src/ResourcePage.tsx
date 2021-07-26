@@ -1,5 +1,5 @@
 import { Bundle, Resource } from '@medplum/core';
-import { Button, Document, keyReplacer, parseForm, ResourceForm, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from '@medplum/ui';
+import { Button, Document, keyReplacer, parseForm, ResourceBlame, ResourceForm, ResourceHistoryTable, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
@@ -77,25 +77,10 @@ export function ResourcePage() {
             />
           </TabPanel>
           <TabPanel name="history">
-            <table style={{ width: '100%', lineHeight: '32px' }}>
-              <thead>
-                <tr>
-                  <th>Version ID</th>
-                  <th>Date/Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historyBundle && historyBundle.entry?.map(entry => (
-                  <tr key={entry.resource?.meta?.versionId}>
-                    <td>{entry.resource?.meta?.versionId}</td>
-                    <td>{entry.resource?.meta?.lastUpdated}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ResourceHistoryTable resourceType={value?.resourceType} id={value?.id} />
           </TabPanel>
           <TabPanel name="blame">
-            <div>Blame</div>
+            <ResourceBlame resourceType={value?.resourceType} id={value?.id} />
           </TabPanel>
           <TabPanel name="json">
             <form onSubmit={e => {
