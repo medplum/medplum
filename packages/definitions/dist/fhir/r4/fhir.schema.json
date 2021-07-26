@@ -61059,6 +61059,10 @@
           "description": "Extensions for language",
           "$ref": "#/definitions/Element"
         },
+        "name": {
+          "description": "Human friendly display name that describes the client application.",
+          "$ref": "#/definitions/string"
+        },
         "secret": {
           "description": "Client secret string used to verify the identity of a client.",
           "$ref": "#/definitions/string"

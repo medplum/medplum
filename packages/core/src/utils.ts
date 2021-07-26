@@ -47,6 +47,9 @@ export function getDisplayString(resource: Resource): string {
       return formatHumanName(names[0]);
     }
   }
+  if (resource.resourceType === 'ClientApplication' && resource.name) {
+    return resource.name;
+  }
   return getReferenceString(resource);
 }
 
