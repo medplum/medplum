@@ -100,8 +100,9 @@ test('ResourceBlame renders preloaded history', async (done) => {
     history: historyBundle
   });
 
-  const el = await utils.findByText(version1Id);
+  const el = await utils.findAllByText(version1Id);
   expect(el).not.toBeUndefined();
+  expect(el.length).not.toBe(0);
   done();
 });
 
@@ -111,7 +112,8 @@ test('ResourceBlame renders after loading the resource', async (done) => {
     id: patientId
   });
 
-  const el = await utils.findByText(version1Id);
+  const el = await utils.findAllByText(version1Id);
   expect(el).not.toBeUndefined();
+  expect(el.length).not.toBe(0);
   done();
 });

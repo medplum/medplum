@@ -72,5 +72,5 @@ function HistoryRow(props: HistoryRowProps) {
 }
 
 function getVersionUrl(resource: Resource) {
-  return `${resource.resourceType}/${resource.id}/_history/${resource.meta?.versionId}`;
+  return `/${resource.resourceType}/${resource.id}/_history/${resource.meta?.versionId}`;
 }
