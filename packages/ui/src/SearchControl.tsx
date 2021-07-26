@@ -1,5 +1,6 @@
 import { Bundle, IndexedStructureDefinition, Resource, SearchRequest } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
+import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import './SearchControl.css';
 import { SearchPopupMenu } from './SearchPopupMenu';
@@ -195,9 +196,7 @@ export function SearchControl(props: SearchControlProps) {
   useEffect(() => requestResources(), [props.search]);
 
   if (!schema) {
-    return (
-      <div>Loading</div>
-    );
+    return <Loading />;
   }
 
   const checkboxColumn = props.checkboxesEnabled;

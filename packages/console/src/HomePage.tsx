@@ -18,6 +18,7 @@ export function HomePage() {
         <Button size="small">Fields</Button>
         <Button size="small">Filters</Button>
         <Button size="small">Export</Button>
+        <Button size="small" onClick={() => history.push(`/${search.resourceType}/new`)}>New...</Button>
       </div>
       <SearchControl
         checkboxesEnabled={true}
