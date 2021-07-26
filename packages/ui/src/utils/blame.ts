@@ -37,8 +37,7 @@ function compareVersions(table: BlameRow[], versions: { meta: Meta, lines: strin
   for (let i = 1; i < versions.length; i++) {
     const revisions = diff(versions[i - 1].lines, versions[i].lines);
 
-    for (let j = 0; j < revisions.length; j++) {
-      const revision = revisions[j];
+    for (const revision of revisions) {
       const position = revision.original.position;
       const oldLines = revision.original.lines;
       const newLines = revision.revised.lines;

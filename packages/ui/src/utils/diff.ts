@@ -4,29 +4,25 @@
  * Apache Software License, Version 1.1
  */
 
-export function diff(original: string[], revised: string[]) {
+export function diff(original: string[], revised: string[]): Delta[] {
   const path = buildPath(original, revised) as PathNode;
   return buildRevisions(path, original, revised);
 }
 
-interface PathNode {
+export interface PathNode {
   readonly i: number;
   readonly j: number;
   readonly prev: PathNode | undefined;
   readonly snake: boolean;
 }
 
-// interface Patch {
-//   readonly deltas: Delta[];
-// }
-
-interface Delta {
+export interface Delta {
   readonly original: Chunk;
   readonly revised: Chunk;
   readonly type: 'change' | 'delete' | 'insert';
 }
 
-interface Chunk {
+export interface Chunk {
   readonly position: number;
   readonly lines: string[];
 }
