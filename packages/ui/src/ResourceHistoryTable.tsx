@@ -4,6 +4,7 @@ import { Avatar } from './Avatar';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
+import { formatDateTime } from './utils/format';
 
 export interface ResourceHistoryTableProps {
   history?: Bundle;
@@ -28,6 +29,14 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps) {
 
   return (
     <table className="table">
+      <thead>
+        <tr>
+          <th />
+          <th>Author</th>
+          <th>Date</th>
+          <th>Version</th>
+        </tr>
+      </thead>
       <tbody>
         {value.entry?.map(entry => (
           <HistoryRow key={entry.resource?.meta?.versionId} version={entry.resource as Resource} />
@@ -48,7 +57,7 @@ function HistoryRow(props: HistoryRowProps) {
         <Avatar size="small" reference={props.version.meta?.author} />
       </td>
       <td>
-        <ResourceName reference={props.version.meta?.author} />
+        <ResourceName reference={props.version.meta?.author} link={true} />
       </td>
       <td>
         {formatDateTime(props.version.meta?.lastUpdated as string | Date)}
@@ -62,11 +71,6 @@ function HistoryRow(props: HistoryRowProps) {
   );
 }
 
-function formatDateTime(dateTime: string | Date): string {
-  const date = dateTime instanceof Date ? dateTime : new Date(dateTime);
-  return date.toLocaleString();
-}
-
 function getVersionUrl(resource: Resource) {
-  return `${resource.resourceType}/${resource.id}/_history/${resource.meta?.versionId}`;
+  return `/${resource.resourceType}/${resource.id}/_history/${resource.meta?.versionId}`;
 }
