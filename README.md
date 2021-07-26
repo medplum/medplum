@@ -2,8 +2,6 @@
 
 Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.  Medplum includes a FHIR server, React component library, and developer console.
 
-**Warning: This is Alpha code and not production ready.**
-
 ## Projects
 
 Medplum uses a [monorepo](https://en.wikipedia.org/wiki/Monorepo) structure via [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspaces).  All subprojects are in `packages`.
