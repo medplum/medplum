@@ -3036,7 +3036,7 @@
         },
         "author": {
           "description": "The individual, device or organization who initiated the last change.",
-          "$ref": "#/definitions/uri"
+          "$ref": "#/definitions/Reference"
         }
       },
       "additionalProperties": false

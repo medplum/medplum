@@ -18,7 +18,10 @@ const historyBundle: Bundle = {
         id: patientId,
         meta: {
           lastUpdated: new Date().toISOString(),
-          versionId: version1Id
+          versionId: version1Id,
+          author: {
+            reference: 'Practitioner/123'
+          }
         },
         name: [{
           given: ['Alice'],
@@ -32,7 +35,10 @@ const historyBundle: Bundle = {
         id: patientId,
         meta: {
           lastUpdated: new Date(),
-          versionId: version2Id
+          versionId: version2Id,
+          author: {
+            reference: 'Practitioner/456'
+          }
         },
         name: [{
           given: ['Alice'],
