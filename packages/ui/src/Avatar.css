@@ -18,6 +18,13 @@
   object-fit: cover;
 }
 
+.medplum-avatar.xsmall {
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  font-size: 10px;
+}
+
 .medplum-avatar.small {
   width: 24px;
   height: 24px;
