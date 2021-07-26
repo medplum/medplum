@@ -30,7 +30,9 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     res.locals.scope = claims.scope;
     res.locals.repo = new Repository({
       project: MEDPLUM_PROJECT_ID,
-      author: claims.profile
+      author: {
+        reference: claims.profile
+      }
     });
   } catch (err) {
     logger.error('verify error', err);

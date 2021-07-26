@@ -20,7 +20,7 @@ export interface RepositoryContext {
    * Where resource type is ClientApplication, Patient, Practitioner, etc.
    * This value will be included in every resource as meta.author.
    */
-  author: string;
+  author: Reference;
 
   /**
    * The current project reference.
@@ -411,7 +411,7 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns
    */
-  private getAuthor(resource: Resource): string {
+  private getAuthor(resource: Resource): Reference {
     // If the resource has an author (whether provided or from existing),
     // and the current context is a ClientApplication (i.e., OAuth client credentials),
     // then allow the ClientApplication to act on behalf of another user.
@@ -428,7 +428,8 @@ export class Repository {
    * @returns True if the current user can manually set the author.
    */
   private canWriteAuthor(): boolean {
-    return this.context.author === 'system' || this.context.author.startsWith('ClientApplication/');
+    const authorRef = this.context.author.reference as string;
+    return authorRef === 'system' || authorRef.startsWith('ClientApplication/');
   }
 }
 
@@ -518,5 +519,7 @@ function getPatientIdFromReference(reference: Reference): string | undefined {
 
 export const repo = new Repository({
   project: MEDPLUM_PROJECT_ID,
-  author: 'system',
+  author: {
+    reference: 'system'
+  }
 });
