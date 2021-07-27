@@ -1,5 +1,5 @@
-import { Bundle, MedplumClient } from '@medplum/core';
-import { act, fireEvent, render, waitFor } from '@testing-library/react';
+import { Bundle, MedplumClient, Patient } from '@medplum/core';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
 import { Autocomplete, AutocompleteProps } from './Autocomplete';
@@ -12,8 +12,8 @@ const mockRouter = {
   listen: () => (() => undefined) // Return mock "unlisten" handler
 }
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const bundle: Bundle = {
+function mockSearch(): Bundle {
+  return {
     resourceType: 'Bundle',
     entry: [{
       resource: {
@@ -34,6 +34,35 @@ function mockFetch(url: string, options: any): Promise<any> {
         }]
       }
     }]
+  };
+}
+
+function mockPatient(): Patient {
+  return {
+    resourceType: 'Patient',
+    id: '123',
+    name: [{
+      given: ['Alice'],
+      family: 'Smith'
+    }]
+  }
+}
+
+function mockCreateNew(): any {
+  return {
+    ok: true
+  }
+}
+
+function mockFetch(url: string, options: any): Promise<any> {
+  let result: any;
+
+  if (url.includes('/fhir/R4/Patient?name=')) {
+    result = mockSearch();
+  } else if (url.includes('/fhir/R4/Patient/123')) {
+    result = mockPatient();
+  } else if (url.includes('/create-new?')) {
+    result = mockCreateNew();
   }
 
   const response: any = {
@@ -41,7 +70,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       url,
       options
     },
-    ...bundle
+    ...result
   };
 
   return Promise.resolve({
@@ -83,6 +112,68 @@ test('Autocomplete renders', () => {
   const utils = setup();
   const input = utils.getByTestId('input-element') as HTMLInputElement;
   expect(input.value).toBe('');
+});
+
+test('Autocomplete renders default value', async (done) => {
+  setup({
+    id: 'foo',
+    resourceType: 'Patient',
+    defaultValue: [{ reference: 'Patient/123' }]
+  });
+
+  // Wait for default value to load
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+    await waitFor(() => screen.getByTestId('selected'));
+  });
+
+  const selected = screen.getByTestId('selected');
+  expect(selected).not.toBeUndefined();
+  done();
+});
+
+test('Autocomplete ignores empty default value', async (done) => {
+  setup({
+    id: 'foo',
+    resourceType: 'Patient',
+    defaultValue: [{ }]
+  });
+
+  // Wait for default value to load
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+    await waitFor(() => screen.getByTestId('hidden'));
+  });
+
+  const hidden = screen.getByTestId('hidden') as HTMLInputElement;
+  expect(hidden.value).toEqual('');
+  done();
+});
+
+test('Autocomplete backspace deletes item', async (done) => {
+  setup({
+    id: 'foo',
+    resourceType: 'Patient',
+    defaultValue: [{ reference: 'Patient/123' }]
+  });
+
+  // Wait for default value to load
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+    await waitFor(() => screen.getByTestId('selected'));
+  });
+
+  expect(screen.getByTestId('selected')).not.toBeUndefined();
+
+  // Press "Backspace"
+  await act(async () => {
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    fireEvent.keyDown(input, { key: 'Backspace', code: 'Backspace' });
+  });
+
+  const hidden = screen.getByTestId('hidden') as HTMLInputElement;
+  expect(hidden.value).toEqual('');
+  done();
 });
 
 test('Autocomplete handles click', async (done) => {
