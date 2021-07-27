@@ -19,3 +19,15 @@ export const Multiple = () => (
     <Autocomplete id="foo" resourceType="Patient" multiple={true} />
   </Document>
 );
+
+export const Prefilled = () => (
+  <Document>
+    <Autocomplete
+      resourceType="Patient"
+      id={process.env.SAMPLE_PATIENT_ID}
+      defaultValue={[{
+        reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID
+      }]}
+    />
+  </Document>
+);
