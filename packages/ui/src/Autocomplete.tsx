@@ -1,16 +1,16 @@
-import { Bundle, Operator, Resource } from '@medplum/core';
+import { Bundle, Operator, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
+import './Autocomplete.css';
 import { Avatar } from './Avatar';
 import { useMedplum, useMedplumRouter } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
-import './Autocomplete.css';
 
 export interface AutocompleteProps {
   id: string,
   resourceType: string,
   multiple?: boolean,
   autofocus?: boolean,
-  defaultValue?: Resource[],
+  defaultValue?: Reference[],
   createNew?: string
 }
 
@@ -41,9 +41,28 @@ export function Autocomplete(props: AutocompleteProps) {
   stateRef.current = state;
 
   useEffect(() => {
+    loadDefaultValues();
+
     const interval = setInterval(() => handleTimer(), 150);
     return () => clearInterval(interval);
   }, []);
+
+  /**
+   * Loads any default values by reference.
+   */
+  function loadDefaultValues() {
+    if (!props.defaultValue) {
+      return;
+    }
+
+    for (const reference of props.defaultValue) {
+      if (reference.reference) {
+        medplum.readCachedReference(reference.reference as string).then(resource => {
+          addResource(resource);
+        });
+      }
+    }
+  }
 
   /**
    * Adds an resource to the list of selected resources.
@@ -369,11 +388,13 @@ export function Autocomplete(props: AutocompleteProps) {
         type="hidden"
         id={props.id}
         name={props.id}
+        data-testid="hidden"
         value={state.values.map(r => JSON.stringify(r)).join(',')} />
       <ul onClick={() => handleClick()}>
         {state.values.map(value => (
           <li
             key={value.id}
+            data-testid="selected"
             className={value.id === '' ? 'unstructured choice' : 'choice'}>
             <ResourceName resource={value} />
           </li>
