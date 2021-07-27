@@ -132,6 +132,50 @@ test('Autocomplete renders default value', async (done) => {
   done();
 });
 
+test('Autocomplete ignores empty default value', async (done) => {
+  setup({
+    id: 'foo',
+    resourceType: 'Patient',
+    defaultValue: [{ }]
+  });
+
+  // Wait for default value to load
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+    await waitFor(() => screen.getByTestId('hidden'));
+  });
+
+  const hidden = screen.getByTestId('hidden') as HTMLInputElement;
+  expect(hidden.value).toEqual('');
+  done();
+});
+
+test('Autocomplete backspace deletes item', async (done) => {
+  setup({
+    id: 'foo',
+    resourceType: 'Patient',
+    defaultValue: [{ reference: 'Patient/123' }]
+  });
+
+  // Wait for default value to load
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+    await waitFor(() => screen.getByTestId('selected'));
+  });
+
+  expect(screen.getByTestId('selected')).not.toBeUndefined();
+
+  // Press "Backspace"
+  await act(async () => {
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    fireEvent.keyDown(input, { key: 'Backspace', code: 'Backspace' });
+  });
+
+  const hidden = screen.getByTestId('hidden') as HTMLInputElement;
+  expect(hidden.value).toEqual('');
+  done();
+});
+
 test('Autocomplete handles click', async (done) => {
   const utils = setup();
   const container = utils.getByTestId('autocomplete');

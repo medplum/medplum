@@ -388,6 +388,7 @@ export function Autocomplete(props: AutocompleteProps) {
         type="hidden"
         id={props.id}
         name={props.id}
+        data-testid="hidden"
         value={state.values.map(r => JSON.stringify(r)).join(',')} />
       <ul onClick={() => handleClick()}>
         {state.values.map(value => (
