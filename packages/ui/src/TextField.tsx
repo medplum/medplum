@@ -12,6 +12,7 @@ export interface TextFieldProps {
   inputRef?: RefObject<HTMLInputElement>;
   onChange?: (e: React.ChangeEvent) => void;
   outcome?: OperationOutcome;
+  testid?: string;
 }
 
 export const TextField = (props: TextFieldProps) => {
@@ -32,6 +33,7 @@ export const TextField = (props: TextFieldProps) => {
         onChange={props.onChange}
         aria-invalid={invalid}
         aria-describedby={invalid ? props.id + '-errors' : ''}
+        data-testid={props.testid}
       />
       {invalid && (
         <div id={props.id + '-errors'} className="medplum-input-error">

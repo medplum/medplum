@@ -40,7 +40,7 @@ export const Sizes = () => (
 
 export const Resource = () => (
   <Document>
-    <Avatar reference={'Patient/' + process.env.SAMPLE_PATIENT_ID} />
+    <Avatar reference={{ reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID }} />
   </Document>
 );
 

@@ -4,6 +4,7 @@ import { useMedplum } from './MedplumProvider';
 
 export interface AttachmentDisplayProps {
   value?: Attachment;
+  maxWidth?: number;
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps) {
@@ -17,17 +18,22 @@ export function AttachmentDisplay(props: AttachmentDisplayProps) {
     }
 
     if (props.value?.url) {
-      medplum.readBlobAsImageUrl(props.value?.url).then(url => setImageUrl(url));
+      medplum.readBlobAsObjectUrl(props.value?.url).then(url => setImageUrl(url));
     }
 
   }, [props.value?.url]);
 
   const value = props.value;
+
+  if (imageUrl) {
+    return <img style={{ maxWidth: props.maxWidth }} src={imageUrl} />;
+  }
+
   return (
     <div>
+      <div>{value?.title}</div>
       <div>{value?.contentType}</div>
       <div>{value?.url}</div>
-      {imageUrl && <img style={{ maxWidth: 100 }} src={imageUrl} />}
     </div>
   );
 }

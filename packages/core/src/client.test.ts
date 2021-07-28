@@ -88,11 +88,17 @@ test('Client read resource', async () => {
 
 test('Client read reference', async () => {
   const client = new MedplumClient(defaultOptions);
-  const result = await client.readReference('Patient/123');
+  const result = await client.readReference({ reference: 'Patient/123' });
   expect(result).not.toBeUndefined();
   expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
   expect(result.resourceType).toBe('Patient');
   expect(result.id).toBe('123');
+});
+
+test('Client read empty reference', async () => {
+  const client = new MedplumClient(defaultOptions);
+  const result = client.readReference({});
+  expect(result).rejects.toEqual('Missing reference');
 });
 
 test('Client read cached resource', async () => {
@@ -106,11 +112,17 @@ test('Client read cached resource', async () => {
 
 test('Client read cached reference', async () => {
   const client = new MedplumClient(defaultOptions);
-  const result = await client.readCachedReference('Patient/123');
+  const result = await client.readCachedReference({ reference: 'Patient/123' });
   expect(result).not.toBeUndefined();
   expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
   expect(result.resourceType).toBe('Patient');
   expect(result.id).toBe('123');
+});
+
+test('Client read cached empty reference', async () => {
+  const client = new MedplumClient(defaultOptions);
+  const result = client.readCachedReference({});
+  expect(result).rejects.toEqual('Missing reference');
 });
 
 test('Client read history', async () => {

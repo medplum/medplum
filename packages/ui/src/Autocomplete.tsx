@@ -1,9 +1,9 @@
 import { Bundle, Operator, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import './Autocomplete.css';
 import { Avatar } from './Avatar';
 import { useMedplum, useMedplumRouter } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
+import './Autocomplete.css';
 
 export interface AutocompleteProps {
   id: string,
@@ -57,9 +57,7 @@ export function Autocomplete(props: AutocompleteProps) {
 
     for (const reference of props.defaultValue) {
       if (reference.reference) {
-        medplum.readCachedReference(reference.reference as string).then(resource => {
-          addResource(resource);
-        });
+        medplum.readCachedReference(reference).then(resource => addResource(resource));
       }
     }
   }

@@ -4,7 +4,7 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, OperationOutcome, Resource, StructureDefinition, Subscription, User } from './fhir';
+import { Binary, Bundle, OperationOutcome, Reference, Resource, StructureDefinition, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { formatSearchQuery, SearchRequest } from './search';
 import { LocalStorage, MemoryStorage, Storage } from './storage';
@@ -280,13 +280,21 @@ export class MedplumClient extends EventTarget {
     return cached ? Promise.resolve(cached) : this.read(resourceType, id);
   }
 
-  readReference(reference: string): Promise<Resource> {
-    const [resourceType, id] = reference.split('/');
+  readReference(reference: Reference): Promise<Resource> {
+    const refString = reference?.reference;
+    if (!refString) {
+      return Promise.reject('Missing reference');
+    }
+    const [resourceType, id] = refString.split('/');
     return this.read(resourceType, id);
   }
 
-  readCachedReference(reference: string): Promise<Resource> {
-    const [resourceType, id] = reference.split('/');
+  readCachedReference(reference: Reference): Promise<Resource> {
+    const refString = reference?.reference;
+    if (!refString) {
+      return Promise.reject('Missing reference');
+    }
+    const [resourceType, id] = refString.split('/');
     return this.readCached(resourceType, id);
   }
 
@@ -325,7 +333,7 @@ export class MedplumClient extends EventTarget {
     return this.get(url, true);
   }
 
-  readBlobAsImageUrl(url: string): Promise<string> {
+  readBlobAsObjectUrl(url: string): Promise<string> {
     const promise = this.readBlob(url)
       .then(imageBlob => {
         const imageUrl = URL.createObjectURL(imageBlob);
@@ -336,9 +344,9 @@ export class MedplumClient extends EventTarget {
     return promise;
   }
 
-  readCachedBlobAsImageUrl(url: string): Promise<string> {
+  readCachedBlobAsObjectUrl(url: string): Promise<string> {
     const cached = this.blobUrlCache.get(url);
-    return cached ? Promise.resolve(cached) : this.readBlobAsImageUrl(url);
+    return cached ? Promise.resolve(cached) : this.readBlobAsObjectUrl(url);
   }
 
   readBinary(id: string): Promise<Blob> {

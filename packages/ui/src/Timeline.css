@@ -16,7 +16,7 @@ article.medplum-timeline-item {
   padding-top: 1px;
 }
 
-.medplum-timeline-item-title >a {
+.medplum-timeline-item-title>a {
   color: var(--medplum-gray-800);
   font-weight: bold;
 }
@@ -25,8 +25,22 @@ article.medplum-timeline-item {
   font-size: 11px;
 }
 
-.medplum-timeline-item-subtitle >a,
-.medplum-timeline-item-subtitle >span {
-  margin-right: 8px;
+.medplum-timeline-item-subtitle>a,
+.medplum-timeline-item-subtitle>span {
+  margin-right: 6px;
+  color: var(--medplum-gray-500);
+}
+
+.medplum-timeline-item-footer {
+  display: flex;
+  padding: 8px;
+  border-top: thin solid var(--medplum-gray-200);
+}
+
+.medplum-timeline-icon {
+  width: 26px;
+  height: 26px;
+  padding: 4px 0;
+  margin-right: 2px;
   color: var(--medplum-gray-500);
 }
