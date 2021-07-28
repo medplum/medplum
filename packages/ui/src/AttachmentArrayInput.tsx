@@ -1,8 +1,8 @@
 import { Attachment } from '@medplum/core';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
-import { ensureKeys, generateKey } from './FormUtils';
-import { useMedplum } from './MedplumProvider';
+import { ensureKeys } from './FormUtils';
+import { UploadButton } from './UploadButton';
 
 export interface AttachmentArrayInputProps {
   name: string;
@@ -11,49 +11,12 @@ export interface AttachmentArrayInputProps {
 }
 
 export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
-  const medplum = useMedplum();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [values, setValues] = useState(ensureKeys(props.values));
 
-  function onFileChange(e: React.ChangeEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    const files = (e.target as HTMLInputElement).files;
-    if (files) {
-      Array.from(files).forEach(processFile);
-    }
-  }
-
-  /**
-   * Processes a single file.
-   *
-   * @param {File} file The file descriptor.
-   */
-  function processFile(file: File) {
-    if (!file) {
-      return;
-    }
-
-    const fileName = file.name;
-    if (!fileName) {
-      return;
-    }
-
-    const contentType = file.type || 'application/octet-stream';
-    medplum.createBinary(file, contentType)
-      .then((obj: any) => {
-        const attachment = {
-          __key: generateKey(),
-          contentType: obj.contentType,
-          url: medplum.fhirUrl('Binary', obj.id)
-        };
-        const copy = values.slice();
-        copy.push(attachment);
-        setValues(copy);
-      })
-      .catch((err: any) => {
-        alert(err?.outcome?.issue?.[0]?.details?.text);
-      });
+  function addAttachment(attachment: Attachment) {
+    const copy = values.slice();
+    copy.push(attachment);
+    setValues(copy);
   }
 
   return (
@@ -90,18 +53,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
           <tr>
             <td></td>
             <td>
-              <input
-                type="file"
-                style={{ display: 'none' }}
-                ref={fileInputRef}
-                onChange={e => onFileChange(e)} />
-              <button
-                className="btn"
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  fileInputRef.current?.click();
-                }}>Upload...</button>
+              <UploadButton onUpload={addAttachment} />
             </td>
           </tr>
         </tbody>

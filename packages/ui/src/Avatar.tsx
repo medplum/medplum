@@ -1,15 +1,17 @@
-import { getDisplayString, getImageSrc, Resource } from '@medplum/core';
+import { getDisplayString, getImageSrc, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
-import { useMedplum } from './MedplumProvider';
 import './Avatar.css';
+import { MedplumLink } from './MedplumLink';
+import { useMedplum } from './MedplumProvider';
 
 export interface AvatarProps {
   size?: 'xsmall' | 'small' | 'medium' | 'large';
   resource?: Resource;
-  reference?: string;
+  reference?: Reference;
   src?: string;
   alt?: string;
   color?: string;
+  link?: boolean;
 }
 
 export const Avatar = (props: AvatarProps) => {
@@ -21,31 +23,37 @@ export const Avatar = (props: AvatarProps) => {
     setText(getDisplayString(resource));
 
     const attachmentUrl = getImageSrc(resource);
-    if (!attachmentUrl) {
-      return;
+    if (attachmentUrl) {
+      medplum.readCachedBlobAsObjectUrl(attachmentUrl).then(url => setImageUrl(url));
     }
-
-    medplum.readCachedBlobAsImageUrl(attachmentUrl)
-      .then(url => setImageUrl(url));
   }
 
   useEffect(() => {
     if (props.resource) {
       setResource(props.resource);
-      return;
-    }
-
-    if (props.reference) {
+    } else if (props.reference) {
       medplum.readCachedReference(props.reference)
-        .then((resource: Resource) => setResource(resource));
+      .then(setResource)
+      .catch(err => console.log('Avatar cached ref error', err, props.reference));
     }
   }, [props.resource, props.reference]);
 
   const className = props.size ? 'medplum-avatar ' + props.size : 'medplum-avatar';
   const initials = text && getInitials(text);
+  const innerContent = imageUrl ? <img src={imageUrl} alt={text} /> : initials;
   return (
-    <div className={className} style={{ backgroundColor: props.color }}>
-      {imageUrl ? <img src={imageUrl} alt={props.alt} /> : initials}
+    <div
+      className={className}
+      style={{ backgroundColor: props.color }}
+      data-testid="avatar"
+    >
+      {props.link ? (
+        <MedplumLink to={`/${props.reference?.reference}`}>
+          {innerContent}
+        </MedplumLink>
+      ) : (
+        innerContent
+      )}
     </div>
   );
 };

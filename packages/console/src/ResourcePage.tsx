@@ -1,5 +1,21 @@
-import { Bundle, getDisplayString, Resource } from '@medplum/core';
-import { Button, Document, keyReplacer, Loading, parseForm, ResourceBlame, ResourceForm, ResourceHistoryTable, ResourceTable, Tab, TabBar, TabPanel, TabSwitch, useMedplum } from '@medplum/ui';
+import { Bundle, Encounter, getDisplayString, Resource } from '@medplum/core';
+import {
+  Button,
+  Document,
+  keyReplacer,
+  Loading,
+  parseForm,
+  ResourceBlame,
+  ResourceForm,
+  ResourceHistoryTable,
+  ResourceTable,
+  EncounterTimeline,
+  Tab,
+  TabBar,
+  TabPanel,
+  TabSwitch,
+  useMedplum
+} from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
@@ -42,6 +58,9 @@ export function ResourcePage() {
     );
   }
 
+  const hasTimeline = resourceType === 'Encounter';
+  const defaultTab = hasTimeline ? 'timeline' : 'details';
+
   return (
     <>
       <div style={{
@@ -54,8 +73,9 @@ export function ResourcePage() {
         {value ? getDisplayString(value) : `${resourceType} ${id}`}
       </div>
       <TabBar
-        value={tab || 'details'}
+        value={tab || defaultTab}
         onChange={(name: string) => history.push(`/${resourceType}/${id}/${name}`)}>
+        {hasTimeline && <Tab name="timeline" label="Timeline" />}
         <Tab name="details" label="Details" />
         <Tab name="edit" label="Edit" />
         <Tab name="history" label="History" />
@@ -63,7 +83,12 @@ export function ResourcePage() {
         <Tab name="json" label="JSON" />
       </TabBar>
       <Document>
-        <TabSwitch value={tab || 'details'}>
+        <TabSwitch value={tab || defaultTab}>
+          {hasTimeline && (
+            <TabPanel name="timeline">
+              <EncounterTimeline resource={value as Encounter} />
+            </TabPanel>
+          )}
           <TabPanel name="details">
             <ResourceTable resource={value} />
           </TabPanel>
