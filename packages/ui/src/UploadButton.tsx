@@ -36,7 +36,6 @@ export function UploadButton(props: UploadButtonProps) {
 
     const contentType = file.type || 'application/octet-stream';
     medplum.createBinary(file, contentType)
-      // .then(props.onUpload)
       .then((binary: Binary) => {
         props.onUpload({
           contentType: binary.contentType,
@@ -53,10 +52,12 @@ export function UploadButton(props: UploadButtonProps) {
     <>
       <input
         type="file"
+        data-testid="upload-file-input"
         style={{ display: 'none' }}
         ref={fileInputRef}
         onChange={e => onFileChange(e)} />
       <button
+        data-testid="upload-button"
         className="btn"
         onClick={e => {
           e.preventDefault();

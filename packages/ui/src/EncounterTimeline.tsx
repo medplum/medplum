@@ -145,6 +145,7 @@ export const EncounterTimeline = (props: EncounterTimelineProps) => {
       <article className="medplum-timeline-item">
         <div className="medplum-timeline-item-header">
           <form
+            data-testid="timeline-form"
             onSubmit={(e: React.SyntheticEvent) => {
               e.preventDefault();
 
@@ -157,7 +158,7 @@ export const EncounterTimeline = (props: EncounterTimelineProps) => {
                 input.focus();
               }
             }}>
-            <TextField id="text" value="" inputRef={inputRef} />
+            <TextField id="text" testid="timeline-input" value="" inputRef={inputRef} />
             <Button type="submit">Comment</Button>
             <UploadButton onUpload={createMedia} />
           </form>
@@ -200,4 +201,3 @@ function MediaTimelineItem(props: MediaTimelineItemProps) {
     </TimelineItem>
   );
 }
-

@@ -30,7 +30,7 @@ export function TimelineItem(props: TimelineItemProps) {
   const author = props.profile ?? props.resource.meta?.author;
   const url = `/${getReferenceString(props.resource)}`;
   return (
-    <article className="medplum-timeline-item">
+    <article className="medplum-timeline-item" data-testid="timeline-item">
       <div className="medplum-timeline-item-header">
         <div className="medplum-timeline-item-avatar">
           <Avatar reference={author} link={true} />
