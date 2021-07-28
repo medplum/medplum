@@ -190,7 +190,7 @@ test('EncounterTimeline upload media', async (done) => {
     await waitFor(() => screen.getAllByTestId('timeline-item'));
   });
 
-  // Enter the comment text
+  // Upload the file
   await act(async () => {
     const files = [
       new File(['hello'], 'hello.txt', { type: 'text/plain' })
@@ -208,4 +208,3 @@ test('EncounterTimeline upload media', async (done) => {
   expect(items.length).toEqual(3);
   done();
 });
-
