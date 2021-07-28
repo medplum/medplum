@@ -74,3 +74,20 @@
 .btn.btn-danger:focus {
   box-shadow: 0 0 0 2px var(--medplum-red-200);
 }
+
+.btn.btn-borderless {
+  background-color: var(--medplum-surface);
+  border: 0;
+}
+
+.btn.btn-borderless:hover {
+  background: var(--medplum-gray-200);
+}
+
+.btn.btn-borderless:active {
+  background: var(--medplum-gray-300);
+}
+
+.btn.btn-borderless:focus {
+  box-shadow: 0 0 0 2px var(--medplum-blue-200);
+}

@@ -26,7 +26,7 @@ export function AttachmentInput(props: AttachmentInputProps) {
 
   const value = props.value;
   return (
-    <div>
+    <div data-testid="attachment-input">
       <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
       <div>{value?.contentType}</div>
       <div>{value?.url}</div>
