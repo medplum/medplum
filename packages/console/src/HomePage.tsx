@@ -15,7 +15,7 @@ export function HomePage() {
 
   useEffect(() => {
     if (!search.resourceType) {
-      setSearch({ ...search, resourceType: 'Patient' });
+      goToSearch({ ...search, resourceType: 'Patient' });
     }
   }, [search]);
 
@@ -44,12 +44,12 @@ export function HomePage() {
             <Button
               testid="prev-page-button"
               size="small"
-              onClick={() => setSearch(movePage(search, -1))}
+              onClick={() => goToSearch(movePage(search, -1))}
             >&lt;&lt;</Button>
             <Button
               testid="next-page-button"
               size="small"
-              onClick={() => setSearch(movePage(search, 1))}
+              onClick={() => goToSearch(movePage(search, 1))}
             >&gt;&gt;</Button>
           </div>
         )}
@@ -58,14 +58,18 @@ export function HomePage() {
         checkboxesEnabled={true}
         search={search}
         onClick={e => history.push(`/${e.resource.resourceType}/${e.resource.id}`)}
-        onChange={e => history.push({
-          pathname: `/${e.definition.resourceType}`,
-          search: formatSearchQuery(e.definition)
-        })}
+        onChange={e => goToSearch(e.definition)}
         onLoad={e => setLastResult(e.response)}
       />
     </>
   );
+}
+
+function goToSearch(search: SearchRequest): void {
+  history.push({
+    pathname: `/${search.resourceType}`,
+    search: formatSearchQuery(search)
+  });
 }
 
 function getStart(search: SearchRequest): number {

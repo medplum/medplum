@@ -96,6 +96,8 @@ test('HomePage renders', async (done) => {
 });
 
 test('HomePage next page button', async (done) => {
+  history.push = jest.fn();
+
   setup();
 
   await act(async () => {
@@ -106,12 +108,13 @@ test('HomePage next page button', async (done) => {
     fireEvent.click(screen.getByTestId('next-page-button'));
   });
 
-  const control = screen.getByTestId('search-control');
-  expect(control).not.toBeUndefined();
+  expect(history.push).toBeCalled();
   done();
 });
 
 test('HomePage prev page button', async (done) => {
+  history.push = jest.fn();
+
   setup();
 
   await act(async () => {
@@ -122,8 +125,7 @@ test('HomePage prev page button', async (done) => {
     fireEvent.click(screen.getByTestId('prev-page-button'));
   });
 
-  const control = screen.getByTestId('search-control');
-  expect(control).not.toBeUndefined();
+  expect(history.push).toBeCalled();
   done();
 });
 
