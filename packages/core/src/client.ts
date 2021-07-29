@@ -629,7 +629,12 @@ export class MedplumClient extends EventTarget {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formBody
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          return Promise.reject('Failed to fetch tokens');
+        }
+        return response.json();
+      })
       .then(tokens => this.verifyTokens(tokens))
       .then(() => this.getUser() as User);
   }

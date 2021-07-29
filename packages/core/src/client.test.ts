@@ -8,6 +8,7 @@ const defaultOptions = {
   fetch: mockFetch
 }
 
+let canRefresh = true;
 let tokenExpired = false;
 
 function mockFetch(url: string, options: any): Promise<any> {
@@ -30,8 +31,12 @@ function mockFetch(url: string, options: any): Promise<any> {
     response.id = '123';
 
   } else if (method === 'POST' && url.endsWith('oauth2/token')) {
-    response.access_token = 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature';
-    response.refresh_token = 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature';
+    if (canRefresh) {
+      response.access_token = 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature';
+      response.refresh_token = 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature';
+    } else {
+      response.status = 400;
+    }
 
   } else if (method === 'GET' && url.includes('expired')) {
     if (tokenExpired) {
@@ -43,6 +48,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   }
 
   return Promise.resolve({
+    ok: response.status === undefined,
     status: response.status,
     blob: () => Promise.resolve(response),
     json: () => Promise.resolve(response)
@@ -94,7 +100,7 @@ test('Client signIn', async () => {
   expect(result.resourceType).toBe('User');
 });
 
-test('Client signInWithRedirect', async () => {
+test('Client signInWithRedirect', async (done) => {
   // Mock window.crypto
   Object.defineProperty(global.self, 'crypto', {
     value: {
@@ -135,6 +141,23 @@ test('Client signInWithRedirect', async () => {
   // Next, test processing the response code
   const result2 = client.signInWithRedirect();
   expect(result2).not.toBeUndefined();
+  done();
+});
+
+test('Client signOutWithRedirect', async (done) => {
+  // Mock window.location.assign
+  global.window = Object.create(window);
+  Object.defineProperty(window, 'location', {
+    value: {
+      assign: jest.fn()
+    },
+    writable: true,
+  });
+
+  const client = new MedplumClient(defaultOptions);
+  client.signOutWithRedirect();
+  expect(window.location.assign).toBeCalled();
+  done();
 });
 
 test('Client read expired and refresh', async (done) => {
@@ -143,6 +166,18 @@ test('Client read expired and refresh', async (done) => {
   const client = new MedplumClient(defaultOptions);
   const result = await client.get('expired');
   expect(result).not.toBeUndefined();
+  done();
+});
+
+test('Client read expired and refresh with unAuthenticated callback', async (done) => {
+  tokenExpired = true;
+  canRefresh = false;
+
+  const onUnauthenticated = jest.fn();
+  const client = new MedplumClient({ ...defaultOptions, onUnauthenticated });
+  const result = client.get('expired');
+  await expect(result).rejects.toEqual('Failed to fetch tokens');
+  expect(onUnauthenticated).toBeCalled();
   done();
 });
 
