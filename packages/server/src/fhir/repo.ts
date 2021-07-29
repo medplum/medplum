@@ -312,11 +312,9 @@ export class Repository {
 
   private addReferenceSearchFilter(builder: Knex.QueryBuilder, param: SearchParameter, filter: Filter): void {
     const columnName = convertCodeToColumnName(param.code as string);
-    const [referenceType, referenceId] = filter.value.split('/');
-    if (!param.target || param.target.length > 1) {
-      builder.where(columnName + 'ResourceType', referenceType);
-    }
-    builder.where(columnName + 'Id', referenceId);
+    // TODO: Support optional resource type when known (param.target.length === 1)
+    // TODO: Support reference queries (filter.value === 'Patient?identifier=123')
+    builder.where(columnName, filter.value);
   }
 
   private async write(resource: Resource): Promise<void> {
@@ -413,14 +411,9 @@ export class Repository {
     }
 
     const columnName = convertCodeToColumnName(searchParam.code as string);
-    const [resourceType, id] = refStr.split('/');
-    if (!searchParam.target || searchParam.target.length > 1) {
-      // Some search parameters use all resource types (target === undefined).
-      // Some search parameters allow a subset of resource types (target.length > 1).
-      // Some search parameters are for only one resource type (target.length === 1).
-      columns[columnName + 'ResourceType'] = resourceType;
-    }
-    columns[columnName + 'Id'] = id;
+
+    // TODO: Consider normalizing reference string when known (searchParam.target.length === 1)
+    columns[columnName] = refStr;
   }
 
   private async writeLookupTables(resource: Resource): Promise<void> {
