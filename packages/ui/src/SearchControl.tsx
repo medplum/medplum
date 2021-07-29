@@ -206,7 +206,11 @@ export function SearchControl(props: SearchControlProps) {
   const resources = entries.map(e => e.resource);
 
   return (
-    <div className="medplum-search-control" onContextMenu={e => killEvent(e)}>
+    <div
+      className="medplum-search-control"
+      onContextMenu={e => killEvent(e)}
+      data-testid="search-control"
+    >
       <table>
         <thead>
           <tr>
