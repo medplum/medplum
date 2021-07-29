@@ -82,6 +82,13 @@ export interface MedplumClientOptions {
    * For nodejs applications, consider the 'node-fetch' package.
    */
   fetch?: FetchLike;
+
+  /**
+   * Optional callback for when the client is unauthenticated.
+   * Default is do nothing.
+   * For client side applications, consider redirecting to a sign in page.
+   */
+  onUnauthenticated?: () => void;
 }
 
 export interface FetchLike {
@@ -123,6 +130,7 @@ export class MedplumClient extends EventTarget {
   private readonly authorizeUrl: string;
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
+  private readonly onUnauthenticated?: () => void;
   private user?: User;
   private profile?: ProfileResource;
 
@@ -152,6 +160,7 @@ export class MedplumClient extends EventTarget {
     this.authorizeUrl = options.authorizeUrl || this.baseUrl + 'oauth2/authorize';
     this.tokenUrl = options.tokenUrl || this.baseUrl + 'oauth2/token';
     this.logoutUrl = options.logoutUrl || this.baseUrl + 'oauth2/logout';
+    this.onUnauthenticated = options.onUnauthenticated;
   }
 
   /**
@@ -228,7 +237,7 @@ export class MedplumClient extends EventTarget {
    * Returns true if the user is signed in.
    * This may result in navigating away to the sign in page.
    */
-  signInWithRedirect(): Promise<User> | undefined {
+  signInWithRedirect(): Promise<User | void> | undefined {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
@@ -247,7 +256,7 @@ export class MedplumClient extends EventTarget {
     if (!this.logoutUrl) {
       throw new Error('Missing logout URL');
     }
-    window.location.href = this.logoutUrl;
+    window.location.assign(this.logoutUrl);
   }
 
   fhirUrl(...path: string[]): string {
@@ -489,7 +498,7 @@ export class MedplumClient extends EventTarget {
     const response = await this.fetch(url, options);
     if (response.status === 401) {
       // Refresh and try again
-      return this.refresh().then(() => this.request(method, url, contentType, body, blob));
+      return this.handleUnauthenticated(method, url, contentType, body, blob);
     }
 
     const obj = blob ? await response.blob() : await response.json();
@@ -497,6 +506,33 @@ export class MedplumClient extends EventTarget {
       return Promise.reject(new MedplumOperationOutcomeError(obj as OperationOutcome));
     }
     return obj;
+  }
+
+  /**
+   * Handles an unauthenticated response from the server.
+   * First, tries to refresh the access token and retry the request.
+   * Otherwise, calls unauthenticated callbacks and rejects.
+   * @param method The HTTP method of the original request.
+   * @param url The URL of the original request.
+   * @param contentType The content type of the original request.
+   * @param body The body of the original request.
+   * @param blob Optional blob flag of the original request.
+   */
+  private async handleUnauthenticated(
+    method: string,
+    url: string,
+    contentType?: string,
+    body?: any,
+    blob?: boolean): Promise<any> {
+    return this.refresh()
+      .then(() => this.request(method, url, contentType, body, blob))
+      .catch(error => {
+        this.clear();
+        if (this.onUnauthenticated) {
+          this.onUnauthenticated();
+        }
+        return Promise.reject(error);
+      });
   }
 
   /**
@@ -508,8 +544,6 @@ export class MedplumClient extends EventTarget {
     if (!this.authorizeUrl) {
       throw new Error('Missing authorize URL');
     }
-
-    console.log('Requesting authorization...');
 
     this.clear();
 
@@ -525,14 +559,14 @@ export class MedplumClient extends EventTarget {
 
     const scope = 'launch/patient openid fhirUser offline_access user/*.*';
 
-    window.location.href = this.authorizeUrl +
+    window.location.assign(this.authorizeUrl +
       '?response_type=code' +
       '&state=' + encodeURIComponent(pkceState) +
       '&client_id=' + encodeURIComponent(this.clientId) +
       '&redirect_uri=' + encodeURIComponent(getBaseUrl()) +
       '&scope=' + encodeURIComponent(scope) +
       '&code_challenge_method=S256' +
-      '&code_challenge=' + encodeURIComponent(codeChallenge);
+      '&code_challenge=' + encodeURIComponent(codeChallenge));
   }
 
   /**
@@ -541,8 +575,6 @@ export class MedplumClient extends EventTarget {
    * @param code The authorization code received by URL parameter.
    */
   private processCode(code: string): Promise<User> {
-    console.log('Processing authorization code...');
-
     const pkceState = this.storage.getString('pkceState');
     if (!pkceState) {
       this.clear();
@@ -567,11 +599,11 @@ export class MedplumClient extends EventTarget {
    * Tries to refresh the auth tokens.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
-  private async refresh() {
+  private async refresh(): Promise<void> {
     const refreshToken = this.getRefreshToken();
     if (!refreshToken) {
       this.clear();
-      throw new Error('Invalid refresh token');
+      return Promise.reject('Invalid refresh token');
     }
 
     await this.fetchTokens(
@@ -590,14 +622,19 @@ export class MedplumClient extends EventTarget {
       throw new Error('Missing token URL');
     }
 
-    return fetch(
+    return this.fetch(
       this.tokenUrl,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formBody
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          return Promise.reject('Failed to fetch tokens');
+        }
+        return response.json();
+      })
       .then(tokens => this.verifyTokens(tokens))
       .then(() => this.getUser() as User);
   }
@@ -608,22 +645,20 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
    * @param tokens
    */
-  private async verifyTokens(tokens: TokenResponse) {
-    console.log('Verifying authorization token...');
-
+  private async verifyTokens(tokens: TokenResponse): Promise<void> {
     const token = tokens.access_token;
 
     // Verify token has not expired
     const tokenPayload = parseJWTPayload(token);
     if (Date.now() >= tokenPayload.exp * 1000) {
       this.clear();
-      throw new Error('Token expired');
+      return Promise.reject('Token expired');
     }
 
     // Verify app_client_id
     if (tokenPayload.client_id !== this.clientId) {
       this.clear();
-      throw new Error('Token was not issued for this audience');
+      return Promise.reject('Token was not issued for this audience');
     }
 
     this.setAccessToken(token);
