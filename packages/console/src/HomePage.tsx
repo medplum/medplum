@@ -1,7 +1,7 @@
 import { Bundle, formatSearchQuery, parseSearchDefinition, SearchRequest } from '@medplum/core';
 import { Button, Loading, movePage, SearchControl } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router';
+import { useLocation } from 'react-router-dom';
 import { history } from './history';
 
 export function HomePage() {
@@ -30,15 +30,27 @@ export function HomePage() {
           <Button size="small">Fields</Button>
           <Button size="small">Filters</Button>
           <Button size="small">Export</Button>
-          <Button size="small" onClick={() => history.push(`/${search.resourceType}/new`)}>New...</Button>
+          <Button
+            testid="new-button"
+            size="small"
+            onClick={() => history.push(`/${search.resourceType}/new`)}
+          >New...</Button>
         </div>
         {lastResult && (
           <div style={{ display: 'flex' }}>
             <span style={{ lineHeight: '28px', padding: '2px 6px', fontSize: '12px' }}>
               {getStart(search)}-{getEnd(search)} of {lastResult.total}
             </span>
-            <Button size="small" onClick={() => setSearch(movePage(search, -1))}>&lt;&lt;</Button>
-            <Button size="small" onClick={() => setSearch(movePage(search, 1))}>&gt;&gt;</Button>
+            <Button
+              testid="prev-page-button"
+              size="small"
+              onClick={() => setSearch(movePage(search, -1))}
+            >&lt;&lt;</Button>
+            <Button
+              testid="next-page-button"
+              size="small"
+              onClick={() => setSearch(movePage(search, 1))}
+            >&gt;&gt;</Button>
           </div>
         )}
       </div>
@@ -50,10 +62,7 @@ export function HomePage() {
           pathname: `/${e.definition.resourceType}`,
           search: formatSearchQuery(e.definition)
         })}
-        onLoad={e => {
-          console.log('onLoad', e);
-          setLastResult(e.response);
-        }}
+        onLoad={e => setLastResult(e.response)}
       />
     </>
   );

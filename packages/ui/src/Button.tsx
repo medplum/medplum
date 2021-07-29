@@ -9,6 +9,7 @@ export interface ButtonProps {
   size?: 'small' | 'medium' | 'large';
   onClick?: (e: React.MouseEvent) => void;
   children: React.ReactNode;
+  testid?: string;
 }
 
 export const Button = (props: ButtonProps) => {
@@ -22,6 +23,7 @@ export const Button = (props: ButtonProps) => {
       type={props.type || 'button'}
       className={className}
       onClick={props.onClick}
+      data-testid={props.testid}
     >{props.children}</button>
   );
 };

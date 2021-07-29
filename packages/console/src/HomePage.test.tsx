@@ -1,75 +1,35 @@
-import { Bundle, Communication, Encounter, Media, MedplumClient } from '@medplum/core';
+import { Bundle, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import { randomUUID } from 'crypto';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { Router } from 'react-router-dom';
+import { history } from './history';
 import { HomePage } from './HomePage';
 
-const encounterId = randomUUID();
-
-const encounter: Encounter = {
-  resourceType: 'Encounter',
-  id: encounterId
-};
-
-const communications: Bundle = {
+const patientStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: randomUUID(),
-        meta: {
-          lastUpdated: new Date(),
-          author: {
-            reference: 'Practitioner/123'
-          }
-        },
-        payload: [{
-          contentString: 'Hello world'
-        }]
-      }
+  entry: [{
+    resource: {
+      resourceType: 'StructureDefinition',
+      id: '123',
+      name: 'Patient'
     }
-  ]
-};
-
-const media: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Media',
-        id: randomUUID(),
-        meta: {
-          lastUpdated: new Date(),
-          author: {
-            reference: 'Practitioner/123'
-          }
-        },
-        content: {
-          contentType: 'text/plain',
-          url: 'https://example.com/test.txt'
-        }
-      }
-    }
-  ]
-};
-
-const newComment: Communication = {
-  resourceType: 'Communication',
-  id: randomUUID(),
-  payload: [{
-    contentString: 'Test comment'
   }]
 };
 
-const newMedia: Media = {
-  resourceType: 'Media',
-  id: randomUUID(),
-  content: {
-    contentType: 'text/plain',
-    url: 'https://example.com/test2.txt'
-  }
+const patientSearchBundle: Bundle = {
+  resourceType: 'Bundle',
+  total: 100,
+  entry: [{
+    resource: {
+      resourceType: 'Patient',
+      id: '123',
+      name: [{
+        given: ['Alice'],
+        family: 'Smith'
+      }]
+    }
+  }]
 };
 
 const mockRouter = {
@@ -83,16 +43,10 @@ function mockFetch(url: string, options: any): Promise<any> {
   const method = options.method ?? 'GET';
   let result: any;
 
-  if (method === 'GET' && url.includes('/fhir/R4/Encounter/' + encounterId)) {
-    result = encounter;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Communication?')) {
-    result = communications;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Media?')) {
-    result = media;
-  } else if (method === 'POST' && url.includes('/fhir/R4/Communication')) {
-    result = newComment;
-  } else if (method === 'POST' && url.includes('/fhir/R4/Media')) {
-    result = newMedia;
+  if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
+    result = patientStructureBundle;
+  } else if (method === 'GET' && url.includes('/fhir/R4/Patient?')) {
+    result = patientSearchBundle;
   }
 
   const response: any = {
@@ -122,7 +76,9 @@ beforeAll(async () => {
 const setup = () => {
   return render(
     <MedplumProvider medplum={medplum} router={mockRouter}>
-      <HomePage />
+      <Router history={history}>
+        <HomePage />
+      </Router>
     </MedplumProvider>
   );
 };
@@ -139,71 +95,51 @@ test('HomePage renders', async (done) => {
   done();
 });
 
-// test('HomePage renders resource', async (done) => {
-//   setup({ resource: encounter });
+test('HomePage next page button', async (done) => {
+  setup();
 
-//   await act(async () => {
-//     await waitFor(() => screen.getAllByTestId('timeline-item'));
-//   });
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('next-page-button'));
+  });
 
-//   const items = screen.getAllByTestId('timeline-item');
-//   expect(items).not.toBeUndefined();
-//   expect(items.length).toEqual(2);
-//   done();
-// });
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('next-page-button'));
+  });
 
-// test('HomePage create comment', async (done) => {
-//   setup({ resource: encounter });
+  const control = screen.getByTestId('search-control');
+  expect(control).not.toBeUndefined();
+  done();
+});
 
-//   // Wait for initial load
-//   await act(async () => {
-//     await waitFor(() => screen.getAllByTestId('timeline-item'));
-//   });
+test('HomePage prev page button', async (done) => {
+  setup();
 
-//   // Enter the comment text
-//   await act(async () => {
-//     fireEvent.change(screen.getByTestId('timeline-input'), { target: { value: 'Test comment' } });
-//   });
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('prev-page-button'));
+  });
 
-//   // Submit the form
-//   await act(async () => {
-//     fireEvent.submit(screen.getByTestId('timeline-form'), { target: { text: 'Test comment' } });
-//   });
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('prev-page-button'));
+  });
 
-//   // Wait for new comment
-//   await act(async () => {
-//     await waitFor(() => screen.getAllByTestId('timeline-item'));
-//   });
+  const control = screen.getByTestId('search-control');
+  expect(control).not.toBeUndefined();
+  done();
+});
 
-//   const items = screen.getAllByTestId('timeline-item');
-//   expect(items).not.toBeUndefined();
-//   expect(items.length).toEqual(3);
-//   done();
-// });
+test('HomePage new button', async (done) => {
+  history.push = jest.fn();
 
-// test('HomePage upload media', async (done) => {
-//   setup({ resource: encounter });
+  setup();
 
-//   // Wait for initial load
-//   await act(async () => {
-//     await waitFor(() => screen.getAllByTestId('timeline-item'));
-//   });
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('new-button'));
+  });
 
-//   // Upload the file
-//   await act(async () => {
-//     const files = [
-//       new File(['hello'], 'hello.txt', { type: 'text/plain' })
-//     ];
-//     fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files } });
-//   });
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('new-button'));
+  });
 
-//   // Wait for new comment
-//   await act(async () => {
-//     await waitFor(() => screen.getAllByTestId('timeline-item'));
-//   });
-
-//   const items = screen.getAllByTestId('timeline-item');
-//   expect(items).not.toBeUndefined();
-//   expect(items.length).toEqual(3);
-//   done();
-// });
+  expect(history.push).toBeCalled();
+  done();
+});

@@ -23,11 +23,15 @@ export interface MedplumRouter {
 }
 
 export interface MedplumRouterListen {
-  (location: Location): void;
+  (location: MedplumRouterLocation): void;
 }
 
 export interface MedplumRouterUnlisten {
   (): void;
+}
+
+export interface MedplumRouterLocation {
+  href: string;
 }
 
 /**
