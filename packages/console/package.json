@@ -15,7 +15,7 @@
     "dev": "webpack serve --mode development",
     "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production",
     "debug": "webpack --mode development",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "lint": "eslint src/ --ext .ts,.tsx"
   },
   "devDependencies": {
