@@ -1,4 +1,4 @@
-import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
+import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { Knex } from 'knex';
@@ -296,18 +296,27 @@ export class Repository {
         if (lookupTable) {
           lookupTable.addSearchConditions(resourceType, builder, filter);
         } else if (param.type === 'string') {
-          builder.where(columnName, 'LIKE', '%' + filter.value + '%');
+          this.addStringSearchFilter(builder, columnName, filter.value);
         } else if (param.type === 'reference') {
-          const [referenceType, referenceId] = filter.value.split('/');
-          if (!param.target || param.target.length > 1) {
-            builder.where(columnName + 'ResourceType', referenceType);
-          }
-          builder.where(columnName + 'Id', referenceId);
+          this.addReferenceSearchFilter(builder, param, filter);
         } else {
           builder.where(columnName, filter.value);
         }
       }
     }
+  }
+
+  private addStringSearchFilter(builder: Knex.QueryBuilder, columnName: string, query: string): void {
+    builder.where(columnName, 'LIKE', '%' + query + '%');
+  }
+
+  private addReferenceSearchFilter(builder: Knex.QueryBuilder, param: SearchParameter, filter: Filter): void {
+    const columnName = convertCodeToColumnName(param.code as string);
+    const [referenceType, referenceId] = filter.value.split('/');
+    if (!param.target || param.target.length > 1) {
+      builder.where(columnName + 'ResourceType', referenceType);
+    }
+    builder.where(columnName + 'Id', referenceId);
   }
 
   private async write(resource: Resource): Promise<void> {
