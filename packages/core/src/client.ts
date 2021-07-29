@@ -498,15 +498,7 @@ export class MedplumClient extends EventTarget {
     const response = await this.fetch(url, options);
     if (response.status === 401) {
       // Refresh and try again
-      return this.refresh()
-        .then(() => this.request(method, url, contentType, body, blob))
-        .catch(error => {
-          this.clear();
-          if (this.onUnauthenticated) {
-            this.onUnauthenticated();
-          }
-          return Promise.reject(error);
-        });
+      return this.handleUnauthenticated(method, url, contentType, body, blob);
     }
 
     const obj = blob ? await response.blob() : await response.json();
@@ -514,6 +506,33 @@ export class MedplumClient extends EventTarget {
       return Promise.reject(new MedplumOperationOutcomeError(obj as OperationOutcome));
     }
     return obj;
+  }
+
+  /**
+   * Handles an unauthenticated response from the server.
+   * First, tries to refresh the access token and retry the request.
+   * Otherwise, calls unauthenticated callbacks and rejects.
+   * @param method The HTTP method of the original request.
+   * @param url The URL of the original request.
+   * @param contentType The content type of the original request.
+   * @param body The body of the original request.
+   * @param blob Optional blob flag of the original request.
+   */
+  private async handleUnauthenticated(
+    method: string,
+    url: string,
+    contentType?: string,
+    body?: any,
+    blob?: boolean): Promise<any> {
+    return this.refresh()
+      .then(() => this.request(method, url, contentType, body, blob))
+      .catch(error => {
+        this.clear();
+        if (this.onUnauthenticated) {
+          this.onUnauthenticated();
+        }
+        return Promise.reject(error);
+      });
   }
 
   /**
