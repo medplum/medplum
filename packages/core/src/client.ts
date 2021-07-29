@@ -256,7 +256,7 @@ export class MedplumClient extends EventTarget {
     if (!this.logoutUrl) {
       throw new Error('Missing logout URL');
     }
-    window.location.href = this.logoutUrl;
+    window.location.assign(this.logoutUrl);
   }
 
   fhirUrl(...path: string[]): string {
@@ -526,8 +526,6 @@ export class MedplumClient extends EventTarget {
       throw new Error('Missing authorize URL');
     }
 
-    console.log('Requesting authorization...');
-
     this.clear();
 
     const pkceState = getRandomString();
@@ -542,14 +540,14 @@ export class MedplumClient extends EventTarget {
 
     const scope = 'launch/patient openid fhirUser offline_access user/*.*';
 
-    window.location.href = this.authorizeUrl +
+    window.location.assign(this.authorizeUrl +
       '?response_type=code' +
       '&state=' + encodeURIComponent(pkceState) +
       '&client_id=' + encodeURIComponent(this.clientId) +
       '&redirect_uri=' + encodeURIComponent(getBaseUrl()) +
       '&scope=' + encodeURIComponent(scope) +
       '&code_challenge_method=S256' +
-      '&code_challenge=' + encodeURIComponent(codeChallenge);
+      '&code_challenge=' + encodeURIComponent(codeChallenge));
   }
 
   /**
@@ -558,8 +556,6 @@ export class MedplumClient extends EventTarget {
    * @param code The authorization code received by URL parameter.
    */
   private processCode(code: string): Promise<User> {
-    console.log('Processing authorization code...');
-
     const pkceState = this.storage.getString('pkceState');
     if (!pkceState) {
       this.clear();
@@ -607,7 +603,7 @@ export class MedplumClient extends EventTarget {
       throw new Error('Missing token URL');
     }
 
-    return fetch(
+    return this.fetch(
       this.tokenUrl,
       {
         method: 'POST',
@@ -626,8 +622,6 @@ export class MedplumClient extends EventTarget {
    * @param tokens
    */
   private async verifyTokens(tokens: TokenResponse): Promise<void> {
-    console.log('Verifying authorization token...');
-
     const token = tokens.access_token;
 
     // Verify token has not expired

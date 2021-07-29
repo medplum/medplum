@@ -1,3 +1,5 @@
+import { randomBytes } from 'crypto';
+import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
 
 const defaultOptions = {
@@ -5,6 +7,8 @@ const defaultOptions = {
   baseUrl: 'https://x/',
   fetch: mockFetch
 }
+
+let tokenExpired = false;
 
 function mockFetch(url: string, options: any): Promise<any> {
   const { method } = options;
@@ -24,9 +28,22 @@ function mockFetch(url: string, options: any): Promise<any> {
   } else if (method === 'GET' && url.endsWith('Patient/123')) {
     response.resourceType = 'Patient';
     response.id = '123';
+
+  } else if (method === 'POST' && url.endsWith('oauth2/token')) {
+    response.access_token = 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature';
+    response.refresh_token = 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature';
+
+  } else if (method === 'GET' && url.includes('expired')) {
+    if (tokenExpired) {
+      response.status = 401;
+      tokenExpired = false;
+    } else {
+      response.ok = true;
+    }
   }
 
   return Promise.resolve({
+    status: response.status,
     blob: () => Promise.resolve(response),
     json: () => Promise.resolve(response)
   });
@@ -75,6 +92,58 @@ test('Client signIn', async () => {
   const result = await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   expect(result).not.toBeUndefined();
   expect(result.resourceType).toBe('User');
+});
+
+test('Client signInWithRedirect', async () => {
+  // Mock window.crypto
+  Object.defineProperty(global.self, 'crypto', {
+    value: {
+      getRandomValues: (arr: Uint8Array) => randomBytes(arr.length),
+      subtle: {
+        digest: () => 'test'
+      }
+    }
+  });
+
+  // Mock TextEncoder
+  global.TextEncoder = TextEncoder;
+
+  // Mock window.location.assign
+  global.window = Object.create(window);
+  Object.defineProperty(window, 'location', {
+    value: {
+      assign: jest.fn()
+    },
+    writable: true,
+  });
+
+  const client = new MedplumClient(defaultOptions);
+
+  // First, test the initial reidrect
+  const result1 = client.signInWithRedirect();
+  expect(result1).toBeUndefined();
+
+  // Mock response code
+  Object.defineProperty(window, 'location', {
+    value: {
+      assign: jest.fn(),
+      search: new URLSearchParams({ code: 'test-code' })
+    },
+    writable: true,
+  });
+
+  // Next, test processing the response code
+  const result2 = client.signInWithRedirect();
+  expect(result2).not.toBeUndefined();
+});
+
+test('Client read expired and refresh', async (done) => {
+  tokenExpired = true;
+
+  const client = new MedplumClient(defaultOptions);
+  const result = await client.get('expired');
+  expect(result).not.toBeUndefined();
+  done();
 });
 
 test('Client read resource', async () => {
