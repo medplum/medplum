@@ -9,10 +9,9 @@ export type ProfileResource = Patient | Practitioner | RelatedPerson;
  * @returns A reference resource.
  */
 export function createReference(resource: Resource): Reference {
-  return {
-    reference: getReferenceString(resource),
-    display: getDisplayString(resource)
-  };
+  const reference = getReferenceString(resource);
+  const display = getDisplayString(resource);
+  return (display === reference) ? { reference } : { reference, display };
 }
 
 /**

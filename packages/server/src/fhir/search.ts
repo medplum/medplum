@@ -321,7 +321,6 @@ class SearchParser {
     }
 
     this.filters.push({
-      // param,
       code: param.code as string,
       operator: op,
       value
@@ -329,7 +328,11 @@ class SearchParser {
   }
 
   private parseReference(param: SearchParameter, value: string) {
-    // TODO
+    this.filters.push({
+      code: param.code as string,
+      operator: Operator.EQUALS,
+      value: value
+    });
   }
 
   private parseComposite(param: SearchParameter, value: string) {

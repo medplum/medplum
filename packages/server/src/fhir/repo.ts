@@ -1,6 +1,7 @@
-import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
+import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
+import { Knex } from 'knex';
 import validator from 'validator';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { executeQuery, getKnex } from '../database';
@@ -263,21 +264,7 @@ export class Repository {
 
     const knex = getKnex();
     const builder = knex.select('content').from(resourceType);
-    if (searchRequest.filters) {
-      for (const filter of searchRequest.filters) {
-        const param = getSearchParameter(resourceType, filter.code);
-        if (param) {
-          const lookupTable = this.getLookupTable(param);
-          if (lookupTable) {
-            lookupTable.addSearchConditions(resourceType, builder, filter);
-          } else if (param.type === 'string') {
-            builder.where(param.code as string, 'LIKE', '%' + filter.value + '%');
-          } else {
-            builder.where(param.code as string, filter.value);
-          }
-        }
-      }
-    }
+    this.addSearchFilters(builder, searchRequest);
 
     const count = searchRequest.count || 10;
     const page = searchRequest.page || 0;
@@ -293,6 +280,43 @@ export class Repository {
         resource: JSON.parse(row.content as string)
       }))
     }];
+  }
+
+  private addSearchFilters(builder: Knex.QueryBuilder, searchRequest: SearchRequest): void {
+    if (!searchRequest.filters) {
+      return;
+    }
+
+    const resourceType = searchRequest.resourceType;
+    for (const filter of searchRequest.filters) {
+      const param = getSearchParameter(resourceType, filter.code);
+      if (param && param.code) {
+        const lookupTable = this.getLookupTable(param);
+        const columnName = convertCodeToColumnName(param.code);
+        if (lookupTable) {
+          lookupTable.addSearchConditions(resourceType, builder, filter);
+        } else if (param.type === 'string') {
+          this.addStringSearchFilter(builder, columnName, filter.value);
+        } else if (param.type === 'reference') {
+          this.addReferenceSearchFilter(builder, param, filter);
+        } else {
+          builder.where(columnName, filter.value);
+        }
+      }
+    }
+  }
+
+  private addStringSearchFilter(builder: Knex.QueryBuilder, columnName: string, query: string): void {
+    builder.where(columnName, 'LIKE', '%' + query + '%');
+  }
+
+  private addReferenceSearchFilter(builder: Knex.QueryBuilder, param: SearchParameter, filter: Filter): void {
+    const columnName = convertCodeToColumnName(param.code as string);
+    const [referenceType, referenceId] = filter.value.split('/');
+    if (!param.target || param.target.length > 1) {
+      builder.where(columnName + 'ResourceType', referenceType);
+    }
+    builder.where(columnName + 'Id', referenceId);
   }
 
   private async write(resource: Resource): Promise<void> {
@@ -335,6 +359,14 @@ export class Repository {
     }).then(executeQuery);
   }
 
+  /**
+   * Builds the columns to write for a given resource and search parameter.
+   * If nothing to write, then no columns will be added.
+   * Some search parameters can result in multiple columns (for example, Reference objects).
+   * @param resource The resource to write.
+   * @param columns The output columns to write.
+   * @param searchParam The search parameter definition.
+   */
   private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
     if (this.isIndexTable(searchParam)) {
       return;
@@ -345,24 +377,50 @@ export class Repository {
       return;
     }
 
+    const columnName = convertCodeToColumnName(searchParam.code as string);
     const value = (resource as any)[name];
     if (searchParam.type === 'date') {
-      columns[name] = new Date(value);
+      columns[columnName] = new Date(value);
     } else if (searchParam.type === 'boolean') {
-      columns[name] = (value === 'true');
+      columns[columnName] = (value === 'true');
+    } else if (searchParam.type === 'reference') {
+      this.buildReferenceColumns(columns, searchParam, value);
     } else if (typeof value === 'string') {
       if (value.length > 128) {
-        columns[name] = value.substr(0, 128);
+        columns[columnName] = value.substr(0, 128);
       } else {
-        columns[name] = value;
+        columns[columnName] = value;
       }
     } else {
       let json = JSON.stringify(value);
       if (json.length > 128) {
         json = json.substr(0, 128);
       }
-      columns[name] = json;
+      columns[columnName] = json;
     }
+  }
+
+  /**
+   * Builds the columns to write for a Reference value.
+   * @param columns The output search columns.
+   * @param searchParam The search parameter definition.
+   * @param value The property value of the reference.
+   */
+  private buildReferenceColumns(columns: Record<string, any>, searchParam: SearchParameter, value: any): void {
+    const refStr = (value as Reference).reference;
+    if (!refStr) {
+      return;
+    }
+
+    const columnName = convertCodeToColumnName(searchParam.code as string);
+    const [resourceType, id] = refStr.split('/');
+    if (!searchParam.target || searchParam.target.length > 1) {
+      // Some search parameters use all resource types (target === undefined).
+      // Some search parameters allow a subset of resource types (target.length > 1).
+      // Some search parameters are for only one resource type (target.length === 1).
+      columns[columnName + 'ResourceType'] = resourceType;
+    }
+    columns[columnName + 'Id'] = id;
   }
 
   private async writeLookupTables(resource: Resource): Promise<void> {
@@ -515,6 +573,20 @@ function getPatientIdFromReference(reference: Reference): string | undefined {
     return reference.reference.replace('Patient/', '');
   }
   return undefined;
+}
+
+/**
+ * Converts a hyphen-delimited code to camelCase string.
+ * @param code The search parameter code.
+ * @returns The SQL column name.
+ */
+function convertCodeToColumnName(code: string): string {
+  return code.split('-')
+    .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
+}
+
+function upperFirst(word: string): string {
+  return word.charAt(0).toUpperCase() + word.substr(1);
 }
 
 export const repo = new Repository({
