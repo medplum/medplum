@@ -15,7 +15,7 @@
     "dev": "webpack serve --mode development",
     "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production",
     "debug": "webpack --mode development",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "lint": "eslint src/ --ext .ts,.tsx"
   },
   "devDependencies": {
@@ -40,6 +40,7 @@
     "dotenv-webpack": "7.0.3",
     "eslint": "7.31.0",
     "html-webpack-plugin": "5.3.2",
+    "identity-obj-proxy": "3.0.0",
     "mini-css-extract-plugin": "2.1.0",
     "react": "17.0.2",
     "react-dom": "17.0.2",

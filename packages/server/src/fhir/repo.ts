@@ -271,15 +271,31 @@ export class Repository {
     builder.limit(count);
     builder.offset(count * page);
 
+    const total = await this.getTotalCount(searchRequest);
     const rows = await builder.then(executeQuery);
 
     return [allOk, {
       resourceType: 'Bundle',
       type: 'searchest',
+      total,
       entry: rows.map(row => ({
         resource: JSON.parse(row.content as string)
       }))
     }];
+  }
+
+  /**
+   * Returns the total number of matching results for a search request.
+   * This ignores page number and page size.
+   * @param searchRequest The search request.
+   * @returns The total number of matching results.
+   */
+  private async getTotalCount(searchRequest: SearchRequest): Promise<number> {
+    const knex = getKnex();
+    const builder = knex.count(searchRequest.resourceType + '.id').from(searchRequest.resourceType);
+    this.addSearchFilters(builder, searchRequest);
+    const rows = await builder.then(executeQuery);
+    return rows[0].count as number;
   }
 
   private addSearchFilters(builder: Knex.QueryBuilder, searchRequest: SearchRequest): void {
