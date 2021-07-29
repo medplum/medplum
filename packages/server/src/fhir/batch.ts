@@ -24,8 +24,9 @@ export async function createBatch(repo: Repository, bundle: Bundle): RepositoryR
   };
 
   const ids = findIds(entries);
+  const rewritten = rewriteIdsInObject(bundle, ids);
 
-  for (const entry of rewriteIdsInObject(bundle, ids).entry) {
+  for (const entry of rewritten.entry) {
     const resource = entry.resource;
     const [updateOutcome, updateResource] = await repo.updateResource(resource);
     (result.entry as BundleEntry[]).push({
@@ -39,8 +40,13 @@ export async function createBatch(repo: Repository, bundle: Bundle): RepositoryR
   return [allOk, result];
 }
 
-function findIds(entries: BundleEntry[]): Record<string, string> {
-  const result: Record<string, string> = {};
+interface OutputId {
+  resourceType: string;
+  id: string;
+}
+
+function findIds(entries: BundleEntry[]): Record<string, OutputId> {
+  const result: Record<string, OutputId> = {};
 
   for (const entry of entries) {
     const resource = entry.resource;
@@ -53,24 +59,28 @@ function findIds(entries: BundleEntry[]): Record<string, string> {
       continue;
     }
 
-    // Direct ID: replace local value with generated ID
     const inputId = fullUrl.substring('urn:uuid:'.length);
-    const outputId = randomUUID();
-    result[inputId] = outputId;
+    const output = {
+      resourceType: resource.resourceType,
+      id: randomUUID()
+    };
+
+    // Direct ID: replace local value with generated ID
+    result[inputId] = output;
 
     // Reference: replace prefixed value with reference string
-    result[fullUrl] = resource.resourceType + '/' + outputId;
+    result[fullUrl] = output;
   }
 
   return result;
 }
 
-function rewriteIds(input: any, ids: Record<string, string>): any {
+function rewriteIds(input: any, ids: Record<string, OutputId>, forceFull?: boolean): any {
   if (Array.isArray(input)) {
     return rewriteIdsInArray(input, ids);
   }
   if (typeof input === 'string') {
-    return rewriteIdsInString(input, ids);
+    return rewriteIdsInString(input, ids, forceFull);
   }
   if (typeof input === 'object') {
     return rewriteIdsInObject(input, ids);
@@ -78,18 +88,26 @@ function rewriteIds(input: any, ids: Record<string, string>): any {
   return input;
 }
 
-function rewriteIdsInArray(input: any[], ids: Record<string, string>): any[] {
+function rewriteIdsInArray(input: any[], ids: Record<string, OutputId>): any[] {
   return input.map(item => rewriteIds(item, ids));
 }
 
-function rewriteIdsInObject(input: any, ids: Record<string, string>): any {
+function rewriteIdsInObject(input: any, ids: Record<string, OutputId>): any {
   return Object.fromEntries(
     Object.entries(input).map(
-      ([k, v]) => [k, rewriteIds(v, ids)]
+      ([k, v]) => [k, rewriteIds(v, ids, k === 'reference')]
     )
   );
 }
 
-function rewriteIdsInString(input: string, ids: Record<string, string>) {
-  return input in ids ? ids[input] : input;
+function rewriteIdsInString(input: string, ids: Record<string, OutputId>, forceFull?: boolean) {
+  const resource = ids[input];
+  if (!resource) {
+    return input;
+  }
+  if (input.startsWith('urn:uuid:') || forceFull) {
+    return `${resource.resourceType}/${resource.id}`
+  } else {
+    return resource.id;
+  }
 }

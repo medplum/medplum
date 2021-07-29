@@ -249,14 +249,6 @@ function buildSearchColumns(b: FileBuilder, resourceType: string): void {
         b.append('t.boolean(\'' + columnName + '\');');
       } else if (searchParam.type === 'date') {
         b.append('t.date(\'' + columnName + '\');');
-      } else if (searchParam.type === 'reference') {
-        if (!searchParam.target || searchParam.target.length > 1) {
-          // Some search parameters use all resource types (target === undefined).
-          // Some search parameters allow a subset of resource types (target.length > 1).
-          // Some search parameters are for only one resource type (target.length === 1).
-          b.append('t.string(\'' + columnName + 'ResourceType\', 32);');
-        }
-        b.append('t.uuid(\'' + columnName + 'Id\', 32);');
       } else {
         b.append('t.string(\'' + columnName + '\', 128);');
       }
