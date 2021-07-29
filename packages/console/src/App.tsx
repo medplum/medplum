@@ -17,6 +17,7 @@ import { SignInPage } from './SignInPage';
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL as string,
   clientId: process.env.MEDPLUM_CLIENT_ID as string,
+  onUnauthenticated: () => history.push('/signin')
 });
 
 export default function App() {
