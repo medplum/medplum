@@ -266,14 +266,21 @@ export class Repository {
     if (searchRequest.filters) {
       for (const filter of searchRequest.filters) {
         const param = getSearchParameter(resourceType, filter.code);
-        if (param) {
+        if (param && param.code) {
           const lookupTable = this.getLookupTable(param);
+          const columnName = convertCodeToColumnName(param.code);
           if (lookupTable) {
             lookupTable.addSearchConditions(resourceType, builder, filter);
           } else if (param.type === 'string') {
-            builder.where(param.code as string, 'LIKE', '%' + filter.value + '%');
+            builder.where(columnName, 'LIKE', '%' + filter.value + '%');
+          } else if (param.type === 'reference') {
+            const [resourceType, id] = filter.value.split('/');
+            if (!param.target || param.target.length > 1) {
+              builder.where(columnName + 'ResourceType', resourceType);
+            }
+            builder.where(columnName + 'Id', id);
           } else {
-            builder.where(param.code as string, filter.value);
+            builder.where(columnName, filter.value);
           }
         }
       }
@@ -345,23 +352,33 @@ export class Repository {
       return;
     }
 
+    const columnName = convertCodeToColumnName(searchParam.code as string);
     const value = (resource as any)[name];
     if (searchParam.type === 'date') {
-      columns[name] = new Date(value);
+      columns[columnName] = new Date(value);
     } else if (searchParam.type === 'boolean') {
-      columns[name] = (value === 'true');
+      columns[columnName] = (value === 'true');
+    } else if (searchParam.type === 'reference') {
+      const refStr = (value as Reference).reference;
+      if (refStr) {
+        const [resourceType, id] = refStr.split('/');
+        if (!searchParam.target || searchParam.target.length > 1) {
+          columns[columnName + 'ResourceType'] = resourceType;
+        }
+        columns[columnName + 'Id'] = id;
+      }
     } else if (typeof value === 'string') {
       if (value.length > 128) {
-        columns[name] = value.substr(0, 128);
+        columns[columnName] = value.substr(0, 128);
       } else {
-        columns[name] = value;
+        columns[columnName] = value;
       }
     } else {
       let json = JSON.stringify(value);
       if (json.length > 128) {
         json = json.substr(0, 128);
       }
-      columns[name] = json;
+      columns[columnName] = json;
     }
   }
 
@@ -515,6 +532,20 @@ function getPatientIdFromReference(reference: Reference): string | undefined {
     return reference.reference.replace('Patient/', '');
   }
   return undefined;
+}
+
+/**
+ * Converts a hyphen-delimited code to camelCase string.
+ * @param code The search parameter code.
+ * @returns The SQL column name.
+ */
+function convertCodeToColumnName(code: string): string {
+  return code.split('-')
+    .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
+}
+
+function upperFirst(word: string): string {
+  return word.charAt(0).toUpperCase() + word.substr(1);
 }
 
 export const repo = new Repository({

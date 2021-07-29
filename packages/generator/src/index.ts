@@ -221,20 +221,26 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
   b.append('t.uuid(\'project\').notNullable();');
 
   if (isInPatientCompartment(resourceType)) {
-    b.append('t.uuid(\'patientCompartment\').notNullable();');
+    b.append('t.uuid(\'patientCompartment\');');
   }
 
   for (const entry of searchParams.entry) {
     const searchParam = entry.resource;
     if (searchParam.base?.includes(resourceType)) {
+      const columnName = convertCodeToColumnName(searchParam.code);
       if (searchParam.code === 'identifier') {
         // Ignore
       } else if (searchParam.code === 'active') {
-        b.append('t.boolean(\'' + searchParam.code + '\');');
+        b.append('t.boolean(\'' + columnName + '\');');
       } else if (searchParam.type === 'date') {
-        b.append('t.date(\'' + searchParam.code + '\');');
+        b.append('t.date(\'' + columnName + '\');');
+      } else if (searchParam.type === 'reference') {
+        if (!searchParam.target || searchParam.target.length > 1) {
+          b.append('t.string(\'' + columnName + 'ResourceType\', 32);');
+        }
+        b.append('t.uuid(\'' + columnName + 'Id\', 32);');
       } else {
-        b.append('t.string(\'' + searchParam.code + '\', 128);');
+        b.append('t.string(\'' + columnName + '\', 128);');
       }
     }
   }
@@ -476,6 +482,20 @@ function escapeHtml(unsafe: string): string {
     .replace(/‘/g, '&lsquo;')
     .replace(/’/g, '&rsquo;')
     .replace(/…/g, '&hellip;');
+}
+
+/**
+ * Converts a hyphen-delimited code to camelCase string.
+ * @param code The search parameter code.
+ * @returns The SQL column name.
+ */
+function convertCodeToColumnName(code: string): string {
+  return code.split('-')
+    .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
+}
+
+function upperFirst(word: string): string {
+  return word.charAt(0).toUpperCase() + word.substr(1);
 }
 
 if (process.argv[1].endsWith('index.ts')) {
