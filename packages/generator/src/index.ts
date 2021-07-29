@@ -224,6 +224,21 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
     b.append('t.uuid(\'patientCompartment\');');
   }
 
+  buildSearchColumns(b, resourceType);
+  b.indentCount--;
+  b.append('});');
+  b.newLine();
+  b.append('await knex.schema.createTable(\'' + resourceType + '_History\', t => {');
+  b.indentCount++;
+  b.append('t.uuid(\'versionId\').notNullable().primary();');
+  b.append('t.uuid(\'id\').notNullable();');
+  b.append('t.text(\'content\').notNullable();');
+  b.append('t.dateTime(\'lastUpdated\').notNullable();');
+  b.indentCount--;
+  b.append('});');
+}
+
+function buildSearchColumns(b: FileBuilder, resourceType: string): void {
   for (const entry of searchParams.entry) {
     const searchParam = entry.resource;
     if (searchParam.base?.includes(resourceType)) {
@@ -236,6 +251,9 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
         b.append('t.date(\'' + columnName + '\');');
       } else if (searchParam.type === 'reference') {
         if (!searchParam.target || searchParam.target.length > 1) {
+          // Some search parameters use all resource types (target === undefined).
+          // Some search parameters allow a subset of resource types (target.length > 1).
+          // Some search parameters are for only one resource type (target.length === 1).
           b.append('t.string(\'' + columnName + 'ResourceType\', 32);');
         }
         b.append('t.uuid(\'' + columnName + 'Id\', 32);');
@@ -244,18 +262,6 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
       }
     }
   }
-
-  b.indentCount--;
-  b.append('});');
-  b.newLine();
-  b.append('await knex.schema.createTable(\'' + resourceType + '_History\', t => {');
-  b.indentCount++;
-  b.append('t.uuid(\'versionId\').notNullable().primary();');
-  b.append('t.uuid(\'id\').notNullable();');
-  b.append('t.text(\'content\').notNullable();');
-  b.append('t.dateTime(\'lastUpdated\').notNullable();');
-  b.indentCount--;
-  b.append('});');
 }
 
 function buildIdentifierTable(b: FileBuilder): void {
