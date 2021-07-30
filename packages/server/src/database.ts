@@ -2,6 +2,13 @@ import * as Knex from 'knex';
 import path from 'path';
 import { MedplumDatabaseConfig } from './config';
 
+export const TEST_CONFIG: MedplumDatabaseConfig = {
+  host: 'localhost',
+  database: 'medplum_test',
+  username: 'medplum',
+  password: 'medplum'
+};
+
 let knex: Knex.Knex | undefined;
 
 export function getKnex(): Knex.Knex {
@@ -13,10 +20,8 @@ export function getKnex(): Knex.Knex {
 
 export async function initDatabase(config: MedplumDatabaseConfig): Promise<void> {
   knex = Knex.knex({
-    client: config.client,
-    connection: config.client === 'sqlite3' ? {
-      filename: ':memory:'
-    } : {
+    client: 'pg',
+    connection: {
       host: config.host,
       database: config.database,
       user: config.username,

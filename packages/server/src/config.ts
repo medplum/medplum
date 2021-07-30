@@ -17,7 +17,7 @@ export interface MedplumServerConfig {
 }
 
 export interface MedplumDatabaseConfig {
-  client: 'pg' | 'sqlite3';
+  // client: 'pg';// | 'sqlite3';
   host?: string;
   port?: number;
   database?: string;
@@ -136,7 +136,6 @@ async function loadAwsSecrets(secretId: string): Promise<MedplumDatabaseConfig> 
 
   const secrets = JSON.parse(result.SecretString) as AwsDatabaseSecrets;
   return {
-    client: secrets.engine === 'postgres' ? 'pg' : 'sqlite3',
     host: secrets.host,
     database: secrets.dbname,
     port: secrets.port,

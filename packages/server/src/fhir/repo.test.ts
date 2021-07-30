@@ -2,12 +2,12 @@ import { Account, Communication, createReference, Encounter, getReferenceString,
 import { randomUUID } from 'crypto';
 import { loadConfig } from '../config';
 import { ADMIN_USER_ID, MEDPLUM_PROJECT_ID } from '../constants';
-import { closeDatabase, initDatabase } from '../database';
+import { closeDatabase, initDatabase, TEST_CONFIG } from '../database';
 import { getPatientId, repo, Repository } from './repo';
 
 beforeAll(async () => {
   await loadConfig('file:medplum.config.json');
-  await initDatabase({ client: 'sqlite3' });
+  await initDatabase(TEST_CONFIG);
 });
 
 afterAll(async () => {
@@ -15,10 +15,12 @@ afterAll(async () => {
 });
 
 test('Patient resource with identifier', async (done) => {
+  const identifier = randomUUID();
+
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }],
-    identifier: [{ system: 'https://www.example.com', value: '123' }]
+    identifier: [{ system: 'https://www.example.com', value: identifier }]
   });
 
   expect(createOutcome.id).toEqual('created');
@@ -28,7 +30,7 @@ test('Patient resource with identifier', async (done) => {
     filters: [{
       code: 'identifier',
       operator: Operator.EQUALS,
-      value: '123'
+      value: identifier
     }]
   });
 
@@ -39,9 +41,11 @@ test('Patient resource with identifier', async (done) => {
 });
 
 test('Patient resource with name', async (done) => {
+  const familyName = randomUUID();
+
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
-    name: [{ given: ['Alice'], family: 'Smithbottom' }],
+    name: [{ given: ['Alice'], family: familyName }],
     identifier: [{ system: 'https://www.example.com', value: '123' }]
   });
 
@@ -52,7 +56,7 @@ test('Patient resource with name', async (done) => {
     filters: [{
       code: 'family',
       operator: Operator.EQUALS,
-      value: 'Smithbottom'
+      value: familyName
     }]
   });
 

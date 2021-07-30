@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
+import { closeDatabase, initDatabase, TEST_CONFIG } from '../database';
 import { isOk, repo } from '../fhir';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
@@ -13,7 +13,7 @@ let client: ClientApplication;
 
 beforeAll(async () => {
   const config = await loadConfig('file:medplum.config.json');
-  await initDatabase({ client: 'sqlite3' });
+  await initDatabase(TEST_CONFIG);
   await seedDatabase();
   await initApp(app);
   await initKeys(config);
