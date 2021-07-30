@@ -130,7 +130,7 @@ test('HomePage prev page button', async (done) => {
 });
 
 test('HomePage new button', async (done) => {
-  history.push = jest.fn();
+  mockRouter.push = jest.fn();
 
   setup();
 
@@ -142,6 +142,6 @@ test('HomePage new button', async (done) => {
     fireEvent.click(screen.getByTestId('new-button'));
   });
 
-  expect(history.push).toBeCalled();
+  expect(mockRouter.push).toBeCalled();
   done();
 });

@@ -43,7 +43,7 @@ test('SearchFieldEditor add field with Add button', async (done) => {
 
   const utils = render(<SearchFieldEditor
     schema={schema}
-    definition={currSearch}
+    search={currSearch}
     visible={true}
     onOk={e => currSearch = e}
     onCancel={() => console.log('onCancel')}
@@ -75,7 +75,7 @@ test('SearchFieldEditor add field with Enter key', async (done) => {
 
   const utils = render(<SearchFieldEditor
     schema={schema}
-    definition={currSearch}
+    search={currSearch}
     visible={true}
     onOk={e => currSearch = e}
     onCancel={() => console.log('onCancel')}
@@ -107,7 +107,7 @@ test('SearchFieldEditor remove field with Remove button', async (done) => {
 
   const utils = render(<SearchFieldEditor
     schema={schema}
-    definition={currSearch}
+    search={currSearch}
     visible={true}
     onOk={e => currSearch = e}
     onCancel={() => console.log('onCancel')}
@@ -139,7 +139,7 @@ test('SearchFieldEditor remove field with Remove button', async (done) => {
 
   const utils = render(<SearchFieldEditor
     schema={schema}
-    definition={currSearch}
+    search={currSearch}
     visible={true}
     onOk={e => currSearch = e}
     onCancel={() => console.log('onCancel')}

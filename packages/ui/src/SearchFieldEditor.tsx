@@ -6,14 +6,14 @@ import { buildFieldNameString } from './SearchUtils';
 interface SearchFieldEditorProps {
   schema: IndexedStructureDefinition;
   visible: boolean;
-  definition: SearchRequest;
-  onOk: (definition: SearchRequest) => void;
+  search: SearchRequest;
+  onOk: (search: SearchRequest) => void;
   onCancel: () => void;
 }
 
 export function SearchFieldEditor(props: SearchFieldEditorProps) {
   const [state, setState] = useState({
-    definition: JSON.parse(JSON.stringify(props.definition)) as SearchRequest
+    search: JSON.parse(JSON.stringify(props.search)) as SearchRequest
   });
 
   const availableRef = useRef<HTMLSelectElement>(null);
@@ -64,13 +64,13 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Moves the "available" selection into the "selected" list.
    */
   function onAddField() {
-    const currentField = state.definition.fields ?? [];
+    const currentField = state.search.fields ?? [];
     const key = availableRef.current?.value;
     if (key) {
       const newFields = [...currentField, key];
       setState({
-        definition: {
-          ...state.definition,
+        search: {
+          ...state.search,
           fields: newFields
         }
       });
@@ -82,14 +82,14 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Moves the "selected" selection into the "available" list.
    */
   function onRemoveField() {
-    const currentField = state.definition.fields ?? [];
+    const currentField = state.search.fields ?? [];
     const key = selectedRef.current?.value;
     if (key) {
       const newFields = [...currentField];
       newFields.splice(newFields.indexOf(key), 1);
       setState({
-        definition: {
-          ...state.definition,
+        search: {
+          ...state.search,
           fields: newFields
         }
       });
@@ -101,7 +101,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Moves the selection up one position in the list.
    */
   function onMoveUp() {
-    const currentField = state.definition.fields ?? [];
+    const currentField = state.search.fields ?? [];
     const field = selectedRef.current?.value;
     if (field) {
       const newFields = [...currentField];
@@ -109,8 +109,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
       swapFields(newFields, index, index - 1);
 
       setState({
-        definition: {
-          ...state.definition,
+        search: {
+          ...state.search,
           fields: newFields
         }
       });
@@ -122,7 +122,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Moves the selection down one position in the list.
    */
   function onMoveDown() {
-    const currentField = state.definition.fields ?? [];
+    const currentField = state.search.fields ?? [];
     const field = selectedRef.current?.value;
     if (field) {
       const newFields = [...currentField];
@@ -130,8 +130,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
       swapFields(newFields, index, index + 1);
 
       setState({
-        definition: {
-          ...state.definition,
+        search: {
+          ...state.search,
           fields: newFields
         }
       });
@@ -154,16 +154,16 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
     return null;
   }
 
-  const resourceType = props.definition.resourceType;
+  const resourceType = props.search.resourceType;
   const typeDef = props.schema.types[resourceType];
 
-  const selected = state.definition.fields ?? [];
+  const selected = state.search.fields ?? [];
   const available = Object.keys(typeDef.properties).filter(field => !selected?.includes(field)).sort();
 
   return (
     <Dialog
       visible={props.visible}
-      onOk={() => props.onOk(state.definition)}
+      onOk={() => props.onOk(state.search)}
       onCancel={props.onCancel}>
       <div>
         <table style={{ margin: 'auto' }}>
