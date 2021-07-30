@@ -41,6 +41,9 @@ jobs:
             ${{ runner.os }}-
       - name: Build Project
         run: ./scripts/build.sh
+        env:
+          POSTGRES_HOST: postgres
+          POSTGRES_PORT: 5432
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@master
         env:
