@@ -5,36 +5,52 @@
 }
 
 /*
+ * Toolbar
+ */
+
+.medplum-search-control-toolbar {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  background: var(--medplum-surface);
+  padding: 2px 4px;
+}
+
+.medplum-search-control-toolbar>div {
+  display: flex;
+}
+
+/*
  * Table styles
  */
 
-.medplum-search-control table {
+.medplum-search-control>table {
   width: 100%;
   clear: both;
   border-top: thin solid var(--medplum-gray-300);
   border-collapse: collapse;
 }
 
-.medplum-search-control table tr {
+.medplum-search-control>table tr {
   border-bottom: thin solid var(--medplum-gray-300);
 }
 
-.medplum-search-control table td, .medplum-search-control table th {
+.medplum-search-control>table td, .medplum-search-control>table th {
   padding: 7px 10px;
   cursor: pointer;
 }
 
-.medplum-search-control table td.c {
+.medplum-search-control>table td.c {
   text-align: center;
 }
 
-.medplum-search-control table td.r {
+.medplum-search-control>table td.r {
   text-align: right;
 }
 
 /* Header cells */
 
-.medplum-search-control table thead th {
+.medplum-search-control>table thead th {
   text-align: left;
   background-color: var(--medplum-blue-50);
   white-space: nowrap;
@@ -43,17 +59,17 @@
   position: relative;
 }
 
-.medplum-search-control table thead th.filters {
+.medplum-search-control>table thead th.filters {
   background-color: var(--medplum-gray-100);
   text-align: center;
   color: var(--medplum-gray-800);
 }
 
-.medplum-search-control table thead th.filters i {
+.medplum-search-control>table thead th.filters i {
   color: var(--medplum-gray-600);
 }
 
-.medplum-search-control table thead th img {
+.medplum-search-control>table thead th img {
   position: absolute;
   bottom: 6px;
   right: 6px;
@@ -66,23 +82,23 @@
 
 /* Body cells */
 
-.medplum-search-control table tbody tr {
+.medplum-search-control>table tbody tr {
   background-color: var(--medplum-surface);
 }
 
-.medplum-search-control table tbody tr.high-priority {
+.medplum-search-control>table tbody tr.high-priority {
   background-color: var(--medplum-gray-300);
 }
 
-.medplum-search-control table tbody tr.duplicate {
+.medplum-search-control>table tbody tr.duplicate {
   background-color: var(--medplum-gray-100);
 }
 
-.medplum-search-control table tbody tr:hover {
+.medplum-search-control>table tbody tr:hover {
   background-color: var(--medplum-yellow-100);
 }
 
-.medplum-search-control table tbody td {
+.medplum-search-control>table tbody td {
   color: var(--medplum-gray-800);
   border-right: thin solid var(--medplum-gray-100);
 }
@@ -124,7 +140,7 @@ a.paginate_button_disabled:hover {
   background: transparent;
 }
 
-.medplum-search-control table thead th:hover {
+.medplum-search-control>table thead th:hover {
   background-color: var(--medplum-blue-200);
 }
 
