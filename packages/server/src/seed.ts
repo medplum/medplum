@@ -19,9 +19,9 @@ export async function seedDatabase(): Promise<void> {
   await createOrganization();
   await createUser();
   await createClientApplication();
-  await createStructureDefinitions();
-  await createSearchParameters();
   await createValueSetElements();
+  await createSearchParameters();
+  await createStructureDefinitions();
 }
 
 /**
@@ -189,26 +189,32 @@ async function createClientApplication(): Promise<void> {
 }
 
 /**
- * Creates all StructureDefinition resources.
+ * Creates test ValueSetElement rows.
  */
-async function createStructureDefinitions(): Promise<void> {
-  const structureDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
-  for (const entry of (structureDefinitions.entry as BundleEntry[])) {
-    const resource = entry.resource as Resource;
+async function createValueSetElements(): Promise<void> {
+  const knex = getKnex();
 
-    if (resource.resourceType === 'StructureDefinition' && resource.name) {
-      logger.debug('StructureDefinition: ' + resource.name);
-      const [outcome, result] = await repo.createResource<StructureDefinition>({
-        ...resource,
-        text: undefined
-      });
+  const countQuery = await knex('ValueSetElement').count('id').first().then(executeQuery);
+  if (countQuery && countQuery.count > 0) {
+    return;
+  }
 
-      if (!isOk(outcome)) {
-        throw new OperationOutcomeError(outcome);
-      }
+  const system = 'https://snomed.info/sct';
 
-      logger.debug('Created: ' + (result as StructureDefinition).id);
-    }
+  const values = [
+    { id: '316791000119102', name: 'Pain in left knee' },
+    { id: '316931000119104', name: 'Pain in right knee' },
+    { id: '287045000', name: 'Pain in left arm' },
+    { id: '287046004', name: 'Pain in right arm' }
+  ];
+
+  for (const value of values) {
+    await knex('ValueSetElement').insert({
+      id: randomUUID(),
+      system,
+      code: value.id,
+      display: value.name
+    }).then(executeQuery);
   }
 }
 
@@ -236,31 +242,25 @@ async function createSearchParameters(): Promise<void> {
 }
 
 /**
- * Creates test ValueSetElement rows.
+ * Creates all StructureDefinition resources.
  */
-async function createValueSetElements(): Promise<void> {
-  const knex = getKnex();
+async function createStructureDefinitions(): Promise<void> {
+  const structureDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
+  for (const entry of (structureDefinitions.entry as BundleEntry[])) {
+    const resource = entry.resource as Resource;
 
-  const countQuery = await knex('ValueSetElement').count('id').first().then(executeQuery);
-  if (countQuery && countQuery.count > 0) {
-    return;
-  }
+    if (resource.resourceType === 'StructureDefinition' && resource.name) {
+      logger.debug('StructureDefinition: ' + resource.name);
+      const [outcome, result] = await repo.createResource<StructureDefinition>({
+        ...resource,
+        text: undefined
+      });
 
-  const system = 'https://snomed.info/sct';
+      if (!isOk(outcome)) {
+        throw new OperationOutcomeError(outcome);
+      }
 
-  const values = [
-    { id: '316791000119102', name: 'Pain in left knee' },
-    { id: '316931000119104', name: 'Pain in right knee' },
-    { id: '287045000', name: 'Pain in left arm' },
-    { id: '287046004', name: 'Pain in right arm' }
-  ];
-
-  for (const value of values) {
-    await knex('ValueSetElement').insert({
-      id: randomUUID(),
-      system,
-      code: value.id,
-      display: value.name
-    }).then(executeQuery);
+      logger.debug('Created: ' + (result as StructureDefinition).id);
+    }
   }
 }

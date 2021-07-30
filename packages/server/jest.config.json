@@ -1,7 +1,7 @@
 {
   "testEnvironment": "node",
   "testRunner": "jasmine2",
-  "testTimeout": 30000,
+  "testTimeout": 60000,
   "transform": {
     "^.+\\.(js|ts)$": "ts-jest"
   },
