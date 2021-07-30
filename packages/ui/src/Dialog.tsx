@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { Button } from './Button';
 import './Dialog.css';
 
 export const DialogEventType = {
@@ -103,8 +104,8 @@ export function Dialog(props: DialogProps) {
           {props.children}
         </div>
         <div className="modal-dialog-buttons">
-          <button onClick={props.onOk}>OK</button>
-          <button onClick={props.onCancel}>Cancel</button>
+          <Button testid="dialog-ok" onClick={props.onOk}>OK</Button>
+          <Button testid="dialog-cancel" onClick={props.onCancel}>Cancel</Button>
         </div>
       </div>
     </>

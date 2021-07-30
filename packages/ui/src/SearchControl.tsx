@@ -1,10 +1,12 @@
 import { Bundle, IndexedStructureDefinition, Resource, SearchRequest } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button } from './Button';
 import { Loading } from './Loading';
-import { useMedplum } from './MedplumProvider';
-import './SearchControl.css';
+import { useMedplum, useMedplumRouter } from './MedplumProvider';
+import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchPopupMenu } from './SearchPopupMenu';
-import { buildFieldNameString, getFilterValueString, getValue, renderValue } from './SearchUtils';
+import { buildFieldNameString, getFilterValueString, getValue, movePage, renderValue } from './SearchUtils';
+import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -50,6 +52,8 @@ interface SearchControlState {
   popupX: number;
   popupY: number;
   popupField: string;
+  fieldEditorVisible: boolean;
+  filterEditorVisible: boolean;
 }
 
 /**
@@ -59,6 +63,7 @@ interface SearchControlState {
  */
 export function SearchControl(props: SearchControlProps) {
   const medplum = useMedplum();
+  const router = useMedplumRouter();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
 
   const [state, setState] = useState<SearchControlState>({
@@ -66,7 +71,9 @@ export function SearchControl(props: SearchControlProps) {
     popupVisible: false,
     popupX: 0,
     popupY: 0,
-    popupField: ''
+    popupField: '',
+    fieldEditorVisible: false,
+    filterEditorVisible: false
   });
 
   const stateRef = useRef<SearchControlState>(state);
@@ -166,6 +173,16 @@ export function SearchControl(props: SearchControlProps) {
   }
 
   /**
+   * Emits a change event to the optional change listener.
+   * @param newSearch The new search definition.
+   */
+  function emitSearchChange(newSearch: SearchRequest): void {
+    if (props.onChange) {
+      props.onChange(new SearchChangeEvent(newSearch));
+    }
+  }
+
+  /**
    * Handles a click on a order row.
    *
    * @param {MouseEvent} e The click event.
@@ -200,10 +217,12 @@ export function SearchControl(props: SearchControlProps) {
   }
 
   const checkboxColumn = props.checkboxesEnabled;
-  const fields = props.search.fields || ['id', 'meta.lastUpdated', 'name'];
-  const resourceType = props.search.resourceType;
-  const entries = state.searchResponse?.entry || [];
-  const resources = entries.map(e => e.resource);
+  const search = props.search;
+  const fields = search.fields || ['id', 'meta.lastUpdated', 'name'];
+  const resourceType = search.resourceType;
+  const lastResult = state.searchResponse;
+  const entries = lastResult?.entry;
+  const resources = entries?.map(e => e.resource);
 
   return (
     <div
@@ -211,6 +230,45 @@ export function SearchControl(props: SearchControlProps) {
       onContextMenu={e => killEvent(e)}
       data-testid="search-control"
     >
+      <div className="medplum-search-control-toolbar">
+        <div style={{ display: 'flex' }}>
+          <Button
+            testid="fields-button"
+            size="small"
+            onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
+          >Fields</Button>
+          <Button
+            testid="filters-button"
+            size="small">
+            Filters</Button>
+          <Button
+            testid="export-button"
+            size="small"
+          >Export</Button>
+          <Button
+            testid="new-button"
+            size="small"
+            onClick={() => router.push(`/${resourceType}/new`)}
+          >New...</Button>
+        </div>
+        {lastResult && (
+          <div style={{ display: 'flex' }}>
+            <span style={{ lineHeight: '28px', padding: '2px 6px', fontSize: '12px' }}>
+              {getStart(search)}-{getEnd(search)} of {lastResult.total}
+            </span>
+            <Button
+              testid="prev-page-button"
+              size="small"
+              onClick={() => emitSearchChange(movePage(search, -1))}
+            >&lt;&lt;</Button>
+            <Button
+              testid="next-page-button"
+              size="small"
+              onClick={() => emitSearchChange(movePage(search, 1))}
+            >&gt;&gt;</Button>
+          </div>
+        )}
+      </div>
       <table>
         <thead>
           <tr>
@@ -242,10 +300,11 @@ export function SearchControl(props: SearchControlProps) {
           </tr>
         </thead>
         <tbody>
-          {resources.map(resource => (resource &&
+          {resources?.map(resource => (resource &&
             <tr
               key={resource.id}
               data-id={resource.id}
+              data-testid="search-control-row"
               onClick={e => handleRowClick(e)}>
               {checkboxColumn &&
                 <td className="medplum-search-icon-cell">
@@ -265,8 +324,9 @@ export function SearchControl(props: SearchControlProps) {
           ))}
         </tbody>
       </table>
-      {resources.length === 0 &&
-        <div className="medplum-empty-search">No results</div>}
+      {resources?.length === 0 && (
+        <div data-testid="empty-search" className="medplum-empty-search">No results</div>
+      )}
       <SearchPopupMenu
         schema={schema}
         search={props.search}
@@ -274,10 +334,8 @@ export function SearchControl(props: SearchControlProps) {
         x={state.popupX}
         y={state.popupY}
         field={state.popupField}
-        onChange={definition => {
-          if (props.onChange) {
-            props.onChange(new SearchChangeEvent(definition));
-          }
+        onChange={result => {
+          emitSearchChange(result);
           setState({
             ...stateRef.current,
             popupVisible: false,
@@ -292,6 +350,24 @@ export function SearchControl(props: SearchControlProps) {
           });
         }}
       />
+      <SearchFieldEditor
+        schema={schema}
+        search={props.search}
+        visible={stateRef.current.fieldEditorVisible}
+        onOk={result => {
+          emitSearchChange(result);
+          setState({
+            ...stateRef.current,
+            fieldEditorVisible: false
+          });
+        }}
+        onCancel={() => {
+          setState({
+            ...stateRef.current,
+            fieldEditorVisible: false
+          });
+        }}
+      />
     </div>
   );
 }
@@ -299,4 +375,12 @@ export function SearchControl(props: SearchControlProps) {
 function killEvent(e: React.SyntheticEvent) {
   e.preventDefault();
   e.stopPropagation();
+}
+
+function getStart(search: SearchRequest): number {
+  return (search.page ?? 0) * (search.count ?? 10) + 1;
+}
+
+function getEnd(search: SearchRequest): number {
+  return ((search.page ?? 0) + 1) * (search.count ?? 10);
 }

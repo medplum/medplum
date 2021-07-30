@@ -28,9 +28,8 @@ export const EncounterTimeline = (props: EncounterTimelineProps) => {
 
   /**
    * Loads existing timeline resources for the encounter.
-   * @param resource The encounter resource.
    */
-  function loadItems(resource: Encounter | undefined): void {
+  function loadItems(): void {
     if (!resource) {
       setItems([]);
       return;
@@ -128,12 +127,12 @@ export const EncounterTimeline = (props: EncounterTimelineProps) => {
     if (props.reference) {
       setResource(undefined);
       setItems([]);
-      medplum.readReference(props.reference).then(resource => setResource(resource as Encounter));
+      medplum.readReference(props.reference).then(r => setResource(r as Encounter));
     }
   }, [props.reference]);
 
   useEffect(() => {
-    loadItems(resource);
+    loadItems();
   }, [resource]);
 
   if (!resource) {
