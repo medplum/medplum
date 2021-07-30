@@ -11,8 +11,29 @@ const patientStructureBundle: Bundle = {
   entry: [{
     resource: {
       resourceType: 'StructureDefinition',
-      id: '123',
-      name: 'Patient'
+      name: 'Patient',
+      snapshot: {
+        element: [
+          {
+            path: 'Patient.id',
+            type: [{
+              code: 'code'
+            }]
+          }
+        ]
+      }
+    }
+  }]
+};
+
+const patientSearchParameter: Bundle = {
+  resourceType: 'Bundle',
+  entry: [{
+    resource: {
+      resourceType: 'SearchParameter',
+      id: 'Patient-name',
+      code: 'name',
+      name: 'name'
     }
   }]
 };
@@ -45,6 +66,8 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
     result = patientStructureBundle;
+  } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?name=Patient')) {
+    result = patientSearchParameter;
   } else if (method === 'GET' && url.includes('/fhir/R4/Patient?')) {
     result = patientSearchBundle;
   }

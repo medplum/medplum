@@ -4,7 +4,7 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, OperationOutcome, Reference, Resource, StructureDefinition, Subscription, User } from './fhir';
+import { Binary, Bundle, OperationOutcome, Reference, Resource, SearchParameter, StructureDefinition, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { formatSearchQuery, SearchRequest } from './search';
 import { LocalStorage, MemoryStorage, Storage } from './storage';
@@ -315,6 +315,7 @@ export class MedplumClient extends EventTarget {
     if (cached) {
       return Promise.resolve(cached);
     }
+    let typeDef: IndexedStructureDefinition;
     return this.search('StructureDefinition?name=' + encodeURIComponent(resourceType))
       .then((result: Bundle) => {
         if (!result.entry?.length) {
@@ -324,7 +325,11 @@ export class MedplumClient extends EventTarget {
         if (!resource) {
           throw new Error('StructureDefinition not found');
         }
-        const typeDef = indexStructureDefinition(resource as StructureDefinition);
+        typeDef = indexStructureDefinition(resource as StructureDefinition);
+      })
+      .then(() => this.search('SearchParameter?base=' + encodeURIComponent(resourceType)))
+      .then((result: Bundle) => {
+        typeDef.types[resourceType].searchParams = result.entry?.map(e => e.resource as SearchParameter);
         this.schema.set(resourceType, typeDef);
         return typeDef;
       });
