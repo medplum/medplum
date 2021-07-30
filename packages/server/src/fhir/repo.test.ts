@@ -1,4 +1,4 @@
-import { Account, Communication, createReference, Encounter, getReferenceString, Observation, Operator, Patient, Reference } from '@medplum/core';
+import { Account, Communication, createReference, Encounter, getReferenceString, Observation, Operator, Patient, Reference, SearchParameter } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { loadConfig } from '../config';
 import { ADMIN_USER_ID, MEDPLUM_PROJECT_ID } from '../constants';
@@ -333,4 +333,20 @@ test('Search for Communications by Encounter', async (done) => {
   expect(searchResult?.entry?.length).toEqual(1);
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(comm1?.id);
   done();
+});
+
+test('Search for token in array', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'SearchParameter',
+    filters: [{
+      code: 'base',
+      operator: Operator.EQUALS,
+      value: 'Patient'
+    }],
+    count: 100
+  });
+
+  expect(outcome.id).toEqual('ok');
+  expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'name')).not.toBeUndefined();
+  expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'email')).not.toBeUndefined();
 });

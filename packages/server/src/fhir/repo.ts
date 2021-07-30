@@ -298,32 +298,53 @@ export class Repository {
     return rows[0].count as number;
   }
 
+  /**
+   * Adds all search filters as "WHERE" clauses to the query builder.
+   * @param builder The knex query builder.
+   * @param searchRequest The search request.
+   */
   private addSearchFilters(builder: Knex.QueryBuilder, searchRequest: SearchRequest): void {
-    if (!searchRequest.filters) {
+    searchRequest.filters?.forEach(filter => this.addSearchFilter(builder, searchRequest, filter));
+  }
+
+  /**
+   * Adds a single search filter as "WHERE" clause to the query builder.
+   * @param builder The knex query builder.
+   * @param searchRequest The search request.
+   * @param filter The search filter.
+   */
+  private addSearchFilter(builder: Knex.QueryBuilder, searchRequest: SearchRequest, filter: Filter): void {
+    const resourceType = searchRequest.resourceType;
+    const param = getSearchParameter(resourceType, filter.code);
+    if (!param || !param.code) {
       return;
     }
 
-    const resourceType = searchRequest.resourceType;
-    for (const filter of searchRequest.filters) {
-      const param = getSearchParameter(resourceType, filter.code);
-      if (param && param.code) {
-        const lookupTable = this.getLookupTable(param);
-        const columnName = convertCodeToColumnName(param.code);
-        if (lookupTable) {
-          lookupTable.addSearchConditions(resourceType, builder, filter);
-        } else if (param.type === 'string') {
-          this.addStringSearchFilter(builder, columnName, filter.value);
-        } else if (param.type === 'reference') {
-          this.addReferenceSearchFilter(builder, param, filter);
-        } else {
-          builder.where(columnName, filter.value);
-        }
-      }
+    const lookupTable = this.getLookupTable(param);
+    const columnName = convertCodeToColumnName(param.code);
+    if (lookupTable) {
+      lookupTable.addSearchConditions(resourceType, builder, filter);
+    } else if (param.type === 'string') {
+      this.addStringSearchFilter(builder, columnName, filter.value);
+    } else if (param.type === 'token') {
+      this.addTokenSearchFilter(builder, resourceType, columnName, filter.value);
+    } else if (param.type === 'reference') {
+      this.addReferenceSearchFilter(builder, param, filter);
+    } else {
+      builder.where(columnName, filter.value);
     }
   }
 
   private addStringSearchFilter(builder: Knex.QueryBuilder, columnName: string, query: string): void {
     builder.where(columnName, 'LIKE', '%' + query + '%');
+  }
+
+  private addTokenSearchFilter(builder: Knex.QueryBuilder, resourceType: string, columnName: string, query: string): void {
+    if (this.isArrayParam(resourceType, columnName)) {
+      builder.whereRaw(`?=ANY("${columnName}")`, query);
+    } else {
+      builder.where(columnName, query);
+    }
   }
 
   private addReferenceSearchFilter(builder: Knex.QueryBuilder, param: SearchParameter, filter: Filter): void {
@@ -398,28 +419,15 @@ export class Repository {
       columns[columnName] = value.map(v => this.buildColumnValue(searchParam, v));
     } else {
       columns[columnName] = this.buildColumnValue(searchParam, value);
-      // if (searchParam.type === 'date') {
-      //   columns[columnName] = new Date(value);
-      // } else if (searchParam.type === 'boolean') {
-      //   columns[columnName] = (value === 'true');
-      // } else if (searchParam.type === 'reference') {
-      //   this.buildReferenceColumns(columns, searchParam, value);
-      // } else if (typeof value === 'string') {
-      //   if (value.length > 128) {
-      //     columns[columnName] = value.substr(0, 128);
-      //   } else {
-      //     columns[columnName] = value;
-      //   }
-      // } else {
-      //   let json = JSON.stringify(value);
-      //   if (json.length > 128) {
-      //     json = json.substr(0, 128);
-      //   }
-      //   columns[columnName] = json;
-      // }
     }
   }
 
+  /**
+   * Determines if the property is an array value.
+   * @param resourceType The FHIR resource type.
+   * @param propertyName The property name.
+   * @returns True if the property is an array.
+   */
   private isArrayParam(resourceType: string, propertyName: string): boolean {
     const typeDef = definitions[resourceType];
     if (!typeDef?.properties) {
