@@ -8,7 +8,7 @@ import { executeQuery, getKnex } from '../database';
 import { logger } from '../logger';
 import { HumanNameTable, IdentifierTable, LookupTable } from './lookuptable';
 import { allOk, badRequest, created, isNotFound, isOk, notFound, notModified } from './outcomes';
-import { validateResource, validateResourceType } from './schema';
+import { definitions, validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
 
 /**
@@ -393,43 +393,80 @@ export class Repository {
 
     const columnName = convertCodeToColumnName(searchParam.code as string);
     const value = (resource as any)[name];
-    if (searchParam.type === 'date') {
-      columns[columnName] = new Date(value);
-    } else if (searchParam.type === 'boolean') {
-      columns[columnName] = (value === 'true');
-    } else if (searchParam.type === 'reference') {
-      this.buildReferenceColumns(columns, searchParam, value);
-    } else if (typeof value === 'string') {
-      if (value.length > 128) {
-        columns[columnName] = value.substr(0, 128);
-      } else {
-        columns[columnName] = value;
-      }
+
+    if (Array.isArray(value) && this.isArrayParam(resource.resourceType, columnName)) {
+      columns[columnName] = value.map(v => this.buildColumnValue(searchParam, v));
     } else {
-      let json = JSON.stringify(value);
-      if (json.length > 128) {
-        json = json.substr(0, 128);
-      }
-      columns[columnName] = json;
+      columns[columnName] = this.buildColumnValue(searchParam, value);
+      // if (searchParam.type === 'date') {
+      //   columns[columnName] = new Date(value);
+      // } else if (searchParam.type === 'boolean') {
+      //   columns[columnName] = (value === 'true');
+      // } else if (searchParam.type === 'reference') {
+      //   this.buildReferenceColumns(columns, searchParam, value);
+      // } else if (typeof value === 'string') {
+      //   if (value.length > 128) {
+      //     columns[columnName] = value.substr(0, 128);
+      //   } else {
+      //     columns[columnName] = value;
+      //   }
+      // } else {
+      //   let json = JSON.stringify(value);
+      //   if (json.length > 128) {
+      //     json = json.substr(0, 128);
+      //   }
+      //   columns[columnName] = json;
+      // }
     }
+  }
+
+  private isArrayParam(resourceType: string, propertyName: string): boolean {
+    const typeDef = definitions[resourceType];
+    if (!typeDef?.properties) {
+      return false;
+    }
+
+    const propertyDef = typeDef.properties[propertyName];
+    if (!propertyDef) {
+      return false;
+    }
+
+    return propertyDef.type === 'array';
+  }
+
+  private buildColumnValue(searchParam: SearchParameter, value: any): any {
+    if (searchParam.type === 'date') {
+      return new Date(value);
+    }
+
+    if (searchParam.type === 'boolean') {
+      return (value === 'true');
+    }
+
+    if (searchParam.type === 'reference') {
+      return this.buildReferenceColumns(searchParam, value);
+    }
+
+    let strValue = (typeof value === 'string') ? value : JSON.stringify(value);
+    if (strValue.length > 128) {
+      strValue = strValue.substr(0, 128);
+    }
+    return strValue;
   }
 
   /**
    * Builds the columns to write for a Reference value.
-   * @param columns The output search columns.
    * @param searchParam The search parameter definition.
    * @param value The property value of the reference.
    */
-  private buildReferenceColumns(columns: Record<string, any>, searchParam: SearchParameter, value: any): void {
+  private buildReferenceColumns(searchParam: SearchParameter, value: any): string | undefined {
     const refStr = (value as Reference).reference;
     if (!refStr) {
-      return;
+      return undefined;
     }
 
-    const columnName = convertCodeToColumnName(searchParam.code as string);
-
     // TODO: Consider normalizing reference string when known (searchParam.target.length === 1)
-    columns[columnName] = refStr;
+    return refStr;
   }
 
   private async writeLookupTables(resource: Resource): Promise<void> {

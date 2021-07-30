@@ -17,7 +17,6 @@ export interface MedplumServerConfig {
 }
 
 export interface MedplumDatabaseConfig {
-  // client: 'pg';// | 'sqlite3';
   host?: string;
   port?: number;
   database?: string;

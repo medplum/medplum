@@ -3,7 +3,8 @@ import path from 'path';
 import { MedplumDatabaseConfig } from './config';
 
 export const TEST_CONFIG: MedplumDatabaseConfig = {
-  host: 'localhost',
+  host: process.env['POSTGRES_HOST'] ?? 'localhost',
+  port: process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT']) : 5432,
   database: 'medplum_test',
   username: 'medplum',
   password: 'medplum'
@@ -23,6 +24,7 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
     client: 'pg',
     connection: {
       host: config.host,
+      port: config.port,
       database: config.database,
       user: config.username,
       password: config.password,

@@ -249,11 +249,27 @@ function buildSearchColumns(b: FileBuilder, resourceType: string): void {
         b.append('t.boolean(\'' + columnName + '\');');
       } else if (searchParam.type === 'date') {
         b.append('t.date(\'' + columnName + '\');');
+      } else if (isArrayParam(resourceType, searchParam.code)) {
+        b.append('t.specificType(\'' + columnName + '\', \'varchar(128)[]\');');
       } else {
         b.append('t.string(\'' + columnName + '\', 128);');
       }
     }
   }
+}
+
+function isArrayParam(resourceType: string, propertyName: string): boolean {
+  const typeDef = definitions[resourceType];
+  if (!typeDef) {
+    return false;
+  }
+
+  const propertyDef = typeDef.properties[propertyName];
+  if (!propertyDef) {
+    return false;
+  }
+
+  return propertyDef.type === 'array';
 }
 
 function buildIdentifierTable(b: FileBuilder): void {
