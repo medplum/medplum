@@ -172,9 +172,13 @@ export function SearchControl(props: SearchControlProps) {
     }
   }
 
-  function emitSearchChange(search: SearchRequest): void {
+  /**
+   * Emits a change event to the optional change listener.
+   * @param newSearch The new search definition.
+   */
+  function emitSearchChange(newSearch: SearchRequest): void {
     if (props.onChange) {
-      props.onChange(new SearchChangeEvent(search));
+      props.onChange(new SearchChangeEvent(newSearch));
     }
   }
 
@@ -321,7 +325,7 @@ export function SearchControl(props: SearchControlProps) {
         </tbody>
       </table>
       {resources?.length === 0 && (
-        <div className="medplum-empty-search">No results</div>
+        <div data-testid="empty-search" className="medplum-empty-search">No results</div>
       )}
       <SearchPopupMenu
         schema={schema}

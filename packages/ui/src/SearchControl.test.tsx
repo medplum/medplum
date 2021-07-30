@@ -28,7 +28,7 @@ const patientStructureBundle: Bundle = {
   }]
 };
 
-const patientSearchBundle: Bundle = {
+const aliceSearchBundle: Bundle = {
   resourceType: 'Bundle',
   total: 100,
   entry: [{
@@ -41,6 +41,12 @@ const patientSearchBundle: Bundle = {
       }]
     }
   }]
+};
+
+const emptySearchBundle: Bundle = {
+  resourceType: 'Bundle',
+  total: 0,
+  entry: []
 };
 
 const mockRouter = {
@@ -56,8 +62,10 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
     result = patientStructureBundle;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Patient')) {
-    result = patientSearchBundle;
+  } else if (method === 'GET' && url.endsWith('/fhir/R4/Patient?name=Alice')) {
+    result = aliceSearchBundle;
+  } else if (method === 'GET' && url.endsWith('/fhir/R4/Patient?name=Bob')) {
+    result = emptySearchBundle;
   }
 
   const response: any = {
@@ -95,7 +103,12 @@ const setup = (args: SearchControlProps) => {
 test('SearchControl renders', async (done) => {
   const props = {
     search: {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
     },
     onLoad: jest.fn()
   };
@@ -107,6 +120,31 @@ test('SearchControl renders', async (done) => {
   });
 
   const control = screen.getByTestId('search-control');
+  expect(control).not.toBeUndefined();
+  expect(props.onLoad).toBeCalled();
+  done();
+});
+
+test('SearchControl renders empty results', async (done) => {
+  const props = {
+    search: {
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Bob'
+      }]
+    },
+    onLoad: jest.fn()
+  };
+
+  setup(props)
+
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('empty-search'));
+  });
+
+  const control = screen.getByTestId('empty-search');
   expect(control).not.toBeUndefined();
   expect(props.onLoad).toBeCalled();
   done();
@@ -141,7 +179,12 @@ test('SearchControl renders filters', async (done) => {
 test('SearchControl next page button', async (done) => {
   const props = {
     search: {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
     },
     onChange: jest.fn()
   };
@@ -160,10 +203,40 @@ test('SearchControl next page button', async (done) => {
   done();
 });
 
+test('SearchControl next page button without onChange listener', async (done) => {
+  const props = {
+    search: {
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
+    }
+  };
+
+  setup(props);
+
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('next-page-button'));
+  });
+
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('next-page-button'));
+  });
+
+  done();
+});
+
 test('SearchControl prev page button', async (done) => {
   const props = {
     search: {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
     },
     onChange: jest.fn()
   };
@@ -206,7 +279,12 @@ test('SearchControl new button', async (done) => {
 test('SearchControl click on row', async (done) => {
   const props = {
     search: {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
     },
     onClick: jest.fn()
   };
@@ -233,7 +311,12 @@ test('SearchControl click on row', async (done) => {
 test('SearchControl open field editor', async (done) => {
   const props = {
     search: {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
     },
     onLoad: jest.fn()
   };
@@ -254,10 +337,83 @@ test('SearchControl open field editor', async (done) => {
   done();
 });
 
+test('SearchControl field editor onOk', async (done) => {
+  const props = {
+    search: {
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
+    },
+    onLoad: jest.fn()
+  };
+
+  setup(props)
+
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('search-control'));
+  });
+
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('fields-button'));
+  });
+
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('dialog-ok'));
+  });
+
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('dialog-ok'));
+  });
+
+  done();
+});
+
+test('SearchControl field editor onCancel', async (done) => {
+  const props = {
+    search: {
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
+    },
+    onLoad: jest.fn()
+  };
+
+  setup(props)
+
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('search-control'));
+  });
+
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('fields-button'));
+  });
+
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('dialog-cancel'));
+  });
+
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('dialog-cancel'));
+  });
+
+  done();
+});
+
 test('SearchControl open filter editor', async (done) => {
   const props = {
     search: {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
     },
     onLoad: jest.fn()
   };
