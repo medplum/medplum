@@ -21,6 +21,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432/tcp
     steps:
       - uses: actions/checkout@v2
         with:
@@ -42,8 +44,8 @@ jobs:
       - name: Build Project
         run: ./scripts/build.sh
         env:
-          POSTGRES_HOST: postgres
-          POSTGRES_PORT: 5432
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@master
         env:
