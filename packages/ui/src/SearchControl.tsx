@@ -4,6 +4,7 @@ import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum, useMedplumRouter } from './MedplumProvider';
 import { SearchFieldEditor } from './SearchFieldEditor';
+import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import { buildFieldNameString, getFilterValueString, getValue, movePage, renderValue } from './SearchUtils';
 import './SearchControl.css';
@@ -239,8 +240,9 @@ export function SearchControl(props: SearchControlProps) {
           >Fields</Button>
           <Button
             testid="filters-button"
-            size="small">
-            Filters</Button>
+            size="small"
+            onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
+          >Filters</Button>
           <Button
             testid="export-button"
             size="small"
@@ -365,6 +367,24 @@ export function SearchControl(props: SearchControlProps) {
           setState({
             ...stateRef.current,
             fieldEditorVisible: false
+          });
+        }}
+      />
+      <SearchFilterEditor
+        schema={schema}
+        search={props.search}
+        visible={stateRef.current.filterEditorVisible}
+        onOk={result => {
+          emitSearchChange(result);
+          setState({
+            ...stateRef.current,
+            filterEditorVisible: false
+          });
+        }}
+        onCancel={() => {
+          setState({
+            ...stateRef.current,
+            filterEditorVisible: false
           });
         }}
       />

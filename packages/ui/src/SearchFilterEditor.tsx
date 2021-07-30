@@ -7,17 +7,17 @@ import { addFilter, buildFieldNameString, deleteFilter, getOpString } from './Se
 interface FilterRowProps {
   schema: IndexedStructureDefinition;
   resourceType: string;
-  definition: Filter;
+  filter: Filter;
   onAdd: (filter: Filter) => void;
   onDelete: (filter: Filter) => void;
 }
 
 function FilterRow(props: FilterRowProps) {
   const [state, setState] = useState({
-    editing: props.definition.code === '',
-    field: props.definition.code,
-    operator: props.definition.operator,
-    value: props.definition.value
+    editing: props.filter.code === '',
+    field: props.filter.code,
+    operator: props.filter.operator,
+    value: props.filter.value
   });
 
   const stateRef = useRef(state);
@@ -207,7 +207,7 @@ function FilterRow(props: FilterRowProps) {
 
   if (!state.editing) {
     const resourceType = props.resourceType;
-    const filter = props.definition;
+    const filter = props.filter;
     return (
       <tr>
         <td>{buildFieldNameString(props.schema, resourceType, filter.code)}</td>
@@ -218,9 +218,9 @@ function FilterRow(props: FilterRowProps) {
             className="btn btn-small"
             onClick={() => setState({
               editing: true,
-              field: props.definition.code,
-              operator: props.definition.operator,
-              value: props.definition.value
+              field: props.filter.code,
+              operator: props.filter.operator,
+              value: props.filter.value
             })}
           >Edit</button>
           <button
@@ -255,38 +255,38 @@ function FilterRow(props: FilterRowProps) {
 export interface SearchFilterEditorProps {
   schema: IndexedStructureDefinition;
   visible: boolean;
-  definition: SearchRequest;
-  onOk: (definition: SearchRequest) => void;
+  search: SearchRequest;
+  onOk: (search: SearchRequest) => void;
   onCancel: () => void;
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps) {
   const [state, setState] = useState({
-    definition: JSON.parse(JSON.stringify(props.definition)) as SearchRequest
+    search: JSON.parse(JSON.stringify(props.search)) as SearchRequest
   });
 
   function onAddFilter(filter: Filter) {
-    setState({ definition: addFilter(state.definition, filter.code, filter.operator, filter.value) });
+    setState({ search: addFilter(state.search, filter.code, filter.operator, filter.value) });
   }
 
   function onDeleteFilter(filter: Filter) {
-    if (!state.definition.filters) {
+    if (!state.search.filters) {
       return;
     }
-    const index = state.definition.filters.findIndex(f => Object.is(f, filter));
-    setState({ definition: deleteFilter(state.definition, index) });
+    const index = state.search.filters.findIndex(f => Object.is(f, filter));
+    setState({ search: deleteFilter(state.search, index) });
   }
 
   if (!props.visible) {
     return null;
   }
 
-  const filters = state.definition.filters || [];
+  const filters = state.search.filters || [];
 
   return (
     <Dialog
       visible={props.visible}
-      onOk={() => props.onOk(state.definition)}
+      onOk={() => props.onOk(state.search)}
       onCancel={props.onCancel}>
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">
@@ -302,17 +302,17 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
             {filters.map((filter: Filter) => (
               <FilterRow
                 schema={props.schema}
-                resourceType={props.definition.resourceType}
+                resourceType={props.search.resourceType}
                 key={JSON.stringify(filter)}
-                definition={filter}
+                filter={filter}
                 onAdd={f => onAddFilter(f)}
                 onDelete={f => onDeleteFilter(f)}
               />
             ))}
             <FilterRow
               schema={props.schema}
-              resourceType={props.definition.resourceType}
-              definition={{ code: '', operator: Operator.EQUALS, value: '' }}
+              resourceType={props.search.resourceType}
+              filter={{ code: '', operator: Operator.EQUALS, value: '' }}
               onAdd={f => onAddFilter(f)}
               onDelete={f => onDeleteFilter(f)}
             />
