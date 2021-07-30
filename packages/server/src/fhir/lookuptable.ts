@@ -72,7 +72,9 @@ export class IdentifierTable implements LookupTable {
     if (!this.compareIdentifiers(identifiers, existing)) {
       const knex = getKnex();
 
-      await knex('Identifier').where('resourceId', resourceId).delete().then(executeQuery);
+      if (existing.length > 0) {
+        await knex('Identifier').where('resourceId', resourceId).delete().then(executeQuery);
+      }
 
       for (const identifier of identifiers) {
         await knex('Identifier').insert({
@@ -186,7 +188,9 @@ export class HumanNameTable implements LookupTable {
     if (!this.compareNames(names, existing)) {
       const knex = getKnex();
 
-      await knex('HumanName').where('resourceId', resourceId).delete().then(executeQuery);
+      if (existing.length > 0) {
+        await knex('HumanName').where('resourceId', resourceId).delete().then(executeQuery);
+      }
 
       for (const name of names) {
         await knex('HumanName').insert({
