@@ -30,7 +30,8 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
       password: config.password,
       timezone: 'UTC'
     },
-    useNullAsDefault: true
+    useNullAsDefault: true,
+    debug: true
   });
 
   await knex.migrate.latest({ directory: path.resolve(__dirname, 'migrations') });
