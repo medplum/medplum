@@ -6,8 +6,19 @@ import { closeDatabase, initDatabase, TEST_CONFIG } from '../database';
 import { getPatientId, repo, Repository } from './repo';
 
 beforeAll(async () => {
+  const startTime = Date.now();
+  console.log('repo.test.ts beforeAll startTime', startTime);
+  try {
   await loadConfig('file:medplum.config.json');
   await initDatabase(TEST_CONFIG);
+  } catch (error) {
+    console.log('repo.test.ts beforeAll error', error);
+  } finally {
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    console.log('repo.test.ts beforeAll endTime', endTime);
+    console.log('repo.test.ts beforeAll duration', duration);
+  }
 });
 
 afterAll(async () => {
