@@ -3,8 +3,8 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
-import { loadConfig } from '../config';
-import { closeDatabase, initDatabase, TEST_CONFIG } from '../database';
+import { loadTestConfig } from '../config';
+import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { isOk } from './outcomes';
@@ -17,8 +17,8 @@ let patientId: string;
 let patientVersionId: string;
 
 beforeAll(async () => {
-  const config = await loadConfig('file:medplum.config.json');
-  await initDatabase(TEST_CONFIG);
+  const config = await loadTestConfig();
+  await initDatabase(config.database);
   await initApp(app);
   await initKeys(config);
   accessToken = await initTestAuth();

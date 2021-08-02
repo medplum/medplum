@@ -1,6 +1,6 @@
 import { ClientApplication } from '@medplum/core';
-import { loadConfig } from '../config';
-import { closeDatabase, initDatabase, TEST_CONFIG } from '../database';
+import { loadTestConfig } from '../config';
+import { closeDatabase, initDatabase } from '../database';
 import { isOk, repo } from '../fhir';
 import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
@@ -9,8 +9,8 @@ import { tryLogin } from './utils';
 let client: ClientApplication;
 
 beforeAll(async () => {
-  const config = await loadConfig('file:medplum.config.json');
-  await initDatabase(TEST_CONFIG);
+  const config = await loadTestConfig();
+  await initDatabase(config.database);
   await seedDatabase();
   await initKeys(config);
 

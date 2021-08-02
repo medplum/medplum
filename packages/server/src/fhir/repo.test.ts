@@ -1,13 +1,13 @@
 import { Account, Communication, createReference, Encounter, getReferenceString, Observation, Operator, Patient, Reference, SearchParameter } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { loadConfig } from '../config';
+import { loadTestConfig } from '../config';
 import { ADMIN_USER_ID, MEDPLUM_PROJECT_ID } from '../constants';
-import { closeDatabase, initDatabase, TEST_CONFIG } from '../database';
+import { closeDatabase, initDatabase } from '../database';
 import { getPatientId, repo, Repository } from './repo';
 
 beforeAll(async () => {
-  await loadConfig('file:medplum.config.json');
-  await initDatabase(TEST_CONFIG);
+  const config = await loadTestConfig();
+  await initDatabase(config.database);
 });
 
 afterAll(async () => {

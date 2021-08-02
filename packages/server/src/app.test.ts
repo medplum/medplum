@@ -1,14 +1,14 @@
 import express from 'express';
 import request from 'supertest';
 import { initApp } from './app';
-import { loadConfig } from './config';
-import { closeDatabase, initDatabase, TEST_CONFIG } from './database';
+import { loadTestConfig } from './config';
+import { closeDatabase, initDatabase } from './database';
 
 const app = express();
 
 beforeAll(async () => {
-  await loadConfig('file:medplum.config.json');
-  await initDatabase(TEST_CONFIG);
+  const config = await loadTestConfig();
+  await initDatabase(config.database);
   await initApp(app);
 });
 

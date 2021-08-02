@@ -77,6 +77,23 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
 }
 
 /**
+ * Loads the configuration setting for unit and integration tests.
+ * @returns The configuration for tests.
+ */
+export async function loadTestConfig(): Promise<MedplumServerConfig> {
+  const config = await loadConfig('file:medplum.config.json');
+  return {
+    ...config,
+    database: {
+      ...config.database,
+      host: process.env['POSTGRES_HOST'] ?? 'localhost',
+      port: process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT']) : 5432,
+      database: 'medplum_test'
+    }
+  };
+}
+
+/**
  * Loads configuration settings from a JSON file.
  * Path relative to the current working directory at runtime.
  * @param path The config file path.

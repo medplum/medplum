@@ -2,14 +2,6 @@ import * as Knex from 'knex';
 import path from 'path';
 import { MedplumDatabaseConfig } from './config';
 
-export const TEST_CONFIG: MedplumDatabaseConfig = {
-  host: process.env['POSTGRES_HOST'] ?? 'localhost',
-  port: process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT']) : 5432,
-  database: 'medplum_test',
-  username: 'medplum',
-  password: 'medplum'
-};
-
 let knex: Knex.Knex | undefined;
 
 export function getKnex(): Knex.Knex {
