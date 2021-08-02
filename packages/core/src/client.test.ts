@@ -74,7 +74,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       }]
     };
 
-  } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?base=Patient')) {
+  } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
     result = {
       resourceType: 'Bundle',
       entry: [{
@@ -82,7 +82,8 @@ function mockFetch(url: string, options: any): Promise<any> {
           resourceType: 'SearchParameter',
           id: 'Patient-name',
           code: 'name',
-          name: 'name'
+          name: 'name',
+          expression: 'Patient.name'
         }
       }]
     };

@@ -6,7 +6,7 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Binary, Bundle, OperationOutcome, Reference, Resource, SearchParameter, StructureDefinition, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
-import { formatSearchQuery, SearchRequest } from './search';
+import { formatSearchQuery, Operator, SearchRequest } from './search';
 import { LocalStorage, MemoryStorage, Storage } from './storage';
 import { IndexedStructureDefinition, indexStructureDefinition } from './types';
 import { arrayBufferToBase64, ProfileResource } from './utils';
@@ -327,9 +327,22 @@ export class MedplumClient extends EventTarget {
         }
         typeDef = indexStructureDefinition(resource as StructureDefinition);
       })
-      .then(() => this.search('SearchParameter?base=' + encodeURIComponent(resourceType)))
+      .then(() => this.search({
+        resourceType: 'SearchParameter',
+        count: 100,
+        filters: [{
+          code: 'base',
+          operator: Operator.EQUALS,
+          value: resourceType
+        }]
+      }))
       .then((result: Bundle) => {
-        typeDef.types[resourceType].searchParams = result.entry?.map(e => e.resource as SearchParameter);
+        const entries = result.entry;
+        if (entries) {
+          typeDef.types[resourceType].searchParams = entries
+            .map(e => e.resource as SearchParameter)
+            .sort((a, b) => a.name?.localeCompare(b.name as string) ?? 0);
+        }
         this.schema.set(resourceType, typeDef);
         return typeDef;
       });

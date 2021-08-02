@@ -1,74 +1,54 @@
-import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
-import React, { useRef, useState } from 'react';
+import { Filter, getReferenceString, IndexedStructureDefinition, Operator, SearchParameter, SearchRequest } from '@medplum/core';
+import React, { useState } from 'react';
 import { Autocomplete } from './Autocomplete';
 import { Dialog } from './Dialog';
-import { addFilter, buildFieldNameString, deleteFilter, getOpString } from './SearchUtils';
+import { addFilter, deleteFilter } from './SearchUtils';
 
 interface FilterRowProps {
   schema: IndexedStructureDefinition;
   resourceType: string;
   filter: Filter;
+  editing: boolean;
   onAdd: (filter: Filter) => void;
   onDelete: (filter: Filter) => void;
 }
 
 function FilterRow(props: FilterRowProps) {
-  const [state, setState] = useState({
-    editing: props.filter.code === '',
-    field: props.filter.code,
-    operator: props.filter.operator,
-    value: props.filter.value
-  });
-
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const [editing, setEditing] = useState<boolean>(props.editing);
+  const [searchParam, setSearchParam] = useState<SearchParameter>();
+  const [operator, setOperator] = useState<Operator>(Operator.EQUALS);
+  const [value, setValue] = useState<string>('');
 
   function renderField() {
     const resourceType = props.resourceType;
-    const typeSchema = props.schema.types[resourceType];
+    const searchParams = props.schema.types[resourceType].searchParams as SearchParameter[];
     return (
-      <select defaultValue={state.field} onChange={e => setState({ ...stateRef.current, field: e.target.value })}>
+      <select defaultValue={searchParam?.code} onChange={e => setSearchParam(searchParams.find(p => p.code === e.target.value))}>
         <option value=""></option>
-        {Object.values(typeSchema.properties)
-          .sort((a, b) => (a.display > b.display) ? 1 : -1)
-          .map(field => (
-            <option key={field.key} value={field.key}>{buildFieldNameString(props.schema, resourceType, field.key)}</option>
-          ))}
+        {searchParams.map(searchParam => (
+          <option key={searchParam.code} value={searchParam.code}>{searchParam.code}</option>
+        ))}
       </select>
     );
   }
 
   function renderOperation() {
-    if (!state.field) {
+    if (!searchParam) {
       return null;
     }
 
     return (
-      <select defaultValue={state.operator} onChange={e => setState({ ...stateRef.current, operator: e.target.value as Operator })}>
-        {renderOperationOptions()}
+      <select defaultValue={operator} onChange={e => setOperator(e.target.value as Operator)}>
+        {renderOperationOptions(searchParam)}
       </select>
     );
   }
 
-  function renderOperationOptions() {
-    const fieldKey = state.field;
-    if (!fieldKey) {
-      return null;
-    }
-
-    const typeSchema = props.schema.types[props.resourceType];
-    if (!typeSchema) {
-      return null;
-    }
-
-    const fieldDefinition = typeSchema.properties[fieldKey];
-    if (!fieldDefinition) {
-      return null;
-    }
-
-    switch (fieldDefinition.type) {
+  function renderOperationOptions(searchParam: SearchParameter) {
+    switch (searchParam.type) {
       case 'string':
       case 'fulltext':
+      case 'token':
         return (
           <>
             <option value=""></option>
@@ -103,10 +83,7 @@ function FilterRow(props: FilterRowProps) {
           </>
         );
 
-      case 'enum':
-      case 'user':
-      case 'organization':
-      case 'site':
+      case 'reference':
         return (
           <>
             <option value=""></option>
@@ -123,105 +100,87 @@ function FilterRow(props: FilterRowProps) {
             <option value="is_not_set">Is not set</option>
           </>
         );
+
+      default:
+        console.log('WARNING: Unhandled search parameter type: ' + searchParam.type);
     }
   }
 
   function renderValue() {
-    const fieldKey = state.field;
-    if (!fieldKey) {
+    if (!searchParam || !operator) {
       return null;
     }
 
-    const typeSchema = props.schema.types[props.resourceType];
-    if (!typeSchema) {
-      return null;
-    }
-
-    const fieldDefinition = typeSchema.properties[fieldKey];
-    if (!fieldDefinition) {
-      return null;
-    }
-
-    const op = state.operator;
-    if (!op) {
-      return null;
-    }
-
-    switch (fieldDefinition.type) {
+    switch (searchParam.type) {
       case 'string':
       case 'fulltext':
+      case 'token':
         return (
-          <input type="text" onChange={e => setState({ ...stateRef.current, value: e.target.value })} />
+          <input type="text" onChange={e => setValue(e.target.value)} />
         );
 
       case 'numeric':
         return (
-          <input type="text" onChange={e => setState({ ...stateRef.current, value: e.target.value })} />
+          <input type="text" onChange={e => setValue(e.target.value)} />
         );
 
       case 'date':
-      case 'datetime':
         return (
-          <input type="datetime-local" step="1" defaultValue="" onChange={e => setState({ ...stateRef.current, value: e.target.value })} />
+          <input type="date" step="1" defaultValue="" onChange={e => {
+            setValue(e.target.value);
+          }} />
         );
 
-      case 'enum':
-      case 'user':
-      case 'organization':
-      case 'site':
+      case 'datetime':
         return (
-          <Autocomplete id="dataEntryUser" resourceType="Practitioner" />
+          <input type="datetime-local" step="1" defaultValue="" onChange={e => {
+            setValue(e.target.value);
+          }} />
+        );
+
+      case 'reference':
+        return (
+          <Autocomplete
+            id="dataEntryUser"
+            resourceType="Practitioner"
+            onChange={resources => setValue(resources.length > 0 ? getReferenceString(resources[0]) : '')}
+          />
         );
 
       case 'bool':
         return (
-          <input type="text" onChange={e => setState({ ...stateRef.current, value: e.target.value })} />
+          <input type="text" onChange={e => setValue(e.target.value)} />
         );
     }
   }
 
-  function onAddClick() {
-    const key = state.field;
-    if (!key) {
-      return;
-    }
-
-    const op = state.operator;
-    if (!op) {
+  function onAddClick(): void {
+    if (!searchParam || !operator) {
       return;
     }
 
     props.onAdd({
-      code: key,
-      operator: op,
-      value: state.value
+      code: searchParam.code as string,
+      operator,
+      value
     });
 
-    setState({
-      ...stateRef.current,
-      field: '',
-      operator: Operator.EQUALS,
-      value: ''
-    });
+    setSearchParam(undefined);
+    setOperator(Operator.EQUALS);
+    setValue('');
   }
 
-  if (!state.editing) {
-    const resourceType = props.resourceType;
+  if (!editing) {
     const filter = props.filter;
     return (
       <tr>
-        <td>{buildFieldNameString(props.schema, resourceType, filter.code)}</td>
-        <td>{getOpString(filter.operator)}</td>
+        <td>{filter.code}</td>
+        <td>{filter.operator}</td>
         <td>{filter.value}</td>
         <td>
           <button
             className="btn btn-small"
-            onClick={() => setState({
-              editing: true,
-              field: props.filter.code,
-              operator: props.filter.operator,
-              value: props.filter.value
-            })}
+            onClick={() => setEditing(true)}
           >Edit</button>
           <button
             className="btn btn-small"
@@ -245,7 +204,7 @@ function FilterRow(props: FilterRowProps) {
         >Add</button>
         <button
           className="btn btn-small"
-          onClick={() => setState({ ...stateRef.current, editing: false })}
+          onClick={() => setEditing(false)}
         >Cancel</button>
       </td>
     </tr>
@@ -305,6 +264,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
                 resourceType={props.search.resourceType}
                 key={JSON.stringify(filter)}
                 filter={filter}
+                editing={false}
                 onAdd={f => onAddFilter(f)}
                 onDelete={f => onDeleteFilter(f)}
               />
@@ -313,6 +273,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
               schema={props.schema}
               resourceType={props.search.resourceType}
               filter={{ code: '', operator: Operator.EQUALS, value: '' }}
+              editing={true}
               onAdd={f => onAddFilter(f)}
               onDelete={f => onDeleteFilter(f)}
             />

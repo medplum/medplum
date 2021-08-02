@@ -6,12 +6,13 @@ import { ResourceName } from './ResourceName';
 import './Autocomplete.css';
 
 export interface AutocompleteProps {
-  id: string,
-  resourceType: string,
-  multiple?: boolean,
-  autofocus?: boolean,
-  defaultValue?: Reference[],
-  createNew?: string
+  id: string;
+  resourceType: string;
+  multiple?: boolean;
+  autofocus?: boolean;
+  defaultValue?: Reference[];
+  createNew?: string;
+  onChange?: (values: Resource[]) => void;
 }
 
 interface AutocompleteState {
@@ -80,14 +81,20 @@ export function Autocomplete(props: AutocompleteProps) {
 
     inputElement.value = '';
 
+    const newValues = props.multiple ? [...state.values, resource] : [resource];
+
     setState({
       focused: true,
       dropDownVisible: false,
       lastValue: '',
-      values: props.multiple ? [...state.values, resource] : [resource],
+      values: newValues,
       options: [],
       selectedIndex: -1
     });
+
+    if (props.onChange) {
+      props.onChange(newValues);
+    }
   }
 
   function handleClick() {

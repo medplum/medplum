@@ -1,4 +1,4 @@
-import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
+import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest, parseFhirPath } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { Knex } from 'knex';
@@ -407,18 +407,19 @@ export class Repository {
       return;
     }
 
-    const name = searchParam.name as string;
-    if (!(name in resource)) {
-      return;
-    }
-
     const columnName = convertCodeToColumnName(searchParam.code as string);
-    const value = (resource as any)[name];
+    const fhirPath = parseFhirPath(searchParam.expression as string);
 
-    if (Array.isArray(value) && this.isArrayParam(resource.resourceType, columnName)) {
-      columns[columnName] = value.map(v => this.buildColumnValue(searchParam, v));
+    if (this.isArrayParam(resource.resourceType, columnName)) {
+      const values = fhirPath.eval(resource);
+      if (values && Array.isArray(values) && values.length > 0) {
+        columns[columnName] = values.map(v => this.buildColumnValue(searchParam, v));
+      }
     } else {
-      columns[columnName] = this.buildColumnValue(searchParam, value);
+      const value = fhirPath.eval(resource);
+      if (value !== undefined) {
+        columns[columnName] = this.buildColumnValue(searchParam, value);
+      }
     }
   }
 
@@ -443,10 +444,6 @@ export class Repository {
   }
 
   private buildColumnValue(searchParam: SearchParameter, value: any): any {
-    if (searchParam.type === 'date') {
-      return new Date(value);
-    }
-
     if (searchParam.type === 'boolean') {
       return (value === 'true');
     }
