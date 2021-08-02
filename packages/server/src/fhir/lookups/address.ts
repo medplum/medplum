@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { Knex } from 'knex';
 import { executeQuery, getKnex } from '../../database';
 import { LookupTable } from './lookuptable';
+import { compareArrays } from './util';
 
 /**
  * The AddressTable class is used to index and search "name" properties on "Person" resources.
@@ -63,17 +64,19 @@ export class AddressTable implements LookupTable {
     const resourceId = resource.id as string;
     const existing = await this.getExistingAddresses(resourceId);
 
-    if (!this.compareNames(addresses, existing)) {
+    if (!compareArrays(addresses, existing)) {
       const knex = getKnex();
 
       if (existing.length > 0) {
         await knex('Address').where('resourceId', resourceId).delete().then(executeQuery);
       }
 
-      for (const address of addresses) {
+      for (let i = 0; i < addresses.length; i++) {
+        const address = addresses[i];
         await knex('Address').insert({
           id: randomUUID(),
           resourceId,
+          index: i,
           content: JSON.stringify(address),
           address: formatAddress(address),
           city: address.city,
@@ -95,7 +98,7 @@ export class AddressTable implements LookupTable {
   addSearchConditions(resourceType: string, selectQuery: Knex.QueryBuilder, filter: Filter): void {
     selectQuery.join('Address', resourceType + '.id', '=', 'Address.resourceId');
 
-    const columnName = filter.code === 'address' ? 'address' : 'address-' + filter.code;
+    const columnName = filter.code === 'address' ? 'address' : filter.code.replace('address-', '');
     selectQuery.where('Address.' + columnName, 'LIKE', '%' + filter.value + '%');
   }
 
@@ -134,29 +137,7 @@ export class AddressTable implements LookupTable {
       .select('content')
       .from('Address')
       .where('resourceId', resourceId)
+      .orderBy('index')
       .then(result => result.map(row => JSON.parse(row.content) as Address));
-  }
-
-  /**
-   * Determines if two lists of addresses are equal.
-   * @param incoming The incoming list of addresses.
-   * @param existing The existing list of addresses.
-   * @returns True if the lists are equivalent; false otherwise.
-   */
-  private compareNames(incoming: Address[], existing: Address[]): boolean {
-    if (incoming.length !== existing.length) {
-      return false;
-    }
-
-    const incomingNames = incoming.map(name => formatAddress(name)).sort((a, b) => a.localeCompare(b));
-    const existingNames = incoming.map(name => formatAddress(name)).sort((a, b) => a.localeCompare(b));
-
-    for (let i = 0; i < incomingNames.length; i++) {
-      if (incomingNames[i] !== existingNames[i]) {
-        return false;
-      }
-    }
-
-    return true;
   }
 }

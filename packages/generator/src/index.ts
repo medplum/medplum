@@ -315,6 +315,7 @@ function buildAddressTable(b: FileBuilder): void {
   b.indentCount++;
   b.append('t.uuid(\'id\').notNullable().primary();');
   b.append('t.uuid(\'resourceId\').notNullable().index();');
+  b.append('t.integer(\'index\').notNullable();');
   b.append('t.text(\'content\').notNullable();');
   b.append('t.string(\'address\', 128).index();');
   b.append('t.string(\'city\', 64).index();');
@@ -332,6 +333,7 @@ function buildContactPointTable(b: FileBuilder): void {
   b.indentCount++;
   b.append('t.uuid(\'id\').notNullable().primary();');
   b.append('t.uuid(\'resourceId\').notNullable().index();');
+  b.append('t.integer(\'index\').notNullable();');
   b.append('t.text(\'content\').notNullable();');
   b.append('t.string(\'system\', 128).index();');
   b.append('t.string(\'value\', 128).index();');
@@ -345,6 +347,7 @@ function buildIdentifierTable(b: FileBuilder): void {
   b.indentCount++;
   b.append('t.uuid(\'id\').notNullable().primary();');
   b.append('t.uuid(\'resourceId\').notNullable().index();');
+  b.append('t.integer(\'index\').notNullable();');
   b.append('t.text(\'content\').notNullable();');
   b.append('t.string(\'system\', 128).index();');
   b.append('t.string(\'value\', 128).index();');
@@ -358,6 +361,7 @@ function buildHumanNameTable(b: FileBuilder): void {
   b.indentCount++;
   b.append('t.uuid(\'id\').notNullable().primary();');
   b.append('t.uuid(\'resourceId\').notNullable().index();');
+  b.append('t.integer(\'index\').notNullable();');
   b.append('t.text(\'content\').notNullable();');
   b.append('t.string(\'name\', 128).index();');
   b.append('t.string(\'given\', 128).index();');

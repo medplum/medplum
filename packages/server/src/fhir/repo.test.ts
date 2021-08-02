@@ -6,19 +6,8 @@ import { closeDatabase, initDatabase, TEST_CONFIG } from '../database';
 import { getPatientId, repo, Repository } from './repo';
 
 beforeAll(async () => {
-  const startTime = Date.now();
-  console.log('repo.test.ts beforeAll startTime', startTime);
-  try {
   await loadConfig('file:medplum.config.json');
   await initDatabase(TEST_CONFIG);
-  } catch (error) {
-    console.log('repo.test.ts beforeAll error', error);
-  } finally {
-    const endTime = Date.now();
-    const duration = endTime - startTime;
-    console.log('repo.test.ts beforeAll endTime', endTime);
-    console.log('repo.test.ts beforeAll duration', duration);
-  }
 });
 
 afterAll(async () => {
@@ -75,6 +64,100 @@ test('Patient resource with name', async (done) => {
   expect(searchResult?.entry?.length).toEqual(1);
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
   done();
+});
+
+test('Patient resource with address', async () => {
+  const addressLine = randomUUID();
+  const addressCity = randomUUID();
+
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    address: [{
+      use: 'both',
+      line: [addressLine],
+      city: addressCity,
+      state: 'CA',
+      postalCode: '94111',
+      country: 'US'
+    }]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+
+  const [searchOutcome1, searchResult1] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'address',
+      operator: Operator.CONTAINS,
+      value: addressLine
+    }]
+  });
+
+  expect(searchOutcome1.id).toEqual('ok');
+  expect(searchResult1?.entry?.length).toEqual(1);
+  expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+
+  const [searchOutcome2, searchResult2] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'address-city',
+      operator: Operator.EQUALS,
+      value: addressCity
+    }]
+  });
+
+  expect(searchOutcome2.id).toEqual('ok');
+  expect(searchResult2?.entry?.length).toEqual(1);
+  expect(searchResult2?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+});
+
+test('Patient resource with telecom', async () => {
+  const email = randomUUID();
+  const phone = randomUUID();
+
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    telecom: [
+      {
+        system: 'email',
+        value: email
+      },
+      {
+        system: 'phone',
+        value: phone
+      }
+    ]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+
+  const [searchOutcome1, searchResult1] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'email',
+      operator: Operator.CONTAINS,
+      value: email
+    }]
+  });
+
+  expect(searchOutcome1.id).toEqual('ok');
+  expect(searchResult1?.entry?.length).toEqual(1);
+  expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+
+  const [searchOutcome2, searchResult2] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'phone',
+      operator: Operator.EQUALS,
+      value: phone
+    }]
+  });
+
+  expect(searchOutcome2.id).toEqual('ok');
+  expect(searchResult2?.entry?.length).toEqual(1);
+  expect(searchResult2?.entry?.[0]?.resource?.id).toEqual(patient?.id);
 });
 
 test('Repo read malformed reference', async (done) => {

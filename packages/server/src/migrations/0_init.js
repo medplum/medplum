@@ -3725,6 +3725,7 @@ export async function up(knex) {
   await knex.schema.createTable('Address', t => {
     t.uuid('id').notNullable().primary();
     t.uuid('resourceId').notNullable().index();
+    t.integer('index').notNullable();
     t.text('content').notNullable();
     t.string('address', 128).index();
     t.string('city', 64).index();
@@ -3737,6 +3738,7 @@ export async function up(knex) {
   await knex.schema.createTable('ContactPoint', t => {
     t.uuid('id').notNullable().primary();
     t.uuid('resourceId').notNullable().index();
+    t.integer('index').notNullable();
     t.text('content').notNullable();
     t.string('system', 128).index();
     t.string('value', 128).index();
@@ -3745,6 +3747,7 @@ export async function up(knex) {
   await knex.schema.createTable('Identifier', t => {
     t.uuid('id').notNullable().primary();
     t.uuid('resourceId').notNullable().index();
+    t.integer('index').notNullable();
     t.text('content').notNullable();
     t.string('system', 128).index();
     t.string('value', 128).index();
@@ -3753,6 +3756,7 @@ export async function up(knex) {
   await knex.schema.createTable('HumanName', t => {
     t.uuid('id').notNullable().primary();
     t.uuid('resourceId').notNullable().index();
+    t.integer('index').notNullable();
     t.text('content').notNullable();
     t.string('name', 128).index();
     t.string('given', 128).index();

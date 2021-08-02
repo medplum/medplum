@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { Knex } from 'knex';
 import { executeQuery, getKnex } from '../../database';
 import { LookupTable } from './lookuptable';
+import { compareArrays } from './util';
 
 /**
  * The IdentifierTable class is used to index and search "identifier" properties.
@@ -39,17 +40,19 @@ export class IdentifierTable implements LookupTable {
     const resourceId = resource.id as string;
     const existing = await this.getIdentifiers(resourceId);
 
-    if (!this.compareIdentifiers(identifiers, existing)) {
+    if (!compareArrays(identifiers, existing)) {
       const knex = getKnex();
 
       if (existing.length > 0) {
         await knex('Identifier').where('resourceId', resourceId).delete().then(executeQuery);
       }
 
-      for (const identifier of identifiers) {
+      for (let i = 0; i < identifiers.length; i++) {
+        const identifier = identifiers[i];
         await knex('Identifier').insert({
           id: randomUUID(),
           resourceId,
+          index: i,
           content: JSON.stringify(identifier),
           system: identifier.system,
           value: identifier.value
@@ -79,31 +82,7 @@ export class IdentifierTable implements LookupTable {
       .select('content')
       .from('Identifier')
       .where('resourceId', resourceId)
+      .orderBy('index')
       .then(result => result.map(row => JSON.parse(row.content) as Identifier));
-  }
-
-  /**
-   * Determines if two lists of identifiers are equal.
-   * @param incoming The incoming list of identifiers.
-   * @param existing The existing list of identifiers.
-   * @returns True if the lists are equivalent; false otherwise.
-   */
-  private compareIdentifiers(incoming: Identifier[], existing: Identifier[]): boolean {
-    if (incoming.length !== existing.length) {
-      return false;
-    }
-
-    incoming.sort((a, b) => (a.system as string).localeCompare(b.system as string));
-    existing.sort((a, b) => (a.system as string).localeCompare(b.system as string));
-
-    for (let i = 0; i < incoming.length; i++) {
-      const incomingId = incoming[i];
-      const existingId = existing[i];
-      if (incomingId.system !== existingId.system || incomingId.value !== existingId.value) {
-        return false;
-      }
-    }
-
-    return true;
   }
 }

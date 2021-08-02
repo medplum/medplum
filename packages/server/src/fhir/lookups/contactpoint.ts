@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { Knex } from 'knex';
 import { executeQuery, getKnex } from '../../database';
 import { LookupTable } from './lookuptable';
+import { compareArrays } from './util';
 
 /**
  * The ContactPointTable class is used to index and search "name" properties on "Person" resources.
@@ -52,17 +53,19 @@ export class ContactPointTable implements LookupTable {
     const resourceId = resource.id as string;
     const existing = await this.getExisting(resourceId);
 
-    if (!this.compareContactPoints(contactPoints, existing)) {
+    if (!compareArrays(contactPoints, existing)) {
       const knex = getKnex();
 
       if (existing.length > 0) {
         await knex('ContactPoint').where('resourceId', resourceId).delete().then(executeQuery);
       }
 
-      for (const contactPoint of contactPoints) {
+      for (let i = 0; i < contactPoints.length; i++) {
+        const contactPoint = contactPoints[i];
         await knex('ContactPoint').insert({
           id: randomUUID(),
           resourceId,
+          index: i,
           content: JSON.stringify(contactPoint),
           system: contactPoint.system,
           value: contactPoint.value
@@ -95,31 +98,7 @@ export class ContactPointTable implements LookupTable {
       .select('content')
       .from('ContactPoint')
       .where('resourceId', resourceId)
+      .orderBy('index')
       .then(result => result.map(row => JSON.parse(row.content) as ContactPoint));
-  }
-
-  /**
-   * Determines if two lists of contact points are equal.
-   * @param incoming The incoming list of contact points.
-   * @param existing The existing list of contact points.
-   * @returns True if the lists are equivalent; false otherwise.
-   */
-  private compareContactPoints(incoming: ContactPoint[], existing: ContactPoint[]): boolean {
-    if (incoming.length !== existing.length) {
-      return false;
-    }
-
-    incoming.sort((a, b) => (a.system as string).localeCompare(b.system as string));
-    existing.sort((a, b) => (a.system as string).localeCompare(b.system as string));
-
-    for (let i = 0; i < incoming.length; i++) {
-      const incomingId = incoming[i];
-      const existingId = existing[i];
-      if (incomingId.system !== existingId.system || incomingId.value !== existingId.value) {
-        return false;
-      }
-    }
-
-    return true;
   }
 }
