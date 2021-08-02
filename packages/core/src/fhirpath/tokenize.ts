@@ -11,7 +11,6 @@ export interface Token extends TokenMatcher {
 const matchers: TokenMatcher[] = [
 	{ id: 'Comment', pattern: /\/\/.*$/ },
 	{ id: 'StringLiteral', pattern: /'[^']*'/ },
-	// { id: 'as', pattern: /(?:^|\\W)as(?!\\w)/ },
 	{ id: '(', pattern: /\(/ },
 	{ id: ')', pattern: /\)/ },
 	{ id: '*', pattern: /\*/ },
@@ -44,24 +43,11 @@ export class Tokenizer {
 		}
 
 		return tokens.map(value => {
-			// let matcher: TokenMatcher;
-
-			// if (value === 'as') {
-			// 	matcher = {id: 'as', pattern: /as/}
-			// } else {
-			const matcher = matchers.find(matcher => matcher.pattern.test(value)) as TokenMatcher;
-			// }
-
 			return {
-				...matcher,
+				...(matchers.find(matcher => matcher.pattern.test(value)) as TokenMatcher),
 				value
 			};
 		});
-
-		// return tokens.map(value => ({
-		// 	...(matchers.find(matcher => matcher.pattern.test(value)) as TokenMatcher),
-		// 	value,
-		// }))
 	}
 }
 

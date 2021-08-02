@@ -25,8 +25,8 @@ function FilterRow(props: FilterRowProps) {
     return (
       <select defaultValue={searchParam?.code} onChange={e => setSearchParam(searchParams.find(p => p.code === e.target.value))}>
         <option value=""></option>
-        {searchParams.map(searchParam => (
-          <option key={searchParam.code} value={searchParam.code}>{searchParam.code}</option>
+        {searchParams.map(param => (
+          <option key={param.code} value={param.code}>{param.code}</option>
         ))}
       </select>
     );
@@ -44,8 +44,8 @@ function FilterRow(props: FilterRowProps) {
     );
   }
 
-  function renderOperationOptions(searchParam: SearchParameter) {
-    switch (searchParam.type) {
+  function renderOperationOptions(param: SearchParameter) {
+    switch (param.type) {
       case 'string':
       case 'fulltext':
       case 'token':
@@ -102,7 +102,7 @@ function FilterRow(props: FilterRowProps) {
         );
 
       default:
-        console.log('WARNING: Unhandled search parameter type: ' + searchParam.type);
+        console.log('WARNING: Unhandled search parameter type: ' + param.type);
     }
   }
 
