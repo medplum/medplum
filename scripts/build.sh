@@ -23,10 +23,5 @@ npm run build --workspace=packages/console
 npm run build --workspace=packages/graphiql
 npm run build --workspace=packages/server
 
-# Seed test database
-cd packages/server
-npx ts-node src/seed.ts
-cd ../..
-
 # Test
 npx jest --runInBand

@@ -25,10 +25,7 @@ export class ContactPointTable implements LookupTable {
    * @returns True if the search parameter is an "identifier" parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
-    if (!searchParam.id) {
-      return false;
-    }
-    return ContactPointTable.knownParams.has(searchParam.id);
+    return ContactPointTable.knownParams.has(searchParam.id as string);
   }
 
   /**

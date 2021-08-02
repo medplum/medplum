@@ -43,10 +43,7 @@ export class AddressTable implements LookupTable {
    * @returns True if the search parameter is an "identifier" parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
-    if (!searchParam.id) {
-      return false;
-    }
-    return AddressTable.knownParams.has(searchParam.id);
+    return AddressTable.knownParams.has(searchParam.id as string);
   }
 
   /**

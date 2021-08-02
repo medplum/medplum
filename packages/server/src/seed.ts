@@ -2,9 +2,8 @@ import { Bundle, BundleEntry, ClientApplication, createReference, Organization, 
 import { readJson } from '@medplum/definitions';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { loadConfig } from './config';
 import { ADMIN_USER_ID, MEDPLUM_ORGANIZATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
-import { closeDatabase, executeQuery, getKnex, initDatabase, TEST_CONFIG } from './database';
+import { executeQuery, getKnex } from './database';
 import { isOk, OperationOutcomeError, repo } from './fhir';
 import { logger } from './logger';
 import { generateSecret } from './oauth';
@@ -264,15 +263,4 @@ async function createStructureDefinitions(): Promise<void> {
       logger.debug('Created: ' + (result as StructureDefinition).id);
     }
   }
-}
-
-async function main() {
-  await loadConfig('file:medplum.config.json');
-  await initDatabase(TEST_CONFIG);
-  await seedDatabase();
-  await closeDatabase();
-}
-
-if (process.argv[1].endsWith('seed.ts')) {
-  main();
 }

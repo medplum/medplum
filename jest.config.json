@@ -1,6 +1,7 @@
 {
   "testEnvironment": "node",
   "testRunner": "jasmine2",
+  "testSequencer": "<rootDir>/packages/server/jest.sequencer.js",
   "transform": {
     "^.+\\.(js|ts)$": "ts-jest"
   },
