@@ -42,6 +42,7 @@
     "winston": "3.3.3"
   },
   "devDependencies": {
+    "@jest/test-sequencer": "27.0.6",
     "@types/bcrypt": "5.0.0",
     "@types/body-parser": "1.19.1",
     "@types/cookie-parser": "1.4.2",
@@ -66,7 +67,6 @@
     "openapi3-ts": "2.0.1",
     "rimraf": "3.0.2",
     "set-cookie-parser": "2.4.8",
-    "sqlite3": "5.0.2",
     "supertest": "6.1.4",
     "ts-jest": "27.0.4",
     "ts-node": "10.1.0",

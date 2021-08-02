@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
-import { loadConfig } from '../config';
+import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { isOk, repo } from '../fhir';
 import { seedDatabase } from '../seed';
@@ -13,8 +13,8 @@ const app = express();
 let client: ClientApplication;
 
 beforeAll(async () => {
-  const config = await loadConfig('file:medplum.config.json');
-  await initDatabase({ client: 'sqlite3' });
+  const config = await loadTestConfig();
+  await initDatabase(config.database);
   await seedDatabase();
   await initApp(app);
   await initKeys(config);

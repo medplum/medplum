@@ -1,4 +1,4 @@
-import { Bundle, ClientApplication, createReference, Organization, Practitioner, Project, StructureDefinition, User } from '@medplum/core';
+import { Bundle, BundleEntry, ClientApplication, createReference, Organization, Practitioner, Project, Resource, SearchParameter, StructureDefinition, User } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
@@ -8,7 +8,7 @@ import { isOk, OperationOutcomeError, repo } from './fhir';
 import { logger } from './logger';
 import { generateSecret } from './oauth';
 
-export async function seedDatabase() {
+export async function seedDatabase(): Promise<void> {
   if (await isSeeded()) {
     logger.info('Already seeded');
     return;
@@ -19,8 +19,9 @@ export async function seedDatabase() {
   await createOrganization();
   await createUser();
   await createClientApplication();
-  await createStructureDefinitions();
   await createValueSetElements();
+  await createSearchParameters();
+  await createStructureDefinitions();
 }
 
 /**
@@ -45,7 +46,7 @@ async function isSeeded(): Promise<boolean> {
  * This is a special project that is available to all users.
  * It includes 'implementation' resources such as CapabilityStatement.
  */
-async function createPublicProject() {
+async function createPublicProject(): Promise<void> {
   logger.info('Create Public project...');
   const [outcome, result] = await repo.updateResource<Project>({
     resourceType: 'Project',
@@ -67,7 +68,7 @@ async function createPublicProject() {
  * Creates the Medplum project.
  * This is a special project for administrative resources.
  */
-async function createMedplumProject() {
+async function createMedplumProject(): Promise<void> {
   logger.info('Create Medplum project...');
   const [outcome, result] = await repo.updateResource<Project>({
     resourceType: 'Project',
@@ -89,7 +90,7 @@ async function createMedplumProject() {
  * Creates the Medplum organization.
  * This is a special organization for super admins.
  */
-async function createOrganization() {
+async function createOrganization(): Promise<void> {
   logger.info('Create Medplum project...');
   const [outcome, result] = await repo.updateResource<Organization>({
     resourceType: 'Organization',
@@ -108,7 +109,7 @@ async function createOrganization() {
  * Creates the admin user.
  * This is the initial user for first login.
  */
-async function createUser() {
+async function createUser(): Promise<void> {
   logger.info('Create admin user...');
   const [practitionerOutcome, practitioner] = await repo.createResource<Practitioner>({
     resourceType: 'Practitioner',
@@ -167,7 +168,7 @@ async function createUser() {
 /**
  * Creates the initial client application.
  */
-async function createClientApplication() {
+async function createClientApplication(): Promise<void> {
   logger.info('Create client application...');
   const [outcome, result] = await repo.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
@@ -188,38 +189,9 @@ async function createClientApplication() {
 }
 
 /**
- * Creates all StructureDefinition resources.
- */
-async function createStructureDefinitions() {
-  const structureDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
-  const entries = structureDefinitions.entry;
-  if (!entries) {
-    return;
-  }
-
-  for (const entry of entries) {
-    const resource = entry.resource;
-    if (!resource) {
-      continue;
-    }
-
-    if (resource.resourceType === 'StructureDefinition' && resource.name) {
-      logger.debug('StructureDefinition: ' + resource.name);
-      const [outcome, result] = await repo.createResource<StructureDefinition>(resource);
-
-      if (!isOk(outcome)) {
-        throw new OperationOutcomeError(outcome);
-      }
-
-      logger.debug('Created: ' + (result as StructureDefinition).id);
-    }
-  }
-}
-
-/**
  * Creates test ValueSetElement rows.
  */
-async function createValueSetElements() {
+async function createValueSetElements(): Promise<void> {
   const knex = getKnex();
 
   const countQuery = await knex('ValueSetElement').count('id').first().then(executeQuery);
@@ -243,5 +215,52 @@ async function createValueSetElements() {
       code: value.id,
       display: value.name
     }).then(executeQuery);
+  }
+}
+
+/**
+ * Creates all SearchParameter resources.
+ */
+async function createSearchParameters(): Promise<void> {
+  const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
+
+  for (const entry of (searchParams.entry as BundleEntry[])) {
+    const searchParam = entry.resource as SearchParameter;
+
+    logger.debug('SearchParameter: ' + searchParam.name);
+    const [outcome, result] = await repo.createResource<SearchParameter>({
+      ...searchParam,
+      text: undefined
+    });
+
+    if (!isOk(outcome)) {
+      throw new OperationOutcomeError(outcome);
+    }
+
+    logger.debug('Created: ' + (result as SearchParameter).id);
+  }
+}
+
+/**
+ * Creates all StructureDefinition resources.
+ */
+async function createStructureDefinitions(): Promise<void> {
+  const structureDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
+  for (const entry of (structureDefinitions.entry as BundleEntry[])) {
+    const resource = entry.resource as Resource;
+
+    if (resource.resourceType === 'StructureDefinition' && resource.name) {
+      logger.debug('StructureDefinition: ' + resource.name);
+      const [outcome, result] = await repo.createResource<StructureDefinition>({
+        ...resource,
+        text: undefined
+      });
+
+      if (!isOk(outcome)) {
+        throw new OperationOutcomeError(outcome);
+      }
+
+      logger.debug('Created: ' + (result as StructureDefinition).id);
+    }
   }
 }

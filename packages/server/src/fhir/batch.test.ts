@@ -1,13 +1,13 @@
 import { randomUUID } from 'crypto';
-import { loadConfig } from '../config';
+import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { createBatch } from './batch';
 import { isOk } from './outcomes';
 import { repo } from './repo';
 
 beforeAll(async () => {
-  await loadConfig('file:medplum.config.json');
-  await initDatabase({ client: 'sqlite3' });
+  const config = await loadTestConfig();
+  await initDatabase(config.database);
 });
 
 afterAll(async () => {

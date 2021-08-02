@@ -14,38 +14,88 @@ let tokenExpired = false;
 function mockFetch(url: string, options: any): Promise<any> {
   const { method } = options;
 
-  const response: any = {
-    request: {
-      url,
-      options
-    }
-  };
+  let result: any;
 
   if (method === 'POST' && url.endsWith('auth/login')) {
-    response.user = { resourceType: 'User', id: '123' };
-    response.accessToken = '123';
-    response.refreshToken = '456';
+    result = {
+      user: { resourceType: 'User', id: '123' },
+      accessToken: '123',
+      refreshToken: '456'
+    };
 
   } else if (method === 'GET' && url.endsWith('Patient/123')) {
-    response.resourceType = 'Patient';
-    response.id = '123';
+    result = {
+      resourceType: 'Patient',
+      id: '123'
+    };
 
   } else if (method === 'POST' && url.endsWith('oauth2/token')) {
     if (canRefresh) {
-      response.access_token = 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature';
-      response.refresh_token = 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature';
+      result = {
+        access_token: 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature',
+        refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature'
+      };
     } else {
-      response.status = 400;
+      result = {
+        status: 400
+      };
     }
 
   } else if (method === 'GET' && url.includes('expired')) {
     if (tokenExpired) {
-      response.status = 401;
+      result = {
+        status: 401
+      };
       tokenExpired = false;
     } else {
-      response.ok = true;
+      result = {
+        ok: true
+      };
     }
+
+  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
+    result = {
+      resourceType: 'Bundle',
+      entry: [{
+        resource: {
+          resourceType: 'StructureDefinition',
+          name: 'Patient',
+          snapshot: {
+            element: [
+              {
+                path: 'Patient.id',
+                type: [{
+                  code: 'code'
+                }]
+              }
+            ]
+          }
+        }
+      }]
+    };
+
+  } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
+    result = {
+      resourceType: 'Bundle',
+      entry: [{
+        resource: {
+          resourceType: 'SearchParameter',
+          id: 'Patient-name',
+          code: 'name',
+          name: 'name',
+          expression: 'Patient.name'
+        }
+      }]
+    };
   }
+
+  const response: any = {
+    request: {
+      url,
+      options
+    },
+    ...result
+  };
 
   return Promise.resolve({
     ok: response.status === undefined,
@@ -272,4 +322,12 @@ test('Client create binary', async () => {
   expect(result).not.toBeUndefined();
   expect((result as any).request.options.method).toBe('POST');
   expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
+});
+
+test('Client get schema', async () => {
+  const client = new MedplumClient(defaultOptions);
+  const schema = await client.getTypeDefinition('Patient');
+  expect(schema).not.toBeUndefined();
+  expect(schema.types['Patient']).not.toBeUndefined();
+  expect(schema.types['Patient'].searchParams).not.toBeUndefined();
 });

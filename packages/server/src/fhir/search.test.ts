@@ -1,5 +1,5 @@
 import { Operator } from '@medplum/core';
-import { parseSearchRequest } from './search';
+import { getSearchParameters, parseSearchRequest } from './search';
 
 test('Parse Patient search', () => {
   expect(parseSearchRequest('Patient', {})).toMatchObject({
@@ -39,4 +39,9 @@ test('Parse page and count', () => {
     page: 3,
     count: 7
   });
+});
+
+test('Patient has birthdate param', () => {
+  const params = getSearchParameters('Patient');
+  expect(params['birthdate']).not.toBeUndefined();
 });

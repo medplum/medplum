@@ -1,10 +1,10 @@
-import { loadConfig } from './config';
+import { loadTestConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 import { seedDatabase } from './seed';
 
 beforeAll(async () => {
-  await loadConfig('file:medplum.config.json');
-  await initDatabase({ client: 'sqlite3' });
+  const config = await loadTestConfig();
+  await initDatabase(config.database);
 });
 
 afterAll(async () => {

@@ -17,6 +17,7 @@
     "lint": "eslint src/ --ext .ts,.tsx"
   },
   "devDependencies": {
+    "@medplum/definitions": "0.0.27",
     "@types/jest": "26.0.24",
     "@types/node": "16.4.3",
     "@typescript-eslint/eslint-plugin": "4.28.5",

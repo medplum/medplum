@@ -62,6 +62,19 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
     result = patientStructureBundle;
+  } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
+    result = {
+      resourceType: 'Bundle',
+      entry: [{
+        resource: {
+          resourceType: 'SearchParameter',
+          id: 'Patient-name',
+          code: 'name',
+          name: 'name',
+          expression: 'Patient.name'
+        }
+      }]
+    };
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Patient?name=Alice')) {
     result = aliceSearchBundle;
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Patient?name=Bob')) {

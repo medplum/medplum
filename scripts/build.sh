@@ -24,4 +24,4 @@ npm run build --workspace=packages/graphiql
 npm run build --workspace=packages/server
 
 # Test
-npx jest
+npx jest --runInBand

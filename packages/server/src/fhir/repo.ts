@@ -1,4 +1,4 @@
-import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
+import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { Knex } from 'knex';
@@ -6,9 +6,9 @@ import validator from 'validator';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { executeQuery, getKnex } from '../database';
 import { logger } from '../logger';
-import { HumanNameTable, IdentifierTable, LookupTable } from './lookuptable';
+import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { allOk, badRequest, created, isNotFound, isOk, notFound, notModified } from './outcomes';
-import { validateResource, validateResourceType } from './schema';
+import { definitions, validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
 
 /**
@@ -70,6 +70,8 @@ const protectedResourceTypes = [
  * The lookup tables array includes a list of special tables for search indexing.
  */
 const lookupTables: LookupTable[] = [
+  new AddressTable(),
+  new ContactPointTable(),
   new HumanNameTable(),
   new IdentifierTable()
 ];
@@ -263,7 +265,7 @@ export class Repository {
     }
 
     const knex = getKnex();
-    const builder = knex.select('content').from(resourceType);
+    const builder = knex.select(resourceType + '.content').from(resourceType);
     this.addSearchFilters(builder, searchRequest);
 
     const count = searchRequest.count || 10;
@@ -298,32 +300,53 @@ export class Repository {
     return rows[0].count as number;
   }
 
+  /**
+   * Adds all search filters as "WHERE" clauses to the query builder.
+   * @param builder The knex query builder.
+   * @param searchRequest The search request.
+   */
   private addSearchFilters(builder: Knex.QueryBuilder, searchRequest: SearchRequest): void {
-    if (!searchRequest.filters) {
+    searchRequest.filters?.forEach(filter => this.addSearchFilter(builder, searchRequest, filter));
+  }
+
+  /**
+   * Adds a single search filter as "WHERE" clause to the query builder.
+   * @param builder The knex query builder.
+   * @param searchRequest The search request.
+   * @param filter The search filter.
+   */
+  private addSearchFilter(builder: Knex.QueryBuilder, searchRequest: SearchRequest, filter: Filter): void {
+    const resourceType = searchRequest.resourceType;
+    const param = getSearchParameter(resourceType, filter.code);
+    if (!param || !param.code) {
       return;
     }
 
-    const resourceType = searchRequest.resourceType;
-    for (const filter of searchRequest.filters) {
-      const param = getSearchParameter(resourceType, filter.code);
-      if (param && param.code) {
-        const lookupTable = this.getLookupTable(param);
-        const columnName = convertCodeToColumnName(param.code);
-        if (lookupTable) {
-          lookupTable.addSearchConditions(resourceType, builder, filter);
-        } else if (param.type === 'string') {
-          this.addStringSearchFilter(builder, columnName, filter.value);
-        } else if (param.type === 'reference') {
-          this.addReferenceSearchFilter(builder, param, filter);
-        } else {
-          builder.where(columnName, filter.value);
-        }
-      }
+    const lookupTable = this.getLookupTable(param);
+    const columnName = convertCodeToColumnName(param.code);
+    if (lookupTable) {
+      lookupTable.addSearchConditions(resourceType, builder, filter);
+    } else if (param.type === 'string') {
+      this.addStringSearchFilter(builder, columnName, filter.value);
+    } else if (param.type === 'token') {
+      this.addTokenSearchFilter(builder, resourceType, columnName, filter.value);
+    } else if (param.type === 'reference') {
+      this.addReferenceSearchFilter(builder, param, filter);
+    } else {
+      builder.where(columnName, filter.value);
     }
   }
 
   private addStringSearchFilter(builder: Knex.QueryBuilder, columnName: string, query: string): void {
     builder.where(columnName, 'LIKE', '%' + query + '%');
+  }
+
+  private addTokenSearchFilter(builder: Knex.QueryBuilder, resourceType: string, columnName: string, query: string): void {
+    if (this.isArrayParam(resourceType, columnName)) {
+      builder.whereRaw(`?=ANY("${columnName}")`, query);
+    } else {
+      builder.where(columnName, query);
+    }
   }
 
   private addReferenceSearchFilter(builder: Knex.QueryBuilder, param: SearchParameter, filter: Filter): void {
@@ -386,50 +409,71 @@ export class Repository {
       return;
     }
 
-    const name = searchParam.name as string;
-    if (!(name in resource)) {
-      return;
-    }
-
     const columnName = convertCodeToColumnName(searchParam.code as string);
-    const value = (resource as any)[name];
-    if (searchParam.type === 'date') {
-      columns[columnName] = new Date(value);
-    } else if (searchParam.type === 'boolean') {
-      columns[columnName] = (value === 'true');
-    } else if (searchParam.type === 'reference') {
-      this.buildReferenceColumns(columns, searchParam, value);
-    } else if (typeof value === 'string') {
-      if (value.length > 128) {
-        columns[columnName] = value.substr(0, 128);
-      } else {
-        columns[columnName] = value;
+    const fhirPath = parseFhirPath(searchParam.expression as string);
+
+    if (this.isArrayParam(resource.resourceType, columnName)) {
+      const values = fhirPath.eval(resource);
+      if (values && Array.isArray(values) && values.length > 0) {
+        columns[columnName] = values.map(v => this.buildColumnValue(searchParam, v));
       }
     } else {
-      let json = JSON.stringify(value);
-      if (json.length > 128) {
-        json = json.substr(0, 128);
+      const value = fhirPath.eval(resource);
+      if (value !== undefined) {
+        columns[columnName] = this.buildColumnValue(searchParam, value);
       }
-      columns[columnName] = json;
     }
   }
 
   /**
+   * Determines if the property is an array value.
+   * @param resourceType The FHIR resource type.
+   * @param propertyName The property name.
+   * @returns True if the property is an array.
+   */
+  private isArrayParam(resourceType: string, propertyName: string): boolean {
+    const typeDef = definitions[resourceType];
+    if (!typeDef?.properties) {
+      return false;
+    }
+
+    const propertyDef = typeDef.properties[propertyName];
+    if (!propertyDef) {
+      return false;
+    }
+
+    return propertyDef.type === 'array';
+  }
+
+  private buildColumnValue(searchParam: SearchParameter, value: any): any {
+    if (searchParam.type === 'boolean') {
+      return (value === 'true');
+    }
+
+    if (searchParam.type === 'reference') {
+      return this.buildReferenceColumns(searchParam, value);
+    }
+
+    let strValue = (typeof value === 'string') ? value : JSON.stringify(value);
+    if (strValue.length > 128) {
+      strValue = strValue.substr(0, 128);
+    }
+    return strValue;
+  }
+
+  /**
    * Builds the columns to write for a Reference value.
-   * @param columns The output search columns.
    * @param searchParam The search parameter definition.
    * @param value The property value of the reference.
    */
-  private buildReferenceColumns(columns: Record<string, any>, searchParam: SearchParameter, value: any): void {
+  private buildReferenceColumns(searchParam: SearchParameter, value: any): string | undefined {
     const refStr = (value as Reference).reference;
     if (!refStr) {
-      return;
+      return undefined;
     }
 
-    const columnName = convertCodeToColumnName(searchParam.code as string);
-
     // TODO: Consider normalizing reference string when known (searchParam.target.length === 1)
-    columns[columnName] = refStr;
+    return refStr;
   }
 
   private async writeLookupTables(resource: Resource): Promise<void> {

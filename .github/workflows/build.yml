@@ -9,6 +9,20 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: medplum_test
+          POSTGRES_USER: medplum
+          POSTGRES_PASSWORD: medplum
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432/tcp
     steps:
       - uses: actions/checkout@v2
         with:
@@ -29,6 +43,9 @@ jobs:
             ${{ runner.os }}-
       - name: Build Project
         run: ./scripts/build.sh
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@master
         env:
