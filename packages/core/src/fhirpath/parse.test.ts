@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry } from '../fhir/Bundle';
+import { Observation } from '../fhir/Observation';
 import { SearchParameter } from '../fhir/SearchParameter';
 import { parse } from './parse';
 
@@ -178,14 +179,6 @@ test('Evaluate fails on unrecognized function', () => {
 	expect(() => parse('asdf()').eval(0)).toThrowError('Unrecognized function');
 });
 
-// test('Evaluate where fails with zero arguments', () => {
-// 	expect(() => parse('where()').eval(0)).toThrowError('Unexpected number of arguments to where function');
-// });
-
-// test('Evaluate where fails with more than one arguments', () => {
-// 	expect(() => parse('where(1, 2, 3)').eval(0)).toThrowError('Unexpected number of arguments to where function');
-// });
-
 test('Evaluate FHIRPath where function', () => {
 	const result = parse('Patient.telecom.where(system=\'email\')').eval({
 		resourceType: 'Patient',
@@ -227,4 +220,20 @@ test('Eval all SearchParameter expressions', () => {
 			expect(() => parse((expression))).not.toThrow();
 		}
 	}
+});
+
+test('Eval FHIRPath resolve function', () => {
+	const observation: Observation = {
+		resourceType: 'Observation',
+		subject: {
+			reference: 'Patient/123'
+		}
+	};
+
+	const result = parse('Observation.subject.resolve()').eval(observation);
+
+	expect(result).toMatchObject({
+		resourceType: 'Patient',
+		id: '123'
+	});
 });

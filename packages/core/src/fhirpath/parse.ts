@@ -89,9 +89,9 @@ class Parser {
 		let left = prefix.parse(this, token);
 
 		while (precedence < this.getPrecedence()) {
-			const token = this.consume();
-			const infix = this.infixParselets[token.id];
-			left = infix.parse(this, left, token);
+			const next = this.consume();
+			const infix = this.infixParselets[next.id];
+			left = infix.parse(this, left, next);
 		}
 
 		return new FhirPathAtom(this.original, left);
@@ -210,25 +210,11 @@ class UnionAtom implements Atom {
 	}
 }
 
-// class AsAtom implements Atom {
-// 	constructor(public readonly left: Atom, public readonly right: Atom) { }
-// 	eval(context: any): any {
-// 		return this.left.eval(context);
-// 	}
-// }
-
-// class AsAtom implements Atom {
-// 	constructor(public readonly left: Atom, public readonly right: Atom) { }
-// 	eval(context: any): any {
-// 		return this.left.eval(context);
-// 	}
-// }
-
 class FunctionAtom implements Atom {
 	constructor(
 		public readonly name: string,
 		public readonly args: Atom[],
-		public readonly impl: (context: any, ...args: Atom[]) => any
+		public readonly impl: (context: any, ...a: Atom[]) => any
 	) { }
 	eval(context: any): any {
 		return this.impl(context, ...this.args);
@@ -240,8 +226,15 @@ const functions: Record<string, (context: any, ...args: Atom[]) => any> = {
 		return applyMaybeArray(context, e => condition.eval(e) ? e : undefined);
 	},
 
-	resolve(context: any, expression: Atom): any {
-		return context;
+	resolve(context: any): any {
+		// If context is a reference, turn it into a resource
+		// Otherwise return undefined
+		const refStr = context.reference;
+		if (!refStr) {
+			return undefined;
+		}
+		const [resourceType, id] = refStr.split('/');
+		return { resourceType, id };
 	},
 
 	as(context: any, expression: Atom): any {
@@ -297,14 +290,8 @@ const parserBuilder = new ParserBuilder()
 	.infixLeft('+', Precedence.AddSub, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x + y))
 	.infixLeft('-', Precedence.AddSub, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x - y))
 	.infixLeft('|', Precedence.Union, (left, _, right) => new UnionAtom(left, right))
-	// .infixLeft('as', Precedence.Union, (left, _, right) => new AsAtom(left, right))
 	.infixLeft('=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x === y))
 	.infixLeft('Symbol', Precedence.Union, (left: Atom, symbol: Token, right: Atom) => {
-		// console.log('try symbol as infix');
-		// if (symbol.value === 'as') {
-		// 	// return new AsAtom(left, right);
-		// 	return new BinaryOperatorAtom(left, right, (x, y) => x);
-		// }
 		switch (symbol.value) {
 			case 'as':
 				return new BinaryOperatorAtom(left, right, (x, y) => x);
@@ -317,15 +304,10 @@ const parserBuilder = new ParserBuilder()
 		}
 	});
 
-// export const parse = (input: string) => parserBuilder.construct(input).parse();
-
 export function parse(input: string): Atom {
 	try {
-		// return parse(input);
 		return parserBuilder.construct(input).parse();
 	} catch (error) {
-		// console.log(`Parse error "${error}" on "${input}`);
-		// throw error;
 		throw new Error(`FhirPathError on "${input}": ${error}`);
 	}
 }
