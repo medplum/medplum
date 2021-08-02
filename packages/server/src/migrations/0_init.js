@@ -1713,12 +1713,6 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('address', 128);
-    t.string('addressCity', 128);
-    t.string('addressCountry', 128);
-    t.string('addressPostalcode', 128);
-    t.string('addressState', 128);
-    t.string('addressUse', 128);
     t.string('administeredBy', 128);
     t.specificType('endpoint', 'varchar(128)[]');
     t.string('name', 128);
@@ -1847,12 +1841,6 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('address', 128);
-    t.string('addressCity', 128);
-    t.string('addressCountry', 128);
-    t.string('addressPostalcode', 128);
-    t.string('addressState', 128);
-    t.string('addressUse', 128);
     t.specificType('endpoint', 'varchar(128)[]');
     t.string('name', 128);
     t.string('near', 128);
@@ -2536,12 +2524,6 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.boolean('active');
-    t.specificType('address', 'varchar(128)[]');
-    t.string('addressCity', 128);
-    t.string('addressCountry', 128);
-    t.string('addressPostalcode', 128);
-    t.string('addressState', 128);
-    t.string('addressUse', 128);
     t.specificType('endpoint', 'varchar(128)[]');
     t.string('name', 128);
     t.string('partof', 128);
@@ -2563,17 +2545,14 @@ export async function up(knex) {
     t.uuid('project').notNullable();
     t.boolean('active');
     t.date('date');
-    t.string('email', 128);
     t.specificType('endpoint', 'varchar(128)[]');
     t.specificType('location', 'varchar(128)[]');
     t.specificType('network', 'varchar(128)[]');
     t.string('participatingOrganization', 128);
-    t.string('phone', 128);
     t.string('primaryOrganization', 128);
     t.string('role', 128);
     t.string('service', 128);
     t.specificType('specialty', 'varchar(128)[]');
-    t.specificType('telecom', 'varchar(128)[]');
   });
 
   await knex.schema.createTable('OrganizationAffiliation_History', t => {
@@ -2604,27 +2583,15 @@ export async function up(knex) {
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
     t.boolean('active');
-    t.specificType('address', 'varchar(128)[]');
-    t.string('addressCity', 128);
-    t.string('addressCountry', 128);
-    t.string('addressPostalcode', 128);
-    t.string('addressState', 128);
-    t.string('addressUse', 128);
     t.date('birthdate');
     t.date('deathDate');
     t.string('deceased', 128);
-    t.string('email', 128);
-    t.string('family', 128);
     t.string('gender', 128);
     t.string('generalPractitioner', 128);
-    t.string('given', 128);
     t.string('language', 128);
     t.specificType('link', 'varchar(128)[]');
-    t.specificType('name', 'varchar(128)[]');
     t.string('organization', 128);
-    t.string('phone', 128);
     t.string('phonetic', 128);
-    t.specificType('telecom', 'varchar(128)[]');
   });
 
   await knex.schema.createTable('Patient_History', t => {
@@ -2681,20 +2648,10 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.specificType('address', 'varchar(128)[]');
-    t.string('addressCity', 128);
-    t.string('addressCountry', 128);
-    t.string('addressPostalcode', 128);
-    t.string('addressState', 128);
-    t.string('addressUse', 128);
     t.date('birthdate');
-    t.string('email', 128);
     t.string('gender', 128);
-    t.string('phone', 128);
     t.string('phonetic', 128);
-    t.specificType('telecom', 'varchar(128)[]');
     t.specificType('link', 'varchar(128)[]');
-    t.specificType('name', 'varchar(128)[]');
     t.string('organization', 128);
     t.string('patient', 128);
     t.string('practitioner', 128);
@@ -2750,22 +2707,10 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('address', 'varchar(128)[]');
-    t.string('addressCity', 128);
-    t.string('addressCountry', 128);
-    t.string('addressPostalcode', 128);
-    t.string('addressState', 128);
-    t.string('addressUse', 128);
-    t.string('email', 128);
-    t.string('family', 128);
     t.string('gender', 128);
-    t.string('given', 128);
-    t.string('phone', 128);
     t.string('phonetic', 128);
-    t.specificType('telecom', 'varchar(128)[]');
     t.boolean('active');
     t.specificType('communication', 'varchar(128)[]');
-    t.specificType('name', 'varchar(128)[]');
   });
 
   await knex.schema.createTable('Practitioner_History', t => {
@@ -2780,9 +2725,6 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('email', 128);
-    t.string('phone', 128);
-    t.specificType('telecom', 'varchar(128)[]');
     t.boolean('active');
     t.date('date');
     t.specificType('endpoint', 'varchar(128)[]');
@@ -2919,20 +2861,10 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.specificType('address', 'varchar(128)[]');
-    t.string('addressCity', 128);
-    t.string('addressCountry', 128);
-    t.string('addressPostalcode', 128);
-    t.string('addressState', 128);
-    t.string('addressUse', 128);
     t.date('birthdate');
-    t.string('email', 128);
     t.string('gender', 128);
-    t.string('phone', 128);
     t.string('phonetic', 128);
-    t.specificType('telecom', 'varchar(128)[]');
     t.boolean('active');
-    t.specificType('name', 'varchar(128)[]');
     t.string('patient', 128);
     t.specificType('relationship', 'varchar(128)[]');
   });
@@ -3790,9 +3722,30 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
   });
 
+  await knex.schema.createTable('Address', t => {
+    t.uuid('id').notNullable().primary();
+    t.uuid('resourceId').notNullable().index();
+    t.text('content').notNullable();
+    t.string('address', 128).index();
+    t.string('city', 64).index();
+    t.string('country', 64).index();
+    t.string('postalCode', 32).index();
+    t.string('state', 32).index();
+    t.string('use', 32).index();
+  });
+
+  await knex.schema.createTable('ContactPoint', t => {
+    t.uuid('id').notNullable().primary();
+    t.uuid('resourceId').notNullable().index();
+    t.text('content').notNullable();
+    t.string('system', 128).index();
+    t.string('value', 128).index();
+  });
+
   await knex.schema.createTable('Identifier', t => {
     t.uuid('id').notNullable().primary();
     t.uuid('resourceId').notNullable().index();
+    t.text('content').notNullable();
     t.string('system', 128).index();
     t.string('value', 128).index();
   });
@@ -3800,6 +3753,7 @@ export async function up(knex) {
   await knex.schema.createTable('HumanName', t => {
     t.uuid('id').notNullable().primary();
     t.uuid('resourceId').notNullable().index();
+    t.text('content').notNullable();
     t.string('name', 128).index();
     t.string('given', 128).index();
     t.string('family', 128).index();

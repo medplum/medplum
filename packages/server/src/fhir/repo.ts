@@ -1,4 +1,4 @@
-import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, Reference, Resource, SearchParameter, SearchRequest, parseFhirPath } from '@medplum/core';
+import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { Knex } from 'knex';
@@ -6,7 +6,7 @@ import validator from 'validator';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { executeQuery, getKnex } from '../database';
 import { logger } from '../logger';
-import { HumanNameTable, IdentifierTable, LookupTable } from './lookuptable';
+import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { allOk, badRequest, created, isNotFound, isOk, notFound, notModified } from './outcomes';
 import { definitions, validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
@@ -70,6 +70,8 @@ const protectedResourceTypes = [
  * The lookup tables array includes a list of special tables for search indexing.
  */
 const lookupTables: LookupTable[] = [
+  new AddressTable(),
+  new ContactPointTable(),
   new HumanNameTable(),
   new IdentifierTable()
 ];
@@ -263,7 +265,7 @@ export class Repository {
     }
 
     const knex = getKnex();
-    const builder = knex.select('content').from(resourceType);
+    const builder = knex.select(resourceType + '.content').from(resourceType);
     this.addSearchFilters(builder, searchRequest);
 
     const count = searchRequest.count || 10;
