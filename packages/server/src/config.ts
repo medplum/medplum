@@ -17,7 +17,6 @@ export interface MedplumServerConfig {
 }
 
 export interface MedplumDatabaseConfig {
-  client: 'pg' | 'sqlite3';
   host?: string;
   port?: number;
   database?: string;
@@ -75,6 +74,23 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
       throw new Error('Unrecognized config type: ' + configType);
   }
   return cachedConfig;
+}
+
+/**
+ * Loads the configuration setting for unit and integration tests.
+ * @returns The configuration for tests.
+ */
+export async function loadTestConfig(): Promise<MedplumServerConfig> {
+  const config = await loadConfig('file:medplum.config.json');
+  return {
+    ...config,
+    database: {
+      ...config.database,
+      host: process.env['POSTGRES_HOST'] ?? 'localhost',
+      port: process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT']) : 5432,
+      database: 'medplum_test'
+    }
+  };
 }
 
 /**
@@ -136,7 +152,6 @@ async function loadAwsSecrets(secretId: string): Promise<MedplumDatabaseConfig> 
 
   const secrets = JSON.parse(result.SecretString) as AwsDatabaseSecrets;
   return {
-    client: secrets.engine === 'postgres' ? 'pg' : 'sqlite3',
     host: secrets.host,
     database: secrets.dbname,
     port: secrets.port,

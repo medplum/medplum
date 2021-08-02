@@ -1,13 +1,13 @@
-import { Account, Communication, createReference, Encounter, getReferenceString, Observation, Operator, Patient, Reference } from '@medplum/core';
+import { Account, Communication, createReference, Encounter, getReferenceString, Observation, Operator, Patient, Reference, SearchParameter } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { loadConfig } from '../config';
+import { loadTestConfig } from '../config';
 import { ADMIN_USER_ID, MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
 import { getPatientId, repo, Repository } from './repo';
 
 beforeAll(async () => {
-  await loadConfig('file:medplum.config.json');
-  await initDatabase({ client: 'sqlite3' });
+  const config = await loadTestConfig();
+  await initDatabase(config.database);
 });
 
 afterAll(async () => {
@@ -15,10 +15,12 @@ afterAll(async () => {
 });
 
 test('Patient resource with identifier', async (done) => {
+  const identifier = randomUUID();
+
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }],
-    identifier: [{ system: 'https://www.example.com', value: '123' }]
+    identifier: [{ system: 'https://www.example.com', value: identifier }]
   });
 
   expect(createOutcome.id).toEqual('created');
@@ -28,7 +30,7 @@ test('Patient resource with identifier', async (done) => {
     filters: [{
       code: 'identifier',
       operator: Operator.EQUALS,
-      value: '123'
+      value: identifier
     }]
   });
 
@@ -39,9 +41,11 @@ test('Patient resource with identifier', async (done) => {
 });
 
 test('Patient resource with name', async (done) => {
+  const familyName = randomUUID();
+
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
-    name: [{ given: ['Alice'], family: 'Smithbottom' }],
+    name: [{ given: ['Alice'], family: familyName }],
     identifier: [{ system: 'https://www.example.com', value: '123' }]
   });
 
@@ -52,7 +56,7 @@ test('Patient resource with name', async (done) => {
     filters: [{
       code: 'family',
       operator: Operator.EQUALS,
-      value: 'Smithbottom'
+      value: familyName
     }]
   });
 
@@ -60,6 +64,100 @@ test('Patient resource with name', async (done) => {
   expect(searchResult?.entry?.length).toEqual(1);
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
   done();
+});
+
+test('Patient resource with address', async () => {
+  const addressLine = randomUUID();
+  const addressCity = randomUUID();
+
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    address: [{
+      use: 'both',
+      line: [addressLine],
+      city: addressCity,
+      state: 'CA',
+      postalCode: '94111',
+      country: 'US'
+    }]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+
+  const [searchOutcome1, searchResult1] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'address',
+      operator: Operator.CONTAINS,
+      value: addressLine
+    }]
+  });
+
+  expect(searchOutcome1.id).toEqual('ok');
+  expect(searchResult1?.entry?.length).toEqual(1);
+  expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+
+  const [searchOutcome2, searchResult2] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'address-city',
+      operator: Operator.EQUALS,
+      value: addressCity
+    }]
+  });
+
+  expect(searchOutcome2.id).toEqual('ok');
+  expect(searchResult2?.entry?.length).toEqual(1);
+  expect(searchResult2?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+});
+
+test('Patient resource with telecom', async () => {
+  const email = randomUUID();
+  const phone = randomUUID();
+
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    telecom: [
+      {
+        system: 'email',
+        value: email
+      },
+      {
+        system: 'phone',
+        value: phone
+      }
+    ]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+
+  const [searchOutcome1, searchResult1] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'email',
+      operator: Operator.CONTAINS,
+      value: email
+    }]
+  });
+
+  expect(searchOutcome1.id).toEqual('ok');
+  expect(searchResult1?.entry?.length).toEqual(1);
+  expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+
+  const [searchOutcome2, searchResult2] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'phone',
+      operator: Operator.EQUALS,
+      value: phone
+    }]
+  });
+
+  expect(searchOutcome2.id).toEqual('ok');
+  expect(searchResult2?.entry?.length).toEqual(1);
+  expect(searchResult2?.entry?.[0]?.resource?.id).toEqual(patient?.id);
 });
 
 test('Repo read malformed reference', async (done) => {
@@ -329,4 +427,20 @@ test('Search for Communications by Encounter', async (done) => {
   expect(searchResult?.entry?.length).toEqual(1);
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(comm1?.id);
   done();
+});
+
+test('Search for token in array', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'SearchParameter',
+    filters: [{
+      code: 'base',
+      operator: Operator.EQUALS,
+      value: 'Patient'
+    }],
+    count: 100
+  });
+
+  expect(outcome.id).toEqual('ok');
+  expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'name')).not.toBeUndefined();
+  expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'email')).not.toBeUndefined();
 });

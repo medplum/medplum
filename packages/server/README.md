@@ -16,6 +16,11 @@ CREATE USER medplum WITH PASSWORD 'medplum';
 GRANT ALL PRIVILEGES ON DATABASE medplum TO medplum;
 \c medplum;
 CREATE EXTENSION "uuid-ossp";
+
+CREATE DATABASE medplum_test;
+GRANT ALL PRIVILEGES ON DATABASE medplum_test TO medplum;
+\c medplum_test;
+CREATE EXTENSION "uuid-ossp";
 ```
 
 ## Dev server:

@@ -1,4 +1,4 @@
-import { ElementDefinition, ElementDefinitionType, StructureDefinition } from './fhir';
+import { ElementDefinition, ElementDefinitionType, SearchParameter, StructureDefinition } from './fhir';
 
 /**
  * An IndexedStructureDefinition is a lookup-optimized version of a StructureDefinition.
@@ -40,6 +40,7 @@ export interface IndexedStructureDefinition {
 export interface TypeSchema {
   display: string;
   properties: { [name: string]: PropertySchema };
+  searchParams?: SearchParameter[];
   description?: string;
   backboneElement?: boolean;
 }
