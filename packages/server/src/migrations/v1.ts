@@ -5,7 +5,7 @@
 
 import { PoolClient } from 'pg';
 
-export async function migrateDatabase(client: PoolClient) {
+export async function run(client: PoolClient) {
 
   await client.query(`CREATE TABLE IF NOT EXISTS "Account" (
     "id" UUID NOT NULL PRIMARY KEY,

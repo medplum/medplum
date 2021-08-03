@@ -185,13 +185,13 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
 function writeMigrations(): void {
   const b = new FileBuilder(INDENT);
   buildMigrationUp(b);
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/0_init.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
   b.append('import { PoolClient } from \'pg\';');
   b.newLine();
-  b.append('export async function migrateDatabase(client: PoolClient) {');
+  b.append('export async function run(client: PoolClient) {');
   b.indentCount++;
 
   for (const fhirType of fhirTypes) {
