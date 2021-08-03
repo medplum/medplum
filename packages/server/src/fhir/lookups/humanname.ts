@@ -1,6 +1,6 @@
 import { Filter, formatFamilyName, formatGivenName, formatHumanName, HumanName, Resource, SearchParameter, SortRule } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { getKnex } from '../../database';
+import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
@@ -59,12 +59,12 @@ export class HumanNameTable implements LookupTable {
     const existing = await this.getNames(resourceId);
 
     if (!compareArrays(names, existing)) {
-      const knex = getKnex();
+      const client = getClient();
 
       if (existing.length > 0) {
         await new DeleteQuery('HumanName')
           .where('resourceId', Operator.EQUALS, resourceId)
-          .execute(knex);
+          .execute(client);
       }
 
       for (let i = 0; i < names.length; i++) {
@@ -77,7 +77,7 @@ export class HumanNameTable implements LookupTable {
           name: formatHumanName(name),
           given: formatGivenName(name),
           family: formatFamilyName(name)
-        }).execute(knex);
+        }).execute(client);
       }
     }
   }
@@ -123,7 +123,7 @@ export class HumanNameTable implements LookupTable {
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
-      .execute(getKnex())
+      .execute(getClient())
       .then(result => result.map(row => JSON.parse(row.content) as HumanName));
   }
 }

@@ -1,6 +1,6 @@
 import { ContactPoint, Filter, Resource, SearchParameter, SortRule } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { getKnex } from '../../database';
+import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
@@ -59,12 +59,12 @@ export class ContactPointTable implements LookupTable {
     const existing = await this.getExisting(resourceId);
 
     if (!compareArrays(contactPoints, existing)) {
-      const knex = getKnex();
+      const client = getClient();
 
       if (existing.length > 0) {
         await new DeleteQuery('ContactPoint')
           .where('resourceId', Operator.EQUALS, resourceId)
-          .execute(knex);
+          .execute(client);
       }
 
       for (let i = 0; i < contactPoints.length; i++) {
@@ -76,7 +76,7 @@ export class ContactPointTable implements LookupTable {
           content: JSON.stringify(contactPoint),
           system: contactPoint.system,
           value: contactPoint.value
-        }).execute(knex);
+        }).execute(client);
       }
     }
   }
@@ -129,7 +129,7 @@ export class ContactPointTable implements LookupTable {
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
-      .execute(getKnex())
+      .execute(getClient())
       .then(result => result.map(row => JSON.parse(row.content) as ContactPoint));
   }
 }

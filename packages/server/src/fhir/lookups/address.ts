@@ -1,6 +1,6 @@
 import { Address, Filter, formatAddress, Resource, SearchParameter, SortRule } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { getKnex } from '../../database';
+import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
@@ -70,12 +70,12 @@ export class AddressTable implements LookupTable {
     const existing = await this.getExistingAddresses(resourceId);
 
     if (!compareArrays(addresses, existing)) {
-      const knex = getKnex();
+      const client = getClient();
 
       if (existing.length > 0) {
         await new DeleteQuery('Address')
           .where('resourceId', Operator.EQUALS, resourceId)
-          .execute(knex);
+          .execute(client);
       }
 
       for (let i = 0; i < addresses.length; i++) {
@@ -91,7 +91,7 @@ export class AddressTable implements LookupTable {
           postalCode: address.postalCode,
           state: address.state,
           use: address.use
-        }).execute(knex);
+        }).execute(client);
       }
     }
   }
@@ -181,7 +181,7 @@ export class AddressTable implements LookupTable {
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
-      .execute(getKnex())
+      .execute(getClient())
       .then(result => result.map(row => JSON.parse(row.content) as Address));
   }
 }

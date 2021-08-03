@@ -3,7 +3,7 @@ import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import validator from 'validator';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
-import { getKnex } from '../database';
+import { getClient } from '../database';
 import { logger } from '../logger';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { allOk, badRequest, created, isNotFound, isOk, notFound, notModified } from './outcomes';
@@ -110,11 +110,11 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
-    const knex = getKnex();
+    const client = getClient();
     const rows = await new SelectQuery(resourceType)
       .column('content')
       .where('id', Operator.EQUALS, id)
-      .execute(knex);
+      .execute(client);
 
     if (rows.length === 0) {
       return [notFound, undefined];
@@ -141,11 +141,11 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
-    const knex = getKnex();
+    const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')
       .column('content')
       .where('id', Operator.EQUALS, id)
-      .execute(knex);
+      .execute(client);
 
     return [allOk, {
       resourceType: 'Bundle',
@@ -166,12 +166,12 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
-    const knex = getKnex();
+    const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')
       .column('content')
       .where('id', Operator.EQUALS, id)
       .where('versionId', Operator.EQUALS, vid)
-      .execute(knex);
+      .execute(client);
 
     if (rows.length === 0) {
       return [notFound, undefined];
@@ -262,7 +262,7 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
-    const knex = getKnex();
+    const client = getClient();
     const builder = new SelectQuery(resourceType)
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
@@ -277,7 +277,7 @@ export class Repository {
     builder.offset(count * page);
 
     const total = await this.getTotalCount(searchRequest);
-    const rows = await builder.execute(knex);
+    const rows = await builder.execute(client);
 
     return [allOk, {
       resourceType: 'Bundle',
@@ -296,20 +296,20 @@ export class Repository {
    * @returns The total number of matching results.
    */
   private async getTotalCount(searchRequest: SearchRequest): Promise<number> {
-    const knex = getKnex();
+    const client = getClient();
     const builder = new SelectQuery(searchRequest.resourceType)
       .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
 
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
-    const rows = await builder.execute(knex);
+    const rows = await builder.execute(client);
     return rows[0].count as number;
   }
 
   /**
    * Adds all "JOIN" expressions to the query builder.
    * Ensures that each join is only done once.
-   * @param builder The knex query builder.
+   * @param builder The client query builder.
    * @param searchRequest The search request.
    */
   private addJoins(builder: SelectQuery, searchRequest: SearchRequest): void {
@@ -335,7 +335,7 @@ export class Repository {
 
   /**
    * Adds all search filters as "WHERE" clauses to the query builder.
-   * @param builder The knex query builder.
+   * @param builder The client query builder.
    * @param searchRequest The search request.
    */
   private addSearchFilters(builder: SelectQuery, searchRequest: SearchRequest): void {
@@ -344,7 +344,7 @@ export class Repository {
 
   /**
    * Adds a single search filter as "WHERE" clause to the query builder.
-   * @param builder The knex query builder.
+   * @param builder The client query builder.
    * @param searchRequest The search request.
    * @param filter The search filter.
    */
@@ -391,7 +391,7 @@ export class Repository {
 
   /**
    * Adds all "order by" clauses to the query builder.
-   * @param builder The knex query builder.
+   * @param builder The client query builder.
    * @param searchRequest The search request.
    */
   private addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
@@ -400,7 +400,7 @@ export class Repository {
 
   /**
    * Adds a single "order by" clause to the query builder.
-   * @param builder The knex query builder.
+   * @param builder The client query builder.
    * @param searchRequest The search request.
    * @param sortRule The sort rule.
    */
@@ -426,7 +426,7 @@ export class Repository {
   }
 
   private async writeResource(resource: Resource): Promise<void> {
-    const knex = getKnex();
+    const client = getClient();
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = JSON.stringify(resource);
@@ -450,14 +450,14 @@ export class Repository {
       }
     }
 
-    await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(knex);
+    await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(client);
 
     await new InsertQuery(resourceType + '_History', {
       id: resource.id,
       versionId: meta.versionId,
       lastUpdated: meta.lastUpdated,
       content
-    }).execute(knex);
+    }).execute(client);
   }
 
   /**

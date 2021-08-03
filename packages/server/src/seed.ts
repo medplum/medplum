@@ -3,7 +3,7 @@ import { readJson } from '@medplum/definitions';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { ADMIN_USER_ID, MEDPLUM_ORGANIZATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
-import { getKnex } from './database';
+import { getClient } from './database';
 import { isOk, OperationOutcomeError, repo } from './fhir';
 import { InsertQuery } from './fhir/sql';
 import { logger } from './logger';
@@ -193,7 +193,7 @@ async function createClientApplication(): Promise<void> {
  * Creates test ValueSetElement rows.
  */
 async function createValueSetElements(): Promise<void> {
-  const knex = getKnex();
+  const client = getClient();
   const system = 'https://snomed.info/sct';
 
   const values = [
@@ -209,7 +209,7 @@ async function createValueSetElements(): Promise<void> {
       system,
       code: value.id,
       display: value.name
-    }).execute(knex);
+    }).execute(client);
   }
 }
 

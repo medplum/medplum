@@ -1,10 +1,10 @@
-import { Client, Pool, PoolClient } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { MedplumDatabaseConfig } from './config';
 import { migrateDatabase } from './migrations/0_init';
 
 let pool: Pool | undefined;
 
-export function getKnex(): Pool {
+export function getClient(): Pool {
   if (!pool) {
     throw new Error('Database not setup');
   }
@@ -20,7 +20,7 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
     password: config.password
   });
 
-  let client: PoolClient | undefined;;
+  let client: PoolClient | undefined;
   try {
     client = await pool.connect();
     await migrateDatabase(client);

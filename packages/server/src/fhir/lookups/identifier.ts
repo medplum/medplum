@@ -1,6 +1,6 @@
 import { Filter, Identifier, Resource, SearchParameter, SortRule } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { getKnex } from '../../database';
+import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
@@ -49,12 +49,12 @@ export class IdentifierTable implements LookupTable {
     const existing = await this.getIdentifiers(resourceId);
 
     if (!compareArrays(identifiers, existing)) {
-      const knex = getKnex();
+      const client = getClient();
 
       if (existing.length > 0) {
         await new DeleteQuery('Identifier')
           .where('resourceId', Operator.EQUALS, resourceId)
-          .execute(knex);
+          .execute(client);
       }
 
       for (let i = 0; i < identifiers.length; i++) {
@@ -66,7 +66,7 @@ export class IdentifierTable implements LookupTable {
           content: JSON.stringify(identifier),
           system: identifier.system,
           value: identifier.value
-        }).execute(knex);
+        }).execute(client);
       }
     }
   }
@@ -112,7 +112,7 @@ export class IdentifierTable implements LookupTable {
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
-      .execute(getKnex())
+      .execute(getClient())
       .then(result => result.map(row => JSON.parse(row.content) as Identifier));
   }
 }
