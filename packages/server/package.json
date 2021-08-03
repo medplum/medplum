@@ -35,7 +35,6 @@
     "express-validator": "6.12.1",
     "graphql": "15.5.1",
     "jose": "3.14.3",
-    "knex": "0.95.9",
     "mustache": "4.2.0",
     "pg": "8.7.1",
     "validator": "13.6.0",

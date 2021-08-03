@@ -1,49 +1,39 @@
-import * as Knex from 'knex';
-import path from 'path';
+import { Client, Pool, PoolClient } from 'pg';
 import { MedplumDatabaseConfig } from './config';
+import { migrateDatabase } from './migrations/0_init';
 
-let knex: Knex.Knex | undefined;
+let pool: Pool | undefined;
 
-export function getKnex(): Knex.Knex {
-  if (!knex) {
+export function getKnex(): Pool {
+  if (!pool) {
     throw new Error('Database not setup');
   }
-  return knex;
+  return pool;
 }
 
 export async function initDatabase(config: MedplumDatabaseConfig): Promise<void> {
-  knex = Knex.knex({
-    client: 'pg',
-    connection: {
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      user: config.username,
-      password: config.password,
-      timezone: 'UTC'
-    },
-    useNullAsDefault: true
+  pool = new Pool({
+    host: config.host,
+    port: config.port,
+    database: config.database,
+    user: config.username,
+    password: config.password
   });
 
-  await knex.migrate.latest({ directory: path.resolve(__dirname, 'migrations') });
-}
-
-export async function closeDatabase(): Promise<void> {
-  if (knex) {
-    await knex.destroy();
-    knex = undefined;
+  let client: PoolClient | undefined;;
+  try {
+    client = await pool.connect();
+    await migrateDatabase(client);
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 }
 
-/**
- * Placeholder to "execute the query".
- * This is a passthrough function, and should not be necessary.
- * It reduces the noise in SonarJS static analysis, because SonarJS
- * does not properly interpret Knex promises.
- * See: https://github.com/SonarSource/SonarJS/issues/2658
- * @param result The query result.
- * @returns
- */
-export async function executeQuery<T>(result: T): Promise<T> {
-  return result;
+export async function closeDatabase(): Promise<void> {
+  if (pool) {
+    pool.end();
+    pool = undefined;
+  }
 }

@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { getKnex } from '../database';
 import { badRequest, sendOutcome } from './outcomes';
+import { Operator, SelectQuery } from './sql';
 
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
@@ -38,12 +39,14 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   }
 
   const knex = getKnex();
-  const elements = await knex.select('code', 'display')
-    .from('ValueSetElement')
-    .where('system', url)
-    .andWhere('display', 'LIKE', '%' + filter + '%')
+  const elements = await new SelectQuery('ValueSetElement')
+    .column('code')
+    .column('display')
+    .where('system', Operator.EQUALS, url)
+    .where('display', Operator.LIKE, '%' + filter + '%')
     .offset(offset)
     .limit(count)
+    .execute(knex)
     .then(result => result.map(row => ({
       system: url,
       code: row.code,

@@ -1,15 +1,15 @@
-import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest } from '@medplum/core';
+import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
-import { Knex } from 'knex';
 import validator from 'validator';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
-import { executeQuery, getKnex } from '../database';
+import { getKnex } from '../database';
 import { logger } from '../logger';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { allOk, badRequest, created, isNotFound, isOk, notFound, notModified } from './outcomes';
 import { definitions, validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
+import { InsertQuery, Operator, SelectQuery } from './sql';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -111,10 +111,10 @@ export class Repository {
     }
 
     const knex = getKnex();
-    const rows = await knex.select('content')
-      .from(resourceType)
-      .where('id', id)
-      .then(executeQuery);
+    const rows = await new SelectQuery(resourceType)
+      .column('content')
+      .where('id', Operator.EQUALS, id)
+      .execute(knex);
 
     if (rows.length === 0) {
       return [notFound, undefined];
@@ -142,17 +142,15 @@ export class Repository {
     }
 
     const knex = getKnex();
-    const builder = knex.select('content')
-      .from(resourceType + '_History')
-      .where('id', id)
-      .then(executeQuery);
-
-    const rows = await builder;
+    const rows = await new SelectQuery(resourceType + '_History')
+      .column('content')
+      .where('id', Operator.EQUALS, id)
+      .execute(knex);
 
     return [allOk, {
       resourceType: 'Bundle',
       type: 'history',
-      entry: rows.map(row => ({
+      entry: rows.map((row: any) => ({
         resource: JSON.parse(row.content as string)
       }))
     }];
@@ -169,11 +167,11 @@ export class Repository {
     }
 
     const knex = getKnex();
-    const rows = await knex.select('content')
-      .from(resourceType + '_History')
-      .where('id', id)
-      .andWhere('versionId', vid)
-      .then(executeQuery);
+    const rows = await new SelectQuery(resourceType + '_History')
+      .column('content')
+      .where('id', Operator.EQUALS, id)
+      .where('versionId', Operator.EQUALS, vid)
+      .execute(knex);
 
     if (rows.length === 0) {
       return [notFound, undefined];
@@ -265,8 +263,13 @@ export class Repository {
     }
 
     const knex = getKnex();
-    const builder = knex.select(resourceType + '.content').from(resourceType);
+    const builder = new SelectQuery(resourceType)
+      .column({ tableName: resourceType, columnName: 'id' })
+      .column({ tableName: resourceType, columnName: 'content' });
+
+    this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
+    this.addSortRules(builder, searchRequest);
 
     const count = searchRequest.count || 10;
     const page = searchRequest.page || 0;
@@ -274,7 +277,7 @@ export class Repository {
     builder.offset(count * page);
 
     const total = await this.getTotalCount(searchRequest);
-    const rows = await builder.then(executeQuery);
+    const rows = await builder.execute(knex);
 
     return [allOk, {
       resourceType: 'Bundle',
@@ -294,10 +297,40 @@ export class Repository {
    */
   private async getTotalCount(searchRequest: SearchRequest): Promise<number> {
     const knex = getKnex();
-    const builder = knex.count(searchRequest.resourceType + '.id').from(searchRequest.resourceType);
+    const builder = new SelectQuery(searchRequest.resourceType)
+      .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
+
+    this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
-    const rows = await builder.then(executeQuery);
+    const rows = await builder.execute(knex);
     return rows[0].count as number;
+  }
+
+  /**
+   * Adds all "JOIN" expressions to the query builder.
+   * Ensures that each join is only done once.
+   * @param builder The knex query builder.
+   * @param searchRequest The search request.
+   */
+  private addJoins(builder: SelectQuery, searchRequest: SearchRequest): void {
+    const { resourceType } = searchRequest;
+
+    const codes = new Set<string>();
+    searchRequest.filters?.forEach(filter => codes.add(filter.code));
+    searchRequest.sortRules?.forEach(sortRule => codes.add(sortRule.code));
+
+    const joinedTables = new Map<string, LookupTable>();
+    codes.forEach(code => {
+      const param = getSearchParameter(resourceType, code);
+      if (param) {
+        const lookupTable = this.getLookupTable(param);
+        if (lookupTable) {
+          joinedTables.set(lookupTable.getName(), lookupTable);
+        }
+      }
+    });
+
+    joinedTables.forEach(lookupTable => lookupTable.addJoin(builder, resourceType));
   }
 
   /**
@@ -305,7 +338,7 @@ export class Repository {
    * @param builder The knex query builder.
    * @param searchRequest The search request.
    */
-  private addSearchFilters(builder: Knex.QueryBuilder, searchRequest: SearchRequest): void {
+  private addSearchFilters(builder: SelectQuery, searchRequest: SearchRequest): void {
     searchRequest.filters?.forEach(filter => this.addSearchFilter(builder, searchRequest, filter));
   }
 
@@ -315,7 +348,7 @@ export class Repository {
    * @param searchRequest The search request.
    * @param filter The search filter.
    */
-  private addSearchFilter(builder: Knex.QueryBuilder, searchRequest: SearchRequest, filter: Filter): void {
+  private addSearchFilter(builder: SelectQuery, searchRequest: SearchRequest, filter: Filter): void {
     const resourceType = searchRequest.resourceType;
     const param = getSearchParameter(resourceType, filter.code);
     if (!param || !param.code) {
@@ -325,7 +358,7 @@ export class Repository {
     const lookupTable = this.getLookupTable(param);
     const columnName = convertCodeToColumnName(param.code);
     if (lookupTable) {
-      lookupTable.addSearchConditions(resourceType, builder, filter);
+      lookupTable.addWhere(builder, filter);
     } else if (param.type === 'string') {
       this.addStringSearchFilter(builder, columnName, filter.value);
     } else if (param.type === 'token') {
@@ -333,27 +366,58 @@ export class Repository {
     } else if (param.type === 'reference') {
       this.addReferenceSearchFilter(builder, param, filter);
     } else {
-      builder.where(columnName, filter.value);
+      builder.where(columnName, Operator.EQUALS, filter.value);
     }
   }
 
-  private addStringSearchFilter(builder: Knex.QueryBuilder, columnName: string, query: string): void {
-    builder.where(columnName, 'LIKE', '%' + query + '%');
+  private addStringSearchFilter(builder: SelectQuery, columnName: string, query: string): void {
+    builder.where(columnName, Operator.LIKE, '%' + query + '%');
   }
 
-  private addTokenSearchFilter(builder: Knex.QueryBuilder, resourceType: string, columnName: string, query: string): void {
+  private addTokenSearchFilter(builder: SelectQuery, resourceType: string, columnName: string, query: string): void {
     if (this.isArrayParam(resourceType, columnName)) {
-      builder.whereRaw(`?=ANY("${columnName}")`, query);
+      builder.where(columnName, Operator.ARRAY_CONTAINS, query);
     } else {
-      builder.where(columnName, query);
+      builder.where(columnName, Operator.EQUALS, query);
     }
   }
 
-  private addReferenceSearchFilter(builder: Knex.QueryBuilder, param: SearchParameter, filter: Filter): void {
+  private addReferenceSearchFilter(builder: SelectQuery, param: SearchParameter, filter: Filter): void {
     const columnName = convertCodeToColumnName(param.code as string);
     // TODO: Support optional resource type when known (param.target.length === 1)
     // TODO: Support reference queries (filter.value === 'Patient?identifier=123')
-    builder.where(columnName, filter.value);
+    builder.where(columnName, Operator.EQUALS, filter.value);
+  }
+
+  /**
+   * Adds all "order by" clauses to the query builder.
+   * @param builder The knex query builder.
+   * @param searchRequest The search request.
+   */
+  private addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
+    searchRequest.sortRules?.forEach(sortRule => this.addOrderByClause(builder, searchRequest, sortRule));
+  }
+
+  /**
+   * Adds a single "order by" clause to the query builder.
+   * @param builder The knex query builder.
+   * @param searchRequest The search request.
+   * @param sortRule The sort rule.
+   */
+  private addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+    const resourceType = searchRequest.resourceType;
+    const param = getSearchParameter(resourceType, sortRule.code);
+    if (!param || !param.code) {
+      return;
+    }
+
+    const lookupTable = this.getLookupTable(param);
+    const columnName = convertCodeToColumnName(param.code);
+    if (lookupTable) {
+      lookupTable.addOrderBy(builder, sortRule);
+    } else {
+      builder.orderBy(columnName, !!sortRule.descending);
+    }
   }
 
   private async write(resource: Resource): Promise<void> {
@@ -386,14 +450,14 @@ export class Repository {
       }
     }
 
-    await knex(resourceType).insert(columns).onConflict('id').merge().then(executeQuery);
+    await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(knex);
 
-    await knex(resourceType + '_History').insert({
+    await new InsertQuery(resourceType + '_History', {
       id: resource.id,
       versionId: meta.versionId,
       lastUpdated: meta.lastUpdated,
       content
-    }).then(executeQuery);
+    }).execute(knex);
   }
 
   /**
