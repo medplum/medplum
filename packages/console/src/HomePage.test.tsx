@@ -106,7 +106,7 @@ const setup = () => {
   );
 };
 
-test('HomePage renders', async (done) => {
+test('HomePage renders', async () => {
   setup();
 
   await act(async () => {
@@ -115,10 +115,9 @@ test('HomePage renders', async (done) => {
 
   const control = screen.getByTestId('search-control');
   expect(control).not.toBeUndefined();
-  done();
 });
 
-test('HomePage next page button', async (done) => {
+test('HomePage next page button', async () => {
   history.push = jest.fn();
 
   setup();
@@ -132,10 +131,9 @@ test('HomePage next page button', async (done) => {
   });
 
   expect(history.push).toBeCalled();
-  done();
 });
 
-test('HomePage prev page button', async (done) => {
+test('HomePage prev page button', async () => {
   history.push = jest.fn();
 
   setup();
@@ -149,10 +147,9 @@ test('HomePage prev page button', async (done) => {
   });
 
   expect(history.push).toBeCalled();
-  done();
 });
 
-test('HomePage new button', async (done) => {
+test('HomePage new button', async () => {
   mockRouter.push = jest.fn();
 
   setup();
@@ -166,5 +163,4 @@ test('HomePage new button', async (done) => {
   });
 
   expect(mockRouter.push).toBeCalled();
-  done();
 });

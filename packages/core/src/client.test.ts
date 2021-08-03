@@ -150,7 +150,7 @@ test('Client signIn', async () => {
   expect(result.resourceType).toBe('User');
 });
 
-test('Client signInWithRedirect', async (done) => {
+test('Client signInWithRedirect', async () => {
   // Mock window.crypto
   Object.defineProperty(global.self, 'crypto', {
     value: {
@@ -191,10 +191,9 @@ test('Client signInWithRedirect', async (done) => {
   // Next, test processing the response code
   const result2 = client.signInWithRedirect();
   expect(result2).not.toBeUndefined();
-  done();
 });
 
-test('Client signOutWithRedirect', async (done) => {
+test('Client signOutWithRedirect', async () => {
   // Mock window.location.assign
   global.window = Object.create(window);
   Object.defineProperty(window, 'location', {
@@ -207,19 +206,17 @@ test('Client signOutWithRedirect', async (done) => {
   const client = new MedplumClient(defaultOptions);
   client.signOutWithRedirect();
   expect(window.location.assign).toBeCalled();
-  done();
 });
 
-test('Client read expired and refresh', async (done) => {
+test('Client read expired and refresh', async () => {
   tokenExpired = true;
 
   const client = new MedplumClient(defaultOptions);
   const result = await client.get('expired');
   expect(result).not.toBeUndefined();
-  done();
 });
 
-test('Client read expired and refresh with unAuthenticated callback', async (done) => {
+test('Client read expired and refresh with unAuthenticated callback', async () => {
   tokenExpired = true;
   canRefresh = false;
 
@@ -228,7 +225,6 @@ test('Client read expired and refresh with unAuthenticated callback', async (don
   const result = client.get('expired');
   await expect(result).rejects.toEqual('Failed to fetch tokens');
   expect(onUnauthenticated).toBeCalled();
-  done();
 });
 
 test('Client read resource', async () => {

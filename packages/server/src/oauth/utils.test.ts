@@ -31,7 +31,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Login with missing client ID', async (done) => {
+test('Login with missing client ID', async () => {
   const [outcome, login] = await tryLogin({
     clientId: '',
     email: 'admin@medplum.com',
@@ -44,10 +44,9 @@ test('Login with missing client ID', async (done) => {
 
   expect(isOk(outcome)).toBe(false);
   expect(login).toBeUndefined();
-  done();
 });
 
-test('Login with missing email', async (done) => {
+test('Login with missing email', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
     email: '',
@@ -60,10 +59,9 @@ test('Login with missing email', async (done) => {
 
   expect(isOk(outcome)).toBe(false);
   expect(login).toBeUndefined();
-  done();
 });
 
-test('Login with missing password', async (done) => {
+test('Login with missing password', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
     email: 'admin@medplum.com',
@@ -76,10 +74,9 @@ test('Login with missing password', async (done) => {
 
   expect(isOk(outcome)).toBe(false);
   expect(login).toBeUndefined();
-  done();
 });
 
-test('Login with missing role', async (done) => {
+test('Login with missing role', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
     email: 'admin@medplum.com',
@@ -92,10 +89,9 @@ test('Login with missing role', async (done) => {
 
   expect(isOk(outcome)).toBe(false);
   expect(login).toBeUndefined();
-  done();
 });
 
-test('Login with missing ', async (done) => {
+test('Login with missing ', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
     email: 'admin@medplum.com',
@@ -108,10 +104,9 @@ test('Login with missing ', async (done) => {
 
   expect(isOk(outcome)).toBe(true);
   expect(login).not.toBeUndefined();
-  done();
 });
 
-test('Login successfully', async (done) => {
+test('Login successfully', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
     email: 'admin@medplum.com',
@@ -124,5 +119,4 @@ test('Login successfully', async (done) => {
 
   expect(isOk(outcome)).toBe(true);
   expect(login).not.toBeUndefined();
-  done();
 });

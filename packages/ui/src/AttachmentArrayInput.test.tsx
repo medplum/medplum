@@ -57,7 +57,7 @@ test('AttachmentArrayInput renders empty array', () => {
   });
 });
 
-test('AttachmentArrayInput renders attachments', async (done) => {
+test('AttachmentArrayInput renders attachments', async () => {
   await act(async () => {
     await setup({
       name: 'test',
@@ -68,5 +68,4 @@ test('AttachmentArrayInput renders attachments', async (done) => {
     });
     await waitFor(() => screen.getByTestId('attachment-input'));
   });
-  done();
 });

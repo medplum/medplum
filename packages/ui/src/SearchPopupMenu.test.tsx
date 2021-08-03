@@ -94,7 +94,7 @@ test('SearchPopupMenu renders date field', () => {
   expect(screen.getByText('After...')).not.toBeUndefined();
 });
 
-test('SearchPopupMenu renders date field submenu', async (done) => {
+test('SearchPopupMenu renders date field submenu', async () => {
   render(<SearchPopupMenu
     schema={schema}
     search={{
@@ -120,7 +120,6 @@ test('SearchPopupMenu renders date field submenu', async (done) => {
   expect(screen.getByText('Tomorrow')).not.toBeUndefined();
   expect(screen.getByText('Today')).not.toBeUndefined();
   expect(screen.getByText('Yesterday')).not.toBeUndefined();
-  done();
 });
 
 test('SearchPopupMenu renders numeric field', () => {
@@ -141,7 +140,7 @@ test('SearchPopupMenu renders numeric field', () => {
   expect(screen.getByText('Sort Smallest to Largest')).not.toBeUndefined();
 });
 
-test('SearchPopupMenu sort', async (done) => {
+test('SearchPopupMenu sort', async () => {
   let currSearch: SearchRequest = {
     resourceType: 'Patient'
   };
@@ -174,10 +173,9 @@ test('SearchPopupMenu sort', async (done) => {
   expect(currSearch.sortRules?.length).toEqual(1);
   expect(currSearch.sortRules?.[0].code).toEqual('birthDate');
   expect(currSearch.sortRules?.[0].descending).toEqual(true);
-  done();
 });
 
-test('SearchPopupMenu text submenu prompt', async (done) => {
+test('SearchPopupMenu text submenu prompt', async () => {
   window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
   let currSearch: SearchRequest = {
@@ -216,10 +214,9 @@ test('SearchPopupMenu text submenu prompt', async (done) => {
     } as Filter);
   }
 
-  done();
 });
 
-test('SearchPopupMenu date submenu prompt', async (done) => {
+test('SearchPopupMenu date submenu prompt', async () => {
   window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
   let currSearch: SearchRequest = {
@@ -268,5 +265,4 @@ test('SearchPopupMenu date submenu prompt', async (done) => {
     } as Filter);
   }
 
-  done();
 });

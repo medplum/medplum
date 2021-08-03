@@ -14,7 +14,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Patient resource with identifier', async (done) => {
+test('Patient resource with identifier', async () => {
   const identifier = randomUUID();
 
   const [createOutcome, patient] = await repo.createResource<Patient>({
@@ -37,10 +37,9 @@ test('Patient resource with identifier', async (done) => {
   expect(searchOutcome.id).toEqual('ok');
   expect(searchResult?.entry?.length).toEqual(1);
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
-  done();
 });
 
-test('Patient resource with name', async (done) => {
+test('Patient resource with name', async () => {
   const familyName = randomUUID();
 
   const [createOutcome, patient] = await repo.createResource<Patient>({
@@ -63,7 +62,6 @@ test('Patient resource with name', async (done) => {
   expect(searchOutcome.id).toEqual('ok');
   expect(searchResult?.entry?.length).toEqual(1);
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
-  done();
 });
 
 test('Patient resource with address', async () => {
@@ -160,7 +158,7 @@ test('Patient resource with telecom', async () => {
   expect(searchResult2?.entry?.[0]?.resource?.id).toEqual(patient?.id);
 });
 
-test('Repo read malformed reference', async (done) => {
+test('Repo read malformed reference', async () => {
   const [outcome1, resource1] = await repo.readReference({ reference: undefined });
   expect(outcome1.id).not.toBe('ok');
   expect(resource1).toBeUndefined();
@@ -176,8 +174,6 @@ test('Repo read malformed reference', async (done) => {
   const [outcome4, resource4] = await repo.readReference({ reference: 'Patient/123/foo' });
   expect(outcome4.id).not.toBe('ok');
   expect(resource4).toBeUndefined();
-
-  done();
 });
 
 test('getPatientId', () => {
@@ -192,7 +188,7 @@ test('getPatientId', () => {
   expect(getPatientId({ subject: { reference: 'Patient/123' } } as Observation, ['subject'])).toBe('123');
 });
 
-test('Update patient', async (done) => {
+test('Update patient', async () => {
   const [createOutcome, patient1] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Update1'], family: 'Update1' }]
@@ -208,10 +204,9 @@ test('Update patient', async (done) => {
   expect(updateOutcome.id).toEqual('ok');
   expect(patient2?.id).toEqual(patient1?.id);
   expect(patient2?.meta?.versionId).not.toEqual(patient1?.meta?.versionId);
-  done();
 });
 
-test('Update patient no changes', async (done) => {
+test('Update patient no changes', async () => {
   const [createOutcome, patient1] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Update1'], family: 'Update1' }]
@@ -226,10 +221,9 @@ test('Update patient no changes', async (done) => {
   expect(updateOutcome.id).toEqual('not-modified');
   expect(patient2?.id).toEqual(patient1?.id);
   expect(patient2?.meta?.versionId).toEqual(patient1?.meta?.versionId);
-  done();
 });
 
-test('Create Patient with no author', async (done) => {
+test('Create Patient with no author', async () => {
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }]
@@ -237,10 +231,9 @@ test('Create Patient with no author', async (done) => {
 
   expect(createOutcome.id).toEqual('created');
   expect(patient?.meta?.author?.reference).toEqual('system');
-  done();
 });
 
-test('Create Patient as system on behalf of author', async (done) => {
+test('Create Patient as system on behalf of author', async () => {
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }],
@@ -253,10 +246,9 @@ test('Create Patient as system on behalf of author', async (done) => {
 
   expect(createOutcome.id).toEqual('created');
   expect(patient?.meta?.author?.reference).toEqual('Practitioner/' + ADMIN_USER_ID);
-  done();
 });
 
-test('Create Patient as ClientApplication with no author', async (done) => {
+test('Create Patient as ClientApplication with no author', async () => {
   const clientApp = 'ClientApplication/' + randomUUID();
 
   const repo = new Repository({
@@ -273,10 +265,9 @@ test('Create Patient as ClientApplication with no author', async (done) => {
 
   expect(createOutcome.id).toEqual('created');
   expect(patient?.meta?.author?.reference).toEqual(clientApp);
-  done();
 });
 
-test('Create Patient as ClientApplication on behalf of author', async (done) => {
+test('Create Patient as ClientApplication on behalf of author', async () => {
   const clientApp = 'ClientApplication/' + randomUUID();
 
   const repo = new Repository({
@@ -298,10 +289,9 @@ test('Create Patient as ClientApplication on behalf of author', async (done) => 
 
   expect(createOutcome.id).toEqual('created');
   expect(patient?.meta?.author?.reference).toEqual('Practitioner/' + ADMIN_USER_ID);
-  done();
 });
 
-test('Create Patient as Practitioner with no author', async (done) => {
+test('Create Patient as Practitioner with no author', async () => {
   const author = 'Practitioner/' + ADMIN_USER_ID;
 
   const repo = new Repository({
@@ -318,10 +308,9 @@ test('Create Patient as Practitioner with no author', async (done) => {
 
   expect(createOutcome.id).toEqual('created');
   expect(patient?.meta?.author?.reference).toEqual(author);
-  done();
 });
 
-test('Create Patient as Practitioner on behalf of author', async (done) => {
+test('Create Patient as Practitioner on behalf of author', async () => {
   const author = 'Practitioner/' + ADMIN_USER_ID;
   const fakeAuthor = 'Practitioner/' + randomUUID();
 
@@ -348,10 +337,9 @@ test('Create Patient as Practitioner on behalf of author', async (done) => {
 
   expect(createOutcome.id).toEqual('created');
   expect(patient?.meta?.author?.reference).toEqual(author);
-  done();
 });
 
-test('Search for Communications by Encounter', async (done) => {
+test('Search for Communications by Encounter', async () => {
   const [outcome1, patient1] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }]
@@ -426,7 +414,6 @@ test('Search for Communications by Encounter', async (done) => {
   expect(searchOutcome.id).toEqual('ok');
   expect(searchResult?.entry?.length).toEqual(1);
   expect(searchResult?.entry?.[0]?.resource?.id).toEqual(comm1?.id);
-  done();
 });
 
 test('Search for token in array', async () => {

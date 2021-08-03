@@ -114,7 +114,7 @@ test('Autocomplete renders', () => {
   expect(input.value).toBe('');
 });
 
-test('Autocomplete renders default value', async (done) => {
+test('Autocomplete renders default value', async () => {
   setup({
     id: 'foo',
     resourceType: 'Patient',
@@ -129,10 +129,9 @@ test('Autocomplete renders default value', async (done) => {
 
   const selected = screen.getByTestId('selected');
   expect(selected).not.toBeUndefined();
-  done();
 });
 
-test('Autocomplete ignores empty default value', async (done) => {
+test('Autocomplete ignores empty default value', async () => {
   setup({
     id: 'foo',
     resourceType: 'Patient',
@@ -147,10 +146,9 @@ test('Autocomplete ignores empty default value', async (done) => {
 
   const hidden = screen.getByTestId('hidden') as HTMLInputElement;
   expect(hidden.value).toEqual('');
-  done();
 });
 
-test('Autocomplete backspace deletes item', async (done) => {
+test('Autocomplete backspace deletes item', async () => {
   setup({
     id: 'foo',
     resourceType: 'Patient',
@@ -173,10 +171,9 @@ test('Autocomplete backspace deletes item', async (done) => {
 
   const hidden = screen.getByTestId('hidden') as HTMLInputElement;
   expect(hidden.value).toEqual('');
-  done();
 });
 
-test('Autocomplete handles click', async (done) => {
+test('Autocomplete handles click', async () => {
   const utils = setup();
   const container = utils.getByTestId('autocomplete');
   const input = utils.getByTestId('input-element') as HTMLInputElement;
@@ -192,10 +189,9 @@ test('Autocomplete handles click', async (done) => {
   });
 
   expect(container.className).not.toContain('focused');
-  done();
 });
 
-test('Autocomplete handles input', async (done) => {
+test('Autocomplete handles input', async () => {
   const utils = setup();
   const input = utils.getByTestId('input-element') as HTMLInputElement;
 
@@ -212,10 +208,9 @@ test('Autocomplete handles input', async (done) => {
 
   const dropdown = utils.getByTestId('dropdown');
   expect(dropdown).not.toBeUndefined();
-  done();
 });
 
-test('Autocomplete move with arrow keys', async (done) => {
+test('Autocomplete move with arrow keys', async () => {
   const utils = setup();
   const input = utils.getByTestId('input-element') as HTMLInputElement;
 
@@ -242,10 +237,9 @@ test('Autocomplete move with arrow keys', async (done) => {
 
   const el = utils.getByText('Alice Smith');
   expect(el).not.toBeUndefined();
-  done();
 });
 
-test('Autocomplete backspace key', async (done) => {
+test('Autocomplete backspace key', async () => {
   const utils = setup();
   const input = utils.getByTestId('input-element') as HTMLInputElement;
 
@@ -267,10 +261,9 @@ test('Autocomplete backspace key', async (done) => {
 
   const el = utils.getByText('Alice Smith');
   expect(el).not.toBeUndefined();
-  done();
 });
 
-test('Autocomplete select resource with Enter key', async (done) => {
+test('Autocomplete select resource with Enter key', async () => {
   const utils = setup();
   const input = utils.getByTestId('input-element') as HTMLInputElement;
 
@@ -292,10 +285,9 @@ test('Autocomplete select resource with Enter key', async (done) => {
 
   const el = utils.getByText('Alice Smith');
   expect(el).not.toBeUndefined();
-  done();
 });
 
-test('Autocomplete select resource with separator key', async (done) => {
+test('Autocomplete select resource with separator key', async () => {
   const utils = setup();
   const input = utils.getByTestId('input-element') as HTMLInputElement;
 
@@ -317,10 +309,9 @@ test('Autocomplete select resource with separator key', async (done) => {
 
   const el = utils.getByText('Alice Smith');
   expect(el).not.toBeUndefined();
-  done();
 });
 
-test('Autocomplete select Create New', async (done) => {
+test('Autocomplete select Create New', async () => {
   const utils = setup({
     id: 'foo',
     resourceType: 'Patient',
@@ -347,5 +338,4 @@ test('Autocomplete select Create New', async (done) => {
 
   const el = utils.getByText('Alice Smith');
   expect(el).not.toBeUndefined();
-  done();
 });

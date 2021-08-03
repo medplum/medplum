@@ -43,7 +43,7 @@ const setup = (args?: UploadButtonProps) => {
   );
 };
 
-test('UploadButton null files', async (done) => {
+test('UploadButton null files', async () => {
   const results: Attachment[] = [];
 
   setup({
@@ -57,10 +57,9 @@ test('UploadButton null files', async (done) => {
   });
 
   expect(results.length).toEqual(0);
-  done();
 });
 
-test('UploadButton null file element', async (done) => {
+test('UploadButton null file element', async () => {
   const results: Attachment[] = [];
 
   setup({
@@ -74,10 +73,9 @@ test('UploadButton null file element', async (done) => {
   });
 
   expect(results.length).toEqual(0);
-  done();
 });
 
-test('UploadButton file without filename', async (done) => {
+test('UploadButton file without filename', async () => {
   const results: Attachment[] = [];
 
   setup({
@@ -91,10 +89,9 @@ test('UploadButton file without filename', async (done) => {
   });
 
   expect(results.length).toEqual(0);
-  done();
 });
 
-test('UploadButton upload media', async (done) => {
+test('UploadButton upload media', async () => {
   const results: Attachment[] = [];
 
   setup({
@@ -111,10 +108,9 @@ test('UploadButton upload media', async (done) => {
   });
 
   expect(results.length).toEqual(1);
-  done();
 });
 
-test('UploadButton click button', async (done) => {
+test('UploadButton click button', async () => {
   const results: Attachment[] = [];
 
   setup({
@@ -127,5 +123,4 @@ test('UploadButton click button', async (done) => {
     fireEvent.click(screen.getByTestId('upload-button'));
   });
 
-  done();
 });
