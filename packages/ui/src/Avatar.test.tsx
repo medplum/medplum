@@ -64,7 +64,7 @@ test('Avatar renders initials', () => {
   expect(utils.getByTestId('avatar')).not.toBeUndefined();
 });
 
-test('Avatar renders resource directly', async (done) => {
+test('Avatar renders resource directly', async () => {
   const utils = setup({
     resource: patient
   });
@@ -72,10 +72,9 @@ test('Avatar renders resource directly', async (done) => {
   await waitFor(() => utils.getByTestId('avatar'));
 
   expect(utils.getByTestId('avatar')).not.toBeUndefined();
-  done();
 });
 
-test('Avatar renders resource directly as link', async (done) => {
+test('Avatar renders resource directly as link', async () => {
   const utils = setup({
     resource: patient,
     link: true
@@ -84,10 +83,9 @@ test('Avatar renders resource directly as link', async (done) => {
   await waitFor(() => utils.getByTestId('avatar'));
 
   expect(utils.getByTestId('avatar')).not.toBeUndefined();
-  done();
 });
 
-test('Avatar renders after loading the resource', async (done) => {
+test('Avatar renders after loading the resource', async () => {
   const utils = setup({
     reference: {
       reference: 'Patient/' + patient.id
@@ -97,5 +95,4 @@ test('Avatar renders after loading the resource', async (done) => {
   await waitFor(() => utils.getByTestId('avatar'));
 
   expect(utils.getByTestId('avatar')).not.toBeUndefined();
-  done();
 });

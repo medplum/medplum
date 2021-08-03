@@ -11,12 +11,10 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Seeder completes successfully', async (done) => {
+test('Seeder completes successfully', async () => {
   // First time, seeder should run
   await seedDatabase();
 
   // Second time, seeder should silently ignore
   await seedDatabase();
-
-  done();
 });

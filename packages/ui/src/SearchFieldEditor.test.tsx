@@ -33,7 +33,7 @@ const schema: IndexedStructureDefinition = {
   }
 };
 
-test('SearchFieldEditor add field with Add button', async (done) => {
+test('SearchFieldEditor add field with Add button', async () => {
   window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
   let currSearch: SearchRequest = {
@@ -62,10 +62,9 @@ test('SearchFieldEditor add field with Add button', async (done) => {
   });
 
   expect(currSearch.fields).toMatchObject(['name', 'birthDate']);
-  done();
 });
 
-test('SearchFieldEditor add field with Enter key', async (done) => {
+test('SearchFieldEditor add field with Enter key', async () => {
   window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
   let currSearch: SearchRequest = {
@@ -94,10 +93,9 @@ test('SearchFieldEditor add field with Enter key', async (done) => {
   });
 
   expect(currSearch.fields).toMatchObject(['name', 'birthDate']);
-  done();
 });
 
-test('SearchFieldEditor remove field with Remove button', async (done) => {
+test('SearchFieldEditor remove field with Remove button', async () => {
   window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
   let currSearch: SearchRequest = {
@@ -126,10 +124,9 @@ test('SearchFieldEditor remove field with Remove button', async (done) => {
   });
 
   expect(currSearch.fields).toMatchObject(['name']);
-  done();
 });
 
-test('SearchFieldEditor remove field with Remove button', async (done) => {
+test('SearchFieldEditor remove field with Remove button', async () => {
   window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
   let currSearch: SearchRequest = {
@@ -158,5 +155,4 @@ test('SearchFieldEditor remove field with Remove button', async (done) => {
   });
 
   expect(currSearch.fields).toMatchObject(['name']);
-  done();
 });

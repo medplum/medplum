@@ -127,7 +127,7 @@ const setup = (args?: EncounterTimelineProps) => {
   );
 };
 
-test('EncounterTimeline renders reference', async (done) => {
+test('EncounterTimeline renders reference', async () => {
   setup({ reference: { reference: 'Encounter/' + encounterId } });
 
   await act(async () => {
@@ -137,10 +137,9 @@ test('EncounterTimeline renders reference', async (done) => {
   const items = screen.getAllByTestId('timeline-item');
   expect(items).not.toBeUndefined();
   expect(items.length).toEqual(2);
-  done();
 });
 
-test('EncounterTimeline renders resource', async (done) => {
+test('EncounterTimeline renders resource', async () => {
   setup({ resource: encounter });
 
   await act(async () => {
@@ -150,10 +149,9 @@ test('EncounterTimeline renders resource', async (done) => {
   const items = screen.getAllByTestId('timeline-item');
   expect(items).not.toBeUndefined();
   expect(items.length).toEqual(2);
-  done();
 });
 
-test('EncounterTimeline create comment', async (done) => {
+test('EncounterTimeline create comment', async () => {
   setup({ resource: encounter });
 
   // Wait for initial load
@@ -179,10 +177,9 @@ test('EncounterTimeline create comment', async (done) => {
   const items = screen.getAllByTestId('timeline-item');
   expect(items).not.toBeUndefined();
   expect(items.length).toEqual(3);
-  done();
 });
 
-test('EncounterTimeline upload media', async (done) => {
+test('EncounterTimeline upload media', async () => {
   setup({ resource: encounter });
 
   // Wait for initial load
@@ -206,5 +203,4 @@ test('EncounterTimeline upload media', async (done) => {
   const items = screen.getAllByTestId('timeline-item');
   expect(items).not.toBeUndefined();
   expect(items.length).toEqual(3);
-  done();
 });

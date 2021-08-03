@@ -14,7 +14,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Create batch with missing bundle type', async (done) => {
+test('Create batch with missing bundle type', async () => {
   const [outcome, bundle] = await createBatch(repo, {
     resourceType: 'Bundle'
   });
@@ -22,10 +22,9 @@ test('Create batch with missing bundle type', async (done) => {
   expect(isOk(outcome)).toBe(false);
   expect(outcome.issue?.[0].details?.text).toContain('Missing bundle type');
   expect(bundle).toBeUndefined();
-  done();
 });
 
-test('Create batch with invalid bundle type', async (done) => {
+test('Create batch with invalid bundle type', async () => {
   const [outcome, bundle] = await createBatch(repo, {
     resourceType: 'Bundle',
     type: 'xyz'
@@ -34,10 +33,9 @@ test('Create batch with invalid bundle type', async (done) => {
   expect(isOk(outcome)).toBe(false);
   expect(outcome.issue?.[0].details?.text).toContain('Unrecognized bundle type');
   expect(bundle).toBeUndefined();
-  done();
 });
 
-test('Create batch with missing entries', async (done) => {
+test('Create batch with missing entries', async () => {
   const [outcome, bundle] = await createBatch(repo, {
     resourceType: 'Bundle',
     type: 'batch'
@@ -46,10 +44,9 @@ test('Create batch with missing entries', async (done) => {
   expect(isOk(outcome)).toBe(false);
   expect(outcome.issue?.[0].details?.text).toContain('Missing bundle entry');
   expect(bundle).toBeUndefined();
-  done();
 });
 
-test('Create batch success', async (done) => {
+test('Create batch success', async () => {
   const patientId = randomUUID();
   const observationId = randomUUID();
 
@@ -88,6 +85,5 @@ test('Create batch success', async (done) => {
 
   expect(isOk(outcome)).toBe(true);
   expect(bundle).not.toBeUndefined();
-  done();
 });
 

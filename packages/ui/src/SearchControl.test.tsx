@@ -113,7 +113,7 @@ const setup = (args: SearchControlProps) => {
   );
 };
 
-test('SearchControl renders', async (done) => {
+test('SearchControl renders', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -135,10 +135,9 @@ test('SearchControl renders', async (done) => {
   const control = screen.getByTestId('search-control');
   expect(control).not.toBeUndefined();
   expect(props.onLoad).toBeCalled();
-  done();
 });
 
-test('SearchControl renders empty results', async (done) => {
+test('SearchControl renders empty results', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -160,10 +159,9 @@ test('SearchControl renders empty results', async (done) => {
   const control = screen.getByTestId('empty-search');
   expect(control).not.toBeUndefined();
   expect(props.onLoad).toBeCalled();
-  done();
 });
 
-test('SearchControl renders filters', async (done) => {
+test('SearchControl renders filters', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -186,10 +184,9 @@ test('SearchControl renders filters', async (done) => {
   const control = screen.getByTestId('search-control');
   expect(control).not.toBeUndefined();
   expect(props.onLoad).toBeCalled();
-  done();
 });
 
-test('SearchControl next page button', async (done) => {
+test('SearchControl next page button', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -213,10 +210,9 @@ test('SearchControl next page button', async (done) => {
   });
 
   expect(props.onChange).toBeCalled();
-  done();
 });
 
-test('SearchControl next page button without onChange listener', async (done) => {
+test('SearchControl next page button without onChange listener', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -238,10 +234,9 @@ test('SearchControl next page button without onChange listener', async (done) =>
     fireEvent.click(screen.getByTestId('next-page-button'));
   });
 
-  done();
 });
 
-test('SearchControl prev page button', async (done) => {
+test('SearchControl prev page button', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -265,10 +260,9 @@ test('SearchControl prev page button', async (done) => {
   });
 
   expect(props.onChange).toBeCalled();
-  done();
 });
 
-test('SearchControl new button', async (done) => {
+test('SearchControl new button', async () => {
   mockRouter.push = jest.fn();
 
   setup({
@@ -286,10 +280,9 @@ test('SearchControl new button', async (done) => {
   });
 
   expect(mockRouter.push).toBeCalled();
-  done();
 });
 
-test('SearchControl click on row', async (done) => {
+test('SearchControl click on row', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -318,10 +311,9 @@ test('SearchControl click on row', async (done) => {
   });
 
   expect(props.onClick).toBeCalled();
-  done();
 });
 
-test('SearchControl open field editor', async (done) => {
+test('SearchControl open field editor', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -347,10 +339,9 @@ test('SearchControl open field editor', async (done) => {
   const control = screen.getByTestId('search-control');
   expect(control).not.toBeUndefined();
   expect(props.onLoad).toBeCalled();
-  done();
 });
 
-test('SearchControl field editor onOk', async (done) => {
+test('SearchControl field editor onOk', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -381,10 +372,9 @@ test('SearchControl field editor onOk', async (done) => {
     fireEvent.click(screen.getByTestId('dialog-ok'));
   });
 
-  done();
 });
 
-test('SearchControl field editor onCancel', async (done) => {
+test('SearchControl field editor onCancel', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -415,10 +405,9 @@ test('SearchControl field editor onCancel', async (done) => {
     fireEvent.click(screen.getByTestId('dialog-cancel'));
   });
 
-  done();
 });
 
-test('SearchControl open filter editor', async (done) => {
+test('SearchControl open filter editor', async () => {
   const props = {
     search: {
       resourceType: 'Patient',
@@ -444,5 +433,4 @@ test('SearchControl open filter editor', async (done) => {
   const control = screen.getByTestId('search-control');
   expect(control).not.toBeUndefined();
   expect(props.onLoad).toBeCalled();
-  done();
 });

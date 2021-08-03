@@ -59,7 +59,7 @@ test('ResourceName renders', () => {
   expect(utils.getByText('Alice Smith')).not.toBeUndefined();
 });
 
-test('ResourceName renders resource directly', async (done) => {
+test('ResourceName renders resource directly', async () => {
   const utils = setup({
     resource: patient
   });
@@ -67,10 +67,9 @@ test('ResourceName renders resource directly', async (done) => {
   await waitFor(() => utils.getByText('Alice Smith'));
 
   expect(utils.getByText('Alice Smith')).not.toBeUndefined();
-  done();
 });
 
-test('ResourceName renders resource directly as link', async (done) => {
+test('ResourceName renders resource directly as link', async () => {
   const utils = setup({
     resource: patient,
     link: true
@@ -79,10 +78,9 @@ test('ResourceName renders resource directly as link', async (done) => {
   await waitFor(() => utils.getByText('Alice Smith'));
 
   expect(utils.getByText('Alice Smith')).not.toBeUndefined();
-  done();
 });
 
-test('ResourceName renders after loading the resource', async (done) => {
+test('ResourceName renders after loading the resource', async () => {
   const utils = setup({
     reference: {
       reference: 'Patient/' + patient.id
@@ -92,5 +90,4 @@ test('ResourceName renders after loading the resource', async (done) => {
   await waitFor(() => utils.getByText('Alice Smith'));
 
   expect(utils.getByText('Alice Smith')).not.toBeUndefined();
-  done();
 });

@@ -90,7 +90,7 @@ const setup = (args: ResourceHistoryTableProps) => {
   );
 };
 
-test('ResourceHistoryTable renders', async (done) => {
+test('ResourceHistoryTable renders', async () => {
   const utils = setup({
     resourceType: 'Patient',
     id: patientId
@@ -98,20 +98,18 @@ test('ResourceHistoryTable renders', async (done) => {
 
   const el = await utils.findByText('Loading...');
   expect(el).not.toBeUndefined();
-  done();
 });
 
-test('ResourceHistoryTable renders preloaded history', async (done) => {
+test('ResourceHistoryTable renders preloaded history', async () => {
   const utils = setup({
     history: historyBundle
   });
 
   const el = await utils.findByText(version1Id);
   expect(el).not.toBeUndefined();
-  done();
 });
 
-test('ResourceHistoryTable renders after loading the resource', async (done) => {
+test('ResourceHistoryTable renders after loading the resource', async () => {
   const utils = setup({
     resourceType: 'Patient',
     id: patientId
@@ -119,5 +117,4 @@ test('ResourceHistoryTable renders after loading the resource', async (done) => 
 
   const el = await utils.findByText(version1Id);
   expect(el).not.toBeUndefined();
-  done();
 });

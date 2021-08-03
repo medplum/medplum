@@ -16,7 +16,7 @@ test('HumanNameInput renders', () => {
   expect(family.value).toEqual('Smith');
 });
 
-test('HumanNameInput change events', async (done) => {
+test('HumanNameInput change events', async () => {
   render(
     <HumanNameInput name="test" value={{}} />
   );
@@ -50,10 +50,9 @@ test('HumanNameInput change events', async (done) => {
     family: 'Simpson',
     suffix: ['Sr']
   });
-  done();
 });
 
-test('HumanNameInput set blanks', async (done) => {
+test('HumanNameInput set blanks', async () => {
   render(
     <HumanNameInput name="test" value={{
       use: 'official',
@@ -87,5 +86,4 @@ test('HumanNameInput set blanks', async (done) => {
   const hidden = screen.getByTestId('hidden') as HTMLInputElement;
   expect(hidden).not.toBeUndefined();
   expect(hidden.value).toEqual('{}');
-  done();
 });

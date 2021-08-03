@@ -90,7 +90,7 @@ const setup = (args: ResourceBlameProps) => {
   );
 };
 
-test('ResourceBlame renders', async (done) => {
+test('ResourceBlame renders', async () => {
   const utils = setup({
     resourceType: 'Patient',
     id: patientId
@@ -98,10 +98,9 @@ test('ResourceBlame renders', async (done) => {
 
   const el = await utils.findByText('Loading...');
   expect(el).not.toBeUndefined();
-  done();
 });
 
-test('ResourceBlame renders preloaded history', async (done) => {
+test('ResourceBlame renders preloaded history', async () => {
   const utils = setup({
     history: historyBundle
   });
@@ -109,10 +108,9 @@ test('ResourceBlame renders preloaded history', async (done) => {
   const el = await utils.findAllByText(version1Id);
   expect(el).not.toBeUndefined();
   expect(el.length).not.toBe(0);
-  done();
 });
 
-test('ResourceBlame renders after loading the resource', async (done) => {
+test('ResourceBlame renders after loading the resource', async () => {
   const utils = setup({
     resourceType: 'Patient',
     id: patientId
@@ -121,5 +119,4 @@ test('ResourceBlame renders after loading the resource', async (done) => {
   const el = await utils.findAllByText(version1Id);
   expect(el).not.toBeUndefined();
   expect(el.length).not.toBe(0);
-  done();
 });
