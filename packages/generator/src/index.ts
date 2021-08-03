@@ -1,5 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { writeFileSync } from 'fs';
+import { JSONSchema4 } from 'json-schema';
 import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
 
@@ -26,9 +27,9 @@ const baseResourceProperties = ['resourceType', 'id', 'meta', 'implicitRules', '
 const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
 
 const searchParams = readJson('fhir/r4/search-parameters.json');
-const schema = readJson('fhir/r4/fhir.schema.json');
+const schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema4;
 const patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json');
-const definitions = schema.definitions;
+const definitions = schema.definitions as { [k: string]: JSONSchema4; };
 
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
@@ -243,20 +244,19 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
 function buildSearchColumns(b: FileBuilder, resourceType: string): void {
   for (const entry of searchParams.entry) {
     const searchParam = entry.resource;
-    if (searchParam.base?.includes(resourceType)) {
-      if (isLookupTableParam(searchParam)) {
-        continue;
-      }
-      const columnName = convertCodeToColumnName(searchParam.code);
-      if (searchParam.code === 'active') {
-        b.append('t.boolean(\'' + columnName + '\');');
-      } else if (searchParam.type === 'date') {
-        b.append('t.date(\'' + columnName + '\');');
-      } else if (isArrayParam(resourceType, searchParam.code)) {
-        b.append('t.specificType(\'' + columnName + '\', \'varchar(128)[]\');');
-      } else {
-        b.append('t.string(\'' + columnName + '\', 128);');
-      }
+    if (!searchParam.base?.includes(resourceType)) {
+      continue;
+    }
+    if (isLookupTableParam(searchParam)) {
+      continue;
+    }
+    const columnName = convertCodeToColumnName(searchParam.code);
+    if (searchParam.code === 'active') {
+      b.append('t.boolean(\'' + columnName + '\');');
+    } else if (isArrayParam(resourceType, searchParam.code)) {
+      b.append('t.specificType(\'' + columnName + '\', \'text[]\');');
+    } else {
+      b.append('t.text(\'' + columnName + '\');');
     }
   }
 }
@@ -301,7 +301,7 @@ function isArrayParam(resourceType: string, propertyName: string): boolean {
     return false;
   }
 
-  const propertyDef = typeDef.properties[propertyName];
+  const propertyDef = typeDef.properties?.[propertyName];
   if (!propertyDef) {
     return false;
   }
@@ -317,12 +317,12 @@ function buildAddressTable(b: FileBuilder): void {
   b.append('t.uuid(\'resourceId\').notNullable().index();');
   b.append('t.integer(\'index\').notNullable();');
   b.append('t.text(\'content\').notNullable();');
-  b.append('t.string(\'address\', 128).index();');
-  b.append('t.string(\'city\', 64).index();');
-  b.append('t.string(\'country\', 64).index();');
-  b.append('t.string(\'postalCode\', 32).index();');
-  b.append('t.string(\'state\', 32).index();');
-  b.append('t.string(\'use\', 32).index();');
+  b.append('t.text(\'address\').index();');
+  b.append('t.text(\'city\').index();');
+  b.append('t.text(\'country\').index();');
+  b.append('t.text(\'postalCode\').index();');
+  b.append('t.text(\'state\').index();');
+  b.append('t.text(\'use\').index();');
   b.indentCount--;
   b.append('});');
 }
@@ -335,8 +335,8 @@ function buildContactPointTable(b: FileBuilder): void {
   b.append('t.uuid(\'resourceId\').notNullable().index();');
   b.append('t.integer(\'index\').notNullable();');
   b.append('t.text(\'content\').notNullable();');
-  b.append('t.string(\'system\', 128).index();');
-  b.append('t.string(\'value\', 128).index();');
+  b.append('t.text(\'system\').index();');
+  b.append('t.text(\'value\').index();');
   b.indentCount--;
   b.append('});');
 }
@@ -349,8 +349,8 @@ function buildIdentifierTable(b: FileBuilder): void {
   b.append('t.uuid(\'resourceId\').notNullable().index();');
   b.append('t.integer(\'index\').notNullable();');
   b.append('t.text(\'content\').notNullable();');
-  b.append('t.string(\'system\', 128).index();');
-  b.append('t.string(\'value\', 128).index();');
+  b.append('t.text(\'system\').index();');
+  b.append('t.text(\'value\').index();');
   b.indentCount--;
   b.append('});');
 }
@@ -363,9 +363,9 @@ function buildHumanNameTable(b: FileBuilder): void {
   b.append('t.uuid(\'resourceId\').notNullable().index();');
   b.append('t.integer(\'index\').notNullable();');
   b.append('t.text(\'content\').notNullable();');
-  b.append('t.string(\'name\', 128).index();');
-  b.append('t.string(\'given\', 128).index();');
-  b.append('t.string(\'family\', 128).index();');
+  b.append('t.text(\'name\').index();');
+  b.append('t.text(\'given\').index();');
+  b.append('t.text(\'family\').index();');
   b.indentCount--;
   b.append('});');
 }
@@ -375,9 +375,9 @@ function buildValueSetElementTable(b: FileBuilder): void {
   b.append('await knex.schema.createTable(\'ValueSetElement\', t => {');
   b.indentCount++;
   b.append('t.uuid(\'id\').notNullable().primary();');
-  b.append('t.string(\'system\', 128).index();');
-  b.append('t.string(\'code\', 128).index();');
-  b.append('t.string(\'display\', 128).index();');
+  b.append('t.text(\'system\').index();');
+  b.append('t.text(\'code\').index();');
+  b.append('t.text(\'display\').index();');
   b.indentCount--;
   b.append('});');
 }
