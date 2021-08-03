@@ -454,11 +454,7 @@ export class Repository {
       return this.buildReferenceColumns(searchParam, value);
     }
 
-    let strValue = (typeof value === 'string') ? value : JSON.stringify(value);
-    if (strValue.length > 128) {
-      strValue = strValue.substr(0, 128);
-    }
-    return strValue;
+    return (typeof value === 'string') ? value : JSON.stringify(value);
   }
 
   /**

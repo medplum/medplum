@@ -11,13 +11,13 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('name', 128);
-    t.string('owner', 128);
-    t.string('patient', 128);
-    t.date('period');
-    t.string('status', 128);
-    t.specificType('subject', 'varchar(128)[]');
-    t.string('type', 128);
+    t.text('name');
+    t.text('owner');
+    t.text('patient');
+    t.text('period');
+    t.text('status');
+    t.specificType('subject', 'text[]');
+    t.text('type');
   });
 
   await knex.schema.createTable('Account_History', t => {
@@ -32,27 +32,27 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composedOf', 128);
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('dependsOn', 128);
-    t.string('derivedFrom', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('predecessor', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('successor', 128);
-    t.string('title', 128);
-    t.specificType('topic', 'varchar(128)[]');
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('composedOf');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('dependsOn');
+    t.text('derivedFrom');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('predecessor');
+    t.text('publisher');
+    t.text('status');
+    t.text('successor');
+    t.text('title');
+    t.specificType('topic', 'text[]');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('ActivityDefinition_History', t => {
@@ -68,18 +68,18 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('actuality', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.date('date');
-    t.string('event', 128);
-    t.string('location', 128);
-    t.string('recorder', 128);
-    t.string('resultingcondition', 128);
-    t.string('seriousness', 128);
-    t.string('severity', 128);
-    t.specificType('study', 'varchar(128)[]');
-    t.string('subject', 128);
-    t.string('substance', 128);
+    t.text('actuality');
+    t.specificType('category', 'text[]');
+    t.text('date');
+    t.text('event');
+    t.text('location');
+    t.text('recorder');
+    t.text('resultingcondition');
+    t.text('seriousness');
+    t.text('severity');
+    t.specificType('study', 'text[]');
+    t.text('subject');
+    t.text('substance');
   });
 
   await knex.schema.createTable('AdverseEvent_History', t => {
@@ -95,21 +95,21 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('asserter', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('clinicalStatus', 128);
-    t.string('code', 128);
-    t.string('criticality', 128);
-    t.date('date');
-    t.date('lastDate');
-    t.string('manifestation', 128);
-    t.date('onset');
-    t.string('patient', 128);
-    t.string('recorder', 128);
-    t.string('route', 128);
-    t.string('severity', 128);
-    t.string('type', 128);
-    t.string('verificationStatus', 128);
+    t.text('asserter');
+    t.specificType('category', 'text[]');
+    t.text('clinicalStatus');
+    t.text('code');
+    t.text('criticality');
+    t.text('date');
+    t.text('lastDate');
+    t.text('manifestation');
+    t.text('onset');
+    t.text('patient');
+    t.text('recorder');
+    t.text('route');
+    t.text('severity');
+    t.text('type');
+    t.text('verificationStatus');
   });
 
   await knex.schema.createTable('AllergyIntolerance_History', t => {
@@ -125,22 +125,22 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('actor', 128);
-    t.string('appointmentType', 128);
-    t.string('basedOn', 128);
-    t.date('date');
-    t.string('location', 128);
-    t.string('partStatus', 128);
-    t.string('patient', 128);
-    t.string('practitioner', 128);
-    t.string('reasonCode', 128);
-    t.string('reasonReference', 128);
-    t.string('serviceCategory', 128);
-    t.string('serviceType', 128);
-    t.specificType('slot', 'varchar(128)[]');
-    t.specificType('specialty', 'varchar(128)[]');
-    t.string('status', 128);
-    t.string('supportingInfo', 128);
+    t.text('actor');
+    t.text('appointmentType');
+    t.text('basedOn');
+    t.text('date');
+    t.text('location');
+    t.text('partStatus');
+    t.text('patient');
+    t.text('practitioner');
+    t.text('reasonCode');
+    t.text('reasonReference');
+    t.text('serviceCategory');
+    t.text('serviceType');
+    t.specificType('slot', 'text[]');
+    t.specificType('specialty', 'text[]');
+    t.text('status');
+    t.text('supportingInfo');
   });
 
   await knex.schema.createTable('Appointment_History', t => {
@@ -156,12 +156,12 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('actor', 128);
-    t.string('appointment', 128);
-    t.string('location', 128);
-    t.string('partStatus', 128);
-    t.string('patient', 128);
-    t.string('practitioner', 128);
+    t.text('actor');
+    t.text('appointment');
+    t.text('location');
+    t.text('partStatus');
+    t.text('patient');
+    t.text('practitioner');
   });
 
   await knex.schema.createTable('AppointmentResponse_History', t => {
@@ -177,24 +177,24 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('action', 128);
-    t.string('address', 128);
-    t.specificType('agent', 'varchar(128)[]');
-    t.string('agentName', 128);
-    t.string('agentRole', 128);
-    t.string('altid', 128);
-    t.date('date');
-    t.specificType('entity', 'varchar(128)[]');
-    t.string('entityName', 128);
-    t.string('entityRole', 128);
-    t.string('entityType', 128);
-    t.string('outcome', 128);
-    t.string('patient', 128);
-    t.string('policy', 128);
-    t.string('site', 128);
-    t.string('source', 128);
-    t.specificType('subtype', 'varchar(128)[]');
-    t.string('type', 128);
+    t.text('action');
+    t.text('address');
+    t.specificType('agent', 'text[]');
+    t.text('agentName');
+    t.text('agentRole');
+    t.text('altid');
+    t.text('date');
+    t.specificType('entity', 'text[]');
+    t.text('entityName');
+    t.text('entityRole');
+    t.text('entityType');
+    t.text('outcome');
+    t.text('patient');
+    t.text('policy');
+    t.text('site');
+    t.text('source');
+    t.specificType('subtype', 'text[]');
+    t.text('type');
   });
 
   await knex.schema.createTable('AuditEvent_History', t => {
@@ -210,11 +210,11 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('author', 128);
-    t.string('code', 128);
-    t.date('created');
-    t.string('patient', 128);
-    t.string('subject', 128);
+    t.text('author');
+    t.text('code');
+    t.text('created');
+    t.text('patient');
+    t.text('subject');
   });
 
   await knex.schema.createTable('Basic_History', t => {
@@ -258,9 +258,9 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('location', 128);
-    t.string('morphology', 128);
-    t.string('patient', 128);
+    t.text('location');
+    t.text('morphology');
+    t.text('patient');
   });
 
   await knex.schema.createTable('BodyStructure_History', t => {
@@ -275,10 +275,10 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composition', 128);
-    t.string('message', 128);
-    t.date('timestamp');
-    t.string('type', 128);
+    t.text('composition');
+    t.text('message');
+    t.text('timestamp');
+    t.text('type');
   });
 
   await knex.schema.createTable('Bundle_History', t => {
@@ -293,29 +293,29 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.string('fhirversion', 128);
-    t.specificType('format', 'varchar(128)[]');
-    t.string('guide', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('mode', 128);
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('resource', 128);
-    t.string('resourceProfile', 128);
-    t.string('securityService', 128);
-    t.string('software', 128);
-    t.string('status', 128);
-    t.string('supportedProfile', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.text('fhirversion');
+    t.specificType('format', 'text[]');
+    t.text('guide');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('mode');
+    t.text('name');
+    t.text('publisher');
+    t.text('resource');
+    t.text('resourceProfile');
+    t.text('securityService');
+    t.text('software');
+    t.text('status');
+    t.text('supportedProfile');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('CapabilityStatement_History', t => {
@@ -331,25 +331,25 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.string('activityCode', 128);
-    t.date('activityDate');
-    t.string('activityReference', 128);
-    t.string('basedOn', 128);
-    t.string('careTeam', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('condition', 128);
-    t.string('encounter', 128);
-    t.specificType('goal', 'varchar(128)[]');
-    t.string('instantiatesCanonical', 128);
-    t.string('instantiatesUri', 128);
-    t.string('intent', 128);
-    t.string('partOf', 128);
-    t.string('performer', 128);
-    t.specificType('replaces', 'varchar(128)[]');
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('date');
+    t.text('patient');
+    t.text('activityCode');
+    t.text('activityDate');
+    t.text('activityReference');
+    t.text('basedOn');
+    t.text('careTeam');
+    t.specificType('category', 'text[]');
+    t.text('condition');
+    t.text('encounter');
+    t.specificType('goal', 'text[]');
+    t.text('instantiatesCanonical');
+    t.text('instantiatesUri');
+    t.text('intent');
+    t.text('partOf');
+    t.text('performer');
+    t.specificType('replaces', 'text[]');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('CarePlan_History', t => {
@@ -365,13 +365,13 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('encounter', 128);
-    t.specificType('participant', 'varchar(128)[]');
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('date');
+    t.text('patient');
+    t.specificType('category', 'text[]');
+    t.text('encounter');
+    t.specificType('participant', 'text[]');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('CareTeam_History', t => {
@@ -401,22 +401,22 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.specificType('account', 'varchar(128)[]');
-    t.string('code', 128);
-    t.string('context', 128);
-    t.date('enteredDate');
-    t.string('enterer', 128);
-    t.string('factorOverride', 128);
-    t.date('occurrence');
-    t.string('patient', 128);
-    t.string('performerActor', 128);
-    t.string('performerFunction', 128);
-    t.string('performingOrganization', 128);
-    t.string('priceOverride', 128);
-    t.string('quantity', 128);
-    t.string('requestingOrganization', 128);
-    t.specificType('service', 'varchar(128)[]');
-    t.string('subject', 128);
+    t.specificType('account', 'text[]');
+    t.text('code');
+    t.text('context');
+    t.text('enteredDate');
+    t.text('enterer');
+    t.text('factorOverride');
+    t.text('occurrence');
+    t.text('patient');
+    t.text('performerActor');
+    t.text('performerFunction');
+    t.text('performingOrganization');
+    t.text('priceOverride');
+    t.text('quantity');
+    t.text('requestingOrganization');
+    t.specificType('service', 'text[]');
+    t.text('subject');
   });
 
   await knex.schema.createTable('ChargeItem_History', t => {
@@ -431,20 +431,20 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('ChargeItemDefinition_History', t => {
@@ -460,22 +460,22 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('careTeam', 128);
-    t.date('created');
-    t.string('detailUdi', 128);
-    t.string('encounter', 128);
-    t.string('enterer', 128);
-    t.string('facility', 128);
-    t.string('insurer', 128);
-    t.string('itemUdi', 128);
-    t.string('patient', 128);
-    t.string('payee', 128);
-    t.string('priority', 128);
-    t.string('procedureUdi', 128);
-    t.string('provider', 128);
-    t.string('status', 128);
-    t.string('subdetailUdi', 128);
-    t.string('use', 128);
+    t.text('careTeam');
+    t.text('created');
+    t.text('detailUdi');
+    t.text('encounter');
+    t.text('enterer');
+    t.text('facility');
+    t.text('insurer');
+    t.text('itemUdi');
+    t.text('patient');
+    t.text('payee');
+    t.text('priority');
+    t.text('procedureUdi');
+    t.text('provider');
+    t.text('status');
+    t.text('subdetailUdi');
+    t.text('use');
   });
 
   await knex.schema.createTable('Claim_History', t => {
@@ -491,16 +491,16 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('created');
-    t.string('disposition', 128);
-    t.string('insurer', 128);
-    t.string('outcome', 128);
-    t.string('patient', 128);
-    t.date('paymentDate');
-    t.string('request', 128);
-    t.string('requestor', 128);
-    t.string('status', 128);
-    t.string('use', 128);
+    t.text('created');
+    t.text('disposition');
+    t.text('insurer');
+    t.text('outcome');
+    t.text('patient');
+    t.text('paymentDate');
+    t.text('request');
+    t.text('requestor');
+    t.text('status');
+    t.text('use');
   });
 
   await knex.schema.createTable('ClaimResponse_History', t => {
@@ -516,18 +516,18 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.string('assessor', 128);
-    t.string('encounter', 128);
-    t.string('findingCode', 128);
-    t.string('findingRef', 128);
-    t.specificType('investigation', 'varchar(128)[]');
-    t.string('previous', 128);
-    t.specificType('problem', 'varchar(128)[]');
-    t.string('status', 128);
-    t.string('subject', 128);
-    t.string('supportingInfo', 128);
+    t.text('date');
+    t.text('patient');
+    t.text('assessor');
+    t.text('encounter');
+    t.text('findingCode');
+    t.text('findingRef');
+    t.specificType('investigation', 'text[]');
+    t.text('previous');
+    t.specificType('problem', 'text[]');
+    t.text('status');
+    t.text('subject');
+    t.text('supportingInfo');
   });
 
   await knex.schema.createTable('ClinicalImpression_History', t => {
@@ -542,25 +542,25 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.string('code', 128);
-    t.string('contentMode', 128);
-    t.string('language', 128);
-    t.string('supplements', 128);
-    t.string('system', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.text('code');
+    t.text('contentMode');
+    t.text('language');
+    t.text('supplements');
+    t.text('system');
   });
 
   await knex.schema.createTable('CodeSystem_History', t => {
@@ -576,20 +576,20 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('basedOn', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('encounter', 128);
-    t.string('instantiatesCanonical', 128);
-    t.string('instantiatesUri', 128);
-    t.specificType('medium', 'varchar(128)[]');
-    t.string('partOf', 128);
-    t.string('patient', 128);
-    t.date('received');
-    t.specificType('recipient', 'varchar(128)[]');
-    t.string('sender', 128);
-    t.date('sent');
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('basedOn');
+    t.specificType('category', 'text[]');
+    t.text('encounter');
+    t.text('instantiatesCanonical');
+    t.text('instantiatesUri');
+    t.specificType('medium', 'text[]');
+    t.text('partOf');
+    t.text('patient');
+    t.text('received');
+    t.specificType('recipient', 'text[]');
+    t.text('sender');
+    t.text('sent');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('Communication_History', t => {
@@ -605,21 +605,21 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('authored');
-    t.string('basedOn', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('encounter', 128);
-    t.string('groupIdentifier', 128);
-    t.specificType('medium', 'varchar(128)[]');
-    t.date('occurrence');
-    t.string('patient', 128);
-    t.string('priority', 128);
-    t.specificType('recipient', 'varchar(128)[]');
-    t.specificType('replaces', 'varchar(128)[]');
-    t.string('requester', 128);
-    t.string('sender', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('authored');
+    t.text('basedOn');
+    t.specificType('category', 'text[]');
+    t.text('encounter');
+    t.text('groupIdentifier');
+    t.specificType('medium', 'text[]');
+    t.text('occurrence');
+    t.text('patient');
+    t.text('priority');
+    t.specificType('recipient', 'text[]');
+    t.specificType('replaces', 'text[]');
+    t.text('requester');
+    t.text('sender');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('CommunicationRequest_History', t => {
@@ -634,20 +634,20 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.string('code', 128);
-    t.specificType('resource', 'varchar(128)[]');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.text('code');
+    t.specificType('resource', 'text[]');
   });
 
   await knex.schema.createTable('CompartmentDefinition_History', t => {
@@ -663,23 +663,23 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.string('type', 128);
-    t.specificType('attester', 'varchar(128)[]');
-    t.specificType('author', 'varchar(128)[]');
-    t.specificType('category', 'varchar(128)[]');
-    t.string('confidentiality', 128);
-    t.string('context', 128);
-    t.string('encounter', 128);
-    t.string('entry', 128);
-    t.date('period');
-    t.string('relatedId', 128);
-    t.string('relatedRef', 128);
-    t.specificType('section', 'varchar(128)[]');
-    t.string('status', 128);
-    t.string('subject', 128);
-    t.string('title', 128);
+    t.text('date');
+    t.text('patient');
+    t.text('type');
+    t.specificType('attester', 'text[]');
+    t.specificType('author', 'text[]');
+    t.specificType('category', 'text[]');
+    t.text('confidentiality');
+    t.text('context');
+    t.text('encounter');
+    t.text('entry');
+    t.text('period');
+    t.text('relatedId');
+    t.text('relatedRef');
+    t.specificType('section', 'text[]');
+    t.text('status');
+    t.text('subject');
+    t.text('title');
   });
 
   await knex.schema.createTable('Composition_History', t => {
@@ -694,31 +694,31 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.string('dependson', 128);
-    t.string('other', 128);
-    t.string('product', 128);
-    t.string('source', 128);
-    t.string('sourceCode', 128);
-    t.string('sourceSystem', 128);
-    t.string('sourceUri', 128);
-    t.string('target', 128);
-    t.string('targetCode', 128);
-    t.string('targetSystem', 128);
-    t.string('targetUri', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.text('dependson');
+    t.text('other');
+    t.text('product');
+    t.text('source');
+    t.text('sourceCode');
+    t.text('sourceSystem');
+    t.text('sourceUri');
+    t.text('target');
+    t.text('targetCode');
+    t.text('targetSystem');
+    t.text('targetUri');
   });
 
   await knex.schema.createTable('ConceptMap_History', t => {
@@ -734,26 +734,26 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.string('patient', 128);
-    t.string('abatementAge', 128);
-    t.date('abatementDate');
-    t.string('abatementString', 128);
-    t.string('asserter', 128);
-    t.string('bodySite', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('clinicalStatus', 128);
-    t.string('encounter', 128);
-    t.specificType('evidence', 'varchar(128)[]');
-    t.string('evidenceDetail', 128);
-    t.string('onsetAge', 128);
-    t.date('onsetDate');
-    t.string('onsetInfo', 128);
-    t.date('recordedDate');
-    t.string('severity', 128);
-    t.specificType('stage', 'varchar(128)[]');
-    t.string('subject', 128);
-    t.string('verificationStatus', 128);
+    t.text('code');
+    t.text('patient');
+    t.text('abatementAge');
+    t.text('abatementDate');
+    t.text('abatementString');
+    t.text('asserter');
+    t.text('bodySite');
+    t.specificType('category', 'text[]');
+    t.text('clinicalStatus');
+    t.text('encounter');
+    t.specificType('evidence', 'text[]');
+    t.text('evidenceDetail');
+    t.text('onsetAge');
+    t.text('onsetDate');
+    t.text('onsetInfo');
+    t.text('recordedDate');
+    t.text('severity');
+    t.specificType('stage', 'text[]');
+    t.text('subject');
+    t.text('verificationStatus');
   });
 
   await knex.schema.createTable('Condition_History', t => {
@@ -769,20 +769,20 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.string('action', 128);
-    t.string('actor', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('consentor', 128);
-    t.string('data', 128);
-    t.specificType('organization', 'varchar(128)[]');
-    t.date('period');
-    t.string('purpose', 128);
-    t.string('scope', 128);
-    t.string('securityLabel', 128);
-    t.string('sourceReference', 128);
-    t.string('status', 128);
+    t.text('date');
+    t.text('patient');
+    t.text('action');
+    t.text('actor');
+    t.specificType('category', 'text[]');
+    t.text('consentor');
+    t.text('data');
+    t.specificType('organization', 'text[]');
+    t.text('period');
+    t.text('purpose');
+    t.text('scope');
+    t.text('securityLabel');
+    t.text('sourceReference');
+    t.text('status');
   });
 
   await knex.schema.createTable('Consent_History', t => {
@@ -797,15 +797,15 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('authority', 'varchar(128)[]');
-    t.specificType('domain', 'varchar(128)[]');
-    t.string('instantiates', 128);
-    t.date('issued');
-    t.string('patient', 128);
-    t.specificType('signer', 'varchar(128)[]');
-    t.string('status', 128);
-    t.specificType('subject', 'varchar(128)[]');
-    t.string('url', 128);
+    t.specificType('authority', 'text[]');
+    t.specificType('domain', 'text[]');
+    t.text('instantiates');
+    t.text('issued');
+    t.text('patient');
+    t.specificType('signer', 'text[]');
+    t.text('status');
+    t.specificType('subject', 'text[]');
+    t.text('url');
   });
 
   await knex.schema.createTable('Contract_History', t => {
@@ -821,16 +821,16 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('beneficiary', 128);
-    t.string('classType', 128);
-    t.string('classValue', 128);
-    t.string('dependent', 128);
-    t.string('patient', 128);
-    t.specificType('payor', 'varchar(128)[]');
-    t.string('policyHolder', 128);
-    t.string('status', 128);
-    t.string('subscriber', 128);
-    t.string('type', 128);
+    t.text('beneficiary');
+    t.text('classType');
+    t.text('classValue');
+    t.text('dependent');
+    t.text('patient');
+    t.specificType('payor', 'text[]');
+    t.text('policyHolder');
+    t.text('status');
+    t.text('subscriber');
+    t.text('type');
   });
 
   await knex.schema.createTable('Coverage_History', t => {
@@ -846,12 +846,12 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('created');
-    t.string('enterer', 128);
-    t.string('facility', 128);
-    t.string('patient', 128);
-    t.string('provider', 128);
-    t.string('status', 128);
+    t.text('created');
+    t.text('enterer');
+    t.text('facility');
+    t.text('patient');
+    t.text('provider');
+    t.text('status');
   });
 
   await knex.schema.createTable('CoverageEligibilityRequest_History', t => {
@@ -867,14 +867,14 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('created');
-    t.string('disposition', 128);
-    t.string('insurer', 128);
-    t.string('outcome', 128);
-    t.string('patient', 128);
-    t.string('request', 128);
-    t.string('requestor', 128);
-    t.string('status', 128);
+    t.text('created');
+    t.text('disposition');
+    t.text('insurer');
+    t.text('outcome');
+    t.text('patient');
+    t.text('request');
+    t.text('requestor');
+    t.text('status');
   });
 
   await knex.schema.createTable('CoverageEligibilityResponse_History', t => {
@@ -890,11 +890,11 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.string('author', 128);
-    t.string('code', 128);
-    t.date('identified');
-    t.specificType('implicated', 'varchar(128)[]');
+    t.text('patient');
+    t.text('author');
+    t.text('code');
+    t.text('identified');
+    t.specificType('implicated', 'text[]');
   });
 
   await knex.schema.createTable('DetectedIssue_History', t => {
@@ -909,17 +909,17 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('deviceName', 128);
-    t.string('location', 128);
-    t.string('manufacturer', 128);
-    t.string('model', 128);
-    t.string('organization', 128);
-    t.string('patient', 128);
-    t.string('status', 128);
-    t.string('type', 128);
-    t.string('udiCarrier', 128);
-    t.string('udiDi', 128);
-    t.string('url', 128);
+    t.text('deviceName');
+    t.text('location');
+    t.text('manufacturer');
+    t.text('model');
+    t.text('organization');
+    t.text('patient');
+    t.text('status');
+    t.text('type');
+    t.text('udiCarrier');
+    t.text('udiDi');
+    t.text('url');
   });
 
   await knex.schema.createTable('Device_History', t => {
@@ -934,8 +934,8 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('parent', 128);
-    t.string('type', 128);
+    t.text('parent');
+    t.text('type');
   });
 
   await knex.schema.createTable('DeviceDefinition_History', t => {
@@ -950,10 +950,10 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('category', 128);
-    t.string('parent', 128);
-    t.string('source', 128);
-    t.string('type', 128);
+    t.text('category');
+    t.text('parent');
+    t.text('source');
+    t.text('type');
   });
 
   await knex.schema.createTable('DeviceMetric_History', t => {
@@ -969,23 +969,23 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.date('authoredOn');
-    t.string('basedOn', 128);
-    t.string('device', 128);
-    t.date('eventDate');
-    t.string('groupIdentifier', 128);
-    t.string('instantiatesCanonical', 128);
-    t.string('instantiatesUri', 128);
-    t.specificType('insurance', 'varchar(128)[]');
-    t.string('intent', 128);
-    t.string('performer', 128);
-    t.string('priorRequest', 128);
-    t.string('requester', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('code');
+    t.text('patient');
+    t.text('encounter');
+    t.text('authoredOn');
+    t.text('basedOn');
+    t.text('device');
+    t.text('eventDate');
+    t.text('groupIdentifier');
+    t.text('instantiatesCanonical');
+    t.text('instantiatesUri');
+    t.specificType('insurance', 'text[]');
+    t.text('intent');
+    t.text('performer');
+    t.text('priorRequest');
+    t.text('requester');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('DeviceRequest_History', t => {
@@ -1001,9 +1001,9 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.string('device', 128);
-    t.string('subject', 128);
+    t.text('patient');
+    t.text('device');
+    t.text('subject');
   });
 
   await knex.schema.createTable('DeviceUseStatement_History', t => {
@@ -1019,21 +1019,21 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.date('date');
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.string('basedOn', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('conclusion', 128);
-    t.date('issued');
-    t.specificType('media', 'varchar(128)[]');
-    t.specificType('performer', 'varchar(128)[]');
-    t.specificType('result', 'varchar(128)[]');
-    t.string('resultsInterpreter', 128);
-    t.specificType('specimen', 'varchar(128)[]');
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('code');
+    t.text('date');
+    t.text('patient');
+    t.text('encounter');
+    t.text('basedOn');
+    t.specificType('category', 'text[]');
+    t.text('conclusion');
+    t.text('issued');
+    t.specificType('media', 'text[]');
+    t.specificType('performer', 'text[]');
+    t.specificType('result', 'text[]');
+    t.text('resultsInterpreter');
+    t.specificType('specimen', 'text[]');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('DiagnosticReport_History', t => {
@@ -1049,18 +1049,18 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.string('type', 128);
-    t.specificType('author', 'varchar(128)[]');
-    t.date('created');
-    t.string('description', 128);
-    t.string('item', 128);
-    t.specificType('recipient', 'varchar(128)[]');
-    t.string('relatedId', 128);
-    t.string('relatedRef', 128);
-    t.string('source', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('patient');
+    t.text('type');
+    t.specificType('author', 'text[]');
+    t.text('created');
+    t.text('description');
+    t.text('item');
+    t.specificType('recipient', 'text[]');
+    t.text('relatedId');
+    t.text('relatedRef');
+    t.text('source');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('DocumentManifest_History', t => {
@@ -1076,30 +1076,30 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.string('type', 128);
-    t.string('encounter', 128);
-    t.string('authenticator', 128);
-    t.specificType('author', 'varchar(128)[]');
-    t.specificType('category', 'varchar(128)[]');
-    t.string('contenttype', 128);
-    t.string('custodian', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.string('event', 128);
-    t.string('facility', 128);
-    t.string('format', 128);
-    t.string('language', 128);
-    t.string('location', 128);
-    t.date('period');
-    t.string('related', 128);
-    t.string('relatesto', 128);
-    t.string('relation', 128);
-    t.string('securityLabel', 128);
-    t.string('setting', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
-    t.string('relationship', 128);
+    t.text('patient');
+    t.text('type');
+    t.text('encounter');
+    t.text('authenticator');
+    t.specificType('author', 'text[]');
+    t.specificType('category', 'text[]');
+    t.text('contenttype');
+    t.text('custodian');
+    t.text('date');
+    t.text('description');
+    t.text('event');
+    t.text('facility');
+    t.text('format');
+    t.text('language');
+    t.text('location');
+    t.text('period');
+    t.text('related');
+    t.text('relatesto');
+    t.text('relation');
+    t.text('securityLabel');
+    t.text('setting');
+    t.text('status');
+    t.text('subject');
+    t.text('relationship');
   });
 
   await knex.schema.createTable('DocumentReference_History', t => {
@@ -1114,21 +1114,21 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('EffectEvidenceSynthesis_History', t => {
@@ -1144,28 +1144,28 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.specificType('type', 'varchar(128)[]');
-    t.specificType('account', 'varchar(128)[]');
-    t.specificType('appointment', 'varchar(128)[]');
-    t.string('basedOn', 128);
-    t.string('class', 128);
-    t.specificType('diagnosis', 'varchar(128)[]');
-    t.string('episodeOfCare', 128);
-    t.string('length', 128);
-    t.specificType('location', 'varchar(128)[]');
-    t.date('locationPeriod');
-    t.string('partOf', 128);
-    t.specificType('participant', 'varchar(128)[]');
-    t.string('participantType', 128);
-    t.string('practitioner', 128);
-    t.string('reasonCode', 128);
-    t.string('reasonReference', 128);
-    t.string('serviceProvider', 128);
-    t.string('specialArrangement', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('date');
+    t.text('patient');
+    t.specificType('type', 'text[]');
+    t.specificType('account', 'text[]');
+    t.specificType('appointment', 'text[]');
+    t.text('basedOn');
+    t.text('class');
+    t.specificType('diagnosis', 'text[]');
+    t.text('episodeOfCare');
+    t.text('length');
+    t.specificType('location', 'text[]');
+    t.text('locationPeriod');
+    t.text('partOf');
+    t.specificType('participant', 'text[]');
+    t.text('participantType');
+    t.text('practitioner');
+    t.text('reasonCode');
+    t.text('reasonReference');
+    t.text('serviceProvider');
+    t.text('specialArrangement');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('Encounter_History', t => {
@@ -1180,11 +1180,11 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('connectionType', 128);
-    t.string('name', 128);
-    t.string('organization', 128);
-    t.string('payloadType', 128);
-    t.string('status', 128);
+    t.text('connectionType');
+    t.text('name');
+    t.text('organization');
+    t.text('payloadType');
+    t.text('status');
   });
 
   await knex.schema.createTable('Endpoint_History', t => {
@@ -1200,9 +1200,9 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('patient');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('EnrollmentRequest_History', t => {
@@ -1217,8 +1217,8 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('request', 128);
-    t.string('status', 128);
+    t.text('request');
+    t.text('status');
   });
 
   await knex.schema.createTable('EnrollmentResponse_History', t => {
@@ -1234,14 +1234,14 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.specificType('type', 'varchar(128)[]');
-    t.string('careManager', 128);
-    t.string('condition', 128);
-    t.string('incomingReferral', 128);
-    t.string('organization', 128);
-    t.string('status', 128);
+    t.text('date');
+    t.text('patient');
+    t.specificType('type', 'text[]');
+    t.text('careManager');
+    t.text('condition');
+    t.text('incomingReferral');
+    t.text('organization');
+    t.text('status');
   });
 
   await knex.schema.createTable('EpisodeOfCare_History', t => {
@@ -1256,27 +1256,27 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composedOf', 128);
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('dependsOn', 128);
-    t.string('derivedFrom', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('predecessor', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('successor', 128);
-    t.string('title', 128);
-    t.specificType('topic', 'varchar(128)[]');
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('composedOf');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('dependsOn');
+    t.text('derivedFrom');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('predecessor');
+    t.text('publisher');
+    t.text('status');
+    t.text('successor');
+    t.text('title');
+    t.specificType('topic', 'text[]');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('EventDefinition_History', t => {
@@ -1291,27 +1291,27 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composedOf', 128);
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('dependsOn', 128);
-    t.string('derivedFrom', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('predecessor', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('successor', 128);
-    t.string('title', 128);
-    t.specificType('topic', 'varchar(128)[]');
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('composedOf');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('dependsOn');
+    t.text('derivedFrom');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('predecessor');
+    t.text('publisher');
+    t.text('status');
+    t.text('successor');
+    t.text('title');
+    t.specificType('topic', 'text[]');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('Evidence_History', t => {
@@ -1326,27 +1326,27 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composedOf', 128);
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('dependsOn', 128);
-    t.string('derivedFrom', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('predecessor', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('successor', 128);
-    t.string('title', 128);
-    t.specificType('topic', 'varchar(128)[]');
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('composedOf');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('dependsOn');
+    t.text('derivedFrom');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('predecessor');
+    t.text('publisher');
+    t.text('status');
+    t.text('successor');
+    t.text('title');
+    t.specificType('topic', 'text[]');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('EvidenceVariable_History', t => {
@@ -1361,18 +1361,18 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('ExampleScenario_History', t => {
@@ -1388,22 +1388,22 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('careTeam', 128);
-    t.string('claim', 128);
-    t.string('coverage', 128);
-    t.date('created');
-    t.string('detailUdi', 128);
-    t.string('disposition', 128);
-    t.string('encounter', 128);
-    t.string('enterer', 128);
-    t.string('facility', 128);
-    t.string('itemUdi', 128);
-    t.string('patient', 128);
-    t.string('payee', 128);
-    t.string('procedureUdi', 128);
-    t.string('provider', 128);
-    t.string('status', 128);
-    t.string('subdetailUdi', 128);
+    t.text('careTeam');
+    t.text('claim');
+    t.text('coverage');
+    t.text('created');
+    t.text('detailUdi');
+    t.text('disposition');
+    t.text('encounter');
+    t.text('enterer');
+    t.text('facility');
+    t.text('itemUdi');
+    t.text('patient');
+    t.text('payee');
+    t.text('procedureUdi');
+    t.text('provider');
+    t.text('status');
+    t.text('subdetailUdi');
   });
 
   await knex.schema.createTable('ExplanationOfBenefit_History', t => {
@@ -1419,14 +1419,14 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.date('date');
-    t.string('patient', 128);
-    t.string('instantiatesCanonical', 128);
-    t.string('instantiatesUri', 128);
-    t.string('relationship', 128);
-    t.string('sex', 128);
-    t.string('status', 128);
+    t.text('code');
+    t.text('date');
+    t.text('patient');
+    t.text('instantiatesCanonical');
+    t.text('instantiatesUri');
+    t.text('relationship');
+    t.text('sex');
+    t.text('status');
   });
 
   await knex.schema.createTable('FamilyMemberHistory_History', t => {
@@ -1442,11 +1442,11 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.string('author', 128);
-    t.string('subject', 128);
+    t.text('date');
+    t.text('patient');
+    t.text('encounter');
+    t.text('author');
+    t.text('subject');
   });
 
   await knex.schema.createTable('Flag_History', t => {
@@ -1462,13 +1462,13 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.string('achievementStatus', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('lifecycleStatus', 128);
-    t.date('startDate');
-    t.string('subject', 128);
-    t.date('targetDate');
+    t.text('patient');
+    t.text('achievementStatus');
+    t.specificType('category', 'text[]');
+    t.text('lifecycleStatus');
+    t.text('startDate');
+    t.text('subject');
+    t.text('targetDate');
   });
 
   await knex.schema.createTable('Goal_History', t => {
@@ -1483,20 +1483,20 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.string('start', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.text('start');
   });
 
   await knex.schema.createTable('GraphDefinition_History', t => {
@@ -1512,15 +1512,15 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('actual', 128);
-    t.specificType('characteristic', 'varchar(128)[]');
-    t.string('code', 128);
-    t.string('exclude', 128);
-    t.string('managingEntity', 128);
-    t.specificType('member', 'varchar(128)[]');
-    t.string('type', 128);
-    t.string('value', 128);
-    t.string('characteristicValue', 128);
+    t.text('actual');
+    t.specificType('characteristic', 'text[]');
+    t.text('code');
+    t.text('exclude');
+    t.text('managingEntity');
+    t.specificType('member', 'text[]');
+    t.text('type');
+    t.text('value');
+    t.text('characteristicValue');
   });
 
   await knex.schema.createTable('Group_History', t => {
@@ -1535,9 +1535,9 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('patient', 128);
-    t.string('request', 128);
-    t.string('subject', 128);
+    t.text('patient');
+    t.text('request');
+    t.text('subject');
   });
 
   await knex.schema.createTable('GuidanceResponse_History', t => {
@@ -1553,16 +1553,16 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.boolean('active');
-    t.specificType('characteristic', 'varchar(128)[]');
-    t.string('coverageArea', 128);
-    t.specificType('endpoint', 'varchar(128)[]');
-    t.specificType('location', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('organization', 128);
-    t.specificType('program', 'varchar(128)[]');
-    t.string('serviceCategory', 128);
-    t.string('serviceType', 128);
-    t.specificType('specialty', 'varchar(128)[]');
+    t.specificType('characteristic', 'text[]');
+    t.text('coverageArea');
+    t.specificType('endpoint', 'text[]');
+    t.specificType('location', 'text[]');
+    t.text('name');
+    t.text('organization');
+    t.specificType('program', 'text[]');
+    t.text('serviceCategory');
+    t.text('serviceType');
+    t.specificType('specialty', 'text[]');
   });
 
   await knex.schema.createTable('HealthcareService_History', t => {
@@ -1578,22 +1578,22 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.string('basedon', 128);
-    t.string('bodysite', 128);
-    t.string('dicomClass', 128);
-    t.string('encounter', 128);
-    t.specificType('endpoint', 'varchar(128)[]');
-    t.string('instance', 128);
-    t.specificType('interpreter', 'varchar(128)[]');
-    t.specificType('modality', 'varchar(128)[]');
-    t.string('performer', 128);
-    t.string('reason', 128);
-    t.string('referrer', 128);
-    t.specificType('series', 'varchar(128)[]');
-    t.date('started');
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('patient');
+    t.text('basedon');
+    t.text('bodysite');
+    t.text('dicomClass');
+    t.text('encounter');
+    t.specificType('endpoint', 'text[]');
+    t.text('instance');
+    t.specificType('interpreter', 'text[]');
+    t.specificType('modality', 'text[]');
+    t.text('performer');
+    t.text('reason');
+    t.text('referrer');
+    t.specificType('series', 'text[]');
+    t.text('started');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('ImagingStudy_History', t => {
@@ -1609,21 +1609,21 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.string('location', 128);
-    t.string('lotNumber', 128);
-    t.string('manufacturer', 128);
-    t.specificType('performer', 'varchar(128)[]');
-    t.specificType('reaction', 'varchar(128)[]');
-    t.date('reactionDate');
-    t.string('reasonCode', 128);
-    t.string('reasonReference', 128);
-    t.string('series', 128);
-    t.string('status', 128);
-    t.string('statusReason', 128);
-    t.string('targetDisease', 128);
-    t.string('vaccineCode', 128);
+    t.text('date');
+    t.text('patient');
+    t.text('location');
+    t.text('lotNumber');
+    t.text('manufacturer');
+    t.specificType('performer', 'text[]');
+    t.specificType('reaction', 'text[]');
+    t.text('reactionDate');
+    t.text('reasonCode');
+    t.text('reasonReference');
+    t.text('series');
+    t.text('status');
+    t.text('statusReason');
+    t.text('targetDisease');
+    t.text('vaccineCode');
   });
 
   await knex.schema.createTable('Immunization_History', t => {
@@ -1639,12 +1639,12 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('doseStatus', 128);
-    t.string('immunizationEvent', 128);
-    t.string('patient', 128);
-    t.string('status', 128);
-    t.string('targetDisease', 128);
+    t.text('date');
+    t.text('doseStatus');
+    t.text('immunizationEvent');
+    t.text('patient');
+    t.text('status');
+    t.text('targetDisease');
   });
 
   await knex.schema.createTable('ImmunizationEvaluation_History', t => {
@@ -1660,13 +1660,13 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('information', 128);
-    t.string('patient', 128);
-    t.string('status', 128);
-    t.string('support', 128);
-    t.string('targetDisease', 128);
-    t.string('vaccineType', 128);
+    t.text('date');
+    t.text('information');
+    t.text('patient');
+    t.text('status');
+    t.text('support');
+    t.text('targetDisease');
+    t.text('vaccineType');
   });
 
   await knex.schema.createTable('ImmunizationRecommendation_History', t => {
@@ -1681,24 +1681,24 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.string('dependsOn', 128);
-    t.string('experimental', 128);
-    t.specificType('global', 'varchar(128)[]');
-    t.string('resource', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.text('dependsOn');
+    t.text('experimental');
+    t.specificType('global', 'text[]');
+    t.text('resource');
   });
 
   await knex.schema.createTable('ImplementationGuide_History', t => {
@@ -1713,13 +1713,13 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('administeredBy', 128);
-    t.specificType('endpoint', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('ownedBy', 128);
-    t.string('phonetic', 128);
-    t.string('status', 128);
-    t.specificType('type', 'varchar(128)[]');
+    t.text('administeredBy');
+    t.specificType('endpoint', 'text[]');
+    t.text('name');
+    t.text('ownedBy');
+    t.text('phonetic');
+    t.text('status');
+    t.specificType('type', 'text[]');
   });
 
   await knex.schema.createTable('InsurancePlan_History', t => {
@@ -1735,18 +1735,18 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('account', 128);
-    t.date('date');
-    t.string('issuer', 128);
-    t.specificType('participant', 'varchar(128)[]');
-    t.string('participantRole', 128);
-    t.string('patient', 128);
-    t.string('recipient', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
-    t.string('totalgross', 128);
-    t.string('totalnet', 128);
-    t.string('type', 128);
+    t.text('account');
+    t.text('date');
+    t.text('issuer');
+    t.specificType('participant', 'text[]');
+    t.text('participantRole');
+    t.text('patient');
+    t.text('recipient');
+    t.text('status');
+    t.text('subject');
+    t.text('totalgross');
+    t.text('totalnet');
+    t.text('type');
   });
 
   await knex.schema.createTable('Invoice_History', t => {
@@ -1761,29 +1761,29 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composedOf', 128);
-    t.string('contentType', 128);
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('dependsOn', 128);
-    t.string('derivedFrom', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('predecessor', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('successor', 128);
-    t.string('title', 128);
-    t.specificType('topic', 'varchar(128)[]');
-    t.string('type', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('composedOf');
+    t.text('contentType');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('dependsOn');
+    t.text('derivedFrom');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('predecessor');
+    t.text('publisher');
+    t.text('status');
+    t.text('successor');
+    t.text('title');
+    t.specificType('topic', 'text[]');
+    t.text('type');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('Library_History', t => {
@@ -1798,9 +1798,9 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('author', 128);
-    t.specificType('item', 'varchar(128)[]');
-    t.string('source', 128);
+    t.text('author');
+    t.specificType('item', 'text[]');
+    t.text('source');
   });
 
   await knex.schema.createTable('Linkage_History', t => {
@@ -1816,17 +1816,17 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.date('date');
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.string('emptyReason', 128);
-    t.string('item', 128);
-    t.string('notes', 128);
-    t.string('source', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
-    t.string('title', 128);
+    t.text('code');
+    t.text('date');
+    t.text('patient');
+    t.text('encounter');
+    t.text('emptyReason');
+    t.text('item');
+    t.text('notes');
+    t.text('source');
+    t.text('status');
+    t.text('subject');
+    t.text('title');
   });
 
   await knex.schema.createTable('List_History', t => {
@@ -1841,14 +1841,14 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('endpoint', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('near', 128);
-    t.string('operationalStatus', 128);
-    t.string('organization', 128);
-    t.string('partof', 128);
-    t.string('status', 128);
-    t.specificType('type', 'varchar(128)[]');
+    t.specificType('endpoint', 'text[]');
+    t.text('name');
+    t.text('near');
+    t.text('operationalStatus');
+    t.text('organization');
+    t.text('partof');
+    t.text('status');
+    t.specificType('type', 'text[]');
   });
 
   await knex.schema.createTable('Location_History', t => {
@@ -1863,27 +1863,27 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composedOf', 128);
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('dependsOn', 128);
-    t.string('derivedFrom', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('predecessor', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('successor', 128);
-    t.string('title', 128);
-    t.specificType('topic', 'varchar(128)[]');
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('composedOf');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('dependsOn');
+    t.text('derivedFrom');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('predecessor');
+    t.text('publisher');
+    t.text('status');
+    t.text('successor');
+    t.text('title');
+    t.specificType('topic', 'text[]');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('Measure_History', t => {
@@ -1899,14 +1899,14 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('evaluatedResource', 128);
-    t.string('measure', 128);
-    t.string('patient', 128);
-    t.date('period');
-    t.string('reporter', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('date');
+    t.text('evaluatedResource');
+    t.text('measure');
+    t.text('patient');
+    t.text('period');
+    t.text('reporter');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('MeasureReport_History', t => {
@@ -1922,18 +1922,18 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('basedOn', 128);
-    t.date('created');
-    t.string('device', 128);
-    t.string('encounter', 128);
-    t.string('modality', 128);
-    t.string('operator', 128);
-    t.string('patient', 128);
-    t.string('site', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
-    t.string('type', 128);
-    t.string('view', 128);
+    t.text('basedOn');
+    t.text('created');
+    t.text('device');
+    t.text('encounter');
+    t.text('modality');
+    t.text('operator');
+    t.text('patient');
+    t.text('site');
+    t.text('status');
+    t.text('subject');
+    t.text('type');
+    t.text('view');
   });
 
   await knex.schema.createTable('Media_History', t => {
@@ -1948,14 +1948,14 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('code', 128);
-    t.date('expirationDate');
-    t.string('form', 128);
-    t.specificType('ingredient', 'varchar(128)[]');
-    t.string('ingredientCode', 128);
-    t.string('lotNumber', 128);
-    t.string('manufacturer', 128);
-    t.string('status', 128);
+    t.text('code');
+    t.text('expirationDate');
+    t.text('form');
+    t.specificType('ingredient', 'text[]');
+    t.text('ingredientCode');
+    t.text('lotNumber');
+    t.text('manufacturer');
+    t.text('status');
   });
 
   await knex.schema.createTable('Medication_History', t => {
@@ -1971,18 +1971,18 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.string('patient', 128);
-    t.string('context', 128);
-    t.specificType('device', 'varchar(128)[]');
-    t.date('effectiveTime');
-    t.string('medication', 128);
-    t.specificType('performer', 'varchar(128)[]');
-    t.string('reasonGiven', 128);
-    t.string('reasonNotGiven', 128);
-    t.string('request', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('code');
+    t.text('patient');
+    t.text('context');
+    t.specificType('device', 'text[]');
+    t.text('effectiveTime');
+    t.text('medication');
+    t.specificType('performer', 'text[]');
+    t.text('reasonGiven');
+    t.text('reasonNotGiven');
+    t.text('request');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('MedicationAdministration_History', t => {
@@ -1998,20 +1998,20 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.string('patient', 128);
-    t.string('medication', 128);
-    t.string('status', 128);
-    t.string('context', 128);
-    t.string('destination', 128);
-    t.specificType('performer', 'varchar(128)[]');
-    t.string('prescription', 128);
-    t.specificType('receiver', 'varchar(128)[]');
-    t.string('responsibleparty', 128);
-    t.string('subject', 128);
-    t.string('type', 128);
-    t.date('whenhandedover');
-    t.date('whenprepared');
+    t.text('code');
+    t.text('patient');
+    t.text('medication');
+    t.text('status');
+    t.text('context');
+    t.text('destination');
+    t.specificType('performer', 'text[]');
+    t.text('prescription');
+    t.specificType('receiver', 'text[]');
+    t.text('responsibleparty');
+    t.text('subject');
+    t.text('type');
+    t.text('whenhandedover');
+    t.text('whenprepared');
   });
 
   await knex.schema.createTable('MedicationDispense_History', t => {
@@ -2026,19 +2026,19 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('classification', 128);
-    t.string('classificationType', 128);
-    t.string('code', 128);
-    t.string('doseform', 128);
-    t.specificType('ingredient', 'varchar(128)[]');
-    t.string('ingredientCode', 128);
-    t.string('manufacturer', 128);
-    t.string('monitoringProgramName', 128);
-    t.string('monitoringProgramType', 128);
-    t.specificType('monograph', 'varchar(128)[]');
-    t.string('monographType', 128);
-    t.string('sourceCost', 128);
-    t.string('status', 128);
+    t.text('classification');
+    t.text('classificationType');
+    t.text('code');
+    t.text('doseform');
+    t.specificType('ingredient', 'text[]');
+    t.text('ingredientCode');
+    t.text('manufacturer');
+    t.text('monitoringProgramName');
+    t.text('monitoringProgramType');
+    t.specificType('monograph', 'text[]');
+    t.text('monographType');
+    t.text('sourceCost');
+    t.text('status');
   });
 
   await knex.schema.createTable('MedicationKnowledge_History', t => {
@@ -2054,21 +2054,21 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.string('patient', 128);
-    t.string('medication', 128);
-    t.string('status', 128);
-    t.date('authoredon');
-    t.specificType('category', 'varchar(128)[]');
-    t.date('date');
-    t.string('encounter', 128);
-    t.string('intendedDispenser', 128);
-    t.string('intendedPerformer', 128);
-    t.string('intendedPerformertype', 128);
-    t.string('intent', 128);
-    t.string('priority', 128);
-    t.string('requester', 128);
-    t.string('subject', 128);
+    t.text('code');
+    t.text('patient');
+    t.text('medication');
+    t.text('status');
+    t.text('authoredon');
+    t.specificType('category', 'text[]');
+    t.text('date');
+    t.text('encounter');
+    t.text('intendedDispenser');
+    t.text('intendedPerformer');
+    t.text('intendedPerformertype');
+    t.text('intent');
+    t.text('priority');
+    t.text('requester');
+    t.text('subject');
   });
 
   await knex.schema.createTable('MedicationRequest_History', t => {
@@ -2084,16 +2084,16 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.string('patient', 128);
-    t.string('medication', 128);
-    t.string('status', 128);
-    t.string('category', 128);
-    t.string('context', 128);
-    t.date('effective');
-    t.string('partOf', 128);
-    t.string('source', 128);
-    t.string('subject', 128);
+    t.text('code');
+    t.text('patient');
+    t.text('medication');
+    t.text('status');
+    t.text('category');
+    t.text('context');
+    t.text('effective');
+    t.text('partOf');
+    t.text('source');
+    t.text('subject');
   });
 
   await knex.schema.createTable('MedicationStatement_History', t => {
@@ -2108,8 +2108,8 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('name', 'varchar(128)[]');
-    t.string('nameLanguage', 128);
+    t.specificType('name', 'text[]');
+    t.text('nameLanguage');
   });
 
   await knex.schema.createTable('MedicinalProduct_History', t => {
@@ -2124,10 +2124,10 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('country', 'varchar(128)[]');
-    t.string('holder', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.specificType('country', 'text[]');
+    t.text('holder');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('MedicinalProductAuthorization_History', t => {
@@ -2142,7 +2142,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('subject', 'varchar(128)[]');
+    t.specificType('subject', 'text[]');
   });
 
   await knex.schema.createTable('MedicinalProductContraindication_History', t => {
@@ -2157,7 +2157,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('subject', 'varchar(128)[]');
+    t.specificType('subject', 'text[]');
   });
 
   await knex.schema.createTable('MedicinalProductIndication_History', t => {
@@ -2186,7 +2186,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('subject', 'varchar(128)[]');
+    t.specificType('subject', 'text[]');
   });
 
   await knex.schema.createTable('MedicinalProductInteraction_History', t => {
@@ -2215,7 +2215,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('subject', 'varchar(128)[]');
+    t.specificType('subject', 'text[]');
   });
 
   await knex.schema.createTable('MedicinalProductPackaged_History', t => {
@@ -2230,8 +2230,8 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('route', 128);
-    t.string('targetSpecies', 128);
+    t.text('route');
+    t.text('targetSpecies');
   });
 
   await knex.schema.createTable('MedicinalProductPharmaceutical_History', t => {
@@ -2246,7 +2246,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('subject', 'varchar(128)[]');
+    t.specificType('subject', 'text[]');
   });
 
   await knex.schema.createTable('MedicinalProductUndesirableEffect_History', t => {
@@ -2261,24 +2261,24 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.string('category', 128);
-    t.string('event', 128);
-    t.specificType('focus', 'varchar(128)[]');
-    t.specificType('parent', 'varchar(128)[]');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.text('category');
+    t.text('event');
+    t.specificType('focus', 'text[]');
+    t.specificType('parent', 'text[]');
   });
 
   await knex.schema.createTable('MessageDefinition_History', t => {
@@ -2293,20 +2293,20 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('author', 128);
-    t.string('code', 128);
-    t.specificType('destination', 'varchar(128)[]');
-    t.string('destinationUri', 128);
-    t.string('enterer', 128);
-    t.string('event', 128);
-    t.specificType('focus', 'varchar(128)[]');
-    t.string('receiver', 128);
-    t.string('responseId', 128);
-    t.string('responsible', 128);
-    t.string('sender', 128);
-    t.string('source', 128);
-    t.string('sourceUri', 128);
-    t.string('target', 128);
+    t.text('author');
+    t.text('code');
+    t.specificType('destination', 'text[]');
+    t.text('destinationUri');
+    t.text('enterer');
+    t.text('event');
+    t.specificType('focus', 'text[]');
+    t.text('receiver');
+    t.text('responseId');
+    t.text('responsible');
+    t.text('sender');
+    t.text('source');
+    t.text('sourceUri');
+    t.text('target');
   });
 
   await knex.schema.createTable('MessageHeader_History', t => {
@@ -2322,18 +2322,18 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('chromosome', 128);
-    t.string('patient', 128);
-    t.string('referenceseqid', 128);
-    t.string('type', 128);
-    t.string('variantEnd', 128);
-    t.string('variantStart', 128);
-    t.string('windowEnd', 128);
-    t.string('windowStart', 128);
-    t.string('chromosomeVariantCoordinate', 128);
-    t.string('chromosomeWindowCoordinate', 128);
-    t.string('referenceseqidVariantCoordinate', 128);
-    t.string('referenceseqidWindowCoordinate', 128);
+    t.text('chromosome');
+    t.text('patient');
+    t.text('referenceseqid');
+    t.text('type');
+    t.text('variantEnd');
+    t.text('variantStart');
+    t.text('windowEnd');
+    t.text('windowStart');
+    t.text('chromosomeVariantCoordinate');
+    t.text('chromosomeWindowCoordinate');
+    t.text('referenceseqidVariantCoordinate');
+    t.text('referenceseqidWindowCoordinate');
   });
 
   await knex.schema.createTable('MolecularSequence_History', t => {
@@ -2348,25 +2348,25 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.specificType('contact', 'varchar(128)[]');
-    t.string('idType', 128);
-    t.string('kind', 128);
-    t.date('period');
-    t.string('responsible', 128);
-    t.string('telecom', 128);
-    t.string('type', 128);
-    t.string('value', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.specificType('contact', 'text[]');
+    t.text('idType');
+    t.text('kind');
+    t.text('period');
+    t.text('responsible');
+    t.text('telecom');
+    t.text('type');
+    t.text('value');
   });
 
   await knex.schema.createTable('NamingSystem_History', t => {
@@ -2382,17 +2382,17 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.string('additive', 128);
-    t.date('datetime');
-    t.string('formula', 128);
-    t.string('instantiatesCanonical', 128);
-    t.string('instantiatesUri', 128);
-    t.string('oraldiet', 128);
-    t.string('provider', 128);
-    t.string('status', 128);
-    t.specificType('supplement', 'varchar(128)[]');
+    t.text('patient');
+    t.text('encounter');
+    t.text('additive');
+    t.text('datetime');
+    t.text('formula');
+    t.text('instantiatesCanonical');
+    t.text('instantiatesUri');
+    t.text('oraldiet');
+    t.text('provider');
+    t.text('status');
+    t.specificType('supplement', 'text[]');
   });
 
   await knex.schema.createTable('NutritionOrder_History', t => {
@@ -2408,43 +2408,43 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.date('date');
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.string('basedOn', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('comboCode', 128);
-    t.string('comboDataAbsentReason', 128);
-    t.string('comboValueConcept', 128);
-    t.string('comboValueQuantity', 128);
-    t.string('componentCode', 128);
-    t.string('componentDataAbsentReason', 128);
-    t.string('componentValueConcept', 128);
-    t.string('componentValueQuantity', 128);
-    t.string('dataAbsentReason', 128);
-    t.string('derivedFrom', 128);
-    t.string('device', 128);
-    t.specificType('focus', 'varchar(128)[]');
-    t.string('hasMember', 128);
-    t.string('method', 128);
-    t.string('partOf', 128);
-    t.specificType('performer', 'varchar(128)[]');
-    t.string('specimen', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
-    t.string('valueConcept', 128);
-    t.date('valueDate');
-    t.string('valueQuantity', 128);
-    t.string('valueString', 128);
-    t.string('codeValueConcept', 128);
-    t.string('codeValueDate', 128);
-    t.string('codeValueQuantity', 128);
-    t.string('codeValueString', 128);
-    t.string('comboCodeValueConcept', 128);
-    t.string('comboCodeValueQuantity', 128);
-    t.string('componentCodeValueConcept', 128);
-    t.string('componentCodeValueQuantity', 128);
+    t.text('code');
+    t.text('date');
+    t.text('patient');
+    t.text('encounter');
+    t.text('basedOn');
+    t.specificType('category', 'text[]');
+    t.text('comboCode');
+    t.text('comboDataAbsentReason');
+    t.text('comboValueConcept');
+    t.text('comboValueQuantity');
+    t.text('componentCode');
+    t.text('componentDataAbsentReason');
+    t.text('componentValueConcept');
+    t.text('componentValueQuantity');
+    t.text('dataAbsentReason');
+    t.text('derivedFrom');
+    t.text('device');
+    t.specificType('focus', 'text[]');
+    t.text('hasMember');
+    t.text('method');
+    t.text('partOf');
+    t.specificType('performer', 'text[]');
+    t.text('specimen');
+    t.text('status');
+    t.text('subject');
+    t.text('valueConcept');
+    t.text('valueDate');
+    t.text('valueQuantity');
+    t.text('valueString');
+    t.text('codeValueConcept');
+    t.text('codeValueDate');
+    t.text('codeValueQuantity');
+    t.text('codeValueString');
+    t.text('comboCodeValueConcept');
+    t.text('comboCodeValueQuantity');
+    t.text('componentCodeValueConcept');
+    t.text('componentCodeValueQuantity');
   });
 
   await knex.schema.createTable('Observation_History', t => {
@@ -2473,28 +2473,28 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.string('base', 128);
-    t.string('code', 128);
-    t.string('inputProfile', 128);
-    t.string('instance', 128);
-    t.string('kind', 128);
-    t.string('outputProfile', 128);
-    t.string('system', 128);
-    t.string('type', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.text('base');
+    t.text('code');
+    t.text('inputProfile');
+    t.text('instance');
+    t.text('kind');
+    t.text('outputProfile');
+    t.text('system');
+    t.text('type');
   });
 
   await knex.schema.createTable('OperationDefinition_History', t => {
@@ -2524,11 +2524,11 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.boolean('active');
-    t.specificType('endpoint', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('partof', 128);
-    t.string('phonetic', 128);
-    t.specificType('type', 'varchar(128)[]');
+    t.specificType('endpoint', 'text[]');
+    t.text('name');
+    t.text('partof');
+    t.text('phonetic');
+    t.specificType('type', 'text[]');
   });
 
   await knex.schema.createTable('Organization_History', t => {
@@ -2544,15 +2544,15 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.boolean('active');
-    t.date('date');
-    t.specificType('endpoint', 'varchar(128)[]');
-    t.specificType('location', 'varchar(128)[]');
-    t.specificType('network', 'varchar(128)[]');
-    t.string('participatingOrganization', 128);
-    t.string('primaryOrganization', 128);
-    t.string('role', 128);
-    t.string('service', 128);
-    t.specificType('specialty', 'varchar(128)[]');
+    t.text('date');
+    t.specificType('endpoint', 'text[]');
+    t.specificType('location', 'text[]');
+    t.specificType('network', 'text[]');
+    t.text('participatingOrganization');
+    t.text('primaryOrganization');
+    t.text('role');
+    t.text('service');
+    t.specificType('specialty', 'text[]');
   });
 
   await knex.schema.createTable('OrganizationAffiliation_History', t => {
@@ -2583,15 +2583,15 @@ export async function up(knex) {
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
     t.boolean('active');
-    t.date('birthdate');
-    t.date('deathDate');
-    t.string('deceased', 128);
-    t.string('gender', 128);
-    t.string('generalPractitioner', 128);
-    t.string('language', 128);
-    t.specificType('link', 'varchar(128)[]');
-    t.string('organization', 128);
-    t.string('phonetic', 128);
+    t.text('birthdate');
+    t.text('deathDate');
+    t.text('deceased');
+    t.text('gender');
+    t.text('generalPractitioner');
+    t.text('language');
+    t.specificType('link', 'text[]');
+    t.text('organization');
+    t.text('phonetic');
   });
 
   await knex.schema.createTable('Patient_History', t => {
@@ -2606,12 +2606,12 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.date('created');
-    t.string('paymentStatus', 128);
-    t.string('provider', 128);
-    t.string('request', 128);
-    t.string('response', 128);
-    t.string('status', 128);
+    t.text('created');
+    t.text('paymentStatus');
+    t.text('provider');
+    t.text('request');
+    t.text('response');
+    t.text('status');
   });
 
   await knex.schema.createTable('PaymentNotice_History', t => {
@@ -2626,13 +2626,13 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.date('created');
-    t.string('disposition', 128);
-    t.string('outcome', 128);
-    t.string('paymentIssuer', 128);
-    t.string('request', 128);
-    t.string('requestor', 128);
-    t.string('status', 128);
+    t.text('created');
+    t.text('disposition');
+    t.text('outcome');
+    t.text('paymentIssuer');
+    t.text('request');
+    t.text('requestor');
+    t.text('status');
   });
 
   await knex.schema.createTable('PaymentReconciliation_History', t => {
@@ -2648,14 +2648,14 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('birthdate');
-    t.string('gender', 128);
-    t.string('phonetic', 128);
-    t.specificType('link', 'varchar(128)[]');
-    t.string('organization', 128);
-    t.string('patient', 128);
-    t.string('practitioner', 128);
-    t.string('relatedperson', 128);
+    t.text('birthdate');
+    t.text('gender');
+    t.text('phonetic');
+    t.specificType('link', 'text[]');
+    t.text('organization');
+    t.text('patient');
+    t.text('practitioner');
+    t.text('relatedperson');
   });
 
   await knex.schema.createTable('Person_History', t => {
@@ -2670,29 +2670,29 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composedOf', 128);
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('definition', 128);
-    t.string('dependsOn', 128);
-    t.string('derivedFrom', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('predecessor', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('successor', 128);
-    t.string('title', 128);
-    t.specificType('topic', 'varchar(128)[]');
-    t.string('type', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('composedOf');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('definition');
+    t.text('dependsOn');
+    t.text('derivedFrom');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('predecessor');
+    t.text('publisher');
+    t.text('status');
+    t.text('successor');
+    t.text('title');
+    t.specificType('topic', 'text[]');
+    t.text('type');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('PlanDefinition_History', t => {
@@ -2707,10 +2707,10 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('gender', 128);
-    t.string('phonetic', 128);
+    t.text('gender');
+    t.text('phonetic');
     t.boolean('active');
-    t.specificType('communication', 'varchar(128)[]');
+    t.specificType('communication', 'text[]');
   });
 
   await knex.schema.createTable('Practitioner_History', t => {
@@ -2726,14 +2726,14 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.boolean('active');
-    t.date('date');
-    t.specificType('endpoint', 'varchar(128)[]');
-    t.specificType('location', 'varchar(128)[]');
-    t.string('organization', 128);
-    t.string('practitioner', 128);
-    t.string('role', 128);
-    t.string('service', 128);
-    t.specificType('specialty', 'varchar(128)[]');
+    t.text('date');
+    t.specificType('endpoint', 'text[]');
+    t.specificType('location', 'text[]');
+    t.text('organization');
+    t.text('practitioner');
+    t.text('role');
+    t.text('service');
+    t.specificType('specialty', 'text[]');
   });
 
   await knex.schema.createTable('PractitionerRole_History', t => {
@@ -2749,21 +2749,21 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.date('date');
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.string('basedOn', 128);
-    t.string('category', 128);
-    t.string('instantiatesCanonical', 128);
-    t.string('instantiatesUri', 128);
-    t.string('location', 128);
-    t.string('partOf', 128);
-    t.specificType('performer', 'varchar(128)[]');
-    t.string('reasonCode', 128);
-    t.string('reasonReference', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('code');
+    t.text('date');
+    t.text('patient');
+    t.text('encounter');
+    t.text('basedOn');
+    t.text('category');
+    t.text('instantiatesCanonical');
+    t.text('instantiatesUri');
+    t.text('location');
+    t.text('partOf');
+    t.specificType('performer', 'text[]');
+    t.text('reasonCode');
+    t.text('reasonReference');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('Procedure_History', t => {
@@ -2779,16 +2779,16 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.specificType('agent', 'varchar(128)[]');
-    t.string('agentRole', 128);
-    t.string('agentType', 128);
-    t.specificType('entity', 'varchar(128)[]');
-    t.string('location', 128);
-    t.string('patient', 128);
-    t.date('recorded');
-    t.string('signatureType', 128);
-    t.specificType('target', 'varchar(128)[]');
-    t.date('when');
+    t.specificType('agent', 'text[]');
+    t.text('agentRole');
+    t.text('agentType');
+    t.specificType('entity', 'text[]');
+    t.text('location');
+    t.text('patient');
+    t.text('recorded');
+    t.text('signatureType');
+    t.specificType('target', 'text[]');
+    t.text('when');
   });
 
   await knex.schema.createTable('Provenance_History', t => {
@@ -2803,24 +2803,24 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('code', 'varchar(128)[]');
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('definition', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('subjectType', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.specificType('code', 'text[]');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('definition');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('subjectType');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('Questionnaire_History', t => {
@@ -2836,16 +2836,16 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('author', 128);
-    t.date('authored');
-    t.string('basedOn', 128);
-    t.string('encounter', 128);
-    t.string('partOf', 128);
-    t.string('patient', 128);
-    t.string('questionnaire', 128);
-    t.string('source', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('author');
+    t.text('authored');
+    t.text('basedOn');
+    t.text('encounter');
+    t.text('partOf');
+    t.text('patient');
+    t.text('questionnaire');
+    t.text('source');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('QuestionnaireResponse_History', t => {
@@ -2861,12 +2861,12 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('birthdate');
-    t.string('gender', 128);
-    t.string('phonetic', 128);
+    t.text('birthdate');
+    t.text('gender');
+    t.text('phonetic');
     t.boolean('active');
-    t.string('patient', 128);
-    t.specificType('relationship', 'varchar(128)[]');
+    t.text('patient');
+    t.specificType('relationship', 'text[]');
   });
 
   await knex.schema.createTable('RelatedPerson_History', t => {
@@ -2882,19 +2882,19 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('author', 128);
-    t.date('authored');
-    t.string('code', 128);
-    t.string('encounter', 128);
-    t.string('groupIdentifier', 128);
-    t.string('instantiatesCanonical', 128);
-    t.string('instantiatesUri', 128);
-    t.string('intent', 128);
-    t.string('participant', 128);
-    t.string('patient', 128);
-    t.string('priority', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('author');
+    t.text('authored');
+    t.text('code');
+    t.text('encounter');
+    t.text('groupIdentifier');
+    t.text('instantiatesCanonical');
+    t.text('instantiatesUri');
+    t.text('intent');
+    t.text('participant');
+    t.text('patient');
+    t.text('priority');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('RequestGroup_History', t => {
@@ -2909,27 +2909,27 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composedOf', 128);
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('dependsOn', 128);
-    t.string('derivedFrom', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('predecessor', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('successor', 128);
-    t.string('title', 128);
-    t.specificType('topic', 'varchar(128)[]');
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('composedOf');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('dependsOn');
+    t.text('derivedFrom');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('predecessor');
+    t.text('publisher');
+    t.text('status');
+    t.text('successor');
+    t.text('title');
+    t.specificType('topic', 'text[]');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('ResearchDefinition_History', t => {
@@ -2944,27 +2944,27 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('composedOf', 128);
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('dependsOn', 128);
-    t.string('derivedFrom', 128);
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('predecessor', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('successor', 128);
-    t.string('title', 128);
-    t.specificType('topic', 'varchar(128)[]');
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('composedOf');
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('dependsOn');
+    t.text('derivedFrom');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('predecessor');
+    t.text('publisher');
+    t.text('status');
+    t.text('successor');
+    t.text('title');
+    t.specificType('topic', 'text[]');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('ResearchElementDefinition_History', t => {
@@ -2979,18 +2979,18 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('category', 'varchar(128)[]');
-    t.date('date');
-    t.specificType('focus', 'varchar(128)[]');
-    t.specificType('keyword', 'varchar(128)[]');
-    t.specificType('location', 'varchar(128)[]');
-    t.string('partof', 128);
-    t.string('principalinvestigator', 128);
-    t.specificType('protocol', 'varchar(128)[]');
-    t.specificType('site', 'varchar(128)[]');
-    t.string('sponsor', 128);
-    t.string('status', 128);
-    t.string('title', 128);
+    t.specificType('category', 'text[]');
+    t.text('date');
+    t.specificType('focus', 'text[]');
+    t.specificType('keyword', 'text[]');
+    t.specificType('location', 'text[]');
+    t.text('partof');
+    t.text('principalinvestigator');
+    t.specificType('protocol', 'text[]');
+    t.specificType('site', 'text[]');
+    t.text('sponsor');
+    t.text('status');
+    t.text('title');
   });
 
   await knex.schema.createTable('ResearchStudy_History', t => {
@@ -3006,11 +3006,11 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('individual', 128);
-    t.string('patient', 128);
-    t.string('status', 128);
-    t.string('study', 128);
+    t.text('date');
+    t.text('individual');
+    t.text('patient');
+    t.text('status');
+    t.text('study');
   });
 
   await knex.schema.createTable('ResearchSubject_History', t => {
@@ -3026,15 +3026,15 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.string('condition', 128);
-    t.string('method', 128);
-    t.string('performer', 128);
-    t.string('probability', 128);
-    t.string('risk', 128);
-    t.string('subject', 128);
+    t.text('date');
+    t.text('patient');
+    t.text('encounter');
+    t.text('condition');
+    t.text('method');
+    t.text('performer');
+    t.text('probability');
+    t.text('risk');
+    t.text('subject');
   });
 
   await knex.schema.createTable('RiskAssessment_History', t => {
@@ -3049,21 +3049,21 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.date('effective');
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.text('effective');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('RiskEvidenceSynthesis_History', t => {
@@ -3080,11 +3080,11 @@ export async function up(knex) {
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
     t.boolean('active');
-    t.specificType('actor', 'varchar(128)[]');
-    t.date('date');
-    t.string('serviceCategory', 128);
-    t.string('serviceType', 128);
-    t.specificType('specialty', 'varchar(128)[]');
+    t.specificType('actor', 'text[]');
+    t.text('date');
+    t.text('serviceCategory');
+    t.text('serviceType');
+    t.specificType('specialty', 'text[]');
   });
 
   await knex.schema.createTable('Schedule_History', t => {
@@ -3099,25 +3099,25 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.specificType('base', 'varchar(128)[]');
-    t.string('code', 128);
-    t.specificType('component', 'varchar(128)[]');
-    t.string('derivedFrom', 128);
-    t.specificType('target', 'varchar(128)[]');
-    t.string('type', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.specificType('base', 'text[]');
+    t.text('code');
+    t.specificType('component', 'text[]');
+    t.text('derivedFrom');
+    t.specificType('target', 'text[]');
+    t.text('type');
   });
 
   await knex.schema.createTable('SearchParameter_History', t => {
@@ -3133,26 +3133,26 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('code', 128);
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.date('authored');
-    t.string('basedOn', 128);
-    t.string('bodySite', 128);
-    t.specificType('category', 'varchar(128)[]');
-    t.string('instantiatesCanonical', 128);
-    t.string('instantiatesUri', 128);
-    t.string('intent', 128);
-    t.date('occurrence');
-    t.specificType('performer', 'varchar(128)[]');
-    t.string('performerType', 128);
-    t.string('priority', 128);
-    t.specificType('replaces', 'varchar(128)[]');
-    t.string('requester', 128);
-    t.string('requisition', 128);
-    t.specificType('specimen', 'varchar(128)[]');
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('code');
+    t.text('patient');
+    t.text('encounter');
+    t.text('authored');
+    t.text('basedOn');
+    t.text('bodySite');
+    t.specificType('category', 'text[]');
+    t.text('instantiatesCanonical');
+    t.text('instantiatesUri');
+    t.text('intent');
+    t.text('occurrence');
+    t.specificType('performer', 'text[]');
+    t.text('performerType');
+    t.text('priority');
+    t.specificType('replaces', 'text[]');
+    t.text('requester');
+    t.text('requisition');
+    t.specificType('specimen', 'text[]');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('ServiceRequest_History', t => {
@@ -3167,13 +3167,13 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('appointmentType', 128);
-    t.string('schedule', 128);
-    t.string('serviceCategory', 128);
-    t.string('serviceType', 128);
-    t.specificType('specialty', 'varchar(128)[]');
-    t.date('start');
-    t.string('status', 128);
+    t.text('appointmentType');
+    t.text('schedule');
+    t.text('serviceCategory');
+    t.text('serviceType');
+    t.specificType('specialty', 'text[]');
+    t.text('start');
+    t.text('status');
   });
 
   await knex.schema.createTable('Slot_History', t => {
@@ -3189,17 +3189,17 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('accession', 128);
-    t.string('bodysite', 128);
-    t.date('collected');
-    t.string('collector', 128);
-    t.specificType('container', 'varchar(128)[]');
-    t.string('containerId', 128);
-    t.specificType('parent', 'varchar(128)[]');
-    t.string('patient', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
-    t.string('type', 128);
+    t.text('accession');
+    t.text('bodysite');
+    t.text('collected');
+    t.text('collector');
+    t.specificType('container', 'text[]');
+    t.text('containerId');
+    t.specificType('parent', 'text[]');
+    t.text('patient');
+    t.text('status');
+    t.text('subject');
+    t.text('type');
   });
 
   await knex.schema.createTable('Specimen_History', t => {
@@ -3214,8 +3214,8 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('container', 128);
-    t.string('type', 128);
+    t.text('container');
+    t.text('type');
   });
 
   await knex.schema.createTable('SpecimenDefinition_History', t => {
@@ -3230,31 +3230,31 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('context', 'varchar(128)[]');
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.string('abstract', 128);
-    t.string('base', 128);
-    t.string('basePath', 128);
-    t.string('derivation', 128);
-    t.string('experimental', 128);
-    t.string('extContext', 128);
-    t.specificType('keyword', 'varchar(128)[]');
-    t.string('kind', 128);
-    t.string('path', 128);
-    t.string('type', 128);
-    t.string('valueset', 128);
+    t.specificType('context', 'text[]');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.text('abstract');
+    t.text('base');
+    t.text('basePath');
+    t.text('derivation');
+    t.text('experimental');
+    t.text('extContext');
+    t.specificType('keyword', 'text[]');
+    t.text('kind');
+    t.text('path');
+    t.text('type');
+    t.text('valueset');
   });
 
   await knex.schema.createTable('StructureDefinition_History', t => {
@@ -3269,20 +3269,20 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('StructureMap_History', t => {
@@ -3297,12 +3297,12 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('contact', 'varchar(128)[]');
-    t.string('criteria', 128);
-    t.string('payload', 128);
-    t.string('status', 128);
-    t.string('type', 128);
-    t.string('url', 128);
+    t.specificType('contact', 'text[]');
+    t.text('criteria');
+    t.text('payload');
+    t.text('status');
+    t.text('type');
+    t.text('url');
   });
 
   await knex.schema.createTable('Subscription_History', t => {
@@ -3317,13 +3317,13 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('category', 'varchar(128)[]');
-    t.string('code', 128);
-    t.string('containerIdentifier', 128);
-    t.date('expiry');
-    t.string('quantity', 128);
-    t.string('status', 128);
-    t.string('substanceReference', 128);
+    t.specificType('category', 'text[]');
+    t.text('code');
+    t.text('containerIdentifier');
+    t.text('expiry');
+    t.text('quantity');
+    t.text('status');
+    t.text('substanceReference');
   });
 
   await knex.schema.createTable('Substance_History', t => {
@@ -3408,7 +3408,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('code', 'varchar(128)[]');
+    t.specificType('code', 'text[]');
   });
 
   await knex.schema.createTable('SubstanceSpecification_History', t => {
@@ -3424,10 +3424,10 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.specificType('receiver', 'varchar(128)[]');
-    t.string('status', 128);
-    t.string('supplier', 128);
+    t.text('patient');
+    t.specificType('receiver', 'text[]');
+    t.text('status');
+    t.text('supplier');
   });
 
   await knex.schema.createTable('SupplyDelivery_History', t => {
@@ -3443,12 +3443,12 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.date('date');
-    t.string('category', 128);
-    t.string('requester', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
-    t.specificType('supplier', 'varchar(128)[]');
+    t.text('date');
+    t.text('category');
+    t.text('requester');
+    t.text('status');
+    t.text('subject');
+    t.specificType('supplier', 'text[]');
   });
 
   await knex.schema.createTable('SupplyRequest_History', t => {
@@ -3463,24 +3463,24 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.date('authoredOn');
-    t.string('basedOn', 128);
-    t.string('businessStatus', 128);
-    t.string('code', 128);
-    t.string('encounter', 128);
-    t.string('focus', 128);
-    t.string('groupIdentifier', 128);
-    t.string('intent', 128);
-    t.date('modified');
-    t.string('owner', 128);
-    t.string('partOf', 128);
-    t.string('patient', 128);
-    t.string('performer', 128);
-    t.date('period');
-    t.string('priority', 128);
-    t.string('requester', 128);
-    t.string('status', 128);
-    t.string('subject', 128);
+    t.text('authoredOn');
+    t.text('basedOn');
+    t.text('businessStatus');
+    t.text('code');
+    t.text('encounter');
+    t.text('focus');
+    t.text('groupIdentifier');
+    t.text('intent');
+    t.text('modified');
+    t.text('owner');
+    t.text('partOf');
+    t.text('patient');
+    t.text('performer');
+    t.text('period');
+    t.text('priority');
+    t.text('requester');
+    t.text('status');
+    t.text('subject');
   });
 
   await knex.schema.createTable('Task_History', t => {
@@ -3495,20 +3495,20 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('TerminologyCapabilities_History', t => {
@@ -3523,11 +3523,11 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.date('issued');
-    t.specificType('participant', 'varchar(128)[]');
-    t.string('result', 128);
-    t.string('tester', 128);
-    t.string('testscript', 128);
+    t.text('issued');
+    t.specificType('participant', 'text[]');
+    t.text('result');
+    t.text('tester');
+    t.text('testscript');
   });
 
   await knex.schema.createTable('TestReport_History', t => {
@@ -3542,21 +3542,21 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('testscriptCapability', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('testscriptCapability');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
   });
 
   await knex.schema.createTable('TestScript_History', t => {
@@ -3571,23 +3571,23 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('context', 128);
-    t.string('contextQuantity', 128);
-    t.string('contextType', 128);
-    t.date('date');
-    t.string('description', 128);
-    t.specificType('jurisdiction', 'varchar(128)[]');
-    t.string('name', 128);
-    t.string('publisher', 128);
-    t.string('status', 128);
-    t.string('title', 128);
-    t.string('url', 128);
-    t.string('version', 128);
-    t.string('contextTypeQuantity', 128);
-    t.string('contextTypeValue', 128);
-    t.string('code', 128);
-    t.string('expansion', 128);
-    t.string('reference', 128);
+    t.text('context');
+    t.text('contextQuantity');
+    t.text('contextType');
+    t.text('date');
+    t.text('description');
+    t.specificType('jurisdiction', 'text[]');
+    t.text('name');
+    t.text('publisher');
+    t.text('status');
+    t.text('title');
+    t.text('url');
+    t.text('version');
+    t.text('contextTypeQuantity');
+    t.text('contextTypeValue');
+    t.text('code');
+    t.text('expansion');
+    t.text('reference');
   });
 
   await knex.schema.createTable('ValueSet_History', t => {
@@ -3602,7 +3602,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.specificType('target', 'varchar(128)[]');
+    t.specificType('target', 'text[]');
   });
 
   await knex.schema.createTable('VerificationResult_History', t => {
@@ -3618,11 +3618,11 @@ export async function up(knex) {
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
     t.uuid('patientCompartment');
-    t.string('patient', 128);
-    t.string('encounter', 128);
-    t.date('datewritten');
-    t.string('prescriber', 128);
-    t.string('status', 128);
+    t.text('patient');
+    t.text('encounter');
+    t.text('datewritten');
+    t.text('prescriber');
+    t.text('status');
   });
 
   await knex.schema.createTable('VisionPrescription_History', t => {
@@ -3637,7 +3637,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('name', 128);
+    t.text('name');
   });
 
   await knex.schema.createTable('Project_History', t => {
@@ -3652,7 +3652,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('name', 128);
+    t.text('name');
   });
 
   await knex.schema.createTable('ClientApplication_History', t => {
@@ -3667,7 +3667,7 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('email', 128);
+    t.text('email');
   });
 
   await knex.schema.createTable('User_History', t => {
@@ -3682,8 +3682,8 @@ export async function up(knex) {
     t.text('content').notNullable();
     t.dateTime('lastUpdated').notNullable();
     t.uuid('project').notNullable();
-    t.string('code', 128);
-    t.string('cookie', 128);
+    t.text('code');
+    t.text('cookie');
   });
 
   await knex.schema.createTable('Login_History', t => {
@@ -3727,12 +3727,12 @@ export async function up(knex) {
     t.uuid('resourceId').notNullable().index();
     t.integer('index').notNullable();
     t.text('content').notNullable();
-    t.string('address', 128).index();
-    t.string('city', 64).index();
-    t.string('country', 64).index();
-    t.string('postalCode', 32).index();
-    t.string('state', 32).index();
-    t.string('use', 32).index();
+    t.text('address').index();
+    t.text('city').index();
+    t.text('country').index();
+    t.text('postalCode').index();
+    t.text('state').index();
+    t.text('use').index();
   });
 
   await knex.schema.createTable('ContactPoint', t => {
@@ -3740,8 +3740,8 @@ export async function up(knex) {
     t.uuid('resourceId').notNullable().index();
     t.integer('index').notNullable();
     t.text('content').notNullable();
-    t.string('system', 128).index();
-    t.string('value', 128).index();
+    t.text('system').index();
+    t.text('value').index();
   });
 
   await knex.schema.createTable('Identifier', t => {
@@ -3749,8 +3749,8 @@ export async function up(knex) {
     t.uuid('resourceId').notNullable().index();
     t.integer('index').notNullable();
     t.text('content').notNullable();
-    t.string('system', 128).index();
-    t.string('value', 128).index();
+    t.text('system').index();
+    t.text('value').index();
   });
 
   await knex.schema.createTable('HumanName', t => {
@@ -3758,16 +3758,16 @@ export async function up(knex) {
     t.uuid('resourceId').notNullable().index();
     t.integer('index').notNullable();
     t.text('content').notNullable();
-    t.string('name', 128).index();
-    t.string('given', 128).index();
-    t.string('family', 128).index();
+    t.text('name').index();
+    t.text('given').index();
+    t.text('family').index();
   });
 
   await knex.schema.createTable('ValueSetElement', t => {
     t.uuid('id').notNullable().primary();
-    t.string('system', 128).index();
-    t.string('code', 128).index();
-    t.string('display', 128).index();
+    t.text('system').index();
+    t.text('code').index();
+    t.text('display').index();
   });
 }
 
