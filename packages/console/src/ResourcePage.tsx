@@ -2,6 +2,7 @@ import { Bundle, Encounter, getDisplayString, Resource } from '@medplum/core';
 import {
   Button,
   Document,
+  EncounterTimeline,
   keyReplacer,
   Loading,
   parseForm,
@@ -9,7 +10,6 @@ import {
   ResourceForm,
   ResourceHistoryTable,
   ResourceTable,
-  EncounterTimeline,
   Tab,
   TabBar,
   TabPanel,
