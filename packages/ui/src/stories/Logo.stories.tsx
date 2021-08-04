@@ -10,6 +10,6 @@ export default {
 
 export const Basic = () => (
   <Document>
-    <Logo width={200} height={200} />
+    <Logo size={200} />
   </Document>
 );

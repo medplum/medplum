@@ -41,6 +41,7 @@ export default function App() {
                 { label: 'Practitioner', href: '/Practitioner' },
                 { label: 'Observation', href: '/Observation' },
                 { label: 'Organization', href: '/Organization' },
+                { label: 'Encounter', href: '/Encounter' },
                 { label: 'StructureDefinition', href: '/StructureDefinition' },
               ]
             }
