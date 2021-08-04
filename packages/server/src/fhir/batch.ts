@@ -1,6 +1,6 @@
 import { Bundle, BundleEntry } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { allOk, badRequest, isOk } from './outcomes';
+import { allOk, badRequest, getStatus, isOk } from './outcomes';
 import { Repository, RepositoryResult } from './repo';
 
 export async function createBatch(repo: Repository, bundle: Bundle): RepositoryResult<Bundle> {
@@ -27,11 +27,18 @@ export async function createBatch(repo: Repository, bundle: Bundle): RepositoryR
   const rewritten = rewriteIdsInObject(bundle, ids);
 
   for (const entry of rewritten.entry) {
-    const resource = entry.resource;
+    let resource = entry.resource;
+    if (!resource) {
+      continue;
+    }
+    if (!resource.id) {
+      resource = { ...resource, id: randomUUID() };
+    }
     const [updateOutcome, updateResource] = await repo.updateResource(resource);
     (result.entry as BundleEntry[]).push({
       response: {
-        status: updateOutcome.id,
+        outcome: updateOutcome,
+        status: getStatus(updateOutcome).toString(),
         location: isOk(updateOutcome) ? updateResource.resourceType + '/' + updateResource.id : undefined
       }
     });

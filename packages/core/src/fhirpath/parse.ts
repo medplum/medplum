@@ -311,7 +311,7 @@ const parserBuilder = new ParserBuilder()
     }
   });
 
-export function parseFhirPath(input: string): Atom {
+export function parseFhirPath(input: string): FhirPathAtom {
   try {
     return new FhirPathAtom(input, parserBuilder.construct(input).parse());
   } catch (error) {

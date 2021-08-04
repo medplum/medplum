@@ -3,6 +3,8 @@ import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { ADMIN_USER_ID, MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
+import { createBatch } from './batch';
+import { isOk } from './outcomes';
 import { getPatientId, repo, Repository } from './repo';
 
 beforeAll(async () => {
@@ -535,4 +537,35 @@ test('Search sort by Patient.birthDate', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+});
+
+test('Filter and sort on same search parameter', async () => {
+  const [createOutcome, createBundle] = await createBatch(repo, {
+    resourceType: 'Bundle',
+    type: 'batch',
+    entry: [{
+      resource: {
+        resourceType: 'Patient',
+        name: [{ given: ['Marge'], family: 'Simpson' }]
+      }
+    }, {
+      resource: {
+        resourceType: 'Patient',
+        name: [{ given: ['Homer'], family: 'Simpson' }]
+      }
+    }]
+  });
+
+  expect(isOk(createOutcome)).toBe(true);
+  console.log(JSON.stringify(createBundle, undefined, 2));
+
+  const [searchOutcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{ code: 'family', operator: Operator.EQUALS, value: 'Simpson' }],
+    sortRules: [{ code: 'family' }]
+  });
+
+  expect(isOk(searchOutcome)).toBe(true);
+  expect(bundle?.entry).not.toBeUndefined();
+  expect(bundle?.entry?.length).toBeGreaterThanOrEqual(2);
 });
