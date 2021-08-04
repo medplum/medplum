@@ -38,7 +38,7 @@ export const TextField = (props: TextFieldProps) => {
       {invalid && (
         <div id={props.id + '-errors'} className="medplum-input-error">
           {issues?.map(issue => (
-            <div key={issue.details?.text}>{issue.details?.text}</div>
+            <div data-testid="text-field-error" key={issue.details?.text}>{issue.details?.text}</div>
           ))}
         </div>
       )}
