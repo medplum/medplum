@@ -2,47 +2,47 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry } from '../fhir/Bundle';
 import { Observation } from '../fhir/Observation';
 import { SearchParameter } from '../fhir/SearchParameter';
-import { parse } from './parse';
+import { parseFhirPath } from './parse';
 
 test('Parser can build a arithmetic parser with correct order of operations', () => {
-  const result = parse('3 / 3 + 4 * 3 ^ 2 - 1').eval(0);
-  expect(result).toEqual(36);
+  const result = parseFhirPath('3 / 3 + 4 * 3 ^ 2 - 1').eval(0);
+  expect(result).toEqual([36]);
 });
 
 test('Parser can build a arithmetic parser with parentheses', () => {
-  const result = parse('3 / 3 + 4 * (3 ^ (2 - 1))').eval(0);
-  expect(result).toEqual(13);
+  const result = parseFhirPath('3 / 3 + 4 * (3 ^ (2 - 1))').eval(0);
+  expect(result).toEqual([13]);
 });
 
 test('Parser can build a arithmetic parser with correct associativity', () => {
-  const result = parse('5 - 4 - 3 - 2 - 1 + 2 ^ 3 ^ 2').eval(0);
-  expect(result).toEqual(507);
+  const result = parseFhirPath('5 - 4 - 3 - 2 - 1 + 2 ^ 3 ^ 2').eval(0);
+  expect(result).toEqual([507]);
 });
 
 test('Parser can build an arithmetic parser with prefix operators', () => {
-  const result = parse('-4 + -(4 + 5 - -4)').eval(0);
-  expect(result).toEqual(-17);
+  const result = parseFhirPath('-4 + -(4 + 5 - -4)').eval(0);
+  expect(result).toEqual([-17]);
 });
 
 test('Parser throws on missing closing parentheses', () => {
-  expect(() => parse('(2 + 1')).toThrowError('Parse error: expected `)`');
+  expect(() => parseFhirPath('(2 + 1')).toThrowError('Parse error: expected `)`');
 });
 
 test('Parser throws on unexpected symbol', () => {
-  expect(() => parse('*')).toThrowError('Parse error at *. No matching prefix parselet.');
+  expect(() => parseFhirPath('*')).toThrowError('Parse error at *. No matching prefix parselet.');
 });
 
 test('Parser throws on missing tokens', () => {
-  expect(() => parse('1 * ')).toThrowError('Cant consume any more tokens.');
+  expect(() => parseFhirPath('1 * ')).toThrowError('Cant consume any more tokens.');
 });
 
 test('Evaluate FHIRPath Patient.name.given on empty resource', () => {
-  const result = parse('Patient.name.given').eval({});
-  expect(result).toBeUndefined();
+  const result = parseFhirPath('Patient.name.given').eval({});
+  expect(result).toEqual([]);
 });
 
 test('Evaluate FHIRPath Patient.name.given', () => {
-  const result = parse('Patient.name.given').eval({
+  const result = parseFhirPath('Patient.name.given').eval({
     resourceType: 'Patient',
     name: [{
       given: ['Alice'],
@@ -53,18 +53,18 @@ test('Evaluate FHIRPath Patient.name.given', () => {
 });
 
 test('Evaluate FHIRPath string concatenation', () => {
-  const result = parse('Patient.name.given + \' \' + Patient.name.family').eval({
+  const result = parseFhirPath('Patient.name.given + \' \' + Patient.name.family').eval({
     resourceType: 'Patient',
     name: [{
       given: ['Alice'],
       family: 'Smith'
     }]
   });
-  expect(result).toEqual('Alice Smith');
+  expect(result).toEqual(['Alice Smith']);
 });
 
 test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
-  const result = parse('Patient.name.given').eval([{
+  const result = parseFhirPath('Patient.name.given').eval([{
     resourceType: 'Patient',
     name: [{
       given: ['Alice'],
@@ -82,7 +82,7 @@ test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
 });
 
 test('Evaluate FHIRPath string concatenation on array of resources', () => {
-  const result = parse('Patient.name.given + \' \' + Patient.name.family').eval([{
+  const result = parseFhirPath('Patient.name.given + \' \' + Patient.name.family').eval([{
     resourceType: 'Patient',
     name: [{
       given: ['Alice'],
@@ -100,7 +100,7 @@ test('Evaluate FHIRPath string concatenation on array of resources', () => {
 });
 
 test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
-  const result = parse('Patient.name.given').eval([{
+  const result = parseFhirPath('Patient.name.given').eval([{
     resourceType: 'Practitioner',
     name: [{
       given: ['Alice'],
@@ -118,7 +118,7 @@ test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
 });
 
 test('Evaluate FHIRPath union', () => {
-  const result = parse('Practitioner.name.given | Patient.name.given').eval({
+  const result = parseFhirPath('Practitioner.name.given | Patient.name.given').eval({
     resourceType: 'Patient',
     name: [{
       given: ['Alice'],
@@ -129,7 +129,7 @@ test('Evaluate FHIRPath union', () => {
 });
 
 test('Evaluate FHIRPath union to combine results', () => {
-  const result = parse('Practitioner.name.given | Patient.name.given').eval([{
+  const result = parseFhirPath('Practitioner.name.given | Patient.name.given').eval([{
     resourceType: 'Patient',
     name: [{
       given: ['Alice'],
@@ -147,7 +147,7 @@ test('Evaluate FHIRPath union to combine results', () => {
 });
 
 test('Evaluate FHIRPath double union', () => {
-  const result = parse('Patient.name.given | Patient.name.given').eval([{
+  const result = parseFhirPath('Patient.name.given | Patient.name.given').eval([{
     resourceType: 'Patient',
     name: [{
       given: ['Alice'],
@@ -165,22 +165,22 @@ test('Evaluate FHIRPath double union', () => {
 });
 
 test('Evaluate ignores non-objects', () => {
-  const result = parse('foo.bar').eval({
+  const result = parseFhirPath('foo.bar').eval({
     foo: 1
   });
-  expect(result).toBeUndefined();
+  expect(result).toEqual([]);
 });
 
 test('Evaluate fails on function parentheses after non-symbol', () => {
-  expect(() => parse('1()').eval(0)).toThrowError('Unexpected parentheses');
+  expect(() => parseFhirPath('1()').eval(0)).toThrowError('Unexpected parentheses');
 });
 
 test('Evaluate fails on unrecognized function', () => {
-  expect(() => parse('asdf()').eval(0)).toThrowError('Unrecognized function');
+  expect(() => parseFhirPath('asdf()').eval(0)).toThrowError('Unrecognized function');
 });
 
 test('Evaluate FHIRPath where function', () => {
-  const result = parse('Patient.telecom.where(system=\'email\')').eval({
+  const result = parseFhirPath('Patient.telecom.where(system=\'email\')').eval({
     resourceType: 'Patient',
     name: [{
       given: ['Alice'],
@@ -217,7 +217,7 @@ test('Eval all SearchParameter expressions', () => {
     const resource = entry.resource as SearchParameter;
     const { expression } = resource;
     if (expression) {
-      expect(() => parse((expression))).not.toThrow();
+      expect(() => parseFhirPath((expression))).not.toThrow();
     }
   }
 });
@@ -230,10 +230,10 @@ test('Eval FHIRPath resolve function', () => {
     }
   };
 
-  const result = parse('Observation.subject.resolve()').eval(observation);
+  const result = parseFhirPath('Observation.subject.resolve()').eval(observation);
 
-  expect(result).toMatchObject({
+  expect(result).toMatchObject([{
     resourceType: 'Patient',
     id: '123'
-  });
+  }]);
 });

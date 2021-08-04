@@ -57,13 +57,12 @@ class ParserBuilder {
   }
 
   public construct(input: string): Parser {
-    return new Parser(input, tokenizer.tokenize(input), this.prefixParselets, this.infixParselets);
+    return new Parser(tokenizer.tokenize(input), this.prefixParselets, this.infixParselets);
   }
 }
 
 class Parser {
   constructor(
-    private original: string,
     private tokens: Token[],
     private prefixParselets: Record<string, PrefixParselet>,
     private infixParselets: Record<string, InfixParselet>,
@@ -94,7 +93,7 @@ class Parser {
       left = infix.parse(this, left, next);
     }
 
-    return new FhirPathAtom(this.original, left);
+    return left;
   }
 
   private getPrecedence(): number {
@@ -143,13 +142,21 @@ function applyMaybeArray(context: any, fn: (context: any) => any): any {
   }
 }
 
-class FhirPathAtom implements Atom {
+export class FhirPathAtom implements Atom {
   constructor(
     public readonly original: string,
     public readonly child: Atom) { }
-  eval(context: any): any {
+
+  eval(context: any): any[] {
     try {
-      return applyMaybeArray(context, e => this.child.eval(e));
+      const result = applyMaybeArray(context, e => this.child.eval(e));
+      if (Array.isArray(result)) {
+        return result.flat();
+      } else if (result === undefined || result === null) {
+        return [];
+      } else {
+        return [result];
+      }
     } catch (error) {
       throw new Error(`FhirPathError on "${this.original}": ${error}`);
     }
@@ -304,9 +311,9 @@ const parserBuilder = new ParserBuilder()
     }
   });
 
-export function parse(input: string): Atom {
+export function parseFhirPath(input: string): Atom {
   try {
-    return parserBuilder.construct(input).parse();
+    return new FhirPathAtom(input, parserBuilder.construct(input).parse());
   } catch (error) {
     throw new Error(`FhirPathError on "${input}": ${error}`);
   }
