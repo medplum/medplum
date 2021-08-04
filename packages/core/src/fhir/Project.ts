@@ -44,7 +44,7 @@ export interface Project {
   readonly language?: string;
 
   /**
-   * A name associated with the organization.
+   * A name associated with the Project.
    */
   readonly name?: string;
 

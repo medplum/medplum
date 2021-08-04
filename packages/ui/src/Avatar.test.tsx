@@ -59,6 +59,11 @@ const setup = (args: AvatarProps) => {
   );
 };
 
+test('Avatar renders system', () => {
+  const utils = setup({ reference: { reference: 'system' } });
+  expect(utils.getByText('S')).not.toBeUndefined();
+});
+
 test('Avatar renders initials', () => {
   const utils = setup({ alt: 'Alice Smith' });
   expect(utils.getByTestId('avatar')).not.toBeUndefined();

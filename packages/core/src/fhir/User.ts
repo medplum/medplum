@@ -61,4 +61,9 @@ export interface User {
    * Optional reference to the user's practitioner identity.
    */
   readonly practitioner?: Reference;
+
+  /**
+   * Projects that the user can access.
+   */
+  readonly projects?: Reference[];
 }

@@ -43,3 +43,15 @@ export const Practitioner = () => (
     />
   </Document>
 );
+
+export const User = () => (
+  <Document>
+    <ResourceForm
+      resourceType="User"
+      id={process.env.SAMPLE_USER_ID}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);

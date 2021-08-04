@@ -18,6 +18,7 @@ export const Avatar = (props: AvatarProps) => {
   const medplum = useMedplum();
   const [imageUrl, setImageUrl] = useState<string | undefined>(props.src);
   const [text, setText] = useState<string | undefined>(props.alt || '');
+  const [linkUrl, setLinkUrl] = useState<string | undefined>();
 
   function setResource(resource: Resource) {
     setText(getDisplayString(resource));
@@ -31,10 +32,14 @@ export const Avatar = (props: AvatarProps) => {
   useEffect(() => {
     if (props.resource) {
       setResource(props.resource);
+      setLinkUrl(`/${props.resource.resourceType}/${props.resource.id}`)
+    } else if (props.reference?.reference === 'system') {
+      setText('System');
     } else if (props.reference) {
+      setLinkUrl(`/${props.reference.reference}`)
       medplum.readCachedReference(props.reference)
-      .then(setResource)
-      .catch(err => console.log('Avatar cached ref error', err, props.reference));
+        .then(setResource)
+        .catch(err => console.log('Avatar cached ref error', err, props.reference));
     }
   }, [props.resource, props.reference]);
 
@@ -47,8 +52,8 @@ export const Avatar = (props: AvatarProps) => {
       style={{ backgroundColor: props.color }}
       data-testid="avatar"
     >
-      {props.link ? (
-        <MedplumLink to={`/${props.reference?.reference}`}>
+      {props.link && linkUrl ? (
+        <MedplumLink to={linkUrl}>
           {innerContent}
         </MedplumLink>
       ) : (
