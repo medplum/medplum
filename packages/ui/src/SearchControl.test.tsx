@@ -161,6 +161,56 @@ test('SearchControl renders empty results', async () => {
   expect(props.onLoad).toBeCalled();
 });
 
+test('SearchControl renders with checkboxes', async () => {
+  const props = {
+    search: {
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
+    },
+    onLoad: jest.fn(),
+    checkboxesEnabled: true
+  };
+
+  setup(props)
+
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('search-control'));
+  });
+
+  const control = screen.getByTestId('search-control');
+  expect(control).not.toBeUndefined();
+  expect(props.onLoad).toBeCalled();
+});
+
+test('SearchControl renders empty results with checkboxes', async () => {
+  const props = {
+    search: {
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Bob'
+      }]
+    },
+    onLoad: jest.fn(),
+    checkboxesEnabled: true
+  };
+
+  setup(props)
+
+  await act(async () => {
+    await waitFor(() => screen.getByTestId('empty-search'));
+  });
+
+  const control = screen.getByTestId('empty-search');
+  expect(control).not.toBeUndefined();
+  expect(props.onLoad).toBeCalled();
+});
+
 test('SearchControl renders filters', async () => {
   const props = {
     search: {

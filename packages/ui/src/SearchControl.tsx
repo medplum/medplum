@@ -143,7 +143,7 @@ export function SearchControl(props: SearchControlProps) {
 
   function isAllSelected() {
     const state = stateRef.current;
-    if (!state.searchResponse?.entry) {
+    if (!state.searchResponse?.entry || state.searchResponse.entry.length === 0) {
       return false;
     }
     for (const e of state.searchResponse.entry) {
@@ -256,7 +256,7 @@ export function SearchControl(props: SearchControlProps) {
         {lastResult && (
           <div style={{ display: 'flex' }}>
             <span style={{ lineHeight: '28px', padding: '2px 6px', fontSize: '12px' }}>
-              {getStart(search)}-{getEnd(search)} of {lastResult.total}
+              {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of {lastResult.total}
             </span>
             <Button
               testid="prev-page-button"
@@ -397,10 +397,10 @@ function killEvent(e: React.SyntheticEvent) {
   e.stopPropagation();
 }
 
-function getStart(search: SearchRequest): number {
-  return (search.page ?? 0) * (search.count ?? 10) + 1;
+function getStart(search: SearchRequest, total: number): number {
+  return Math.min(total, (search.page ?? 0) * (search.count ?? 10) + 1);
 }
 
-function getEnd(search: SearchRequest): number {
-  return ((search.page ?? 0) + 1) * (search.count ?? 10);
+function getEnd(search: SearchRequest, total: number): number {
+  return Math.min(total, ((search.page ?? 0) + 1) * (search.count ?? 10));
 }

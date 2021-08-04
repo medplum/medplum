@@ -13,6 +13,7 @@ export interface ResourceNameProps {
 export const ResourceName = (props: ResourceNameProps) => {
   const medplum = useMedplum();
   const [text, setText] = useState<string | undefined>(props.alt || '');
+  const [linkUrl, setLinkUrl] = useState<string | undefined>();
 
   function setResource(resource: Resource) {
     setText(getDisplayString(resource));
@@ -21,13 +22,17 @@ export const ResourceName = (props: ResourceNameProps) => {
   useEffect(() => {
     if (props.resource) {
       setResource(props.resource);
+      setLinkUrl(`/${props.resource.resourceType}/${props.resource.id}`)
+    } else if (props.reference?.reference === 'system') {
+      setText('System');
     } else if (props.reference) {
+      setLinkUrl(`/${props.reference.reference}`)
       medplum.readCachedReference(props.reference).then(setResource);
     }
   }, [props.resource, props.reference]);
 
-  return props.link ? (
-    <MedplumLink to={`/${props.reference?.reference}`}>{text}</MedplumLink>
+  return props.link && linkUrl ? (
+    <MedplumLink to={linkUrl}>{text}</MedplumLink>
   ) : (
     <span>{text}</span>
   );

@@ -54,6 +54,11 @@ const setup = (args: ResourceNameProps) => {
   );
 };
 
+test('ResourceName renders system', () => {
+  const utils = setup({ reference: { reference: 'system' } });
+  expect(utils.getByText('System')).not.toBeUndefined();
+});
+
 test('ResourceName renders', () => {
   const utils = setup({ alt: 'Alice Smith' });
   expect(utils.getByText('Alice Smith')).not.toBeUndefined();
