@@ -13,7 +13,9 @@ fieldset.bordered {
   padding: 2px 8px 8px 8px;
 }
 
+fieldset label,
 fieldset legend {
+  display: block;
   margin: 2px 0 4px 0;
 }
 
@@ -23,7 +25,12 @@ fieldset small {
   padding: 2px 0 4px 0;
 }
 
-fieldset input,
+fieldset input[type=datetime-local],
+fieldset input[type=email],
+fieldset input[type=number],
+fieldset input[type=password],
+fieldset input[type=tel],
+fieldset input[type=text],
 fieldset select,
 fieldset table {
   width: 100%;
