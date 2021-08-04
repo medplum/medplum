@@ -223,6 +223,30 @@ test('Update patient no changes', async () => {
   expect(patient2?.meta?.versionId).toEqual(patient1?.meta?.versionId);
 });
 
+test('Update patient multiple names', async () => {
+  const [createOutcome1, patient1] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Suzy'], family: 'Smith' }]
+  });
+
+  expect(createOutcome1.id).toEqual('created');
+
+  const [updateOutcome2, patient2] = await repo.updateResource<Patient>({
+    ...patient1 as Patient,
+    name: [
+      { given: ['Suzy'], family: 'Smith' },
+      { given: ['Suzy'], family: 'Jones' }
+    ]
+  });
+
+  expect(updateOutcome2.id).toEqual('ok');
+  expect(patient2?.id).toEqual(patient1?.id);
+  expect(patient2?.meta?.versionId).not.toEqual(patient1?.meta?.versionId);
+  expect(patient2?.name?.length).toEqual(2);
+  expect(patient2?.name?.[0]?.family).toEqual('Smith');
+  expect(patient2?.name?.[1]?.family).toEqual('Jones');
+});
+
 test('Create Patient with no author', async () => {
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
@@ -430,4 +454,85 @@ test('Search for token in array', async () => {
   expect(outcome.id).toEqual('ok');
   expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'name')).not.toBeUndefined();
   expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'email')).not.toBeUndefined();
+});
+
+test('Search sort by Patient.id', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    sortRules: [{ code: 'id' }]
+  });
+
+  expect(outcome.id).toEqual('ok');
+});
+
+test('Search sort by Patient.meta.lastUpdated', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    sortRules: [{ code: 'lastUpdated' }]
+  });
+
+  expect(outcome.id).toEqual('ok');
+});
+
+test('Search sort by Patient.identifier', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    sortRules: [{ code: 'identifier' }]
+  });
+
+  expect(outcome.id).toEqual('ok');
+});
+
+test('Search sort by Patient.name', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    sortRules: [{ code: 'name' }]
+  });
+
+  expect(outcome.id).toEqual('ok');
+});
+
+test('Search sort by Patient.given', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    sortRules: [{ code: 'given' }]
+  });
+
+  expect(outcome.id).toEqual('ok');
+});
+
+test('Search sort by Patient.address', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    sortRules: [{ code: 'address' }]
+  });
+
+  expect(outcome.id).toEqual('ok');
+});
+
+test('Search sort by Patient.telecom', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    sortRules: [{ code: 'telecom' }]
+  });
+
+  expect(outcome.id).toEqual('ok');
+});
+
+test('Search sort by Patient.email', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    sortRules: [{ code: 'email' }]
+  });
+
+  expect(outcome.id).toEqual('ok');
+});
+
+test('Search sort by Patient.birthDate', async () => {
+  const [outcome, bundle] = await repo.search({
+    resourceType: 'Patient',
+    sortRules: [{ code: 'birthdate' }]
+  });
+
+  expect(outcome.id).toEqual('ok');
 });

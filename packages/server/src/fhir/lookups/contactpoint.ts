@@ -1,7 +1,7 @@
-import { ContactPoint, Filter, Resource, SearchParameter } from '@medplum/core';
+import { ContactPoint, Filter, Resource, SearchParameter, SortRule } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { Knex } from 'knex';
-import { executeQuery, getKnex } from '../../database';
+import { getClient } from '../../database';
+import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -18,6 +18,14 @@ export class ContactPointTable implements LookupTable {
     'OrganizationAffiliation-email',
     'OrganizationAffiliation-phone'
   ]);
+
+  /**
+   * Returns the table name.
+   * @returns The table name.
+   */
+  getName(): string {
+    return 'ContactPoint';
+  }
 
   /**
    * Returns true if the search parameter is an "" parameter.
@@ -51,38 +59,64 @@ export class ContactPointTable implements LookupTable {
     const existing = await this.getExisting(resourceId);
 
     if (!compareArrays(contactPoints, existing)) {
-      const knex = getKnex();
+      const client = getClient();
 
       if (existing.length > 0) {
-        await knex('ContactPoint').where('resourceId', resourceId).delete().then(executeQuery);
+        await new DeleteQuery('ContactPoint')
+          .where('resourceId', Operator.EQUALS, resourceId)
+          .execute(client);
       }
 
       for (let i = 0; i < contactPoints.length; i++) {
         const contactPoint = contactPoints[i];
-        await knex('ContactPoint').insert({
+        await new InsertQuery('ContactPoint', {
           id: randomUUID(),
           resourceId,
           index: i,
           content: JSON.stringify(contactPoint),
           system: contactPoint.system,
           value: contactPoint.value
-        }).then(executeQuery);
+        }).execute(client);
       }
     }
   }
 
   /**
+   * Adds "join" expression to the select query builder.
+   * @param selectQuery The select query builder.
+   */
+  addJoin(selectQuery: SelectQuery): void {
+    selectQuery.join('ContactPoint', 'id', 'resourceId');
+  }
+
+  /**
    * Adds "where" conditions to the select query builder.
-   * @param resourceType The FHIR resource type.
    * @param selectQuery The select query builder.
    * @param filter The search filter details.
    */
-  addSearchConditions(resourceType: string, selectQuery: Knex.QueryBuilder, filter: Filter): void {
-    selectQuery.join('ContactPoint', resourceType + '.id', '=', 'ContactPoint.resourceId');
-    selectQuery.where('ContactPoint.value', filter.value);
+  addWhere(selectQuery: SelectQuery, filter: Filter): void {
+    selectQuery.where(
+      { tableName: 'ContactPoint', columnName: 'value' },
+      Operator.EQUALS,
+      filter.value);
+
     if (filter.code !== 'telecom') {
-      selectQuery.where('ContactPoint.system', filter.code);
+      selectQuery.where(
+        { tableName: 'ContactPoint', columnName: 'system' },
+        Operator.EQUALS,
+        filter.code);
     }
+  }
+
+  /**
+   * Adds "order by" clause to the select query builder.
+   * @param selectQuery The select query builder.
+   * @param sortRule The sort rule details.
+   */
+  addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
+    selectQuery.orderBy(
+      { tableName: 'ContactPoint', columnName: 'value' },
+      sortRule.descending);
   }
 
   /**
@@ -91,11 +125,11 @@ export class ContactPointTable implements LookupTable {
    * @returns Promise for the list of indexed names.
    */
   private async getExisting(resourceId: string): Promise<ContactPoint[]> {
-    return getKnex()
-      .select('content')
-      .from('ContactPoint')
-      .where('resourceId', resourceId)
+    return new SelectQuery('ContactPoint')
+      .column('content')
+      .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
+      .execute(getClient())
       .then(result => result.map(row => JSON.parse(row.content) as ContactPoint));
   }
 }

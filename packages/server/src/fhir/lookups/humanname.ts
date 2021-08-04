@@ -1,7 +1,7 @@
-import { Filter, formatFamilyName, formatGivenName, formatHumanName, HumanName, Resource, SearchParameter } from '@medplum/core';
+import { Filter, formatFamilyName, formatGivenName, formatHumanName, HumanName, Resource, SearchParameter, SortRule } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { Knex } from 'knex';
-import { executeQuery, getKnex } from '../../database';
+import { getClient } from '../../database';
+import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -18,6 +18,14 @@ export class HumanNameTable implements LookupTable {
     'Practitioner-name',
     'RelatedPerson-name'
   ]);
+
+  /**
+   * Returns the table name.
+   * @returns The table name.
+   */
+  getName(): string {
+    return 'HumanName';
+  }
 
   /**
    * Returns true if the search parameter is an "" parameter.
@@ -51,15 +59,17 @@ export class HumanNameTable implements LookupTable {
     const existing = await this.getNames(resourceId);
 
     if (!compareArrays(names, existing)) {
-      const knex = getKnex();
+      const client = getClient();
 
       if (existing.length > 0) {
-        await knex('HumanName').where('resourceId', resourceId).delete().then(executeQuery);
+        await new DeleteQuery('HumanName')
+          .where('resourceId', Operator.EQUALS, resourceId)
+          .execute(client);
       }
 
       for (let i = 0; i < names.length; i++) {
         const name = names[i];
-        await knex('HumanName').insert({
+        await new InsertQuery('HumanName', {
           id: randomUUID(),
           resourceId,
           index: i,
@@ -67,20 +77,40 @@ export class HumanNameTable implements LookupTable {
           name: formatHumanName(name),
           given: formatGivenName(name),
           family: formatFamilyName(name)
-        }).then(executeQuery);
+        }).execute(client);
       }
     }
   }
 
   /**
+   * Adds "join" expression to the select query builder.
+   * @param selectQuery The select query builder.
+   */
+  addJoin(selectQuery: SelectQuery): void {
+    selectQuery.join('HumanName', 'id', 'resourceId');
+  }
+
+  /**
    * Adds "where" conditions to the select query builder.
-   * @param resourceType The FHIR resource type.
    * @param selectQuery The select query builder.
    * @param filter The search filter details.
    */
-  addSearchConditions(resourceType: string, selectQuery: Knex.QueryBuilder, filter: Filter): void {
-    selectQuery.join('HumanName', resourceType + '.id', '=', 'HumanName.resourceId');
-    selectQuery.where('HumanName.' + filter.code, 'LIKE', '%' + filter.value + '%');
+  addWhere(selectQuery: SelectQuery, filter: Filter): void {
+    selectQuery.where(
+      { tableName: 'HumanName', columnName: filter.code },
+      Operator.LIKE,
+      '%' + filter.value + '%');
+  }
+
+  /**
+   * Adds "order by" clause to the select query builder.
+   * @param selectQuery The select query builder.
+   * @param sortRule The sort rule details.
+   */
+  addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
+    selectQuery.orderBy(
+      { tableName: 'HumanName', columnName: sortRule.code },
+      sortRule.descending);
   }
 
   /**
@@ -89,11 +119,11 @@ export class HumanNameTable implements LookupTable {
    * @returns Promise for the list of indexed names.
    */
   private async getNames(resourceId: string): Promise<HumanName[]> {
-    return getKnex()
-      .select('content')
-      .from('HumanName')
-      .where('resourceId', resourceId)
+    return new SelectQuery('HumanName')
+      .column('content')
+      .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
+      .execute(getClient())
       .then(result => result.map(row => JSON.parse(row.content) as HumanName));
   }
 }

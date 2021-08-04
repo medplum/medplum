@@ -1,7 +1,7 @@
-import { Filter, Identifier, Resource, SearchParameter } from '@medplum/core';
+import { Filter, Identifier, Resource, SearchParameter, SortRule } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { Knex } from 'knex';
-import { executeQuery, getKnex } from '../../database';
+import { getClient } from '../../database';
+import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -11,6 +11,14 @@ import { compareArrays } from './util';
  * Each identifier is represented as a separate row in the "Identifier" table.
  */
 export class IdentifierTable implements LookupTable {
+
+  /**
+   * Returns the table name.
+   * @returns The table name.
+   */
+  getName(): string {
+    return 'Identifier';
+  }
 
   /**
    * Returns true if the search parameter is an "identifier" parameter.
@@ -41,35 +49,57 @@ export class IdentifierTable implements LookupTable {
     const existing = await this.getIdentifiers(resourceId);
 
     if (!compareArrays(identifiers, existing)) {
-      const knex = getKnex();
+      const client = getClient();
 
       if (existing.length > 0) {
-        await knex('Identifier').where('resourceId', resourceId).delete().then(executeQuery);
+        await new DeleteQuery('Identifier')
+          .where('resourceId', Operator.EQUALS, resourceId)
+          .execute(client);
       }
 
       for (let i = 0; i < identifiers.length; i++) {
         const identifier = identifiers[i];
-        await knex('Identifier').insert({
+        await new InsertQuery('Identifier', {
           id: randomUUID(),
           resourceId,
           index: i,
           content: JSON.stringify(identifier),
           system: identifier.system,
           value: identifier.value
-        }).then(executeQuery);
+        }).execute(client);
       }
     }
   }
 
   /**
+   * Adds "join" expression to the select query builder.
+   * @param selectQuery The select query builder.
+   */
+  addJoin(selectQuery: SelectQuery): void {
+    selectQuery.join('Identifier', 'id', 'resourceId');
+  }
+
+  /**
    * Adds "where" conditions to the select query builder.
-   * @param resourceType The FHIR resource type.
    * @param selectQuery The select query builder.
    * @param filter The search filter details.
    */
-  addSearchConditions(resourceType: string, selectQuery: Knex.QueryBuilder, filter: Filter): void {
-    selectQuery.join('Identifier', resourceType + '.id', '=', 'Identifier.resourceId');
-    selectQuery.where('Identifier.value', filter.value);
+  addWhere(selectQuery: SelectQuery, filter: Filter): void {
+    selectQuery.where(
+      { tableName: 'Identifier', columnName: 'value' },
+      Operator.EQUALS,
+      filter.value);
+  }
+
+  /**
+   * Adds "order by" clause to the select query builder.
+   * @param selectQuery The select query builder.
+   * @param sortRule The sort rule details.
+   */
+  addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
+    selectQuery.orderBy(
+      { tableName: 'Identifier', columnName: 'value' },
+      sortRule.descending);
   }
 
   /**
@@ -78,11 +108,11 @@ export class IdentifierTable implements LookupTable {
    * @returns Promise for the list of indexed identifiers.
    */
   private async getIdentifiers(resourceId: string): Promise<Identifier[]> {
-    return getKnex()
-      .select('content')
-      .from('Identifier')
-      .where('resourceId', resourceId)
+    return new SelectQuery('Identifier')
+      .column('content')
+      .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
+      .execute(getClient())
       .then(result => result.map(row => JSON.parse(row.content) as Identifier));
   }
 }

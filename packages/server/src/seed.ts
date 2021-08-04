@@ -3,8 +3,9 @@ import { readJson } from '@medplum/definitions';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { ADMIN_USER_ID, MEDPLUM_ORGANIZATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
-import { executeQuery, getKnex } from './database';
+import { getClient } from './database';
 import { isOk, OperationOutcomeError, repo } from './fhir';
+import { InsertQuery } from './fhir/sql';
 import { logger } from './logger';
 import { generateSecret } from './oauth';
 
@@ -192,13 +193,7 @@ async function createClientApplication(): Promise<void> {
  * Creates test ValueSetElement rows.
  */
 async function createValueSetElements(): Promise<void> {
-  const knex = getKnex();
-
-  const countQuery = await knex('ValueSetElement').count('id').first().then(executeQuery);
-  if (countQuery && countQuery.count > 0) {
-    return;
-  }
-
+  const client = getClient();
   const system = 'https://snomed.info/sct';
 
   const values = [
@@ -209,12 +204,12 @@ async function createValueSetElements(): Promise<void> {
   ];
 
   for (const value of values) {
-    await knex('ValueSetElement').insert({
+    await new InsertQuery('ValueSetElement', {
       id: randomUUID(),
       system,
       code: value.id,
       display: value.name
-    }).then(executeQuery);
+    }).execute(client);
   }
 }
 
