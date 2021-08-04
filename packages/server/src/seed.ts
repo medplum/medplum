@@ -52,8 +52,9 @@ async function createPublicProject(): Promise<void> {
   const [outcome, result] = await repo.updateResource<Project>({
     resourceType: 'Project',
     id: PUBLIC_PROJECT_ID,
-    name: 'Medplum',
+    name: 'Public',
     owner: {
+      display: 'Medplum Admin',
       reference: 'User/' + ADMIN_USER_ID
     }
   });
@@ -76,6 +77,7 @@ async function createMedplumProject(): Promise<void> {
     id: MEDPLUM_PROJECT_ID,
     name: 'Medplum',
     owner: {
+      display: 'Medplum Admin',
       reference: 'User/' + ADMIN_USER_ID
     }
   });
@@ -156,7 +158,11 @@ async function createUser(): Promise<void> {
     id: ADMIN_USER_ID,
     email: 'admin@medplum.com',
     passwordHash,
-    practitioner: createReference(practitioner as Practitioner)
+    practitioner: createReference(practitioner as Practitioner),
+    projects: [{
+      display: 'Medplum',
+      reference: 'Project/' + MEDPLUM_PROJECT_ID
+    }]
   });
 
   if (!isOk(userOutcome)) {

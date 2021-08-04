@@ -61011,7 +61011,7 @@
           "$ref": "#/definitions/code"
         },
         "name": {
-          "description": "A name associated with the organization.",
+          "description": "A name associated with the Project.",
           "$ref": "#/definitions/string"
         },
         "description": {
@@ -61061,6 +61061,10 @@
         },
         "name": {
           "description": "Human friendly display name that describes the client application.",
+          "$ref": "#/definitions/string"
+        },
+        "description": {
+          "description": "A summary, characterization or explanation of the Client Application.",
           "$ref": "#/definitions/string"
         },
         "secret": {
@@ -61124,6 +61128,13 @@
         "practitioner": {
           "description": "Optional reference to the user's practitioner identity.",
           "$ref": "#/definitions/Reference"
+        },
+        "projects": {
+          "description": "Projects that the user can access.",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
         }
       },
       "required": [
