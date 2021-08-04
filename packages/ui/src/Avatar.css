@@ -7,7 +7,7 @@
   border-radius: 50%;
   overflow: hidden;
   text-align: center;
-  color: white;
+  color: var(--medplum-surface);
   background-color: var(--medplum-gray-500);
   font-size: 18px;
 }
@@ -37,4 +37,9 @@
   height: 56px;
   line-height: 56px;
   font-size: 32px;
+}
+
+.medplum-avatar>a {
+  color: var(--medplum-surface);
+  text-decoration: none;
 }

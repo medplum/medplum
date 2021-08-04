@@ -3,6 +3,7 @@ import { useMedplumRouter } from "./MedplumProvider";
 
 export interface MedplumLinkProps {
   to?: string;
+  testid?: string;
   onClick?: () => void;
   children: React.ReactNode;
 }
@@ -12,7 +13,7 @@ export function MedplumLink(props: MedplumLinkProps) {
   return (
     <a
       href={props.to || '#'}
-      data-testid="link"
+      data-testid={props.testid || 'link'}
       onClick={(e: React.SyntheticEvent) => {
         e.preventDefault();
         e.stopPropagation();

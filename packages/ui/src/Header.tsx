@@ -2,11 +2,11 @@ import { HumanName } from '@medplum/core';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
+import './Header.css';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
-import './Header.css';
 
 export interface HeaderProps {
   onLogo?: () => void;
@@ -37,12 +37,12 @@ export function Header(props: HeaderProps) {
     <>
       <header role="banner">
         <div>
-          <MedplumLink onClick={() => setSidebarVisible(!sidebarVisible)}>
+          <MedplumLink testid="header-menu-button" onClick={() => setSidebarVisible(!sidebarVisible)}>
             <svg xmlns="http://www.w3.org/2000/svg" style={{ width: 20, height: 20, verticalAlign: 'text-top' }} viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
             </svg>
           </MedplumLink>
-          <MedplumLink onClick={props.onLogo}>
+          <MedplumLink testid="header-logo" onClick={props.onLogo}>
             Medplum
           </MedplumLink>
           {auth.user && (
@@ -85,7 +85,7 @@ export function Header(props: HeaderProps) {
         </div>
         {auth.user && (
           <div className="medplum-nav-menu-container">
-            <MedplumLink onClick={() => setUserMenuVisible(true)}>
+            <MedplumLink testid="header-profile-menu-button" onClick={() => setUserMenuVisible(true)}>
               <Avatar size="small" resource={auth.profile as any} />
             </MedplumLink>
             <Popup
@@ -102,7 +102,7 @@ export function Header(props: HeaderProps) {
                 <div style={{ margin: 'auto', padding: '8px' }}>
                   <div style={{ margin: '4px auto 4px auto', fontWeight: 'bold' }}><HumanNameDisplay value={auth.profile?.name?.[0] as HumanName} /></div>
                   <div style={{ margin: '4px auto 8px auto' }}>{auth.user?.email}</div>
-                  <Button onClick={() => {
+                  <Button testid="header-profile-link" onClick={() => {
                     setUserMenuVisible(false);
                     if (props.onProfile) {
                       props.onProfile();
