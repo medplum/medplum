@@ -475,16 +475,13 @@ export class Repository {
 
     const columnName = convertCodeToColumnName(searchParam.code as string);
     const fhirPath = parseFhirPath(searchParam.expression as string);
+    const values = fhirPath.eval(resource);
 
-    if (this.isArrayParam(resource.resourceType, columnName)) {
-      const values = fhirPath.eval(resource);
-      if (values && Array.isArray(values) && values.length > 0) {
+    if (values.length > 0) {
+      if (this.isArrayParam(resource.resourceType, columnName)) {
         columns[columnName] = values.map(v => this.buildColumnValue(searchParam, v));
-      }
-    } else {
-      const value = fhirPath.eval(resource);
-      if (value !== undefined) {
-        columns[columnName] = this.buildColumnValue(searchParam, value);
+      } else {
+        columns[columnName] = this.buildColumnValue(searchParam, values[0]);
       }
     }
   }
