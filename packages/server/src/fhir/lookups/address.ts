@@ -1,7 +1,7 @@
-import { Address, Filter, formatAddress, Resource, SearchParameter } from '@medplum/core';
+import { Address, Filter, formatAddress, Resource, SearchParameter, SortRule } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { Knex } from 'knex';
-import { executeQuery, getKnex } from '../../database';
+import { getClient } from '../../database';
+import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -38,6 +38,14 @@ export class AddressTable implements LookupTable {
   ]);
 
   /**
+   * Returns the table name.
+   * @returns The table name.
+   */
+  getName(): string {
+    return 'Address';
+  }
+
+  /**
    * Returns true if the search parameter is an "" parameter.
    * @param searchParam The search parameter.
    * @returns True if the search parameter is an "identifier" parameter.
@@ -62,15 +70,17 @@ export class AddressTable implements LookupTable {
     const existing = await this.getExistingAddresses(resourceId);
 
     if (!compareArrays(addresses, existing)) {
-      const knex = getKnex();
+      const client = getClient();
 
       if (existing.length > 0) {
-        await knex('Address').where('resourceId', resourceId).delete().then(executeQuery);
+        await new DeleteQuery('Address')
+          .where('resourceId', Operator.EQUALS, resourceId)
+          .execute(client);
       }
 
       for (let i = 0; i < addresses.length; i++) {
         const address = addresses[i];
-        await knex('Address').insert({
+        await new InsertQuery('Address', {
           id: randomUUID(),
           resourceId,
           index: i,
@@ -81,22 +91,59 @@ export class AddressTable implements LookupTable {
           postalCode: address.postalCode,
           state: address.state,
           use: address.use
-        }).then(executeQuery);
+        }).execute(client);
       }
     }
   }
 
   /**
+   * Adds "join" expression to the select query builder.
+   * @param selectQuery The select query builder.
+   */
+  addJoin(selectQuery: SelectQuery): void {
+    selectQuery.join('Address', 'id', 'resourceId');
+  }
+
+  /**
    * Adds "where" conditions to the select query builder.
-   * @param resourceType The FHIR resource type.
    * @param selectQuery The select query builder.
    * @param filter The search filter details.
    */
-  addSearchConditions(resourceType: string, selectQuery: Knex.QueryBuilder, filter: Filter): void {
-    selectQuery.join('Address', resourceType + '.id', '=', 'Address.resourceId');
+  addWhere(selectQuery: SelectQuery, filter: Filter): void {
+    selectQuery.where(
+      { tableName: 'Address', columnName: this.getColumnName(filter.code) },
+      Operator.LIKE,
+      '%' + filter.value + '%');
+  }
 
-    const columnName = filter.code === 'address' ? 'address' : filter.code.replace('address-', '');
-    selectQuery.where('Address.' + columnName, 'LIKE', '%' + filter.value + '%');
+  /**
+   * Adds "order by" clause to the select query builder.
+   * @param selectQuery The select query builder.
+   * @param sortRule The sort rule details.
+   */
+  addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
+    selectQuery.orderBy(
+      { tableName: 'Address', columnName: this.getColumnName(sortRule.code) },
+      sortRule.descending);
+  }
+
+  /**
+   * Returns the column name for the address.
+   *
+   *   Input              | Output
+   *  --------------------+-----------
+   *   address            | address
+   *   address-city       | city
+   *   address-country    | country
+   *   address-postalcode | postalcode
+   *   address-state      | state
+   *   addrses-use        | use
+   *
+   * @param code The search parameter code.
+   * @returns The column name.
+   */
+  private getColumnName(code: string): string {
+    return code === 'address' ? 'address' : code.replace('address-', '');
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {
@@ -130,11 +177,11 @@ export class AddressTable implements LookupTable {
    * @returns Promise for the list of indexed addresses.
    */
   private async getExistingAddresses(resourceId: string): Promise<Address[]> {
-    return getKnex()
-      .select('content')
-      .from('Address')
-      .where('resourceId', resourceId)
+    return new SelectQuery('Address')
+      .column('content')
+      .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
+      .execute(getClient())
       .then(result => result.map(row => JSON.parse(row.content) as Address));
   }
 }

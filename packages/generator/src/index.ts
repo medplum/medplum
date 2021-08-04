@@ -185,13 +185,13 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
 function writeMigrations(): void {
   const b = new FileBuilder(INDENT);
   buildMigrationUp(b);
-  b.newLine();
-  buildMigrationDown(b);
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/0_init.js'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
-  b.append('export async function up(knex) {');
+  b.append('import { PoolClient } from \'pg\';');
+  b.newLine();
+  b.append('export async function run(client: PoolClient) {');
   b.indentCount++;
 
   for (const fhirType of fhirTypes) {
@@ -214,34 +214,42 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
   }
 
   const resourceType = fhirType.outputName;
-
-  b.newLine();
-  b.append('await knex.schema.createTable(\'' + resourceType + '\', t => {');
-  b.indentCount++;
-  b.append('t.uuid(\'id\').notNullable().primary();');
-  b.append('t.text(\'content\').notNullable();');
-  b.append('t.dateTime(\'lastUpdated\').notNullable();');
-  b.append('t.uuid(\'project\').notNullable();');
+  const columns = [
+    '"id" UUID NOT NULL PRIMARY KEY',
+    '"content" TEXT NOT NULL',
+    '"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL',
+    '"project" UUID NOT NULL',
+  ];
 
   if (isInPatientCompartment(resourceType)) {
-    b.append('t.uuid(\'patientCompartment\');');
+    columns.push('"patientCompartment" UUID')
   }
 
-  buildSearchColumns(b, resourceType);
-  b.indentCount--;
-  b.append('});');
+  columns.push(...buildSearchColumns(resourceType));
+
   b.newLine();
-  b.append('await knex.schema.createTable(\'' + resourceType + '_History\', t => {');
+  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '" (');
   b.indentCount++;
-  b.append('t.uuid(\'versionId\').notNullable().primary();');
-  b.append('t.uuid(\'id\').notNullable();');
-  b.append('t.text(\'content\').notNullable();');
-  b.append('t.dateTime(\'lastUpdated\').notNullable();');
+  for (let i = 0; i < columns.length; i++) {
+    b.append(columns[i] + (i !== columns.length - 1 ? ',' : ''));
+  }
   b.indentCount--;
-  b.append('});');
+  b.append(')`);')
+  b.newLine();
+
+  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '_History" (');
+  b.indentCount++;
+  b.append('"versionId" UUID NOT NULL PRIMARY KEY,');
+  b.append('"id" UUID NOT NULL,');
+  b.append('"content" TEXT NOT NULL,');
+  b.append('"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL');
+  b.indentCount--;
+  b.append(')`);')
+  b.newLine();
 }
 
-function buildSearchColumns(b: FileBuilder, resourceType: string): void {
+function buildSearchColumns(resourceType: string): string[] {
+  const result: string[] = [];
   for (const entry of searchParams.entry) {
     const searchParam = entry.resource;
     if (!searchParam.base?.includes(resourceType)) {
@@ -252,13 +260,14 @@ function buildSearchColumns(b: FileBuilder, resourceType: string): void {
     }
     const columnName = convertCodeToColumnName(searchParam.code);
     if (searchParam.code === 'active') {
-      b.append('t.boolean(\'' + columnName + '\');');
+      result.push(`"${columnName}" BOOLEAN`)
     } else if (isArrayParam(resourceType, searchParam.code)) {
-      b.append('t.specificType(\'' + columnName + '\', \'text[]\');');
+      result.push(`"${columnName}" TEXT[]`)
     } else {
-      b.append('t.text(\'' + columnName + '\');');
+      result.push(`"${columnName}" TEXT`)
     }
   }
+  return result;
 }
 
 function isLookupTableParam(searchParam: any) {
@@ -310,95 +319,54 @@ function isArrayParam(resourceType: string, propertyName: string): boolean {
 }
 
 function buildAddressTable(b: FileBuilder): void {
-  b.newLine();
-  b.append('await knex.schema.createTable(\'Address\', t => {');
-  b.indentCount++;
-  b.append('t.uuid(\'id\').notNullable().primary();');
-  b.append('t.uuid(\'resourceId\').notNullable().index();');
-  b.append('t.integer(\'index\').notNullable();');
-  b.append('t.text(\'content\').notNullable();');
-  b.append('t.text(\'address\').index();');
-  b.append('t.text(\'city\').index();');
-  b.append('t.text(\'country\').index();');
-  b.append('t.text(\'postalCode\').index();');
-  b.append('t.text(\'state\').index();');
-  b.append('t.text(\'use\').index();');
-  b.indentCount--;
-  b.append('});');
+  buildLookupTable(b, 'Address', ['address', 'city', 'country', 'postalCode', 'state', 'use']);
 }
 
 function buildContactPointTable(b: FileBuilder): void {
-  b.newLine();
-  b.append('await knex.schema.createTable(\'ContactPoint\', t => {');
-  b.indentCount++;
-  b.append('t.uuid(\'id\').notNullable().primary();');
-  b.append('t.uuid(\'resourceId\').notNullable().index();');
-  b.append('t.integer(\'index\').notNullable();');
-  b.append('t.text(\'content\').notNullable();');
-  b.append('t.text(\'system\').index();');
-  b.append('t.text(\'value\').index();');
-  b.indentCount--;
-  b.append('});');
+  buildLookupTable(b, 'ContactPoint', ['system', 'value']);
 }
 
 function buildIdentifierTable(b: FileBuilder): void {
-  b.newLine();
-  b.append('await knex.schema.createTable(\'Identifier\', t => {');
-  b.indentCount++;
-  b.append('t.uuid(\'id\').notNullable().primary();');
-  b.append('t.uuid(\'resourceId\').notNullable().index();');
-  b.append('t.integer(\'index\').notNullable();');
-  b.append('t.text(\'content\').notNullable();');
-  b.append('t.text(\'system\').index();');
-  b.append('t.text(\'value\').index();');
-  b.indentCount--;
-  b.append('});');
+  buildLookupTable(b, 'Identifier', ['system', 'value']);
 }
 
 function buildHumanNameTable(b: FileBuilder): void {
+  buildLookupTable(b, 'HumanName', ['name', 'given', 'family']);
+}
+
+function buildLookupTable(b: FileBuilder, tableName: string, columns: string[]): void {
   b.newLine();
-  b.append('await knex.schema.createTable(\'HumanName\', t => {');
+  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + tableName + '" (');
   b.indentCount++;
-  b.append('t.uuid(\'id\').notNullable().primary();');
-  b.append('t.uuid(\'resourceId\').notNullable().index();');
-  b.append('t.integer(\'index\').notNullable();');
-  b.append('t.text(\'content\').notNullable();');
-  b.append('t.text(\'name\').index();');
-  b.append('t.text(\'given\').index();');
-  b.append('t.text(\'family\').index();');
+  b.append('"id" UUID NOT NULL PRIMARY KEY,');
+  b.append('"resourceId" UUID NOT NULL,');
+  b.append('"index" INTEGER NOT NULL,');
+  b.append('"content" TEXT NOT NULL,');
+  for (let i = 0; i < columns.length; i++) {
+    b.append(`"${columns[i]}" TEXT` + (i !== columns.length - 1 ? ',' : ''));
+  }
   b.indentCount--;
-  b.append('});');
+  b.append(')`);');
+  b.newLine();
+  for (const column of columns) {
+    b.append(`await client.query('CREATE INDEX ON "${tableName}" ("${column}")');`);
+  }
 }
 
 function buildValueSetElementTable(b: FileBuilder): void {
   b.newLine();
-  b.append('await knex.schema.createTable(\'ValueSetElement\', t => {');
+  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "ValueSetElement" (');
   b.indentCount++;
-  b.append('t.uuid(\'id\').notNullable().primary();');
-  b.append('t.text(\'system\').index();');
-  b.append('t.text(\'code\').index();');
-  b.append('t.text(\'display\').index();');
+  b.append('"id" UUID NOT NULL PRIMARY KEY,');
+  b.append('"system" TEXT,');
+  b.append('"code" TEXT,');
+  b.append('"display" TEXT');
   b.indentCount--;
-  b.append('});');
-}
-
-function buildMigrationDown(b: FileBuilder): void {
-  b.append('export async function down(knex) {');
-  b.indentCount++;
-
-  for (const fhirType of fhirTypes) {
-    if (fhirType.parentType || !fhirType.resource) {
-      continue;
-    }
-
-    const resourceType = fhirType.outputName;
-    b.append('await knex.schema.dropTable(\'' + resourceType + '\');');
-    b.append('await knex.schema.dropTable(\'' + resourceType + '_History\');');
-  }
-
-  b.append('await knex.schema.dropTable(\'Identifier\');');
-  b.indentCount--;
-  b.append('}');
+  b.append(')`);');
+  b.newLine();
+  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("system")');`);
+  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("code")');`);
+  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("display")');`);
 }
 
 /**

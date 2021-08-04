@@ -1,5 +1,5 @@
-import { Filter, Resource, SearchParameter } from '@medplum/core';
-import { Knex } from 'knex';
+import { Filter, Resource, SearchParameter, SortRule } from '@medplum/core';
+import { SelectQuery } from '../sql';
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -10,6 +10,12 @@ import { Knex } from 'knex';
  *   3) Contact Points - email addresses and phone numbers
  */
 export interface LookupTable {
+
+  /**
+   * Returns the unique name of the lookup table.
+   * @returns The unique name of the lookup table.
+   */
+  getName(): string;
 
   /**
    * Determines if the search parameter is indexed by this index table.
@@ -24,10 +30,23 @@ export interface LookupTable {
   indexResource(resource: Resource): Promise<void>;
 
   /**
+   * Adds "join" expression to the select query builder.
+   * @param selectQuery The select query builder.
+   * @param resourceType The primary FHIR resource type.
+   */
+  addJoin(selectQuery: SelectQuery, resourceType: string): void;
+
+  /**
    * Adds "where" conditions to the select query builder.
-   * @param resourceType The FHIR resource type.
    * @param selectQuery The select query builder.
    * @param filter The search filter details.
    */
-  addSearchConditions(resourceType: string, selectQuery: Knex.QueryBuilder, filter: Filter): void;
+  addWhere(selectQuery: SelectQuery, filter: Filter): void;
+
+  /**
+   * Adds "order by" clause to the select query builder.
+   * @param selectQuery The select query builder.
+   * @param sortRule The sort rule details.
+   */
+  addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void;
 }

@@ -1,8 +1,9 @@
 import { ValueSet } from '@medplum/core';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
-import { getKnex } from '../database';
+import { getClient } from '../database';
 import { badRequest, sendOutcome } from './outcomes';
+import { Operator, SelectQuery } from './sql';
 
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
@@ -37,13 +38,15 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     count = Math.max(1, Math.min(20, parseInt(req.query.count as string)));
   }
 
-  const knex = getKnex();
-  const elements = await knex.select('code', 'display')
-    .from('ValueSetElement')
-    .where('system', url)
-    .andWhere('display', 'LIKE', '%' + filter + '%')
+  const client = getClient();
+  const elements = await new SelectQuery('ValueSetElement')
+    .column('code')
+    .column('display')
+    .where('system', Operator.EQUALS, url)
+    .where('display', Operator.LIKE, '%' + filter + '%')
     .offset(offset)
     .limit(count)
+    .execute(client)
     .then(result => result.map(row => ({
       system: url,
       code: row.code,
