@@ -1,4 +1,6 @@
+import { functions } from './functions';
 import { Token, tokenizer } from './tokenize';
+import { applyMaybeArray } from './utils';
 
 export interface Atom {
   eval(context: any): any;
@@ -131,17 +133,6 @@ const enum Precedence {
   FunctionCall = 8
 }
 
-function applyMaybeArray(context: any, fn: (context: any) => any): any {
-  if (context === undefined) {
-    return undefined;
-  }
-  if (Array.isArray(context)) {
-    return context.map(e => fn(e)).filter(e => !!e).flat();
-  } else {
-    return fn(context);
-  }
-}
-
 export class FhirPathAtom implements Atom {
   constructor(
     public readonly original: string,
@@ -221,37 +212,16 @@ class FunctionAtom implements Atom {
   constructor(
     public readonly name: string,
     public readonly args: Atom[],
-    public readonly impl: (context: any, ...a: Atom[]) => any
+    public readonly impl: (context: any[], ...a: Atom[]) => any[]
   ) { }
   eval(context: any): any {
-    return this.impl(context, ...this.args);
-  }
-}
-
-const functions: Record<string, (context: any, ...args: Atom[]) => any> = {
-  where(context: any, condition: Atom): any {
-    return applyMaybeArray(context, e => condition.eval(e) ? e : undefined);
-  },
-
-  resolve(context: any): any {
-    // If context is a reference, turn it into a resource
-    // Otherwise return undefined
-    const refStr = context.reference;
-    if (!refStr) {
+    if (context === undefined) {
       return undefined;
     }
-    const [resourceType, id] = refStr.split('/');
-    return { resourceType, id };
-  },
-
-  as(context: any, expression: Atom): any {
-    return context;
-  },
-
-  exists(context: any): boolean {
-    return context !== undefined && (Array.isArray(context) && context.length > 0) || (!!context);
+    const input = Array.isArray(context) ? context : [context];
+    return this.impl(input, ...this.args);
   }
-};
+}
 
 const PARENTHESES_PARSELET: PrefixParselet = {
   parse(parser: Parser) {
