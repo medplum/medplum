@@ -7,11 +7,11 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@types/jest": "26.0.23",
-    "@types/node": "15.12.1",
+    "@types/jest": "26.0.24",
+    "@types/node": "16.4.12",
     "identity-obj-proxy": "3.0.0",
-    "jest": "27.0.4",
-    "ts-jest": "27.0.2",
-    "typescript": "4.3.2"
+    "jest": "27.0.6",
+    "ts-jest": "27.0.4",
+    "typescript": "4.3.5"
   }
 }
