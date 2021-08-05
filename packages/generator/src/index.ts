@@ -1,6 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { writeFileSync } from 'fs';
-import { JSONSchema4 } from 'json-schema';
+import { JSONSchema6 } from 'json-schema';
 import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
 
@@ -9,11 +9,11 @@ const INDENT = ' '.repeat(2);
 interface Property {
   resourceType: string;
   name: string;
-  definition: any;
+  definition: JSONSchema6;
 }
 
 interface FhirType {
-  definition: any;
+  definition: JSONSchema6;
   inputName: string;
   parentType?: string;
   outputName: string;
@@ -27,9 +27,9 @@ const baseResourceProperties = ['resourceType', 'id', 'meta', 'implicitRules', '
 const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
 
 const searchParams = readJson('fhir/r4/search-parameters.json');
-const schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema4;
+const schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema6;
 const patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json');
-const definitions = schema.definitions as { [k: string]: JSONSchema4; };
+const definitions = schema.definitions as { [k: string]: JSONSchema6; };
 
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
@@ -63,7 +63,7 @@ export function main() {
   writeMigrations();
 }
 
-function buildType(resourceType: string, definition: any): FhirType | undefined {
+function buildType(resourceType: string, definition: JSONSchema6): FhirType | undefined {
   if (!definition.properties) {
     return undefined;
   }
@@ -90,7 +90,7 @@ function buildType(resourceType: string, definition: any): FhirType | undefined 
     properties.push({
       resourceType,
       name: propertyName,
-      definition: propertyDefinition
+      definition: propertyDefinition as JSONSchema6
     });
 
     propertyNames.add(propertyName);
@@ -153,10 +153,12 @@ function writeInterfaceFile(fhirType: FhirType): void {
 
 function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   const resourceType = fhirType.outputName;
+  const genericTypes = ['Bundle', 'BundleEntry', 'OperationOutcome'];
+  const genericModifier = genericTypes.includes(resourceType) ? '<T extends Resource = Resource>' : '';
 
   b.newLine();
   generateJavadoc(b, fhirType.definition.description);
-  b.append('export interface ' + resourceType + ' {');
+  b.append('export interface ' + resourceType + genericModifier + ' {');
   b.indentCount++;
 
   for (const property of fhirType.properties) {
@@ -315,7 +317,7 @@ function isArrayParam(resourceType: string, propertyName: string): boolean {
     return false;
   }
 
-  return propertyDef.type === 'array';
+  return (propertyDef as JSONSchema6).type === 'array';
 }
 
 function buildAddressTable(b: FileBuilder): void {
@@ -403,7 +405,9 @@ function cleanReferencedType(typeName: string): string | undefined {
   if (typeName.startsWith('\'') ||
     isLowerCase(typeName.charAt(0)) ||
     typeName === 'Date | string' ||
-    typeName === '(Date | string)[]') {
+    typeName === '(Date | string)[]' ||
+    typeName === 'BundleEntry<T>[]' ||
+    typeName === 'T') {
     return undefined;
   }
 
@@ -417,13 +421,21 @@ function getTypeScriptType(property: Property): string {
   }
 
   if (property.resourceType === 'OperationOutcome' && property.name === 'resource') {
-    return 'Resource';
+    return 'T';
+  }
+
+  if (property.resourceType === 'Bundle' && property.name === 'entry') {
+    return 'BundleEntry<T>[]';
+  }
+
+  if (property.resourceType === 'Bundle_Entry' && property.name === 'resource') {
+    return 'T';
   }
 
   const typeValue = property.definition.type;
   if (typeValue) {
     if (typeValue === 'array') {
-      const itemDefinition = property.definition.items;
+      const itemDefinition = property.definition.items as JSONSchema6 | undefined;
       if (itemDefinition && itemDefinition.$ref) {
         const itemType = getTypeScriptTypeFromDefinition(itemDefinition.$ref);
         if (itemType.includes(' | ')) {
@@ -437,7 +449,7 @@ function getTypeScriptType(property: Property): string {
         return 'any[]';
       }
     } else {
-      return getTypeScriptTypeFromDefinition(typeValue);
+      return getTypeScriptTypeFromDefinition(typeValue as string);
     }
   }
 
@@ -454,7 +466,11 @@ function getTypeScriptType(property: Property): string {
 }
 
 
-function generateJavadoc(b: FileBuilder, text: string): void {
+function generateJavadoc(b: FileBuilder, text: string | undefined): void {
+  if (!text) {
+    return;
+  }
+
   b.append('/**');
 
   for (const textLine of text.split('\n')) {
