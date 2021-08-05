@@ -325,7 +325,7 @@ export class MedplumClient extends EventTarget {
         if (!resource) {
           throw new Error('StructureDefinition not found');
         }
-        typeDef = indexStructureDefinition(resource as StructureDefinition);
+        typeDef = indexStructureDefinition(resource);
       })
       .then(() => this.search<SearchParameter>({
         resourceType: 'SearchParameter',
