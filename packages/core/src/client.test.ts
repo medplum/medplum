@@ -1,12 +1,46 @@
 import { randomBytes } from 'crypto';
 import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
+import { Bundle, SearchParameter, StructureDefinition } from './fhir';
 
 const defaultOptions = {
   clientId: 'xyz',
   baseUrl: 'https://x/',
   fetch: mockFetch
 }
+
+const patientStructureDefinition: StructureDefinition = {
+  resourceType: 'StructureDefinition',
+  name: 'Patient',
+  snapshot: {
+    element: [
+      {
+        path: 'Patient.id',
+        type: [{
+          code: 'code'
+        }]
+      }
+    ]
+  }
+};
+
+const patientStructureDefinitionBundle: Bundle<StructureDefinition> = {
+  resourceType: 'Bundle',
+  entry: [{ resource: patientStructureDefinition }]
+};
+
+const patientSearchParameter: SearchParameter = {
+  resourceType: 'SearchParameter',
+  id: 'Patient-name',
+  code: 'name',
+  name: 'name',
+  expression: 'Patient.name'
+};
+
+const patientSearchParameterBundle: Bundle<SearchParameter> = {
+  resourceType: 'Bundle',
+  entry: [{ resource: patientSearchParameter }]
+};
 
 let canRefresh = true;
 let tokenExpired = false;
@@ -54,39 +88,10 @@ function mockFetch(url: string, options: any): Promise<any> {
     }
 
   } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
-    result = {
-      resourceType: 'Bundle',
-      entry: [{
-        resource: {
-          resourceType: 'StructureDefinition',
-          name: 'Patient',
-          snapshot: {
-            element: [
-              {
-                path: 'Patient.id',
-                type: [{
-                  code: 'code'
-                }]
-              }
-            ]
-          }
-        }
-      }]
-    };
+    result = patientStructureDefinitionBundle;
 
   } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
-    result = {
-      resourceType: 'Bundle',
-      entry: [{
-        resource: {
-          resourceType: 'SearchParameter',
-          id: 'Patient-name',
-          code: 'name',
-          name: 'name',
-          expression: 'Patient.name'
-        }
-      }]
-    };
+    result = patientSearchParameterBundle;
   }
 
   const response: any = {

@@ -265,7 +265,7 @@ export class MedplumClient extends EventTarget {
     return builder.join('');
   }
 
-  search(search: string | SearchRequest): Promise<Bundle> {
+  search<T extends Resource>(search: string | SearchRequest): Promise<Bundle<T>> {
     if (typeof search === 'string') {
       return this.get(this.baseUrl + 'fhir/R4/' + search);
     } else {
@@ -316,8 +316,8 @@ export class MedplumClient extends EventTarget {
       return Promise.resolve(cached);
     }
     let typeDef: IndexedStructureDefinition;
-    return this.search('StructureDefinition?name=' + encodeURIComponent(resourceType))
-      .then((result: Bundle) => {
+    return this.search<StructureDefinition>('StructureDefinition?name=' + encodeURIComponent(resourceType))
+      .then((result: Bundle<StructureDefinition>) => {
         if (!result.entry?.length) {
           throw new Error('StructureDefinition not found');
         }
@@ -325,9 +325,9 @@ export class MedplumClient extends EventTarget {
         if (!resource) {
           throw new Error('StructureDefinition not found');
         }
-        typeDef = indexStructureDefinition(resource as StructureDefinition);
+        typeDef = indexStructureDefinition(resource);
       })
-      .then(() => this.search({
+      .then(() => this.search<SearchParameter>({
         resourceType: 'SearchParameter',
         count: 100,
         filters: [{
@@ -336,7 +336,7 @@ export class MedplumClient extends EventTarget {
           value: resourceType
         }]
       }))
-      .then((result: Bundle) => {
+      .then((result: Bundle<SearchParameter>) => {
         const entries = result.entry;
         if (entries) {
           typeDef.types[resourceType].searchParams = entries
