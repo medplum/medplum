@@ -12,7 +12,7 @@ import { Signature } from './Signature';
 /**
  * A container for a collection of resources.
  */
-export interface Bundle {
+export interface Bundle<T extends Resource = Resource> {
 
   /**
    * This is a Bundle resource
@@ -79,7 +79,7 @@ export interface Bundle {
    * An entry in a bundle resource - will either contain a resource or
    * information about a resource (transactions and history only).
    */
-  readonly entry?: BundleEntry[];
+  readonly entry?: BundleEntry<T>[];
 
   /**
    * Digital Signature - base64 encoded. XML-DSig or a JWT.
@@ -90,7 +90,7 @@ export interface Bundle {
 /**
  * A container for a collection of resources.
  */
-export interface BundleEntry {
+export interface BundleEntry<T extends Resource = Resource> {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -149,7 +149,7 @@ export interface BundleEntry {
    * The Resource for the entry. The purpose/meaning of the resource is
    * determined by the Bundle.type.
    */
-  readonly resource?: Resource;
+  readonly resource?: T;
 
   /**
    * Information about the search process that lead to the creation of this
