@@ -28,8 +28,8 @@
 }
 
 .medplum-smarttext-completions {
-  display: none;
-  position: absolute;
+  position: fixed;
+  display: block;
   list-style: none;
   margin: 0;
   padding: 0;

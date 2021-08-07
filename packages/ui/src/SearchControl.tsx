@@ -7,6 +7,7 @@ import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import { buildFieldNameString, getFilterValueString, getValue, movePage, renderValue } from './SearchUtils';
+import { killEvent } from './utils/dom';
 import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
@@ -390,11 +391,6 @@ export function SearchControl(props: SearchControlProps) {
       />
     </div>
   );
-}
-
-function killEvent(e: React.SyntheticEvent) {
-  e.preventDefault();
-  e.stopPropagation();
 }
 
 function getStart(search: SearchRequest, total: number): number {
