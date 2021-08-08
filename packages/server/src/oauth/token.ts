@@ -264,9 +264,17 @@ function verifyCode(challenge: string, method: string, verifier: string): boolea
 
 /**
  * Returns the base64-url-encoded SHA256 hash of the code.
+ * The details around '+', '/', and '=' are important for compatibility.
+ * See: https://auth0.com/docs/flows/call-your-api-using-the-authorization-code-flow-with-pkce
  * @param code The input code.
  * @returns The base64-url-encoded SHA256 hash.
  */
 export function hashCode(code: string): string {
-  return createHash('sha256').update(code).digest('base64');
+  return createHash('sha256')
+    .update(code)
+    .digest()
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
 }

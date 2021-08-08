@@ -84,8 +84,8 @@ test('Get userinfo with profile email phone address', async (done) => {
               expect(res3.body.given_name).toBe('Medplum');
               expect(res3.body.family_name).toBe('Admin');
               expect(res3.body.email).toBe('admin@medplum.com');
-              expect(res3.body.phone).toBe('415-867-5309');
-              expect(res3.body.address).toBe('742 Evergreen Terrace, Springfield, OR, 97403');
+              expect(res3.body.phone_number).toBe('415-867-5309');
+              expect(res3.body.address).toMatchObject({ formatted: '742 Evergreen Terrace, Springfield, OR, 97403' });
               done();
             });
         });
@@ -140,7 +140,7 @@ test('Get userinfo with only openid', async (done) => {
               expect(res3.body.given_name).toBeUndefined();
               expect(res3.body.family_name).toBeUndefined();
               expect(res3.body.email).toBeUndefined();
-              expect(res3.body.phone).toBeUndefined();
+              expect(res3.body.phone_number).toBeUndefined();
               expect(res3.body.address).toBeUndefined();
               done();
             });

@@ -25,11 +25,11 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (req: Request, re
   }
 
   if (res.locals.scope.includes('email')) {
-    buildContact(userInfo, profile, 'email');
+    buildEmail(userInfo, profile);
   }
 
   if (res.locals.scope.includes('phone')) {
-    buildContact(userInfo, profile, 'phone');
+    buildPhone(userInfo, profile);
   }
 
   if (res.locals.scope.includes('address')) {
@@ -53,6 +53,7 @@ function buildProfile(userInfo: Record<string, any>, profile: ProfileResource): 
   if (humanName) {
     userInfo.name = formatHumanName(humanName);
     userInfo.given_name = formatGivenName(humanName);
+    userInfo.middle_name = '';
     userInfo.family_name = formatFamilyName(humanName);
   }
 
@@ -64,16 +65,27 @@ function buildProfile(userInfo: Record<string, any>, profile: ProfileResource): 
   userInfo.nickname = '';
 }
 
-function buildContact(userInfo: Record<string, any>, profile: ProfileResource, system: string): void {
-  const contactPoint = profile.telecom?.find(cp => cp.system === system);
+function buildEmail(userInfo: Record<string, any>, profile: ProfileResource): void {
+  const contactPoint = profile.telecom?.find(cp => cp.system === 'email');
   if (contactPoint) {
-    userInfo[system] = contactPoint.value;
+    userInfo.email = contactPoint.value;
+    userInfo.email_verified = false;
+  }
+}
+
+function buildPhone(userInfo: Record<string, any>, profile: ProfileResource): void {
+  const contactPoint = profile.telecom?.find(cp => cp.system === 'phone');
+  if (contactPoint) {
+    userInfo.phone_number = contactPoint.value;
+    userInfo.phone_number_verified = false;
   }
 }
 
 function buildAddress(userInfo: Record<string, any>, profile: ProfileResource): void {
   const address = profile.address?.[0];
   if (address) {
-    userInfo.address = formatAddress(address);
+    userInfo.address = {
+      formatted: formatAddress(address),
+    };
   }
 }
