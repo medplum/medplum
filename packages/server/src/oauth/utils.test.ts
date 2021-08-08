@@ -4,7 +4,7 @@ import { closeDatabase, initDatabase } from '../database';
 import { isOk, repo } from '../fhir';
 import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
-import { tryLogin } from './utils';
+import { tryLogin, validateLoginRequest } from './utils';
 
 let client: ClientApplication;
 
@@ -119,4 +119,69 @@ test('Login successfully', async () => {
 
   expect(isOk(outcome)).toBe(true);
   expect(login).not.toBeUndefined();
+});
+
+test('Validate code challenge login request', () => {
+  // If user submits codeChallenge, then codeChallengeMethod is required
+  expect(validateLoginRequest({
+    clientId: client.id as string,
+    email: 'admin@medplum.com',
+    password: 'admin',
+    role: 'practitioner',
+    scope: 'openid',
+    nonce: 'nonce',
+    remember: false,
+    codeChallenge: 'xyz'
+  })?.issue?.[0]?.expression).toEqual(['code_challenge_method']);
+
+  // If user submits codeChallengeMethod, then codeChallenge is required
+  expect(validateLoginRequest({
+    clientId: client.id as string,
+    email: 'admin@medplum.com',
+    password: 'admin',
+    role: 'practitioner',
+    scope: 'openid',
+    nonce: 'nonce',
+    remember: false,
+    codeChallengeMethod: 'plain'
+  })?.issue?.[0]?.expression).toEqual(['code_challenge']);
+
+  // Code challenge method
+  expect(validateLoginRequest({
+    clientId: client.id as string,
+    email: 'admin@medplum.com',
+    password: 'admin',
+    role: 'practitioner',
+    scope: 'openid',
+    nonce: 'nonce',
+    remember: false,
+    codeChallenge: 'xyz',
+    codeChallengeMethod: 'xyz'
+  })?.issue?.[0]?.expression).toEqual(['code_challenge_method']);
+
+  // Code challenge method 'plain' is ok
+  expect(validateLoginRequest({
+    clientId: client.id as string,
+    email: 'admin@medplum.com',
+    password: 'admin',
+    role: 'practitioner',
+    scope: 'openid',
+    nonce: 'nonce',
+    remember: false,
+    codeChallenge: 'xyz',
+    codeChallengeMethod: 'plain'
+  })).toBeUndefined();
+
+  // Code challenge method 'S256' is ok
+  expect(validateLoginRequest({
+    clientId: client.id as string,
+    email: 'admin@medplum.com',
+    password: 'admin',
+    role: 'practitioner',
+    scope: 'openid',
+    nonce: 'nonce',
+    remember: false,
+    codeChallenge: 'xyz',
+    codeChallengeMethod: 'plain'
+  })).toBeUndefined();
 });

@@ -1,4 +1,5 @@
 import { ClientApplication, createReference, getReferenceString, Login, Operator } from '@medplum/core';
+import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { isOk, repo } from '../fhir';
@@ -7,6 +8,12 @@ import { getAuthTokens, getReferenceIdPart, revokeLogin } from './utils';
 
 /**
  * Handles the OAuth/OpenID Token Endpoint.
+ *
+ * Implements the following authorization flows:
+ *  1) Client Credentials - for server-to-server access
+ *  2) Authorization Code - for user access
+ *  3) Refresh - for "remember me" long term access
+ *
  * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
  */
 export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
@@ -31,6 +38,13 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
   }
 });
 
+/**
+ * Handles the "Client Credentials" OAuth flow.
+ * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
+ * @param req The HTTP request.
+ * @param res The HTTP response.
+ * @returns Async promise to the response.
+ */
 async function handleClientCredentials(req: Request, res: Response): Promise<Response> {
   const clientId = req.body.client_id;
   if (!clientId) {
@@ -85,6 +99,13 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
   });
 }
 
+/**
+ * Handles the "Authorization Code Grant" flow.
+ * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.1
+ * @param req The HTTP request.
+ * @param res The HTTP response.
+ * @returns Async promise to the response.
+ */
 async function handleAuthorizationCode(req: Request, res: Response): Promise<Response> {
   const code = req.body.code;
   if (!code) {
@@ -118,6 +139,17 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_grant', 'Token revoked');
   }
 
+  if (login.codeChallenge) {
+    const codeVerifier = req.body.code_verifier;
+    if (!codeVerifier) {
+      return sendTokenError(res, 'invalid_grant', 'Missing code verifier');
+    }
+
+    if (!verifyCode(login.codeChallenge, login.codeChallengeMethod as string, codeVerifier)) {
+      return sendTokenError(res, 'invalid_grant', 'Invalid code verifier');
+    }
+  }
+
   const [tokenOutcome, token] = await getAuthTokens(login);
   if (!isOk(tokenOutcome) || !token) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
@@ -133,6 +165,13 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
   });
 }
 
+/**
+ * Handles the "Refresh" flow.
+ * See: https://datatracker.ietf.org/doc/html/rfc6749#section-6
+ * @param req The HTTP request.
+ * @param res The HTTP response.
+ * @returns Async promise to the response.
+ */
 async function handleRefreshToken(req: Request, res: Response): Promise<Response> {
   const refreshToken = req.body.refresh_token;
   if (!refreshToken) {
@@ -190,9 +229,44 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
   });
 }
 
+/**
+ * Sends an OAuth2 response.
+ * @param res The HTTP response.
+ * @param error The error code.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.7
+ * @param description The error description.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.8
+ * @returns Reference to the HTTP response.
+ */
 function sendTokenError(res: Response, error: string, description?: string): Response<any, Record<string, any>> {
   return res.status(400).json({
     error,
     error_description: description
   });
+}
+
+/**
+ * Verifies the code challenge and verifier.
+ * @param challenge The code_challenge from the authorization.
+ * @param method The code_challenge_method from the authorization.
+ * @param verifier The code_verifier from the token request.
+ * @returns True if the verifier succeeds; false otherwise.
+ */
+function verifyCode(challenge: string, method: string, verifier: string): boolean {
+  if (method === 'plain' && challenge === verifier) {
+    return true;
+  }
+
+  if (method === 'S256' && challenge === hashCode(verifier)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Returns the base64-url-encoded SHA256 hash of the code.
+ * @param code The input code.
+ * @returns The base64-url-encoded SHA256 hash.
+ */
+export function hashCode(code: string): string {
+  return createHash('sha256').update(code).digest('base64');
 }

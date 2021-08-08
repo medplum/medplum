@@ -1,4 +1,4 @@
-import { getDateProperty, ClientApplication, Login, OperationOutcome, Operator } from '@medplum/core';
+import { ClientApplication, getDateProperty, Login, OperationOutcome, Operator } from '@medplum/core';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { isOk, repo } from '../fhir';
@@ -12,6 +12,9 @@ import { tryLogin } from './utils';
  * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
  */
 
+/**
+ * HTTP GET handler for /oauth2/authorize endpoint.
+ */
 export const authorizeGetHandler = asyncWrap(async (req: Request, res: Response) => {
   const validateResult = await validateAuthorizeRequest(req, res);
   if (!validateResult) {
@@ -21,6 +24,9 @@ export const authorizeGetHandler = asyncWrap(async (req: Request, res: Response)
   renderTemplate(res, 'login', buildView());
 });
 
+/**
+ * HTTP POST handler for /oauth2/authorize endpoint.
+ */
 export const authorizePostHandler = asyncWrap(async (req: Request, res: Response) => {
   const validateResult = await validateAuthorizeRequest(req, res);
   if (!validateResult) {
@@ -29,6 +35,8 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
 
   const [outcome, login] = await tryLogin({
     clientId: req.query.client_id as string,
+    codeChallenge: req.query.code_challenge as string,
+    codeChallengeMethod: req.query.code_challenge_method as string,
     scope: req.query.scope as string,
     nonce: req.query.nonce as string,
     email: req.body.email as string,
@@ -50,7 +58,6 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
   res.redirect(redirectUrl.toString());
 });
 
-
 /**
  * Validates the OAuth/OpenID Authorization Endpoint configuration.
  * This is used for both GET and POST requests.
@@ -71,31 +78,42 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
     return false;
   }
 
+  const state = req.query.state as string;
+
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
   const scope = req.query.scope as string | undefined;
   if (!scope) {
-    sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', req.query.state as string);
+    sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
     return false;
   }
 
   const responseType = req.query.response_type;
   if (responseType !== 'code') {
-    sendErrorRedirect(res, client.redirectUri as string, 'unsupported_response_type', req.query.state as string);
+    sendErrorRedirect(res, client.redirectUri as string, 'unsupported_response_type', state);
     return false;
   }
 
   const requestObject = req.query.request as string | undefined;
   if (requestObject) {
-    sendErrorRedirect(res, client.redirectUri as string, 'request_not_supported', req.query.state as string);
+    sendErrorRedirect(res, client.redirectUri as string, 'request_not_supported', state);
     return false;
+  }
+
+  const codeChallenge = req.query.code_challenge;
+  if (codeChallenge) {
+    const codeChallengeMethod = req.query.code_challenge_method;
+    if (!codeChallengeMethod) {
+      sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
+      return false;
+    }
   }
 
   const existingLogin = await getExistingLogin(req, client);
 
   const prompt = req.query.prompt as string | undefined;
   if (prompt === 'none' && !existingLogin) {
-    sendErrorRedirect(res, client.redirectUri as string, 'login_required', req.query.state as string);
+    sendErrorRedirect(res, client.redirectUri as string, 'login_required', state);
     return false;
   }
 
@@ -108,7 +126,7 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
 
     const redirectUrl = new URL(req.query.redirect_uri as string);
     redirectUrl.searchParams.append('code', existingLogin?.code as string);
-    redirectUrl.searchParams.append('state', req.query.state as string);
+    redirectUrl.searchParams.append('state', state);
     res.redirect(redirectUrl.toString());
     return false;
   }
