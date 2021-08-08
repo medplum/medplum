@@ -8,6 +8,7 @@ import { closeDatabase, initDatabase } from '../database';
 import { isOk, repo } from '../fhir';
 import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
+import { hashCode } from './token';
 
 const app = express();
 let client: ClientApplication;
@@ -157,7 +158,8 @@ test('Token for authorization_code with missing code', async (done) => {
     .type('form')
     .send({
       grant_type: 'authorization_code',
-      code: ''
+      code: '',
+      code_verifier: 'xyz'
     })
     .end((err, res) => {
       expect(res.status).toBe(400);
@@ -173,7 +175,8 @@ test('Token for authorization_code with bad code', async (done) => {
     .type('form')
     .send({
       grant_type: 'authorization_code',
-      code: 'xyzxyz'
+      code: 'xyzxyz',
+      code_verifier: 'xyz'
     })
     .end((err, res) => {
       expect(res.status).toBe(400);
@@ -184,8 +187,16 @@ test('Token for authorization_code with bad code', async (done) => {
 });
 
 test('Authorization code token success', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -204,7 +215,8 @@ test('Authorization code token success', async (done) => {
         .type('form')
         .send({
           grant_type: 'authorization_code',
-          code: location.searchParams.get('code')
+          code: location.searchParams.get('code'),
+          code_verifier: 'xyz'
         })
         .expect(200)
         .end((err2, res2) => {
@@ -255,8 +267,16 @@ test('Refresh token with malformed token', (done) => {
 });
 
 test('Refresh token success', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -275,7 +295,113 @@ test('Refresh token success', async (done) => {
         .type('form')
         .send({
           grant_type: 'authorization_code',
-          code: location.searchParams.get('code')
+          code: location.searchParams.get('code'),
+          code_verifier: 'xyz'
+        })
+        .expect(200)
+        .end((err2, res2) => {
+          expect(res2.status).toBe(200);
+          expect(res2.body.token_type).toBe('Bearer');
+          expect(res2.body.scope).toBe('openid');
+          expect(res2.body.expires_in).toBe(3600);
+          expect(res2.body.id_token).not.toBeUndefined();
+          expect(res2.body.access_token).not.toBeUndefined();
+          expect(res2.body.refresh_token).not.toBeUndefined();
+          request(app)
+            .post('/oauth2/token')
+            .type('form')
+            .send({
+              grant_type: 'refresh_token',
+              refresh_token: res2.body.refresh_token
+            })
+            .expect(200)
+            .end((err3, res3) => {
+              expect(res3.status).toBe(200);
+              expect(res3.body.token_type).toBe('Bearer');
+              expect(res3.body.scope).toBe('openid');
+              expect(res3.body.expires_in).toBe(3600);
+              expect(res3.body.id_token).not.toBeUndefined();
+              expect(res3.body.access_token).not.toBeUndefined();
+              expect(res3.body.refresh_token).not.toBeUndefined();
+              done();
+            });
+        });
+    });
+});
+
+test('Refresh token failure with S256 code', async (done) => {
+  const code = randomUUID();
+  const codeHash = hashCode(code);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: codeHash,
+    code_challenge_method: 'S256'
+  });
+  request(app)
+    .post('/oauth2/authorize?' + params.toString())
+    .type('form')
+    .send({
+      email: 'admin@medplum.com',
+      password: 'admin',
+      nonce: 'asdf',
+      state: 'xyz'
+    })
+    .expect(302)
+    .end((err, res) => {
+      expect(res.status).toBe(302);
+      expect(res.headers.location).not.toBeUndefined();
+      const location = new URL(res.headers.location);
+      expect(location.searchParams.get('error')).toBeNull();
+      request(app)
+        .post('/oauth2/token')
+        .type('form')
+        .send({
+          grant_type: 'authorization_code',
+          code: location.searchParams.get('code'),
+          code_verifier: codeHash // sending hash, should be code
+        })
+        .expect(400, done);
+    });
+});
+
+test('Refresh token success with S256 code', async (done) => {
+  const code = randomUUID();
+  const codeHash = hashCode(code);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: codeHash,
+    code_challenge_method: 'S256'
+  });
+  request(app)
+    .post('/oauth2/authorize?' + params.toString())
+    .type('form')
+    .send({
+      email: 'admin@medplum.com',
+      password: 'admin',
+      nonce: 'asdf',
+      state: 'xyz'
+    })
+    .expect(302)
+    .end((err, res) => {
+      expect(res.status).toBe(302);
+      expect(res.headers.location).not.toBeUndefined();
+      const location = new URL(res.headers.location);
+      expect(location.searchParams.get('error')).toBeNull();
+      request(app)
+        .post('/oauth2/token')
+        .type('form')
+        .send({
+          grant_type: 'authorization_code',
+          code: location.searchParams.get('code'),
+          code_verifier: code
         })
         .expect(200)
         .end((err2, res2) => {

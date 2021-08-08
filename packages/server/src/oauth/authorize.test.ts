@@ -38,20 +38,44 @@ afterAll(async () => {
 });
 
 test('Authorize GET client not found', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: '123',
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .get('/oauth2/authorize?response_type=code&client_id=123&redirect_uri=https://example.com&scope=openid')
+    .get('/oauth2/authorize?' + params.toString())
     .expect(400, done);
 });
 
 test('Authorize GET wrong redirect', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example2.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .get('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example2.com&scope=openid')
+    .get('/oauth2/authorize?' + params.toString())
     .expect(400, done);
 });
 
 test('Authorize GET invalid response_type', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'xyz',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .get('/oauth2/authorize?response_type=xyz&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .get('/oauth2/authorize?' + params.toString())
     .expect(302)
     .end((err, res) => {
       const location = new URL(res.headers.location);
@@ -61,8 +85,17 @@ test('Authorize GET invalid response_type', async (done) => {
 });
 
 test('Authorize GET unsupported request', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain',
+    request: 'unsupported-request'
+  });
   request(app)
-    .get('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&request=xyz&scope=openid')
+    .get('/oauth2/authorize?' + params.toString())
     .expect(302)
     .end((err, res) => {
       const location = new URL(res.headers.location);
@@ -72,8 +105,15 @@ test('Authorize GET unsupported request', async (done) => {
 });
 
 test('Authorize GET missing scope', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .get('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&request=xyz')
+    .get('/oauth2/authorize?' + params.toString())
     .expect(302)
     .end((err, res) => {
       const location = new URL(res.headers.location);
@@ -83,14 +123,30 @@ test('Authorize GET missing scope', async (done) => {
 });
 
 test('Authorize GET success', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .get('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .get('/oauth2/authorize?' + params.toString())
     .expect(200, done);
 });
 
 test('Authorize POST client not found', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: '123',
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=123&redirect_uri=https://example.com&scope=openid')
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -101,8 +157,16 @@ test('Authorize POST client not found', async (done) => {
 });
 
 test('Authorize POST wrong password', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -116,9 +180,15 @@ test('Authorize POST wrong password', async (done) => {
     });
 });
 
-test('Authorize POST success', async (done) => {
+test('Authorize POST success without code_challenge', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -136,9 +206,70 @@ test('Authorize POST success', async (done) => {
     });
 });
 
-test('Authorize POST prompt=none and no existing login', async (done) => {
+test('Authorize POST success with code_challenge', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid&prompt=none')
+    .post('/oauth2/authorize?' + params.toString())
+    .type('form')
+    .send({
+      email: 'admin@medplum.com',
+      password: 'admin',
+      nonce: 'asdf'
+    })
+    .expect(302)
+    .end((err, res) => {
+      expect(res.status).toBe(302);
+      expect(res.headers.location).not.toBeUndefined();
+      const location = new URL(res.headers.location);
+      expect(location.searchParams.get('error')).toBeNull();
+      expect(location.searchParams.get('code')).not.toBeNull();
+      done();
+    });
+});
+
+test('Authorize POST with code_challenge without code_challenge_method', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz'
+  });
+  request(app)
+    .post('/oauth2/authorize?' + params.toString())
+    .type('form')
+    .send({
+      email: 'admin@medplum.com',
+      password: 'admin',
+      nonce: 'asdf'
+    })
+    .expect(302)
+    .end((err, res) => {
+      const location = new URL(res.headers.location);
+      expect(location.searchParams.get('error')).toEqual('invalid_request');
+      done();
+    });
+});
+
+test('Authorize POST prompt=none and no existing login', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain',
+    prompt: 'none'
+  });
+  request(app)
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -157,8 +288,16 @@ test('Authorize POST prompt=none and no existing login', async (done) => {
 });
 
 test('Authorize POST success and prompt=none', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -172,8 +311,17 @@ test('Authorize POST success and prompt=none', async (done) => {
       const cookies = setCookieParser.parse(res.headers['set-cookie']);
       expect(cookies.length).toBe(1);
       const cookie = cookies[0];
+      const params2 = new URLSearchParams({
+        response_type: 'code',
+        client_id: client.id as string,
+        redirect_uri: 'https://example.com',
+        scope: 'openid',
+        code_challenge: 'xyz',
+        code_challenge_method: 'plain',
+        prompt: 'none'
+      });
       request(app)
-        .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid&prompt=none')
+        .post('/oauth2/authorize?' + params2.toString())
         .set('Cookie', cookie.name + '=' + cookie.value)
         .type('form')
         .send({
@@ -195,8 +343,16 @@ test('Authorize POST success and prompt=none', async (done) => {
 });
 
 test('Authorize POST success and prompt=login', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -210,8 +366,17 @@ test('Authorize POST success and prompt=login', async (done) => {
       const cookies = setCookieParser.parse(res.headers['set-cookie']);
       expect(cookies.length).toBe(1);
       const cookie = cookies[0];
+      const params2 = new URLSearchParams({
+        response_type: 'code',
+        client_id: client.id as string,
+        redirect_uri: 'https://example.com',
+        scope: 'openid',
+        code_challenge: 'xyz',
+        code_challenge_method: 'plain',
+        prompt: 'login'
+      });
       request(app)
-        .get('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid&prompt=login')
+        .get('/oauth2/authorize?' + params2.toString())
         .set('Cookie', cookie.name + '=' + cookie.value)
         .expect(200)
         .end((err, res) => {
@@ -226,8 +391,16 @@ test('Authorize POST using id_token_hint', async (done) => {
   // 1) Authorize as normal
   // 2) Get tokens
   // 3) Authorize using id_token_hint
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid')
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -246,14 +419,24 @@ test('Authorize POST using id_token_hint', async (done) => {
         .type('form')
         .send({
           grant_type: 'authorization_code',
-          code: location.searchParams.get('code')
+          code: location.searchParams.get('code'),
+          code_verifier: 'xyz'
         })
         .expect(200)
         .end((err2, res2) => {
           expect(res2.status).toBe(200);
           expect(res2.body.id_token).not.toBeUndefined();
+          const params2 = new URLSearchParams({
+            response_type: 'code',
+            client_id: client.id as string,
+            redirect_uri: 'https://example.com',
+            scope: 'openid',
+            code_challenge: 'xyz',
+            code_challenge_method: 'plain',
+            id_token_hint: res2.body.id_token
+          });
           request(app)
-            .get('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=openid&id_token_hint=' + encodeURIComponent(res2.body.id_token))
+            .get('/oauth2/authorize?' + params2.toString())
             .expect(200)
             .end((err3, res3) => {
               expect(res3.status).toBe(302);

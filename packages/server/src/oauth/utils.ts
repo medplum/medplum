@@ -1,4 +1,4 @@
-import { getDateProperty, ClientApplication, createReference, Login, OperationOutcome, Operator, ProfileResource, Reference, User } from '@medplum/core';
+import { ClientApplication, createReference, getDateProperty, Login, OperationOutcome, Operator, ProfileResource, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { allOk, badRequest, isNotFound, isOk, notFound, repo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
@@ -11,6 +11,8 @@ export interface LoginRequest {
   scope: string;
   nonce: string;
   remember: boolean;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
 }
 
 export interface TokenResult {
@@ -72,10 +74,12 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     refreshSecret,
     scope: request.scope,
     nonce: request.nonce,
+    codeChallenge: request.codeChallenge,
+    codeChallengeMethod: request.codeChallengeMethod,
   });
 }
 
-function validateLoginRequest(request: LoginRequest): OperationOutcome | undefined {
+export function validateLoginRequest(request: LoginRequest): OperationOutcome | undefined {
   if (!request.clientId) {
     return badRequest('Invalid clientId', 'clientId');
   }
@@ -94,6 +98,20 @@ function validateLoginRequest(request: LoginRequest): OperationOutcome | undefin
 
   if (!request.scope) {
     return badRequest('Invalid scope', 'scope');
+  }
+
+  if (!request.codeChallenge && request.codeChallengeMethod) {
+    return badRequest('Invalid code challenge', 'code_challenge');
+  }
+
+  if (request.codeChallenge && !request.codeChallengeMethod) {
+    return badRequest('Invalid code challenge method', 'code_challenge_method');
+  }
+
+  if (request.codeChallengeMethod &&
+    request.codeChallengeMethod !== 'plain' &&
+    request.codeChallengeMethod !== 'S256') {
+    return badRequest('Invalid code challenge method', 'code_challenge_method');
   }
 
   return undefined;

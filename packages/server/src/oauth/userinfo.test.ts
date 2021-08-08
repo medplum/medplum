@@ -37,9 +37,16 @@ afterAll(async () => {
 });
 
 test('Get userinfo with profile email phone address', async (done) => {
-  const scope = 'openid profile email phone address';
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid profile email phone address',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=' + encodeURIComponent(scope))
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -58,7 +65,8 @@ test('Get userinfo with profile email phone address', async (done) => {
         .type('form')
         .send({
           grant_type: 'authorization_code',
-          code: location.searchParams.get('code')
+          code: location.searchParams.get('code'),
+          code_verifier: 'xyz'
         })
         .expect(200)
         .end((err2, res2) => {
@@ -85,9 +93,16 @@ test('Get userinfo with profile email phone address', async (done) => {
 });
 
 test('Get userinfo with only openid', async (done) => {
-  const scope = 'openid';
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz',
+    code_challenge_method: 'plain'
+  });
   request(app)
-    .post('/oauth2/authorize?response_type=code&client_id=' + client.id + '&redirect_uri=https://example.com&scope=' + encodeURIComponent(scope))
+    .post('/oauth2/authorize?' + params.toString())
     .type('form')
     .send({
       email: 'admin@medplum.com',
@@ -106,7 +121,8 @@ test('Get userinfo with only openid', async (done) => {
         .type('form')
         .send({
           grant_type: 'authorization_code',
-          code: location.searchParams.get('code')
+          code: location.searchParams.get('code'),
+          code_verifier: 'xyz'
         })
         .expect(200)
         .end((err2, res2) => {
