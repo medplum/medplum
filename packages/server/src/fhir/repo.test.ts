@@ -557,7 +557,6 @@ test('Filter and sort on same search parameter', async () => {
   });
 
   expect(isOk(createOutcome)).toBe(true);
-  console.log(JSON.stringify(createBundle, undefined, 2));
 
   const [searchOutcome, bundle] = await repo.search({
     resourceType: 'Patient',

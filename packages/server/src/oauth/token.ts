@@ -145,11 +145,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
       return sendTokenError(res, 'invalid_grant', 'Missing code verifier');
     }
 
-    if (login.codeChallengeMethod === 'plain' && login.codeChallenge !== codeVerifier) {
-      return sendTokenError(res, 'invalid_grant', 'Invalid code verifier');
-    }
-
-    if (login.codeChallengeMethod === 'S256' && login.codeChallenge !== hashCode(codeVerifier)) {
+    if (!verifyCode(login.codeChallenge, login.codeChallengeMethod as string, codeVerifier)) {
       return sendTokenError(res, 'invalid_grant', 'Invalid code verifier');
     }
   }
@@ -245,6 +241,25 @@ function sendTokenError(res: Response, error: string, description?: string): Res
     error,
     error_description: description
   });
+}
+
+/**
+ * Verifies the code challenge and verifier.
+ * @param challenge The code_challenge from the authorization.
+ * @param method The code_challenge_method from the authorization.
+ * @param verifier The code_verifier from the token request.
+ * @returns True if the verifier succeeds; false otherwise.
+ */
+function verifyCode(challenge: string, method: string, verifier: string): boolean {
+  if (method === 'plain' && challenge === verifier) {
+    return true;
+  }
+
+  if (method === 'S256' && challenge === hashCode(verifier)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**

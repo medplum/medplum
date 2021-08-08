@@ -180,7 +180,33 @@ test('Authorize POST wrong password', async (done) => {
     });
 });
 
-test('Authorize POST success', async (done) => {
+test('Authorize POST success without code_challenge', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid'
+  });
+  request(app)
+    .post('/oauth2/authorize?' + params.toString())
+    .type('form')
+    .send({
+      email: 'admin@medplum.com',
+      password: 'admin',
+      nonce: 'asdf'
+    })
+    .expect(302)
+    .end((err, res) => {
+      expect(res.status).toBe(302);
+      expect(res.headers.location).not.toBeUndefined();
+      const location = new URL(res.headers.location);
+      expect(location.searchParams.get('error')).toBeNull();
+      expect(location.searchParams.get('code')).not.toBeNull();
+      done();
+    });
+});
+
+test('Authorize POST success with code_challenge', async (done) => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -204,6 +230,30 @@ test('Authorize POST success', async (done) => {
       const location = new URL(res.headers.location);
       expect(location.searchParams.get('error')).toBeNull();
       expect(location.searchParams.get('code')).not.toBeNull();
+      done();
+    });
+});
+
+test('Authorize POST with code_challenge without code_challenge_method', async (done) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.id as string,
+    redirect_uri: 'https://example.com',
+    scope: 'openid',
+    code_challenge: 'xyz'
+  });
+  request(app)
+    .post('/oauth2/authorize?' + params.toString())
+    .type('form')
+    .send({
+      email: 'admin@medplum.com',
+      password: 'admin',
+      nonce: 'asdf'
+    })
+    .expect(302)
+    .end((err, res) => {
+      const location = new URL(res.headers.location);
+      expect(location.searchParams.get('error')).toEqual('invalid_request');
       done();
     });
 });
