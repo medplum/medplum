@@ -1,51 +1,52 @@
-import React, { useRef } from 'react';
+import { ValueSet, ValueSetContains } from '@medplum/core';
+import React, { useRef, useState } from 'react';
+import { useMedplum } from './MedplumProvider';
+import { getRange, getRangeBounds, indexOfNode, killEvent } from './utils/dom';
 import './SmartText.css';
-
-const KEY_TAB = 9;
-const KEY_ESCAPE = 27;
-const KEY_DOWN = 40;
-const KEY_PERIOD = 190;
-
-const SEARCH_API_URL = 'http://localhost:3000/search';
 
 export interface SmartTextProps {
   id?: string;
   value?: string;
+  onChange?: (html: string) => void;
 }
 
-export const SmartText = (props: SmartTextProps) => {
-  const containerRef = useRef<HTMLUListElement>(null);
-  const editorRef = useRef<HTMLDivElement>(null);
-  let open = false;
-  let ignoreInput = false;
-  let search: string | null = null;
-  let matches: any[] = [];
-  let selectedIndex = -1;
-  const conceptCache: any = {};
-  const codeCache: any = {};
-  let codes: any[] = [];
-  let actions: any[] = [];
+interface DropdownState {
+  open: boolean;
+  x: number;
+  y: number;
+}
 
+export function SmartText(props: SmartTextProps) {
+  const medplum = useMedplum();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [lastSearch, setLastSearch] = useState('');
+  const [valueSet, setValueSet] = useState<ValueSet>();
+  const [dropdown, setDropdown] = useState<DropdownState>({ open: false, x: 0, y: 0 });
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   function onKeyDown(e: React.KeyboardEvent) {
-    switch (e.keyCode) {
-      case KEY_TAB:
-        if (e.shiftKey) {
-          handleShiftTabKey(e);
-        } else {
-          handleTabKey(e);
-        }
+    switch (e.code) {
+      case 'Enter':
+        handleEnterKey(e);
         break;
 
-      case KEY_ESCAPE:
+      case 'Tab':
+        handleTabKey(e);
+        break;
+
+      case 'Escape':
         handleEscapeKey(e);
         break;
 
-      case KEY_DOWN:
+      case 'ArrowUp':
+        handleUpArrow(e);
+        break;
+
+      case 'ArrowDown':
         handleDownArrow(e);
         break;
 
-      case KEY_PERIOD:
+      case 'Period':
         if (e.ctrlKey) {
           handleCreateGroup(e);
         }
@@ -54,13 +55,8 @@ export const SmartText = (props: SmartTextProps) => {
   }
 
   function onTextChange() {
-    if (ignoreInput) {
-      // Ignore non-user changes
-      return;
-    }
-
     // Reset the search
-    selectedIndex = -1;
+    setSelectedIndex(-1);
 
     // Current selection
     const range = getRange();
@@ -98,27 +94,22 @@ export const SmartText = (props: SmartTextProps) => {
     }
 
     const search2 = allText.substring(startIndex, endIndex).trim();
-    if (search2.length >= 2 && search2 !== search) {
-      search = search2;
+    if (search2.length >= 2 && search2 !== lastSearch) {
+      setLastSearch(search2);
 
-      const url = SEARCH_API_URL + '?q=' + search2;
-      const init = { method: 'GET' };
-      fetch(url, init)
-        .then(response => response.json())
+      const url = `fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://snomed.info/sct')}&filter=${encodeURIComponent(search2)}`;
+      medplum.get(url)
         .then(handleSearchResults);
     } else {
-      search = null;
       closeSuggestions();
     }
-
-    // Update concepts in case of delete
-    // TODO: Only do this on delete events?
-    updateConcepts();
   }
 
-  function handleSearchResults(response: any) {
-    matches = response;
-    updateAutoComplete();
+  function handleSearchResults(response: ValueSet) {
+    setValueSet(response);
+    if (response.expansion?.contains && response.expansion.contains.length > 0) {
+      openSuggestions();
+    }
   }
 
   function openSuggestions() {
@@ -128,129 +119,58 @@ export const SmartText = (props: SmartTextProps) => {
       return;
     }
 
-    const container = containerRef.current;
-    if (container) {
-      const toolbarEl = document.querySelector('.ql-toolbar');
-      const toolbarHeight = toolbarEl ? toolbarEl.getBoundingClientRect().height : 0;
-      container.style.left = (rangeBounds.x) + 'px';
-      container.style.top = (toolbarHeight + rangeBounds.top + rangeBounds.height) + 'px';
-      container.style.position = 'fixed';
-      container.style.display = 'block';
-      open = true;
-    }
-  }
-
-  function getRange() {
-    const selection = window.getSelection();
-    if (!selection) {
-      return null;
-    }
-
-    return selection.getRangeAt(0);
-  }
-
-  function getRangeBounds() {
-    const range = getRange();
-    if (!range) {
-      return null;
-    }
-
-    const rangeRects = range.getClientRects();
-    if (!rangeRects || rangeRects.length === 0) {
-      return;
-    }
-
-    return rangeRects[0];
+    setDropdown({
+      open: true,
+      x: rangeBounds.left,
+      y: rangeBounds.bottom
+    });
   }
 
   function closeSuggestions() {
-    const container = containerRef.current;
-    if (container) {
-      container.style.display = 'none';
-    }
-    open = false;
+    setDropdown({ open: false, x: 0, y: 0 });
   }
 
-  function updateAutoComplete() {
-    if (!search) {
-      return;
+  function handleEnterKey(e: React.KeyboardEvent) {
+    if (dropdown.open) {
+      killEvent(e);
+      applyReplacement();
     }
-
-    if (matches.length === 0) {
-      closeSuggestions();
-      return;
-    }
-
-    const searchTokens = search.split(/\s+/);
-    const searchRegexes = searchTokens.map(token => new RegExp(escapeRegExp(token), 'gi'));
-
-    let html = '';
-    for (let i = 0; i < matches.length; i++) {
-      const concept = matches[i].concept;
-      const selected = i === selectedIndex ? ' class="selected"' : '';
-      const style = concept.type === 'template' ? ' style="color:' + concept.color + '"' : '';
-
-      let highlight = concept.name;
-      for (let j = 0; j < searchRegexes.length; j++) {
-        highlight = highlight.replace(searchRegexes[j], '<b>' + searchTokens[j] + '</b>');
-      }
-
-      html += '<li ' + selected + style + '">' + highlight + '</li>';
-    }
-
-    const container = containerRef.current;
-    if (container) {
-      container.innerHTML = html;
-    }
-    openSuggestions();
   }
 
   function handleTabKey(e: React.KeyboardEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (open) {
+    killEvent(e);
+    if (e.shiftKey) {
+      selectPrevPlaceholder();
+    } else if (dropdown.open) {
       applyReplacement();
     } else {
       selectNextPlaceholder();
     }
   }
 
-  function handleShiftTabKey(e: React.KeyboardEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!open) {
-      selectPrevPlaceholder();
-    }
-  }
-
   function handleEscapeKey(e: React.KeyboardEvent) {
-    if (open) {
-      e.preventDefault();
-      e.stopPropagation();
-      search = null;
+    if (dropdown.open) {
+      killEvent(e);
       closeSuggestions();
     }
   }
 
-  function handleDownArrow(e: React.KeyboardEvent) {
-    if (!open) {
-      return true;
+  function handleUpArrow(e: React.KeyboardEvent) {
+    if (dropdown.open) {
+      killEvent(e);
+      setSelectedIndex(selectedIndex - 1);
     }
+  }
 
-    e.preventDefault();
-    e.stopPropagation();
-    selectedIndex = 0;
-    updateAutoComplete();
-
-    const container = containerRef.current;
-    if (container) {
-      container.focus();
+  function handleDownArrow(e: React.KeyboardEvent) {
+    if (dropdown.open) {
+      killEvent(e);
+      setSelectedIndex(selectedIndex + 1);
     }
   }
 
   function handleCreateGroup(e: React.KeyboardEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+    killEvent(e);
 
     const selection = window.getSelection();
     if (!selection) {
@@ -266,53 +186,9 @@ export const SmartText = (props: SmartTextProps) => {
     document.execCommand('insertHTML', false, newContents);
   }
 
-  function handleContainerKey(e: React.KeyboardEvent) {
-    if (!open) {
-      return;
-    }
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      closeSuggestions();
-    }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      e.stopPropagation();
-      selectedIndex--;
-      if (selectedIndex < 0) {
-        closeSuggestions();
-        const editor = editorRef.current;
-        if (editor) {
-          editor.focus();
-        }
-      } else {
-        updateAutoComplete();
-      }
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      e.stopPropagation();
-      selectedIndex = Math.min(selectedIndex + 1, matches.length - 1);
-      updateAutoComplete();
-    }
-    if (e.key === 'Tab' || e.key === 'Enter') {
-      e.preventDefault();
-      e.stopPropagation();
-      applyReplacement();
-    }
-  }
-
   function applyReplacement() {
-    // Start ignoring input
-    ignoreInput = true;
-
-    selectedIndex = Math.max(0, selectedIndex);
-    const match = matches[selectedIndex];
-    const concept = match.concept;
-    const replacement = concept.name;
-
-    // Add the concept to the local cache
-    conceptCache[concept.id] = concept;
+    const concept = valueSet?.expansion?.contains?.[Math.max(0, selectedIndex)] as ValueSetContains;
+    const replacement = concept.display as string;
 
     // Get the current selection
     const selection = window.getSelection();
@@ -328,8 +204,8 @@ export const SmartText = (props: SmartTextProps) => {
     }
 
     // Find the match term in the element
-    const matchIndex = selectionContent.lastIndexOf(match.matchTerm, selectionRange.endOffset);
-    const matchLength = match.matchTerm.length;
+    const matchIndex = selectionContent.lastIndexOf(lastSearch, selectionRange.endOffset);
+    const matchLength = lastSearch.length;
 
     // Select the search term
     const searchRange = new Range();
@@ -339,12 +215,7 @@ export const SmartText = (props: SmartTextProps) => {
     selection.addRange(searchRange);
 
     // Replace with the replacement text
-    let replacementHtml = '<span class="concept"';
-    replacementHtml += ' data-id="' + concept.id + '"';
-    if (concept.color) {
-      replacementHtml += ' style="color:' + concept.color + '"';
-    }
-    replacementHtml += '>';
+    let replacementHtml = '<span class="concept" data-id="' + concept.code + '">';
     replacementHtml += replacement;
     replacementHtml += '</span>&nbsp;';
     document.execCommand('insertHtml', false, replacementHtml);
@@ -353,174 +224,12 @@ export const SmartText = (props: SmartTextProps) => {
     const afterSelection = window.getSelection();
     if (afterSelection) {
       const afterRange = afterSelection.getRangeAt(0);
-
-      if (concept.type === 'template') {
-        // If this is a template, add the template content
-        document.execCommand('insertText', false, concept.content);
-      }
-
       afterSelection.removeAllRanges();
       afterSelection.addRange(afterRange);
     }
 
-    if (concept.type === 'template' && concept.content.indexOf('[') >= 0) {
-      // If this is a template with placeholders, select the first placeholder
-      selectNextPlaceholder();
-    }
-
-    updateConcepts();
+    setLastSearch('');
     closeSuggestions();
-
-    // Stop ignoring input
-    ignoreInput = false;
-  }
-
-  /**
-   * Diffs two arrays into "add" and "remove" elements.
-   * @param {Array} oldArray
-   * @param {Array} newArray
-   * @return {Object} Diff object containing "add" and "remove" propeties.
-   */
-  function diffArrays(oldArray: any[], newArray: any[]) {
-    const addList = [];
-    const removeList = [];
-    let i = 0;
-    let j = 0;
-
-    while (i < oldArray.length && j < newArray.length) {
-      if (oldArray[i] === newArray[j]) {
-        i++;
-        j++;
-      } else if (oldArray[i] < newArray[j]) {
-        removeList.push(oldArray[i++]);
-      } else {
-        addList.push(newArray[j++]);
-      }
-    }
-
-    while (i < oldArray.length) {
-      removeList.push(oldArray[i++]);
-    }
-
-    while (j < newArray.length) {
-      addList.push(newArray[j++]);
-    }
-
-    return {
-      add: addList,
-      remove: removeList
-    };
-  }
-
-  /**
-   * Scans the text for all "concepts".
-   * Updates ICD-10 codes and actions based on the contents of the editor.
-   */
-  function updateConcepts() {
-    const editor = editorRef.current;
-    if (!editor) {
-      return;
-    }
-
-    const conceptElements = editor.querySelectorAll('.concept');
-    const newCodesSet = new Set();
-    const newActionsSet = new Set();
-
-    for (let i = 0; i < conceptElements.length; i++) {
-      const conceptElement = conceptElements[i] as HTMLElement;
-      const conceptId = conceptElement.dataset.id;
-      if (!conceptId) {
-        continue;
-      }
-
-      const concept = conceptCache[conceptId];
-
-      for (let j = 0; j < concept.codes.length; j++) {
-        const code = concept.codes[j];
-        codeCache[code.id] = code;
-        newCodesSet.add(code.id);
-      }
-
-      if (concept.type === 'rxnorm') {
-        newActionsSet.add(concept.id);
-      }
-    }
-
-    const oldCodes = codes;
-    const newCodes = Array.from(newCodesSet);
-    newCodes.sort();
-
-    const oldActions = actions;
-    const newActions = Array.from(newActionsSet);
-    newActions.sort();
-
-    const codeDiff = diffArrays(oldCodes, newCodes);
-    updateCodes(codeDiff);
-    codes = newCodes;
-
-    const actionsDiff = diffArrays(oldActions, newActions);
-    updateActions(actionsDiff);
-    actions = newActions;
-  }
-
-  function updateCodes(codesDiff: any) {
-    const container = document.querySelector('.code-list');
-    if (!container) {
-      return;
-    }
-
-    const children = container.querySelectorAll('.code');
-
-    // Remove deleted codes
-    for (let i = children.length - 1; i >= 0; i--) {
-      for (let j = 0; j < codesDiff.remove.length; j++) {
-        if ((children[i] as HTMLElement).dataset.id === codesDiff.remove[j]) {
-          container.removeChild(children[i]);
-          break;
-        }
-      }
-    }
-
-    // Add new codes
-    for (let i = 0; i < codesDiff.add.length; i++) {
-      const codeId = codesDiff.add[i];
-      const code = codeCache[codeId];
-      const el = document.createElement('div');
-      el.dataset.id = codeId;
-      el.className = 'code';
-      el.innerHTML = '<strong>' + code.id + '</strong> ' + code.name;
-      container.appendChild(el);
-    }
-  }
-
-  function updateActions(actionsDiff: any) {
-    const container = document.querySelector('.action-container');
-    if (!container) {
-      return;
-    }
-
-    const children = container.querySelectorAll('.action');
-
-    // Remove deleted actions
-    for (let i = children.length - 1; i >= 0; i--) {
-      for (let j = 0; j < actionsDiff.remove.length; j++) {
-        if ((children[i] as HTMLElement).dataset.id === actionsDiff.remove[j]) {
-          container.removeChild(children[i]);
-          break;
-        }
-      }
-    }
-
-    // Add new actions
-    for (let i = 0; i < actionsDiff.add.length; i++) {
-      const actionId = actionsDiff.add[i];
-      const action = conceptCache[actionId];
-      const el = document.createElement('div');
-      el.dataset.id = actionId;
-      el.className = 'action';
-      el.innerHTML = action.name;
-      container.appendChild(el);
-    }
   }
 
   function selectNextPlaceholder() {
@@ -672,39 +381,39 @@ export const SmartText = (props: SmartTextProps) => {
     return null;
   }
 
-  function indexOfNode(nodeList: NodeList, node: Node) {
-    for (let i = 0; i < nodeList.length; i++) {
-      if (nodeList[i] === node) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  function escapeRegExp(text: string) {
-    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-  }
-
   return (
-    <div className="medplum-smarttext">
+    <div className="medplum-smarttext" data-testid="smarttext">
       <div className="medplum-smartext-editor-container">
         <div
+          id={props.id}
+          data-testid="smarttext-editor"
           className="medplum-smarttext-editor"
           ref={editorRef}
           contentEditable={true}
-          id={props.id}
           defaultValue={props.value || ''}
           onKeyDown={onKeyDown}
           onInput={onTextChange}
+          onBlur={onTextChange}
         ></div>
       </div>
-      <ul
-        className="medplum-smarttext-completions"
-        ref={containerRef}
-        tabIndex={-1}
-        onKeyDown={handleContainerKey}
-      >
-      </ul>
+      {dropdown.open && (
+        <ul
+          data-testid="smarttext-dropdown"
+          className="medplum-smarttext-completions"
+          tabIndex={-1}
+          style={{ left: dropdown.x, top: dropdown.y }}
+        >
+          {valueSet?.expansion?.contains?.map((element, index) => (
+            <li
+              key={element.code}
+              data-index={index}
+              className={index === selectedIndex ? "medplum-autocomplete-row medplum-autocomplete-active" : "medplum-autocomplete-row"}
+            >
+              {element.display}
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="code-container">
         <div className="code-header">ICD-10 SUGGESTIONS</div>
         <div className="code-list">
@@ -714,4 +423,4 @@ export const SmartText = (props: SmartTextProps) => {
       <div className="action-container"></div>
     </div>
   );
-};
+}
