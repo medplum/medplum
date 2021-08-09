@@ -4,14 +4,18 @@ import { Button } from './Button';
 import { FormSection } from "./FormSection";
 import { parseForm } from './FormUtils';
 import { Logo } from './Logo';
+import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { TextField } from './TextField';
+import './SignInForm.css';
 
 export interface SignInFormProps {
   role?: string;
   scope?: string;
   remember?: boolean;
   onSuccess?: () => void;
+  onForgotPassword?: () => void;
+  onRegister?: () => void;
 }
 
 export function SignInForm(props: SignInFormProps) {
@@ -48,8 +52,18 @@ export function SignInForm(props: SignInFormProps) {
       <FormSection title="Password">
         <TextField id="password" type="password" testid="password" required={true} outcome={outcome} />
       </FormSection>
-      <div className="right">
-        <Button type="submit" testid="submit">Sign in</Button>
+      <div className="medplum-signin-buttons">
+        <div>
+          {props.onForgotPassword && (
+            <MedplumLink testid="forgotpassword" onClick={props.onForgotPassword}>Forgot password</MedplumLink>
+          )}
+          {props.onRegister && (
+            <MedplumLink testid="register" onClick={props.onRegister}>Register</MedplumLink>
+          )}
+        </div>
+        <div>
+          <Button type="submit" testid="submit">Sign in</Button>
+        </div>
       </div>
     </form>
   );

@@ -29,14 +29,14 @@
   width: 24px;
   height: 24px;
   line-height: 24px;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .medplum-avatar.large {
   width: 56px;
   height: 56px;
   line-height: 56px;
-  font-size: 32px;
+  font-size: 28px;
 }
 
 .medplum-avatar>a {

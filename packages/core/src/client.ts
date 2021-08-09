@@ -95,15 +95,6 @@ export interface FetchLike {
   (url: string, options?: any): Promise<any>;
 }
 
-interface LoginRequest {
-  clientId: string;
-  email: string;
-  password: string;
-  role: string;
-  scope: string;
-  remember: boolean;
-}
-
 interface LoginResponse {
   user: User;
   profile: any;
@@ -186,13 +177,38 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Tries to sign in with email and password.
-   * @param email
-   * @param password
-   * @param role
-   * @param scope
+   * Tries to register a new user.
+   * @param firstName The user first name.
+   * @param lastName The user last name.
+   * @param email The user email address.
+   * @param password The user password.
    * @param remember Optional flag to "remember" to generate a refresh token and persist in local storage.
-   * @returns
+   * @returns Promise to the user resource.
+   */
+  register(
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+    remember?: boolean): Promise<User> {
+
+    return this.post('auth/register', {
+      firstName,
+      lastName,
+      email,
+      password,
+      remember
+    }).then((response: LoginResponse) => this.handleLoginResponse(response));
+  }
+
+  /**
+   * Tries to sign in with email and password.
+   * @param email The user email address.
+   * @param password The user password.
+   * @param role The login role.
+   * @param scope The OAuth2 login scope.
+   * @param remember Optional flag to "remember" to generate a refresh token and persist in local storage.
+   * @returns Promise to the user resource.
    */
   signIn(
     email: string,
@@ -201,26 +217,29 @@ export class MedplumClient extends EventTarget {
     scope: string,
     remember?: boolean): Promise<User> {
 
-    const url = this.baseUrl + 'auth/login';
-
-    const body: LoginRequest = {
+    return this.post('auth/login', {
       clientId: this.clientId,
       email,
       password,
       role,
       scope,
       remember: !!remember
-    };
+    }).then((response: LoginResponse) => this.handleLoginResponse(response));
+  }
 
-    return this.post(url, body)
-      .then((response: LoginResponse) => {
-        this.setAccessToken(response.accessToken);
-        this.setRefreshToken(response.refreshToken);
-        this.setUser(response.user);
-        this.setProfile(response.profile);
-        this.dispatchEvent({ type: 'change' });
-        return response.user;
-      });
+  /**
+   * Handles a login response.
+   * This can be used for both "register" and "signIn".
+   * @param response The login response.
+   * @returns The login user.
+   */
+  private handleLoginResponse(response: LoginResponse): User {
+    this.setAccessToken(response.accessToken);
+    this.setRefreshToken(response.refreshToken);
+    this.setUser(response.user);
+    this.setProfile(response.profile);
+    this.dispatchEvent({ type: 'change' });
+    return response.user;
   }
 
   /**
@@ -267,7 +286,7 @@ export class MedplumClient extends EventTarget {
 
   search<T extends Resource>(search: string | SearchRequest): Promise<Bundle<T>> {
     if (typeof search === 'string') {
-      return this.get(this.baseUrl + 'fhir/R4/' + search);
+      return this.get('fhir/R4/' + search);
     } else {
       return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search));
     }

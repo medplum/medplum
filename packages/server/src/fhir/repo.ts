@@ -220,7 +220,11 @@ export class Repository {
       }
     }
 
-    await this.write(result);
+    try {
+      await this.write(result);
+    } catch (error) {
+      return [badRequest(error.message), undefined];
+    }
 
     return [existing ? allOk : created, result];
   }
@@ -255,7 +259,7 @@ export class Repository {
     return [allOk, resource];
   }
 
-  async search(searchRequest: SearchRequest): RepositoryResult<Bundle> {
+  async search<T extends Resource>(searchRequest: SearchRequest): RepositoryResult<Bundle<T>> {
     const resourceType = searchRequest.resourceType;
     const validateOutcome = validateResourceType(resourceType);
     if (!isOk(validateOutcome)) {

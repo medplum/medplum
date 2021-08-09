@@ -13,6 +13,7 @@ export interface MedplumServerConfig {
   tokenUrl: string;
   userInfoUrl: string;
   binaryStorage: string;
+  supportEmail: string;
   database: MedplumDatabaseConfig;
 }
 
@@ -29,7 +30,6 @@ export interface MedplumDatabaseConfig {
  * See: https://docs.aws.amazon.com/secretsmanager/latest/userguide/secretsmanager-userguide.pdf
  */
 interface AwsDatabaseSecrets {
-  engine: 'postgres';
   dbname: string;
   host: string;
   port: number;

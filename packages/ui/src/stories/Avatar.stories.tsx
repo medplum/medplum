@@ -38,6 +38,16 @@ export const Sizes = () => (
   </Document>
 );
 
+export const LetterSizes = () => (
+  <Document>
+    <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
+      <Avatar alt="George Wasington" size="small" />
+      <Avatar alt="George Wasington" color="var(--medplum-blue-500)" />
+      <Avatar alt="George Wasington" color="var(--medplum-purple-500)" size="large" />
+    </div>
+  </Document>
+);
+
 export const Resource = () => (
   <Document>
     <Avatar reference={{ reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID }} />
