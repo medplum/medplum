@@ -7,9 +7,9 @@ export interface PageProps {
   onRegister: () => void;
 }
 
-export const Page: React.FC<PageProps> = ({ onSignIn, onRegister }) => (
+export const Page: React.FC<PageProps> = () => (
   <>
-    <Header onSignIn={onSignIn} onRegister={onRegister} />
+    <Header />
 
     <Document>
       <h2>Hello World</h2>

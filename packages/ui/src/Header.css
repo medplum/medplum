@@ -33,6 +33,10 @@ header a:hover {
   text-decoration: none;
 }
 
+header a:focus {
+  outline: none;
+}
+
 div.medplum-nav-search-container {
   position: relative;
   margin-left: 32px;

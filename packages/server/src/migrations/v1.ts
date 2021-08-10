@@ -3672,6 +3672,7 @@ export async function run(client: PoolClient) {
     "email" TEXT
   )`);
 
+  await client.query('CREATE UNIQUE INDEX ON "User" ("email")');
   await client.query(`CREATE TABLE IF NOT EXISTS "User_History" (
     "versionId" UUID NOT NULL PRIMARY KEY,
     "id" UUID NOT NULL,

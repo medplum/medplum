@@ -2,6 +2,7 @@
   max-width: 100%;
   overflow: auto;
   text-align: left;
+  margin-bottom: 20px;
 }
 
 /*
@@ -13,7 +14,7 @@
   width: 100%;
   justify-content: space-between;
   background: var(--medplum-surface);
-  padding: 2px 4px;
+  padding: 3px 4px 4px 2px;
 }
 
 .medplum-search-control-toolbar>div {

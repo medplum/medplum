@@ -239,6 +239,8 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
   b.append(')`);')
   b.newLine();
 
+  buildSearchIndexes(b, resourceType);
+
   b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '_History" (');
   b.indentCount++;
   b.append('"versionId" UUID NOT NULL PRIMARY KEY,');
@@ -318,6 +320,12 @@ function isArrayParam(resourceType: string, propertyName: string): boolean {
   }
 
   return (propertyDef as JSONSchema6).type === 'array';
+}
+
+function buildSearchIndexes(b: FileBuilder, resourceType: string): void {
+  if (resourceType === 'User') {
+    b.append(`await client.query('CREATE UNIQUE INDEX ON "User" ("email")');`);
+  }
 }
 
 function buildAddressTable(b: FileBuilder): void {

@@ -20,7 +20,7 @@ input[type=password],
 input[type=tel],
 input[type=text],
 input[type=datetime-local] {
-  padding: 1px 8px;
+  padding: 2px 8px;
   margin: 0;
 }
 

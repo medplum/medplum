@@ -71,70 +71,102 @@ const setup = (args?: SignInFormProps) => {
   );
 };
 
-test('SignInForm renders', () => {
-  const utils = setup();
-  const input = utils.getByTestId('submit') as HTMLButtonElement;
-  expect(input.innerHTML).toBe('Sign in');
-});
+describe('SignInForm', () => {
 
-test('SignInForm submit success', async () => {
-  let success = false;
-
-  setup({
-    onSuccess: () => success = true
+  test('Renders', () => {
+    const utils = setup();
+    const input = utils.getByTestId('submit') as HTMLButtonElement;
+    expect(input.innerHTML).toBe('Sign in');
   });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@medplum.com' } });
+  test('Submit success', async () => {
+    let success = false;
+
+    setup({
+      onSuccess: () => success = true
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@medplum.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    expect(success).toBe(true);
   });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+  test('User not found', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), { target: { value: 'not-found@example.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('text-field-error'));
+    });
+
+    expect(screen.getByTestId('text-field-error')).not.toBeUndefined();
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('submit'));
+  test('Incorrect password', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), { target: { value: 'not-found@example.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    expect(screen.getByTestId('text-field-error')).not.toBeUndefined();
   });
 
-  expect(success).toBe(true);
-});
+  test('Forgot password', async () => {
+    const props = {
+      onForgotPassword: jest.fn()
+    };
 
-test('SignInForm user not found', async () => {
-  setup();
+    setup(props);
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('email'), { target: { value: 'not-found@example.com' } });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('forgotpassword'));
+    });
+
+    expect(props.onForgotPassword).toBeCalled();
   });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+  test('Register', async () => {
+    const props = {
+      onRegister: jest.fn()
+    };
+
+    setup(props);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('register'));
+    });
+
+    expect(props.onRegister).toBeCalled();
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('submit'));
-  });
-
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('text-field-error'));
-  });
-
-  expect(screen.getByTestId('text-field-error')).not.toBeUndefined();
-});
-
-test('SignInForm incorrect password', async () => {
-  setup();
-
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('email'), { target: { value: 'not-found@example.com' } });
-  });
-
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('submit'));
-  });
-
-  expect(screen.getByTestId('text-field-error')).not.toBeUndefined();
 });
