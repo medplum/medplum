@@ -9,28 +9,34 @@ export interface AttachmentDisplayProps {
 
 export function AttachmentDisplay(props: AttachmentDisplayProps) {
   const medplum = useMedplum();
-  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
+  const [objectUrl, setObjectUrl] = useState<string>();
 
   useEffect(() => {
-    if (!props.value?.contentType || !props.value.contentType.startsWith('image/')) {
-      setImageUrl(undefined);
-      return;
-    }
-
-    if (props.value?.url) {
-      medplum.readBlobAsObjectUrl(props.value?.url).then(url => setImageUrl(url));
+    if (props.value) {
+      const { url, contentType } = props.value;
+      if (url && (contentType?.startsWith('image/') || contentType?.startsWith('video/'))) {
+        medplum.readBlobAsObjectUrl(url).then(url => setObjectUrl(url));
+      }
     }
 
   }, [props.value?.url]);
 
   const value = props.value;
 
-  if (imageUrl) {
-    return <img style={{ maxWidth: props.maxWidth }} src={imageUrl} />;
+  if (value?.contentType?.startsWith('image/') && objectUrl) {
+    return <img data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={objectUrl} />;
+  }
+
+  if (value?.contentType?.startsWith('video/') && objectUrl) {
+    return (
+      <video data-testid="attachment-video" style={{ maxWidth: props.maxWidth }} controls={true}>
+        <source type={value.contentType} src={objectUrl} />
+      </video>
+    );
   }
 
   return (
-    <div>
+    <div data-testid="attachment-details">
       <div>{value?.title}</div>
       <div>{value?.contentType}</div>
       <div>{value?.url}</div>
