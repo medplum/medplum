@@ -2,9 +2,6 @@ import { OperationOutcome } from '@medplum/core';
 import { Button, Document, FormSection, Logo, MedplumLink, parseForm, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
-// const scope = props.scope || 'launch/patient openid fhirUser offline_access user/*.*';
-const scope = 'launch/patient openid fhirUser offline_access user/*.*';
-
 export function RegisterPage() {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();

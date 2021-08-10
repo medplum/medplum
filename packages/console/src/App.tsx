@@ -21,25 +21,19 @@ import { SignInPage } from './SignInPage';
 export function App() {
   const medplum = useMedplum();
   const router = useMedplumRouter();
+  const profile = medplum.getProfile();
   return (
     <Router history={history}>
       <CssBaseline />
       <DefaultTheme />
-      {medplum.getProfile() && (
+      {profile && (
         <Header
           onLogo={() => router.push('/')}
-          onProfile={() => {
-            const profile = medplum.getProfile();
-            if (profile) {
-              router.push(`/${getReferenceString(profile)}`);
-            }
-          }}
-          onSignIn={() => router.push('/signin')}
+          onProfile={() => router.push(`/${getReferenceString(profile)}`)}
           onSignOut={() => {
             medplum.signOut();
             router.push('/signin');
           }}
-          onRegister={() => console.log('onCreateAccount')}
           sidebarLinks={[
             {
               title: 'Favorites',

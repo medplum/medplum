@@ -2,17 +2,15 @@ import { HumanName } from '@medplum/core';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
-import './Header.css';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
+import './Header.css';
 
 export interface HeaderProps {
   onLogo?: () => void;
   onProfile?: () => void;
-  onSignIn?: () => void;
-  onRegister?: () => void;
   onSignOut?: () => void;
   sidebarLinks?: SidebarLinkGroup[];
 }
@@ -111,7 +109,7 @@ export function Header(props: HeaderProps) {
                 </div>
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>
-                  <Button onClick={() => {
+                  <Button testid="header-signout-button" onClick={() => {
                     setUserMenuVisible(false);
                     if (props.onSignOut) {
                       props.onSignOut();
