@@ -15,7 +15,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps) {
     if (props.value) {
       const { url, contentType } = props.value;
       if (url && (contentType?.startsWith('image/') || contentType?.startsWith('video/'))) {
-        medplum.readBlobAsObjectUrl(url).then(url => setObjectUrl(url));
+        medplum.readBlobAsObjectUrl(url).then(setObjectUrl);
       }
     }
 

@@ -11,7 +11,6 @@ export interface BackboneElementInputProps {
 
 export function BackboneElementInput(props: BackboneElementInputProps) {
   const [value, setValue] = useState(props.value);
-  // const typeSchema = props.backboneType;
   const typeSchema = {
     properties: [] as PropertySchema[]
   };

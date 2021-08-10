@@ -94,8 +94,6 @@ export class SubMenu extends React.Component<SubMenuProps, SubMenuState> {
 
     if (rect.right + 250 < window.innerWidth) {
       x = rect.width;
-    } else {
-      x = 0;
     }
 
     this.setState({ visible: true, x: x, y: y });

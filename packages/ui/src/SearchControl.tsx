@@ -84,7 +84,7 @@ export function SearchControl(props: SearchControlProps) {
   function requestResources() {
     medplum.search(props.search)
       .then(response => {
-        setState({ ...stateRef.current, searchResponse: response as Bundle });
+        setState({ ...stateRef.current, searchResponse: response });
         if (props.onLoad) {
           props.onLoad(new SearchLoadEvent(response));
         }

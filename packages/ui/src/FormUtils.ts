@@ -112,7 +112,7 @@ function parseSelectElement(result: Record<string, string>, el: HTMLSelectElemen
 export function parseResourceForm(
   typeSchema: TypeSchema,
   form: HTMLFormElement,
-  initial?: Resource): Resource | undefined {
+  initial?: Resource): Resource {
 
   const result: Resource = (initial ? { ...initial } : {}) as Resource;
 
@@ -127,7 +127,7 @@ export function parseResourceForm(
     }
   }
 
-  return result as Resource;
+  return result;
 }
 
 /**
