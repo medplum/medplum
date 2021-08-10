@@ -61,11 +61,11 @@ export async function initApp(app: Express): Promise<Express> {
   }));
   app.use(json({
     type: ['application/json', 'application/fhir+json'],
-    limit: '5mb'
+    limit: '10mb'
   }));
   app.use(raw({
     type: '*/*',
-    limit: '5mb'
+    limit: '100mb'
   }));
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
   app.get('/healthcheck', (req: Request, res: Response) => res.json({ ok: true }));
