@@ -91,9 +91,7 @@ export const EncounterTimeline = (props: EncounterTimelineProps) => {
     medplum.create({
       resourceType: 'Communication',
       encounter: createReference(resource),
-      subject: {
-        reference: 'Patient/017acf55-bcc1-8a9c-6084-17af24c5a389'
-      },
+      subject: resource.subject,
       sender: senderRef,
       payload: [{ contentString }]
     }).then(result => {
@@ -113,9 +111,7 @@ export const EncounterTimeline = (props: EncounterTimelineProps) => {
     medplum.create({
       resourceType: 'Media',
       encounter: createReference(resource),
-      subject: {
-        reference: 'Patient/017acf55-bcc1-8a9c-6084-17af24c5a389'
-      },
+      subject: resource.subject,
       operator: senderRef,
       content: attachment
     }).then(result => {
