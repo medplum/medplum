@@ -110,6 +110,12 @@ export function sendOutcome(res: Response, outcome: OperationOutcome): Response<
   return res.status(getStatus(outcome)).json(outcome);
 }
 
+export function assertOk(outcome: OperationOutcome): void {
+  if (!isOk(outcome)) {
+    throw new OperationOutcomeError(outcome);
+  }
+}
+
 export class OperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
 

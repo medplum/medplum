@@ -3,7 +3,7 @@ import { Bundle, BundleEntry, Operator, User } from '@medplum/core';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
-import { allOk, badRequest, invalidRequest, isOk, repo, sendOutcome } from '../fhir';
+import { allOk, assertOk, badRequest, invalidRequest, repo, sendOutcome } from '../fhir';
 
 export const resetPasswordValidators = [
   body('email').isEmail().withMessage('Valid email address is required')
@@ -25,9 +25,7 @@ export async function resetPasswordHandler(req: Request, res: Response) {
     }]
   });
 
-  if (!isOk(existingOutcome)) {
-    return sendOutcome(res, existingOutcome);
-  }
+  assertOk(existingOutcome);
 
   if (((existingBundle as Bundle).entry as BundleEntry[]).length === 0) {
     return sendOutcome(res, badRequest('User not found', 'email'));

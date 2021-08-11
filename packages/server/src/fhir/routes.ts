@@ -6,7 +6,7 @@ import { createBatch } from './batch';
 import { binaryRouter } from './binary';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
-import { badRequest, getStatus, isOk, sendOutcome } from './outcomes';
+import { assertOk, badRequest, getStatus, sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
@@ -65,9 +65,7 @@ fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
   }
   const repo = res.locals.repo as Repository;
   const [outcome, result] = await createBatch(repo, bundle);
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   res.status(getStatus(outcome)).json(result);
 }));
 
@@ -77,9 +75,7 @@ fhirRouter.get('/:resourceType', asyncWrap(async (req: Request, res: Response) =
   const repo = res.locals.repo as Repository;
   const query = req.query as Record<string, string | undefined>;
   const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   res.status(getStatus(outcome)).json(bundle);
 }));
 
@@ -95,9 +91,7 @@ fhirRouter.post('/:resourceType', asyncWrap(async (req: Request, res: Response) 
   }
   const repo = res.locals.repo as Repository;
   const [outcome, result] = await repo.createResource(resource);
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   res.status(getStatus(outcome)).json(result);
 }));
 
@@ -106,9 +100,7 @@ fhirRouter.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource(resourceType, id);
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   res.status(getStatus(outcome)).json(resource);
 }));
 
@@ -117,9 +109,7 @@ fhirRouter.get('/:resourceType/:id/_history', asyncWrap(async (req: Request, res
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, bundle] = await repo.readHistory(resourceType, id);
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   res.status(getStatus(outcome)).json(bundle);
 }));
 
@@ -128,9 +118,7 @@ fhirRouter.get('/:resourceType/:id/_history/:vid', asyncWrap(async (req: Request
   const { resourceType, id, vid } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readVersion(resourceType, id, vid);
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   res.status(getStatus(outcome)).json(resource);
 }));
 
@@ -149,9 +137,7 @@ fhirRouter.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
   }
   const repo = res.locals.repo as Repository;
   const [outcome, result] = await repo.updateResource(resource);
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   res.status(getStatus(outcome)).json(result);
 }));
 
@@ -160,9 +146,7 @@ fhirRouter.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Resp
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.deleteResource(resourceType, id);
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   res.status(getStatus(outcome)).json(resource);
 }));
 

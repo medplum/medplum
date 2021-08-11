@@ -18,7 +18,7 @@ const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
 
-export class MedplumOperationOutcomeError extends Error {
+export class OperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
 
   constructor(outcome: OperationOutcome) {
@@ -540,7 +540,7 @@ export class MedplumClient extends EventTarget {
 
     const obj = blob ? await response.blob() : await response.json();
     if (obj.issue && obj.issue.length > 0) {
-      return Promise.reject(new MedplumOperationOutcomeError(obj as OperationOutcome));
+      return Promise.reject(new OperationOutcomeError(obj as OperationOutcome));
     }
     return obj;
   }

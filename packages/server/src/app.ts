@@ -1,3 +1,4 @@
+import { OperationOutcome } from '@medplum/core';
 import { json, raw, urlencoded } from 'body-parser';
 import cors from 'cors';
 import { Express, NextFunction, Request, Response } from 'express';
@@ -41,6 +42,10 @@ function cacheHandler(req: Request, res: Response, next: NextFunction): void {
 function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
   if (res.headersSent) {
     return next(err)
+  }
+  if (err.outcome) {
+    sendOutcome(res, err.outcome as OperationOutcome);
+    return;
   }
   if (err.type === 'entity.too.large') {
     sendOutcome(res, badRequest('File too large'));

@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { MEDPLUM_CLIENT_APPLICATION_ID } from '../constants';
-import { badRequest, invalidRequest, isOk, repo, sendOutcome } from '../fhir';
+import { assertOk, badRequest, invalidRequest, repo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
 import { getAuthTokens, tryLogin } from '../oauth';
 
@@ -34,9 +34,7 @@ export async function registerHandler(req: Request, res: Response) {
     }]
   });
 
-  if (!isOk(existingOutcome)) {
-    return sendOutcome(res, existingOutcome);
-  }
+  assertOk(existingOutcome);
 
   if (existingBundle?.entry && existingBundle.entry?.length > 0) {
     return sendOutcome(res, badRequest('Email already registered', 'email'));
@@ -58,9 +56,7 @@ export async function registerHandler(req: Request, res: Response) {
     ]
   });
 
-  if (!isOk(practitionerOutcome)) {
-    return sendOutcome(res, practitionerOutcome);
-  }
+  assertOk(practitionerOutcome);
 
   const passwordHash = await bcrypt.hash(password, 10);
 
@@ -71,9 +67,7 @@ export async function registerHandler(req: Request, res: Response) {
     practitioner: createReference(practitioner as Practitioner)
   });
 
-  if (!isOk(userOutcome)) {
-    return sendOutcome(res, userOutcome);
-  }
+  assertOk(userOutcome);
 
   logger.info('Created: ' + (user as User).id);
 
@@ -87,14 +81,10 @@ export async function registerHandler(req: Request, res: Response) {
     remember: true
   });
 
-  if (!isOk(loginOutcome)) {
-    return sendOutcome(res, loginOutcome);
-  }
+  assertOk(loginOutcome);
 
   const [tokenOutcome, token] = await getAuthTokens(login as Login);
-  if (!isOk(tokenOutcome)) {
-    return sendOutcome(res, tokenOutcome);
-  }
+  assertOk(tokenOutcome);
 
   return res.status(200).json({
     ...token,
