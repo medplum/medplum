@@ -1,4 +1,4 @@
-import { SESv2Client } from '@aws-sdk/client-sesv2';
+import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -7,6 +7,8 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+
+jest.mock('@aws-sdk/client-sesv2');
 
 const app = express();
 
@@ -22,6 +24,10 @@ describe('Reset Password', () => {
 
   afterAll(async () => {
     await closeDatabase();
+  });
+
+  beforeEach(() => {
+    (SESv2Client as any).mockClear();
   });
 
   test('User not found', async (done) => {
@@ -41,7 +47,6 @@ describe('Reset Password', () => {
 
   test('Success', async (done) => {
     const email = `george${randomUUID()}@example.com`;
-    const spy = jest.spyOn(SESv2Client.prototype, 'send');
 
     request(app)
       .post('/auth/register')
@@ -63,7 +68,8 @@ describe('Reset Password', () => {
           })
           .end((err, res) => {
             expect(res.status).toBe(200);
-            expect(spy).toHaveBeenCalled();
+            expect(SESv2Client).toHaveBeenCalledTimes(1);
+            expect(SendEmailCommand).toHaveBeenCalledTimes(1);
             done();
           });
       });
