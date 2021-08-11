@@ -41,7 +41,7 @@ export function ResetPasswordPage() {
           </>
         )}
         {success && (
-          <div>Email sent</div>
+          <div data-testid="success">Email sent</div>
         )}
       </form>
     </Document>

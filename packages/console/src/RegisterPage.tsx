@@ -12,7 +12,6 @@ export function RegisterPage() {
       <form style={{ maxWidth: 400 }} onSubmit={(e: React.SyntheticEvent) => {
         e.preventDefault();
 
-        // const formData =
         const { firstName, lastName, email, password } = parseForm(e.target as HTMLFormElement);
         medplum.register(firstName, lastName, email, password)
           .then(() => setSuccess(true))
@@ -51,7 +50,7 @@ export function RegisterPage() {
           </>
         )}
         {success && (
-          <div>Email sent</div>
+          <div data-testid="success">Email sent</div>
         )}
       </form>
     </Document>
