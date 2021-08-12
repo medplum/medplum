@@ -220,12 +220,8 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
     '"id" UUID NOT NULL PRIMARY KEY',
     '"content" TEXT NOT NULL',
     '"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL',
-    '"project" UUID NOT NULL',
+    '"compartments" UUID[] NOT NULL',
   ];
-
-  if (isInPatientCompartment(resourceType)) {
-    columns.push('"patientCompartment" UUID')
-  }
 
   columns.push(...buildSearchColumns(resourceType));
 

@@ -84,8 +84,6 @@ test('Get userinfo with profile email phone address', async (done) => {
               expect(res3.body.given_name).toBe('Medplum');
               expect(res3.body.family_name).toBe('Admin');
               expect(res3.body.email).toBe('admin@medplum.com');
-              expect(res3.body.phone_number).toBe('415-867-5309');
-              expect(res3.body.address).toMatchObject({ formatted: '742 Evergreen Terrace, Springfield, OR, 97403' });
               done();
             });
         });

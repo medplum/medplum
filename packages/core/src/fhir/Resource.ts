@@ -118,6 +118,7 @@ import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
 import { Procedure } from './Procedure';
 import { Project } from './Project';
+import { ProjectMembership } from './ProjectMembership';
 import { Provenance } from './Provenance';
 import { Questionnaire } from './Questionnaire';
 import { QuestionnaireResponse } from './QuestionnaireResponse';
@@ -271,6 +272,7 @@ export type Resource = Account
   | PractitionerRole
   | Procedure
   | Project
+  | ProjectMembership
   | Provenance
   | Questionnaire
   | QuestionnaireResponse

@@ -54,6 +54,7 @@ describe('Reset Password', () => {
       .send({
         firstName: 'George',
         lastName: 'Washington',
+        projectName: 'Washington Project',
         email,
         password: 'password!@#'
       })

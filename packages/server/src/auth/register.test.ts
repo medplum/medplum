@@ -30,6 +30,7 @@ describe('Register', () => {
       .send({
         firstName: 'Alexander',
         lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#'
       })
@@ -45,29 +46,25 @@ describe('Register', () => {
   });
 
   test('Email already registered', async (done) => {
-    const email = `george${randomUUID()}@example.com`;
+    const registerRequest = {
+      firstName: 'George',
+      lastName: 'Washington',
+      projectName: 'Washington Project',
+      email: `george${randomUUID()}@example.com`,
+      password: 'password!@#'
+    };
 
     request(app)
       .post('/auth/register')
       .type('json')
-      .send({
-        firstName: 'George',
-        lastName: 'Washington',
-        email,
-        password: 'password!@#'
-      })
+      .send(registerRequest)
       .end((err, res) => {
         expect(res.status).toBe(200);
         expect(res.body.user).not.toBeUndefined();
         request(app)
           .post('/auth/register')
           .type('json')
-          .send({
-            firstName: 'George',
-            lastName: 'Washington',
-            email,
-            password: 'password!@#'
-          })
+          .send(registerRequest)
           .end((err, res) => {
             expect(res.status).toBe(400);
             expect(res.body.issue[0].details.text).toBe('Email already registered');

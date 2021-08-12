@@ -434,17 +434,21 @@ export class Repository {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = JSON.stringify(resource);
+    const compartments = [meta.project];
 
     const columns: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
-      project: meta.project,
+      compartments,
       content
     };
 
     const patientCompartmentProperties = getPatientCompartmentProperties(resourceType);
     if (patientCompartmentProperties) {
-      columns.patientCompartment = getPatientId(resource, patientCompartmentProperties);
+      const patientId = getPatientId(resource, patientCompartmentProperties);
+      if (patientId) {
+        compartments.push(patientId);
+      }
     }
 
     const searchParams = getSearchParameters(resourceType);

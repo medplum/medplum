@@ -1,7 +1,7 @@
 import { Account, Communication, createReference, Encounter, getReferenceString, Observation, Operator, Patient, Reference, SearchParameter } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
-import { ADMIN_USER_ID, MEDPLUM_PROJECT_ID } from '../constants';
+import { MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
 import { createBatch } from './batch';
 import { isOk } from './outcomes';
@@ -260,18 +260,19 @@ test('Create Patient with no author', async () => {
 });
 
 test('Create Patient as system on behalf of author', async () => {
+  const author = 'Practitioner/' + randomUUID();
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }],
     meta: {
       author: {
-        reference: 'Practitioner/' + ADMIN_USER_ID
+        reference: author
       }
     }
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author?.reference).toEqual('Practitioner/' + ADMIN_USER_ID);
+  expect(patient?.meta?.author?.reference).toEqual(author);
 });
 
 test('Create Patient as ClientApplication with no author', async () => {
@@ -295,6 +296,7 @@ test('Create Patient as ClientApplication with no author', async () => {
 
 test('Create Patient as ClientApplication on behalf of author', async () => {
   const clientApp = 'ClientApplication/' + randomUUID();
+  const author = 'Practitioner/' + randomUUID();
 
   const repo = new Repository({
     project: MEDPLUM_PROJECT_ID,
@@ -308,17 +310,17 @@ test('Create Patient as ClientApplication on behalf of author', async () => {
     name: [{ given: ['Alice'], family: 'Smith' }],
     meta: {
       author: {
-        reference: 'Practitioner/' + ADMIN_USER_ID
+        reference: author
       }
     }
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author?.reference).toEqual('Practitioner/' + ADMIN_USER_ID);
+  expect(patient?.meta?.author?.reference).toEqual(author);
 });
 
 test('Create Patient as Practitioner with no author', async () => {
-  const author = 'Practitioner/' + ADMIN_USER_ID;
+  const author = 'Practitioner/' + randomUUID();
 
   const repo = new Repository({
     project: MEDPLUM_PROJECT_ID,
@@ -337,7 +339,7 @@ test('Create Patient as Practitioner with no author', async () => {
 });
 
 test('Create Patient as Practitioner on behalf of author', async () => {
-  const author = 'Practitioner/' + ADMIN_USER_ID;
+  const author = 'Practitioner/' + randomUUID();
   const fakeAuthor = 'Practitioner/' + randomUUID();
 
   const repo = new Repository({

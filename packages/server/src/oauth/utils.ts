@@ -1,6 +1,6 @@
-import { ClientApplication, createReference, getDateProperty, Login, OperationOutcome, Operator, ProfileResource, Reference, User } from '@medplum/core';
+import { BundleEntry, ClientApplication, createReference, getDateProperty, getReferenceString, Login, OperationOutcome, Operator, ProfileResource, ProjectMembership, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
-import { allOk, badRequest, isNotFound, isOk, notFound, repo, RepositoryResult } from '../fhir';
+import { allOk, assertOk, badRequest, isNotFound, isOk, notFound, repo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {
@@ -51,14 +51,38 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [badRequest('Incorrect password', 'password'), undefined];
   }
 
-  const roleReference = request.role === 'patient' ? user.patient : user.practitioner;
-  if (!roleReference) {
-    return [badRequest('User does not have role', 'role'), undefined];
+  // TODO: Introduce new login step for user to choose project and profile
+  // For now, support the common case of one project per user
+  const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [{
+      code: 'user',
+      operator: Operator.EQUALS,
+      value: getReferenceString(user)
+    }]
+  });
+
+  assertOk(membershipsOutcome);
+
+  if (!memberships || (memberships.entry as BundleEntry[]).length === 0) {
+    return [badRequest('Project memberships not found', 'email'), undefined];
   }
 
-  const [profileOutcome, profile] = await repo.readReference<ProfileResource>(roleReference);
-  if (!isOk(profileOutcome) || !profile) {
-    return [profileOutcome, undefined];
+  const compartments: Reference[] = [];
+  let profile: Reference | undefined;
+
+  for (const entry of memberships.entry as BundleEntry<ProjectMembership>[]) {
+    const membership = entry.resource as ProjectMembership;
+    if (membership.compartments) {
+      compartments.push(...membership.compartments);
+    }
+    if (!profile) {
+      profile = membership.profile;
+    }
+  }
+
+  if (!profile) {
+    return [badRequest('User profile not found', 'email'), undefined];
   }
 
   const refreshSecret = request.remember ? generateSecret(48) : undefined;
@@ -67,7 +91,8 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     resourceType: 'Login',
     client: createReference(client as ClientApplication),
     user: createReference(user),
-    profile: createReference(profile),
+    profile,
+    compartments,
     authTime: new Date(),
     code: generateSecret(16),
     cookie: generateSecret(16),

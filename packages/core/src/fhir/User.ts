@@ -4,7 +4,6 @@
  */
 
 import { Meta } from './Meta';
-import { Reference } from './Reference';
 
 /**
  * OAuth user.
@@ -51,19 +50,4 @@ export interface User {
    * Encrypted hash of the user's password.
    */
   readonly passwordHash?: string;
-
-  /**
-   * Optional reference to the user's patient identity.
-   */
-  readonly patient?: Reference;
-
-  /**
-   * Optional reference to the user's practitioner identity.
-   */
-  readonly practitioner?: Reference;
-
-  /**
-   * Projects that the user can access.
-   */
-  readonly projects?: Reference[];
 }
