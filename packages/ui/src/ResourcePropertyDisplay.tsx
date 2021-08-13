@@ -44,16 +44,13 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     case 'uri':
     case 'url':
     case 'http://hl7.org/fhirpath/System.String':
-      return value;
     case 'number':
     case 'integer':
     case 'positiveInt':
     case 'unsignedInt':
-      return value;
     case 'enum':
-      return value;
     case 'boolean':
-      return value;
+      return <div>{value}</div>;
     case 'markdown':
       return <pre>{value}</pre>
     case 'Address':

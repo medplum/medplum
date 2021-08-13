@@ -16,7 +16,7 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps) {
     <>
       {values.map(v => (
         <ResourcePropertyDisplay
-          key={v.__key}
+          key={typeof v === 'string' ? v : v.__key}
           arrayElement={true}
           property={property}
           value={v} />

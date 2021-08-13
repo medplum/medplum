@@ -10,7 +10,7 @@ export interface EnumInputProps {
 export function EnumInput(props: EnumInputProps) {
   const options = props.property.short?.split(' | ');
   return (
-    <select name={props.name} defaultValue={props.value}>
+    <select data-testid="enum-input" name={props.name} defaultValue={props.value}>
       <option></option>
       {options && options.map(v => (
         <option key={v} value={v}>{v}</option>
