@@ -1,4 +1,4 @@
-import { BundleEntry, ClientApplication, createReference, getDateProperty, getReferenceString, Login, OperationOutcome, Operator, ProfileResource, ProjectMembership, Reference, User } from '@medplum/core';
+import { BundleEntry, ClientApplication, createReference, getDateProperty, getReferenceString, Login, OperationOutcome, Operator, ProjectMembership, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { allOk, assertOk, badRequest, isNotFound, isOk, notFound, repo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';

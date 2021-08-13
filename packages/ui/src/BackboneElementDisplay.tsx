@@ -1,8 +1,8 @@
-import { PropertySchema } from '@medplum/core';
+import { ElementDefinition } from '@medplum/core';
 import React from 'react';
 
 export interface BackboneElementDisplayProps {
-  property: PropertySchema;
+  property: ElementDefinition;
   value?: any;
 }
 

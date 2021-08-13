@@ -46,6 +46,14 @@ export function App() {
                 { label: 'Encounter', href: '/Encounter' },
                 { label: 'StructureDefinition', href: '/StructureDefinition' },
               ]
+            },
+            {
+              title: 'Admin',
+              links: [
+                { label: 'User', href: '/User' },
+                { label: 'Project', href: '/Project' },
+                { label: 'ProjectMembership', href: '/ProjectMembership' }
+              ]
             }
           ]}
         />
@@ -58,11 +66,13 @@ export function App() {
         <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
         <Route exact path="/:resourceType?"><HomePage /></Route>
       </Switch>
-      <FooterLinks>
-        <MedplumLink to="/help">Help</MedplumLink>
-        <MedplumLink to="/terms">Terms</MedplumLink>
-        <MedplumLink to="/privacy">Privacy</MedplumLink>
-      </FooterLinks>
+      {!profile && (
+        <FooterLinks>
+          <MedplumLink to="/help">Help</MedplumLink>
+          <MedplumLink to="/terms">Terms</MedplumLink>
+          <MedplumLink to="/privacy">Privacy</MedplumLink>
+        </FooterLinks>
+      )}
     </Router>
   );
 }

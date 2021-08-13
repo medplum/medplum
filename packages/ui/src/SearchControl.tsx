@@ -336,7 +336,7 @@ export function SearchControl(props: SearchControlProps) {
         visible={state.popupVisible}
         x={state.popupX}
         y={state.popupY}
-        field={state.popupField}
+        property={state.popupField}
         onChange={result => {
           emitSearchChange(result);
           setState({

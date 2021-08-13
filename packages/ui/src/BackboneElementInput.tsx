@@ -1,10 +1,10 @@
-import { PropertySchema } from '@medplum/core';
+import { ElementDefinition, getPropertyDisplayName } from '@medplum/core';
 import React, { useState } from 'react';
 import { FormSection } from './FormSection';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
-  property: PropertySchema;
+  property: ElementDefinition;
   name: string;
   value?: any;
 }
@@ -12,7 +12,7 @@ export interface BackboneElementInputProps {
 export function BackboneElementInput(props: BackboneElementInputProps) {
   const [value, setValue] = useState(props.value);
   const typeSchema = {
-    properties: [] as PropertySchema[]
+    properties: [] as ElementDefinition[]
   };
   return (
     <>
@@ -20,8 +20,8 @@ export function BackboneElementInput(props: BackboneElementInputProps) {
         const key = entry[0];
         const property = entry[1];
         return (
-          <FormSection key={key} title={property.display} description={property.description}>
-            <ResourcePropertyInput property={property} name={props.name + '.' + property.key} value={value[key]} />
+          <FormSection key={key} title={getPropertyDisplayName(property)} description={property.definition}>
+            <ResourcePropertyInput property={property} name={props.name + '.' + property.id} value={value[key]} />
           </FormSection>
         );
       })}

@@ -1,4 +1,4 @@
-import { Filter, formatHumanName, HumanName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { Filter, formatHumanName, getPropertyDisplayName, HumanName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -413,12 +413,12 @@ export function buildFieldNameString(schema: IndexedStructureDefinition, resourc
     return key;
   }
 
-  const field = typeDef.properties[key];
-  if (!field) {
+  const property = typeDef.properties[key];
+  if (!property) {
     return key;
   }
 
-  return field.display;
+  return getPropertyDisplayName(property);
 }
 
 /**
@@ -475,31 +475,22 @@ export function renderValue(schema: IndexedStructureDefinition, resourceType: st
     return new Date(value).toLocaleString('en-US');
   }
 
-  const typeDef = schema.types[resourceType];
-  if (!typeDef) {
+  const propertyType = schema.types[resourceType]?.properties?.[key]?.type?.[0]?.code;
+  if (!propertyType) {
     return JSON.stringify(value);
   }
 
-  const field = typeDef.properties[key];
-  if (!field) {
-    return JSON.stringify(value);
-  }
-
-  if (field.type === 'string' || field.type === 'date') {
+  if (propertyType === 'string' || propertyType === 'date') {
     return value.toString();
   }
 
-  if (field.type === 'HumanName') {
+  if (propertyType === 'HumanName') {
     const names = value as HumanName[];
     if (names.length > 0) {
       return formatHumanName(names[0]);
     } else {
       return '';
     }
-  }
-
-  if (field['type'] === 'map') {
-    return JSON.stringify(value);
   }
 
   return JSON.stringify(value);

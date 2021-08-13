@@ -12,7 +12,7 @@ export interface SearchPopupMenuProps {
   visible: boolean,
   x: number,
   y: number,
-  field: string,
+  property: string,
   onChange: (definition: SearchRequest) => void,
   onClose: () => void
 }
@@ -25,15 +25,20 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
     return null;
   }
 
-  const field = typeDef.properties[props.field];
-  if (!field) {
+  const property = typeDef.properties[props.property];
+  if (!property) {
+    return null;
+  }
+
+  const propertyType = property.type?.[0]?.code;
+  if (!propertyType) {
     return null;
   }
 
   /**
    * Returns the string that represents the "sort ascending" operation.
    *
-   * @param {string} fieldType The field type.
+   * @param {string} fieldType The property type.
    * @return {string} The string that represents "sort ascending".
    */
   function getAscSortString(fieldType: string) {
@@ -51,7 +56,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   /**
    * Returns the string that represents the "sort descending" operation.
    *
-   * @param {string} fieldType The field type.
+   * @param {string} fieldType The property type.
    * @return {string} The string that represents "sort descending".
    */
   function getDescSortString(fieldType: string) {
@@ -67,9 +72,9 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   }
 
   /**
-   * Returns the submenu of specialized tools for a particular field type.
+   * Returns the submenu of specialized tools for a particular property type.
    *
-   * @param {string} fieldType The field type.
+   * @param {string} fieldType The property type.
    * @return {SubMenu} The new submenu.
    */
   function renderSubMenu(fieldType: string) {
@@ -117,7 +122,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   /**
    * Returns the submenu of specialized tools for text fields.
    *
-   * @return {SubMenu} The text field submenu.
+   * @return {SubMenu} The text property submenu.
    */
   function renderTextSubMenu() {
     return (
@@ -132,11 +137,11 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   }
 
   function sort(desc: boolean) {
-    props.onChange(setSort(props.search, props.field, desc));
+    props.onChange(setSort(props.search, props.property, desc));
   }
 
   function clearFilters() {
-    props.onChange(clearFiltersOnField(props.search, props.field));
+    props.onChange(clearFiltersOnField(props.search, props.property));
   }
 
   /**
@@ -145,22 +150,22 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    * @param {Operator} op The filter operation.
    */
   function prompt(op: Operator) {
-    const caption = buildFieldNameString(props.schema, props.search.resourceType, props.field) + ' ' + getOpString(op) + '...';
+    const caption = buildFieldNameString(props.schema, props.search.resourceType, props.property) + ' ' + getOpString(op) + '...';
 
     const retVal = window.prompt(caption, '');
     if (retVal !== null) {
-      props.onChange(addFilter(props.search, props.field, op, retVal, true));
+      props.onChange(addFilter(props.search, props.property, op, retVal, true));
     }
   }
 
   return (
     <PopupMenu visible={props.visible} x={props.x} y={props.y} onClose={props.onClose}>
-      <MenuItem onClick={() => sort(false)}>{getAscSortString(field.type)}</MenuItem>
-      <MenuItem onClick={() => sort(true)}>{getDescSortString(field.type)}</MenuItem>
+      <MenuItem onClick={() => sort(false)}>{getAscSortString(propertyType)}</MenuItem>
+      <MenuItem onClick={() => sort(true)}>{getDescSortString(propertyType)}</MenuItem>
       <MenuSeparator />
       <MenuItem onClick={() => clearFilters()}>Clear filters</MenuItem>
-      {renderSubMenu(field.type)}
-      {field.type === 'string' && (
+      {renderSubMenu(propertyType)}
+      {propertyType === 'string' && (
         <>
           <MenuSeparator />
           <MenuItem onClick={() => console.log('search')}>Search</MenuItem>

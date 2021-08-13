@@ -5,15 +5,17 @@ const patientSchema: TypeSchema = {
   display: 'Patient',
   properties: {
     name: {
-      key: 'patient',
-      display: 'Patient',
-      type: 'HumanName',
-      array: true
+      id: 'Patient.name',
+      type: [{
+        code: 'HumanName'
+      }],
+      max: '*'
     },
     birthDate: {
-      key: 'birthDate',
-      display: 'Birth Date',
-      type: 'date'
+      id: 'Patient.birthDate',
+      type: [{
+        code: 'date'
+      }]
     }
   }
 };
