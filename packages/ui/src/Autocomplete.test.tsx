@@ -103,7 +103,7 @@ afterEach(async () => {
 const setup = (args?: AutocompleteProps) => {
   return render(
     <MedplumProvider medplum={medplum} router={mockRouter}>
-      <Autocomplete id="foo" resourceType="Patient" {...args} />
+      <Autocomplete name="foo" resourceType="Patient" {...args} />
     </MedplumProvider>
   );
 };
@@ -116,7 +116,7 @@ test('Autocomplete renders', () => {
 
 test('Autocomplete renders default value', async () => {
   setup({
-    id: 'foo',
+    name: 'foo',
     resourceType: 'Patient',
     defaultValue: [{ reference: 'Patient/123' }]
   });
@@ -133,7 +133,7 @@ test('Autocomplete renders default value', async () => {
 
 test('Autocomplete ignores empty default value', async () => {
   setup({
-    id: 'foo',
+    name: 'foo',
     resourceType: 'Patient',
     defaultValue: [{ }]
   });
@@ -150,7 +150,7 @@ test('Autocomplete ignores empty default value', async () => {
 
 test('Autocomplete backspace deletes item', async () => {
   setup({
-    id: 'foo',
+    name: 'foo',
     resourceType: 'Patient',
     defaultValue: [{ reference: 'Patient/123' }]
   });
@@ -313,7 +313,7 @@ test('Autocomplete select resource with separator key', async () => {
 
 test('Autocomplete select Create New', async () => {
   const utils = setup({
-    id: 'foo',
+    name: 'foo',
     resourceType: 'Patient',
     createNew: 'https://example.com/create-new'
   });

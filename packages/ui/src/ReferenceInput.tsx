@@ -22,9 +22,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
     if (targetProfile) {
       const typeNames = targetProfile.map(p => p.split('/').pop() as string);
       setTargetTypes(typeNames);
-      if (typeNames.length > 0) {
-        setResourceType(typeNames[0]);
-      }
+      setResourceType(typeNames[0]);
     } else {
       setTargetTypes(undefined);
     }
@@ -38,6 +36,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
             <input name={props.name} type="hidden" value={JSON.stringify(value) || ''} readOnly={true} />
             {targetTypes ? (
               <select
+                data-testid="reference-input-resource-type-select"
                 defaultValue={resourceType}
                 onChange={e => setResourceType(e.currentTarget.value)}
               >
@@ -48,6 +47,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
             ) : (
               <input
                 type="text"
+                data-testid="reference-input-resource-type-input"
                 defaultValue={resourceType}
                 onChange={e => setResourceType(e.currentTarget.value)}
               />
@@ -57,7 +57,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
             {resourceType && (
               <Autocomplete
                 resourceType={resourceType}
-                id={props.name + '-id'}
+                name={props.name + '-id'}
                 defaultValue={props.value ? [props.value] : undefined}
                 onChange={(resources: Resource[]) => {
                   const resource = resources?.[0];
