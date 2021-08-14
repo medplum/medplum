@@ -1,4 +1,4 @@
-import { OperationOutcome } from '@medplum/core';
+import { OperationOutcome, RegisterRequest } from '@medplum/core';
 import { Button, Document, FormSection, Logo, MedplumLink, parseForm, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
@@ -12,8 +12,8 @@ export function RegisterPage() {
       <form style={{ maxWidth: 400 }} onSubmit={(e: React.SyntheticEvent) => {
         e.preventDefault();
 
-        const { firstName, lastName, email, password } = parseForm(e.target as HTMLFormElement);
-        medplum.register(firstName, lastName, email, password)
+        const formData = parseForm(e.target as HTMLFormElement) as any as RegisterRequest;
+        medplum.register(formData)
           .then(() => setSuccess(true))
           .catch(err => {
             if (err.outcome) {
@@ -32,6 +32,9 @@ export function RegisterPage() {
             </FormSection>
             <FormSection title="Last Name">
               <TextField id="lastName" type="text" testid="lastName" required={true} outcome={outcome} />
+            </FormSection>
+            <FormSection title="Project Name">
+              <TextField id="projectName" type="text" testid="projectName" required={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Email">
               <TextField id="email" type="email" testid="email" required={true} outcome={outcome} />

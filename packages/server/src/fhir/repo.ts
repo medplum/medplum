@@ -29,6 +29,13 @@ export interface RepositoryContext {
    * This value will be included in every resource as meta.project.
    */
   project: string;
+
+  /**
+   * Optional compartment restriction.
+   * If the compartments array is provided,
+   * all queries will be restricted to those compartments.
+   */
+  compartments?: Reference[];
 }
 
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
@@ -82,10 +89,16 @@ const lookupTables: LookupTable[] = [
  * Repository instances should be created per author and project.
  */
 export class Repository {
-  private readonly context;
+  private readonly context: RepositoryContext;
+  private readonly compartmentIds: string[] | undefined;
 
   constructor(context: RepositoryContext) {
     this.context = context;
+    this.compartmentIds = context.compartments
+      ?.map(c => c.reference?.split('/')[1])
+      ?.filter(c => !!c) as string[] | undefined;
+
+    console.log('compartmentIds', JSON.stringify(this.compartmentIds, undefined, 2));
   }
 
   async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
@@ -111,11 +124,13 @@ export class Repository {
     }
 
     const client = getClient();
-    const rows = await new SelectQuery(resourceType)
+    const builder = new SelectQuery(resourceType)
       .column('content')
-      .where('id', Operator.EQUALS, id)
-      .execute(client);
+      .where('id', Operator.EQUALS, id);
 
+    this.addCompartments(builder);
+
+    const rows = await builder.execute(client);
     if (rows.length === 0) {
       return [notFound, undefined];
     }
@@ -271,6 +286,7 @@ export class Repository {
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
 
+    this.addCompartments(builder);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     this.addSortRules(builder, searchRequest);
@@ -304,10 +320,21 @@ export class Repository {
     const builder = new SelectQuery(searchRequest.resourceType)
       .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
 
+    this.addCompartments(builder);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
+  }
+
+  /**
+   * Adds compartment restrictions to the query.
+   * @param builder The select query builder.
+   */
+  private addCompartments(builder: SelectQuery): void {
+    if (this.compartmentIds) {
+      builder.where('compartments', Operator.ARRAY_CONTAINS, this.compartmentIds, 'UUID[]');
+    }
   }
 
   /**

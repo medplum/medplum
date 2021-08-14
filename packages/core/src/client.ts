@@ -110,6 +110,15 @@ interface TokenResponse {
   expires_in: number;
 }
 
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  projectName: string;
+  email: string;
+  password: string;
+  remember?: boolean;
+}
+
 export class MedplumClient extends EventTarget {
   private readonly fetch: FetchLike;
   private readonly storage: Storage;
@@ -178,27 +187,12 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Tries to register a new user.
-   * @param firstName The user first name.
-   * @param lastName The user last name.
-   * @param email The user email address.
-   * @param password The user password.
-   * @param remember Optional flag to "remember" to generate a refresh token and persist in local storage.
+   * @param request The registration request.
    * @returns Promise to the user resource.
    */
-  register(
-    firstName: string,
-    lastName: string,
-    email: string,
-    password: string,
-    remember?: boolean): Promise<User> {
-
-    return this.post('auth/register', {
-      firstName,
-      lastName,
-      email,
-      password,
-      remember
-    }).then((response: LoginResponse) => this.handleLoginResponse(response));
+  register(request: RegisterRequest): Promise<User> {
+    return this.post('auth/register', request)
+      .then((response: LoginResponse) => this.handleLoginResponse(response));
   }
 
   /**

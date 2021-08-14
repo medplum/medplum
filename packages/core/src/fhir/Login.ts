@@ -126,4 +126,9 @@ export interface Login {
    * at the time of login.
    */
   readonly compartments?: Reference[];
+
+  /**
+   * Reference to the default project for the duration of the login.
+   */
+  readonly defaultProject?: Reference;
 }

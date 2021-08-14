@@ -61267,6 +61267,10 @@
             "$ref": "#/definitions/Reference"
           },
           "type": "array"
+        },
+        "defaultProject": {
+          "description": "Reference to the default project for the duration of the login.",
+          "$ref": "#/definitions/Reference"
         }
       }
     },

@@ -1,5 +1,6 @@
 import { BundleEntry, ClientApplication, createReference, getDateProperty, getReferenceString, Login, OperationOutcome, Operator, ProjectMembership, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
+import { PUBLIC_PROJECT_ID } from '../constants';
 import { allOk, assertOk, badRequest, isNotFound, isOk, notFound, repo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
@@ -68,13 +69,19 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [badRequest('Project memberships not found', 'email'), undefined];
   }
 
-  const compartments: Reference[] = [];
+  const compartments: Reference[] = [{
+    reference: 'Project/' + PUBLIC_PROJECT_ID
+  }];
+  let project: Reference | undefined;
   let profile: Reference | undefined;
 
   for (const entry of memberships.entry as BundleEntry<ProjectMembership>[]) {
     const membership = entry.resource as ProjectMembership;
     if (membership.compartments) {
       compartments.push(...membership.compartments);
+    }
+    if (!project) {
+      project = membership.project;
     }
     if (!profile) {
       profile = membership.profile;
@@ -92,6 +99,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     client: createReference(client as ClientApplication),
     user: createReference(user),
     profile,
+    defaultProject: project,
     compartments,
     authTime: new Date(),
     code: generateSecret(16),
