@@ -1,4 +1,4 @@
-import { BundleEntry, ClientApplication, createReference, getDateProperty, getReferenceString, Login, OperationOutcome, Operator, ProjectMembership, Reference, User } from '@medplum/core';
+import { ClientApplication, createReference, getDateProperty, getReferenceString, Login, OperationOutcome, Operator, ProjectMembership, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { PUBLIC_PROJECT_ID } from '../constants';
 import { allOk, assertOk, badRequest, isNotFound, isOk, notFound, repo, RepositoryResult } from '../fhir';
@@ -52,46 +52,14 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [badRequest('Incorrect password', 'password'), undefined];
   }
 
-  // TODO: Introduce new login step for user to choose project and profile
-  // For now, support the common case of one project per user
-  const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [{
-      code: 'user',
-      operator: Operator.EQUALS,
-      value: getReferenceString(user)
-    }]
-  });
-
-  assertOk(membershipsOutcome);
-
-  if (!memberships || (memberships.entry as BundleEntry[]).length === 0) {
+  const memberships = await getUserMemberships(user);
+  if (!memberships || memberships.length === 0) {
     return [badRequest('Project memberships not found', 'email'), undefined];
   }
 
-  const compartments: Reference[] = [{
-    reference: 'Project/' + PUBLIC_PROJECT_ID
-  }];
-  let project: Reference | undefined;
-  let profile: Reference | undefined;
-
-  for (const entry of memberships.entry as BundleEntry<ProjectMembership>[]) {
-    const membership = entry.resource as ProjectMembership;
-    if (membership.compartments) {
-      compartments.push(...membership.compartments);
-    }
-    if (!project) {
-      project = membership.project;
-    }
-    if (!profile) {
-      profile = membership.profile;
-    }
-  }
-
-  if (!profile) {
-    return [badRequest('User profile not found', 'email'), undefined];
-  }
-
+  const compartments = getCompartments(memberships);
+  const project = getDefaultProject(memberships);
+  const profile = getDefaultProfile(memberships);
   const refreshSecret = request.remember ? generateSecret(48) : undefined;
 
   return repo.createResource<Login>({
@@ -242,4 +210,52 @@ async function getUserByEmail(email: string): RepositoryResult<User | undefined>
   }
 
   return [allOk, bundle.entry[0].resource as User];
+}
+
+async function getUserMemberships(user: User): Promise<ProjectMembership[] | undefined> {
+  // In the future, introduce new login step for user to choose project and profile
+  // For now, support the common case of one project per user
+  const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [{
+      code: 'user',
+      operator: Operator.EQUALS,
+      value: getReferenceString(user)
+    }]
+  });
+
+  assertOk(membershipsOutcome);
+  return memberships?.entry?.map(entry => entry.resource as ProjectMembership);
+}
+
+function getCompartments(memberships: ProjectMembership[]): Reference[] {
+  const compartments: Reference[] = [{
+    reference: 'Project/' + PUBLIC_PROJECT_ID
+  }];
+
+  for (const membership of memberships) {
+    if (membership.compartments) {
+      compartments.push(...membership.compartments);
+    }
+  }
+
+  return compartments;
+}
+
+function getDefaultProfile(memberships: ProjectMembership[]): Reference | undefined {
+  for (const membership of memberships) {
+    if (membership.profile) {
+      return membership.profile;
+    }
+  }
+  return undefined;
+}
+
+function getDefaultProject(memberships: ProjectMembership[]): Reference | undefined {
+  for (const membership of memberships) {
+    if (membership.project) {
+      return membership.project;
+    }
+  }
+  return undefined;
 }

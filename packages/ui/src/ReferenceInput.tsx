@@ -9,7 +9,7 @@ export interface ReferenceInputProps {
 }
 
 export function ReferenceInput(props: ReferenceInputProps) {
-  const [initialResourceType, initialId] = (props.value?.reference || '/').split('/');
+  const [initialResourceType] = (props.value?.reference || '/').split('/');
   const [value, setValue] = useState<Reference | undefined>(props.value);
   const [resourceType, setResourceType] = useState<string | undefined>(initialResourceType);
   const [targetTypes, setTargetTypes] = useState<string[] | undefined>();

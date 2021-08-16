@@ -615,6 +615,7 @@ test('Compartment permissions', async () => {
 
   assertOk(patientOutcome1);
   expect(patient1).not.toBeUndefined();
+  expect(patient1?.id).not.toBeUndefined();
 
   const [patientOutcome2, patient2] = await repo1.readResource('Patient', patient1?.id as string);
   assertOk(patientOutcome2);
