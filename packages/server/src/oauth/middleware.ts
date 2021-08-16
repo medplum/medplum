@@ -1,7 +1,6 @@
 import { Login } from '@medplum/core';
 import { NextFunction, Request, Response } from 'express';
-import { MEDPLUM_PROJECT_ID } from '../constants';
-import { isOk, repo, Repository } from '../fhir';
+import { getRepoForLogin, isOk, repo } from '../fhir';
 import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 
@@ -28,12 +27,7 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     res.locals.user = claims.username;
     res.locals.profile = claims.profile;
     res.locals.scope = claims.scope;
-    res.locals.repo = new Repository({
-      project: MEDPLUM_PROJECT_ID,
-      author: {
-        reference: claims.profile
-      }
-    });
+    res.locals.repo = getRepoForLogin(login);
   } catch (err) {
     logger.error('verify error', err);
     return res.sendStatus(401);

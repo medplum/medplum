@@ -9,14 +9,18 @@ const schema: IndexedStructureDefinition = {
       display: 'Patient',
       properties: {
         name: {
-          key: 'name',
-          display: 'Name',
-          type: 'HumanName'
+          id: 'Patient.name',
+          path: 'Patient.name',
+          type: [{
+            code: 'HumanName'
+          }]
         },
         birthDate: {
-          key: 'birthDate',
-          display: 'Birth Date',
-          type: 'date'
+          id: 'Patient.birthDate',
+          path: 'Patient.birthDate',
+          type: [{
+            code: 'date'
+          }]
         }
       }
     },
@@ -24,9 +28,11 @@ const schema: IndexedStructureDefinition = {
       display: 'Observation',
       properties: {
         valueInteger: {
-          key: 'valueInteger',
-          display: 'Value',
-          type: 'integer'
+          id: 'Observation.value[x]',
+          path: 'Observation.value[x]',
+          type: [{
+            code: 'integer'
+          }]
         }
       }
     }
@@ -40,7 +46,7 @@ test('SearchPopupMenu for invalid resource', () => {
     visible: true,
     x: 0,
     y: 0,
-    field: 'name',
+    property: 'name',
     onChange: (e) => console.log('onChange', e),
     onClose: () => console.log('onClose')
   })).toBeNull();
@@ -53,7 +59,7 @@ test('SearchPopupMenu for invalid property', () => {
     visible: true,
     x: 0,
     y: 0,
-    field: 'xyz',
+    property: 'xyz',
     onChange: (e) => console.log('onChange', e),
     onClose: () => console.log('onClose')
   })).toBeNull();
@@ -68,7 +74,7 @@ test('SearchPopupMenu renders name field', () => {
     visible={true}
     x={0}
     y={0}
-    field={'name'}
+    property={'name'}
     onChange={e => console.log('onChange', e)}
     onClose={() => console.log('onClose')}
   />);
@@ -85,7 +91,7 @@ test('SearchPopupMenu renders date field', () => {
     visible={true}
     x={0}
     y={0}
-    field={'birthDate'}
+    property={'birthDate'}
     onChange={e => console.log('onChange', e)}
     onClose={() => console.log('onClose')}
   />);
@@ -103,7 +109,7 @@ test('SearchPopupMenu renders date field submenu', async () => {
     visible={true}
     x={0}
     y={0}
-    field={'birthDate'}
+    property={'birthDate'}
     onChange={e => console.log('onChange', e)}
     onClose={() => console.log('onClose')}
   />);
@@ -131,7 +137,7 @@ test('SearchPopupMenu renders numeric field', () => {
     visible={true}
     x={0}
     y={0}
-    field={'valueInteger'}
+    property={'valueInteger'}
     onChange={e => console.log('onChange', e)}
     onClose={() => console.log('onClose')}
   />);
@@ -151,7 +157,7 @@ test('SearchPopupMenu sort', async () => {
     visible={true}
     x={0}
     y={0}
-    field={'birthDate'}
+    property={'birthDate'}
     onChange={e => currSearch = e}
     onClose={() => console.log('onClose')}
   />);
@@ -188,7 +194,7 @@ test('SearchPopupMenu text submenu prompt', async () => {
     visible={true}
     x={0}
     y={0}
-    field={'name'}
+    property={'name'}
     onChange={e => currSearch = e}
     onClose={() => console.log('onClose')}
   />);
@@ -229,7 +235,7 @@ test('SearchPopupMenu date submenu prompt', async () => {
     visible={true}
     x={0}
     y={0}
-    field={'birthDate'}
+    property={'birthDate'}
     onChange={e => currSearch = e}
     onClose={() => console.log('onClose')}
   />);

@@ -65423,6 +65423,42 @@
     }
   },
   {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ProjectMembership-project",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "ProjectMembership-project",
+      "url" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-project",
+      "version" : "4.0.1",
+      "name" : "project",
+      "publisher" : "Medplum",
+      "code" : "project",
+      "base" : ["ProjectMembership"],
+      "type" : "reference",
+      "expression" : "ProjectMembership.project",
+      "xpath" : "f:ProjectMembership/f:project",
+      "xpathUsage" : "normal",
+      "target" : ["Project"]
+    }
+  },
+  {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ProjectMembership-user",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "ProjectMembership-user",
+      "url" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-user",
+      "version" : "4.0.1",
+      "name" : "user",
+      "publisher" : "Medplum",
+      "code" : "user",
+      "base" : ["ProjectMembership"],
+      "type" : "reference",
+      "expression" : "ProjectMembership.user",
+      "xpath" : "f:ProjectMembership/f:user",
+      "xpathUsage" : "normal",
+      "target" : ["User"]
+    }
+  },
+  {
     "fullUrl" : "http://hl7.org/fhir/SearchParameter/ClientApplication-name",
     "resource" : {
       "resourceType" : "SearchParameter",

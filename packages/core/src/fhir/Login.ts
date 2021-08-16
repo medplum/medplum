@@ -119,4 +119,16 @@ export interface Login {
    * Whether this login has been revoked or invalidated.
    */
   readonly revoked?: boolean;
+
+  /**
+   * Collection of compartments that the user has been granted access.
+   * This is a flattened collection of all ProjectMembership compartments
+   * at the time of login.
+   */
+  readonly compartments?: Reference[];
+
+  /**
+   * Reference to the default project for the duration of the login.
+   */
+  readonly defaultProject?: Reference;
 }

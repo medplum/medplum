@@ -1,8 +1,8 @@
-import { Bundle, BundleEntry, ClientApplication, createReference, Organization, Practitioner, Project, Resource, SearchParameter, StructureDefinition, User } from '@medplum/core';
+import { Bundle, BundleEntry, ClientApplication, createReference, Project, Resource, SearchParameter, StructureDefinition, User } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { ADMIN_USER_ID, MEDPLUM_ORGANIZATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
+import { registerNew } from './auth/register';
+import { MEDPLUM_CLIENT_APPLICATION_ID, PUBLIC_PROJECT_ID } from './constants';
 import { getClient } from './database';
 import { isOk, OperationOutcomeError, repo } from './fhir';
 import { InsertQuery } from './fhir/sql';
@@ -15,10 +15,15 @@ export async function seedDatabase(): Promise<void> {
     return;
   }
 
-  await createPublicProject();
-  await createMedplumProject();
-  await createOrganization();
-  await createUser();
+  const result = await registerNew({
+    firstName: 'Medplum',
+    lastName: 'Admin',
+    projectName: 'Medplum',
+    email: 'admin@medplum.com',
+    password: 'admin'
+  });
+
+  await createPublicProject(result.user);
   await createClientApplication();
   await createValueSetElements();
   await createSearchParameters();
@@ -47,16 +52,13 @@ async function isSeeded(): Promise<boolean> {
  * This is a special project that is available to all users.
  * It includes 'implementation' resources such as CapabilityStatement.
  */
-async function createPublicProject(): Promise<void> {
+async function createPublicProject(owner: User): Promise<void> {
   logger.info('Create Public project...');
   const [outcome, result] = await repo.updateResource<Project>({
     resourceType: 'Project',
     id: PUBLIC_PROJECT_ID,
     name: 'Public',
-    owner: {
-      display: 'Medplum Admin',
-      reference: 'User/' + ADMIN_USER_ID
-    }
+    owner: createReference(owner)
   });
 
   if (!isOk(outcome)) {
@@ -64,112 +66,6 @@ async function createPublicProject(): Promise<void> {
   }
 
   logger.info('Created: ' + (result as Project).id);
-}
-
-/**
- * Creates the Medplum project.
- * This is a special project for administrative resources.
- */
-async function createMedplumProject(): Promise<void> {
-  logger.info('Create Medplum project...');
-  const [outcome, result] = await repo.updateResource<Project>({
-    resourceType: 'Project',
-    id: MEDPLUM_PROJECT_ID,
-    name: 'Medplum',
-    owner: {
-      display: 'Medplum Admin',
-      reference: 'User/' + ADMIN_USER_ID
-    }
-  });
-
-  if (!isOk(outcome)) {
-    throw new OperationOutcomeError(outcome);
-  }
-
-  logger.info('Created: ' + (result as Project).id);
-}
-
-/**
- * Creates the Medplum organization.
- * This is a special organization for super admins.
- */
-async function createOrganization(): Promise<void> {
-  logger.info('Create Medplum project...');
-  const [outcome, result] = await repo.updateResource<Organization>({
-    resourceType: 'Organization',
-    id: MEDPLUM_ORGANIZATION_ID,
-    name: 'Medplum'
-  });
-
-  if (!isOk(outcome)) {
-    throw new OperationOutcomeError(outcome);
-  }
-
-  logger.info('Created: ' + (result as Organization).id);
-}
-
-/**
- * Creates the admin user.
- * This is the initial user for first login.
- */
-async function createUser(): Promise<void> {
-  logger.info('Create admin user...');
-  const [practitionerOutcome, practitioner] = await repo.createResource<Practitioner>({
-    resourceType: 'Practitioner',
-    name: [{
-      given: ['Medplum'],
-      family: 'Admin'
-    }],
-    telecom: [
-      {
-        system: 'email',
-        use: 'work',
-        value: 'admin@medplum.com'
-      },
-      {
-        system: 'phone',
-        use: 'work',
-        value: '415-867-5309'
-      }
-    ],
-    address: [
-      {
-        use: 'work',
-        type: 'both',
-        line: [
-          '742 Evergreen Terrace'
-        ],
-        city: 'Springfield',
-        state: 'OR',
-        postalCode: '97403'
-      }
-    ],
-    birthDate: '2000-01-01'
-  });
-
-  if (!isOk(practitionerOutcome)) {
-    throw new OperationOutcomeError(practitionerOutcome);
-  }
-
-  const passwordHash = await bcrypt.hash('admin', 10);
-
-  const [userOutcome, user] = await repo.updateResource<User>({
-    resourceType: 'User',
-    id: ADMIN_USER_ID,
-    email: 'admin@medplum.com',
-    passwordHash,
-    practitioner: createReference(practitioner as Practitioner),
-    projects: [{
-      display: 'Medplum',
-      reference: 'Project/' + MEDPLUM_PROJECT_ID
-    }]
-  });
-
-  if (!isOk(userOutcome)) {
-    throw new OperationOutcomeError(userOutcome);
-  }
-
-  logger.info('Created: ' + (user as User).id);
 }
 
 /**
@@ -177,8 +73,9 @@ async function createUser(): Promise<void> {
  */
 async function createClientApplication(): Promise<void> {
   logger.info('Create client application...');
-  const [outcome, result] = await repo.createResource<ClientApplication>({
+  const [outcome, result] = await repo.updateResource<ClientApplication>({
     resourceType: 'ClientApplication',
+    id: MEDPLUM_CLIENT_APPLICATION_ID,
     name: 'OpenID Certification',
     secret: generateSecret(48),
     redirectUri: 'https://www.certification.openid.net/test/a/medplum/callback',

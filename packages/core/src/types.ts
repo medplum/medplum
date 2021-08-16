@@ -1,4 +1,4 @@
-import { ElementDefinition, ElementDefinitionType, SearchParameter, StructureDefinition } from './fhir';
+import { ElementDefinition, SearchParameter, StructureDefinition } from './fhir';
 
 /**
  * An IndexedStructureDefinition is a lookup-optimized version of a StructureDefinition.
@@ -39,31 +39,10 @@ export interface IndexedStructureDefinition {
  */
 export interface TypeSchema {
   display: string;
-  properties: { [name: string]: PropertySchema };
+  properties: { [name: string]: ElementDefinition };
   searchParams?: SearchParameter[];
   description?: string;
   backboneElement?: boolean;
-}
-
-/**
- * An indexed PropertySchema.
- *
- * Within a StructureDefinition, the original ElementDefinition contains a comprehensive
- * representation of the property.  However, again, it is not optimized for realtime look-up.
- *
- * For example, the "type" is nested in objects and arrays.  There is no "name", which we
- * can implicitly derive from camelCase conversion.
- *
- * The PropertySchema object precomputes all of those for fast lookup at display time.
- */
-export interface PropertySchema {
-  key: string;
-  display: string;
-  type: string;
-  description?: string;
-  array?: boolean;
-  enumValues?: string[];
-  targetProfile?: string[];
 }
 
 /**
@@ -127,50 +106,29 @@ function indexProperty(output: IndexedStructureDefinition, element: ElementDefin
   const typeName = buildTypeName(parts.slice(0, parts.length - 1));
   const typeSchema = output.types[typeName];
   const key = parts[parts.length - 1];
-  const elementTypes = element.type as ElementDefinitionType[];
-
-  const propertySchema = {
-    key,
-    display: buildDisplayName(key),
-    description: element.definition,
-    type: elementTypes[0].code as string
-  } as PropertySchema;
-
-  if (propertySchema.type === 'code') {
-    propertySchema.type = 'enum';
-    propertySchema.enumValues = element.short?.split(' | ');
-  }
-
-  if (propertySchema.type === 'BackboneElement') {
-    propertySchema.type = buildTypeName((element.id as string).split('.'));
-  }
-
-  if (propertySchema.type === 'Reference'
-    && elementTypes[0].targetProfile
-    && elementTypes[0].targetProfile.length > 0) {
-    propertySchema.targetProfile = elementTypes[0].targetProfile.map(str => str.split('/').pop()) as string[];
-  }
-
-  if (element.max === '*') {
-    propertySchema.array = true;
-  }
-
-  typeSchema.properties[key] = propertySchema;
+  typeSchema.properties[key] = element;
 }
 
-function buildTypeName(components: string[]) {
+function buildTypeName(components: string[]): string {
   return components.map(capitalize).join('_');
 }
 
-function capitalize(word: string) {
+function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.substr(1);
 }
 
-function buildDisplayName(propertyName: string) {
+export function getPropertyDisplayName(property: ElementDefinition): string {
+  // Get the property name, which is the remainder after the last period
+  // For example, for path "Patient.birthDate"
+  // the property name is "birthDate"
+  const propertyName = (property.path as string).split('.').pop() as string;
+
   // Split by capital letters
   // Capitalize the first letter of each word
   // Join together with spaces in between
   // Then normalize whitespace to single space character
+  // For example, for property name "birthDate",
+  // the display name is "Birth Date".
   return propertyName
     .split(/(?=[A-Z])/)
     .map(capitalize)

@@ -1,10 +1,11 @@
-import { PropertySchema } from '@medplum/core';
+import { ElementDefinition } from '@medplum/core';
 import React from 'react';
 import { AddressInput } from './AddressInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
 import { AttachmentInput } from './AttachmentInput';
 import { BackboneElementInput } from './BackboneElementInput';
 import { CodeableConceptInput } from './CodeableConceptInput';
+import { CodingInput } from './CodingInput';
 import { ContactPointInput } from './ContactPointInput';
 import { DeviceNameInput } from './DeviceNameInput';
 import { EnumInput } from './EnumInput';
@@ -15,7 +16,7 @@ import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
 
 export interface ResourcePropertyInputProps {
-  property: PropertySchema;
+  property: ElementDefinition;
   name: string;
   value: any;
   arrayElement?: boolean;
@@ -23,17 +24,18 @@ export interface ResourcePropertyInputProps {
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
   const property = props.property;
+  const propertyType = property.type?.[0]?.code;
   const name = props.name;
   const value = props.value;
 
-  if (property.array && !props.arrayElement) {
-    if (property.type === 'Attachment') {
+  if (property.max === '*' && !props.arrayElement) {
+    if (propertyType === 'Attachment') {
       return <AttachmentArrayInput name={name} values={value} />
     }
     return <ResourceArrayInput property={property} name={name} values={value} />
   }
 
-  switch (property.type) {
+  switch (propertyType) {
     case 'string':
     case 'canonical':
     case 'date':
@@ -56,10 +58,8 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
       return (
         <EnumInput
           name={name}
-          label={property.display}
-          options={property.enumValues}
-          helperText={property.description}
           value={value}
+          property={property}
         />);
     case 'boolean':
       return (
@@ -73,6 +73,8 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
       return <AddressInput name={name} value={value} />;
     case 'Attachment':
       return <AttachmentInput name={name} value={value} />;
+    case 'Coding':
+      return <CodingInput name={name} value={value} />;
     case 'CodeableConcept':
       return <CodeableConceptInput name={name} value={value} />;
     case 'ContactPoint':
@@ -86,7 +88,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     case 'Patient_Link':
       return <PatientLinkInput name={name} value={value} />;
     case 'Reference':
-      return <ReferenceInput name={name} value={value} />;
+      return <ReferenceInput property={property} name={name} value={value} />;
     default:
       return <BackboneElementInput property={property} name={name} value={value} />;
   }

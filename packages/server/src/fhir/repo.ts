@@ -1,4 +1,4 @@
-import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
+import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Login, Meta, OperationOutcome, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import validator from 'validator';
@@ -29,6 +29,13 @@ export interface RepositoryContext {
    * This value will be included in every resource as meta.project.
    */
   project: string;
+
+  /**
+   * Optional compartment restriction.
+   * If the compartments array is provided,
+   * all queries will be restricted to those compartments.
+   */
+  compartments?: Reference[];
 }
 
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
@@ -82,10 +89,14 @@ const lookupTables: LookupTable[] = [
  * Repository instances should be created per author and project.
  */
 export class Repository {
-  private readonly context;
+  private readonly context: RepositoryContext;
+  private readonly compartmentIds: string[] | undefined;
 
   constructor(context: RepositoryContext) {
     this.context = context;
+    this.compartmentIds = context.compartments
+      ?.map(c => c.reference?.split('/')[1])
+      ?.filter(c => !!c) as string[] | undefined;
   }
 
   async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
@@ -111,11 +122,13 @@ export class Repository {
     }
 
     const client = getClient();
-    const rows = await new SelectQuery(resourceType)
+    const builder = new SelectQuery(resourceType)
       .column('content')
-      .where('id', Operator.EQUALS, id)
-      .execute(client);
+      .where('id', Operator.EQUALS, id);
 
+    this.addCompartments(builder);
+
+    const rows = await builder.execute(client);
     if (rows.length === 0) {
       return [notFound, undefined];
     }
@@ -220,7 +233,11 @@ export class Repository {
       }
     }
 
-    await this.write(result);
+    try {
+      await this.write(result);
+    } catch (error) {
+      return [badRequest(error.message), undefined];
+    }
 
     return [existing ? allOk : created, result];
   }
@@ -255,7 +272,7 @@ export class Repository {
     return [allOk, resource];
   }
 
-  async search(searchRequest: SearchRequest): RepositoryResult<Bundle> {
+  async search<T extends Resource>(searchRequest: SearchRequest): RepositoryResult<Bundle<T>> {
     const resourceType = searchRequest.resourceType;
     const validateOutcome = validateResourceType(resourceType);
     if (!isOk(validateOutcome)) {
@@ -267,6 +284,7 @@ export class Repository {
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
 
+    this.addCompartments(builder);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     this.addSortRules(builder, searchRequest);
@@ -300,10 +318,21 @@ export class Repository {
     const builder = new SelectQuery(searchRequest.resourceType)
       .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
 
+    this.addCompartments(builder);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
+  }
+
+  /**
+   * Adds compartment restrictions to the query.
+   * @param builder The select query builder.
+   */
+  private addCompartments(builder: SelectQuery): void {
+    if (this.compartmentIds) {
+      builder.where('compartments', Operator.ARRAY_CONTAINS, this.compartmentIds, 'UUID[]');
+    }
   }
 
   /**
@@ -430,17 +459,21 @@ export class Repository {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = JSON.stringify(resource);
+    const compartments = [meta.project];
 
     const columns: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
-      project: meta.project,
+      compartments,
       content
     };
 
     const patientCompartmentProperties = getPatientCompartmentProperties(resourceType);
     if (patientCompartmentProperties) {
-      columns.patientCompartment = getPatientId(resource, patientCompartmentProperties);
+      const patientId = getPatientId(resource, patientCompartmentProperties);
+      if (patientId) {
+        compartments.push(patientId);
+      }
     }
 
     const searchParams = getSearchParameters(resourceType);
@@ -697,6 +730,22 @@ function convertCodeToColumnName(code: string): string {
 
 function upperFirst(word: string): string {
   return word.charAt(0).toUpperCase() + word.substr(1);
+}
+
+/**
+ * Creates a repository object for the user login object.
+ * Individual instances of the Repository class manage access rights to resources.
+ * Login instances contain details about user compartments.
+ * This method ensures that the repository is setup correctly.
+ * @param login The user login.
+ * @returns A repository configured for the login details.
+ */
+export function getRepoForLogin(login: Login): Repository {
+  return new Repository({
+    project: login.defaultProject?.reference?.split('/')[1] as string,
+    author: login.profile as Reference,
+    compartments: login.compartments
+  });
 }
 
 export const repo = new Repository({

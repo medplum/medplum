@@ -1,4 +1,4 @@
-import { PropertySchema } from '@medplum/core';
+import { ElementDefinition } from '@medplum/core';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
 import { AttachmentArrayDisplay } from './AttachmentArrayDisplay';
@@ -14,17 +14,18 @@ import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
-  property: PropertySchema;
+  property: ElementDefinition;
   value: any;
   arrayElement?: boolean;
 }
 
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
   const property = props.property;
+  const propertyType = property.type?.[0]?.code;
   const value = props.value;
 
-  if (property.array && !props.arrayElement) {
-    if (property.type === 'Attachment') {
+  if (property.max === '*' && !props.arrayElement) {
+    if (propertyType === 'Attachment') {
       return <AttachmentArrayDisplay values={value} />
     }
     return <ResourceArrayDisplay property={property} values={value} />
@@ -34,7 +35,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     return null;
   }
 
-  switch (property.type) {
+  switch (propertyType) {
     case 'string':
     case 'canonical':
     case 'date':
@@ -43,16 +44,13 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     case 'uri':
     case 'url':
     case 'http://hl7.org/fhirpath/System.String':
-      return value;
     case 'number':
     case 'integer':
     case 'positiveInt':
     case 'unsignedInt':
-      return value;
     case 'enum':
-      return value;
     case 'boolean':
-      return value;
+      return <div>{value}</div>;
     case 'markdown':
       return <pre>{value}</pre>
     case 'Address':

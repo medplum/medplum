@@ -141,7 +141,7 @@ function FilterRow(props: FilterRowProps) {
       case 'reference':
         return (
           <Autocomplete
-            id="dataEntryUser"
+            name="dataEntryUser"
             resourceType="Practitioner"
             onChange={resources => setValue(resources.length > 0 ? getReferenceString(resources[0]) : '')}
           />

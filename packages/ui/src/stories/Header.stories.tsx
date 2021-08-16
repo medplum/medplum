@@ -19,8 +19,6 @@ export const Basic = (args: HeaderProps) => {
     <Header
       onLogo={() => alert('Logo!')}
       onProfile={() => alert('Profile!')}
-      onRegister={() => alert('Register!')}
-      onSignIn={() => alert('Sign in!')}
       onSignOut={() => {
         alert('Sign out!');
         ctx.medplum.signOut();

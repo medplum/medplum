@@ -1,11 +1,11 @@
-import { PropertySchema } from '@medplum/core';
+import { ElementDefinition } from '@medplum/core';
 import React, { useState } from 'react';
 import { Button } from './Button';
 import { ensureKeys, generateKey } from './FormUtils';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 interface ResourceArrayProps {
-  property: PropertySchema;
+  property: ElementDefinition;
   name: string;
   values: any[];
   arrayElement?: boolean;

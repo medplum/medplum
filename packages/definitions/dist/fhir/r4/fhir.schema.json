@@ -152,6 +152,7 @@
       "VerificationResult": "#/definitions/VerificationResult",
       "VisionPrescription": "#/definitions/VisionPrescription",
       "Project": "#/definitions/Project",
+      "ProjectMembership": "#/definitions/ProjectMembership",
       "ClientApplication": "#/definitions/ClientApplication",
       "User": "#/definitions/User",
       "Login": "#/definitions/Login",
@@ -61028,6 +61029,56 @@
         "owner"
       ]
     },
+    "ProjectMembership": {
+      "description": "Medplum project membership. A project membership grants a user access to a project.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a ProjectMembership resource",
+          "const": "ProjectMembership"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/id"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "project": {
+          "description": "Project where the memberships are available.",
+          "$ref": "#/definitions/Reference"
+        },
+        "user": {
+          "description": "User that is granted access to the project.",
+          "$ref": "#/definitions/Reference"
+        },
+        "profile": {
+          "description": "User that is granted access to the project.",
+          "$ref": "#/definitions/Reference"
+        },
+        "compartments": {
+          "description": "Collection of compartments that the user has been granted access.",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "project",
+        "user",
+        "profile",
+        "compartments"
+      ]
+    },
     "ClientApplication": {
       "description": "OAuth client application.",
       "properties": {
@@ -61120,21 +61171,6 @@
         "passwordHash": {
           "description": "Encrypted hash of the user's password.",
           "$ref": "#/definitions/string"
-        },
-        "patient": {
-          "description": "Optional reference to the user's patient identity.",
-          "$ref": "#/definitions/Reference"
-        },
-        "practitioner": {
-          "description": "Optional reference to the user's practitioner identity.",
-          "$ref": "#/definitions/Reference"
-        },
-        "projects": {
-          "description": "Projects that the user can access.",
-          "items": {
-            "$ref": "#/definitions/Reference"
-          },
-          "type": "array"
         }
       },
       "required": [
@@ -61224,6 +61260,17 @@
         "revoked": {
           "description": "Whether this login has been revoked or invalidated.",
           "$ref": "#/definitions/boolean"
+        },
+        "compartments": {
+          "description": "Collection of compartments that the user has been granted access.  This is a flattened collection of all ProjectMembership compartments at the time of login.",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
+        },
+        "defaultProject": {
+          "description": "Reference to the default project for the duration of the login.",
+          "$ref": "#/definitions/Reference"
         }
       }
     },

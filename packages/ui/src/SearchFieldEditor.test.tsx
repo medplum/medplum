@@ -9,14 +9,18 @@ const schema: IndexedStructureDefinition = {
       display: 'Patient',
       properties: {
         name: {
-          key: 'name',
-          display: 'Name',
-          type: 'HumanName'
+          id: 'Patient.name',
+          path: 'Patient.name',
+          type: [{
+            code: 'HumanName'
+          }]
         },
         birthDate: {
-          key: 'birthDate',
-          display: 'Birth Date',
-          type: 'date'
+          id: 'Patient.birthDate',
+          path: 'Patient.birthDate',
+          type: [{
+            code: 'date'
+          }]
         }
       }
     },
@@ -24,9 +28,11 @@ const schema: IndexedStructureDefinition = {
       display: 'Observation',
       properties: {
         valueInteger: {
-          key: 'valueInteger',
-          display: 'Value',
-          type: 'integer'
+          id: 'Observation.value[x]',
+          path: 'Observation.value[x]',
+          type: [{
+            code: 'integer'
+          }]
         }
       }
     }

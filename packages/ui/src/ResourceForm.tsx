@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, Resource } from '@medplum/core';
+import { getPropertyDisplayName, IndexedStructureDefinition, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
 import { FormSection } from './FormSection';
@@ -73,8 +73,8 @@ export function ResourceForm(props: any) {
         }
         const property = entry[1];
         return (
-          <FormSection key={key} title={property.display} description={property.description}>
-            <ResourcePropertyInput property={property} name={property.key} value={(value as any)[key]} />
+          <FormSection key={key} title={getPropertyDisplayName(property)} description={property.definition}>
+            <ResourcePropertyInput property={property} name={key} value={(value as any)[key]} />
           </FormSection>
         );
       })}

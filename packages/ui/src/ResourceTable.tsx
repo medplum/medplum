@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, Resource } from '@medplum/core';
+import { getPropertyDisplayName, IndexedStructureDefinition, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';
 import { useMedplum } from './MedplumProvider';
@@ -60,7 +60,7 @@ export function ResourceTable(props: ResourceTableProps) {
         }
         const property = entry[1];
         return (
-          <DescriptionListEntry key={key} term={property.display}>
+          <DescriptionListEntry key={key} term={getPropertyDisplayName(property)}>
             <ResourcePropertyDisplay property={property} value={(value as any)[key]} />
           </DescriptionListEntry>
         );

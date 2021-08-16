@@ -6,7 +6,7 @@ import { ResourceName } from './ResourceName';
 import './Autocomplete.css';
 
 export interface AutocompleteProps {
-  id: string;
+  name: string;
   resourceType: string;
   multiple?: boolean;
   autofocus?: boolean;
@@ -391,8 +391,8 @@ export function Autocomplete(props: AutocompleteProps) {
       onClick={() => handleClick()}>
       <input
         type="hidden"
-        id={props.id}
-        name={props.id}
+        id={props.name}
+        name={props.name}
         data-testid="hidden"
         value={state.values.map(r => JSON.stringify(r)).join(',')} />
       <ul onClick={() => handleClick()}>

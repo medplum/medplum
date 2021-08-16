@@ -7,6 +7,8 @@ export function SignInPage() {
     <Document width={450}>
       <SignInForm
         onSuccess={() => history.push('/')}
+        onForgotPassword={() => history.push('/resetpassword')}
+        onRegister={() => history.push('/register')}
       />
     </Document>
   );

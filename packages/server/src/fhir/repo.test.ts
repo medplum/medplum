@@ -1,11 +1,13 @@
-import { Account, Communication, createReference, Encounter, getReferenceString, Observation, Operator, Patient, Reference, SearchParameter } from '@medplum/core';
+import { Account, Communication, createReference, Encounter, getReferenceString, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter } from '@medplum/core';
 import { randomUUID } from 'crypto';
+import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { ADMIN_USER_ID, MEDPLUM_PROJECT_ID } from '../constants';
+import { MEDPLUM_CLIENT_APPLICATION_ID, MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
+import { tryLogin } from '../oauth';
 import { createBatch } from './batch';
-import { isOk } from './outcomes';
-import { getPatientId, repo, Repository } from './repo';
+import { assertOk, isOk } from './outcomes';
+import { getPatientId, getRepoForLogin, repo, Repository } from './repo';
 
 beforeAll(async () => {
   const config = await loadTestConfig();
@@ -260,18 +262,19 @@ test('Create Patient with no author', async () => {
 });
 
 test('Create Patient as system on behalf of author', async () => {
+  const author = 'Practitioner/' + randomUUID();
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',
     name: [{ given: ['Alice'], family: 'Smith' }],
     meta: {
       author: {
-        reference: 'Practitioner/' + ADMIN_USER_ID
+        reference: author
       }
     }
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author?.reference).toEqual('Practitioner/' + ADMIN_USER_ID);
+  expect(patient?.meta?.author?.reference).toEqual(author);
 });
 
 test('Create Patient as ClientApplication with no author', async () => {
@@ -295,6 +298,7 @@ test('Create Patient as ClientApplication with no author', async () => {
 
 test('Create Patient as ClientApplication on behalf of author', async () => {
   const clientApp = 'ClientApplication/' + randomUUID();
+  const author = 'Practitioner/' + randomUUID();
 
   const repo = new Repository({
     project: MEDPLUM_PROJECT_ID,
@@ -308,17 +312,17 @@ test('Create Patient as ClientApplication on behalf of author', async () => {
     name: [{ given: ['Alice'], family: 'Smith' }],
     meta: {
       author: {
-        reference: 'Practitioner/' + ADMIN_USER_ID
+        reference: author
       }
     }
   });
 
   expect(createOutcome.id).toEqual('created');
-  expect(patient?.meta?.author?.reference).toEqual('Practitioner/' + ADMIN_USER_ID);
+  expect(patient?.meta?.author?.reference).toEqual(author);
 });
 
 test('Create Patient as Practitioner with no author', async () => {
-  const author = 'Practitioner/' + ADMIN_USER_ID;
+  const author = 'Practitioner/' + randomUUID();
 
   const repo = new Repository({
     project: MEDPLUM_PROJECT_ID,
@@ -337,7 +341,7 @@ test('Create Patient as Practitioner with no author', async () => {
 });
 
 test('Create Patient as Practitioner on behalf of author', async () => {
-  const author = 'Practitioner/' + ADMIN_USER_ID;
+  const author = 'Practitioner/' + randomUUID();
   const fakeAuthor = 'Practitioner/' + randomUUID();
 
   const repo = new Repository({
@@ -465,6 +469,7 @@ test('Search sort by Patient.id', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+  expect(bundle).not.toBeUndefined();
 });
 
 test('Search sort by Patient.meta.lastUpdated', async () => {
@@ -474,6 +479,7 @@ test('Search sort by Patient.meta.lastUpdated', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+  expect(bundle).not.toBeUndefined();
 });
 
 test('Search sort by Patient.identifier', async () => {
@@ -483,6 +489,7 @@ test('Search sort by Patient.identifier', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+  expect(bundle).not.toBeUndefined();
 });
 
 test('Search sort by Patient.name', async () => {
@@ -492,6 +499,7 @@ test('Search sort by Patient.name', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+  expect(bundle).not.toBeUndefined();
 });
 
 test('Search sort by Patient.given', async () => {
@@ -501,6 +509,7 @@ test('Search sort by Patient.given', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+  expect(bundle).not.toBeUndefined();
 });
 
 test('Search sort by Patient.address', async () => {
@@ -510,6 +519,7 @@ test('Search sort by Patient.address', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+  expect(bundle).not.toBeUndefined();
 });
 
 test('Search sort by Patient.telecom', async () => {
@@ -519,6 +529,7 @@ test('Search sort by Patient.telecom', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+  expect(bundle).not.toBeUndefined();
 });
 
 test('Search sort by Patient.email', async () => {
@@ -528,6 +539,7 @@ test('Search sort by Patient.email', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+  expect(bundle).not.toBeUndefined();
 });
 
 test('Search sort by Patient.birthDate', async () => {
@@ -537,6 +549,7 @@ test('Search sort by Patient.birthDate', async () => {
   });
 
   expect(outcome.id).toEqual('ok');
+  expect(bundle).not.toBeUndefined();
 });
 
 test('Filter and sort on same search parameter', async () => {
@@ -557,6 +570,7 @@ test('Filter and sort on same search parameter', async () => {
   });
 
   expect(isOk(createOutcome)).toBe(true);
+  expect(createBundle).not.toBeUndefined();
 
   const [searchOutcome, bundle] = await repo.search({
     resourceType: 'Patient',
@@ -567,4 +581,73 @@ test('Filter and sort on same search parameter', async () => {
   expect(isOk(searchOutcome)).toBe(true);
   expect(bundle?.entry).not.toBeUndefined();
   expect(bundle?.entry?.length).toBeGreaterThanOrEqual(2);
+});
+
+test('Compartment permissions', async () => {
+  const registration1: RegisterRequest = {
+    firstName: randomUUID(),
+    lastName: randomUUID(),
+    projectName: randomUUID(),
+    email: randomUUID() + '@example.com',
+    password: randomUUID()
+  };
+
+  const result1 = await registerNew(registration1);
+  expect(result1.user).not.toBeUndefined();
+
+  const [loginOutcome1, login1] = await tryLogin({
+    clientId: MEDPLUM_CLIENT_APPLICATION_ID,
+    email: registration1.email,
+    password: registration1.password,
+    scope: 'openid',
+    role: 'practitioner',
+    nonce: randomUUID(),
+    remember: true
+  });
+
+  assertOk(loginOutcome1);
+  expect(login1).not.toBeUndefined();
+
+  const repo1 = getRepoForLogin(login1 as Login);
+  const [patientOutcome1, patient1] = await repo1.createResource<Patient>({
+    resourceType: 'Patient'
+  });
+
+  assertOk(patientOutcome1);
+  expect(patient1).not.toBeUndefined();
+  expect(patient1?.id).not.toBeUndefined();
+
+  const [patientOutcome2, patient2] = await repo1.readResource('Patient', patient1?.id as string);
+  assertOk(patientOutcome2);
+  expect(patient2).not.toBeUndefined();
+  expect(patient2?.id).toEqual(patient1?.id);
+
+  const registration2: RegisterRequest = {
+    firstName: randomUUID(),
+    lastName: randomUUID(),
+    projectName: randomUUID(),
+    email: randomUUID() + '@example.com',
+    password: randomUUID()
+  };
+
+  const result2 = await registerNew(registration2);
+  expect(result2.user).not.toBeUndefined();
+
+  const [loginOutcome2, login2] = await tryLogin({
+    clientId: MEDPLUM_CLIENT_APPLICATION_ID,
+    email: registration2.email,
+    password: registration2.password,
+    scope: 'openid',
+    role: 'practitioner',
+    nonce: randomUUID(),
+    remember: true
+  });
+
+  assertOk(loginOutcome2);
+  expect(login2).not.toBeUndefined();
+
+  const repo2 = getRepoForLogin(login2 as Login);
+  const [patientOutcome3, patient3] = await repo2.readResource('Patient', patient1?.id as string);
+  expect(patientOutcome3.id).toEqual('not-found');
+  expect(patient3).toBeUndefined();
 });

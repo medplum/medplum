@@ -1,24 +1,20 @@
+import { ElementDefinition } from '@medplum/core';
 import React from 'react';
 
 export interface EnumInputProps {
+  property: ElementDefinition;
   name: string;
-  label: string;
-  value?: string;
-  options?: any[];
-  helperText?: string;
+  value: string;
 }
 
 export function EnumInput(props: EnumInputProps) {
+  const options = props.property.short?.split(' | ');
   return (
-    <select name={props.name} defaultValue={props.value}>
+    <select data-testid="enum-input" name={props.name} defaultValue={props.value}>
       <option></option>
-      {props.options && props.options.map(v => {
-        if (typeof v === 'string') {
-          return <option key={v} value={v}>{v}</option>
-        } else {
-          return <option key={v.value} value={v.value}>{v.display}</option>
-        }
-      })}
+      {options && options.map(v => (
+        <option key={v} value={v}>{v}</option>
+      ))}
     </select>
   );
 }

@@ -17,6 +17,7 @@ fieldset label,
 fieldset legend {
   display: block;
   margin: 2px 0 4px 0;
+  font-size: 12px;
 }
 
 fieldset small {

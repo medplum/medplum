@@ -1,10 +1,10 @@
-import { PropertySchema } from '@medplum/core';
+import { ElementDefinition } from '@medplum/core';
 import React from 'react';
 import { ensureKeys } from './FormUtils';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 interface ResourceArrayDisplayProps {
-  property: PropertySchema;
+  property: ElementDefinition;
   values: any[];
   arrayElement?: boolean;
 }
@@ -16,7 +16,7 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps) {
     <>
       {values.map(v => (
         <ResourcePropertyDisplay
-          key={v.__key}
+          key={typeof v === 'string' ? v : v.__key}
           arrayElement={true}
           property={property}
           value={v} />

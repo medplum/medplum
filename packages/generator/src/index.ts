@@ -220,12 +220,8 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
     '"id" UUID NOT NULL PRIMARY KEY',
     '"content" TEXT NOT NULL',
     '"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL',
-    '"project" UUID NOT NULL',
+    '"compartments" UUID[] NOT NULL',
   ];
-
-  if (isInPatientCompartment(resourceType)) {
-    columns.push('"patientCompartment" UUID')
-  }
 
   columns.push(...buildSearchColumns(resourceType));
 
@@ -238,6 +234,8 @@ function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
   b.indentCount--;
   b.append(')`);')
   b.newLine();
+
+  buildSearchIndexes(b, resourceType);
 
   b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '_History" (');
   b.indentCount++;
@@ -318,6 +316,12 @@ function isArrayParam(resourceType: string, propertyName: string): boolean {
   }
 
   return (propertyDef as JSONSchema6).type === 'array';
+}
+
+function buildSearchIndexes(b: FileBuilder, resourceType: string): void {
+  if (resourceType === 'User') {
+    b.append(`await client.query('CREATE UNIQUE INDEX ON "User" ("email")');`);
+  }
 }
 
 function buildAddressTable(b: FileBuilder): void {

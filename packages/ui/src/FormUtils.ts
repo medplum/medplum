@@ -1,4 +1,4 @@
-import { PropertySchema, Resource, TypeSchema } from '@medplum/core';
+import { ElementDefinition, Resource, TypeSchema } from '@medplum/core';
 
 let nextKeyId = 1;
 
@@ -189,7 +189,7 @@ function setValue(typeDef: TypeSchema, result: any, fullName: string, value: str
 
   const valueObj = isStringProperty(fieldDef) ? value : parseJson(value);
 
-  if (fieldDef.array) {
+  if (fieldDef.max === '*') {
     let array = result[name];
     if (!array) {
       array = result[name] = [];
@@ -226,8 +226,12 @@ function parseJson(str: string): any {
   }
 }
 
-function isStringProperty(fieldDef: PropertySchema) {
-  switch (fieldDef.type) {
+function isStringProperty(fieldDef: ElementDefinition) {
+  const code = fieldDef.type?.[0]?.code;
+  if (!code) {
+    return false;
+  }
+  switch (code) {
     case 'string':
     case 'canonical':
     case 'date':

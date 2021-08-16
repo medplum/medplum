@@ -5,7 +5,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { IncomingMessage } from 'http';
 import path from 'path';
 import { asyncWrap } from '../async';
-import { isOk, sendOutcome } from './outcomes';
+import { assertOk } from './outcomes';
 import { Repository } from './repo';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
@@ -27,9 +27,7 @@ binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
     resourceType: 'Binary',
     contentType: req.get('Content-Type')
   });
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   await binaryStorage?.writeBinary(resource as Binary, req);
   res.status(201).json(resource);
 }));
@@ -43,9 +41,7 @@ binaryRouter.put('/:id', asyncWrap(async (req: Request, res: Response) => {
     id,
     contentType: req.get('Content-Type')
   });
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
   await binaryStorage?.writeBinary(resource as Binary, req);
   res.status(201).json(resource);
 }));
@@ -55,9 +51,7 @@ binaryRouter.get('/:id', asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource('Binary', id);
-  if (!isOk(outcome)) {
-    return sendOutcome(res, outcome);
-  }
+  assertOk(outcome);
 
   const binary = resource as Binary;
   res.status(200).contentType(binary.contentType as string);

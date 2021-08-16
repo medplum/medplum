@@ -171,49 +171,73 @@ const setup = () => {
   );
 };
 
-test('App renders', async () => {
-  setup();
+describe('App', () => {
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
+  test('Renders', async () => {
+    setup();
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
   });
 
-  const control = screen.getByTestId('search-control');
-  expect(control).not.toBeUndefined();
-});
+  test('Click logo', async () => {
+    mockRouter.push = jest.fn();
 
-test('App click logo', async () => {
-  mockRouter.push = jest.fn();
+    setup();
 
-  setup();
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('header-logo'));
+    });
+
+    expect(mockRouter.push).toBeCalledWith('/');
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('header-logo'));
+  test('Click profile', async () => {
+    mockRouter.push = jest.fn();
+
+    setup();
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('header-profile-menu-button'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('header-profile-link'));
+    });
+
+    expect(mockRouter.push).toBeCalledWith('/Practitioner/123');
   });
 
-  expect(mockRouter.push).toBeCalledWith('/');
-});
+  test('Click sign out', async () => {
+    mockRouter.push = jest.fn();
 
-test('App click profile', async () => {
-  mockRouter.push = jest.fn();
+    setup();
 
-  setup();
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('header-profile-menu-button'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('header-signout-button'));
+    });
+
+    expect(mockRouter.push).toBeCalledWith('/signin');
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('header-profile-menu-button'));
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('header-profile-link'));
-  });
-
-  expect(mockRouter.push).toBeCalledWith('/Practitioner/123');
 });

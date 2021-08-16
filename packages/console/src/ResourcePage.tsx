@@ -36,9 +36,8 @@ export function ResourcePage() {
       .then(result => setHistoryBundle(result))
       .then(() => setLoading(false))
       .catch(reason => {
-        console.log('reason', reason);
-        setLoading(false);
         setError(reason);
+        setLoading(false);
       })
   }
 

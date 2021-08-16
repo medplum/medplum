@@ -30,6 +30,7 @@ export interface Condition {
   readonly column: Column;
   readonly operator: Operator;
   readonly parameter: any;
+  readonly parameterType?: string;
 }
 
 export interface Join {
@@ -100,8 +101,13 @@ export abstract class BaseQuery {
     this.conditions = [];
   }
 
-  where(column: Column | string, operator: Operator, value: any): this {
-    this.conditions.push({ column: getColumn(column), operator, parameter: value });
+  where(column: Column | string, operator: Operator, value: any, type?: string): this {
+    this.conditions.push({
+      column: getColumn(column),
+      operator,
+      parameter: value,
+      parameterType: type
+    });
     return this;
   }
 
@@ -109,18 +115,53 @@ export abstract class BaseQuery {
     let first = true;
     for (const condition of this.conditions) {
       sql.append(first ? ' WHERE ' : ' AND ');
-      if (condition.operator === Operator.ARRAY_CONTAINS) {
-        sql.param(condition.parameter);
-        sql.append('=ANY(');
-        sql.appendColumn(condition.column);
-        sql.append(')');
-      } else {
-        sql.appendColumn(condition.column);
-        sql.append(condition.operator);
-        sql.param(condition.parameter);
-      }
+      this.buildCondition(sql, condition);
       first = false;
     }
+  }
+
+  protected buildCondition(sql: SqlBuilder, condition: Condition): void {
+    if (condition.operator === Operator.ARRAY_CONTAINS) {
+      if (Array.isArray(condition.parameter)) {
+        this.buildArrayContainsArray(sql, condition);
+      } else {
+        this.buildArrayContainsValue(sql, condition);
+      }
+    } else {
+      this.buildSimpleCondition(sql, condition);
+    }
+  }
+
+  protected buildArrayContainsArray(sql: SqlBuilder, condition: Condition): void {
+    sql.appendColumn(condition.column);
+    sql.append('&&ARRAY[');
+
+    let first = true;
+    for (const value of condition.parameter) {
+      if (!first) {
+        sql.append(',');
+      }
+      sql.param(value);
+      first = false;
+    }
+
+    sql.append(']');
+    if (condition.parameterType) {
+      sql.append('::' + condition.parameterType);
+    }
+  }
+
+  protected buildArrayContainsValue(sql: SqlBuilder, condition: Condition): void {
+    sql.param(condition.parameter);
+    sql.append('=ANY(');
+    sql.appendColumn(condition.column);
+    sql.append(')');
+  }
+
+  protected buildSimpleCondition(sql: SqlBuilder, condition: Condition): void {
+    sql.appendColumn(condition.column);
+    sql.append(condition.operator);
+    sql.param(condition.parameter);
   }
 }
 
