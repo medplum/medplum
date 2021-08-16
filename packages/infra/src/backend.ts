@@ -35,6 +35,7 @@ export class BackEnd extends cdk.Construct {
       }),
       credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
       defaultDatabaseName: 'medplum',
+      storageEncrypted: true,
       instances: 1,
       instanceProps: {
         vpc: vpc,
