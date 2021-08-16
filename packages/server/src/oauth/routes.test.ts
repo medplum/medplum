@@ -34,7 +34,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Get token with client credentials', async (done) => {
+test('Get token with client credentials', done => {
   request(app)
     .post('/oauth2/token')
     .type('form')

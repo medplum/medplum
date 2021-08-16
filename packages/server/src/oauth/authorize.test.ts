@@ -37,7 +37,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Authorize GET client not found', async (done) => {
+test('Authorize GET client not found', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: '123',
@@ -51,7 +51,7 @@ test('Authorize GET client not found', async (done) => {
     .expect(400, done);
 });
 
-test('Authorize GET wrong redirect', async (done) => {
+test('Authorize GET wrong redirect', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -65,7 +65,7 @@ test('Authorize GET wrong redirect', async (done) => {
     .expect(400, done);
 });
 
-test('Authorize GET invalid response_type', async (done) => {
+test('Authorize GET invalid response_type', done => {
   const params = new URLSearchParams({
     response_type: 'xyz',
     client_id: client.id as string,
@@ -84,7 +84,7 @@ test('Authorize GET invalid response_type', async (done) => {
     });
 });
 
-test('Authorize GET unsupported request', async (done) => {
+test('Authorize GET unsupported request', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -104,7 +104,7 @@ test('Authorize GET unsupported request', async (done) => {
     });
 });
 
-test('Authorize GET missing scope', async (done) => {
+test('Authorize GET missing scope', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -122,7 +122,7 @@ test('Authorize GET missing scope', async (done) => {
     });
 });
 
-test('Authorize GET success', async (done) => {
+test('Authorize GET success', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -136,7 +136,7 @@ test('Authorize GET success', async (done) => {
     .expect(200, done);
 });
 
-test('Authorize POST client not found', async (done) => {
+test('Authorize POST client not found', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: '123',
@@ -156,7 +156,7 @@ test('Authorize POST client not found', async (done) => {
     .expect(400, done);
 });
 
-test('Authorize POST wrong password', async (done) => {
+test('Authorize POST wrong password', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -180,7 +180,7 @@ test('Authorize POST wrong password', async (done) => {
     });
 });
 
-test('Authorize POST success without code_challenge', async (done) => {
+test('Authorize POST success without code_challenge', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -206,7 +206,7 @@ test('Authorize POST success without code_challenge', async (done) => {
     });
 });
 
-test('Authorize POST success with code_challenge', async (done) => {
+test('Authorize POST success with code_challenge', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -234,7 +234,7 @@ test('Authorize POST success with code_challenge', async (done) => {
     });
 });
 
-test('Authorize POST with code_challenge without code_challenge_method', async (done) => {
+test('Authorize POST with code_challenge without code_challenge_method', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -258,7 +258,7 @@ test('Authorize POST with code_challenge without code_challenge_method', async (
     });
 });
 
-test('Authorize POST prompt=none and no existing login', async (done) => {
+test('Authorize POST prompt=none and no existing login', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -287,7 +287,7 @@ test('Authorize POST prompt=none and no existing login', async (done) => {
     });
 });
 
-test('Authorize POST success and prompt=none', async (done) => {
+test('Authorize POST success and prompt=none', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -342,7 +342,7 @@ test('Authorize POST success and prompt=none', async (done) => {
     });
 });
 
-test('Authorize POST success and prompt=login', async (done) => {
+test('Authorize POST success and prompt=login', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -387,7 +387,7 @@ test('Authorize POST success and prompt=login', async (done) => {
     });
 });
 
-test('Authorize POST using id_token_hint', async (done) => {
+test('Authorize POST using id_token_hint', done => {
   // 1) Authorize as normal
   // 2) Get tokens
   // 3) Authorize using id_token_hint

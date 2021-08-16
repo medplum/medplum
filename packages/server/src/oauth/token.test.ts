@@ -38,7 +38,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Token with wrong Content-Type', async (done) => {
+test('Token with wrong Content-Type', done => {
   request(app)
     .post('/oauth2/token')
     .type('json')
@@ -52,7 +52,7 @@ test('Token with wrong Content-Type', async (done) => {
     });
 });
 
-test('Token with missing grant type', async (done) => {
+test('Token with missing grant type', done => {
   request(app)
     .post('/oauth2/token')
     .type('form')
@@ -68,7 +68,7 @@ test('Token with missing grant type', async (done) => {
     });
 });
 
-test('Token with unsupported grant type', async (done) => {
+test('Token with unsupported grant type', done => {
   request(app)
     .post('/oauth2/token')
     .type('form')
@@ -84,7 +84,7 @@ test('Token with unsupported grant type', async (done) => {
     });
 });
 
-test('Token for client credentials with missing client_id', async (done) => {
+test('Token for client credentials with missing client_id', done => {
   request(app)
     .post('/oauth2/token')
     .type('form')
@@ -101,7 +101,7 @@ test('Token for client credentials with missing client_id', async (done) => {
     });
 });
 
-test('Token for client credentials with missing client_secret', async (done) => {
+test('Token for client credentials with missing client_secret', done => {
   request(app)
     .post('/oauth2/token')
     .type('form')
@@ -118,7 +118,7 @@ test('Token for client credentials with missing client_secret', async (done) => 
     });
 });
 
-test('Token for client credentials with wrong client_id', async (done) => {
+test('Token for client credentials with wrong client_id', done => {
   request(app)
     .post('/oauth2/token')
     .type('form')
@@ -135,7 +135,7 @@ test('Token for client credentials with wrong client_id', async (done) => {
     });
 });
 
-test('Token for client credentials with wrong client_secret', async (done) => {
+test('Token for client credentials with wrong client_secret', done => {
   request(app)
     .post('/oauth2/token')
     .type('form')
@@ -152,7 +152,7 @@ test('Token for client credentials with wrong client_secret', async (done) => {
     });
 });
 
-test('Token for authorization_code with missing code', async (done) => {
+test('Token for authorization_code with missing code', done => {
   request(app)
     .post('/oauth2/token')
     .type('form')
@@ -169,7 +169,7 @@ test('Token for authorization_code with missing code', async (done) => {
     });
 });
 
-test('Token for authorization_code with bad code', async (done) => {
+test('Token for authorization_code with bad code', done => {
   request(app)
     .post('/oauth2/token')
     .type('form')
@@ -186,7 +186,7 @@ test('Token for authorization_code with bad code', async (done) => {
     });
 });
 
-test('Authorization code token success', async (done) => {
+test('Authorization code token success', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -266,7 +266,7 @@ test('Refresh token with malformed token', (done) => {
     });
 });
 
-test('Refresh token success', async (done) => {
+test('Refresh token success', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -329,7 +329,7 @@ test('Refresh token success', async (done) => {
     });
 });
 
-test('Refresh token failure with S256 code', async (done) => {
+test('Refresh token failure with S256 code', done => {
   const code = randomUUID();
   const codeHash = hashCode(code);
 
@@ -368,7 +368,7 @@ test('Refresh token failure with S256 code', async (done) => {
     });
 });
 
-test('Refresh token success with S256 code', async (done) => {
+test('Refresh token success with S256 code', done => {
   const code = randomUUID();
   const codeHash = hashCode(code);
 

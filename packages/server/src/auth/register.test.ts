@@ -23,7 +23,7 @@ describe('Register', () => {
     await closeDatabase();
   });
 
-  test('Success', async (done) => {
+  test('Success', done => {
     request(app)
       .post('/auth/register')
       .type('json')
@@ -45,7 +45,7 @@ describe('Register', () => {
       });
   });
 
-  test('Email already registered', async (done) => {
+  test('Email already registered', done => {
     const registerRequest = {
       firstName: 'George',
       lastName: 'Washington',
