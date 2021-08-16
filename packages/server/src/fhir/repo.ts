@@ -1,4 +1,4 @@
-import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Meta, OperationOutcome, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
+import { Bundle, CompartmentDefinition, CompartmentDefinitionResource, Filter, Login, Meta, OperationOutcome, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import validator from 'validator';
@@ -97,8 +97,6 @@ export class Repository {
     this.compartmentIds = context.compartments
       ?.map(c => c.reference?.split('/')[1])
       ?.filter(c => !!c) as string[] | undefined;
-
-    console.log('compartmentIds', JSON.stringify(this.compartmentIds, undefined, 2));
   }
 
   async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
@@ -732,6 +730,22 @@ function convertCodeToColumnName(code: string): string {
 
 function upperFirst(word: string): string {
   return word.charAt(0).toUpperCase() + word.substr(1);
+}
+
+/**
+ * Creates a repository object for the user login object.
+ * Individual instances of the Repository class manage access rights to resources.
+ * Login instances contain details about user compartments.
+ * This method ensures that the repository is setup correctly.
+ * @param login The user login.
+ * @returns A repository configured for the login details.
+ */
+export function getRepoForLogin(login: Login): Repository {
+  return new Repository({
+    project: login.defaultProject?.reference?.split('/')[1] as string,
+    author: login.profile as Reference,
+    compartments: login.compartments
+  });
 }
 
 export const repo = new Repository({
