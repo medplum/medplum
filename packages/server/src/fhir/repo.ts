@@ -602,7 +602,7 @@ export class Repository {
       return MEDPLUM_PROJECT_ID;
     }
 
-    return this.context.project;
+    return resource.meta?.project ?? this.context.project;
   }
 
   /**
