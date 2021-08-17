@@ -61118,6 +61118,10 @@
           "description": "A summary, characterization or explanation of the Client Application.",
           "$ref": "#/definitions/string"
         },
+        "project": {
+          "description": "Project where the client application is defined.",
+          "$ref": "#/definitions/Reference"
+        },
         "secret": {
           "description": "Client secret string used to verify the identity of a client.",
           "$ref": "#/definitions/string"
@@ -61129,6 +61133,7 @@
       },
       "required": [
         "resourceType",
+        "project",
         "secret",
         "redirectUri"
       ]

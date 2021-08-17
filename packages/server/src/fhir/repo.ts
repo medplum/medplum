@@ -459,22 +459,13 @@ export class Repository {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = JSON.stringify(resource);
-    const compartments = [meta.project];
 
     const columns: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
-      compartments,
+      compartments: getCompartments(resource),
       content
     };
-
-    const patientCompartmentProperties = getPatientCompartmentProperties(resourceType);
-    if (patientCompartmentProperties) {
-      const patientId = getPatientId(resource, patientCompartmentProperties);
-      if (patientId) {
-        compartments.push(patientId);
-      }
-    }
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
@@ -635,13 +626,57 @@ export class Repository {
 }
 
 /**
+ * Builds a list of compartments for the resource.
+ * FHIR compartments are used for two purposes.
+ * 1) Search narrowing (i.e., /Patient/123/Observation searches within the patient compartment).
+ * 2) Access controls.
+ * @param resource The resource.
+ * @returns The list of compartments for the resource.
+ */
+export function getCompartments(resource: Resource): string[] {
+  const result = new Set<string>();
+
+  if (resource.meta?.project) {
+    result.add(resource.meta.project);
+  }
+
+  const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
+  if (patientCompartmentProperties) {
+    const patientId = getPatientId(resource, patientCompartmentProperties);
+    if (patientId) {
+      result.add(patientId);
+    }
+  }
+
+  if (resource.resourceType === 'Project' && resource.id) {
+    result.add(resource.id);
+  }
+
+  if (resource.resourceType === 'ProjectMembership') {
+    const projectId = resolveId(resource.project);
+    if (projectId) {
+      result.add(projectId);
+    }
+  }
+
+  if (resource.resourceType === 'ClientApplication') {
+    const projectId = resolveId(resource.project);
+    if (projectId) {
+      result.add(projectId);
+    }
+  }
+
+  return Array.from(result);
+}
+
+/**
  * Returns the list of patient compartment properties, if the resource type is in a patient compartment.
  * Returns undefined otherwise.
  * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
  * @param resourceType The resource type.
  * @returns List of property names if in patient compartment; undefined otherwise.
  */
-export function getPatientCompartmentProperties(resourceType: string): string[] | undefined {
+function getPatientCompartmentProperties(resourceType: string): string[] | undefined {
   const resourceList = patientCompartment.resource as CompartmentDefinitionResource[];
   for (const resource of resourceList) {
     if (resource.code === resourceType) {
@@ -713,9 +748,20 @@ function getPatientIdFromReferenceArray(references: Reference[]): string | undef
  */
 function getPatientIdFromReference(reference: Reference): string | undefined {
   if (reference.reference?.startsWith('Patient/')) {
-    return reference.reference.replace('Patient/', '');
+    return resolveId(reference);
   }
   return undefined;
+}
+
+/**
+ * Returns the ID portion of a reference.
+ * For now, assumes the common convention of resourceType/id.
+ * In the future, detect and handle searches (i.e., "Patient?identifier=123").
+ * @param reference A FHIR reference.
+ * @returns The ID portion of a reference.
+ */
+function resolveId(reference: Reference | undefined): string | undefined {
+  return reference?.reference?.split('/')[1];
 }
 
 /**
@@ -742,7 +788,7 @@ function upperFirst(word: string): string {
  */
 export function getRepoForLogin(login: Login): Repository {
   return new Repository({
-    project: login.defaultProject?.reference?.split('/')[1] as string,
+    project: resolveId(login.defaultProject) as string,
     author: login.profile as Reference,
     compartments: login.compartments
   });
