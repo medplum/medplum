@@ -37,8 +37,8 @@ describe('Login', () => {
     await closeDatabase();
   });
 
-  test('Invalid client UUID', done => {
-    request(app)
+  test('Invalid client UUID', async () => {
+    const res = await request(app)
       .post('/auth/login')
       .type('json')
       .send({
@@ -47,18 +47,14 @@ describe('Login', () => {
         password: 'admin',
         scope: 'openid',
         role: 'practitioner'
-      })
-      .expect(400)
-      .end((err, res) => {
-        expect(res.status).toBe(400);
-        expect(res.body.issue).not.toBeUndefined();
-        expect(res.body.issue[0].details.text).toBe('Invalid UUID');
-        done();
       });
+    expect(res.status).toBe(400);
+    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue[0].details.text).toBe('Invalid UUID');
   });
 
-  test('Invalid client ID', done => {
-    request(app)
+  test('Invalid client ID', async () => {
+    const res = await request(app)
       .post('/auth/login')
       .type('json')
       .send({
@@ -67,18 +63,14 @@ describe('Login', () => {
         password: 'admin',
         scope: 'openid',
         role: 'practitioner'
-      })
-      .expect(404)
-      .end((err, res) => {
-        expect(res.status).toBe(404);
-        expect(res.body.issue).not.toBeUndefined();
-        expect(res.body.issue[0].details.text).toBe('Not found');
-        done();
       });
+    expect(res.status).toBe(404);
+    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue[0].details.text).toBe('Not found');
   });
 
-  test('Wrong password', done => {
-    request(app)
+  test('Wrong password', async () => {
+    const res = await request(app)
       .post('/auth/login')
       .type('json')
       .send({
@@ -87,18 +79,14 @@ describe('Login', () => {
         password: 'wrong-password',
         scope: 'openid',
         role: 'practitioner'
-      })
-      .expect(400)
-      .end((err, res) => {
-        expect(res.status).toBe(400);
-        expect(res.body.issue).not.toBeUndefined();
-        expect(res.body.issue[0].details.text).toBe('Incorrect password');
-        done();
       });
+    expect(res.status).toBe(400);
+    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue[0].details.text).toBe('Incorrect password');
   });
 
-  test('Success', done => {
-    request(app)
+  test('Success', async () => {
+    const res = await request(app)
       .post('/auth/login')
       .type('json')
       .send({
@@ -107,17 +95,13 @@ describe('Login', () => {
         password: 'admin',
         scope: 'openid',
         role: 'practitioner'
-      })
-      .expect(200)
-      .end((err, res) => {
-        expect(res.status).toBe(200);
-        expect(res.body.user).not.toBeUndefined();
-        expect(res.body.profile).not.toBeUndefined();
-        expect(res.body.idToken).not.toBeUndefined();
-        expect(res.body.accessToken).not.toBeUndefined();
-        expect(res.body.refreshToken).not.toBeUndefined();
-        done();
       });
+    expect(res.status).toBe(200);
+    expect(res.body.user).not.toBeUndefined();
+    expect(res.body.profile).not.toBeUndefined();
+    expect(res.body.idToken).not.toBeUndefined();
+    expect(res.body.accessToken).not.toBeUndefined();
+    expect(res.body.refreshToken).not.toBeUndefined();
   });
 
 });

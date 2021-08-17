@@ -13,55 +13,57 @@ const app = express();
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let accessToken: string;
 
-beforeAll(async () => {
-  const config = await loadTestConfig();
-  await initDatabase(config.database);
-  await initApp(app);
-  await initBinaryStorage('file:' + binaryDir);
-  await initKeys(config);
-  accessToken = await initTestAuth();
-});
+describe('Binary', () => {
 
-afterAll(async () => {
-  await closeDatabase();
-  rmSync(binaryDir, { recursive: true, force: true });
-});
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config.database);
+    await initApp(app);
+    await initBinaryStorage('file:' + binaryDir);
+    await initKeys(config);
+    accessToken = await initTestAuth();
+  });
 
-test('Create and read binary', (done) => {
-  request(app)
-    .post('/fhir/R4/Binary')
-    .set('Authorization', 'Bearer ' + accessToken)
-    .set('Content-Type', 'text/plain')
-    .send('Hello world')
-    .expect(201)
-    .end((err, res) => {
-      const binary = res.body;
-      request(app)
-        .get('/fhir/R4/Binary/' + binary.id)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .expect(200, done);
-    });
-});
+  afterAll(async () => {
+    await closeDatabase();
+    rmSync(binaryDir, { recursive: true, force: true });
+  });
 
-test('Read binary not found', (done) => {
-  request(app)
-    .get('/fhir/R4/Binary/2e9dfab6-a3af-4e5b-9324-483b4c333737')
-    .set('Authorization', 'Bearer ' + accessToken)
-    .expect(404, done);
-});
+  test('Create and read binary', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .send('Hello world');
+    expect(res.status).toBe(201);
 
-test('Update and read binary', (done) => {
-  request(app)
-    .put('/fhir/R4/Binary/4c57f787-dca0-411f-bfe2-322800208286')
-    .set('Authorization', 'Bearer ' + accessToken)
-    .set('Content-Type', 'text/plain')
-    .send('Hello world')
-    .expect(201)
-    .end((err, res) => {
-      const binary = res.body;
-      request(app)
-        .get('/fhir/R4/Binary/' + binary.id)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .expect(200, done);
-    });
+    const binary = res.body;
+    const res2 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+  });
+
+  test('Read binary not found', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Binary/2e9dfab6-a3af-4e5b-9324-483b4c333737')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(404);
+  });
+
+  test('Update and read binary', async () => {
+    const res = await request(app)
+      .put('/fhir/R4/Binary/4c57f787-dca0-411f-bfe2-322800208286')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .send('Hello world');
+    expect(res.status).toBe(201);
+
+    const binary = res.body;
+    const res2 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+  });
+
 });

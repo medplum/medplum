@@ -10,35 +10,37 @@ import { repo } from './repo';
 const app = express();
 let accessToken: string;
 
-beforeAll(async () => {
-  const config = await loadTestConfig();
-  await initDatabase(config.database);
-  await initApp(app);
-  await initKeys(config);
-  accessToken = await initTestAuth();
+describe('GraphQL', () => {
 
-  await repo.updateResource({
-    resourceType: 'Patient',
-    id: '8a54c7db-654b-4c3d-ba85-e0909f51c12b',
-    name: [{
-      given: ['Alice'],
-      family: 'Smith'
-    }]
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config.database);
+    await initApp(app);
+    await initKeys(config);
+    accessToken = await initTestAuth();
+
+    await repo.updateResource({
+      resourceType: 'Patient',
+      id: '8a54c7db-654b-4c3d-ba85-e0909f51c12b',
+      name: [{
+        given: ['Alice'],
+        family: 'Smith'
+      }]
+    });
   });
-});
 
-afterAll(async () => {
-  await closeDatabase();
-});
+  afterAll(async () => {
+    await closeDatabase();
+  });
 
-test('GraphQL schema', (done) => {
-  request(app)
-    .post('/fhir/R4/$graphql')
-    .set('Authorization', 'Bearer ' + accessToken)
-    .set('Content-Type', 'application/json')
-    .send({
-      operationName: 'IntrospectionQuery',
-      query: `
+  test('Get schema', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        operationName: 'IntrospectionQuery',
+        query: `
       query IntrospectionQuery {
         __schema {
           queryType { name }
@@ -128,17 +130,17 @@ test('GraphQL schema', (done) => {
         }
       }
     `
-    })
-    .expect(200, done);
-});
+      });
+    expect(res.status).toBe(200);
+  });
 
-test('GraphQL read by ID', (done) => {
-  request(app)
-    .post('/fhir/R4/$graphql')
-    .set('Authorization', 'Bearer ' + accessToken)
-    .set('Content-Type', 'application/json')
-    .send({
-      query: `
+  test('Read by ID', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
       {
         Patient(id: "8a54c7db-654b-4c3d-ba85-e0909f51c12b") {
           id
@@ -146,21 +148,18 @@ test('GraphQL read by ID', (done) => {
         }
       }
     `
-    })
-    .expect(200)
-    .end((err: any, res: any) => {
-      expect(res.body.Patient).not.toBeNull();
-      done();
-    });
-});
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.Patient).not.toBeNull();
+  });
 
-test('GraphQL search', (done) => {
-  request(app)
-    .post('/fhir/R4/$graphql')
-    .set('Authorization', 'Bearer ' + accessToken)
-    .set('Content-Type', 'application/json')
-    .send({
-      query: `
+  test('Search', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
       {
         PatientList(name: "Smith") {
           id
@@ -168,10 +167,9 @@ test('GraphQL search', (done) => {
         }
       }
     `
-    })
-    .expect(200)
-    .end((err: any, res: any) => {
-      expect(res.body.PatientList).not.toBeNull();
-      done();
-    });
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.PatientList).not.toBeNull();
+  });
+
 });

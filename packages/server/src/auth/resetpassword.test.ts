@@ -30,25 +30,22 @@ describe('Reset Password', () => {
     (SESv2Client as any).mockClear();
   });
 
-  test('User not found', done => {
-    request(app)
+  test('User not found', async () => {
+    const res = await request(app)
       .post('/auth/resetpassword')
       .type('json')
       .send({
         email: `alex${randomUUID()}@example.com`
-      })
-      .end((err, res) => {
-        expect(res.status).toBe(400);
-        expect(res.body.issue[0].details.text).toBe('User not found');
-        expect(res.body.issue[0].expression[0]).toBe('email');
-        done();
       });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+    expect(res.body.issue[0].expression[0]).toBe('email');
   });
 
-  test('Success', done => {
+  test('Success', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    request(app)
+    const res = await request(app)
       .post('/auth/register')
       .type('json')
       .send({
@@ -58,22 +55,18 @@ describe('Reset Password', () => {
         email,
         password: 'password!@#'
       })
-      .end((err, res) => {
-        expect(res.status).toBe(200);
-        expect(res.body.user).not.toBeUndefined();
-        request(app)
-          .post('/auth/resetpassword')
-          .type('json')
-          .send({
-            email
-          })
-          .end((err, res) => {
-            expect(res.status).toBe(200);
-            expect(SESv2Client).toHaveBeenCalledTimes(1);
-            expect(SendEmailCommand).toHaveBeenCalledTimes(1);
-            done();
-          });
+    expect(res.status).toBe(200);
+    expect(res.body.user).not.toBeUndefined();
+
+    const res2 = await request(app)
+      .post('/auth/resetpassword')
+      .type('json')
+      .send({
+        email
       });
+    expect(res2.status).toBe(200);
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
   });
 
 });

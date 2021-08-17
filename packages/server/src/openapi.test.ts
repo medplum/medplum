@@ -7,24 +7,25 @@ import { initKeys } from './oauth';
 
 const app = express();
 
-beforeAll(async () => {
-  const config = await loadTestConfig();
-  await initDatabase(config.database);
-  await initApp(app);
-  await initKeys(config);
-});
+describe('OpenAPI', () => {
 
-afterAll(async () => {
-  await closeDatabase();
-});
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config.database);
+    await initApp(app);
+    await initKeys(config);
+  });
 
-test('Get /openapi.json', done => {
-  request(app)
-    .get('/openapi.json')
-    .expect(200)
-    .end((err, res) => {
-      expect(res.body.openapi).not.toBeUndefined();
-      expect(res.body.info).not.toBeUndefined();
-      done();
-    });
+  afterAll(async () => {
+    await closeDatabase();
+  });
+
+  test('Get /openapi.json', async () => {
+    const res = await request(app)
+      .get('/openapi.json');
+    expect(res.status).toBe(200);
+    expect(res.body.openapi).not.toBeUndefined();
+    expect(res.body.info).not.toBeUndefined();
+  });
+
 });
