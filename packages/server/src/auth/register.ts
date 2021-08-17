@@ -69,8 +69,8 @@ export async function registerHandler(req: Request, res: Response) {
 
 export async function registerNew(request: RegisterRequest): Promise<RegisterResponse> {
   const user = await createUser(request);
-  const practitioner = await createPractitioner(request);
   const project = await createProject(request, user);
+  const practitioner = await createPractitioner(request, project);
   await createProjectMembership(user, project, practitioner);
   return {
     user,
@@ -107,10 +107,25 @@ async function createUser(request: RegisterRequest): Promise<User> {
   return result as User;
 }
 
-async function createPractitioner(request: RegisterRequest): Promise<Practitioner> {
+async function createProject(request: RegisterRequest, user: User): Promise<Project> {
+  logger.info('Create project ' + request.projectName);
+  const [outcome, result] = await repo.createResource<Project>({
+    resourceType: 'Project',
+    name: request.projectName,
+    owner: createReference(user)
+  });
+  assertOk(outcome);
+  logger.info('Created: ' + (result as Project).id);
+  return result as Project;
+}
+
+async function createPractitioner(request: RegisterRequest, project: Project): Promise<Practitioner> {
   logger.info(`Create practitioner: ${request.firstName} ${request.lastName}`);
   const [outcome, result] = await repo.createResource<Practitioner>({
     resourceType: 'Practitioner',
+    meta: {
+      project: project.id
+    },
     name: [{
       given: [request.firstName],
       family: request.lastName
@@ -128,22 +143,13 @@ async function createPractitioner(request: RegisterRequest): Promise<Practitione
   return result as Practitioner;
 }
 
-async function createProject(request: RegisterRequest, user: User): Promise<Project> {
-  logger.info('Create project ' + request.projectName);
-  const [outcome, result] = await repo.createResource<Project>({
-    resourceType: 'Project',
-    name: request.projectName,
-    owner: createReference(user)
-  });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as Project).id);
-  return result as Project;
-}
-
 async function createProjectMembership(user: User, project: Project, practitioner: Practitioner): Promise<ProjectMembership> {
   logger.info('Create project membership: ' + project.name);
   const [outcome, result] = await repo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
+    meta: {
+      project: project.id
+    },
     project: createReference(project),
     user: createReference(user),
     profile: createReference(practitioner),

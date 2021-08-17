@@ -23,8 +23,8 @@ describe('Register', () => {
     await closeDatabase();
   });
 
-  test('Success', done => {
-    request(app)
+  test('Success', async () => {
+    const res = await request(app)
       .post('/auth/register')
       .type('json')
       .send({
@@ -33,19 +33,17 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#'
-      })
-      .end((err, res) => {
-        expect(res.status).toBe(200);
-        expect(res.body.user).not.toBeUndefined();
-        expect(res.body.profile).not.toBeUndefined();
-        expect(res.body.idToken).not.toBeUndefined();
-        expect(res.body.accessToken).not.toBeUndefined();
-        expect(res.body.refreshToken).not.toBeUndefined();
-        done();
       });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).not.toBeUndefined();
+    expect(res.body.profile).not.toBeUndefined();
+    expect(res.body.idToken).not.toBeUndefined();
+    expect(res.body.accessToken).not.toBeUndefined();
+    expect(res.body.refreshToken).not.toBeUndefined();
   });
 
-  test('Email already registered', done => {
+  test('Email already registered', async () => {
     const registerRequest = {
       firstName: 'George',
       lastName: 'Washington',
@@ -54,24 +52,44 @@ describe('Register', () => {
       password: 'password!@#'
     };
 
-    request(app)
+    const res = await request(app)
       .post('/auth/register')
       .type('json')
-      .send(registerRequest)
-      .end((err, res) => {
-        expect(res.status).toBe(200);
-        expect(res.body.user).not.toBeUndefined();
-        request(app)
-          .post('/auth/register')
-          .type('json')
-          .send(registerRequest)
-          .end((err, res) => {
-            expect(res.status).toBe(400);
-            expect(res.body.issue[0].details.text).toBe('Email already registered');
-            expect(res.body.issue[0].expression[0]).toBe('email');
-            done();
-          });
+      .send(registerRequest);
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).not.toBeUndefined();
+
+    const res2 = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send(registerRequest);
+
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0].details.text).toBe('Email already registered');
+    expect(res2.body.issue[0].expression[0]).toBe('email');
+  });
+
+  test('Can access Practitioner resource', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#'
       });
+
+    expect(res.status).toBe(200);
+    expect(res.body.profile).not.toBeUndefined();
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/Practitioner/${res.body.profile.id}`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+
+    expect(res2.status).toBe(200);
   });
 
 });
