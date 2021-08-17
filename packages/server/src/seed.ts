@@ -16,6 +16,7 @@ export async function seedDatabase(): Promise<void> {
   }
 
   const result = await registerNew({
+    admin: true,
     firstName: 'Medplum',
     lastName: 'Admin',
     projectName: 'Medplum',
