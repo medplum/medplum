@@ -70,6 +70,28 @@ describe('Register', () => {
     expect(res2.body.issue[0].expression[0]).toBe('email');
   });
 
+  test('Can access Project resource', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#'
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.project).not.toBeUndefined();
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/Project/${res.body.project.id}`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+
+    expect(res2.status).toBe(200);
+  });
+
   test('Can access Practitioner resource', async () => {
     const res = await request(app)
       .post('/auth/register')

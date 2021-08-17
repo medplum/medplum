@@ -3,6 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
+import { MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
 import { isOk, repo } from '../fhir';
 import { initKeys } from '../oauth';
@@ -22,6 +23,9 @@ describe('OAuth2 UserInfo', () => {
 
     const [outcome, result] = await repo.createResource({
       resourceType: 'ClientApplication',
+      project: {
+        reference: 'Project/' + MEDPLUM_PROJECT_ID
+      },
       secret: 'big-long-string',
       redirectUri: 'https://example.com'
     } as ClientApplication);

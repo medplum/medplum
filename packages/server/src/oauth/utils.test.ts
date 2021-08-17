@@ -1,5 +1,6 @@
 import { ClientApplication } from '@medplum/core';
 import { loadTestConfig } from '../config';
+import { MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
 import { isOk, repo } from '../fhir';
 import { seedDatabase } from '../seed';
@@ -16,6 +17,9 @@ beforeAll(async () => {
 
   const [outcome, result] = await repo.createResource({
     resourceType: 'ClientApplication',
+    project: {
+      reference: 'Project/' + MEDPLUM_PROJECT_ID
+    },
     secret: 'big-long-string',
     redirectUri: 'https://example.com'
   } as ClientApplication);

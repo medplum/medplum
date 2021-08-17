@@ -2,7 +2,7 @@ import { Bundle, BundleEntry, ClientApplication, createReference, Project, Resou
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { registerNew } from './auth/register';
-import { MEDPLUM_CLIENT_APPLICATION_ID, PUBLIC_PROJECT_ID } from './constants';
+import { MEDPLUM_CLIENT_APPLICATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
 import { getClient } from './database';
 import { isOk, OperationOutcomeError, repo } from './fhir';
 import { InsertQuery } from './fhir/sql';
@@ -77,6 +77,9 @@ async function createClientApplication(): Promise<void> {
     resourceType: 'ClientApplication',
     id: MEDPLUM_CLIENT_APPLICATION_ID,
     name: 'OpenID Certification',
+    project: {
+      reference: 'Project/' + MEDPLUM_PROJECT_ID
+    },
     secret: generateSecret(48),
     redirectUri: 'https://www.certification.openid.net/test/a/medplum/callback',
   });
