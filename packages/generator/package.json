@@ -19,15 +19,15 @@
   },
   "devDependencies": {
     "@medplum/definitions": "0.0.30",
-    "@types/jest": "26.0.24",
+    "@types/jest": "27.0.1",
     "@types/json-schema": "7.0.9",
-    "@types/node": "16.4.12",
-    "@typescript-eslint/eslint-plugin": "4.29.0",
-    "@typescript-eslint/parser": "4.29.0",
+    "@types/node": "16.6.1",
+    "@typescript-eslint/eslint-plugin": "4.29.2",
+    "@typescript-eslint/parser": "4.29.2",
     "eslint": "7.32.0",
     "jest": "27.0.6",
     "rimraf": "3.0.2",
-    "ts-node": "10.1.0",
+    "ts-node": "10.2.0",
     "typescript": "4.3.5"
   }
 }

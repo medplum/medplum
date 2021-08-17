@@ -18,7 +18,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Get /openapi.json', async (done) => {
+test('Get /openapi.json', done => {
   request(app)
     .get('/openapi.json')
     .expect(200)

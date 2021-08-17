@@ -37,7 +37,7 @@ describe('Login', () => {
     await closeDatabase();
   });
 
-  test('Invalid client UUID', async (done) => {
+  test('Invalid client UUID', done => {
     request(app)
       .post('/auth/login')
       .type('json')
@@ -57,7 +57,7 @@ describe('Login', () => {
       });
   });
 
-  test('Invalid client ID', async (done) => {
+  test('Invalid client ID', done => {
     request(app)
       .post('/auth/login')
       .type('json')
@@ -77,7 +77,7 @@ describe('Login', () => {
       });
   });
 
-  test('Wrong password', async (done) => {
+  test('Wrong password', done => {
     request(app)
       .post('/auth/login')
       .type('json')
@@ -97,7 +97,7 @@ describe('Login', () => {
       });
   });
 
-  test('Success', async (done) => {
+  test('Success', done => {
     request(app)
       .post('/auth/login')
       .type('json')

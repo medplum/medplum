@@ -36,7 +36,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Get userinfo with profile email phone address', async (done) => {
+test('Get userinfo with profile email phone address', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,
@@ -90,7 +90,7 @@ test('Get userinfo with profile email phone address', async (done) => {
     });
 });
 
-test('Get userinfo with only openid', async (done) => {
+test('Get userinfo with only openid', done => {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: client.id as string,

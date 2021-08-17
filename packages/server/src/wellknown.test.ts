@@ -19,7 +19,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-test('Get /.well-known/jwks.json', async (done) => {
+test('Get /.well-known/jwks.json', done => {
   request(app)
     .get('/.well-known/jwks.json')
     .expect(200)
@@ -54,7 +54,7 @@ test('Get /.well-known/jwks.json', async (done) => {
     });
 });
 
-test('Get /.well-known/openid-configuration', async (done) => {
+test('Get /.well-known/openid-configuration', done => {
   request(app)
     .get('/.well-known/openid-configuration')
     .expect(200)

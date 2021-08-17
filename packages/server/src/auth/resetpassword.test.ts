@@ -30,7 +30,7 @@ describe('Reset Password', () => {
     (SESv2Client as any).mockClear();
   });
 
-  test('User not found', async (done) => {
+  test('User not found', done => {
     request(app)
       .post('/auth/resetpassword')
       .type('json')
@@ -45,7 +45,7 @@ describe('Reset Password', () => {
       });
   });
 
-  test('Success', async (done) => {
+  test('Success', done => {
     const email = `george${randomUUID()}@example.com`;
 
     request(app)
