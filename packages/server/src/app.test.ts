@@ -6,24 +6,26 @@ import { closeDatabase, initDatabase } from './database';
 
 const app = express();
 
-beforeAll(async () => {
-  const config = await loadTestConfig();
-  await initDatabase(config.database);
-  await initApp(app);
-});
+describe('App', () => {
 
-afterAll(async () => {
-  await closeDatabase();
-});
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config.database);
+    await initApp(app);
+  });
 
-test('Get root', (done) => {
-  request(app)
-    .get('/')
-    .expect(200, done);
-});
+  afterAll(async () => {
+    await closeDatabase();
+  });
 
-test('Get healthcheck', (done) => {
-  request(app)
-    .get('/healthcheck')
-    .expect(200, done);
+  test('Get root', async () => {
+    const res = await request(app).get('/');
+    expect(res.status).toBe(200);
+  });
+
+  test('Get healthcheck', async () => {
+    const res = await request(app).get('/healthcheck');
+    expect(res.status).toBe(200);
+  });
+
 });

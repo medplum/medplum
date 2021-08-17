@@ -8,65 +8,63 @@ import { initKeys } from './oauth';
 
 const app = express();
 
-beforeAll(async () => {
-  const config = await loadTestConfig();
-  await initDatabase(config.database);
-  await initApp(app);
-  await initKeys(config);
-});
+describe('Well Known', () => {
 
-afterAll(async () => {
-  await closeDatabase();
-});
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config.database);
+    await initApp(app);
+    await initKeys(config);
+  });
 
-test('Get /.well-known/jwks.json', done => {
-  request(app)
-    .get('/.well-known/jwks.json')
-    .expect(200)
-    .end((err, res) => {
-      const keys = res.body.keys;
-      expect(keys).not.toBeUndefined();
-      expect(Array.isArray(keys)).toEqual(true);
-      expect(keys.length).toBeGreaterThanOrEqual(1);
+  afterAll(async () => {
+    await closeDatabase();
+  });
 
-      for (const key of keys) {
-        expect(key.kid).not.toBeUndefined();
-        expect(key.kid.length).toEqual(36); // kid should be a UUID
-        expect(validator.isUUID(key.kid)).toEqual(true);
-        expect(key.alg).toEqual('RS256');
-        expect(key.kty).toEqual('RSA');
-        expect(key.use).toEqual('sig');
+  test('Get /.well-known/jwks.json', async () => {
+    const res = await request(app)
+      .get('/.well-known/jwks.json');
+    expect(res.status).toBe(200);
 
-        // Make sure public key properties are there
-        expect(key.e).not.toBeUndefined();
-        expect(key.n).not.toBeUndefined();
+    const keys = res.body.keys;
+    expect(keys).not.toBeUndefined();
+    expect(Array.isArray(keys)).toEqual(true);
+    expect(keys.length).toBeGreaterThanOrEqual(1);
 
-        // Make sure private key properties are *NOT* there
-        expect(key.d).toBeUndefined();
-        expect(key.p).toBeUndefined();
-        expect(key.q).toBeUndefined();
-        expect(key.dp).toBeUndefined();
-        expect(key.dq).toBeUndefined();
-        expect(key.qi).toBeUndefined();
-      }
+    for (const key of keys) {
+      expect(key.kid).not.toBeUndefined();
+      expect(key.kid.length).toEqual(36); // kid should be a UUID
+      expect(validator.isUUID(key.kid)).toEqual(true);
+      expect(key.alg).toEqual('RS256');
+      expect(key.kty).toEqual('RSA');
+      expect(key.use).toEqual('sig');
 
-      done();
-    });
-});
+      // Make sure public key properties are there
+      expect(key.e).not.toBeUndefined();
+      expect(key.n).not.toBeUndefined();
 
-test('Get /.well-known/openid-configuration', done => {
-  request(app)
-    .get('/.well-known/openid-configuration')
-    .expect(200)
-    .end((err, res) => {
-      expect(res.body.issuer).not.toBeUndefined();
-      expect(res.body.authorization_endpoint).not.toBeUndefined();
-      expect(res.body.token_endpoint).not.toBeUndefined();
-      expect(res.body.userinfo_endpoint).not.toBeUndefined();
-      expect(res.body.jwks_uri).not.toBeUndefined();
-      expect(res.body.id_token_signing_alg_values_supported).not.toBeUndefined();
-      expect(res.body.response_types_supported).not.toBeUndefined();
-      expect(res.body.subject_types_supported).not.toBeUndefined();
-      done();
-    });
+      // Make sure private key properties are *NOT* there
+      expect(key.d).toBeUndefined();
+      expect(key.p).toBeUndefined();
+      expect(key.q).toBeUndefined();
+      expect(key.dp).toBeUndefined();
+      expect(key.dq).toBeUndefined();
+      expect(key.qi).toBeUndefined();
+    }
+  });
+
+  test('Get /.well-known/openid-configuration', async () => {
+    const res = await request(app)
+      .get('/.well-known/openid-configuration');
+    expect(res.status).toBe(200);
+    expect(res.body.issuer).not.toBeUndefined();
+    expect(res.body.authorization_endpoint).not.toBeUndefined();
+    expect(res.body.token_endpoint).not.toBeUndefined();
+    expect(res.body.userinfo_endpoint).not.toBeUndefined();
+    expect(res.body.jwks_uri).not.toBeUndefined();
+    expect(res.body.id_token_signing_alg_values_supported).not.toBeUndefined();
+    expect(res.body.response_types_supported).not.toBeUndefined();
+    expect(res.body.subject_types_supported).not.toBeUndefined();
+  });
+
 });
