@@ -57,7 +57,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [badRequest('Project memberships not found', 'email'), undefined];
   }
 
-  const compartments = getCompartments(memberships);
+  const compartments = user.admin ? [] : getCompartments(memberships);
   const project = getDefaultProject(memberships);
   const profile = getDefaultProfile(memberships);
   const refreshSecret = request.remember ? generateSecret(48) : undefined;

@@ -50,4 +50,9 @@ export interface User {
    * Encrypted hash of the user's password.
    */
   readonly passwordHash?: string;
+
+  /**
+   * Whether this user is a system administrator.
+   */
+  readonly admin?: boolean;
 }

@@ -16,6 +16,7 @@ export interface RegisterRequest {
   password: string;
   scope?: string;
   role?: string;
+  admin?: boolean;
 }
 
 export interface RegisterResponse {
@@ -94,13 +95,14 @@ async function searchForExisting(email: string): Promise<boolean> {
 }
 
 async function createUser(request: RegisterRequest): Promise<User> {
-  const { email, password } = request;
+  const { email, password, admin } = request;
   logger.info('Create user ' + email);
   const passwordHash = await bcrypt.hash(password, 10);
   const [outcome, result] = await repo.createResource<User>({
     resourceType: 'User',
     email,
-    passwordHash
+    passwordHash,
+    admin
   });
   assertOk(outcome);
   logger.info('Created: ' + (result as User).id);

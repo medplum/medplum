@@ -61176,6 +61176,10 @@
         "passwordHash": {
           "description": "Encrypted hash of the user's password.",
           "$ref": "#/definitions/string"
+        },
+        "admin": {
+          "description": "Whether this user is a system administrator.",
+          "$ref": "#/definitions/boolean"
         }
       },
       "required": [
