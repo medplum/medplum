@@ -32,7 +32,6 @@ describe('OAuth Authorize', () => {
     } as ClientApplication);
 
     if (!isOk(outcome) || !result) {
-      console.log(JSON.stringify(outcome, undefined, 2));
       throw new Error('Error creating application');
     }
 
@@ -262,7 +261,6 @@ describe('OAuth Authorize', () => {
         nonce: 'asdf'
       });
     expect(res.status).toBe(302);
-    expect(res.status).toBe(302);
     expect(res.headers.location).not.toBeUndefined();
     const location = new URL(res.headers.location);
     expect(location.host).toBe('example.com');
@@ -286,7 +284,6 @@ describe('OAuth Authorize', () => {
         password: 'admin',
         nonce: 'asdf'
       });
-    expect(res.status).toBe(302);
     expect(res.status).toBe(302);
     expect(res.headers['set-cookie']).not.toBeUndefined();
     const cookies = setCookieParser.parse(res.headers['set-cookie']);

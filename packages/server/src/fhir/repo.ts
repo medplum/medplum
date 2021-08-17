@@ -330,7 +330,7 @@ export class Repository {
    * @param builder The select query builder.
    */
   private addCompartments(builder: SelectQuery): void {
-    if (this.compartmentIds) {
+    if (this.compartmentIds && this.compartmentIds.length > 0) {
       builder.where('compartments', Operator.ARRAY_CONTAINS, this.compartmentIds, 'UUID[]');
     }
   }
