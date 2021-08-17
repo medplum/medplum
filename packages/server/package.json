@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "0.0.30",
+  "version": "0.1.0",
   "description": "Medplum Server",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -23,8 +23,8 @@
     "@aws-sdk/client-sesv2": "3.26.0",
     "@aws-sdk/client-ssm": "3.26.0",
     "@aws-sdk/client-secrets-manager": "3.26.0",
-    "@medplum/core": "0.0.30",
-    "@medplum/definitions": "0.0.30",
+    "@medplum/core": "0.1.0",
+    "@medplum/definitions": "0.1.0",
     "bcrypt": "5.0.1",
     "body-parser": "1.19.0",
     "cookie-parser": "1.4.5",
