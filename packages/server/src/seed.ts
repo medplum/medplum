@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, ClientApplication, CodeSystem, createReference, isOk, OperationOutcomeError, Project, Resource, SearchParameter, StructureDefinition, User, ValueSet } from '@medplum/core';
+import { Bundle, BundleEntry, ClientApplication, CodeSystem, CodeSystemConcept, createReference, isOk, OperationOutcomeError, Project, Resource, SearchParameter, StructureDefinition, User, ValueSet } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { Pool } from 'pg';
@@ -127,8 +127,24 @@ async function importCodeSystem(client: Pool, codeSystem: CodeSystem): Promise<v
     return;
   }
   for (const concept of codeSystem.concept) {
-    if (concept.code && concept.display) {
-      await insertValueSetElement(client, codeSystem.valueSet, concept.code, concept.display);
+    importCodeSystemConcept(client, codeSystem.valueSet, concept);
+  }
+}
+
+/**
+ * Recursively imports CodeSystem concepts.
+ * See: https://www.hl7.org/fhir/codesystem-definitions.html#CodeSystem.concept
+ * @param client The database client.
+ * @param system The ValueSet system.
+ * @param concept The CodeSystem concept.
+ */
+async function importCodeSystemConcept(client: Pool, system: string, concept: CodeSystemConcept): Promise<void> {
+  if (concept.code && concept.display) {
+    await insertValueSetElement(client, system, concept.code, concept.display);
+  }
+  if (concept.concept) {
+    for (const child of concept.concept) {
+      await importCodeSystemConcept(client, system, child);
     }
   }
 }
@@ -140,15 +156,13 @@ async function importCodeSystem(client: Pool, codeSystem: CodeSystem): Promise<v
  * @param valueSet The FHIR ValueSet resource.
  */
 async function importValueSet(client: Pool, valueSet: ValueSet): Promise<void> {
-  const includes = valueSet.compose?.include;
-  if (!includes) {
+  if (!valueSet.url || !valueSet.compose?.include) {
     return;
   }
-  for (const include of includes) {
+  for (const include of valueSet.compose.include) {
     if (!include.system || !include.concept) {
       continue;
     }
-
     for (const concept of include.concept) {
       if (concept.code && concept.display) {
         await insertValueSetElement(client, include.system, concept.code, concept.display);

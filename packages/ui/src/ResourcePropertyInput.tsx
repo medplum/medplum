@@ -5,9 +5,9 @@ import { AttachmentArrayInput } from './AttachmentArrayInput';
 import { AttachmentInput } from './AttachmentInput';
 import { BackboneElementInput } from './BackboneElementInput';
 import { CodeableConceptInput } from './CodeableConceptInput';
+import { CodeInput } from './CodeInput';
 import { CodingInput } from './CodingInput';
 import { ContactPointInput } from './ContactPointInput';
-import { EnumInput } from './EnumInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
 import { ReferenceInput } from './ReferenceInput';
@@ -123,9 +123,9 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
       );
     case PropertyType.code:
       return (
-        <EnumInput
+        <CodeInput
           name={name}
-          value={value}
+          defaultValue={value}
           property={property}
         />);
     case PropertyType.boolean:

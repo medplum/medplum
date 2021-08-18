@@ -18,9 +18,13 @@ import { Operator, SelectQuery } from './sql';
 // 4) Optional count for pagination (default is 10, can be 1-20)
 
 export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
-  const url = req.query.url as string | undefined;
+  let url = req.query.url as string | undefined;
   if (!url) {
     return sendOutcome(res, badRequest('Missing url'));
+  }
+  const pipeIndex = url.indexOf('|');
+  if (pipeIndex >= 0) {
+    url = url.substr(0, pipeIndex);
   }
 
   const filter = req.query.filter as string | undefined;
