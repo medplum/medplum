@@ -1,84 +1,54 @@
-import { Bundle, Operator, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { Avatar } from './Avatar';
-import { useMedplum, useMedplumRouter } from './MedplumProvider';
-import { ResourceName } from './ResourceName';
 import './Autocomplete.css';
 
-export interface AutocompleteProps {
+export interface AutocompleteProps<T> {
   name: string;
-  resourceType: string;
   multiple?: boolean;
   autofocus?: boolean;
-  defaultValue?: Reference[];
-  createNew?: string;
-  onChange?: (values: Resource[]) => void;
+  defaultValue?: T[];
+  loadOptions: (input: string) => Promise<T[]>;
+  getId: (item: T) => string;
+  getIcon?: (item: T) => JSX.Element;
+  getDisplay: (item: T) => JSX.Element;
+  onChange?: (values: T[]) => void;
+  onCreateNew?: () => void;
 }
 
-interface AutocompleteState {
+interface AutocompleteState<T> {
   focused: boolean,
   lastValue: string,
   dropDownVisible: boolean,
-  values: Resource[],
-  options: Resource[],
+  values: T[],
+  options: T[],
   selectedIndex: number
 }
 
-export function Autocomplete(props: AutocompleteProps) {
-  const medplum = useMedplum();
-  const router = useMedplumRouter();
+export function Autocomplete<T>(props: AutocompleteProps<T>) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [state, setState] = useState({
     focused: false,
     lastValue: '',
     dropDownVisible: false,
-    values: [],
+    values: props.defaultValue ?? [],
     options: [],
     selectedIndex: -1
-  } as AutocompleteState);
+  } as AutocompleteState<T>);
 
-  const stateRef = useRef<AutocompleteState>(state);
+  const stateRef = useRef<AutocompleteState<T>>(state);
   stateRef.current = state;
 
   useEffect(() => {
-    loadDefaultValues();
-
     const interval = setInterval(() => handleTimer(), 150);
     return () => clearInterval(interval);
   }, []);
 
   /**
-   * Loads any default values by reference.
-   */
-  function loadDefaultValues() {
-    if (!props.defaultValue) {
-      return;
-    }
-
-    for (const reference of props.defaultValue) {
-      if (reference.reference) {
-        medplum.readCachedReference(reference).then(resource => addResource(resource));
-      }
-    }
-  }
-
-  /**
    * Adds an resource to the list of selected resources.
-   *
-   * @param {!Resource} resource The resource.
+   * @param resource The resource.
    */
-  function addResource(resource: Resource) {
+  function addResource(resource: T): void {
     const inputElement = inputRef.current as HTMLInputElement;
-
-    if (props.createNew && resource.id === '__createNew') {
-      const name = inputElement.value;
-      const next = window.location.href;
-      const url = props.createNew + '?name=' + encodeURIComponent(name) + '&next=' + encodeURIComponent(next);
-      router.push(url);
-      return true;
-    }
-
     inputElement.value = '';
 
     const newValues = props.multiple ? [...state.values, resource] : [resource];
@@ -97,20 +67,20 @@ export function Autocomplete(props: AutocompleteProps) {
     }
   }
 
-  function handleClick() {
+  function handleClick(): void {
     inputRef.current?.focus();
   }
 
-  function handleFocus() {
+  function handleFocus(): void {
     setState({ ...stateRef.current, focused: true });
   }
 
-  function handleBlur() {
+  function handleBlur(): void {
     setState({ ...stateRef.current, focused: false });
     dismissOnDelay();
   }
 
-  function handleKeyDown(e: React.KeyboardEvent) {
+  function handleKeyDown(e: React.KeyboardEvent): void {
     switch (e.key) {
       case 'Enter':
       case 'Tab':
@@ -144,9 +114,9 @@ export function Autocomplete(props: AutocompleteProps) {
    * Try to add an resource with tryAddResource.  On success, cancel event.
    * Otherwise, let the browser handle the enter key normally.
    *
-   * @param {KeyboardEvent} e The key down event.
+   * @param e The key down event.
    */
-  function handleSelectKey(e: React.KeyboardEvent) {
+  function handleSelectKey(e: React.KeyboardEvent): void {
     if (tryAddResource()) {
       e.preventDefault();
       e.stopPropagation();
@@ -159,9 +129,9 @@ export function Autocomplete(props: AutocompleteProps) {
    * If the input is empty and there is at least one item, delete the last item.
    * Otherwise, let the browser handle the backspace key normally.
    *
-   * @param {KeyboardEvent} e The key down event.
+   * @param e The key down event.
    */
-  function handleBackspaceKey(e: React.KeyboardEvent) {
+  function handleBackspaceKey(e: React.KeyboardEvent): void {
     if (inputRef.current?.value) {
       // If there is still text in the input,
       // then handle backspace as normal.
@@ -187,9 +157,9 @@ export function Autocomplete(props: AutocompleteProps) {
    * If there is content in the input, use that as a "gray" resource.
    * Otherwise, ignore.
    *
-   * @param {KeyboardEvent} e The key down event.
+   * @param e The key down event.
    */
-  function handleSeparatorKey(e: React.KeyboardEvent) {
+  function handleSeparatorKey(e: React.KeyboardEvent): void {
     tryAddResource();
     e.preventDefault();
     e.stopPropagation();
@@ -199,10 +169,10 @@ export function Autocomplete(props: AutocompleteProps) {
   /**
    * Tries to capture the existing input as an resource.
    *
-   * @return {boolean} True if captured an resource; false otherwise.
+   * @return True if captured an resource; false otherwise.
    */
-  function tryAddResource() {
-    let resource: Resource | undefined;
+  function tryAddResource(): boolean {
+    let resource: T | undefined;
 
     const currState = stateRef.current;
     if (currState.selectedIndex >= 0 && currState.selectedIndex < currState.options.length) {
@@ -212,13 +182,6 @@ export function Autocomplete(props: AutocompleteProps) {
     } else if (currState.selectedIndex === -1 && currState.options.length > 0) {
       // Default to first row
       resource = currState.options[0];
-
-    } else if (inputRef.current?.value) {
-      // Otherwise create an unstructured resource
-      resource = {
-        resourceType: props.resourceType,
-        name: inputRef.current?.value
-      } as Resource;
     }
 
     if (!resource) {
@@ -233,9 +196,8 @@ export function Autocomplete(props: AutocompleteProps) {
    * Handles a timer tick event.
    * If the contents of the input have changed, sends xhr to the server
    * for updated contents.
-   *
    */
-  const handleTimer = () => {
+  function handleTimer() {
     const value = inputRef.current?.value?.trim() || '';
     const currState = stateRef.current;
     if (value === currState.lastValue) {
@@ -256,54 +218,20 @@ export function Autocomplete(props: AutocompleteProps) {
 
     setState({ ...currState, lastValue: value });
 
-    medplum.search({
-      resourceType: props.resourceType,
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: value
-      }]
-    })
-      .then((e: Bundle) => handleResponse(e))
+    props.loadOptions(value)
+      .then((resources: T[]) => {
+        setState({
+          ...stateRef.current,
+          dropDownVisible: resources.length > 0,
+          options: resources
+        });
+      })
       .catch(console.log);
-  };
-
-  /**
-   * Handles the HTTP response.
-   *
-   * @param {Object} response The HTTP response body in JSON.
-   */
-  function handleResponse(response: Bundle) {
-    const resources: Resource[] = [];
-
-    if (props.createNew) {
-      const createNewResource = {
-        resourceType: props.resourceType,
-        id: '__createNew',
-        name: 'Create new...'
-      } as Resource;
-      resources.push(createNewResource);
-    }
-
-    if (response.entry) {
-      response.entry.forEach(entry => {
-        if (entry.resource) {
-          resources.push(entry.resource);
-        }
-      });
-    }
-
-    setState({
-      ...stateRef.current,
-      dropDownVisible: resources.length > 0,
-      options: resources
-    });
   }
 
   /**
    * Moves the selected row.
-   *
-   * @param {number} delta The amount to move the selection, up is negative.
+   * @param delta The amount to move the selection, up is negative.
    */
   function moveSelection(delta: number) {
     const currState = stateRef.current;
@@ -324,8 +252,7 @@ export function Autocomplete(props: AutocompleteProps) {
 
   /**
    * Handles a hover event.
-   *
-   * @param {MouseEvent} e The mouse event.
+   * @param e The mouse event.
    */
   function handleDropDownHover(e: React.MouseEvent) {
     const target = e.currentTarget as HTMLElement;
@@ -346,8 +273,7 @@ export function Autocomplete(props: AutocompleteProps) {
 
   /**
    * Handles a click event.
-   *
-   * @param {MouseEvent} e The mouse event.
+   * @param e The mouse event.
    */
   function handleDropDownClick(e: React.MouseEvent) {
     const target = e.currentTarget as HTMLElement;
@@ -398,10 +324,10 @@ export function Autocomplete(props: AutocompleteProps) {
       <ul onClick={() => handleClick()}>
         {state.values.map(value => (
           <li
-            key={value.id}
+            key={props.getId(value)}
             data-testid="selected"
-            className={value.id === '' ? 'unstructured choice' : 'choice'}>
-            <ResourceName resource={value} />
+            className="choice">
+            {props.getDisplay(value)}
           </li>
         ))}
         <li>
@@ -423,16 +349,23 @@ export function Autocomplete(props: AutocompleteProps) {
         <div className="medplum-autocomplete" data-testid="dropdown">
           {state.options.map((option, index) => (
             <div
-              key={option.id}
+              key={props.getId(option)}
               data-index={index}
               className={index === state.selectedIndex ? "medplum-autocomplete-row medplum-autocomplete-active" : "medplum-autocomplete-row"}
               onMouseOver={e => handleDropDownHover(e)}
               onClick={e => handleDropDownClick(e)}
             >
-              <div className="medplum-autocomplete-icon"><Avatar resource={option} /></div>
-              <div className="medplum-autocomplete-label"><ResourceName resource={option} /></div>
+              {props.getIcon && (
+                <div className="medplum-autocomplete-icon">{props.getIcon(option)}</div>
+              )}
+              <div className="medplum-autocomplete-label">{props.getDisplay(option)}</div>
             </div>
           ))}
+          {props.onCreateNew && (
+            <div className="medplum-autocomplete-row" onClick={props.onCreateNew}>
+              <div className="medplum-autocomplete-label">Create new...</div>
+            </div>
+          )}
         </div>
       )}
     </div>

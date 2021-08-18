@@ -1,12 +1,12 @@
-import { HumanName } from '@medplum/core';
+import { HumanName, ProfileResource } from '@medplum/core';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
+import './Header.css';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
-import './Header.css';
 
 export interface HeaderProps {
   onLogo?: () => void;
@@ -84,7 +84,7 @@ export function Header(props: HeaderProps) {
         {auth.user && (
           <div className="medplum-nav-menu-container">
             <MedplumLink testid="header-profile-menu-button" onClick={() => setUserMenuVisible(true)}>
-              <Avatar size="small" resource={auth.profile as any} />
+              <Avatar size="small" value={auth.profile as ProfileResource} />
             </MedplumLink>
             <Popup
               visible={userMenuVisible}
@@ -94,7 +94,7 @@ export function Header(props: HeaderProps) {
               onClose={() => setUserMenuVisible(false)}>
               <div className="medplum-nav-menu">
                 <div style={{ margin: 'auto', padding: '8px' }}>
-                  <Avatar size="large" resource={auth.profile as any} />
+                  <Avatar size="large" value={auth.profile as ProfileResource} />
                 </div>
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>

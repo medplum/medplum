@@ -50,7 +50,7 @@ export const LetterSizes = () => (
 
 export const Resource = () => (
   <Document>
-    <Avatar reference={{ reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID }} />
+    <Avatar value={{ reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID }} />
   </Document>
 );
 

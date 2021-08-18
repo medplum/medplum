@@ -38,8 +38,8 @@ export function ResourceBlame(props: ResourceBlameProps) {
               {
                 row.span > 0 && (
                   <td className="details" rowSpan={row.span} >
-                    <Avatar size="xsmall" reference={row.meta.author} />
-                    <ResourceName reference={row.meta.author} link={true} />
+                    <Avatar size="xsmall" value={row.meta.author} />
+                    <ResourceName value={row.meta.author} link={true} />
                     <br />
                     {formatDateTime(row.meta.lastUpdated as string | Date)}
                     <br />

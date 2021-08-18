@@ -4,8 +4,7 @@ import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 
 export interface ResourceNameProps {
-  resource?: Resource;
-  reference?: Reference;
+  value?: Reference | Resource;
   alt?: string;
   link?: boolean;
 }
@@ -20,16 +19,23 @@ export const ResourceName = (props: ResourceNameProps) => {
   }
 
   useEffect(() => {
-    if (props.resource) {
-      setResource(props.resource);
-      setLinkUrl(`/${props.resource.resourceType}/${props.resource.id}`)
-    } else if (props.reference?.reference === 'system') {
-      setText('System');
-    } else if (props.reference) {
-      setLinkUrl(`/${props.reference.reference}`)
-      medplum.readCachedReference(props.reference).then(setResource);
+    const value = props.value as Reference | Resource | undefined;
+    if (value) {
+      if ('resourceType' in value) {
+        const resource = value as Resource;
+        setResource(resource);
+        setLinkUrl(`/${resource.resourceType}/${resource.id}`);
+      } else if ('reference' in value) {
+        const reference = value as Reference;
+        if (reference.reference === 'system') {
+          setText('System');
+        } else if (reference.reference) {
+          setLinkUrl(`/${reference.reference}`)
+          medplum.readCachedReference(reference).then(setResource);
+        }
+      }
     }
-  }, [props.resource, props.reference]);
+  }, [props.value]);
 
   return props.link && linkUrl ? (
     <MedplumLink to={linkUrl}>{text}</MedplumLink>
