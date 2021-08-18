@@ -7,10 +7,10 @@ pushd packages/server
 aws ecr get-login-password --profile medplum --region us-east-1 | docker login --username AWS --password-stdin 647991932601.dkr.ecr.us-east-1.amazonaws.com
 
 # Build the Docker image
-docker build . -t 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest -t 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.1.0
+docker build . -t 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest -t 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.1.1
 
 # Push the Docker image
-docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.1.0
+docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:0.1.1
 docker push 647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:latest
 
 # Update the medplum fargate service
