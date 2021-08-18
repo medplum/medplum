@@ -87,7 +87,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       };
     }
 
-  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
+  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Patient')) {
     result = patientStructureDefinitionBundle;
 
   } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
