@@ -1,4 +1,4 @@
-import { Account, Communication, createReference, Encounter, getReferenceString, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter } from '@medplum/core';
+import { Account, assertOk, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -6,7 +6,6 @@ import { MEDPLUM_CLIENT_APPLICATION_ID, MEDPLUM_PROJECT_ID } from '../constants'
 import { closeDatabase, initDatabase } from '../database';
 import { tryLogin } from '../oauth';
 import { createBatch } from './batch';
-import { assertOk, isOk } from './outcomes';
 import { getPatientId, getRepoForLogin, repo, Repository } from './repo';
 
 beforeAll(async () => {

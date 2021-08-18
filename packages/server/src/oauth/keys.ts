@@ -1,4 +1,4 @@
-import { JsonWebKey, Operator } from '@medplum/core';
+import { isOk, JsonWebKey, Operator } from '@medplum/core';
 import { randomBytes } from 'crypto';
 import { fromKeyLike } from 'jose/jwk/from_key_like';
 import { parseJwk } from 'jose/jwk/parse';
@@ -7,7 +7,7 @@ import { jwtVerify, JWTVerifyOptions } from 'jose/jwt/verify';
 import { generateKeyPair } from 'jose/util/generate_key_pair';
 import { JWK, JWSHeaderParameters, JWTPayload, KeyLike } from 'jose/webcrypto/types';
 import { MedplumServerConfig } from '../config';
-import { isOk, repo } from '../fhir';
+import { repo } from '../fhir';
 import { logger } from '../logger';
 
 export interface MedplumBaseClaims extends JWTPayload {

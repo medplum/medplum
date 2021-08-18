@@ -1,7 +1,7 @@
-import { formatAddress, formatFamilyName, formatGivenName, formatHumanName, getDateProperty, getReferenceString, ProfileResource } from '@medplum/core';
+import { formatAddress, formatFamilyName, formatGivenName, formatHumanName, getDateProperty, getReferenceString, isOk, ProfileResource } from '@medplum/core';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { isOk, repo } from '../fhir';
+import { repo } from '../fhir';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.

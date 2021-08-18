@@ -1,4 +1,4 @@
-import { Meta, Patient } from '@medplum/core';
+import { isOk, Meta, Patient } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -7,7 +7,6 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
-import { isOk } from './outcomes';
 import { repo } from './repo';
 
 const app = express();

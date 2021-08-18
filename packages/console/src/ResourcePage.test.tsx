@@ -96,8 +96,6 @@ function mockFetch(url: string, options: any): Promise<any> {
     result = practitioner;
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123/_history')) {
     result = practitionerHistory;
-  } else {
-    console.log('fetch', method, url);
   }
 
   const response: any = {

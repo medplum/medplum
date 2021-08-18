@@ -4,8 +4,9 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, OperationOutcome, Reference, Resource, SearchParameter, StructureDefinition, Subscription, User } from './fhir';
+import { Binary, Bundle, Reference, Resource, SearchParameter, StructureDefinition, Subscription, User } from './fhir';
 import { parseJWTPayload } from './jwt';
+import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
 import { LocalStorage, MemoryStorage, Storage } from './storage';
 import { IndexedStructureDefinition, indexStructureDefinition } from './types';
@@ -17,15 +18,6 @@ const DEFAULT_BLOB_CACHE_SIZE = 100;
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
-
-export class OperationOutcomeError extends Error {
-  readonly outcome: OperationOutcome;
-
-  constructor(outcome: OperationOutcome) {
-    super(outcome?.id);
-    this.outcome = outcome;
-  }
-}
 
 export interface MedplumClientOptions {
   /**
@@ -533,8 +525,8 @@ export class MedplumClient extends EventTarget {
     }
 
     const obj = blob ? await response.blob() : await response.json();
-    if (obj.issue && obj.issue.length > 0) {
-      return Promise.reject(new OperationOutcomeError(obj as OperationOutcome));
+    if (obj.resourceType === 'OperationOutcome' && !isOk(obj)) {
+      return Promise.reject(new OperationOutcomeError(obj));
     }
     return obj;
   }

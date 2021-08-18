@@ -1,10 +1,10 @@
-import { BundleEntry, createReference, Login, Operator, Practitioner, ProfileResource, Project, ProjectMembership, User } from '@medplum/core';
+import { assertOk, badRequest, BundleEntry, createReference, Login, Operator, Practitioner, ProfileResource, Project, ProjectMembership, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { MEDPLUM_CLIENT_APPLICATION_ID } from '../constants';
-import { assertOk, badRequest, invalidRequest, repo, sendOutcome } from '../fhir';
+import { invalidRequest, repo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
 import { getAuthTokens, tryLogin } from '../oauth';
 

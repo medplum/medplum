@@ -1,7 +1,7 @@
-import { ClientApplication, getDateProperty, Login, OperationOutcome, Operator } from '@medplum/core';
+import { ClientApplication, getDateProperty, isOk, Login, OperationOutcome, Operator } from '@medplum/core';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
-import { isOk, repo } from '../fhir';
+import { repo } from '../fhir';
 import { logger } from '../logger';
 import { renderTemplate } from '../templates';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';

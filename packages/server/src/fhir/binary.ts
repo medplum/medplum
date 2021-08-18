@@ -1,11 +1,10 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { Binary } from '@medplum/core';
+import { assertOk, Binary } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { mkdirSync, writeFileSync } from 'fs';
 import { IncomingMessage } from 'http';
 import path from 'path';
 import { asyncWrap } from '../async';
-import { assertOk } from './outcomes';
 import { Repository } from './repo';
 
 let binaryStorage: BinaryStorage | undefined = undefined;

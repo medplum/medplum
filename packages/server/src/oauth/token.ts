@@ -1,8 +1,8 @@
-import { ClientApplication, createReference, getReferenceString, Login, Operator } from '@medplum/core';
+import { ClientApplication, createReference, getReferenceString, isOk, Login, Operator } from '@medplum/core';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { isOk, repo } from '../fhir';
+import { repo } from '../fhir';
 import { generateAccessToken, MedplumRefreshTokenClaims, verifyJwt } from './keys';
 import { getAuthTokens, getReferenceIdPart, revokeLogin } from './utils';
 

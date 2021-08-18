@@ -10,6 +10,7 @@ import {
 } from '@medplum/ui';
 import React from 'react';
 import { Route, Router, Switch } from 'react-router-dom';
+import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
 import { history } from './history';
 import { HomePage } from './HomePage';
@@ -54,6 +55,14 @@ export function App() {
                 { label: 'Project', href: '/Project' },
                 { label: 'ProjectMembership', href: '/ProjectMembership' }
               ]
+            },
+            {
+              title: 'Settings',
+              links: [
+                { label: 'Change Password', href: '/changepassword' },
+                { label: 'Client Applications', href: '/Project' },
+                { label: 'Projects', href: '/ProjectMembership' }
+              ]
             }
           ]}
         />
@@ -62,6 +71,7 @@ export function App() {
         <Route exact path="/signin"><SignInPage /></Route>
         <Route exact path="/resetpassword"><ResetPasswordPage /></Route>
         <Route exact path="/register"><RegisterPage /></Route>
+        <Route exact path="/changepassword"><ChangePasswordPage /></Route>
         <Route exact path="/:resourceType/new"><CreateResourcePage /></Route>
         <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
         <Route exact path="/:resourceType?"><HomePage /></Route>
