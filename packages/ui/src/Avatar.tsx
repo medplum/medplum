@@ -29,17 +29,17 @@ export const Avatar = (props: AvatarProps) => {
   }
 
   useEffect(() => {
-    const value = props.value as Reference | Resource | undefined;
+    const value = props.value;
     if (value) {
       if ('resourceType' in value) {
-        const resource = value as Resource;
+        const resource = value;
         setResource(resource);
         setLinkUrl(`/${resource.resourceType}/${resource.id}`);
       } else if ('reference' in value) {
-        const reference = value as Reference;
+        const reference = value;
         if (reference.reference === 'system') {
           setText('System');
-        } else if (reference.reference) {
+        } else {
           setLinkUrl(`/${reference.reference}`)
           medplum.readCachedReference(reference).then(setResource);
         }

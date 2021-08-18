@@ -123,11 +123,12 @@ async function createValueSetElements(): Promise<void> {
  * @param codeSystem The FHIR CodeSystem resource.
  */
 async function importCodeSystem(client: Pool, codeSystem: CodeSystem): Promise<void> {
-  if (codeSystem.valueSet && codeSystem.concept) {
-    for (const concept of codeSystem.concept) {
-      if (concept.code && concept.display) {
-        await insertValueSetElement(client, codeSystem.valueSet, concept.code, concept.display);
-      }
+  if (!codeSystem.valueSet || !codeSystem.concept) {
+    return;
+  }
+  for (const concept of codeSystem.concept) {
+    if (concept.code && concept.display) {
+      await insertValueSetElement(client, codeSystem.valueSet, concept.code, concept.display);
     }
   }
 }
@@ -140,14 +141,17 @@ async function importCodeSystem(client: Pool, codeSystem: CodeSystem): Promise<v
  */
 async function importValueSet(client: Pool, valueSet: ValueSet): Promise<void> {
   const includes = valueSet.compose?.include;
-  if (includes) {
-    for (const include of includes) {
-      if (include.system && include.concept) {
-        for (const concept of include.concept) {
-          if (concept.code && concept.display) {
-            await insertValueSetElement(client, include.system, concept.code, concept.display);
-          }
-        }
+  if (!includes) {
+    return;
+  }
+  for (const include of includes) {
+    if (!include.system || !include.concept) {
+      continue;
+    }
+
+    for (const concept of include.concept) {
+      if (concept.code && concept.display) {
+        await insertValueSetElement(client, include.system, concept.code, concept.display);
       }
     }
   }

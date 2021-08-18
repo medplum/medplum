@@ -73,25 +73,25 @@ export function ReferenceInput(props: ReferenceInputProps) {
                   })
                     .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map(entry => entry.resource as Resource));
                 }}
-                getId={(value: Reference | Resource) => {
-                  if ('resourceType' in value) {
-                    return (value as Resource).id as string;
+                getId={(item: Reference | Resource) => {
+                  if ('resourceType' in item) {
+                    return (item as Resource).id as string;
                   }
-                  if ('reference' in value) {
-                    return (value as Reference).reference as string;
+                  if ('reference' in item) {
+                    return (item as Reference).reference as string;
                   }
-                  return value.toString();
+                  return item.toString();
                 }}
-                getIcon={(value: Reference | Resource) => <Avatar value={value} />}
-                getDisplay={(value: Reference | Resource) => <ResourceName value={value} />}
+                getIcon={(item: Reference | Resource) => <Avatar value={item} />}
+                getDisplay={(item: Reference | Resource) => <ResourceName value={item} />}
                 name={props.name + '-id'}
                 defaultValue={props.value ? [props.value] : undefined}
-                onChange={(value: (Reference | Resource)[]) => {
-                  if (value.length > 0) {
-                    if ('resourceType' in value[0]) {
-                      setValue(createReference(value[0] as Resource));
-                    } else if ('reference' in value[0]) {
-                      setValue(value[0] as Reference);
+                onChange={(items: (Reference | Resource)[]) => {
+                  if (items.length > 0) {
+                    if ('resourceType' in items[0]) {
+                      setValue(createReference(items[0]));
+                    } else if ('reference' in items[0]) {
+                      setValue(items[0]);
                     }
                   }
                 }}
