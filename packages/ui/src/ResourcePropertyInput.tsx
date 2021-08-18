@@ -7,11 +7,9 @@ import { BackboneElementInput } from './BackboneElementInput';
 import { CodeableConceptInput } from './CodeableConceptInput';
 import { CodingInput } from './CodingInput';
 import { ContactPointInput } from './ContactPointInput';
-import { DeviceNameInput } from './DeviceNameInput';
 import { EnumInput } from './EnumInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
-import { PatientLinkInput } from './PatientLinkInput';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
 
@@ -23,9 +21,78 @@ export interface ResourcePropertyInputProps {
   arrayElement?: boolean;
 }
 
+/**
+ * List of property types.
+ * http://www.hl7.org/fhir/valueset-defined-types.html
+ * The list here includes additions found from StructureDefinition resources.
+ */
+enum PropertyType {
+  Address = 'Address',
+  Age = 'Age',
+  Annotation = 'Annotation',
+  Attachment = 'Attachment',
+  BackboneElement = 'BackboneElement',
+  CodeableConcept = 'CodeableConcept',
+  Coding = 'Coding',
+  ContactDetail = 'ContactDetail',
+  ContactPoint = 'ContactPoint',
+  Contributor = 'Contributor',
+  Count = 'Count',
+  DataRequirement = 'DataRequirement',
+  Distance = 'Distance',
+  Dosage = 'Dosage',
+  Duration = 'Duration',
+  ElementDefinition = 'ElementDefinition',
+  Expression = 'Expression',
+  Extension = 'Extension',
+  HumanName = 'HumanName',
+  Identifier = 'Identifier',
+  MarketingStatus = 'MarketingStatus',
+  Meta = 'Meta',
+  Money = 'Money',
+  Narrative = 'Narrative',
+  ParameterDefinition = 'ParameterDefinition',
+  Period = 'Period',
+  Population = 'Population',
+  ProdCharacteristic = 'ProdCharacteristic',
+  ProductShelfLife = 'ProductShelfLife',
+  Quantity = 'Quantity',
+  Range = 'Range',
+  Ratio = 'Ratio',
+  Reference = 'Reference',
+  RelatedArtifact = 'RelatedArtifact',
+  Resource = 'Resource',
+  SampledData = 'SampledData',
+  Signature = 'Signature',
+  SubstanceAmount = 'SubstanceAmount',
+  SystemString = 'http://hl7.org/fhirpath/System.String',
+  Timing = 'Timing',
+  TriggerDefinition = 'TriggerDefinition',
+  UsageContext = 'UsageContext',
+  base64Binary = 'base64Binary',
+  boolean = 'boolean',
+  canonical = 'canonical',
+  code = 'code',
+  date = 'date',
+  dateTime = 'dateTime',
+  decimal = 'decimal',
+  id = 'id',
+  instant = 'instant',
+  integer = 'integer',
+  markdown = 'markdown',
+  oid = 'oid',
+  positiveInt = 'positiveInt',
+  string = 'string',
+  time = 'time',
+  unsignedInt = 'unsignedInt',
+  uri = 'uri',
+  url = 'url',
+  uuid = 'uuid',
+}
+
 export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
   const property = props.property;
-  const propertyType = property.type?.[0]?.code;
+  const propertyType = property.type?.[0]?.code as PropertyType;
   const name = props.name;
   const value = props.value;
 
@@ -37,59 +104,53 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
   }
 
   switch (propertyType) {
-    case 'string':
-    case 'canonical':
-    case 'date':
-    case 'dateTime':
-    case 'instant':
-    case 'uri':
-    case 'url':
-    case 'http://hl7.org/fhirpath/System.String':
+    case PropertyType.SystemString:
+    case PropertyType.canonical:
+    case PropertyType.date:
+    case PropertyType.dateTime:
+    case PropertyType.instant:
+    case PropertyType.string:
+    case PropertyType.uri:
+    case PropertyType.url:
       return (
         <input type="text" name={name} defaultValue={value}></input>
       );
-    case 'number':
-    case 'integer':
-    case 'positiveInt':
-    case 'unsignedInt':
+    case PropertyType.integer:
+    case PropertyType.positiveInt:
+    case PropertyType.unsignedInt:
       return (
         <input type="text" name={name} defaultValue={value}></input>
       );
-    case 'code':
-    case 'enum':
+    case PropertyType.code:
       return (
         <EnumInput
           name={name}
           value={value}
           property={property}
         />);
-    case 'boolean':
+    case PropertyType.boolean:
       return (
         <input type="checkbox" name={name} defaultChecked={!!value} value="true" />
       );
-    case 'markdown':
+    case PropertyType.markdown:
       return (
         <textarea name={name} defaultValue={value} />
       );
-    case 'Address':
+    case PropertyType.Address:
       return <AddressInput name={name} value={value} />;
-    case 'Attachment':
+    case PropertyType.Attachment:
       return <AttachmentInput name={name} value={value} />;
-    case 'Coding':
+    case PropertyType.Coding:
       return <CodingInput name={name} value={value} />;
-    case 'CodeableConcept':
+    case PropertyType.CodeableConcept:
       return <CodeableConceptInput name={name} value={value} />;
-    case 'ContactPoint':
+    case PropertyType.ContactPoint:
       return <ContactPointInput name={name} value={value} />;
-    case 'Device_DeviceName':
-      return <DeviceNameInput name={name} value={value} />;
-    case 'HumanName':
+    case PropertyType.HumanName:
       return <HumanNameInput name={name} value={value} />;
-    case 'Identifier':
+    case PropertyType.Identifier:
       return <IdentifierInput name={name} value={value} />;
-    case 'Patient_Link':
-      return <PatientLinkInput name={name} value={value} />;
-    case 'Reference':
+    case PropertyType.Reference:
       return <ReferenceInput property={property} name={name} value={value} />;
     default:
       return <BackboneElementInput schema={props.schema} property={property} name={name} value={value} />;
