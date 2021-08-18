@@ -81,6 +81,20 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Unsupported grant_type');
   });
 
+  test('Token for client credentials success', async () => {
+    const res = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({
+        grant_type: 'client_credentials',
+        client_id: client.id,
+        client_secret: client.secret
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).not.toBeUndefined();
+  });
+
   test('Token for client credentials with missing client_id', async () => {
     const res = await request(app)
       .post('/oauth2/token')
