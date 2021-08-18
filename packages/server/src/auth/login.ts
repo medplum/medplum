@@ -1,8 +1,8 @@
-import { Login, ProfileResource, Reference, User } from '@medplum/core';
+import { badRequest, isOk, Login, ProfileResource, Reference, User } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { badRequest, invalidRequest, isOk, repo, sendOutcome } from '../fhir';
+import { invalidRequest, repo, sendOutcome } from '../fhir';
 import { getAuthTokens, tryLogin } from '../oauth';
 
 export const loginValidators = [

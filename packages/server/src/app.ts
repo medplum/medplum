@@ -1,10 +1,10 @@
-import { OperationOutcome } from '@medplum/core';
+import { badRequest, OperationOutcome } from '@medplum/core';
 import { json, raw, urlencoded } from 'body-parser';
 import cors from 'cors';
 import { Express, NextFunction, Request, Response } from 'express';
 import { authRouter } from './auth';
 import { dicomRouter } from './dicom/routes';
-import { badRequest, fhirRouter, sendOutcome } from './fhir';
+import { fhirRouter, sendOutcome } from './fhir';
 import { logger } from './logger';
 import { oauthRouter } from './oauth';
 import { openApiHandler } from './openapi';

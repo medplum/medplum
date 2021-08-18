@@ -1,10 +1,10 @@
-import { Bundle, BundleEntry, ClientApplication, createReference, Project, Resource, SearchParameter, StructureDefinition, User } from '@medplum/core';
+import { Bundle, BundleEntry, ClientApplication, createReference, isOk, OperationOutcomeError, Project, Resource, SearchParameter, StructureDefinition, User } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { registerNew } from './auth/register';
 import { MEDPLUM_CLIENT_APPLICATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
 import { getClient } from './database';
-import { isOk, OperationOutcomeError, repo } from './fhir';
+import { repo } from './fhir';
 import { InsertQuery } from './fhir/sql';
 import { logger } from './logger';
 import { generateSecret } from './oauth';

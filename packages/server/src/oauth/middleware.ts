@@ -1,6 +1,6 @@
-import { Login } from '@medplum/core';
+import { isOk, Login } from '@medplum/core';
 import { NextFunction, Request, Response } from 'express';
-import { getRepoForLogin, isOk, repo } from '../fhir';
+import { getRepoForLogin, repo } from '../fhir';
 import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 

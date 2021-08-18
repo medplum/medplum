@@ -1,6 +1,6 @@
-import { ClientApplication, createReference, Login } from '@medplum/core';
+import { ClientApplication, createReference, isOk, Login } from '@medplum/core';
 import { MEDPLUM_PROJECT_ID } from './constants';
-import { isOk, repo } from './fhir';
+import { repo } from './fhir';
 import { generateAccessToken } from './oauth';
 
 export async function initTestAuth() {

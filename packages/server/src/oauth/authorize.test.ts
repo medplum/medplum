@@ -1,4 +1,4 @@
-import { ClientApplication } from '@medplum/core';
+import { ClientApplication, isOk } from '@medplum/core';
 import express from 'express';
 import setCookieParser from 'set-cookie-parser';
 import request from 'supertest';
@@ -6,7 +6,7 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
-import { isOk, repo } from '../fhir';
+import { repo } from '../fhir';
 import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
 
@@ -413,5 +413,5 @@ describe('OAuth Authorize', () => {
     expect(location2.searchParams.get('error')).toBeNull();
     expect(location2.searchParams.get('code')).not.toBeNull();
   });
-  
+
 });

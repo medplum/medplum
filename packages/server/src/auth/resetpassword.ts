@@ -1,9 +1,9 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { Bundle, BundleEntry, Operator, User } from '@medplum/core';
+import { allOk, assertOk, badRequest, Bundle, BundleEntry, Operator, User } from '@medplum/core';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
-import { allOk, assertOk, badRequest, invalidRequest, repo, sendOutcome } from '../fhir';
+import { invalidRequest, repo, sendOutcome } from '../fhir';
 
 export const resetPasswordValidators = [
   body('email').isEmail().withMessage('Valid email address is required')

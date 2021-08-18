@@ -1,8 +1,8 @@
+import { isOk } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { createBatch } from './batch';
-import { isOk } from './outcomes';
 import { repo } from './repo';
 
 beforeAll(async () => {

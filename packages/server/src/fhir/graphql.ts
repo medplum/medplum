@@ -1,4 +1,4 @@
-import { Filter, Operator, Resource } from '@medplum/core';
+import { Filter, isOk, Operator, Resource } from '@medplum/core';
 import {
   GraphQLBoolean,
   GraphQLFieldConfigArgumentMap,
@@ -13,7 +13,6 @@ import {
   GraphQLSchema,
   GraphQLString
 } from 'graphql';
-import { isOk } from './outcomes';
 import { repo } from './repo';
 import { definitions, resourceTypes } from './schema';
 import { getSearchParameters } from './search';

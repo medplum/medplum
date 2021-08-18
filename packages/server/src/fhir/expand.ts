@@ -1,8 +1,8 @@
-import { ValueSet } from '@medplum/core';
+import { badRequest, ValueSet } from '@medplum/core';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { getClient } from '../database';
-import { badRequest, sendOutcome } from './outcomes';
+import { sendOutcome } from './outcomes';
 import { Operator, SelectQuery } from './sql';
 
 // Implements FHIR "Value Set Expansion"

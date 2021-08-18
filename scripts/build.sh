@@ -26,5 +26,3 @@ npm run build --workspace=packages/server
 # Test
 npx jest --runInBand
 
-# Verify coverage output
-ls -la coverage

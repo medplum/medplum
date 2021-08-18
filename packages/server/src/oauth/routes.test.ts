@@ -1,11 +1,11 @@
-import { ClientApplication } from '@medplum/core';
+import { ClientApplication, isOk } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
-import { isOk, repo } from '../fhir';
+import { repo } from '../fhir';
 import { initKeys } from './keys';
 
 const app = express();
