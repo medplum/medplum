@@ -1,10 +1,11 @@
-import { ElementDefinition } from '@medplum/core';
+import { ElementDefinition, IndexedStructureDefinition } from '@medplum/core';
 import React, { useState } from 'react';
 import { Button } from './Button';
 import { ensureKeys, generateKey } from './FormUtils';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 interface ResourceArrayProps {
+  schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
   values: any[];
@@ -13,7 +14,6 @@ interface ResourceArrayProps {
 
 export function ResourceArrayInput(props: ResourceArrayProps) {
   const [values, setValues] = useState(ensureKeys(props.values));
-  const property = props.property;
   return (
     <div>
       {values.map(v => v.__removed && (
@@ -30,7 +30,8 @@ export function ResourceArrayInput(props: ResourceArrayProps) {
               <td>
                 <ResourcePropertyInput
                   arrayElement={true}
-                  property={property}
+                  schema={props.schema}
+                  property={props.property}
                   name={props.name + '.' + v.__key}
                   value={v} />
               </td>

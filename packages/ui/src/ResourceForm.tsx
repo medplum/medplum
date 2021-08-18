@@ -74,7 +74,7 @@ export function ResourceForm(props: any) {
         const property = entry[1];
         return (
           <FormSection key={key} title={getPropertyDisplayName(property)} description={property.definition}>
-            <ResourcePropertyInput property={property} name={key} value={(value as any)[key]} />
+            <ResourcePropertyInput schema={schema} property={property} name={key} value={(value as any)[key]} />
           </FormSection>
         );
       })}

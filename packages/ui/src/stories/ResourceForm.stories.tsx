@@ -55,3 +55,16 @@ export const User = () => (
     />
   </Document>
 );
+
+export const Questionnaire = () => (
+  <Document>
+    <ResourceForm
+      resource={{
+        resourceType: 'Questionnaire'
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);

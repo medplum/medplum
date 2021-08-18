@@ -1,4 +1,4 @@
-import { ElementDefinition } from '@medplum/core';
+import { ElementDefinition, IndexedStructureDefinition } from '@medplum/core';
 import React from 'react';
 import { AddressInput } from './AddressInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
@@ -16,6 +16,7 @@ import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
 
 export interface ResourcePropertyInputProps {
+  schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
   value: any;
@@ -32,7 +33,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     if (propertyType === 'Attachment') {
       return <AttachmentArrayInput name={name} values={value} />
     }
-    return <ResourceArrayInput property={property} name={name} values={value} />
+    return <ResourceArrayInput schema={props.schema} property={property} name={name} values={value} />
   }
 
   switch (propertyType) {
@@ -54,6 +55,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
       return (
         <input type="text" name={name} defaultValue={value}></input>
       );
+    case 'code':
     case 'enum':
       return (
         <EnumInput
@@ -90,6 +92,6 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     case 'Reference':
       return <ReferenceInput property={property} name={name} value={value} />;
     default:
-      return <BackboneElementInput property={property} name={name} value={value} />;
+      return <BackboneElementInput schema={props.schema} property={property} name={name} value={value} />;
   }
 }

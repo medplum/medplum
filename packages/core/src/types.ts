@@ -109,11 +109,11 @@ function indexProperty(output: IndexedStructureDefinition, element: ElementDefin
   typeSchema.properties[key] = element;
 }
 
-function buildTypeName(components: string[]): string {
+export function buildTypeName(components: string[]): string {
   return components.map(capitalize).join('_');
 }
 
-function capitalize(word: string): string {
+export function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.substr(1);
 }
 

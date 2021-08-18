@@ -321,7 +321,7 @@ export class MedplumClient extends EventTarget {
       return Promise.resolve(cached);
     }
     let typeDef: IndexedStructureDefinition;
-    return this.search<StructureDefinition>('StructureDefinition?name=' + encodeURIComponent(resourceType))
+    return this.search<StructureDefinition>('StructureDefinition?name:exact=' + encodeURIComponent(resourceType))
       .then((result: Bundle<StructureDefinition>) => {
         if (!result.entry?.length) {
           throw new Error('StructureDefinition not found');
