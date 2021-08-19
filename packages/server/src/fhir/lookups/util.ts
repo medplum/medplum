@@ -1,3 +1,4 @@
+import { stringify } from '@medplum/core';
 
 /**
  * Compares two arrays of objects.
@@ -11,7 +12,7 @@ export function compareArrays(incoming: any[], existing: any[]): boolean {
   }
 
   for (let i = 0; i < incoming.length; i++) {
-    if (JSON.stringify(incoming[i]) !== JSON.stringify(existing[i])) {
+    if (stringify(incoming[i]) !== stringify(existing[i])) {
       return false;
     }
   }

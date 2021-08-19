@@ -6,10 +6,8 @@ import { AttachmentDisplay } from './AttachmentDisplay';
 import { BackboneElementDisplay } from './BackboneElementDisplay';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { ContactPointDisplay } from './ContactPointDisplay';
-import { DeviceNameDisplay } from './DeviceNameDisplay';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { IdentifierDisplay } from './IdentifierDisplay';
-import { PatientLinkDisplay } from './PatientLinkDisplay';
 import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
@@ -61,14 +59,10 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
       return <CodeableConceptDisplay value={value} />;
     case 'ContactPoint':
       return <ContactPointDisplay value={value} />;
-    case 'Device_DeviceName':
-      return <DeviceNameDisplay value={value} />;
     case 'HumanName':
       return <HumanNameDisplay value={value} />;
     case 'Identifier':
       return <IdentifierDisplay value={value} />;
-    case 'Patient_Link':
-      return <PatientLinkDisplay value={value} />;
     case 'Reference':
       return <ReferenceDisplay value={value} />;
     default:

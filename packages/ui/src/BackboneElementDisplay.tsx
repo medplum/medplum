@@ -1,4 +1,4 @@
-import { ElementDefinition } from '@medplum/core';
+import { ElementDefinition, stringify } from '@medplum/core';
 import React from 'react';
 
 export interface BackboneElementDisplayProps {
@@ -8,6 +8,6 @@ export interface BackboneElementDisplayProps {
 
 export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
   return (
-    <div>{JSON.stringify(props.value)}</div>
+    <div>{stringify(props.value)}</div>
   );
 }

@@ -1,5 +1,5 @@
-import { IndexedStructureDefinition, Patient, Questionnaire } from '@medplum/core';
-import { ensureKeys, generateKey, keyReplacer, parseForm, parseResourceForm } from './FormUtils';
+import { IndexedStructureDefinition, Patient, Questionnaire, stringify } from '@medplum/core';
+import { ensureKeys, generateKey, parseForm, parseResourceForm } from './FormUtils';
 
 const patientStructureDefinition: IndexedStructureDefinition = {
   types: {
@@ -85,7 +85,7 @@ test('Ensure keys on null array', () => {
 });
 
 test('Key replacer removes __key', () => {
-  expect(JSON.stringify({ __key: 'foo' }, keyReplacer)).toEqual('{}');
+  expect(stringify({ __key: 'foo' })).toEqual('{}');
 });
 
 test('Parse form into key/value pairs', () => {

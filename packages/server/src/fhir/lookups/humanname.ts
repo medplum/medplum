@@ -1,4 +1,4 @@
-import { Filter, formatFamilyName, formatGivenName, formatHumanName, HumanName, Resource, SearchParameter, SortRule } from '@medplum/core';
+import { Filter, formatFamilyName, formatGivenName, formatHumanName, HumanName, Resource, SearchParameter, SortRule, stringify } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
@@ -73,7 +73,7 @@ export class HumanNameTable implements LookupTable {
           id: randomUUID(),
           resourceId,
           index: i,
-          content: JSON.stringify(name),
+          content: stringify(name),
           name: formatHumanName(name),
           given: formatGivenName(name),
           family: formatFamilyName(name)

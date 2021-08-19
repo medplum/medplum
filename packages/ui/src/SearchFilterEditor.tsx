@@ -1,4 +1,4 @@
-import { Filter, IndexedStructureDefinition, Operator, SearchParameter, SearchRequest } from '@medplum/core';
+import { Filter, IndexedStructureDefinition, Operator, SearchParameter, SearchRequest, stringify } from '@medplum/core';
 import React, { useState } from 'react';
 import { Dialog } from './Dialog';
 import { ReferenceInput } from './ReferenceInput';
@@ -217,7 +217,7 @@ export interface SearchFilterEditorProps {
 
 export function SearchFilterEditor(props: SearchFilterEditorProps) {
   const [state, setState] = useState({
-    search: JSON.parse(JSON.stringify(props.search)) as SearchRequest
+    search: JSON.parse(stringify(props.search)) as SearchRequest
   });
 
   function onAddFilter(filter: Filter) {
@@ -258,7 +258,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
               <FilterRow
                 schema={props.schema}
                 resourceType={props.search.resourceType}
-                key={JSON.stringify(filter)}
+                key={stringify(filter)}
                 filter={filter}
                 editing={false}
                 onAdd={f => onAddFilter(f)}

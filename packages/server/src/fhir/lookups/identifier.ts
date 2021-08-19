@@ -1,4 +1,4 @@
-import { Filter, Identifier, Resource, SearchParameter, SortRule } from '@medplum/core';
+import { Filter, Identifier, Resource, SearchParameter, SortRule, stringify } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
@@ -63,7 +63,7 @@ export class IdentifierTable implements LookupTable {
           id: randomUUID(),
           resourceId,
           index: i,
-          content: JSON.stringify(identifier),
+          content: stringify(identifier),
           system: identifier.system,
           value: identifier.value
         }).execute(client);

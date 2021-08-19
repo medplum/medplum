@@ -33,7 +33,6 @@ describe('OAuth2 Token', () => {
     } as ClientApplication);
 
     if (!isOk(outcome) || !result) {
-      console.log(JSON.stringify(outcome, undefined, 2));
       throw new Error('Error creating application');
     }
 

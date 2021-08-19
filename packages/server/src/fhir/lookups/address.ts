@@ -1,4 +1,4 @@
-import { Address, Filter, formatAddress, Resource, SearchParameter, SortRule } from '@medplum/core';
+import { Address, Filter, formatAddress, Resource, SearchParameter, SortRule, stringify } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
@@ -84,7 +84,7 @@ export class AddressTable implements LookupTable {
           id: randomUUID(),
           resourceId,
           index: i,
-          content: JSON.stringify(address),
+          content: stringify(address),
           address: formatAddress(address),
           city: address.city,
           country: address.country,

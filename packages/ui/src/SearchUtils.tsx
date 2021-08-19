@@ -1,4 +1,4 @@
-import { Filter, formatHumanName, getPropertyDisplayName, HumanName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { Filter, formatHumanName, getPropertyDisplayName, HumanName, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -477,7 +477,7 @@ export function renderValue(schema: IndexedStructureDefinition, resourceType: st
 
   const propertyType = schema.types[resourceType]?.properties?.[key]?.type?.[0]?.code;
   if (!propertyType) {
-    return JSON.stringify(value);
+    return stringify(value);
   }
 
   if (propertyType === 'string' || propertyType === 'date') {
@@ -493,5 +493,5 @@ export function renderValue(schema: IndexedStructureDefinition, resourceType: st
     }
   }
 
-  return JSON.stringify(value);
+  return stringify(value);
 }

@@ -121,6 +121,45 @@ export function getDateProperty(date: Date | string | undefined): Date | undefin
   return undefined;
 }
 
+/**
+ * FHIR JSON stringify.
+ * Removes properties with empty string values.
+ * Removes objects with zero properties.
+ * See: https://www.hl7.org/fhir/json.html
+ * @param value The input value.
+ * @returns The resulting JSON string.
+ */
+export function stringify(value: any): string {
+  return JSON.stringify(value, stringifyReplacer);
+}
+
+/**
+ * Evaluates JSON key/value pairs for FHIR JSON stringify.
+ * Removes properties with empty string values.
+ * Removes objects with zero properties.
+ * Replaces any key/value pair of key "__key" with value undefined.
+ * This function can be used as the 2nd argument to stringify to remove __key properties.
+ * We add __key properties to array elements to improve React render performance.
+ * @param {string} k Property key.
+ * @param {*} v Property value.
+ */
+function stringifyReplacer(k: string, v: any): any {
+  return (k === '__key' || isEmpty(v)) ? undefined : v;
+}
+
+/**
+ * Returns true if the value is empty (null, undefined, empty string, or empty object).
+ * @param v Any value.
+ * @returns True if the value is an empty string or an empty object.
+ */
+function isEmpty(v: any): boolean {
+  if (v === null || v === undefined) {
+    return true;
+  }
+  const t = typeof v;
+  return (t === 'string' && v === '') || (t === 'object' && Object.keys(v).length === 0);
+}
+
 // Precompute hex octets
 // See: https://stackoverflow.com/a/55200387
 const byteToHex: string[] = [];

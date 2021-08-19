@@ -1,4 +1,4 @@
-import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
+import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import validator from 'validator';
@@ -217,7 +217,7 @@ export class Repository {
       }
     };
 
-    if (JSON.stringify(existing) === JSON.stringify(updated)) {
+    if (stringify(existing) === stringify(updated)) {
       return [notModified, existing as T];
     }
 
@@ -461,7 +461,7 @@ export class Repository {
     const client = getClient();
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
-    const content = JSON.stringify(resource);
+    const content = stringify(resource);
 
     const columns: Record<string, any> = {
       id: resource.id,
@@ -542,7 +542,7 @@ export class Repository {
       return this.buildReferenceColumns(searchParam, value);
     }
 
-    return (typeof value === 'string') ? value : JSON.stringify(value);
+    return (typeof value === 'string') ? value : stringify(value);
   }
 
   /**

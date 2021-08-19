@@ -1,4 +1,4 @@
-import { Reference } from '@medplum/core';
+import { Reference, stringify } from '@medplum/core';
 import React from 'react';
 import { MedplumLink } from './MedplumLink';
 
@@ -21,6 +21,6 @@ export function ReferenceDisplay(props: ReferenceDisplayProps) {
     );
   }
   return (
-    <div>{JSON.stringify(props.value)}</div>
+    <div>{stringify(props.value)}</div>
   );
 }

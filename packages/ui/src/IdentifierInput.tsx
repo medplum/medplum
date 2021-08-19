@@ -1,4 +1,4 @@
-import { Identifier } from '@medplum/core';
+import { Identifier, stringify } from '@medplum/core';
 import React, { useState } from 'react';
 import { TextField } from './TextField';
 
@@ -14,7 +14,7 @@ export function IdentifierInput(props: IdentifierInputProps) {
       <tbody>
         <tr>
           <td>
-            <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
+            <input name={props.name} type="hidden" value={stringify(value)} readOnly={true} />
             <TextField
               value={value?.system}
               onChange={e => setValue({

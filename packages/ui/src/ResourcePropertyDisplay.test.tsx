@@ -1,4 +1,4 @@
-import { Address, CodeableConcept, ContactPoint, HumanName, Identifier } from '@medplum/core';
+import { Address, CodeableConcept, ContactPoint, HumanName, Identifier, stringify } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -58,7 +58,7 @@ describe('ResourcePropertyDisplay', () => {
       value={value}
     />);
 
-    expect(screen.getByText(JSON.stringify(value))).not.toBeUndefined();
+    expect(screen.getByText(stringify(value))).not.toBeUndefined();
   });
 
   test('Renders ContactPoint', () => {
