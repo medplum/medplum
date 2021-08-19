@@ -26,7 +26,7 @@ export function BackboneElementInput(props: BackboneElementInputProps) {
         const property = entry[1];
         return (
           <FormSection key={key} title={getPropertyDisplayName(property)} description={property.definition}>
-            <ResourcePropertyInput schema={props.schema} property={property} name={props.name + '.' + property.id} value={value[key]} />
+            <ResourcePropertyInput schema={props.schema} property={property} name={props.name + '.' + key} value={value[key]} />
           </FormSection>
         );
       })}

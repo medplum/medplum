@@ -24,7 +24,7 @@ export interface ResourceFormProps {
   onSubmit: (formData: any) => void;
 }
 
-export function ResourceForm(props: any) {
+export function ResourceForm(props: ResourceFormProps) {
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [value, setValue] = useState<Resource | undefined>(props.resource);
@@ -55,7 +55,7 @@ export function ResourceForm(props: any) {
   return (
     <form noValidate autoComplete="off" onSubmit={(e: React.FormEvent) => {
       e.preventDefault();
-      const formData = parseResourceForm(typeSchema, e.target as HTMLFormElement, value);
+      const formData = parseResourceForm(schema, value.resourceType, e.target as HTMLFormElement, value);
       if (props.onSubmit) {
         props.onSubmit(formData);
       }

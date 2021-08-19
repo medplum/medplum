@@ -1,4 +1,4 @@
-import { ElementDefinition, Resource, TypeSchema } from '@medplum/core';
+import { buildTypeName, ElementDefinition, IndexedStructureDefinition, Resource } from '@medplum/core';
 
 let nextKeyId = 1;
 
@@ -107,10 +107,15 @@ function parseSelectElement(result: Record<string, string>, el: HTMLSelectElemen
 
 /**
  * Parses an HTML form and returns the result as a JavaScript object.
+ * @param schema The schema / indexed structure definition.
+ * @param resourceType The base resource type.
  * @param form The HTML form element.
+ * @param initial
+ * @returns
  */
 export function parseResourceForm(
-  typeSchema: TypeSchema,
+  schema: IndexedStructureDefinition,
+  resourceType: string,
   form: HTMLFormElement,
   initial?: Resource): Resource {
 
@@ -120,10 +125,10 @@ export function parseResourceForm(
     const element = form.elements[i] as HTMLElement;
 
     if (element instanceof HTMLInputElement) {
-      parseResourceInputElement(typeSchema, result, element);
+      parseResourceInputElement(schema, resourceType, result, element);
 
     } else if (element instanceof HTMLSelectElement) {
-      parseResourceSelectElement(typeSchema, result, element);
+      parseResourceSelectElement(schema, resourceType, result, element);
     }
   }
 
@@ -134,12 +139,14 @@ export function parseResourceForm(
  * Parses an HTML input element.
  * Sets the name/value pair in the result,
  * but only if the element is enabled and checked.
- * @param typeSchema The resource type schema.
- * @param el The input element.
+ * @param schema The schema / indexed structure definition.
+ * @param resourceType The base resource type.
  * @param result The result builder.
+ * @param el The input element.
  */
 function parseResourceInputElement(
-  typeSchema: TypeSchema,
+  schema: IndexedStructureDefinition,
+  resourceType: string,
   result: Resource,
   el: HTMLInputElement): void {
 
@@ -153,17 +160,20 @@ function parseResourceInputElement(
     return;
   }
 
-  setValue(typeSchema, result, el.name, el.value);
+  setValue(schema, resourceType, result, el.name, el.value);
 }
 
 /**
  * Parses an HTML select element.
  * Sets the name/value pair if one is selected.
- * @param el The select element.
+ * @param schema The schema / indexed structure definition.
+ * @param resourceType The base resource type.
  * @param result The result builder.
+ * @param el The select element.
  */
 function parseResourceSelectElement(
-  typeSchema: TypeSchema,
+  schema: IndexedStructureDefinition,
+  resourceType: string,
   result: Resource,
   el: HTMLSelectElement): void {
 
@@ -171,37 +181,84 @@ function parseResourceSelectElement(
     return;
   }
 
-  setValue(typeSchema, result, el.name, el.value);
+  setValue(schema, resourceType, result, el.name, el.value);
 }
 
-function setValue(typeDef: TypeSchema, result: any, fullName: string, value: string) {
+/**
+ *
+ * @param schema The schema / indexed structure definition.
+ * @param resourceType The base resource type.
+ * @param result The result builder.
+ * @param fullName The input name.
+ * @param value The input value.
+ */
+function setValue(
+  schema: IndexedStructureDefinition,
+  resourceType: string,
+  result: any,
+  fullName: string,
+  value: string): void {
+
   if (!fullName) {
     return;
   }
 
   const nameParts = fullName.split('.');
-  const name = nameParts[0];
+  let typeName = resourceType;
+  let base = result;
+  let i = 0;
 
-  const fieldDef = typeDef.properties[name];
-  if (!fieldDef) {
-    return;
-  }
-
-  const valueObj = isStringProperty(fieldDef) ? value : parseJson(value);
-
-  if (fieldDef.max === '*') {
-    let array = result[name];
-    if (!array) {
-      array = result[name] = [];
+  while (i < nameParts.length) {
+    const typeDef = schema.types[typeName];
+    if (!typeDef) {
+      return;
     }
-    const element = getEntryByKey(array, nameParts[1]);
-    if (valueObj.__removed) {
-      (array as any[]).splice(array.indexOf(element), 1);
+
+    const propertyName = nameParts[i];
+    const property = typeDef.properties[propertyName];
+    if (!property) {
+      return;
+    }
+
+    const valueObj = isStringProperty(property) ? value : parseJson(value);
+    if (property.max === '*') {
+      // This is an array property.
+      // Use the next name part to find the correct element in the array.
+      let array = base[propertyName];
+      if (!array) {
+        array = base[propertyName] = [];
+      }
+      const arrayKey = nameParts[++i];
+      const element = getEntryByKey(array, arrayKey);
+      if (i === nameParts.length - 1) {
+        // This is the last name part, so set the value.
+        if (valueObj?.__removed) {
+          (array as any[]).splice(array.indexOf(element), 1);
+        } else {
+          Object.assign(element, valueObj);
+        }
+      } else {
+        // This is not the last name part, so use the array element as the next base.
+        base = element;
+      }
+
     } else {
-      Object.assign(element, valueObj);
+      // This is not an array property.
+      if (i === nameParts.length - 1) {
+        // This is the last name part, so set the value.
+        base[propertyName] = valueObj;
+      } else {
+        // This is not the last name part, so build the nested object.
+        let obj = base[propertyName];
+        if (!obj) {
+          obj = base[propertyName] = {};
+        }
+        base = obj;
+      }
     }
-  } else {
-    result[name] = valueObj;
+
+    typeName = buildTypeName([typeName, propertyName]);
+    i++;
   }
 }
 

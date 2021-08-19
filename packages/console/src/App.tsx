@@ -45,6 +45,7 @@ export function App() {
                 { label: 'Observation', href: '/Observation' },
                 { label: 'Organization', href: '/Organization' },
                 { label: 'Encounter', href: '/Encounter' },
+                { label: 'Questionnaire', href: '/Questionnaire' },
                 { label: 'StructureDefinition', href: '/StructureDefinition' },
               ]
             },
