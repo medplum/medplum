@@ -7,11 +7,11 @@ export interface BackboneElementInputProps {
   schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
-  value?: any;
+  defaultValue?: any;
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps) {
-  const [value, setValue] = useState(props.value);
+  const [value, setValue] = useState(props.defaultValue);
 
   const typeName = buildTypeName(props.property.path?.split('.') as string[]);
   const typeSchema = props.schema.types[typeName];

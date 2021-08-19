@@ -8,12 +8,12 @@ interface ResourceArrayProps {
   schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
-  values: any[];
+  defaultValue: any[];
   arrayElement?: boolean;
 }
 
 export function ResourceArrayInput(props: ResourceArrayProps) {
-  const [values, setValues] = useState(ensureKeys(props.values));
+  const [values, setValues] = useState(ensureKeys(props.defaultValue));
   return (
     <div>
       {values.map(v => v.__removed && (

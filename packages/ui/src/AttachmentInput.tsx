@@ -4,7 +4,7 @@ import { useMedplum } from './MedplumProvider';
 
 export interface AttachmentInputProps {
   name: string;
-  value?: Attachment;
+  defaultValue?: Attachment;
 }
 
 export function AttachmentInput(props: AttachmentInputProps) {
@@ -12,19 +12,19 @@ export function AttachmentInput(props: AttachmentInputProps) {
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!props.value?.contentType || !props.value.contentType.startsWith('image/')) {
+    if (!props.defaultValue?.contentType || !props.defaultValue.contentType.startsWith('image/')) {
       setImageUrl(undefined);
       return;
     }
 
-    if (props.value?.url) {
-      medplum.readBlob(props.value?.url)
+    if (props.defaultValue?.url) {
+      medplum.readBlob(props.defaultValue?.url)
         .then(imageBlob => setImageUrl(URL.createObjectURL(imageBlob)));
     }
 
-  }, [props.value?.url]);
+  }, [props.defaultValue?.url]);
 
-  const value = props.value;
+  const value = props.defaultValue;
   return (
     <div data-testid="attachment-input">
       <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />

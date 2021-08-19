@@ -4,11 +4,11 @@ import { TextField } from './TextField';
 
 export interface IdentifierInputProps {
   name: string;
-  value?: Identifier;
+  defaultValue?: Identifier;
 }
 
 export function IdentifierInput(props: IdentifierInputProps) {
-  const [value, setValue] = useState(props.value);
+  const [value, setValue] = useState(props.defaultValue);
   return (
     <table>
       <tbody>

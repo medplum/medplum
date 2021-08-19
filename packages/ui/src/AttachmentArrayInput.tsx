@@ -6,12 +6,12 @@ import { UploadButton } from './UploadButton';
 
 export interface AttachmentArrayInputProps {
   name: string;
-  values?: Attachment[];
+  defaultValue?: Attachment[];
   arrayElement?: boolean;
 }
 
 export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
-  const [values, setValues] = useState(ensureKeys(props.values));
+  const [values, setValues] = useState(ensureKeys(props.defaultValue));
 
   function addAttachment(attachment: Attachment) {
     const copy = values.slice();
@@ -35,7 +35,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
               <td>
                 <AttachmentInput
                   name={props.name + '.' + v.__key}
-                  value={v} />
+                  defaultValue={v} />
               </td>
               <td>
                 <button

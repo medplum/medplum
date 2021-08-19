@@ -8,13 +8,13 @@ import { ResourceName } from './ResourceName';
 export interface ReferenceInputProps {
   property?: ElementDefinition;
   name: string;
-  value?: Reference;
+  defaultValue?: Reference;
 }
 
 export function ReferenceInput(props: ReferenceInputProps) {
   const medplum = useMedplum();
-  const [initialResourceType] = (props.value?.reference || '/').split('/');
-  const [value, setValue] = useState<Reference | undefined>(props.value);
+  const [initialResourceType] = (props.defaultValue?.reference || '/').split('/');
+  const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [resourceType, setResourceType] = useState<string | undefined>(initialResourceType);
   const [targetTypes, setTargetTypes] = useState<string[] | undefined>();
 
@@ -85,7 +85,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
                 getIcon={(item: Reference | Resource) => <Avatar value={item} />}
                 getDisplay={(item: Reference | Resource) => <ResourceName value={item} />}
                 name={props.name + '-id'}
-                defaultValue={props.value ? [props.value] : undefined}
+                defaultValue={props.defaultValue ? [props.defaultValue] : undefined}
                 onChange={(items: (Reference | Resource)[]) => {
                   if (items.length > 0) {
                     if ('resourceType' in items[0]) {
