@@ -59,11 +59,6 @@ test('ResourceName renders system', () => {
   expect(utils.getByText('System')).not.toBeUndefined();
 });
 
-test('ResourceName renders', () => {
-  const utils = setup({ alt: 'Alice Smith' });
-  expect(utils.getByText('Alice Smith')).not.toBeUndefined();
-});
-
 test('ResourceName renders resource directly', async () => {
   const utils = setup({
     value: patient

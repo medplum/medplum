@@ -119,7 +119,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
       return (
-        <input type="text" name={name} defaultValue={value}></input>
+        <input type="number" name={name} defaultValue={value}></input>
       );
     case PropertyType.code:
       return (

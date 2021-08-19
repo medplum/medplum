@@ -75,10 +75,10 @@ export function ReferenceInput(props: ReferenceInputProps) {
                 }}
                 getId={(item: Reference | Resource) => {
                   if ('resourceType' in item) {
-                    return (item as Resource).id as string;
+                    return item.id as string;
                   }
                   if ('reference' in item) {
-                    return (item as Reference).reference as string;
+                    return item.reference as string;
                   }
                   return item.toString();
                 }}

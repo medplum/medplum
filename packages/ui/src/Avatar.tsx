@@ -2,6 +2,7 @@ import { getDisplayString, getImageSrc, Reference, Resource } from '@medplum/cor
 import React, { useEffect, useState } from 'react';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
+import { useResource } from './useResource';
 import './Avatar.css';
 
 export interface AvatarProps {
@@ -15,39 +16,21 @@ export interface AvatarProps {
 
 export const Avatar = (props: AvatarProps) => {
   const medplum = useMedplum();
+  const resource = useResource(props.value);
   const [imageUrl, setImageUrl] = useState<string | undefined>(props.src);
-  const [text, setText] = useState<string | undefined>(props.alt || '');
-  const [linkUrl, setLinkUrl] = useState<string | undefined>();
-
-  function setResource(resource: Resource) {
-    setText(getDisplayString(resource));
-
-    const attachmentUrl = getImageSrc(resource);
-    if (attachmentUrl) {
-      medplum.readCachedBlobAsObjectUrl(attachmentUrl).then(url => setImageUrl(url));
-    }
-  }
 
   useEffect(() => {
-    const value = props.value;
-    if (value) {
-      if ('resourceType' in value) {
-        const resource = value;
-        setResource(resource);
-        setLinkUrl(`/${resource.resourceType}/${resource.id}`);
-      } else if ('reference' in value) {
-        const reference = value;
-        if (reference.reference === 'system') {
-          setText('System');
-        } else {
-          setLinkUrl(`/${reference.reference}`)
-          medplum.readCachedReference(reference).then(setResource);
-        }
+    if (resource) {
+      const attachmentUrl = getImageSrc(resource);
+      if (attachmentUrl) {
+        medplum.readCachedBlobAsObjectUrl(attachmentUrl).then(url => setImageUrl(url));
       }
     }
-  }, [props.value]);
+
+  }, [resource]);
 
   const className = props.size ? 'medplum-avatar ' + props.size : 'medplum-avatar';
+  const text = resource ? getDisplayString(resource) : props.alt ?? '';
   const initials = text && getInitials(text);
   const innerContent = imageUrl ? <img src={imageUrl} alt={text} /> : initials;
   return (
@@ -56,8 +39,8 @@ export const Avatar = (props: AvatarProps) => {
       style={{ backgroundColor: props.color }}
       data-testid="avatar"
     >
-      {props.link && linkUrl ? (
-        <MedplumLink to={linkUrl}>
+      {props.link && resource ? (
+        <MedplumLink to={`/${resource.resourceType}/${resource.id}`}>
           {innerContent}
         </MedplumLink>
       ) : (

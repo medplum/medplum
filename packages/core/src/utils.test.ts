@@ -34,6 +34,9 @@ test('getDisplayString', () => {
   expect(getDisplayString({ resourceType: 'Observation', id: '123' })).toEqual('Observation/123');
   expect(getDisplayString({ resourceType: 'ClientApplication', id: '123' })).toEqual('ClientApplication/123');
   expect(getDisplayString({ resourceType: 'ClientApplication', id: '123', name: 'foo' })).toEqual('foo');
+  expect(getDisplayString({ resourceType: 'Device', deviceName: [{ name: 'Foo' }] })).toEqual('Foo');
+  expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [{}] })).toEqual('Device/123');
+  expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toEqual('Device/123');
 });
 
 test('getImageSrc', () => {

@@ -1,4 +1,4 @@
-import { Patient, Practitioner, Reference, RelatedPerson, Resource } from './fhir';
+import { Device, Patient, Practitioner, Reference, RelatedPerson, Resource } from './fhir';
 import { formatHumanName } from './format';
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
@@ -41,9 +41,15 @@ export function isProfileResource(resource: Resource): boolean {
  */
 export function getDisplayString(resource: Resource): string {
   if (isProfileResource(resource)) {
-    const names = (resource as ProfileResource).name;
-    if (names && names.length > 0) {
-      return formatHumanName(names[0]);
+    const profileName = getProfileResourceDisplayString(resource as ProfileResource);
+    if (profileName) {
+      return profileName;
+    }
+  }
+  if (resource.resourceType === 'Device') {
+    const deviceName = getDeviceDisplayString(resource);
+    if (deviceName) {
+      return deviceName;
     }
   }
   const simpleName = (resource as any).name;
@@ -51,6 +57,32 @@ export function getDisplayString(resource: Resource): string {
     return simpleName;
   }
   return getReferenceString(resource);
+}
+
+/**
+ * Returns a display string for a profile resource if one is found.
+ * @param resource The profile resource.
+ * @returns The display name if one is found.
+ */
+function getProfileResourceDisplayString(resource: ProfileResource): string | undefined {
+  const names = resource.name;
+  if (names && names.length > 0) {
+    return formatHumanName(names[0]);
+  }
+  return undefined;
+}
+
+/**
+ * Returns a display string for a device resource if one is found.
+ * @param device The device resource.
+ * @returns The display name if one is found.
+ */
+function getDeviceDisplayString(device: Device): string | undefined {
+  const names = device.deviceName;
+  if (names && names.length > 0) {
+    return names[0].name;
+  }
+  return undefined;
 }
 
 /**
