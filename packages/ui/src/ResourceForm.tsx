@@ -28,11 +28,13 @@ export function ResourceForm(props: ResourceFormProps) {
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [value, setValue] = useState<Resource | undefined>(props.resource);
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
     const resourceType = props.resourceType || props.resource?.resourceType;
     if (!resourceType) {
-      throw new Error('Missing resourceType');
+      setError('Missing resourceType');
+      return;
     }
 
     medplum.getTypeDefinition(resourceType).then(typeSchema => setSchema(typeSchema));
@@ -43,13 +45,23 @@ export function ResourceForm(props: ResourceFormProps) {
 
   }, [props.resource, props.resourceType, props.id]);
 
+  if (error) {
+    return (
+      <div>{error}</div>
+    );
+  }
+
   if (!schema || !value) {
-    return <div>Loading...</div>
+    return (
+      <div>Loading...</div>
+    );
   }
 
   const typeSchema = schema.types[value.resourceType];
   if (!typeSchema) {
-    return <div>Schema not found</div>
+    return (
+      <div>Schema not found</div>
+    );
   }
 
   return (
