@@ -16,7 +16,7 @@ export interface ResourcePropertyInputProps {
   schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
-  value: any;
+  defaultValue?: any;
   arrayElement?: boolean;
 }
 
@@ -24,7 +24,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
   const property = props.property;
   const propertyType = property.type?.[0]?.code as PropertyType;
   const name = props.name;
-  const value = props.value;
+  const value = props.defaultValue;
 
   if (property.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {

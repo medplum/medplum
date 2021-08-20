@@ -33,7 +33,7 @@ export function ResourceArrayInput(props: ResourceArrayProps) {
                   schema={props.schema}
                   property={props.property}
                   name={props.name + '.' + v.__key}
-                  value={v} />
+                  defaultValue={v} />
               </td>
               <td>
                 <Button
