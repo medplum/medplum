@@ -1,5 +1,5 @@
 import { Bundle, BundleEntry, createReference, ElementDefinition, Operator, Reference, Resource } from '@medplum/core';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Autocomplete } from './Autocomplete';
 import { Avatar } from './Avatar';
 import { useMedplum } from './MedplumProvider';
@@ -12,25 +12,14 @@ export interface ReferenceInputProps {
 }
 
 export function ReferenceInput(props: ReferenceInputProps) {
+  const targetTypes = getTargetTypes(props.property);
+  const initialResourceType = getInitialResourceType(props.defaultValue, targetTypes);
   const medplum = useMedplum();
-  const [initialResourceType] = (props.defaultValue?.reference || '/').split('/');
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [resourceType, setResourceType] = useState<string | undefined>(initialResourceType);
-  const [targetTypes, setTargetTypes] = useState<string[] | undefined>();
 
   const valueRef = useRef<Reference>();
   valueRef.current = value;
-
-  useEffect(() => {
-    const targetProfile = props.property?.type?.[0]?.targetProfile;
-    if (targetProfile) {
-      const typeNames = targetProfile.map(p => p.split('/').pop() as string);
-      setTargetTypes(typeNames);
-      setResourceType(typeNames[0]);
-    } else {
-      setTargetTypes(undefined);
-    }
-  }, [props.property]);
 
   return (
     <table style={{ tableLayout: 'fixed' }}>
@@ -102,4 +91,21 @@ export function ReferenceInput(props: ReferenceInputProps) {
       </tbody>
     </table>
   );
+}
+
+function getTargetTypes(property?: ElementDefinition): string[] | undefined {
+  return property?.type?.[0]?.targetProfile?.map(p => p.split('/').pop() as string);
+}
+
+function getInitialResourceType(defaultValue: Reference | undefined, targetTypes: string[] | undefined): string | undefined {
+  const defaultValueResourceType = defaultValue?.reference?.split('/')[0]
+  if (defaultValueResourceType) {
+    return defaultValueResourceType;
+  }
+
+  if (targetTypes && targetTypes.length > 0) {
+    return targetTypes[0];
+  }
+
+  return undefined;
 }
