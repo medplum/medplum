@@ -1,4 +1,4 @@
-import { Filter, isOk, Operator, Reference, Resource } from '@medplum/core';
+import { assertOk, Filter, Operator, Reference, Resource } from '@medplum/core';
 import {
   GraphQLBoolean,
   GraphQLFieldConfig,
@@ -126,7 +126,7 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
     });
   }
 
-  const schema = definitions[resourceType] as JSONSchema4;
+  const schema = definitions[resourceType];
   const properties = schema.properties as { [k: string]: JSONSchema4 };
 
   const fields: GraphQLFieldConfigMap<any, any> = {};
@@ -215,7 +215,7 @@ function getRefString(property: any): string | undefined {
 async function resolveBySearch(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
   const resourceType = fieldName.substr(0, fieldName.length - 4);
-  const [searchOutcome, searchResult] = await repo.search({
+  const [outcome, bundle] = await repo.search({
     resourceType,
     filters: Object.entries(args).map(e => ({
       code: e[0],
@@ -223,10 +223,8 @@ async function resolveBySearch(source: any, args: any, ctx: any, info: GraphQLRe
       value: e[1] as string
     } as Filter))
   });
-  if (!isOk(searchOutcome)) {
-    throw new Error(searchOutcome.issue?.[0].details?.text);
-  }
-  return searchResult?.entry?.map(e => e.resource as Resource);
+  assertOk(outcome);
+  return bundle?.entry?.map(e => e.resource as Resource);
 }
 
 /**
@@ -241,11 +239,9 @@ async function resolveBySearch(source: any, args: any, ctx: any, info: GraphQLRe
  * @implements {GraphQLFieldResolver}
  */
 async function resolveById(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
-  const [readOutcome, readResult] = await repo.readResource(info.fieldName, args.id);
-  if (!isOk(readOutcome)) {
-    throw new Error(readOutcome.issue?.[0].details?.text);
-  }
-  return readResult;
+  const [outcome, resource] = await repo.readResource(info.fieldName, args.id);
+  assertOk(outcome);
+  return resource;
 }
 
 /**
@@ -259,11 +255,9 @@ async function resolveById(source: any, args: any, ctx: any, info: GraphQLResolv
  * @implements {GraphQLFieldResolver}
  */
 async function resolveByReference(source: any): Promise<Resource | undefined> {
-  const [readOutcome, readResult] = await repo.readReference(source as Reference);
-  if (!isOk(readOutcome)) {
-    throw new Error(readOutcome.issue?.[0].details?.text);
-  }
-  return readResult;
+  const [outcome, resource] = await repo.readReference(source as Reference);
+  assertOk(outcome);
+  return resource;
 }
 
 /**
