@@ -1,6 +1,7 @@
-import { Filter, isOk, Operator, Resource } from '@medplum/core';
+import { Filter, isOk, Operator, Reference, Resource } from '@medplum/core';
 import {
   GraphQLBoolean,
+  GraphQLFieldConfig,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
   GraphQLFloat,
@@ -11,7 +12,8 @@ import {
   GraphQLOutputType,
   GraphQLResolveInfo,
   GraphQLSchema,
-  GraphQLString
+  GraphQLString,
+  GraphQLUnionType
 } from 'graphql';
 import { repo } from './repo';
 import { definitions, resourceTypes } from './schema';
@@ -66,7 +68,7 @@ function buildRootSchema(): GraphQLSchema {
           description: resourceType + ' ID'
         }
       },
-      resolve: dataLoader
+      resolve: resolveById
     };
 
     // Search resource by search parameters
@@ -83,7 +85,7 @@ function buildRootSchema(): GraphQLSchema {
     fields[resourceType + 'List'] = {
       type: new GraphQLList(graphQLType),
       args,
-      resolve: dataLoader
+      resolve: resolveBySearch
     };
   }
 
@@ -99,8 +101,7 @@ function getGraphQLType(resourceType: string): GraphQLOutputType | undefined {
   if (resourceType === 'Extension' ||
     resourceType === 'ExampleScenario' ||
     resourceType === 'GraphDefinition' ||
-    resourceType === 'QuestionnaireResponse' ||
-    resourceType === 'ResourceList') {
+    resourceType === 'QuestionnaireResponse') {
     return undefined;
   }
 
@@ -111,10 +112,19 @@ function getGraphQLType(resourceType: string): GraphQLOutputType | undefined {
       typeCache[resourceType] = result;
     }
   }
+
   return result;
 }
 
 function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
+  if (resourceType === 'ResourceList') {
+    return new GraphQLUnionType({
+      name: 'ResourceList',
+      types: () => resourceTypes.map(getGraphQLType).filter(t => !!t) as GraphQLObjectType[],
+      resolveType: resolveTypeByReference
+    });
+  }
+
   const schema = definitions[resourceType];
   if (!schema) {
     return undefined;
@@ -132,7 +142,6 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
       propertyName === 'contained' ||
       propertyName === 'extension' ||
       propertyName === 'modifierExtension' ||
-      propertyName === 'resource' ||
       (resourceType === 'Reference' && propertyName === 'identifier') ||
       (resourceType === 'Bundle_Response' && propertyName === 'outcome')) {
       continue;
@@ -143,10 +152,16 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
       continue;
     }
 
-    fields[propertyName] = {
+    const fieldConfig: GraphQLFieldConfig<any, any> = {
       type: propertyType,
       description: (property as any).description
     };
+
+    if (resourceType === 'Reference' && propertyName === 'resource') {
+      fieldConfig.resolve = resolveByReference;
+    }
+
+    fields[propertyName] = fieldConfig;
   }
 
   return new GraphQLObjectType({
@@ -193,42 +208,87 @@ function getRefString(property: any): string | undefined {
 }
 
 /**
- * GraphQL data loader.
+ * GraphQL data loader for search requests.
+ * The field name should always end with "List" (i.e., "Patient" search uses "PatientList").
+ * The search args should be FHIR search parameters.
+ * @param source The source/root.  This should always be null for our top level readers.
+ * @param args The GraphQL search arguments.
+ * @param ctx The GraphQL context.  This is the Node IncomingMessage.
+ * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
+ * @returns Promise to read the resoures for the query.
+ * @implements {GraphQLFieldResolver}
+ */
+async function resolveBySearch(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource[] | undefined> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substr(0, fieldName.length - 4);
+  const [searchOutcome, searchResult] = await repo.search({
+    resourceType,
+    filters: Object.entries(args).map(e => ({
+      code: e[0],
+      operator: Operator.EQUALS,
+      value: e[1] as string
+    } as Filter))
+  });
+  if (!isOk(searchOutcome)) {
+    throw new Error(searchOutcome.issue?.[0].details?.text);
+  }
+  return searchResult?.entry?.map(e => e.resource as Resource);
+}
+
+/**
+ * GraphQL data loader for ID requests.
+ * The field name should always by the resource type.
+ * There should always be exactly one argument "id".
+ * @param source The source/root.  This should always be null for our top level readers.
+ * @param args The GraphQL search arguments.
+ * @param ctx The GraphQL context.  This is the Node IncomingMessage.
+ * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
+ * @returns Promise to read the resoure for the query.
+ * @implements {GraphQLFieldResolver}
+ */
+async function resolveById(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
+  const [readOutcome, readResult] = await repo.readResource(info.fieldName, args.id);
+  if (!isOk(readOutcome)) {
+    throw new Error(readOutcome.issue?.[0].details?.text);
+  }
+  return readResult;
+}
+
+/**
+ * GraphQL data loader for Reference requests.
+ * This is a special data loader for following Reference objects.
  * @param source The source/root.  This should always be null for our top level readers.
  * @param args The GraphQL search arguments.
  * @param ctx The GraphQL context.  This is the Node IncomingMessage.
  * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoure(s) for the query.
+ * @implements {GraphQLFieldResolver}
  */
-async function dataLoader(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource[] | Resource | undefined> {
-  const fieldName = info.fieldName;
+async function resolveByReference(source: any): Promise<Resource | undefined> {
+  const [readOutcome, readResult] = await repo.readReference(source as Reference);
+  if (!isOk(readOutcome)) {
+    throw new Error(readOutcome.issue?.[0].details?.text);
+  }
+  return readResult;
+}
 
-  // Search by search parameters
-  if (fieldName.endsWith('List')) {
-    const resourceType = fieldName.substr(0, fieldName.length - 4);
-    const [searchOutcome, searchResult] = await repo.search({
-      resourceType,
-      filters: Object.entries(args).map(e => ({
-        code: e[0],
-        operator: Operator.EQUALS,
-        value: e[1] as string
-      } as Filter))
-    });
-    if (!isOk(searchOutcome)) {
-      throw new Error(searchOutcome.issue?.[0].details?.text);
-    }
-    return searchResult?.entry?.map(e => e.resource as Resource);
+/**
+ * GraphQL type resolver for resources.
+ * When loading a resource via reference, GraphQL needs to know the type of the resource.
+ * @param resource The loaded resource.
+ * @returns The GraphQL type of the resource.
+ * @implements {GraphQLTypeResolver}
+ */
+function resolveTypeByReference(resource: Resource | undefined): GraphQLObjectType | undefined {
+  const resourceType = resource?.resourceType;
+  if (!resourceType) {
+    return undefined;
   }
 
-  // Direct read by ID
-  if (args.id) {
-    const [readOutcome, readResult] = await repo.readResource(fieldName, args.id);
-    if (!isOk(readOutcome)) {
-      throw new Error(readOutcome.issue?.[0].details?.text);
-    }
-    return readResult;
+  const graphQLType = getGraphQLType(resourceType);
+  if (!graphQLType) {
+    return undefined;
   }
 
-  // Unknown search
-  return undefined;
+  return graphQLType as GraphQLObjectType;
 }
