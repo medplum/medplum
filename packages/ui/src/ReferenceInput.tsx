@@ -9,6 +9,7 @@ export interface ReferenceInputProps {
   property?: ElementDefinition;
   name: string;
   defaultValue?: Reference;
+  onChange?: (value: Reference) => void;
 }
 
 export function ReferenceInput(props: ReferenceInputProps) {
@@ -23,6 +24,13 @@ export function ReferenceInput(props: ReferenceInputProps) {
 
   const resourceTypeRef = useRef<string>();
   resourceTypeRef.current = resourceType;
+
+  function setValueHelper(newValue: Reference): void {
+    setValue(newValue);
+    if (props.onChange) {
+      props.onChange(newValue);
+    }
+  }
 
   return (
     <table style={{ tableLayout: 'fixed' }}>
@@ -81,9 +89,9 @@ export function ReferenceInput(props: ReferenceInputProps) {
                 onChange={(items: (Reference | Resource)[]) => {
                   if (items.length > 0) {
                     if ('resourceType' in items[0]) {
-                      setValue(createReference(items[0]));
+                      setValueHelper(createReference(items[0]));
                     } else if ('reference' in items[0]) {
-                      setValue(items[0]);
+                      setValueHelper(items[0]);
                     }
                   }
                 }}

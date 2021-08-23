@@ -140,7 +140,7 @@ function FilterRow(props: FilterRowProps) {
 
       case 'reference':
         return (
-          <ReferenceInput name="reference" />
+          <ReferenceInput name="reference" onChange={e => setValue(e?.reference || '')} />
         );
 
       case 'bool':
