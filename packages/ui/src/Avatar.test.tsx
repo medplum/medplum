@@ -60,7 +60,7 @@ const setup = (args: AvatarProps) => {
 };
 
 test('Avatar renders system', () => {
-  const utils = setup({ reference: { reference: 'system' } });
+  const utils = setup({ value: { reference: 'system' } });
   expect(utils.getByText('S')).not.toBeUndefined();
 });
 
@@ -71,7 +71,7 @@ test('Avatar renders initials', () => {
 
 test('Avatar renders resource directly', async () => {
   const utils = setup({
-    resource: patient
+    value: patient
   });
 
   await waitFor(() => utils.getByTestId('avatar'));
@@ -81,7 +81,7 @@ test('Avatar renders resource directly', async () => {
 
 test('Avatar renders resource directly as link', async () => {
   const utils = setup({
-    resource: patient,
+    value: patient,
     link: true
   });
 
@@ -92,7 +92,7 @@ test('Avatar renders resource directly as link', async () => {
 
 test('Avatar renders after loading the resource', async () => {
   const utils = setup({
-    reference: {
+    value: {
       reference: 'Patient/' + patient.id
     }
   });

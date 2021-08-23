@@ -1,5 +1,5 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { assertOk, Binary } from '@medplum/core';
+import { assertOk, Binary, stringify } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { mkdirSync, writeFileSync } from 'fs';
 import { IncomingMessage } from 'http';
@@ -114,7 +114,7 @@ class S3Storage implements BinaryStorage {
     if (req.body instanceof Buffer) {
       body = req.body;
     } else if (req.is('application/json') || req.is('application/fhir+json')) {
-      body = JSON.stringify(req.body);
+      body = stringify(req.body);
     } else if (req.body) {
       body = req.body.toString();
     }

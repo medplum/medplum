@@ -159,9 +159,17 @@ export abstract class BaseQuery {
   }
 
   protected buildSimpleCondition(sql: SqlBuilder, condition: Condition): void {
-    sql.appendColumn(condition.column);
-    sql.append(condition.operator);
-    sql.param(condition.parameter);
+    if (condition.operator === Operator.LIKE || condition.operator === Operator.NOT_LIKE) {
+      sql.append('LOWER(');
+      sql.appendColumn(condition.column);
+      sql.append(')');
+      sql.append(condition.operator);
+      sql.param((condition.parameter as string).toLowerCase());
+    } else {
+      sql.appendColumn(condition.column);
+      sql.append(condition.operator);
+      sql.param(condition.parameter);
+    }
   }
 }
 

@@ -10,11 +10,11 @@ function getCoding(codeableConcept: any) {
 
 export interface CodeableConceptInputProps {
   name: string;
-  value?: CodeableConcept;
+  defaultValue?: CodeableConcept;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps) {
-  const [value, setValue] = useState(props.value);
+  const [value, setValue] = useState(props.defaultValue);
   return (
     <table>
       <tbody>

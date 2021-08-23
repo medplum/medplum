@@ -24,15 +24,17 @@ export interface ResourceFormProps {
   onSubmit: (formData: any) => void;
 }
 
-export function ResourceForm(props: any) {
+export function ResourceForm(props: ResourceFormProps) {
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [value, setValue] = useState<Resource | undefined>(props.resource);
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
     const resourceType = props.resourceType || props.resource?.resourceType;
     if (!resourceType) {
-      throw new Error('Missing resourceType');
+      setError('Missing resourceType');
+      return;
     }
 
     medplum.getTypeDefinition(resourceType).then(typeSchema => setSchema(typeSchema));
@@ -43,19 +45,29 @@ export function ResourceForm(props: any) {
 
   }, [props.resource, props.resourceType, props.id]);
 
+  if (error) {
+    return (
+      <div>{error}</div>
+    );
+  }
+
   if (!schema || !value) {
-    return <div>Loading...</div>
+    return (
+      <div>Loading...</div>
+    );
   }
 
   const typeSchema = schema.types[value.resourceType];
   if (!typeSchema) {
-    return <div>Schema not found</div>
+    return (
+      <div>Schema not found</div>
+    );
   }
 
   return (
     <form noValidate autoComplete="off" onSubmit={(e: React.FormEvent) => {
       e.preventDefault();
-      const formData = parseResourceForm(typeSchema, e.target as HTMLFormElement, value);
+      const formData = parseResourceForm(schema, value.resourceType, e.target as HTMLFormElement, value);
       if (props.onSubmit) {
         props.onSubmit(formData);
       }
@@ -74,7 +86,7 @@ export function ResourceForm(props: any) {
         const property = entry[1];
         return (
           <FormSection key={key} title={getPropertyDisplayName(property)} description={property.definition}>
-            <ResourcePropertyInput property={property} name={key} value={(value as any)[key]} />
+            <ResourcePropertyInput schema={schema} property={property} name={key} defaultValue={(value as any)[key]} />
           </FormSection>
         );
       })}

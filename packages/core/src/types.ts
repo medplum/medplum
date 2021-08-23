@@ -1,6 +1,76 @@
 import { ElementDefinition, SearchParameter, StructureDefinition } from './fhir';
 
 /**
+ * List of property types.
+ * http://www.hl7.org/fhir/valueset-defined-types.html
+ * The list here includes additions found from StructureDefinition resources.
+ */
+export enum PropertyType {
+  Address = 'Address',
+  Age = 'Age',
+  Annotation = 'Annotation',
+  Attachment = 'Attachment',
+  BackboneElement = 'BackboneElement',
+  CodeableConcept = 'CodeableConcept',
+  Coding = 'Coding',
+  ContactDetail = 'ContactDetail',
+  ContactPoint = 'ContactPoint',
+  Contributor = 'Contributor',
+  Count = 'Count',
+  DataRequirement = 'DataRequirement',
+  Distance = 'Distance',
+  Dosage = 'Dosage',
+  Duration = 'Duration',
+  ElementDefinition = 'ElementDefinition',
+  Expression = 'Expression',
+  Extension = 'Extension',
+  HumanName = 'HumanName',
+  Identifier = 'Identifier',
+  MarketingStatus = 'MarketingStatus',
+  Meta = 'Meta',
+  Money = 'Money',
+  Narrative = 'Narrative',
+  ParameterDefinition = 'ParameterDefinition',
+  Period = 'Period',
+  Population = 'Population',
+  ProdCharacteristic = 'ProdCharacteristic',
+  ProductShelfLife = 'ProductShelfLife',
+  Quantity = 'Quantity',
+  Range = 'Range',
+  Ratio = 'Ratio',
+  Reference = 'Reference',
+  RelatedArtifact = 'RelatedArtifact',
+  Resource = 'Resource',
+  SampledData = 'SampledData',
+  Signature = 'Signature',
+  SubstanceAmount = 'SubstanceAmount',
+  SystemString = 'http://hl7.org/fhirpath/System.String',
+  Timing = 'Timing',
+  TriggerDefinition = 'TriggerDefinition',
+  UsageContext = 'UsageContext',
+  base64Binary = 'base64Binary',
+  boolean = 'boolean',
+  canonical = 'canonical',
+  code = 'code',
+  date = 'date',
+  dateTime = 'dateTime',
+  decimal = 'decimal',
+  id = 'id',
+  instant = 'instant',
+  integer = 'integer',
+  markdown = 'markdown',
+  oid = 'oid',
+  positiveInt = 'positiveInt',
+  string = 'string',
+  time = 'time',
+  unsignedInt = 'unsignedInt',
+  uri = 'uri',
+  url = 'url',
+  uuid = 'uuid',
+}
+
+
+/**
  * An IndexedStructureDefinition is a lookup-optimized version of a StructureDefinition.
  *
  * StructureDefinition resources contain schema information for other resource types.
@@ -109,11 +179,11 @@ function indexProperty(output: IndexedStructureDefinition, element: ElementDefin
   typeSchema.properties[key] = element;
 }
 
-function buildTypeName(components: string[]): string {
+export function buildTypeName(components: string[]): string {
   return components.map(capitalize).join('_');
 }
 
-function capitalize(word: string): string {
+export function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.substr(1);
 }
 

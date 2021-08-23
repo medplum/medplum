@@ -3,11 +3,11 @@ import React, { useRef, useState } from 'react';
 
 export interface ContactPointInputProps {
   name: string;
-  value?: ContactPoint;
+  defaultValue?: ContactPoint;
 }
 
 export function ContactPointInput(props: ContactPointInputProps) {
-  const [contactPoint, setContactPoint] = useState(props.value);
+  const [contactPoint, setContactPoint] = useState(props.defaultValue);
 
   const ref = useRef<ContactPoint>();
   ref.current = contactPoint;

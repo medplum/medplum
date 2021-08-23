@@ -1,7 +1,7 @@
-import { Filter, getReferenceString, IndexedStructureDefinition, Operator, SearchParameter, SearchRequest } from '@medplum/core';
+import { Filter, IndexedStructureDefinition, Operator, SearchParameter, SearchRequest, stringify } from '@medplum/core';
 import React, { useState } from 'react';
-import { Autocomplete } from './Autocomplete';
 import { Dialog } from './Dialog';
+import { ReferenceInput } from './ReferenceInput';
 import { addFilter, deleteFilter } from './SearchUtils';
 
 interface FilterRowProps {
@@ -140,11 +140,7 @@ function FilterRow(props: FilterRowProps) {
 
       case 'reference':
         return (
-          <Autocomplete
-            name="dataEntryUser"
-            resourceType="Practitioner"
-            onChange={resources => setValue(resources.length > 0 ? getReferenceString(resources[0]) : '')}
-          />
+          <ReferenceInput name="reference" />
         );
 
       case 'bool':
@@ -221,7 +217,7 @@ export interface SearchFilterEditorProps {
 
 export function SearchFilterEditor(props: SearchFilterEditorProps) {
   const [state, setState] = useState({
-    search: JSON.parse(JSON.stringify(props.search)) as SearchRequest
+    search: JSON.parse(stringify(props.search)) as SearchRequest
   });
 
   function onAddFilter(filter: Filter) {
@@ -262,7 +258,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
               <FilterRow
                 schema={props.schema}
                 resourceType={props.search.resourceType}
-                key={JSON.stringify(filter)}
+                key={stringify(filter)}
                 filter={filter}
                 editing={false}
                 onAdd={f => onAddFilter(f)}

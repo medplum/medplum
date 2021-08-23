@@ -55,18 +55,13 @@ const setup = (args: ResourceNameProps) => {
 };
 
 test('ResourceName renders system', () => {
-  const utils = setup({ reference: { reference: 'system' } });
+  const utils = setup({ value: { reference: 'system' } });
   expect(utils.getByText('System')).not.toBeUndefined();
-});
-
-test('ResourceName renders', () => {
-  const utils = setup({ alt: 'Alice Smith' });
-  expect(utils.getByText('Alice Smith')).not.toBeUndefined();
 });
 
 test('ResourceName renders resource directly', async () => {
   const utils = setup({
-    resource: patient
+    value: patient
   });
 
   await waitFor(() => utils.getByText('Alice Smith'));
@@ -76,7 +71,7 @@ test('ResourceName renders resource directly', async () => {
 
 test('ResourceName renders resource directly as link', async () => {
   const utils = setup({
-    resource: patient,
+    value: patient,
     link: true
   });
 
@@ -87,7 +82,7 @@ test('ResourceName renders resource directly as link', async () => {
 
 test('ResourceName renders after loading the resource', async () => {
   const utils = setup({
-    reference: {
+    value: {
       reference: 'Patient/' + patient.id
     }
   });

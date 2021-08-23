@@ -4,7 +4,7 @@ import { HumanNameInput } from './HumanNameInput';
 
 test('HumanNameInput renders', () => {
   render(
-    <HumanNameInput name="test" value={{ given: ['Alice'], family: 'Smith' }} />
+    <HumanNameInput name="test" defaultValue={{ given: ['Alice'], family: 'Smith' }} />
   );
 
   const given = screen.getByTestId('given') as HTMLInputElement;
@@ -18,7 +18,7 @@ test('HumanNameInput renders', () => {
 
 test('HumanNameInput change events', async () => {
   render(
-    <HumanNameInput name="test" value={{}} />
+    <HumanNameInput name="test" defaultValue={{}} />
   );
 
   await act(async () => {
@@ -54,7 +54,7 @@ test('HumanNameInput change events', async () => {
 
 test('HumanNameInput set blanks', async () => {
   render(
-    <HumanNameInput name="test" value={{
+    <HumanNameInput name="test" defaultValue={{
       use: 'official',
       prefix: ['Mr'],
       given: ['Homer', 'J'],

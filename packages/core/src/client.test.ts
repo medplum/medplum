@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
 import { Bundle, SearchParameter, StructureDefinition } from './fhir';
+import { stringify } from './utils';
 
 const defaultOptions = {
   clientId: 'xyz',
@@ -66,8 +67,8 @@ function mockFetch(url: string, options: any): Promise<any> {
   } else if (method === 'POST' && url.endsWith('oauth2/token')) {
     if (canRefresh) {
       result = {
-        access_token: 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature',
-        refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: defaultOptions.clientId })) + '.signature'
+        access_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
+        refresh_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature'
       };
     } else {
       result = {
@@ -87,7 +88,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       };
     }
 
-  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
+  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Patient')) {
     result = patientStructureDefinitionBundle;
 
   } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {

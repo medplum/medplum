@@ -60,7 +60,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   const method = options.method ?? 'GET';
   let result: any;
 
-  if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
+  if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Patient')) {
     result = patientStructureBundle;
   } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
     result = {

@@ -1,19 +1,24 @@
-import { ElementDefinition, getPropertyDisplayName } from '@medplum/core';
+import { buildTypeName, ElementDefinition, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
 import React, { useState } from 'react';
 import { FormSection } from './FormSection';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
+  schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
-  value?: any;
+  defaultValue?: any;
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps) {
-  const [value, setValue] = useState(props.value);
-  const typeSchema = {
-    properties: [] as ElementDefinition[]
-  };
+  const [value, setValue] = useState(props.defaultValue);
+
+  const typeName = buildTypeName(props.property.path?.split('.') as string[]);
+  const typeSchema = props.schema.types[typeName];
+  if (!typeSchema) {
+    return <div>Schema not found</div>
+  }
+
   return (
     <>
       {Object.entries(typeSchema.properties).map(entry => {
@@ -21,7 +26,12 @@ export function BackboneElementInput(props: BackboneElementInputProps) {
         const property = entry[1];
         return (
           <FormSection key={key} title={getPropertyDisplayName(property)} description={property.definition}>
-            <ResourcePropertyInput property={property} name={props.name + '.' + property.id} value={value[key]} />
+            <ResourcePropertyInput
+              schema={props.schema}
+              property={property}
+              name={props.name + '.' + key}
+              defaultValue={value[key]}
+            />
           </FormSection>
         );
       })}

@@ -1,4 +1,4 @@
-import { Patient, Practitioner, Reference, RelatedPerson, Resource } from './fhir';
+import { Device, Patient, Practitioner, Reference, RelatedPerson, Resource } from './fhir';
 import { formatHumanName } from './format';
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
@@ -41,9 +41,15 @@ export function isProfileResource(resource: Resource): boolean {
  */
 export function getDisplayString(resource: Resource): string {
   if (isProfileResource(resource)) {
-    const names = (resource as ProfileResource).name;
-    if (names && names.length > 0) {
-      return formatHumanName(names[0]);
+    const profileName = getProfileResourceDisplayString(resource as ProfileResource);
+    if (profileName) {
+      return profileName;
+    }
+  }
+  if (resource.resourceType === 'Device') {
+    const deviceName = getDeviceDisplayString(resource);
+    if (deviceName) {
+      return deviceName;
     }
   }
   const simpleName = (resource as any).name;
@@ -51,6 +57,32 @@ export function getDisplayString(resource: Resource): string {
     return simpleName;
   }
   return getReferenceString(resource);
+}
+
+/**
+ * Returns a display string for a profile resource if one is found.
+ * @param resource The profile resource.
+ * @returns The display name if one is found.
+ */
+function getProfileResourceDisplayString(resource: ProfileResource): string | undefined {
+  const names = resource.name;
+  if (names && names.length > 0) {
+    return formatHumanName(names[0]);
+  }
+  return undefined;
+}
+
+/**
+ * Returns a display string for a device resource if one is found.
+ * @param device The device resource.
+ * @returns The display name if one is found.
+ */
+function getDeviceDisplayString(device: Device): string | undefined {
+  const names = device.deviceName;
+  if (names && names.length > 0) {
+    return names[0].name;
+  }
+  return undefined;
 }
 
 /**
@@ -87,6 +119,45 @@ export function getDateProperty(date: Date | string | undefined): Date | undefin
     return new Date(date);
   }
   return undefined;
+}
+
+/**
+ * FHIR JSON stringify.
+ * Removes properties with empty string values.
+ * Removes objects with zero properties.
+ * See: https://www.hl7.org/fhir/json.html
+ * @param value The input value.
+ * @returns The resulting JSON string.
+ */
+export function stringify(value: any): string {
+  return JSON.stringify(value, stringifyReplacer);
+}
+
+/**
+ * Evaluates JSON key/value pairs for FHIR JSON stringify.
+ * Removes properties with empty string values.
+ * Removes objects with zero properties.
+ * Replaces any key/value pair of key "__key" with value undefined.
+ * This function can be used as the 2nd argument to stringify to remove __key properties.
+ * We add __key properties to array elements to improve React render performance.
+ * @param {string} k Property key.
+ * @param {*} v Property value.
+ */
+function stringifyReplacer(k: string, v: any): any {
+  return (k === '__key' || isEmpty(v)) ? undefined : v;
+}
+
+/**
+ * Returns true if the value is empty (null, undefined, empty string, or empty object).
+ * @param v Any value.
+ * @returns True if the value is an empty string or an empty object.
+ */
+function isEmpty(v: any): boolean {
+  if (v === null || v === undefined) {
+    return true;
+  }
+  const t = typeof v;
+  return (t === 'string' && v === '') || (t === 'object' && Object.keys(v).length === 0);
 }
 
 // Precompute hex octets

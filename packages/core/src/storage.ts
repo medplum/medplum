@@ -1,3 +1,4 @@
+import { stringify } from './utils';
 
 export interface Storage {
   clear(): void;
@@ -36,7 +37,7 @@ export class MemoryStorage implements Storage {
   }
 
   setObject<T>(key: string, value: T) {
-    this.setString(key, value ? JSON.stringify(value) : undefined);
+    this.setString(key, value ? stringify(value) : undefined);
   }
 }
 
@@ -64,6 +65,6 @@ export class LocalStorage implements Storage {
   }
 
   setObject<T>(key: string, value: T) {
-    this.setString(key, value ? JSON.stringify(value) : undefined);
+    this.setString(key, value ? stringify(value) : undefined);
   }
 }

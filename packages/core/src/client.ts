@@ -10,7 +10,7 @@ import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
 import { LocalStorage, MemoryStorage, Storage } from './storage';
 import { IndexedStructureDefinition, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, ProfileResource } from './utils';
+import { arrayBufferToBase64, ProfileResource, stringify } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
@@ -321,7 +321,7 @@ export class MedplumClient extends EventTarget {
       return Promise.resolve(cached);
     }
     let typeDef: IndexedStructureDefinition;
-    return this.search<StructureDefinition>('StructureDefinition?name=' + encodeURIComponent(resourceType))
+    return this.search<StructureDefinition>('StructureDefinition?name:exact=' + encodeURIComponent(resourceType))
       .then((result: Bundle<StructureDefinition>) => {
         if (!result.entry?.length) {
           throw new Error('StructureDefinition not found');
@@ -514,7 +514,7 @@ export class MedplumClient extends EventTarget {
       if (typeof body === 'string' || (typeof File !== 'undefined' && body instanceof File)) {
         options.body = body;
       } else {
-        options.body = JSON.stringify(body, keyReplacer);
+        options.body = stringify(body);
       }
     }
 
@@ -694,15 +694,4 @@ export class MedplumClient extends EventTarget {
  */
 function getBaseUrl() {
   return window.location.protocol + '//' + window.location.host + '/';
-}
-
-/**
- * Replaces any key/value pair of key "__key" with value undefined.
- * This function can be used as the 2nd argument to JSON.stringify to remove __key properties.
- * We add __key properties to array elements to improve React render performance.
- * @param {string} k Property key.
- * @param {*} v Property value.
- */
-export function keyReplacer(k: string, v: string) {
-  return k === '__key' ? undefined : v;
 }

@@ -1,13 +1,13 @@
 import { getDisplayString, getImageSrc, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
-import './Avatar.css';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
+import { useResource } from './useResource';
+import './Avatar.css';
 
 export interface AvatarProps {
   size?: 'xsmall' | 'small' | 'medium' | 'large';
-  resource?: Resource;
-  reference?: Reference;
+  value?: Reference | Resource;
   src?: string;
   alt?: string;
   color?: string;
@@ -16,34 +16,21 @@ export interface AvatarProps {
 
 export const Avatar = (props: AvatarProps) => {
   const medplum = useMedplum();
+  const resource = useResource(props.value);
   const [imageUrl, setImageUrl] = useState<string | undefined>(props.src);
-  const [text, setText] = useState<string | undefined>(props.alt || '');
-  const [linkUrl, setLinkUrl] = useState<string | undefined>();
-
-  function setResource(resource: Resource) {
-    setText(getDisplayString(resource));
-
-    const attachmentUrl = getImageSrc(resource);
-    if (attachmentUrl) {
-      medplum.readCachedBlobAsObjectUrl(attachmentUrl).then(url => setImageUrl(url));
-    }
-  }
 
   useEffect(() => {
-    if (props.resource) {
-      setResource(props.resource);
-      setLinkUrl(`/${props.resource.resourceType}/${props.resource.id}`)
-    } else if (props.reference?.reference === 'system') {
-      setText('System');
-    } else if (props.reference) {
-      setLinkUrl(`/${props.reference.reference}`)
-      medplum.readCachedReference(props.reference)
-        .then(setResource)
-        .catch(err => console.log('Avatar cached ref error', err, props.reference));
+    if (resource) {
+      const attachmentUrl = getImageSrc(resource);
+      if (attachmentUrl) {
+        medplum.readCachedBlobAsObjectUrl(attachmentUrl).then(url => setImageUrl(url));
+      }
     }
-  }, [props.resource, props.reference]);
+
+  }, [resource]);
 
   const className = props.size ? 'medplum-avatar ' + props.size : 'medplum-avatar';
+  const text = resource ? getDisplayString(resource) : props.alt ?? '';
   const initials = text && getInitials(text);
   const innerContent = imageUrl ? <img src={imageUrl} alt={text} /> : initials;
   return (
@@ -52,8 +39,8 @@ export const Avatar = (props: AvatarProps) => {
       style={{ backgroundColor: props.color }}
       data-testid="avatar"
     >
-      {props.link && linkUrl ? (
-        <MedplumLink to={linkUrl}>
+      {props.link && resource ? (
+        <MedplumLink to={`/${resource.resourceType}/${resource.id}`}>
           {innerContent}
         </MedplumLink>
       ) : (

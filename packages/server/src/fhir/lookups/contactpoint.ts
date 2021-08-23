@@ -1,4 +1,4 @@
-import { ContactPoint, Filter, Resource, SearchParameter, SortRule } from '@medplum/core';
+import { ContactPoint, Filter, Resource, SearchParameter, SortRule, stringify } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
@@ -73,7 +73,7 @@ export class ContactPointTable implements LookupTable {
           id: randomUUID(),
           resourceId,
           index: i,
-          content: JSON.stringify(contactPoint),
+          content: stringify(contactPoint),
           system: contactPoint.system,
           value: contactPoint.value
         }).execute(client);

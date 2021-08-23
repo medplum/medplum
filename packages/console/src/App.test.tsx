@@ -119,9 +119,9 @@ function mockFetch(url: string, options: any): Promise<any> {
       user,
       profile: practitioner
     };
-  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Practitioner')) {
+  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Practitioner')) {
     result = practitionerStructureBundle;
-  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name=Patient')) {
+  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Patient')) {
     result = patientStructureBundle;
   } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?name=Practitioner')) {
     result = practitionerSearchParameter;

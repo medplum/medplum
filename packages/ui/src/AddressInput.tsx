@@ -16,11 +16,11 @@ function setLine(address: Address, index: number, str: string): Address {
 
 export interface AddressInputProps {
   name: string;
-  value?: Address;
+  defaultValue?: Address;
 }
 
 export function AddressInput(props: AddressInputProps) {
-  const [value, setValue] = useState<Address>(props.value || {});
+  const [value, setValue] = useState<Address>(props.defaultValue || {});
 
   const valueRef = useRef<Address>();
   valueRef.current = value;

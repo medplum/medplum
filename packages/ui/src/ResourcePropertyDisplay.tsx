@@ -1,4 +1,4 @@
-import { ElementDefinition } from '@medplum/core';
+import { ElementDefinition, PropertyType } from '@medplum/core';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
 import { AttachmentArrayDisplay } from './AttachmentArrayDisplay';
@@ -6,10 +6,8 @@ import { AttachmentDisplay } from './AttachmentDisplay';
 import { BackboneElementDisplay } from './BackboneElementDisplay';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { ContactPointDisplay } from './ContactPointDisplay';
-import { DeviceNameDisplay } from './DeviceNameDisplay';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { IdentifierDisplay } from './IdentifierDisplay';
-import { PatientLinkDisplay } from './PatientLinkDisplay';
 import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
@@ -21,7 +19,7 @@ export interface ResourcePropertyDisplayProps {
 
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
   const property = props.property;
-  const propertyType = property.type?.[0]?.code;
+  const propertyType = property.type?.[0]?.code as PropertyType;
   const value = props.value;
 
   if (property.max === '*' && !props.arrayElement) {
@@ -36,40 +34,35 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
   }
 
   switch (propertyType) {
-    case 'string':
-    case 'canonical':
-    case 'date':
-    case 'dateTime':
-    case 'instant':
-    case 'uri':
-    case 'url':
-    case 'http://hl7.org/fhirpath/System.String':
-    case 'number':
-    case 'integer':
-    case 'positiveInt':
-    case 'unsignedInt':
-    case 'enum':
-    case 'boolean':
+    case PropertyType.SystemString:
+    case PropertyType.boolean:
+    case PropertyType.canonical:
+    case PropertyType.code:
+    case PropertyType.date:
+    case PropertyType.dateTime:
+    case PropertyType.instant:
+    case PropertyType.integer:
+    case PropertyType.positiveInt:
+    case PropertyType.string:
+    case PropertyType.unsignedInt:
+    case PropertyType.uri:
+    case PropertyType.url:
       return <div>{value}</div>;
-    case 'markdown':
+    case PropertyType.markdown:
       return <pre>{value}</pre>
-    case 'Address':
+    case PropertyType.Address:
       return <AddressDisplay value={value} />;
-    case 'Attachment':
+    case PropertyType.Attachment:
       return <AttachmentDisplay value={value} />;
-    case 'CodeableConcept':
+    case PropertyType.CodeableConcept:
       return <CodeableConceptDisplay value={value} />;
-    case 'ContactPoint':
+    case PropertyType.ContactPoint:
       return <ContactPointDisplay value={value} />;
-    case 'Device_DeviceName':
-      return <DeviceNameDisplay value={value} />;
-    case 'HumanName':
+    case PropertyType.HumanName:
       return <HumanNameDisplay value={value} />;
-    case 'Identifier':
+    case PropertyType.Identifier:
       return <IdentifierDisplay value={value} />;
-    case 'Patient_Link':
-      return <PatientLinkDisplay value={value} />;
-    case 'Reference':
+    case PropertyType.Reference:
       return <ReferenceDisplay value={value} />;
     default:
       return <BackboneElementDisplay property={property} value={value} />;

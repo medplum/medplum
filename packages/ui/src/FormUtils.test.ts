@@ -1,21 +1,59 @@
-import { Patient, TypeSchema } from '@medplum/core';
-import { ensureKeys, generateKey, keyReplacer, parseForm, parseResourceForm } from './FormUtils';
+import { IndexedStructureDefinition, Patient, Questionnaire, stringify } from '@medplum/core';
+import { ensureKeys, generateKey, parseForm, parseResourceForm } from './FormUtils';
 
-const patientSchema: TypeSchema = {
-  display: 'Patient',
-  properties: {
-    name: {
-      id: 'Patient.name',
-      type: [{
-        code: 'HumanName'
-      }],
-      max: '*'
+const patientStructureDefinition: IndexedStructureDefinition = {
+  types: {
+    Patient: {
+      display: 'Patient',
+      properties: {
+        name: {
+          id: 'Patient.name',
+          type: [{
+            code: 'HumanName'
+          }],
+          max: '*'
+        },
+        birthDate: {
+          id: 'Patient.birthDate',
+          type: [{
+            code: 'date'
+          }]
+        }
+      }
+    }
+  }
+};
+
+const questionnaireStructureDefinition: IndexedStructureDefinition = {
+  types: {
+    Questionnaire: {
+      display: 'Questionnaire',
+      properties: {
+        name: {
+          id: 'Questionnaire.name',
+          type: [{
+            code: 'string'
+          }]
+        },
+        item: {
+          id: 'Questionnaire.item',
+          type: [{
+            code: 'BackboneElement'
+          }],
+          max: '*'
+        }
+      }
     },
-    birthDate: {
-      id: 'Patient.birthDate',
-      type: [{
-        code: 'date'
-      }]
+    Questionnaire_Item: {
+      display: 'Questionnaire_Item',
+      properties: {
+        text: {
+          id: 'Questionnaire.item.text',
+          type: [{
+            code: 'string'
+          }]
+        }
+      }
     }
   }
 };
@@ -47,7 +85,7 @@ test('Ensure keys on null array', () => {
 });
 
 test('Key replacer removes __key', () => {
-  expect(JSON.stringify({ __key: 'foo' }, keyReplacer)).toEqual('{}');
+  expect(stringify({ __key: 'foo' })).toEqual('{}');
 });
 
 test('Parse form into key/value pairs', () => {
@@ -83,8 +121,22 @@ test('Parse form into Patient resource', () => {
     <input type="text" name="birthDate" value="1990-01-01" />
   `;
 
-  const resource = parseResourceForm(patientSchema, form) as Patient;
+  const resource = parseResourceForm(patientStructureDefinition, 'Patient', form) as Patient;
   expect(resource).not.toBeNull();
   expect(resource.name?.[0].given).toEqual(['Alice']);
   expect(resource.birthDate).toEqual('1990-01-01');
+});
+
+test('Parse form into Questionnaire resource', () => {
+  const form = document.createElement('form')
+  form.innerHTML = `
+    <input type="text" name="name" value="ABC" />
+    <input type="text" name="item.key1.text" value="XYZ" />
+  `;
+
+  const resource = parseResourceForm(questionnaireStructureDefinition, 'Questionnaire', form) as Questionnaire;
+  expect(resource).not.toBeNull();
+  expect(resource.name).toEqual('ABC');
+  expect(resource.item?.length).toEqual(1);
+  expect(resource.item?.[0]?.text).toEqual('XYZ');
 });

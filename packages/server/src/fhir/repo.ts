@@ -1,4 +1,4 @@
-import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
+import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import validator from 'validator';
@@ -217,7 +217,7 @@ export class Repository {
       }
     };
 
-    if (JSON.stringify(existing) === JSON.stringify(updated)) {
+    if (stringify(existing) === stringify(updated)) {
       return [notModified, existing as T];
     }
 
@@ -388,7 +388,7 @@ export class Repository {
     if (lookupTable) {
       lookupTable.addWhere(builder, filter);
     } else if (param.type === 'string') {
-      this.addStringSearchFilter(builder, columnName, filter.value);
+      this.addStringSearchFilter(builder, columnName, filter);
     } else if (param.type === 'token') {
       this.addTokenSearchFilter(builder, resourceType, columnName, filter.value);
     } else if (param.type === 'reference') {
@@ -398,8 +398,12 @@ export class Repository {
     }
   }
 
-  private addStringSearchFilter(builder: SelectQuery, columnName: string, query: string): void {
-    builder.where(columnName, Operator.LIKE, '%' + query + '%');
+  private addStringSearchFilter(builder: SelectQuery, columnName: string, filter: Filter): void {
+    if (filter.operator === FhirOperator.EXACT) {
+      builder.where(columnName, Operator.EQUALS, filter.value);
+    } else {
+      builder.where(columnName, Operator.LIKE, '%' + filter.value + '%');
+    }
   }
 
   private addTokenSearchFilter(builder: SelectQuery, resourceType: string, columnName: string, query: string): void {
@@ -457,7 +461,7 @@ export class Repository {
     const client = getClient();
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
-    const content = JSON.stringify(resource);
+    const content = stringify(resource);
 
     const columns: Record<string, any> = {
       id: resource.id,
@@ -538,7 +542,7 @@ export class Repository {
       return this.buildReferenceColumns(searchParam, value);
     }
 
-    return (typeof value === 'string') ? value : JSON.stringify(value);
+    return (typeof value === 'string') ? value : stringify(value);
   }
 
   /**

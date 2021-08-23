@@ -1,32 +1,25 @@
-import { createReference, ElementDefinition, Reference, Resource } from '@medplum/core';
-import React, { useEffect, useRef, useState } from 'react';
+import { Bundle, BundleEntry, createReference, ElementDefinition, Operator, Reference, Resource } from '@medplum/core';
+import React, { useRef, useState } from 'react';
 import { Autocomplete } from './Autocomplete';
+import { Avatar } from './Avatar';
+import { useMedplum } from './MedplumProvider';
+import { ResourceName } from './ResourceName';
 
 export interface ReferenceInputProps {
-  property: ElementDefinition;
+  property?: ElementDefinition;
   name: string;
-  value?: Reference;
+  defaultValue?: Reference;
 }
 
 export function ReferenceInput(props: ReferenceInputProps) {
-  const [initialResourceType] = (props.value?.reference || '/').split('/');
-  const [value, setValue] = useState<Reference | undefined>(props.value);
+  const targetTypes = getTargetTypes(props.property);
+  const initialResourceType = getInitialResourceType(props.defaultValue, targetTypes);
+  const medplum = useMedplum();
+  const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [resourceType, setResourceType] = useState<string | undefined>(initialResourceType);
-  const [targetTypes, setTargetTypes] = useState<string[] | undefined>();
 
   const valueRef = useRef<Reference>();
   valueRef.current = value;
-
-  useEffect(() => {
-    const targetProfile = props.property.type?.[0]?.targetProfile;
-    if (targetProfile) {
-      const typeNames = targetProfile.map(p => p.split('/').pop() as string);
-      setTargetTypes(typeNames);
-      setResourceType(typeNames[0]);
-    } else {
-      setTargetTypes(undefined);
-    }
-  }, [props.property]);
 
   return (
     <table style={{ tableLayout: 'fixed' }}>
@@ -49,20 +42,46 @@ export function ReferenceInput(props: ReferenceInputProps) {
                 type="text"
                 data-testid="reference-input-resource-type-input"
                 defaultValue={resourceType}
-                onChange={e => setResourceType(e.currentTarget.value)}
+                onChange={e => {
+                  setResourceType(e.currentTarget.value);
+                }}
               />
             )}
           </td>
           <td>
             {resourceType && (
               <Autocomplete
-                resourceType={resourceType}
+                loadOptions={(input: string): Promise<(Reference | Resource)[]> => {
+                  return medplum.search({
+                    resourceType,
+                    filters: [{
+                      code: 'name',
+                      operator: Operator.EQUALS,
+                      value: input
+                    }]
+                  })
+                    .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map(entry => entry.resource as Resource));
+                }}
+                getId={(item: Reference | Resource) => {
+                  if ('resourceType' in item) {
+                    return item.id as string;
+                  }
+                  if ('reference' in item) {
+                    return item.reference as string;
+                  }
+                  return item.toString();
+                }}
+                getIcon={(item: Reference | Resource) => <Avatar value={item} />}
+                getDisplay={(item: Reference | Resource) => <ResourceName value={item} />}
                 name={props.name + '-id'}
-                defaultValue={props.value ? [props.value] : undefined}
-                onChange={(resources: Resource[]) => {
-                  const resource = resources?.[0];
-                  if (resource) {
-                    setValue(createReference(resource));
+                defaultValue={props.defaultValue ? [props.defaultValue] : undefined}
+                onChange={(items: (Reference | Resource)[]) => {
+                  if (items.length > 0) {
+                    if ('resourceType' in items[0]) {
+                      setValue(createReference(items[0]));
+                    } else if ('reference' in items[0]) {
+                      setValue(items[0]);
+                    }
                   }
                 }}
               />
@@ -72,4 +91,21 @@ export function ReferenceInput(props: ReferenceInputProps) {
       </tbody>
     </table>
   );
+}
+
+function getTargetTypes(property?: ElementDefinition): string[] | undefined {
+  return property?.type?.[0]?.targetProfile?.map(p => p.split('/').pop() as string);
+}
+
+function getInitialResourceType(defaultValue: Reference | undefined, targetTypes: string[] | undefined): string | undefined {
+  const defaultValueResourceType = defaultValue?.reference?.split('/')[0]
+  if (defaultValueResourceType) {
+    return defaultValueResourceType;
+  }
+
+  if (targetTypes && targetTypes.length > 0) {
+    return targetTypes[0];
+  }
+
+  return undefined;
 }

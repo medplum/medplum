@@ -53,7 +53,7 @@ test('AttachmentArrayInput renders', () => {
 test('AttachmentArrayInput renders empty array', () => {
   setup({
     name: 'test',
-    values: []
+    defaultValue: []
   });
 });
 
@@ -61,7 +61,7 @@ test('AttachmentArrayInput renders attachments', async () => {
   await act(async () => {
     await setup({
       name: 'test',
-      values: [{
+      defaultValue: [{
         contentType: 'image/jpeg',
         url: 'https://example.com/test.jpg'
       }]

@@ -54,10 +54,10 @@ function HistoryRow(props: HistoryRowProps) {
   return (
     <tr>
       <td>
-        <Avatar size="small" reference={props.version.meta?.author} />
+        <Avatar size="small" value={props.version.meta?.author} />
       </td>
       <td>
-        <ResourceName reference={props.version.meta?.author} link={true} />
+        <ResourceName value={props.version.meta?.author} link={true} />
       </td>
       <td>
         {formatDateTime(props.version.meta?.lastUpdated as string | Date)}

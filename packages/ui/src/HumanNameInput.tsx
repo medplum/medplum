@@ -3,11 +3,11 @@ import React, { useRef, useState } from 'react';
 
 export interface HumanNameInputProps {
   name: string;
-  value?: HumanName;
+  defaultValue?: HumanName;
 }
 
 export function HumanNameInput(props: HumanNameInputProps) {
-  const [value, setValue] = useState<HumanName | undefined>(props.value);
+  const [value, setValue] = useState<HumanName | undefined>(props.defaultValue);
 
   const valueRef = useRef<HumanName>();
   valueRef.current = value;

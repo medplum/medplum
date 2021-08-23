@@ -33,10 +33,10 @@ export function TimelineItem(props: TimelineItemProps) {
     <article className="medplum-timeline-item" data-testid="timeline-item">
       <div className="medplum-timeline-item-header">
         <div className="medplum-timeline-item-avatar">
-          <Avatar reference={author} link={true} />
+          <Avatar value={author} link={true} />
         </div>
         <div className="medplum-timeline-item-title">
-          <ResourceName reference={author} link={true} />
+          <ResourceName value={author} link={true} />
           <div className="medplum-timeline-item-subtitle">
             <MedplumLink to={url}>{formatDateTime(props.resource.meta?.lastUpdated)}</MedplumLink>
             <span>&middot;</span>

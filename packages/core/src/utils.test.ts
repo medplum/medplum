@@ -1,4 +1,4 @@
-import { arrayBufferToBase64, arrayBufferToHex, createReference, getDateProperty, getDisplayString, getImageSrc, isProfileResource } from './utils';
+import { arrayBufferToBase64, arrayBufferToHex, createReference, getDateProperty, getDisplayString, getImageSrc, isProfileResource, stringify } from './utils';
 
 if (typeof btoa === 'undefined') {
   global.btoa = function (str) {
@@ -34,6 +34,9 @@ test('getDisplayString', () => {
   expect(getDisplayString({ resourceType: 'Observation', id: '123' })).toEqual('Observation/123');
   expect(getDisplayString({ resourceType: 'ClientApplication', id: '123' })).toEqual('ClientApplication/123');
   expect(getDisplayString({ resourceType: 'ClientApplication', id: '123', name: 'foo' })).toEqual('foo');
+  expect(getDisplayString({ resourceType: 'Device', deviceName: [{ name: 'Foo' }] })).toEqual('Foo');
+  expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [{}] })).toEqual('Device/123');
+  expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toEqual('Device/123');
 });
 
 test('getImageSrc', () => {
@@ -79,4 +82,16 @@ test('Get date property', () => {
   expect(getDateProperty(undefined)).toBeUndefined();
   expect(getDateProperty(new Date('2020-01-01'))).toEqual(new Date('2020-01-01'));
   expect(getDateProperty('2020-01-01')).toEqual(new Date('2020-01-01'));
+});
+
+test('Stringify', () => {
+  expect(stringify(null)).toBeUndefined();
+  expect(stringify(undefined)).toBeUndefined();
+  expect(stringify('foo')).toEqual('"foo"');
+  expect(stringify({ x: 'y' })).toEqual('{"x":"y"}');
+  expect(stringify({ x: 123 })).toEqual('{"x":123}');
+  expect(stringify({ x: undefined })).toEqual('{}');
+  expect(stringify({ x: null })).toEqual('{}');
+  expect(stringify({ x: {} })).toEqual('{}');
+  expect(stringify({ x: { y: 'z' } })).toEqual('{"x":{"y":"z"}}');
 });
