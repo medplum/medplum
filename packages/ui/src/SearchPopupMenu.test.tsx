@@ -216,6 +216,34 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.[0].descending).toEqual(true);
   });
 
+  test('Clear filters', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{
+        code: 'name',
+        operator: Operator.EQUALS,
+        value: 'Alice'
+      }]
+    };
+
+    setup({
+      schema,
+      search: currSearch,
+      visible: true,
+      x: 0,
+      y: 0,
+      property: 'name',
+      onChange: (e) => currSearch = e,
+      onClose: jest.fn()
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Clear filters'));
+    });
+
+    expect(currSearch.filters?.length).toEqual(0);
+  });
+
   test('Text submenu prompt', async () => {
     window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
@@ -257,7 +285,7 @@ describe('SearchPopupMenu', () => {
 
   });
 
-  test('date submenu prompt', async () => {
+  test('Date submenu prompt', async () => {
     window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
     let currSearch: SearchRequest = {
@@ -306,6 +334,39 @@ describe('SearchPopupMenu', () => {
       } as Filter);
     }
 
+  });
+
+  test('Renders meta.versionId', () => {
+    setup({
+      schema,
+      search: {
+        resourceType: 'Patient'
+      },
+      visible: true,
+      x: 0,
+      y: 0,
+      property: 'meta.versionId',
+      onClose: jest.fn()
+    });
+
+    expect(screen.getByText('Equals...')).not.toBeUndefined();
+  });
+
+  test('Renders meta.lastUpdated', () => {
+    setup({
+      schema,
+      search: {
+        resourceType: 'Patient'
+      },
+      visible: true,
+      x: 0,
+      y: 0,
+      property: 'meta.lastUpdated',
+      onClose: jest.fn()
+    });
+
+    expect(screen.getByText('Before...')).not.toBeUndefined();
+    expect(screen.getByText('After...')).not.toBeUndefined();
   });
 
 });
