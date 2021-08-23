@@ -13,7 +13,7 @@ export interface SearchPopupMenuProps {
   x: number,
   y: number,
   property: string,
-  onChange: (definition: SearchRequest) => void,
+  onChange?: (definition: SearchRequest) => void,
   onClose: () => void
 }
 
@@ -137,11 +137,11 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   }
 
   function sort(desc: boolean) {
-    props.onChange(setSort(props.search, props.property, desc));
+    onChange(setSort(props.search, props.property, desc));
   }
 
   function clearFilters() {
-    props.onChange(clearFiltersOnField(props.search, props.property));
+    onChange(clearFiltersOnField(props.search, props.property));
   }
 
   /**
@@ -154,7 +154,13 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
 
     const retVal = window.prompt(caption, '');
     if (retVal !== null) {
-      props.onChange(addFilter(props.search, props.property, op, retVal, true));
+      onChange(addFilter(props.search, props.property, op, retVal, true));
+    }
+  }
+
+  function onChange(definition: SearchRequest): void {
+    if (props.onChange) {
+      props.onChange(definition);
     }
   }
 
