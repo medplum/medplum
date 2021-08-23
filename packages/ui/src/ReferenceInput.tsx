@@ -21,6 +21,9 @@ export function ReferenceInput(props: ReferenceInputProps) {
   const valueRef = useRef<Reference>();
   valueRef.current = value;
 
+  const resourceTypeRef = useRef<string>();
+  resourceTypeRef.current = resourceType;
+
   return (
     <table style={{ tableLayout: 'fixed' }}>
       <tbody>
@@ -53,7 +56,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
               <Autocomplete
                 loadOptions={(input: string): Promise<(Reference | Resource)[]> => {
                   return medplum.search({
-                    resourceType,
+                    resourceType: resourceTypeRef.current as string,
                     filters: [{
                       code: 'name',
                       operator: Operator.EQUALS,
