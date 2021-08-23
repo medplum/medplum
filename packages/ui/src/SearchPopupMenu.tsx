@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { ElementDefinition, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import React from 'react';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
@@ -19,13 +19,7 @@ export interface SearchPopupMenuProps {
 
 export function SearchPopupMenu(props: SearchPopupMenuProps) {
   const resourceType = props.search.resourceType;
-
-  const typeDef = props.schema.types[resourceType];
-  if (!typeDef) {
-    return null;
-  }
-
-  const property = typeDef.properties[props.property];
+  const property = getProperty();
   if (!property) {
     return null;
   }
@@ -33,6 +27,31 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   const propertyType = property.type?.[0]?.code;
   if (!propertyType) {
     return null;
+  }
+
+  /**
+   * Returns the ElementDefinition for the property.
+   * Handles some special cases (i.e., "meta.lastUpdated").
+   * @returns The element definition, if found.
+   */
+  function getProperty(): ElementDefinition | undefined {
+    if (props.property === 'meta.lastUpdated') {
+      return {
+        type: [{
+          code: 'datetime'
+        }]
+      };
+    }
+
+    if (props.property === 'meta.versionId') {
+      return {
+        type: [{
+          code: 'id'
+        }]
+      };
+    }
+
+    return props.schema.types[resourceType]?.properties?.[props.property];
   }
 
   /**
