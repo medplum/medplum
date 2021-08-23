@@ -161,7 +161,7 @@ describe('GraphQL', () => {
     `
       });
     expect(res.status).toBe(200);
-    expect(res.body.Patient).not.toBeNull();
+    expect(res.body.data.Patient).not.toBeUndefined();
   });
 
   test('Search', async () => {
@@ -180,7 +180,7 @@ describe('GraphQL', () => {
     `
       });
     expect(res.status).toBe(200);
-    expect(res.body.PatientList).not.toBeNull();
+    expect(res.body.data.PatientList).not.toBeUndefined();
   });
 
   test('Read resource by reference', async () => {
@@ -214,7 +214,7 @@ describe('GraphQL', () => {
     `
       });
     expect(res.status).toBe(200);
-    expect(res.body.PatientList).not.toBeNull();
+    expect(res.body.data.Encounter).not.toBeUndefined();
   });
 
 });
