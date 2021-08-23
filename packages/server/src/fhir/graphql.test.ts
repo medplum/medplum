@@ -27,6 +27,17 @@ describe('GraphQL', () => {
         family: 'Smith'
       }]
     });
+
+    await repo.updateResource({
+      resourceType: 'Encounter',
+      id: '1ef2b1fc-74d9-491c-8e5e-595a9d460043',
+      'class': {
+        code: 'HH'
+      },
+      subject: {
+        reference: 'Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12b'
+      }
+    });
   });
 
   afterAll(async () => {
@@ -166,6 +177,40 @@ describe('GraphQL', () => {
           name { given }
         }
       }
+    `
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.PatientList).not.toBeNull();
+  });
+
+  test('Read resource by reference', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+        {
+          Encounter(id: "1ef2b1fc-74d9-491c-8e5e-595a9d460043") {
+            id
+            meta {
+              lastUpdated
+            }
+            subject {
+              id
+              reference
+              resource {
+                __typename
+                ... on Patient {
+                  name {
+                    given
+                    family
+                  }
+                }
+              }
+            }
+          }
+        }
     `
       });
     expect(res.status).toBe(200);

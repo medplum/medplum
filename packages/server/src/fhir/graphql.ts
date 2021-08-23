@@ -15,6 +15,7 @@ import {
   GraphQLString,
   GraphQLUnionType
 } from 'graphql';
+import { JSONSchema4 } from 'json-schema';
 import { repo } from './repo';
 import { definitions, resourceTypes } from './schema';
 import { getSearchParameters } from './search';
@@ -125,15 +126,8 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
     });
   }
 
-  const schema = definitions[resourceType];
-  if (!schema) {
-    return undefined;
-  }
-
-  const properties = schema.properties;
-  if (!properties) {
-    return undefined;
-  }
+  const schema = definitions[resourceType] as JSONSchema4;
+  const properties = schema.properties as { [k: string]: JSONSchema4 };
 
   const fields: GraphQLFieldConfigMap<any, any> = {};
 
