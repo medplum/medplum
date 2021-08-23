@@ -2,7 +2,7 @@ import { IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/co
 import React from 'react';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
-import { PopupMenu } from './PopupMenu';
+import { Popup } from './Popup';
 import { addFilter, buildFieldNameString, clearFiltersOnField, getOpString, setSort } from './SearchUtils';
 import { SubMenu } from './SubMenu';
 
@@ -159,7 +159,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   }
 
   return (
-    <PopupMenu visible={props.visible} x={props.x} y={props.y} onClose={props.onClose}>
+    <Popup visible={props.visible} x={props.x} y={props.y} autoClose={true} onClose={props.onClose}>
       <MenuItem onClick={() => sort(false)}>{getAscSortString(propertyType)}</MenuItem>
       <MenuItem onClick={() => sort(true)}>{getDescSortString(propertyType)}</MenuItem>
       <MenuSeparator />
@@ -171,6 +171,6 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
           <MenuItem onClick={() => console.log('search')}>Search</MenuItem>
         </>
       )}
-    </PopupMenu>
+    </Popup>
   );
 }

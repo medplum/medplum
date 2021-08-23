@@ -27,7 +27,7 @@ export * from './MedplumLink';
 export * from './MedplumProvider';
 export * from './MenuItem';
 export * from './Page';
-export * from './PopupMenu';
+export * from './Popup';
 export * from './ReferenceInput';
 export * from './ResourceArrayDisplay';
 export * from './ResourceArrayInput';

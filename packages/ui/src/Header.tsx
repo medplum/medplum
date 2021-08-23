@@ -61,8 +61,7 @@ export function Header(props: HeaderProps) {
                 </svg>
                 <Popup
                   visible={searchHintsVisible}
-                  activeClassName="medplum-popup medplum-nav-search-popover"
-                  inactiveClassName="medplum-popup-hidden"
+                  activeClassName="medplum-nav-search-popover"
                   onClose={() => setSearchHintsVisible(false)}>
                   <div className="medplum-nav-search-hints">
                     <div className="medplum-nav-search-hints-column">
@@ -89,8 +88,7 @@ export function Header(props: HeaderProps) {
             <Popup
               visible={userMenuVisible}
               autoClose={true}
-              activeClassName="medplum-popup medplum-nav-menu-popover"
-              inactiveClassName="medplum-popup-hidden"
+              activeClassName="medplum-nav-menu-popover"
               onClose={() => setUserMenuVisible(false)}>
               <div className="medplum-nav-menu">
                 <div style={{ margin: 'auto', padding: '8px' }}>
