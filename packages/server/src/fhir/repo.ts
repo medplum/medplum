@@ -226,7 +226,7 @@ export class Repository {
       meta: {
         ...updated?.meta,
         versionId: randomUUID(),
-        lastUpdated: new Date(),
+        lastUpdated: this.getLastUpdated(resource),
         project: this.getProjectId(updated),
         author: this.getAuthor(updated)
       }
@@ -580,6 +580,26 @@ export class Repository {
   }
 
   /**
+   * Returns the last updated timestamp for the resource.
+   * During historical data migration, some client applications are allowed
+   * to override the timestamp.
+   * @param resource The FHIR resource.
+   * @returns The last updated date.
+   */
+  private getLastUpdated(resource: Resource): Date | string {
+    // If the resource has a specified "lastUpdated",
+    // and the current context is a ClientApplication (i.e., OAuth client credentials),
+    // then allow the ClientApplication to set the date.
+    const lastUpdated = resource.meta?.lastUpdated;
+    if (lastUpdated && this.canWriteMeta()) {
+      return lastUpdated;
+    }
+
+    // Otherwise, use "now"
+    return new Date();
+  }
+
+  /**
    * Returns the project ID for the resource.
    * If it is a public resource type, then returns the public project ID.
    * If it is a protected resource type, then returns the Medplum project ID.
@@ -611,7 +631,7 @@ export class Repository {
     // and the current context is a ClientApplication (i.e., OAuth client credentials),
     // then allow the ClientApplication to act on behalf of another user.
     const author = resource.meta?.author;
-    if (author && this.canWriteAuthor()) {
+    if (author && this.canWriteMeta()) {
       return author;
     }
 
@@ -619,10 +639,10 @@ export class Repository {
   }
 
   /**
-   * Determines if the current user can manually set the meta.author field.
-   * @returns True if the current user can manually set the author.
+   * Determines if the current user can manually set meta fields.
+   * @returns True if the current user can manually set meta fields.
    */
-  private canWriteAuthor(): boolean {
+  private canWriteMeta(): boolean {
     const authorRef = this.context.author.reference as string;
     return authorRef === 'system' || authorRef.startsWith('ClientApplication/');
   }

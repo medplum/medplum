@@ -368,6 +368,22 @@ test('Create Patient as Practitioner on behalf of author', async () => {
   expect(patient?.meta?.author?.reference).toEqual(author);
 });
 
+test('Create resource with lastUpdated', async () => {
+  const lastUpdated = '2020-01-01T12:00:00Z';
+
+  // System repo has the ability to write custom timestamps
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    meta: {
+      lastUpdated
+    }
+  });
+
+  expect(createOutcome.id).toEqual('created');
+  expect(patient?.meta?.lastUpdated).toEqual(lastUpdated);
+});
+
 test('Search for Communications by Encounter', async () => {
   const [outcome1, patient1] = await repo.createResource<Patient>({
     resourceType: 'Patient',
