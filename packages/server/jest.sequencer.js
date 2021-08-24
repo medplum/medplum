@@ -1,5 +1,9 @@
 const Sequencer = require('@jest/test-sequencer').default;
 
+/**
+ * The Sequencer class determines the order of tests.
+ * We want to ensure that the seeder test runs first.
+ */
 class CustomSequencer extends Sequencer {
   sort(tests) {
     // Test structure information
