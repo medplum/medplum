@@ -3,42 +3,50 @@ import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
-import { CONSOLE_DOMAIN_NAME, DOMAIN_NAME, SSL_CERT_ARN } from './constants';
+import { APP_DOMAIN_NAME, APP_SSL_CERT_ARN, DOMAIN_NAME } from './constants';
 
 /**
- * Static site infrastructure, which deploys site content to an S3 bucket.
+ * Static app infrastructure, which deploys app content to an S3 bucket.
  *
- * The site redirects from HTTP to HTTPS, using a CloudFront distribution,
+ * The app redirects from HTTP to HTTPS, using a CloudFront distribution,
  * Route53 alias record, and ACM certificate.
  */
 export class FrontEnd extends cdk.Construct {
-  constructor(parent: cdk.Construct, name: string) {
-    super(parent, name);
+  readonly id: string;
+
+  constructor(parent: cdk.Construct, id: string) {
+    super(parent, id);
+    this.id = id;
 
     const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: DOMAIN_NAME });
 
-    // site bucket
-    const siteBucket = new s3.Bucket(this, 'SiteBucket', {
-      bucketName: CONSOLE_DOMAIN_NAME,
+    // S3 bucket
+    const appBucket = new s3.Bucket(this, 'AppBucket', {
+      bucketName: APP_DOMAIN_NAME,
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'error.html',
-      publicReadAccess: true,
+      publicReadAccess: false,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: true
+      encryption: s3.BucketEncryption.S3_MANAGED
     });
 
+    // Access Identity for CloudFront to access S3
+    const accessIdentity = new cloudfront.OriginAccessIdentity(this, 'AccessIdentity', {});
+    appBucket.grantRead(accessIdentity);
+
     // CloudFront distribution that provides HTTPS
-    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'SiteDistribution', {
+    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'AppDistribution', {
       aliasConfiguration: {
-        acmCertRef: SSL_CERT_ARN,
-        names: [CONSOLE_DOMAIN_NAME],
+        acmCertRef: APP_SSL_CERT_ARN,
+        names: [APP_DOMAIN_NAME],
         sslMethod: cloudfront.SSLMethod.SNI,
-        securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_1_2016,
+        securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021
       },
       originConfigs: [{
-        customOriginSource: {
-          domainName: siteBucket.bucketWebsiteDomainName,
-          originProtocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+        s3OriginSource: {
+          s3BucketSource: appBucket,
+          originAccessIdentity: accessIdentity
         },
         behaviors: [{ isDefaultBehavior: true }],
       }],
@@ -55,8 +63,8 @@ export class FrontEnd extends cdk.Construct {
     });
 
     // Route53 alias record for the CloudFront distribution
-    const record = new route53.ARecord(this, 'SiteAliasRecord', {
-      recordName: CONSOLE_DOMAIN_NAME,
+    const record = new route53.ARecord(this, 'AppAliasRecord', {
+      recordName: APP_DOMAIN_NAME,
       target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
       zone
     });

@@ -1,6 +1,6 @@
 # Medplum
 
-Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.  Medplum includes a FHIR server, React component library, and developer console.
+Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.  Medplum includes a FHIR server, React component library, and developer app.
 
 # Medplum Data Definitions
 

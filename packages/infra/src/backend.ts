@@ -9,7 +9,7 @@ import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as ssm from '@aws-cdk/aws-ssm';
 import * as cdk from '@aws-cdk/core';
-import { API_DOMAIN_NAME, DOMAIN_NAME, SSL_CERT_ARN } from './constants';
+import { API_DOMAIN_NAME, API_SSL_CERT_ARN, DOMAIN_NAME } from './constants';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -159,7 +159,7 @@ export class BackEnd extends cdk.Construct {
     loadBalancer.addListener('HttpsListener', {
       port: 443,
       certificates: [{
-        certificateArn: SSL_CERT_ARN
+        certificateArn: API_SSL_CERT_ARN
       }],
       sslPolicy: elbv2.SslPolicy.FORWARD_SECRECY_TLS12_RES_GCM,
       defaultAction: elbv2.ListenerAction.forward([targetGroup])

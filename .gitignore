@@ -11,7 +11,7 @@ node_modules/
 .env.production
 
 # Output
-packages/console/dist/
+packages/app/dist/
 packages/core/dist/
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map

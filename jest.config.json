@@ -30,7 +30,7 @@
     "!src/stories/**/*.tsx"
   ],
   "projects": [
-    "packages/console",
+    "packages/app",
     "packages/core",
     "packages/generator",
     "packages/infra",
