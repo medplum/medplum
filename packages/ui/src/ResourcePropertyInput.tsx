@@ -52,12 +52,8 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
         <input type="number" name={name} defaultValue={value}></input>
       );
     case PropertyType.code:
-      return (
-        <CodeInput
-          name={name}
-          defaultValue={value}
-          property={property}
-        />);
+    case PropertyType.Coding:
+      return <CodeInput property={property} name={name} defaultValue={value} />;
     case PropertyType.boolean:
       return (
         <input type="checkbox" name={name} defaultChecked={!!value} value="true" />
@@ -70,8 +66,6 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
       return <AddressInput name={name} defaultValue={value} />;
     case PropertyType.Attachment:
       return <AttachmentInput name={name} defaultValue={value} />;
-    case PropertyType.Coding:
-      return <CodeInput property={property} name={name} defaultValue={value} />;
     case PropertyType.CodeableConcept:
       return <CodeableConceptInput name={name} defaultValue={value} />;
     case PropertyType.ContactPoint:

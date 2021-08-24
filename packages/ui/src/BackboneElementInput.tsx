@@ -1,5 +1,5 @@
 import { buildTypeName, ElementDefinition, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
-import React, { useState } from 'react';
+import React from 'react';
 import { FormSection } from './FormSection';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
@@ -11,8 +11,6 @@ export interface BackboneElementInputProps {
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps) {
-  const [value, setValue] = useState(props.defaultValue);
-
   const typeName = buildTypeName(props.property.path?.split('.') as string[]);
   const typeSchema = props.schema.types[typeName];
   if (!typeSchema) {
@@ -30,7 +28,7 @@ export function BackboneElementInput(props: BackboneElementInputProps) {
               schema={props.schema}
               property={property}
               name={props.name + '.' + key}
-              defaultValue={value[key]}
+              defaultValue={props.defaultValue?.[key]}
             />
           </FormSection>
         );

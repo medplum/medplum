@@ -79,6 +79,7 @@
 .btn.btn-borderless {
   background-color: var(--medplum-surface);
   border: 0;
+  box-shadow: none;
 }
 
 .btn.btn-borderless:hover {

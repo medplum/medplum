@@ -8,21 +8,13 @@ export default {
   component: ReferenceInput,
 } as Meta;
 
-// const targetProfile = props.property.type?.[0]?.targetProfile;
-
-export const Patient = () => (
+export const TargetProfile = () => (
   <Document>
     <ReferenceInput
-      // id="foo"
-      // resourceType="Patient"
       name="foo"
-      // loadOptions={async (input: string) => presidents.filter(s => s.toLowerCase().includes(input.toLowerCase()))}
-      // getId={(option: string) => option}
-      // getDisplay={(option: string) => (
-      //   <div>{option}</div>
-      // )}
       property={{
         type: [{
+          code: 'reference',
           targetProfile: ['Practitioner', 'Patient']
         }]
       }}
@@ -30,20 +22,15 @@ export const Patient = () => (
   </Document>
 );
 
-// export const Multiple = () => (
-//   <Document>
-//     <ReferenceInput id="foo" resourceType="Patient" multiple={true} />
-//   </Document>
-// );
-
-// export const Prefilled = () => (
-//   <Document>
-//     <ReferenceInput
-//       resourceType="Patient"
-//       id={process.env.SAMPLE_PATIENT_ID}
-//       defaultValue={[{
-//         reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID
-//       }]}
-//     />
-//   </Document>
-// );
+export const FreeText = () => (
+  <Document>
+    <ReferenceInput
+      name="foo"
+      property={{
+        type: [{
+          code: 'reference'
+        }]
+      }}
+    />
+  </Document>
+);

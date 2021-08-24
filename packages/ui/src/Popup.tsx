@@ -4,6 +4,8 @@ import './Popup.css';
 
 interface PopupProps {
   visible: boolean;
+  x?: number;
+  y?: number;
   modal?: boolean;
   autoClose?: boolean;
   onClose: () => void;
@@ -39,6 +41,27 @@ export function Popup(props: PopupProps) {
 
   }, []);
 
+  const style: React.CSSProperties = {
+    display: props.visible ? 'block' : 'none'
+  };
+
+  if (props.x !== undefined && props.y !== undefined) {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    if (props.x > width - 250) {
+      style.right = (width - props.x) + 'px';
+    } else {
+      style.left = props.x + 'px';
+    }
+
+    if (props.y > height - 300) {
+      style.bottom = (height - props.y) + 'px';
+    } else {
+      style.top = props.y + 'px';
+    }
+  }
+
   return (
     <>
       {props.modal && (
@@ -47,7 +70,10 @@ export function Popup(props: PopupProps) {
           onClick={props.onClose}
         />
       )}
-      <div ref={ref} className={props.visible ? props.activeClassName : props.inactiveClassName}>
+      <div
+        ref={ref}
+        className={'medplum-popup ' + (props.visible ? props.activeClassName : props.inactiveClassName)}
+        style={style}>
         {props.children}
       </div>
     </>

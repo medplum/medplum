@@ -35,6 +35,7 @@ export function CodeInput(props: CodeInputProps) {
             } as Coding));
           });
       }}
+      buildUnstructured={(str: string) => ({ code: str })}
       getId={(item: Coding) => item.code as string}
       getDisplay={(item: Coding) => <>{item.display || item.code}</>}
       name={props.name}

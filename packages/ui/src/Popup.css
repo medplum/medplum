@@ -1,9 +1,14 @@
 .medplum-popup {
-  box-shadow: 0 1px 3px 0 var(--medplum-gray-300);
-}
-
-.medplum-popup-hidden {
-  display: none;
+  position: absolute;
+  background: var(--medplum-surface);
+  cursor: default;
+  margin: 0;
+  outline: none;
+  z-index: 20000;
+  border-radius: 0;
+  box-shadow: 0 2px 4px var(--medplum-shadow);
+  transition: opacity .2s;
+  border: thin solid var(--medplum-gray-400);
 }
 
 .medplum-backdrop {

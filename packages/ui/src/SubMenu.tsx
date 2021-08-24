@@ -1,5 +1,5 @@
 import React from 'react';
-import { PopupMenu } from './PopupMenu';
+import { Popup } from './Popup';
 import './SubMenu.css';
 
 interface SubMenuProps {
@@ -15,7 +15,7 @@ interface SubMenuState {
 export class SubMenu extends React.Component<SubMenuProps, SubMenuState> {
   private menuItemRef: React.RefObject<HTMLDivElement>;
   private timerId?: number;
-  private hover: boolean = false;
+  private hover = false;
 
   constructor(props: SubMenuProps) {
     super(props);
@@ -34,18 +34,19 @@ export class SubMenu extends React.Component<SubMenuProps, SubMenuState> {
       <div
         ref={this.menuItemRef}
         className="medplum-menu-item medplum-submenu-item"
-        onClick={e => this.handleClick(e)}
+        onClick={() => this.handleClick()}
         onMouseOver={() => this.handleMouseOver()}
         onMouseLeave={() => this.handleMouseLeave()}>
         {this.props.title}
         <span className="medplum-submenu-arrow" style={{ userSelect: 'none' }}>{'\u25BA'}</span>
-        <PopupMenu
+        <Popup
           visible={this.state.visible}
           x={this.state.x}
           y={this.state.y}
+          autoClose={true}
           onClose={() => this.setState({ visible: false })}>
           {this.props.children}
-        </PopupMenu>
+        </Popup>
       </div>
     );
   }
@@ -77,8 +78,7 @@ export class SubMenu extends React.Component<SubMenuProps, SubMenuState> {
     }
   }
 
-  handleClick(e: React.MouseEvent) {
-    // Calculate position relative to the title menu item
+  handleClick() {
     this.show();
   }
 
@@ -90,7 +90,7 @@ export class SubMenu extends React.Component<SubMenuProps, SubMenuState> {
 
     const rect = el.getBoundingClientRect();
     let x = 0;
-    let y = 0;
+    const y = 0;
 
     if (rect.right + 250 < window.innerWidth) {
       x = rect.width;

@@ -1,8 +1,8 @@
-import { IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { ElementDefinition, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import React from 'react';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
-import { PopupMenu } from './PopupMenu';
+import { Popup } from './Popup';
 import { addFilter, buildFieldNameString, clearFiltersOnField, getOpString, setSort } from './SearchUtils';
 import { SubMenu } from './SubMenu';
 
@@ -13,19 +13,13 @@ export interface SearchPopupMenuProps {
   x: number,
   y: number,
   property: string,
-  onChange: (definition: SearchRequest) => void,
+  onChange?: (definition: SearchRequest) => void,
   onClose: () => void
 }
 
 export function SearchPopupMenu(props: SearchPopupMenuProps) {
   const resourceType = props.search.resourceType;
-
-  const typeDef = props.schema.types[resourceType];
-  if (!typeDef) {
-    return null;
-  }
-
-  const property = typeDef.properties[props.property];
+  const property = getProperty();
   if (!property) {
     return null;
   }
@@ -33,6 +27,31 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   const propertyType = property.type?.[0]?.code;
   if (!propertyType) {
     return null;
+  }
+
+  /**
+   * Returns the ElementDefinition for the property.
+   * Handles some special cases (i.e., "meta.lastUpdated").
+   * @returns The element definition, if found.
+   */
+  function getProperty(): ElementDefinition | undefined {
+    if (props.property === 'meta.lastUpdated') {
+      return {
+        type: [{
+          code: 'datetime'
+        }]
+      };
+    }
+
+    if (props.property === 'meta.versionId') {
+      return {
+        type: [{
+          code: 'id'
+        }]
+      };
+    }
+
+    return props.schema.types[resourceType]?.properties?.[props.property];
   }
 
   /**
@@ -137,11 +156,11 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   }
 
   function sort(desc: boolean) {
-    props.onChange(setSort(props.search, props.property, desc));
+    onChange(setSort(props.search, props.property, desc));
   }
 
   function clearFilters() {
-    props.onChange(clearFiltersOnField(props.search, props.property));
+    onChange(clearFiltersOnField(props.search, props.property));
   }
 
   /**
@@ -154,12 +173,18 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
 
     const retVal = window.prompt(caption, '');
     if (retVal !== null) {
-      props.onChange(addFilter(props.search, props.property, op, retVal, true));
+      onChange(addFilter(props.search, props.property, op, retVal, true));
+    }
+  }
+
+  function onChange(definition: SearchRequest): void {
+    if (props.onChange) {
+      props.onChange(definition);
     }
   }
 
   return (
-    <PopupMenu visible={props.visible} x={props.x} y={props.y} onClose={props.onClose}>
+    <Popup visible={props.visible} x={props.x} y={props.y} autoClose={true} onClose={props.onClose}>
       <MenuItem onClick={() => sort(false)}>{getAscSortString(propertyType)}</MenuItem>
       <MenuItem onClick={() => sort(true)}>{getDescSortString(propertyType)}</MenuItem>
       <MenuSeparator />
@@ -171,6 +196,6 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
           <MenuItem onClick={() => console.log('search')}>Search</MenuItem>
         </>
       )}
-    </PopupMenu>
+    </Popup>
   );
 }

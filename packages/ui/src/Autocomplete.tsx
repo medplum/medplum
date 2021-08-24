@@ -7,6 +7,7 @@ export interface AutocompleteProps<T> {
   autofocus?: boolean;
   defaultValue?: T[];
   loadOptions: (input: string) => Promise<T[]>;
+  buildUnstructured?: (input: string) => T;
   getId: (item: T) => string;
   getIcon?: (item: T) => JSX.Element;
   getDisplay: (item: T) => JSX.Element;
@@ -76,6 +77,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
   }
 
   function handleBlur(): void {
+    tryAddResource();
     setState({ ...stateRef.current, focused: false });
     dismissOnDelay();
   }
@@ -182,6 +184,10 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     } else if (currState.selectedIndex === -1 && currState.options.length > 0) {
       // Default to first row
       resource = currState.options[0];
+
+    } else if (props.buildUnstructured && inputRef.current?.value) {
+      // Build semi-structured item
+      resource = props.buildUnstructured(inputRef.current.value);
     }
 
     if (!resource) {
