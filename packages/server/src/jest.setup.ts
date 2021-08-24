@@ -10,6 +10,7 @@ export async function initTestAuth() {
   const [loginOutcome, login] = await repo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client),
+    profile: createReference(client),
     authTime: new Date(),
     scope
   });
