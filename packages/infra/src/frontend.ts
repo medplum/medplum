@@ -3,7 +3,7 @@ import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
-import { CONSOLE_DOMAIN_NAME, DOMAIN_NAME, SSL_CERT_ARN } from './constants';
+import { APP_DOMAIN_NAME, DOMAIN_NAME, SSL_CERT_ARN } from './constants';
 
 /**
  * Static site infrastructure, which deploys site content to an S3 bucket.
@@ -19,7 +19,7 @@ export class FrontEnd extends cdk.Construct {
 
     // site bucket
     const siteBucket = new s3.Bucket(this, 'SiteBucket', {
-      bucketName: CONSOLE_DOMAIN_NAME,
+      bucketName: APP_DOMAIN_NAME,
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'error.html',
       publicReadAccess: true,
@@ -31,7 +31,7 @@ export class FrontEnd extends cdk.Construct {
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'SiteDistribution', {
       aliasConfiguration: {
         acmCertRef: SSL_CERT_ARN,
-        names: [CONSOLE_DOMAIN_NAME],
+        names: [APP_DOMAIN_NAME],
         sslMethod: cloudfront.SSLMethod.SNI,
         securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_1_2016,
       },
@@ -56,7 +56,7 @@ export class FrontEnd extends cdk.Construct {
 
     // Route53 alias record for the CloudFront distribution
     const record = new route53.ARecord(this, 'SiteAliasRecord', {
-      recordName: CONSOLE_DOMAIN_NAME,
+      recordName: APP_DOMAIN_NAME,
       target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
       zone
     });

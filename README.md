@@ -10,7 +10,7 @@ Here is a quick summary of the subprojects:
 
 | Folder                                 | Description                            | Port  |
 | -------------------------------------- | -------------------------------------- | ----- |
-| [`console`](packages/console)          | Developer console application          | 3000  |
+| [`app`](packages/app)                  | End user application                   | 3000  |
 | [`core`](packages/core)                | Core Typescript client library         |       |
 | [`definitions`](packages/definiitons)  | Data definitions                       |       |
 | [`generator`](packages/generator)      | Code generator                         |       |
@@ -69,10 +69,10 @@ Run the server:
 npm run dev -w packages/server
 ```
 
-Run the console:
+Run the app:
 
 ```
-npm run dev -w packages/console
+npm run dev -w packages/app
 ```
 
 ## License

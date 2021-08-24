@@ -1,6 +1,6 @@
 # Medplum
 
-Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.  Medplum includes a FHIR server, React component library, and developer console.
+Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.  Medplum includes a FHIR server, React component library, and developer app.
 
 # Medplum JS Client Library
 
@@ -45,7 +45,7 @@ If you are using Medplum as your FHIR server, you can use a direct sign-in API t
 
 Before you begin
 
-1. Create a project in the [Medplum Console](https://console.medplum.com/)
+1. Create a project in the [Medplum App](https://app.medplum.com/)
 2. Enable Email/Password
 
 After that, you can use the `signIn()` method:

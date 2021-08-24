@@ -1,14 +1,14 @@
 {
-  "name": "@medplum/console",
+  "name": "@medplum/app",
   "version": "0.1.1",
-  "description": "Medplum Console",
+  "description": "Medplum App",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
-    "directory": "packages/console"
+    "directory": "packages/app"
   },
   "scripts": {
     "clean": "rimraf dist",
