@@ -27,8 +27,8 @@
     "@babel/preset-typescript": "7.15.0",
     "@medplum/core": "0.1.1",
     "@medplum/ui": "0.1.1",
-    "@typescript-eslint/eslint-plugin": "4.29.2",
-    "@typescript-eslint/parser": "4.29.2",
+    "@typescript-eslint/eslint-plugin": "4.29.3",
+    "@typescript-eslint/parser": "4.29.3",
     "babel-loader": "8.2.2",
     "css-loader": "6.2.0",
     "cross-env": "7.0.3",
@@ -43,9 +43,9 @@
     "rimraf": "3.0.2",
     "style-loader": "3.2.1",
     "typescript": "4.3.5",
-    "webpack": "5.50.0",
+    "webpack": "5.51.1",
     "webpack-cli": "4.8.0",
-    "webpack-dev-server": "3.11.2",
+    "webpack-dev-server": "4.0.0",
     "worker-loader": "3.0.8"
   },
   "browserslist": [
