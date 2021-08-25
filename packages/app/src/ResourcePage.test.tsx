@@ -1,6 +1,6 @@
-import { Bundle, MedplumClient, Practitioner, User } from '@medplum/core';
+import { Bundle, MedplumClient, notFound, Practitioner, Questionnaire, User } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Switch } from 'react-router-dom';
 import { ResourcePage } from './ResourcePage';
@@ -77,6 +77,16 @@ const patientSearchBundle: Bundle = {
   }]
 };
 
+const questionnaire: Questionnaire = {
+  resourceType: 'Questionnaire',
+  id: '123',
+  item: [{
+    linkId: '1',
+    text: 'Hello',
+    type: 'string'
+  }]
+}
+
 const mockRouter = {
   push: (path: string, state: any) => {
     console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
@@ -101,8 +111,14 @@ function mockFetch(url: string, options: any): Promise<any> {
     result = patientSearchBundle;
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123')) {
     result = practitioner;
+  } else if (method === 'PUT' && url.endsWith('/fhir/R4/Practitioner/123')) {
+    result = practitioner;
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123/_history')) {
     result = practitionerHistory;
+  } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/not-found')) {
+    result = notFound
+  } else if (method === 'GET' && url.endsWith('/fhir/R4/Questionnaire/123')) {
+    result = questionnaire;
   }
 
   const response: any = {
@@ -143,6 +159,16 @@ describe('ResourcePage', () => {
     );
   };
 
+  test('Not found', async () => {
+    setup('/Practitioner/not-found');
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('error'));
+    });
+
+    expect(screen.getByTestId('error')).not.toBeUndefined();
+  });
+
   test('Details tab renders', async () => {
     setup('/Practitioner/123');
 
@@ -150,8 +176,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Resource Type'));
     });
 
-    const control = screen.getByText('Resource Type');
-    expect(control).not.toBeUndefined();
+    expect(screen.getByText('Resource Type')).not.toBeUndefined();
   });
 
   test('Edit tab renders', async () => {
@@ -161,8 +186,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Edit'));
     });
 
-    const control = screen.getByText('Edit');
-    expect(control).not.toBeUndefined();
+    expect(screen.getByText('Edit')).not.toBeUndefined();
   });
 
   test('History tab renders', async () => {
@@ -172,8 +196,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('History'));
     });
 
-    const control = screen.getByText('History');
-    expect(control).not.toBeUndefined();
+    expect(screen.getByText('History')).not.toBeUndefined();
   });
 
   test('Blame tab renders', async () => {
@@ -183,8 +206,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Blame'));
     });
 
-    const control = screen.getByText('Blame');
-    expect(control).not.toBeUndefined();
+    expect(screen.getByText('Blame')).not.toBeUndefined();
   });
 
   test('JSON tab renders', async () => {
@@ -194,8 +216,45 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByTestId('resource-json'));
     });
 
-    const control = screen.getByTestId('resource-json');
-    expect(control).not.toBeUndefined();
+    expect(screen.getByTestId('resource-json')).not.toBeUndefined();
+  });
+
+  test('JSON submit', async () => {
+    setup('/Practitioner/123/json');
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('resource-json'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('resource-json'), { target: { value: '{"resourceType":"Practitioner","id":"123"}' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(screen.getByTestId('resource-json')).not.toBeUndefined();
+  });
+
+  test('Encounter timeline', async () => {
+    setup('/Encounter/123/timeline');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Timeline'));
+    });
+
+    expect(screen.getByText('Timeline')).not.toBeUndefined();
+  });
+
+  test('Questionnaire preview', async () => {
+    setup('/Questionnaire/123/preview');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Preview'));
+    });
+
+    expect(screen.getByText('Preview')).not.toBeUndefined();
   });
 
 });

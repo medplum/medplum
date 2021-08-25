@@ -60,7 +60,7 @@ export function ResourcePage() {
       .catch(reason => {
         setError(reason);
         setLoading(false);
-      })
+      });
   }
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export function ResourcePage() {
   if (error) {
     return (
       <Document>
-        <pre>{JSON.stringify(error, undefined, 2)}</pre>
+        <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>
       </Document>
     );
   }
