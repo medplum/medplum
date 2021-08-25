@@ -1,7 +1,8 @@
 .medplum-autocomplete-container {
-  border: thin solid var(--medplum-gray-400);
+  border: thin solid var(--medplum-gray-300);
   border-radius: 3px;
   background: var(--medplum-surface);
+  box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
   outline: 2px var(--medplum-surface);
   position: relative;
   margin: 0;

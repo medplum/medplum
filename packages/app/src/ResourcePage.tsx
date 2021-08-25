@@ -1,4 +1,10 @@
-import { Bundle, Encounter, getDisplayString, Resource } from '@medplum/core';
+import {
+  Bundle,
+  Encounter,
+  getDisplayString,
+  Questionnaire,
+  Resource
+} from '@medplum/core';
 import {
   Button,
   Document,
@@ -6,6 +12,7 @@ import {
   keyReplacer,
   Loading,
   parseForm,
+  QuestionnaireForm,
   ResourceBlame,
   ResourceForm,
   ResourceHistoryTable,
@@ -19,6 +26,21 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
+
+function getTabs(resourceType: string): string[] {
+  const result = [];
+
+  if (resourceType === 'Encounter') {
+    result.push('Timeline');
+  }
+
+  if (resourceType === 'Questionnaire') {
+    result.push('Preview', 'Builder');
+  }
+
+  result.push('Details', 'Edit', 'History', 'Blame', 'JSON');
+  return result;
+}
 
 export function ResourcePage() {
   const { resourceType, id, tab } = useParams<{ resourceType: string, id: string, tab: string }>();
@@ -38,27 +60,27 @@ export function ResourcePage() {
       .catch(reason => {
         setError(reason);
         setLoading(false);
-      })
+      });
   }
 
   useEffect(() => {
     loadResource();
   }, [resourceType, id]);
 
-  if (loading) {
-    return <Loading />;
-  }
-
   if (error) {
     return (
       <Document>
-        <pre>{JSON.stringify(error, undefined, 2)}</pre>
+        <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>
       </Document>
     );
   }
 
-  const hasTimeline = resourceType === 'Encounter';
-  const defaultTab = hasTimeline ? 'timeline' : 'details';
+  if (loading || !value || !historyBundle) {
+    return <Loading />;
+  }
+
+  const tabs = getTabs(resourceType);
+  const defaultTab = tabs[0].toLowerCase();
 
   return (
     <>
@@ -74,50 +96,82 @@ export function ResourcePage() {
       <TabBar
         value={tab || defaultTab}
         onChange={(name: string) => history.push(`/${resourceType}/${id}/${name}`)}>
-        {hasTimeline && <Tab name="timeline" label="Timeline" />}
-        <Tab name="details" label="Details" />
-        <Tab name="edit" label="Edit" />
-        <Tab name="history" label="History" />
-        <Tab name="blame" label="Blame" />
-        <Tab name="json" label="JSON" />
+        {tabs.map(t => <Tab key={t} name={t.toLowerCase()} label={t} />)}
       </TabBar>
       <Document>
         <TabSwitch value={tab || defaultTab}>
-          {hasTimeline && (
-            <TabPanel name="timeline">
-              <EncounterTimeline resource={value as Encounter} />
+          {tabs.map(t => (
+            <TabPanel key={t} name={t.toLowerCase()}>
+              <ResourceTab
+                name={t.toLowerCase()}
+                resource={value}
+                resourceHistory={historyBundle}
+                onSubmit={(resource: Resource) => {
+                  medplum.update(resource).then(() => loadResource());
+                }}
+              />
             </TabPanel>
-          )}
-          <TabPanel name="details">
-            <ResourceTable resource={value} />
-          </TabPanel>
-          <TabPanel name="edit">
-            <ResourceForm
-              resource={value}
-              onSubmit={(resource: Resource) => {
-                medplum.update(resource).then(() => loadResource());
-              }}
-            />
-          </TabPanel>
-          <TabPanel name="history">
-            <ResourceHistoryTable history={historyBundle} />
-          </TabPanel>
-          <TabPanel name="blame">
-            <ResourceBlame history={historyBundle} />
-          </TabPanel>
-          <TabPanel name="json">
-            <form onSubmit={e => {
-              e.preventDefault();
-              const formData = parseForm(e.target as HTMLFormElement);
-              const resource = JSON.parse(formData.resource);
-              medplum.update(resource).then(() => loadResource());
-            }}>
-              <textarea id="resource" name="resource" defaultValue={JSON.stringify(value, keyReplacer, 2)} />
-              <Button type="submit">OK</Button>
-            </form>
-          </TabPanel>
+          ))}
         </TabSwitch>
       </Document>
     </>
   );
+}
+
+interface ResourceTabProps {
+  name: string;
+  resource: Resource;
+  resourceHistory: Bundle;
+  onSubmit: (resource: Resource) => void;
+}
+
+function ResourceTab(props: ResourceTabProps): JSX.Element | null {
+  switch (props.name) {
+    case 'details':
+      return (
+        <ResourceTable resource={props.resource} />
+      );
+    case 'edit':
+      return (
+        <ResourceForm resource={props.resource} onSubmit={props.onSubmit} />
+      );
+    case 'history':
+      return (
+        <ResourceHistoryTable history={props.resourceHistory} />
+      );
+    case 'blame':
+      return (
+        <ResourceBlame history={props.resourceHistory} />
+      );
+    case 'json':
+      return (
+        <form onSubmit={e => {
+          e.preventDefault();
+          const formData = parseForm(e.target as HTMLFormElement);
+          props.onSubmit(JSON.parse(formData.resource));
+        }}>
+          <textarea
+            id="resource"
+            data-testid="resource-json"
+            name="resource"
+            defaultValue={JSON.stringify(props.resource, keyReplacer, 2)}
+          />
+          <Button type="submit">OK</Button>
+        </form>
+      );
+    case 'timeline':
+      return (
+        <EncounterTimeline resource={props.resource as Encounter} />
+      );
+    case 'preview':
+      return (
+        <QuestionnaireForm
+          questionnaire={props.resource as Questionnaire}
+          onSubmit={formData => {
+            console.log('formData', formData);
+          }}
+        />
+      );
+  }
+  return null;
 }
