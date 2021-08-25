@@ -62,13 +62,29 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
           props.onSubmit(response);
         }
       }}>
-      {questionnaire.item?.map(item => (
+      {questionnaire.item && (
+        <QuestionnaireFormItemArray items={questionnaire.item} />
+      )}
+      <Button type="submit" size="large">OK</Button>
+    </form>
+  );
+}
+
+interface QuestionnaireFormItemArrayProps {
+  items: QuestionnaireItem[];
+}
+
+function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX.Element {
+  return (
+    <>
+      {props.items.map(item => item.type === QuestionnaireItemType.group ? (
+        <QuestionnaireFormItem key={item.linkId} item={item} />
+      ) : (
         <FormSection key={item.linkId} title={item.text || ''}>
           <QuestionnaireFormItem item={item} />
         </FormSection>
       ))}
-      <Button type="submit" size="large">OK</Button>
-    </form>
+    </>
   );
 }
 
@@ -92,6 +108,15 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
   const property: ElementDefinition = {} as ElementDefinition;
 
   switch (type) {
+    case QuestionnaireItemType.group:
+      return (
+        <div>
+          <h3>{item.text}</h3>
+          {item.item && (
+            <QuestionnaireFormItemArray items={item.item} />
+          )}
+        </div>
+      );
     case PropertyType.SystemString:
     case PropertyType.canonical:
     case PropertyType.date:
@@ -103,6 +128,7 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
       return (
         <input type="text" name={name} data-testid={name}></input>
       );
+    case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:

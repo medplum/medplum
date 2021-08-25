@@ -71,6 +71,48 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByTestId('questionnaire-form')).not.toBeUndefined();
   });
 
+  test('Render groups', async () => {
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [{
+          linkId: 'group1',
+          text: 'Group 1',
+          type: 'group',
+          item: [{
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string'
+          },
+          {
+            linkId: 'question2',
+            text: 'Question 2',
+            type: 'string'
+          }]
+        }, {
+          linkId: 'group2',
+          text: 'Group 2',
+          type: 'group',
+          item: [{
+            linkId: 'question3',
+            text: 'Question 3',
+            type: 'string'
+          },
+          {
+            linkId: 'question4',
+            text: 'Question 4',
+            type: 'string'
+          }]
+        }]
+      },
+      onSubmit: jest.fn()
+    });
+
+    expect(screen.getByTestId('questionnaire-form')).not.toBeUndefined();
+    expect(screen.getByText('Group 1')).not.toBeUndefined();
+    expect(screen.getByText('Group 2')).not.toBeUndefined();
+  });
+
   test('Handles submit', async () => {
     const onSubmit = jest.fn();
 

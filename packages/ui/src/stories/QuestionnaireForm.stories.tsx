@@ -29,3 +29,45 @@ export const Basic = () => (
     />
   </Document>
 );
+
+export const Groups = () => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        item: [{
+          linkId: 'group1',
+          text: 'Group 1',
+          type: 'group',
+          item: [{
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string'
+          },
+          {
+            linkId: 'question2',
+            text: 'Question 2',
+            type: 'string'
+          }]
+        }, {
+          linkId: 'group2',
+          text: 'Group 2',
+          type: 'group',
+          item: [{
+            linkId: 'question3',
+            text: 'Question 3',
+            type: 'string'
+          },
+          {
+            linkId: 'question4',
+            text: 'Question 4',
+            type: 'string'
+          }]
+        }]
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
