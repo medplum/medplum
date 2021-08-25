@@ -152,6 +152,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         }}>
           <textarea
             id="resource"
+            data-testid="resource-json"
             name="resource"
             defaultValue={JSON.stringify(props.resource, keyReplacer, 2)}
           />

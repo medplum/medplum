@@ -13,7 +13,14 @@ const user: User = {
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
   id: '123',
-  name: [{ given: ['Medplum'], family: 'Admin' }]
+  name: [{ given: ['Medplum'], family: 'Admin' }],
+  meta: {
+    versionId: '456',
+    lastUpdated: '2021-01-01T12:00:00Z',
+    author: {
+      reference: 'Practitioner/123'
+    }
+  }
 };
 
 const practitionerHistory: Bundle = {
@@ -118,29 +125,77 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-beforeAll(async () => {
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-});
+describe('ResourcePage', () => {
 
-const setup = (url: string) => {
-  return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Switch>
-          <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
-        </Switch>
-      </MemoryRouter>
-    </MedplumProvider>
-  );
-};
-
-test('ResourcePage renders', async () => {
-  setup('/Practitioner/123');
-
-  await act(async () => {
-    await waitFor(() => screen.getByText('Resource Type'));
+  beforeAll(async () => {
+    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  const control = screen.getByText('Resource Type');
-  expect(control).not.toBeUndefined();
+  const setup = (url: string) => {
+    return render(
+      <MedplumProvider medplum={medplum} router={mockRouter}>
+        <MemoryRouter initialEntries={[url]} initialIndex={0}>
+          <Switch>
+            <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
+          </Switch>
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+  };
+
+  test('Details tab renders', async () => {
+    setup('/Practitioner/123');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Resource Type'));
+    });
+
+    const control = screen.getByText('Resource Type');
+    expect(control).not.toBeUndefined();
+  });
+
+  test('Edit tab renders', async () => {
+    setup('/Practitioner/123/edit');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Edit'));
+    });
+
+    const control = screen.getByText('Edit');
+    expect(control).not.toBeUndefined();
+  });
+
+  test('History tab renders', async () => {
+    setup('/Practitioner/123/history');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('History'));
+    });
+
+    const control = screen.getByText('History');
+    expect(control).not.toBeUndefined();
+  });
+
+  test('Blame tab renders', async () => {
+    setup('/Practitioner/123/blame');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Blame'));
+    });
+
+    const control = screen.getByText('Blame');
+    expect(control).not.toBeUndefined();
+  });
+
+  test('JSON tab renders', async () => {
+    setup('/Practitioner/123/json');
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('resource-json'));
+    });
+
+    const control = screen.getByTestId('resource-json');
+    expect(control).not.toBeUndefined();
+  });
+
 });
