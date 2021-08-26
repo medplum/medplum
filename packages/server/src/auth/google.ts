@@ -1,4 +1,4 @@
-import { badRequest, isOk, Login, ProfileResource, Reference, User } from '@medplum/core';
+import { assertOk, badRequest, isOk, Login, ProfileResource, Reference, Resource, User } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -61,8 +61,6 @@ export async function googleHandler(req: Request, res: Response) {
 
   const result = await jwtVerify(googleJwt, JWKS, verifyOptions);
   const claims = result.payload as GoogleCredentialClaims;
-  console.log('Google claims', JSON.stringify(claims, undefined, 2));
-
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'google',
     clientId: MEDPLUM_CLIENT_APPLICATION_ID,
@@ -79,27 +77,17 @@ export async function googleHandler(req: Request, res: Response) {
   }
 
   const [tokenOutcome, token] = await getAuthTokens(login as Login);
-  if (!isOk(tokenOutcome)) {
-    return sendOutcome(res, tokenOutcome);
-  }
+  assertOk(tokenOutcome);
 
   const [userOutcome, user] = await repo.readReference<User>(login?.user as Reference);
-  if (!isOk(userOutcome)) {
-    return sendOutcome(res, userOutcome);
-  }
+  assertOk(userOutcome);
 
   const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
-  if (!isOk(profileOutcome)) {
-    return sendOutcome(res, profileOutcome);
-  }
-
-  if (!profile) {
-    return sendOutcome(res, badRequest('Invalid profile'));
-  }
+  assertOk(profileOutcome);
 
   return res.status(200).json({
     ...token,
     user,
-    profile
+    profile: profile as Resource
   });
 }
