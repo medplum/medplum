@@ -3,7 +3,7 @@
     "target": "esnext",
     "module": "commonjs",
     "outDir": "dist",
-    "lib": [ "esnext", "dom" ],
+    "lib": [ "esnext", "dom", "dom.iterable" ],
     "jsx": "react",
     "moduleResolution": "node",
     "strict": true,

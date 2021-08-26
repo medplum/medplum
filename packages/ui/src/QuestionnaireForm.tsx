@@ -11,13 +11,9 @@ import { parseForm } from './FormUtils';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
 import { useMedplum } from './MedplumProvider';
+import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
 import { useResource } from './useResource';
-
-export enum QuestionnaireItemType {
-  group = 'group',
-  display = 'display',
-}
 
 export interface QuestionnaireFormProps {
   questionnaire: Reference | Questionnaire;
@@ -105,6 +101,8 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
     return null;
   }
 
+  const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
+
   const property: ElementDefinition = {} as ElementDefinition;
 
   switch (type) {
@@ -118,26 +116,41 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
         </div>
       );
     case PropertyType.SystemString:
-    case PropertyType.canonical:
+    case PropertyType.string:
+      return (
+        <input type="text" name={name} data-testid={name} defaultValue={initial?.valueString} />
+      );
     case PropertyType.date:
+      return (
+        <input type="date" name={name} data-testid={name} defaultValue={initial?.valueDate} />
+      );
     case PropertyType.dateTime:
     case PropertyType.instant:
-    case PropertyType.string:
+      return (
+        <input type="datetime-local" name={name} data-testid={name} defaultValue={initial?.valueDateTime} />
+      );
+    case PropertyType.time:
+      return (
+        <input type="time" name={name} data-testid={name} defaultValue={initial?.valueTime} />
+      );
     case PropertyType.uri:
     case PropertyType.url:
       return (
-        <input type="text" name={name} data-testid={name}></input>
+        <input type="url" name={name} data-testid={name} defaultValue={initial?.valueUri} />
       );
     case PropertyType.decimal:
+      return (
+        <input type="number" name={name} data-testid={name} defaultValue={initial?.valueDecimal} />
+      );
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
       return (
-        <input type="number" name={name} data-testid={name}></input>
+        <input type="number" name={name} data-testid={name} defaultValue={initial?.valueInteger} />
       );
     case PropertyType.code:
     case PropertyType.Coding:
-      return <CodeInput property={property} name={name} />;
+      return <CodeInput property={property} name={name} defaultValue={initial?.valueCoding} />;
     case PropertyType.boolean:
       return (
         <input type="checkbox" name={name} value="true" />
@@ -158,8 +171,9 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
       return <HumanNameInput name={name} />;
     case PropertyType.Identifier:
       return <IdentifierInput name={name} />;
+    case PropertyType.canonical:
     case PropertyType.Reference:
-      return <ReferenceInput property={property} name={name} />;
+      return <ReferenceInput property={property} name={name} defaultValue={initial?.valueReference} />;
   }
 
   return null;

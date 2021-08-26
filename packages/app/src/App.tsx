@@ -12,6 +12,7 @@ import React from 'react';
 import { Route, Router, Switch } from 'react-router-dom';
 import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
+import { FormPage } from './FormPage';
 import { history } from './history';
 import { HomePage } from './HomePage';
 import { RegisterPage } from './RegisterPage';
@@ -73,6 +74,7 @@ export function App() {
         <Route exact path="/resetpassword"><ResetPasswordPage /></Route>
         <Route exact path="/register"><RegisterPage /></Route>
         <Route exact path="/changepassword"><ChangePasswordPage /></Route>
+        <Route exact path="/forms/:id"><FormPage /></Route>
         <Route exact path="/:resourceType/new"><CreateResourcePage /></Route>
         <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
         <Route exact path="/:resourceType?"><HomePage /></Route>

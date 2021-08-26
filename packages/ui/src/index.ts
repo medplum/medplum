@@ -29,6 +29,7 @@ export * from './MenuItem';
 export * from './Page';
 export * from './Popup';
 export * from './QuestionnaireForm';
+export * from './QuestionnaireUtils';
 export * from './ReferenceInput';
 export * from './ResourceArrayDisplay';
 export * from './ResourceArrayInput';
