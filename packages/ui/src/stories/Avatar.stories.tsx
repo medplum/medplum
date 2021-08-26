@@ -62,7 +62,7 @@ export const WithText = () => (
         George Washington
       </div>
     </a>
-    <hr style={{ margin: '40px 0' }} />
+    <hr />
     <a href="#">
       <div style={{ display: 'flex', width: 180, justifyContent: 'space-between' }}>
         <Avatar alt="George Washington" src="/avatars/1.jpg" />

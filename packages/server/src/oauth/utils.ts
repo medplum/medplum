@@ -1,25 +1,60 @@
 import { allOk, assertOk, badRequest, ClientApplication, createReference, getDateProperty, getReferenceString, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProjectMembership, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
+import { JWTPayload } from 'jose/webcrypto/types';
 import { PUBLIC_PROJECT_ID } from '../constants';
 import { repo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {
-  clientId: string;
-  email: string;
-  password: string;
-  role: 'practitioner' | 'patient';
-  scope: string;
-  nonce: string;
-  remember: boolean;
-  codeChallenge?: string;
-  codeChallengeMethod?: string;
+  readonly clientId: string;
+  readonly email: string;
+  readonly authMethod: 'password' | 'google';
+  readonly password?: string;
+  readonly role: 'practitioner' | 'patient';
+  readonly scope: string;
+  readonly nonce: string;
+  readonly remember: boolean;
+  readonly codeChallenge?: string;
+  readonly codeChallengeMethod?: string;
+  readonly googleCredentials?: GoogleCredentialClaims;
 }
 
 export interface TokenResult {
-  idToken: string;
-  accessToken: string;
-  refreshToken?: string;
+  readonly idToken: string;
+  readonly accessToken: string;
+  readonly refreshToken?: string;
+}
+
+/**
+ * The decoded payload of Google Credentials.
+ */
+export interface GoogleCredentialClaims extends JWTPayload {
+  /**
+   * If present, the host domain of the user's GSuite email address.
+   */
+  readonly hd: string;
+
+  /**
+   * The user's email address.
+   */
+  readonly email: string;
+
+  /**
+   * True if Google has verified the email address.
+   */
+  readonly email_verified: boolean;
+
+  /**
+   * The user's full name.
+   */
+  readonly name: string;
+  readonly given_name: string;
+  readonly family_name: string;
+
+  /**
+   * If present, a URL to the user's profile picture.
+   */
+  readonly picture: string;
 }
 
 export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome, Login | undefined]> {
@@ -42,14 +77,9 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [badRequest('User not found', 'email'), undefined];
   }
 
-  const passwordHash = user?.passwordHash;
-  if (!passwordHash) {
-    return [badRequest('Invalid user', 'email'), undefined];
-  }
-
-  const bcryptResult = await bcrypt.compare(request.password, passwordHash);
-  if (!bcryptResult) {
-    return [badRequest('Incorrect password', 'password'), undefined];
+  const authOutcome = await authenticate(request, user);
+  if (!isOk(authOutcome)) {
+    return [authOutcome, undefined];
   }
 
   const memberships = await getUserMemberships(user);
@@ -89,7 +119,15 @@ export function validateLoginRequest(request: LoginRequest): OperationOutcome | 
     return badRequest('Invalid email', 'email');
   }
 
-  if (!request.password) {
+  if (!request.authMethod) {
+    return badRequest('Invalid authentication method', 'authMethod');
+  }
+
+  if (request.authMethod === 'password' && !request.password) {
+    return badRequest('Invalid password', 'password');
+  }
+
+  if (request.authMethod === 'google' && !request.googleCredentials) {
     return badRequest('Invalid password', 'password');
   }
 
@@ -116,6 +154,29 @@ export function validateLoginRequest(request: LoginRequest): OperationOutcome | 
   }
 
   return undefined;
+}
+
+export async function authenticate(request: LoginRequest, user: User): Promise<OperationOutcome> {
+  if (request.password) {
+    const passwordHash = user?.passwordHash;
+    if (!passwordHash) {
+      return badRequest('Invalid user', 'email');
+    }
+
+    const bcryptResult = await bcrypt.compare(request.password, passwordHash);
+    if (!bcryptResult) {
+      return badRequest('Incorrect password', 'password');
+    }
+
+    return allOk;
+  }
+
+  if (request.googleCredentials) {
+    // Verify Google user id
+    return allOk;
+  }
+
+  return badRequest('Invalid authentication method');
 }
 
 export async function getAuthTokens(login: Login): Promise<[OperationOutcome, TokenResult | undefined]> {

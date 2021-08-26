@@ -49,6 +49,7 @@ export async function registerHandler(req: Request, res: Response) {
   const scope = req.body.scope ?? 'launch/patient openid fhirUser offline_access user/*.*';
   const role = req.body.role ?? 'practitioner';
   const [loginOutcome, login] = await tryLogin({
+    authMethod: 'password',
     clientId: MEDPLUM_CLIENT_APPLICATION_ID,
     email: email,
     password: password,

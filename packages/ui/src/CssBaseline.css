@@ -64,6 +64,7 @@ svg {
 
 hr {
   border: none;
+  margin: 10px 0;
   height: 1px;
   color: var(--medplum-gray-200);
   background-color: var(--medplum-gray-200);

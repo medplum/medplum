@@ -20,6 +20,7 @@ export async function loginHandler(req: Request, res: Response) {
   }
 
   const [loginOutcome, login] = await tryLogin({
+    authMethod: 'password',
     clientId: req.body.clientId,
     email: req.body.email,
     password: req.body.password,
