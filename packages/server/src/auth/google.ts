@@ -1,4 +1,4 @@
-import { assertOk, badRequest, isOk, Login, ProfileResource, Reference, Resource, User } from '@medplum/core';
+import { assertOk, badRequest, Login } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -6,8 +6,8 @@ import { createRemoteJWKSet } from 'jose/jwks/remote';
 import { jwtVerify, JWTVerifyOptions } from 'jose/jwt/verify';
 import { getConfig } from '../config';
 import { MEDPLUM_CLIENT_APPLICATION_ID } from '../constants';
-import { invalidRequest, repo, sendOutcome } from '../fhir';
-import { getAuthTokens, GoogleCredentialClaims, tryLogin } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir';
+import { finalizeLogin, GoogleCredentialClaims, tryLogin } from '../oauth';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -71,23 +71,13 @@ export async function googleHandler(req: Request, res: Response) {
     nonce: randomUUID(),
     remember: true
   });
+  assertOk(loginOutcome);
 
-  if (!isOk(loginOutcome)) {
-    return sendOutcome(res, loginOutcome);
-  }
-
-  const [tokenOutcome, token] = await getAuthTokens(login as Login);
-  assertOk(tokenOutcome);
-
-  const [userOutcome, user] = await repo.readReference<User>(login?.user as Reference);
-  assertOk(userOutcome);
-
-  const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
-  assertOk(profileOutcome);
+  const loginDetails = await finalizeLogin(login as Login);
 
   return res.status(200).json({
-    ...token,
-    user,
-    profile: profile as Resource
+    ...loginDetails.tokens,
+    user: loginDetails.user,
+    profile: loginDetails.profile
   });
 }

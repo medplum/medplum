@@ -175,4 +175,27 @@ describe('SignInForm', () => {
     expect(props.onRegister).toBeCalled();
   });
 
+  test('Google success', async () => {
+    (window as any).google = {
+      accounts: {
+        id: {
+          initialize: jest.fn(),
+          prompt: jest.fn()
+        }
+      }
+    };
+
+    setup({
+      onSuccess: jest.fn(),
+      googleClientId: '123'
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign in with Google'));
+    });
+
+    expect((window as any).google.accounts.id.initialize).toHaveBeenCalled();
+    expect((window as any).google.accounts.id.prompt).toHaveBeenCalled();
+  });
+
 });

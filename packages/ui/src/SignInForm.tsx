@@ -25,6 +25,12 @@ export function SignInForm(props: SignInFormProps) {
   const role = props.role || 'practitioner';
   const scope = props.scope || 'launch/patient openid fhirUser offline_access user/*.*';
 
+  function handleError(err: any): void {
+    if (err.outcome) {
+      setOutcome(err.outcome);
+    }
+  }
+
   return (
     <form style={{ maxWidth: 400 }} onSubmit={(e: React.SyntheticEvent) => {
       e.preventDefault();
@@ -33,11 +39,7 @@ export function SignInForm(props: SignInFormProps) {
       const remember = !!props.remember;
       medplum.signIn(formData.email, formData.password, role, scope, remember)
         .then(() => props.onSuccess())
-        .catch(err => {
-          if (err.outcome) {
-            setOutcome(err.outcome);
-          }
-        });
+        .catch(handleError);
     }}>
       <div className="center">
         <Logo size={32} />
@@ -73,11 +75,7 @@ export function SignInForm(props: SignInFormProps) {
               callback: (response: GoogleCredentialResponse) => {
                 medplum.signInWithGoogle(response)
                   .then(() => props.onSuccess())
-                  .catch(err => {
-                    if (err.outcome) {
-                      setOutcome(err.outcome);
-                    }
-                  });
+                  .catch(handleError);
               }
             });
             google.accounts.id.prompt();
