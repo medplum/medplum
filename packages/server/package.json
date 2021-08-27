@@ -42,7 +42,7 @@
     "winston": "3.3.3"
   },
   "devDependencies": {
-    "@jest/test-sequencer": "27.0.6",
+    "@jest/test-sequencer": "27.1.0",
     "@types/bcrypt": "5.0.0",
     "@types/body-parser": "1.19.1",
     "@types/cookie-parser": "1.4.2",
@@ -52,7 +52,7 @@
     "@types/jest": "27.0.1",
     "@types/json-schema": "7.0.9",
     "@types/mustache": "4.1.2",
-    "@types/node": "16.7.1",
+    "@types/node": "16.7.3",
     "@types/pg": "8.6.1",
     "@types/set-cookie-parser": "2.4.1",
     "@types/supertest": "2.0.11",
@@ -63,7 +63,7 @@
     "cross-env": "7.0.3",
     "enhanced-resolve": "5.8.2",
     "eslint": "7.32.0",
-    "jest": "27.0.6",
+    "jest": "27.1.0",
     "openapi3-ts": "2.0.1",
     "rimraf": "3.0.2",
     "set-cookie-parser": "2.4.8",
@@ -71,6 +71,6 @@
     "ts-jest": "27.0.5",
     "ts-node": "10.2.1",
     "ts-node-dev": "1.1.8",
-    "typescript": "4.3.5"
+    "typescript": "4.4.2"
   }
 }

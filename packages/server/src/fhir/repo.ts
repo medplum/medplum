@@ -235,7 +235,7 @@ export class Repository {
     try {
       await this.write(result);
     } catch (error) {
-      return [badRequest(error.message), undefined];
+      return [badRequest((error as Error).message), undefined];
     }
 
     return [existing ? allOk : created, result];
