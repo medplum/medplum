@@ -64,9 +64,13 @@ const medplum = new MedplumClient({
 });
 
 const setup = (args?: SignInFormProps) => {
+  const props = {
+    onSuccess: jest.fn(),
+    ...args
+  };
   return render(
     <MedplumProvider medplum={medplum} router={mockRouter}>
-      <SignInForm {...args} />
+      <SignInForm {...props} />
     </MedplumProvider>
   );
 };
@@ -143,7 +147,8 @@ describe('SignInForm', () => {
 
   test('Forgot password', async () => {
     const props = {
-      onForgotPassword: jest.fn()
+      onForgotPassword: jest.fn(),
+      onSuccess: jest.fn()
     };
 
     setup(props);
@@ -157,7 +162,8 @@ describe('SignInForm', () => {
 
   test('Register', async () => {
     const props = {
-      onRegister: jest.fn()
+      onRegister: jest.fn(),
+      onSuccess: jest.fn()
     };
 
     setup(props);
@@ -167,6 +173,29 @@ describe('SignInForm', () => {
     });
 
     expect(props.onRegister).toBeCalled();
+  });
+
+  test('Google success', async () => {
+    (window as any).google = {
+      accounts: {
+        id: {
+          initialize: jest.fn(),
+          prompt: jest.fn()
+        }
+      }
+    };
+
+    setup({
+      onSuccess: jest.fn(),
+      googleClientId: '123'
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign in with Google'));
+    });
+
+    expect((window as any).google.accounts.id.initialize).toHaveBeenCalled();
+    expect((window as any).google.accounts.id.prompt).toHaveBeenCalled();
   });
 
 });

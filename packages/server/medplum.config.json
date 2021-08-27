@@ -8,6 +8,8 @@
   "userInfoUrl": "http://host.docker.internal:5000/oauth2/userinfo",
   "binaryStorage": "s3:medplum-binary",
   "supportEmail": "Medplum <support@medplum.com>",
+  "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
+  "googleClientSecret": "",
   "database": {
     "host": "localhost",
     "port": 5432,

@@ -611,6 +611,7 @@ test('Compartment permissions', async () => {
   expect(result1.user).not.toBeUndefined();
 
   const [loginOutcome1, login1] = await tryLogin({
+    authMethod: 'password',
     clientId: MEDPLUM_CLIENT_APPLICATION_ID,
     email: registration1.email,
     password: registration1.password,
@@ -649,6 +650,7 @@ test('Compartment permissions', async () => {
   expect(result2.user).not.toBeUndefined();
 
   const [loginOutcome2, login2] = await tryLogin({
+    authMethod: 'password',
     clientId: MEDPLUM_CLIENT_APPLICATION_ID,
     email: registration2.email,
     password: registration2.password,

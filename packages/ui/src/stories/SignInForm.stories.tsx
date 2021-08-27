@@ -79,3 +79,33 @@ export function WithFooter() {
     </>
   );
 }
+
+export function WithGoogle() {
+  const ctx = useMedplumContext();
+  return (
+    <>
+      <Document width={450}>
+        {ctx.user ? (
+          <div>
+            <pre>User: {JSON.stringify(ctx.user)}</pre>
+            <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
+              Sign out
+            </Button>
+          </div>
+        ) : (
+          <SignInForm
+            onSuccess={() => alert('Signed in!')}
+            onForgotPassword={() => alert('Forgot password')}
+            onRegister={() => alert('Register')}
+            googleClientId="xyz"
+          />
+        )}
+      </Document>
+      <FooterLinks>
+        <a href="#">Help</a>
+        <a href="#">Terms</a>
+        <a href="#">Privacy</a>
+      </FooterLinks>
+    </>
+  );
+}

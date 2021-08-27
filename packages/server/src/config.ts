@@ -15,6 +15,8 @@ export interface MedplumServerConfig {
   binaryStorage: string;
   supportEmail: string;
   database: MedplumDatabaseConfig;
+  googleClientId?: string;
+  googleClientSecret?: string;
 }
 
 export interface MedplumDatabaseConfig {

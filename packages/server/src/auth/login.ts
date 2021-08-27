@@ -1,9 +1,9 @@
-import { badRequest, isOk, Login, ProfileResource, Reference, User } from '@medplum/core';
+import { assertOk, Login } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, repo, sendOutcome } from '../fhir';
-import { getAuthTokens, tryLogin } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir';
+import { finalizeLogin, tryLogin } from '../oauth';
 
 export const loginValidators = [
   body('clientId').exists().withMessage('Missing clientId'),
@@ -20,6 +20,7 @@ export async function loginHandler(req: Request, res: Response) {
   }
 
   const [loginOutcome, login] = await tryLogin({
+    authMethod: 'password',
     clientId: req.body.clientId,
     email: req.body.email,
     password: req.body.password,
@@ -28,33 +29,12 @@ export async function loginHandler(req: Request, res: Response) {
     nonce: randomUUID(),
     remember: true
   });
+  assertOk(loginOutcome);
 
-  if (!isOk(loginOutcome)) {
-    return sendOutcome(res, loginOutcome);
-  }
-
-  const [tokenOutcome, token] = await getAuthTokens(login as Login);
-  if (!isOk(tokenOutcome)) {
-    return sendOutcome(res, tokenOutcome);
-  }
-
-  const [userOutcome, user] = await repo.readReference<User>(login?.user as Reference);
-  if (!isOk(userOutcome)) {
-    return sendOutcome(res, userOutcome);
-  }
-
-  const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
-  if (!isOk(profileOutcome)) {
-    return sendOutcome(res, profileOutcome);
-  }
-
-  if (!profile) {
-    return sendOutcome(res, badRequest('Invalid profile'));
-  }
-
+  const loginDetails = await finalizeLogin(login as Login);
   return res.status(200).json({
-    ...token,
-    user,
-    profile
+    ...loginDetails.tokens,
+    user: loginDetails.user,
+    profile: loginDetails.profile
   });
 }

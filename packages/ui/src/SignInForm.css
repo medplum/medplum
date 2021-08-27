@@ -17,3 +17,13 @@
   font-size: 12px;
   margin-right: 16px;
 }
+
+.medplum-signin-google-container {
+  padding: 20px 0 10px 0;
+  margin: 20px 0 10px 0;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: thin solid var(--medplum-gray-200);
+}

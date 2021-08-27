@@ -9,6 +9,7 @@ export function SignInPage() {
         onSuccess={() => history.push('/')}
         onForgotPassword={() => history.push('/resetpassword')}
         onRegister={() => history.push('/register')}
+        googleClientId={process.env.GOOGLE_CLIENT_ID}
       />
     </Document>
   );

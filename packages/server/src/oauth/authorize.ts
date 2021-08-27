@@ -34,6 +34,7 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
   }
 
   const [outcome, login] = await tryLogin({
+    authMethod: 'password',
     clientId: req.query.client_id as string,
     codeChallenge: req.query.code_challenge as string,
     codeChallengeMethod: req.query.code_challenge_method as string,

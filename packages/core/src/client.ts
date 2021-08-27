@@ -111,6 +111,11 @@ export interface RegisterRequest {
   remember?: boolean;
 }
 
+export interface GoogleCredentialResponse {
+  readonly clientId: string;
+  readonly credential: string;
+}
+
 export class MedplumClient extends EventTarget {
   private readonly fetch: FetchLike;
   private readonly storage: Storage;
@@ -211,6 +216,18 @@ export class MedplumClient extends EventTarget {
       scope,
       remember: !!remember
     }).then((response: LoginResponse) => this.handleLoginResponse(response));
+  }
+
+  /**
+   * Tries to sign in with Google authentication.
+   * The response parameter is the result of a Google authentication.
+   * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
+   * @param googleResponse The Google credential response.
+   * @returns Promise to the user resource.
+   */
+  signInWithGoogle(googleResponse: GoogleCredentialResponse): Promise<User> {
+    return this.post('auth/google', googleResponse)
+      .then((loginResponse: LoginResponse) => this.handleLoginResponse(loginResponse));
   }
 
   /**

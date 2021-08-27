@@ -38,6 +38,7 @@ afterAll(async () => {
 test('Login with missing client ID', async () => {
   const [outcome, login] = await tryLogin({
     clientId: '',
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: 'admin',
     role: 'practitioner',
@@ -53,6 +54,7 @@ test('Login with missing client ID', async () => {
 test('Login with missing email', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
+    authMethod: 'password',
     email: '',
     password: 'admin',
     role: 'practitioner',
@@ -68,6 +70,7 @@ test('Login with missing email', async () => {
 test('Login with missing password', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: '',
     role: 'practitioner',
@@ -83,6 +86,7 @@ test('Login with missing password', async () => {
 test('Login with missing role', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: 'admin',
     role: '' as 'practitioner',
@@ -98,6 +102,7 @@ test('Login with missing role', async () => {
 test('Login with missing ', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: 'admin',
     role: 'practitioner',
@@ -113,6 +118,7 @@ test('Login with missing ', async () => {
 test('Login successfully', async () => {
   const [outcome, login] = await tryLogin({
     clientId: client.id as string,
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: 'admin',
     role: 'practitioner',
@@ -129,6 +135,7 @@ test('Validate code challenge login request', () => {
   // If user submits codeChallenge, then codeChallengeMethod is required
   expect(validateLoginRequest({
     clientId: client.id as string,
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: 'admin',
     role: 'practitioner',
@@ -141,6 +148,7 @@ test('Validate code challenge login request', () => {
   // If user submits codeChallengeMethod, then codeChallenge is required
   expect(validateLoginRequest({
     clientId: client.id as string,
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: 'admin',
     role: 'practitioner',
@@ -153,6 +161,7 @@ test('Validate code challenge login request', () => {
   // Code challenge method
   expect(validateLoginRequest({
     clientId: client.id as string,
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: 'admin',
     role: 'practitioner',
@@ -166,6 +175,7 @@ test('Validate code challenge login request', () => {
   // Code challenge method 'plain' is ok
   expect(validateLoginRequest({
     clientId: client.id as string,
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: 'admin',
     role: 'practitioner',
@@ -179,6 +189,7 @@ test('Validate code challenge login request', () => {
   // Code challenge method 'S256' is ok
   expect(validateLoginRequest({
     clientId: client.id as string,
+    authMethod: 'password',
     email: 'admin@medplum.com',
     password: 'admin',
     role: 'practitioner',

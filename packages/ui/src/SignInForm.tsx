@@ -1,4 +1,4 @@
-import { OperationOutcome } from '@medplum/core';
+import { GoogleCredentialResponse, OperationOutcome } from '@medplum/core';
 import React, { useState } from 'react';
 import { Button } from './Button';
 import { FormSection } from "./FormSection";
@@ -13,7 +13,8 @@ export interface SignInFormProps {
   role?: string;
   scope?: string;
   remember?: boolean;
-  onSuccess?: () => void;
+  googleClientId?: string;
+  onSuccess: () => void;
   onForgotPassword?: () => void;
   onRegister?: () => void;
 }
@@ -24,6 +25,12 @@ export function SignInForm(props: SignInFormProps) {
   const role = props.role || 'practitioner';
   const scope = props.scope || 'launch/patient openid fhirUser offline_access user/*.*';
 
+  function handleError(err: any): void {
+    if (err.outcome) {
+      setOutcome(err.outcome);
+    }
+  }
+
   return (
     <form style={{ maxWidth: 400 }} onSubmit={(e: React.SyntheticEvent) => {
       e.preventDefault();
@@ -31,16 +38,8 @@ export function SignInForm(props: SignInFormProps) {
       const formData = parseForm(e.target as HTMLFormElement);
       const remember = !!props.remember;
       medplum.signIn(formData.email, formData.password, role, scope, remember)
-        .then(() => {
-          if (props.onSuccess) {
-            props.onSuccess();
-          }
-        })
-        .catch(err => {
-          if (err.outcome) {
-            setOutcome(err.outcome);
-          }
-        })
+        .then(() => props.onSuccess())
+        .catch(handleError);
     }}>
       <div className="center">
         <Logo size={32} />
@@ -65,6 +64,24 @@ export function SignInForm(props: SignInFormProps) {
           <Button type="submit" testid="submit">Sign in</Button>
         </div>
       </div>
+      {props.googleClientId && (
+        <div className="medplum-signin-google-container">
+          <Button type="button" onClick={() => {
+            // Sign In With Google JavaScript API reference
+            // https://developers.google.com/identity/gsi/web/reference/js-reference
+            const google = (window as any).google;
+            google.accounts.id.initialize({
+              client_id: props.googleClientId,
+              callback: (response: GoogleCredentialResponse) => {
+                medplum.signInWithGoogle(response)
+                  .then(() => props.onSuccess())
+                  .catch(handleError);
+              }
+            });
+            google.accounts.id.prompt();
+          }}>Sign in with Google</Button>
+        </div>
+      )}
     </form>
   );
 }
