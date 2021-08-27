@@ -222,12 +222,12 @@ export class MedplumClient extends EventTarget {
    * Tries to sign in with Google authentication.
    * The response parameter is the result of a Google authentication.
    * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
-   * @param response The Google credential response.
+   * @param googleResponse The Google credential response.
    * @returns Promise to the user resource.
    */
-  signInWithGoogle(response: GoogleCredentialResponse): Promise<User> {
-    return this.post('auth/google', response)
-      .then((response: LoginResponse) => this.handleLoginResponse(response));
+  signInWithGoogle(googleResponse: GoogleCredentialResponse): Promise<User> {
+    return this.post('auth/google', googleResponse)
+      .then((loginResponse: LoginResponse) => this.handleLoginResponse(loginResponse));
   }
 
   /**

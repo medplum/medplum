@@ -185,8 +185,17 @@ export async function authenticate(request: LoginRequest, user: User): Promise<O
   return badRequest('Invalid authentication method');
 }
 
+/**
+ * Performs common additional login steps.
+ * Each of the common login paths (signin, register, google auth) perform a similar
+ * series of post-login steps for the client.
+ * Note that this *cannot* be part of tryLogin directly, because tokens cannot be issued in that step.
+ * In OAuth2 authorization code flow, "login" and "token" must be two separate requests.
+ * @param login The login resource.
+ * @returns Additional common login artifacts.
+ */
 export async function finalizeLogin(login: Login): Promise<LoginResult> {
-  const [tokensOutcome, tokens] = await getAuthTokens(login as Login);
+  const [tokensOutcome, tokens] = await getAuthTokens(login);
   assertOk(tokensOutcome);
 
   const [userOutcome, user] = await repo.readReference<User>(login?.user as Reference);
