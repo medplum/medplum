@@ -233,6 +233,17 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
+  test('Patch resource not found', async () => {
+    const res = await request(app)
+      .patch(`/fhir/R4/Patient/${randomUUID()}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json-patch+json')
+      .send([
+        { op: 'add', path: '/generalPractitioner', value: [{ reference: 'Practitioner/123' }] }
+      ]);
+    expect(res.status).toBe(404);
+  });
+
   test('Patch resource wrong content type', async () => {
     const res = await request(app)
       .patch(`/fhir/R4/Patient/${patientId}`)
