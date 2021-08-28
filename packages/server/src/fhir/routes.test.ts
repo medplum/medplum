@@ -42,6 +42,15 @@ describe('FHIR Routes', () => {
     await closeDatabase();
   });
 
+  test('Invalid JSON', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send('not-json');
+    expect(res.status).toBe(400);
+  });
+
   test('Create batch', async () => {
     const res = await request(app)
       .post(`/fhir/R4/`)

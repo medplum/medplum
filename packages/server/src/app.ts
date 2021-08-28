@@ -47,6 +47,10 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, err.outcome as OperationOutcome);
     return;
   }
+  if (err.type === 'entity.parse.failed') {
+    sendOutcome(res, badRequest('Content could not be parsed'));
+    return;
+  }
   if (err.type === 'entity.too.large') {
     sendOutcome(res, badRequest('File too large'));
     return;

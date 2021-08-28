@@ -29,6 +29,15 @@ describe('Binary', () => {
     rmSync(binaryDir, { recursive: true, force: true });
   });
 
+  test('Payload too large', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Binary`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/octet-stream')
+      .send('a'.repeat(101 * 1024 * 1024));
+    expect(res.status).toBe(400);
+  });
+
   test('Create and read binary', async () => {
     const res = await request(app)
       .post('/fhir/R4/Binary')
