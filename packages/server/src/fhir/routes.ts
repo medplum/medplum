@@ -1,6 +1,7 @@
 import { assertOk, badRequest, getStatus } from '@medplum/core';
 import { NextFunction, Request, Response, Router } from 'express';
 import { graphqlHTTP } from 'express-graphql';
+import { Operation } from 'fast-json-patch';
 import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth';
 import { createBatch } from './batch';
@@ -153,10 +154,15 @@ fhirRouter.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Resp
 
 // Patch resource
 fhirRouter.patch('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
-  if (!isFhirJsonContentType(req)) {
+  if (!req.is('application/json-patch+json')) {
     return res.status(400).send('Unsupported content type');
   }
-  res.status(200).json({});
+  const { resourceType, id } = req.params;
+  const patch = req.body as Operation[];
+  const repo = res.locals.repo as Repository;
+  const [outcome, resource] = await repo.patchResource(resourceType, id, patch);
+  assertOk(outcome);
+  res.status(getStatus(outcome)).json(resource);
 }));
 
 // Validate create resource

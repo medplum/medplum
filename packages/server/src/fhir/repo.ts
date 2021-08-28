@@ -1,6 +1,7 @@
 import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
+import { applyPatch, Operation } from 'fast-json-patch';
 import validator from 'validator';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
@@ -262,13 +263,15 @@ export class Repository {
     return [allOk, undefined];
   }
 
-  async patchResource(resource: Resource): RepositoryResult<Resource> {
-    const validateOutcome = validateResource(resource);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
+  async patchResource(resourceType: string, id: string, patch: Operation[]): RepositoryResult<Resource> {
+    const [readOutcome, resource] = await this.readResource(resourceType, id);
+    if (!isOk(readOutcome)) {
+      return [readOutcome, undefined];
     }
 
-    return [allOk, resource];
+    const patchResult = applyPatch(resource as Resource, patch);
+    const patchedResource = patchResult.newDocument;
+    return this.updateResource(patchedResource);
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest): RepositoryResult<Bundle<T>> {

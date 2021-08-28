@@ -69,7 +69,7 @@ export async function initApp(app: Express): Promise<Express> {
     extended: false
   }));
   app.use(json({
-    type: ['application/json', 'application/fhir+json'],
+    type: ['application/json', 'application/fhir+json', 'application/json-patch+json'],
     limit: '10mb'
   }));
   app.use(raw({
