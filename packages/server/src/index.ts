@@ -6,6 +6,7 @@ import { initBinaryStorage } from './fhir';
 import { logger } from './logger';
 import { initKeys } from './oauth';
 import { seedDatabase } from './seed';
+import { initWorker } from './worker';
 
 async function main() {
   logger.info('Starting Medplum Server...');
@@ -20,6 +21,7 @@ async function main() {
   await initKeys(config);
   await seedDatabase();
   initBinaryStorage(config.binaryStorage);
+  initWorker();
 
   const app = await initApp(express());
   app.listen(5000);

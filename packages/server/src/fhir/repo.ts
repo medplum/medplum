@@ -1,12 +1,12 @@
-import { allOk, assertOk, badRequest, Bundle, BundleEntry, CompartmentDefinition, CompartmentDefinitionResource, created, Extension, Filter, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule, stringify, Subscription } from '@medplum/core';
+import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { createHmac, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
-import fetch from 'node-fetch';
 import validator from 'validator';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
 import { logger } from '../logger';
+import { addJob } from '../worker';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { definitions, validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
@@ -92,7 +92,7 @@ const lookupTables: LookupTable[] = [
 export class Repository {
   private readonly context: RepositoryContext;
   private readonly compartmentIds: string[] | undefined;
-  private subscriptions: Subscription[] | undefined;
+  subscriptionsEnabled = true;
 
   constructor(context: RepositoryContext) {
     this.context = context;
@@ -171,7 +171,7 @@ export class Repository {
     }];
   }
 
-  async readVersion(resourceType: string, id: string, vid: string): RepositoryResult<Bundle> {
+  async readVersion(resourceType: string, id: string, vid: string): RepositoryResult<Resource> {
     if (!validator.isUUID(id) || !validator.isUUID(vid)) {
       return [badRequest('Invalid UUID'), undefined];
     }
@@ -460,7 +460,14 @@ export class Repository {
   private async write(resource: Resource): Promise<void> {
     await this.writeResource(resource);
     await this.writeLookupTables(resource);
-    await this.sendSubscriptions(resource);
+
+    if (this.subscriptionsEnabled) {
+      addJob({
+        resourceType: resource.resourceType,
+        id: resource.id as string,
+        versionId: resource.meta?.versionId as string
+      });
+    }
   }
 
   private async writeResource(resource: Resource): Promise<void> {
@@ -652,73 +659,6 @@ export class Repository {
     const authorRef = this.context.author.reference as string;
     return authorRef === 'system' || authorRef.startsWith('ClientApplication/');
   }
-
-  /**
-   * Sends updates to all subscriptions for a resource that changed.
-   * This should be called on both "create" and "update".
-   * Subscriptions are lazy-loaded once per repository.
-   * @param resource The resource that changed.
-   */
-  private async sendSubscriptions(resource: Resource): Promise<void> {
-    console.log('repo sendSubscriptions');
-    const subscriptions = await this.getSubscriptions();
-    console.log('subscriptions.length', subscriptions.length);
-    for (const subscription of subscriptions) {
-      switch (subscription.channel?.type) {
-        case 'rest-hook':
-          this.sendRestHook(subscription, resource);
-          break;
-      }
-    }
-  }
-
-  /**
-   * Lazy loads the list of all subscriptions in this repository.
-   * @returns The list of all subscriptions in this repository.
-   */
-  private async getSubscriptions(): Promise<Subscription[]> {
-    if (!this.subscriptions) {
-      const [outcome, bundle] = await this.search<Subscription>({ resourceType: 'Subscription' });
-      assertOk(outcome);
-      this.subscriptions = (bundle?.entry as BundleEntry<Subscription>[]).map(e => e.resource as Subscription);
-    }
-    return this.subscriptions as Subscription[];
-  }
-
-  /**
-   * Sends a rest hook to the subscription.
-   * @param subscription The FHIR subscription resource.
-   * @param resource The resource that changed.
-   */
-  private async sendRestHook(subscription: Subscription, resource: Resource): Promise<void> {
-    const url = subscription.channel?.endpoint;
-    if (!url) {
-      return;
-    }
-
-    const headers: HeadersInit = {
-      'Content-Type': 'application/fhir+json'
-    };
-
-    const body = stringify(resource);
-
-    const secret = getExtensionValue(
-      subscription,
-      'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
-
-    if (secret) {
-      headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
-    }
-
-    logger.info('Sending rest hook to: ' + url);
-    try {
-      const response = await fetch(url, { method: 'POST', headers, body });
-      logger.info('Received rest hook status: ' + response.status);
-
-    } catch (error) {
-      logger.info('Webhook error: ' + error);
-    }
-  }
 }
 
 /**
@@ -872,24 +812,6 @@ function convertCodeToColumnName(code: string): string {
 
 function upperFirst(word: string): string {
   return word.charAt(0).toUpperCase() + word.substr(1);
-}
-
-/**
- * Returns an extension value by extension URLs.
- * @param resource The base resource.
- * @param urls Array of extension URLs.  Each entry represents a nested extension.
- * @returns The extension value if found; undefined otherwise.
- */
-function getExtensionValue(resource: Resource, ...urls: string[]): string | undefined {
-  // Let curr be the current resource or extension. Extensions can be nested.
-  let curr: any = resource;
-
-  // For each of the urls, try to find a matching nested extension.
-  for (let i = 0; i < urls.length && curr; i++) {
-    curr = (curr?.extension as Extension[] | undefined)?.find(e => e.url === urls[i]);
-  }
-
-  return curr?.valueString as string | undefined;
 }
 
 /**
