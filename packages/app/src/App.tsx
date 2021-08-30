@@ -55,15 +55,15 @@ export function App() {
               links: [
                 { label: 'User', href: '/User' },
                 { label: 'Project', href: '/Project' },
-                { label: 'ProjectMembership', href: '/ProjectMembership' }
+                { label: 'ProjectMembership', href: '/ProjectMembership' },
+                { label: 'Client Applications', href: '/ClientApplication' },
+                { label: 'Subscription', href: '/Subscription' }
               ]
             },
             {
               title: 'Settings',
               links: [
-                { label: 'Change Password', href: '/changepassword' },
-                { label: 'Client Applications', href: '/Project' },
-                { label: 'Projects', href: '/ProjectMembership' }
+                { label: 'Change Password', href: '/changepassword' }
               ]
             }
           ]}
