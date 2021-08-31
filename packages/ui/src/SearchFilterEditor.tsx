@@ -1,5 +1,5 @@
 import { Filter, IndexedStructureDefinition, Operator, SearchParameter, SearchRequest, stringify } from '@medplum/core';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog } from './Dialog';
 import { ReferenceInput } from './ReferenceInput';
 import { addFilter, deleteFilter } from './SearchUtils';
@@ -216,32 +216,36 @@ export interface SearchFilterEditorProps {
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps) {
-  const [state, setState] = useState({
-    search: JSON.parse(stringify(props.search)) as SearchRequest
-  });
+  const [search, setSearch] = useState<SearchRequest>(JSON.parse(stringify(props.search)) as SearchRequest);
+  const searchRef = useRef<SearchRequest>(search);
+  searchRef.current = search;
+
+  useEffect(() => {
+    setSearch(JSON.parse(stringify(props.search)) as SearchRequest);
+  }, [props.search]);
 
   function onAddFilter(filter: Filter) {
-    setState({ search: addFilter(state.search, filter.code, filter.operator, filter.value) });
+    setSearch(addFilter(searchRef.current, filter.code, filter.operator, filter.value));
   }
 
   function onDeleteFilter(filter: Filter) {
-    if (!state.search.filters) {
+    if (!searchRef.current.filters) {
       return;
     }
-    const index = state.search.filters.findIndex(f => Object.is(f, filter));
-    setState({ search: deleteFilter(state.search, index) });
+    const index = searchRef.current.filters.findIndex(f => Object.is(f, filter));
+    setSearch(deleteFilter(searchRef.current, index));
   }
 
   if (!props.visible) {
     return null;
   }
 
-  const filters = state.search.filters || [];
+  const filters = search.filters || [];
 
   return (
     <Dialog
       visible={props.visible}
-      onOk={() => props.onOk(state.search)}
+      onOk={() => props.onOk(searchRef.current)}
       onCancel={props.onCancel}>
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">

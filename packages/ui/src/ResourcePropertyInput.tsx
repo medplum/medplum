@@ -6,6 +6,7 @@ import { AttachmentInput } from './AttachmentInput';
 import { BackboneElementInput } from './BackboneElementInput';
 import { CodeableConceptInput } from './CodeableConceptInput';
 import { CodeInput } from './CodeInput';
+import { CodingInput } from './CodingInput';
 import { ContactPointInput } from './ContactPointInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
@@ -52,7 +53,6 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
         <input type="number" name={name} defaultValue={value}></input>
       );
     case PropertyType.code:
-    case PropertyType.Coding:
       return <CodeInput property={property} name={name} defaultValue={value} />;
     case PropertyType.boolean:
       return (
@@ -68,6 +68,8 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
       return <AttachmentInput name={name} defaultValue={value} />;
     case PropertyType.CodeableConcept:
       return <CodeableConceptInput name={name} defaultValue={value} />;
+    case PropertyType.Coding:
+      return <CodingInput property={property} name={name} defaultValue={value} />;
     case PropertyType.ContactPoint:
       return <ContactPointInput name={name} defaultValue={value} />;
     case PropertyType.HumanName:

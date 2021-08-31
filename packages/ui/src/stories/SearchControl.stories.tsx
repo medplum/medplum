@@ -10,7 +10,8 @@ export default {
 
 export const Checkboxes = () => {
   const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Patient'
+    resourceType: 'Patient',
+    fields: ['id', 'meta.lastUpdated', 'name']
   });
 
   return (

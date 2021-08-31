@@ -4,7 +4,7 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, Reference, Resource, SearchParameter, StructureDefinition, Subscription, User } from './fhir';
+import { Binary, Bundle, Reference, Resource, SearchParameter, StructureDefinition, Subscription, User, ValueSet } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
@@ -293,6 +293,20 @@ export class MedplumClient extends EventTarget {
     } else {
       return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search));
     }
+  }
+
+  /**
+   * Searches a ValueSet resource using the "expand" operation.
+   * See: https://www.hl7.org/fhir/operation-valueset-expand.html
+   * @param system The ValueSet system url.
+   * @param filter The search string.
+   * @returns Promise to expanded ValueSet.
+   */
+  searchValueSet(system: string, filter: string): Promise<ValueSet> {
+    return this.get(
+      this.fhirUrl('ValueSet', '$expand') +
+      `?url=${encodeURIComponent(system)}` +
+      `&filter=${encodeURIComponent(filter)}`);
   }
 
   read(resourceType: string, id: string): Promise<Resource> {

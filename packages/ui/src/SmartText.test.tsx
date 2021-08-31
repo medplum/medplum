@@ -26,7 +26,7 @@ const valueSetResults: ValueSet = {
 function mockFetch(url: string, options: any): Promise<any> {
   let result: any;
 
-  if (url.endsWith('/fhir/R4/ValueSet/$expand?url=https%3A%2F%2Fsnomed.info%2Fsct&filter=pain')) {
+  if (url.endsWith('/fhir/R4/ValueSet/%24expand?url=https%3A%2F%2Fsnomed.info%2Fsct&filter=pain')) {
     result = valueSetResults;
   }
 

@@ -1,5 +1,6 @@
-import { Filter, formatHumanName, getPropertyDisplayName, HumanName, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
+import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
 import React from 'react';
+import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 /**
  * Sets the array of filters.
@@ -475,23 +476,10 @@ export function renderValue(schema: IndexedStructureDefinition, resourceType: st
     return new Date(value).toLocaleString('en-US');
   }
 
-  const propertyType = schema.types[resourceType]?.properties?.[key]?.type?.[0]?.code;
-  if (!propertyType) {
+  const property = schema.types[resourceType]?.properties?.[key];
+  if (!property) {
     return stringify(value);
   }
 
-  if (propertyType === 'string' || propertyType === 'date') {
-    return value.toString();
-  }
-
-  if (propertyType === 'HumanName') {
-    const names = value as HumanName[];
-    if (names.length > 0) {
-      return formatHumanName(names[0]);
-    } else {
-      return '';
-    }
-  }
-
-  return stringify(value);
+  return <ResourcePropertyDisplay property={property} value={value} />;
 }

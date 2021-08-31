@@ -90,6 +90,7 @@ describe('ResourcePropertyDisplay', () => {
 
   test('Renders Identifier', () => {
     const value: Identifier = {
+      system: 'xyz',
       value: 'xyz123'
     };
 
@@ -98,7 +99,7 @@ describe('ResourcePropertyDisplay', () => {
       value={value}
     />);
 
-    expect(screen.getByText('xyz123')).not.toBeUndefined();
+    expect(screen.getByText('xyz: xyz123')).not.toBeUndefined();
   });
 
 });
