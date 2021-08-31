@@ -21,6 +21,7 @@ describe('Webhook Worker', () => {
   afterAll(async () => {
     await closeDatabase();
     await closeWebhookWorker();
+    await closeWebhookWorker(); // Double close to ensure quite ignore
   });
 
   beforeEach(async () => {
@@ -159,7 +160,36 @@ describe('Webhook Worker', () => {
       resourceType: 'Subscription',
       criteria: 'Patient?active=true',
       channel: {
-        type: 'rest-hook'
+        type: 'rest-hook',
+        endpoint: 'https://example.com/webhook'
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).not.toBeUndefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
+    await sendSubscriptions(jobData);
+    expect(fetch).not.toHaveBeenCalledWith();
+  });
+
+  test('Ignore webhooks with missing criteria', async () => {
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'https://example.com/webhook'
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
@@ -187,7 +217,8 @@ describe('Webhook Worker', () => {
       resourceType: 'Subscription',
       criteria: 'Observation',
       channel: {
-        type: 'rest-hook'
+        type: 'rest-hook',
+        endpoint: 'https://example.com/webhook'
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
