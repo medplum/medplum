@@ -83,7 +83,7 @@ export function Header(props: HeaderProps) {
         {auth.user && (
           <div className="medplum-nav-menu-container">
             <MedplumLink testid="header-profile-menu-button" onClick={() => setUserMenuVisible(true)}>
-              <Avatar size="small" value={auth.profile as ProfileResource} />
+              <Avatar size="small" color="#f68d42" value={auth.profile as ProfileResource} />
             </MedplumLink>
             <Popup
               visible={userMenuVisible}
