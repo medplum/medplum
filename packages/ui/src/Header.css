@@ -6,7 +6,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: var(--medplum-navbar);
+  background-image: linear-gradient(to right, #5b2876, #5b2876, #a33272);
   box-shadow: 0 1px 2px 0 var(--medplum-gray-200);
   color: white;
 }

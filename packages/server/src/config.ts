@@ -15,28 +15,27 @@ export interface MedplumServerConfig {
   binaryStorage: string;
   supportEmail: string;
   database: MedplumDatabaseConfig;
+  redis: MedplumRedisConfig;
   googleClientId?: string;
   googleClientSecret?: string;
 }
 
+/**
+ * Based on AWS Secrets Manager for databases.
+ * See: https://docs.aws.amazon.com/secretsmanager/latest/userguide/secretsmanager-userguide.pdf
+ */
 export interface MedplumDatabaseConfig {
   host?: string;
   port?: number;
-  database?: string;
+  dbname?: string;
   username?: string;
   password?: string;
 }
 
-/**
- * AWS Secrets Manager for databases.
- * See: https://docs.aws.amazon.com/secretsmanager/latest/userguide/secretsmanager-userguide.pdf
- */
-interface AwsDatabaseSecrets {
-  dbname: string;
-  host: string;
-  port: number;
-  username: string;
-  password: string;
+export interface MedplumRedisConfig {
+  host?: string;
+  port?: number;
+  password?: string;
 }
 
 let cachedConfig: MedplumServerConfig | undefined = undefined;
@@ -90,7 +89,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
       ...config.database,
       host: process.env['POSTGRES_HOST'] ?? 'localhost',
       port: process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT']) : 5432,
-      database: 'medplum_test'
+      dbname: 'medplum_test'
     }
   };
 }
@@ -123,6 +122,8 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
         const value = param.Value as string;
         if (key === 'DatabaseSecrets') {
           config['database'] = await loadAwsSecrets(value);
+        } else if (key === 'RedisSecrets') {
+          config['redis'] = await loadAwsSecrets(value);
         } else {
           config[key] = value;
         }
@@ -135,11 +136,11 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
 }
 
 /**
- * Returns the AWS Secret data as a JSON map.
+ * Returns the AWS Database Secret data as a JSON map.
  * @param secretId Secret ARN
  * @returns The secret data as a JSON map.
  */
-async function loadAwsSecrets(secretId: string): Promise<MedplumDatabaseConfig> {
+async function loadAwsSecrets(secretId: string): Promise<Record<string, any> | undefined> {
   const client = new SecretsManagerClient({
     region: AWS_REGION
   });
@@ -149,15 +150,8 @@ async function loadAwsSecrets(secretId: string): Promise<MedplumDatabaseConfig> 
   }));
 
   if (!result.SecretString) {
-    throw new Error('Missing secret data');
+    return undefined;
   }
 
-  const secrets = JSON.parse(result.SecretString) as AwsDatabaseSecrets;
-  return {
-    host: secrets.host,
-    database: secrets.dbname,
-    port: secrets.port,
-    username: secrets.username,
-    password: secrets.password
-  };
+  return JSON.parse(result.SecretString);
 }

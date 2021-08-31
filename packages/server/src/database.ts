@@ -15,7 +15,7 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
   pool = new Pool({
     host: config.host,
     port: config.port,
-    database: config.database,
+    database: config.dbname,
     user: config.username,
     password: config.password
   });

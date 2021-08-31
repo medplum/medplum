@@ -1,5 +1,6 @@
 import { Bundle, BundleEntry, Filter, Operator, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { URL } from 'url';
 
 /**
  * Parses a FHIR search query.
@@ -64,8 +65,27 @@ export function getSearchParameter(resourceType: string, code: string): SearchPa
   return searchMappings[resourceType]?.[code];
 }
 
+/**
+ * Parses a search URL into a search request.
+ * @param resourceType The FHIR resource type.
+ * @param query The collection of query string parameters.
+ * @returns A parsed SearchRequest.
+ */
 export function parseSearchRequest(resourceType: string, query: Record<string, string | undefined>): SearchRequest {
   return new SearchParser(resourceType, query);
+}
+
+/**
+ * Parses a search URL into a search request.
+ * @param url The search URL.
+ * @returns A parsed SearchRequest.
+ */
+export function parseSearchUrl(url: URL): SearchRequest {
+  let resourceType = url.pathname;
+  if (resourceType.startsWith('/')) {
+    resourceType = resourceType.substring(1);
+  }
+  return new SearchParser(resourceType, Object.fromEntries(url.searchParams.entries()));
 }
 
 class SearchParser {
