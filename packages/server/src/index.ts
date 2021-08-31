@@ -21,7 +21,7 @@ async function main() {
   await initKeys(config);
   await seedDatabase();
   initBinaryStorage(config.binaryStorage);
-  initWebhookWorker();
+  initWebhookWorker(config.redis);
 
   const app = await initApp(express());
   app.listen(5000);

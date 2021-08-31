@@ -16,5 +16,10 @@
     "database": "medplum",
     "username": "medplum",
     "password": "medplum"
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "medplum"
   }
 }

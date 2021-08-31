@@ -15,6 +15,7 @@ export interface MedplumServerConfig {
   binaryStorage: string;
   supportEmail: string;
   database: MedplumDatabaseConfig;
+  redis: MedplumRedisConfig;
   googleClientId?: string;
   googleClientSecret?: string;
 }
@@ -24,6 +25,12 @@ export interface MedplumDatabaseConfig {
   port?: number;
   database?: string;
   username?: string;
+  password?: string;
+}
+
+export interface MedplumRedisConfig {
+  host?: string;
+  port?: number;
   password?: string;
 }
 

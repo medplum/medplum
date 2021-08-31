@@ -15,7 +15,7 @@ describe('Webhook Worker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
-    await initWebhookWorker();
+    await initWebhookWorker(config.redis);
   });
 
   afterAll(async () => {
@@ -148,6 +148,9 @@ describe('Webhook Worker', () => {
     expect(patientOutcome.id).toEqual('created');
     expect(patient).not.toBeUndefined();
     expect(queue.add).toHaveBeenCalled();
+
+    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
+    await sendSubscriptions(jobData);
     expect(fetch).not.toHaveBeenCalledWith();
   });
 
@@ -173,6 +176,9 @@ describe('Webhook Worker', () => {
     expect(patientOutcome.id).toEqual('created');
     expect(patient).not.toBeUndefined();
     expect(queue.add).toHaveBeenCalled();
+
+    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
+    await sendSubscriptions(jobData);
     expect(fetch).not.toHaveBeenCalledWith();
   });
 
@@ -198,6 +204,9 @@ describe('Webhook Worker', () => {
     expect(patientOutcome.id).toEqual('created');
     expect(patient).not.toBeUndefined();
     expect(queue.add).toHaveBeenCalled();
+
+    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
+    await sendSubscriptions(jobData);
     expect(fetch).not.toHaveBeenCalledWith();
   });
 

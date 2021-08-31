@@ -1,8 +1,9 @@
 import { assertOk, BundleEntry, Extension, Resource, stringify, Subscription } from '@medplum/core';
-import { Job, Queue, Worker } from 'bullmq';
+import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
 import { URL } from 'url';
+import { MedplumRedisConfig } from '../config';
 import { repo } from '../fhir';
 import { parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
@@ -23,26 +24,27 @@ let worker: Worker<WebhookJobData> | undefined = undefined;
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
  */
-export function initWebhookWorker(): void {
-  // const options: QueueBaseOptions = {
-  //   connection: {
+export function initWebhookWorker(config: MedplumRedisConfig): void {
+  const options: QueueBaseOptions = {
+    connection: config
+  };
 
-  //   }
-  // };
-
-  queue = new Queue<WebhookJobData>(queueName);
-
-  worker = new Worker<WebhookJobData>(queueName, async (job: Job<WebhookJobData>) => {
-    try {
-      await sendSubscriptions(job.data);
-    } catch (ex) {
-      logger.error(`Subscrition failed with ${ex}`);
-      console.log(JSON.stringify(job.data, undefined, 2));
-    }
-  });
-
+  queue = new Queue<WebhookJobData>(queueName, options);
+  worker = new Worker<WebhookJobData>(queueName, webhookProcessor, options);
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => logger.info(`Failed job ${job.id} with ${err}`));
+}
+
+/**
+ * Webhook job processor.
+ * @param job BullMQ job definition.
+ */
+async function webhookProcessor(job: Job<WebhookJobData>): Promise<void> {
+  try {
+    await sendSubscriptions(job.data);
+  } catch (ex) {
+    logger.error(`Subscrition failed with ${ex}`);
+  }
 }
 
 /**
