@@ -1,12 +1,14 @@
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as ecr from '@aws-cdk/aws-ecr';
 import * as ecs from '@aws-cdk/aws-ecs';
+import * as elasticache from '@aws-cdk/aws-elasticache';
 import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
 import * as iam from '@aws-cdk/aws-iam';
 import * as logs from '@aws-cdk/aws-logs';
 import * as rds from '@aws-cdk/aws-rds';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
+import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import * as ssm from '@aws-cdk/aws-ssm';
 import * as cdk from '@aws-cdk/core';
 import { API_DOMAIN_NAME, API_SSL_CERT_ARN, DOMAIN_NAME } from './constants';
@@ -46,6 +48,43 @@ export class BackEnd extends cdk.Construct {
     });
 
     rdsCluster.connections.allowDefaultPortFromAnyIpv4();
+
+    // Redis
+    // Important: For HIPAA compliance, you must specify TransitEncryptionEnabled as true, an AuthToken, and a CacheSubnetGroup.
+    const redisSubnetGroup = new elasticache.CfnSubnetGroup(this, 'RedisSubnetGroup', {
+      description: 'Redis Subnet Group',
+      subnetIds: vpc.privateSubnets.map(subnet => subnet.subnetId)
+    });
+
+    const redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
+      vpc,
+      description: 'Redis Security Group',
+      allowAllOutbound: false,
+    });
+
+    const redisPassword = new secretsmanager.Secret(this, 'RedisSecret', {
+      generateSecretString: {
+        secretStringTemplate: '{}',
+        generateStringKey: 'password',
+        excludeCharacters: '@%*()_+=`~{}|[]\\:";\'?,./'
+      }
+    });
+
+    const redisCluster = new elasticache.CfnReplicationGroup(this, 'RedisCluster', {
+      engine: "Redis",
+      engineVersion: '6.x',
+      cacheNodeType: 'cache.t2.medium',
+      replicationGroupDescription: 'RedisReplicationGroup',
+      authToken: redisPassword.secretValueFromJson('password').toString(),
+      transitEncryptionEnabled: true,
+      atRestEncryptionEnabled: true,
+      multiAzEnabled: true,
+      cacheSubnetGroupName: redisSubnetGroup.ref,
+      numNodeGroups: 1,
+      replicasPerNodeGroup: 1,
+      securityGroupIds: [redisSecurityGroup.securityGroupId],
+    });
+    redisCluster.node.addDependency(redisPassword);
 
     // ECS Cluster
     const cluster = new ecs.Cluster(this, 'Cluster', {
@@ -176,15 +215,40 @@ export class BackEnd extends cdk.Construct {
     });
 
     // SSM Parameters
-    const secrets = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
+    const databaseSecrets = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/DatabaseSecrets`,
       description: 'Database secrets ARN',
       stringValue: rdsCluster.secret?.secretArn as string
     });
 
+    const redisHostParameter = new ssm.StringParameter(this, 'RedisHostParameter', {
+      tier: ssm.ParameterTier.STANDARD,
+      parameterName: `/medplum/${name}/redisHost`,
+      description: 'Redis secrets ARN',
+      stringValue: redisCluster.attrPrimaryEndPointAddress
+    });
+
+    const redisPortParameter = new ssm.StringParameter(this, 'RedisPortParameter', {
+      tier: ssm.ParameterTier.STANDARD,
+      parameterName: `/medplum/${name}/redisPort`,
+      description: 'Redis port number',
+      stringValue: redisCluster.attrPrimaryEndPointPort
+    });
+
+    const redisSecrets = new ssm.StringParameter(this, 'RedisSecretsParameter', {
+      tier: ssm.ParameterTier.STANDARD,
+      parameterName: `/medplum/${name}/redisSecrets`,
+      description: 'Redis secrets ARN',
+      stringValue: redisPassword.secretArn as string
+    });
+
     // Debug
     console.log('ARecord', record.domainName);
-    console.log('DatabaseSecretsParameter', secrets.parameterArn);
+    console.log('DatabaseSecretsParameter', databaseSecrets.parameterArn);
+    console.log('RedisHostParameter', redisHostParameter.parameterArn);
+    console.log('RedisPortParameter', redisPortParameter.parameterArn);
+    console.log('RedisSecretsParameter', redisSecrets.parameterArn);
+    console.log('RedisCluster', redisCluster.attrPrimaryEndPointAddress);
   }
 }
