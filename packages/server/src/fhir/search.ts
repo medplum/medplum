@@ -1,6 +1,6 @@
 import { Bundle, BundleEntry, Filter, Operator, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { URL, URLSearchParams } from 'url';
+import { URL } from 'url';
 
 /**
  * Parses a FHIR search query.
