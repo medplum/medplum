@@ -240,7 +240,7 @@ export class BackEnd extends cdk.Construct {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/redisSecrets`,
       description: 'Redis secrets ARN',
-      stringValue: redisPassword.secretArn as string
+      stringValue: redisPassword.secretArn
     });
 
     // Debug

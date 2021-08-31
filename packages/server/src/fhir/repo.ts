@@ -6,7 +6,7 @@ import validator from 'validator';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
 import { logger } from '../logger';
-import { addJob } from '../worker';
+import { addWebhookJobData } from '../workers/webhooks';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { definitions, validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
@@ -92,7 +92,6 @@ const lookupTables: LookupTable[] = [
 export class Repository {
   private readonly context: RepositoryContext;
   private readonly compartmentIds: string[] | undefined;
-  subscriptionsEnabled = true;
 
   constructor(context: RepositoryContext) {
     this.context = context;
@@ -461,13 +460,11 @@ export class Repository {
     await this.writeResource(resource);
     await this.writeLookupTables(resource);
 
-    if (this.subscriptionsEnabled) {
-      addJob({
-        resourceType: resource.resourceType,
-        id: resource.id as string,
-        versionId: resource.meta?.versionId as string
-      });
-    }
+    addWebhookJobData({
+      resourceType: resource.resourceType,
+      id: resource.id as string,
+      versionId: resource.meta?.versionId as string
+    });
   }
 
   private async writeResource(resource: Resource): Promise<void> {

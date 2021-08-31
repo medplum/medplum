@@ -2,27 +2,37 @@ import { assertOk, BundleEntry, Extension, Resource, stringify, Subscription } f
 import { Job, Queue, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
-import { repo } from './fhir';
-import { logger } from './logger';
+import { URL } from 'url';
+import { repo } from '../fhir';
+import { parseSearchUrl } from '../fhir/search';
+import { logger } from '../logger';
 
-const queueName = 'WebhookQueue';
-const jobName = 'WebhookJob';
-
-export interface WebhookJob {
+export interface WebhookJobData {
   readonly resourceType: string;
   readonly id: string;
   readonly versionId: string;
 }
 
-// export const queue = new Queue<WebhookJob>(queueName);
+const queueName = 'WebhookQueue';
+const jobName = 'WebhookJobData';
+let queue: Queue<WebhookJobData> | undefined = undefined;
+let worker: Worker<WebhookJobData> | undefined = undefined;
 
-let queue: Queue<WebhookJob> | undefined = undefined;
-let worker: Worker<WebhookJob> | undefined = undefined;
+/**
+ * Initializes the webhook worker.
+ * Sets up the BullMQ job queue.
+ * Sets up the BullMQ worker.
+ */
+export function initWebhookWorker(): void {
+  // const options: QueueBaseOptions = {
+  //   connection: {
 
-export function initWorker(): void {
-  queue = new Queue<WebhookJob>(queueName);
+  //   }
+  // };
 
-  worker = new Worker<WebhookJob>(queueName, async (job: Job<WebhookJob>) => {
+  queue = new Queue<WebhookJobData>(queueName);
+
+  worker = new Worker<WebhookJobData>(queueName, async (job: Job<WebhookJobData>) => {
     try {
       await sendSubscriptions(job.data);
     } catch (ex) {
@@ -30,18 +40,33 @@ export function initWorker(): void {
       console.log(JSON.stringify(job.data, undefined, 2));
     }
   });
+
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => logger.info(`Failed job ${job.id} with ${err}`));
 }
 
-export async function closeWorker(): Promise<void> {
+/**
+ * Shuts down the webhook worker.
+ * Closes the BullMQ job queue.
+ * Clsoes the BullMQ worker.
+ */
+export async function closeWebhookWorker(): Promise<void> {
+  if (queue) {
+    await queue.close();
+    queue = undefined;
+  }
+
   if (worker) {
     await worker.close();
     worker = undefined;
   }
 }
 
-export function addJob(job: WebhookJob): void {
+/**
+ * Adds a webhook job to the queue.
+ * @param job The webhook job details.
+ */
+export function addWebhookJobData(job: WebhookJobData): void {
   if (queue) {
     queue.add(jobName, job);
   }
@@ -53,16 +78,14 @@ export function addJob(job: WebhookJob): void {
  * Subscriptions are lazy-loaded once per repository.
  * @param resource The resource that changed.
  */
-async function sendSubscriptions(job: WebhookJob): Promise<void> {
+export async function sendSubscriptions(job: WebhookJobData): Promise<void> {
   const [outcome, resource] = await repo.readVersion(job.resourceType, job.id, job.versionId);
   assertOk(outcome);
 
   const subscriptions = await getSubscriptions();
   for (const subscription of subscriptions) {
-    switch (subscription.channel?.type) {
-      case 'rest-hook':
-        sendRestHook(subscription, resource as Resource);
-        break;
+    if (subscription.channel?.type === 'rest-hook') {
+      sendRestHook(subscription, resource as Resource);
     }
   }
 }
@@ -85,6 +108,16 @@ async function getSubscriptions(): Promise<Subscription[]> {
 async function sendRestHook(subscription: Subscription, resource: Resource): Promise<void> {
   const url = subscription.channel?.endpoint;
   if (!url) {
+    return;
+  }
+
+  const criteria = subscription.criteria;
+  if (!criteria) {
+    return;
+  }
+
+  const searchRequest = parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
+  if (resource.resourceType !== searchRequest.resourceType) {
     return;
   }
 
