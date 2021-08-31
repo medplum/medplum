@@ -62,7 +62,7 @@ export class BackEnd extends cdk.Construct {
       allowAllOutbound: false,
     });
 
-    const redisPassword = new secretsmanager.Secret(this, 'RedisSecret', {
+    const redisPassword = new secretsmanager.Secret(this, 'RedisPassword', {
       generateSecretString: {
         secretStringTemplate: '{}',
         generateStringKey: 'password',
@@ -85,6 +85,19 @@ export class BackEnd extends cdk.Construct {
       securityGroupIds: [redisSecurityGroup.securityGroupId],
     });
     redisCluster.node.addDependency(redisPassword);
+
+    const redisSecrets = new secretsmanager.Secret(this, 'RedisSecrets', {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({
+          host: redisCluster.attrPrimaryEndPointAddress,
+          port: redisCluster.attrPrimaryEndPointPort,
+          password: redisPassword.secretValueFromJson('password').toString()
+        }),
+        generateStringKey: 'unused'
+      }
+    });
+    redisSecrets.node.addDependency(redisPassword);
+    redisSecrets.node.addDependency(redisCluster);
 
     // ECS Cluster
     const cluster = new ecs.Cluster(this, 'Cluster', {
@@ -222,23 +235,9 @@ export class BackEnd extends cdk.Construct {
       stringValue: rdsCluster.secret?.secretArn as string
     });
 
-    const redisHostParameter = new ssm.StringParameter(this, 'RedisHostParameter', {
+    const redisSecretsParameter = new ssm.StringParameter(this, 'RedisSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,
-      parameterName: `/medplum/${name}/redisHost`,
-      description: 'Redis secrets ARN',
-      stringValue: redisCluster.attrPrimaryEndPointAddress
-    });
-
-    const redisPortParameter = new ssm.StringParameter(this, 'RedisPortParameter', {
-      tier: ssm.ParameterTier.STANDARD,
-      parameterName: `/medplum/${name}/redisPort`,
-      description: 'Redis port number',
-      stringValue: redisCluster.attrPrimaryEndPointPort
-    });
-
-    const redisSecrets = new ssm.StringParameter(this, 'RedisSecretsParameter', {
-      tier: ssm.ParameterTier.STANDARD,
-      parameterName: `/medplum/${name}/redisSecrets`,
+      parameterName: `/medplum/${name}/RedisSecrets`,
       description: 'Redis secrets ARN',
       stringValue: redisPassword.secretArn
     });
@@ -246,9 +245,7 @@ export class BackEnd extends cdk.Construct {
     // Debug
     console.log('ARecord', record.domainName);
     console.log('DatabaseSecretsParameter', databaseSecrets.parameterArn);
-    console.log('RedisHostParameter', redisHostParameter.parameterArn);
-    console.log('RedisPortParameter', redisPortParameter.parameterArn);
-    console.log('RedisSecretsParameter', redisSecrets.parameterArn);
+    console.log('RedisSecretsParameter', redisSecretsParameter.parameterArn);
     console.log('RedisCluster', redisCluster.attrPrimaryEndPointAddress);
   }
 }
