@@ -23,6 +23,7 @@ export function Timeline(props: TimelineProps) {
 export interface TimelineItemProps {
   resource: Resource
   profile?: Reference;
+  socialEnabled?: boolean;
   children?: React.ReactNode;
 }
 
@@ -45,10 +46,12 @@ export function TimelineItem(props: TimelineItemProps) {
         </div>
       </div>
       {props.children}
-      <div className="medplum-timeline-item-footer">
-        <Button borderless={true}><ThumbUpIcon className="medplum-timeline-icon" /> Like</Button>
-        <Button borderless={true}><ChatIcon className="medplum-timeline-icon" /> Comment</Button>
-      </div>
+      {props.socialEnabled && (
+        <div className="medplum-timeline-item-footer">
+          <Button borderless={true}><ThumbUpIcon className="medplum-timeline-icon" /> Like</Button>
+          <Button borderless={true}><ChatIcon className="medplum-timeline-icon" /> Comment</Button>
+        </div>
+      )}
     </article>
   );
 }

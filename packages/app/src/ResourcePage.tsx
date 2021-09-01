@@ -2,6 +2,7 @@ import {
   Bundle,
   Encounter,
   getDisplayString,
+  Patient,
   Questionnaire,
   Resource
 } from '@medplum/core';
@@ -26,6 +27,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
+import { PatientHeader } from './PatientHeader';
 
 function getTabs(resourceType: string): string[] {
   const result = [];
@@ -85,15 +87,19 @@ export function ResourcePage() {
 
   return (
     <>
-      <div style={{
-        backgroundColor: 'white',
-        borderBottom: '2px solid #eee',
-        color: '#444',
-        fontWeight: 'bold',
-        padding: '15px 30px',
-      }}>
-        {value ? getDisplayString(value) : `${resourceType} ${id}`}
-      </div>
+      {resourceType === 'Patient' ? (
+        <PatientHeader patient={value as Patient} />
+      ) : (
+        <div style={{
+          backgroundColor: 'white',
+          borderBottom: '2px solid #eee',
+          color: '#444',
+          fontWeight: 'bold',
+          padding: '15px 30px',
+        }}>
+          {value ? getDisplayString(value) : `${resourceType} ${id}`}
+        </div>
+      )}
       <TabBar
         value={tab || defaultTab}
         onChange={(name: string) => history.push(`/${resourceType}/${id}/${name}`)}>
