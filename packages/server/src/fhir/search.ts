@@ -183,17 +183,11 @@ class SearchParser {
       case 'reference':
         this.parseReference(searchParam, value);
         break;
-      case 'composite':
-        this.parseComposite(searchParam, value);
-        break;
       case 'quantity':
         this.parseQuantity(searchParam, value);
         break;
       case 'uri':
-        this.parseUri(searchParam, value);
-        break;
-      case 'special':
-        this.parseSpecial(searchParam, value);
+        this.parseUri(searchParam, modifier, value);
         break;
     }
   }
@@ -227,7 +221,6 @@ class SearchParser {
     }
 
     this.filters.push({
-      // param,
       code: param.code as string,
       operator: op,
       value: num
@@ -298,7 +291,6 @@ class SearchParser {
     }
 
     this.filters.push({
-      // param,
       code: param.code as string,
       operator: op,
       value
@@ -355,19 +347,71 @@ class SearchParser {
     });
   }
 
-  private parseComposite(param: SearchParameter, value: string) {
-    // TODO
-  }
-
   private parseQuantity(param: SearchParameter, value: string) {
-    // TODO
+    const [prefixNumber, unitSystem, unitCode] = value.split('|');
+    let op = Operator.EQUALS;
+    let num = prefixNumber;
+
+    if (value.startsWith('eq')) {
+      num = value.substring(2);
+
+    } else if (value.startsWith('ne')) {
+      op = Operator.NOT_EQUALS;
+      num = value.substring(2);
+
+    } else if (value.startsWith('lt')) {
+      op = Operator.LESS_THAN;
+      num = value.substring(2);
+
+    } else if (value.startsWith('le')) {
+      op = Operator.LESS_THAN_OR_EQUALS;
+      num = value.substring(2);
+
+    } else if (value.startsWith('gt')) {
+      op = Operator.GREATER_THAN;
+      num = value.substring(2);
+
+    } else if (value.startsWith('ge')) {
+      op = Operator.GREATER_THAN_OR_EQUALS;
+      num = value.substring(2);
+    }
+
+    this.filters.push({
+      code: param.code as string,
+      operator: op,
+      value: num,
+      unitSystem,
+      unitCode
+    });
   }
 
-  private parseUri(param: SearchParameter, value: string) {
-    // TODO
-  }
+  private parseUri(param: SearchParameter, modifier: string, value: string) {
+    let op = Operator.EQUALS;
 
-  private parseSpecial(param: SearchParameter, value: string) {
-    // TODO
+    if (modifier) {
+      switch (modifier) {
+        case 'contains':
+          op = Operator.CONTAINS;
+          break;
+
+        case 'exact':
+          op = Operator.EXACT;
+          break;
+
+        case 'above':
+          op = Operator.ABOVE;
+          break;
+
+        case 'below':
+          op = Operator.BELOW;
+          break;
+      }
+    }
+
+    this.filters.push({
+      code: param.code as string,
+      operator: op,
+      value
+    });
   }
 }

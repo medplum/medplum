@@ -1,6 +1,6 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { AddressInput, AddressInputProps } from '../AddressInput';
+import { AddressInput } from '../AddressInput';
 import { Document } from '../Document';
 
 export default {
@@ -8,15 +8,15 @@ export default {
   component: AddressInput,
 } as Meta;
 
-export const Basic = (args: AddressInputProps) => (
+export const Basic = () => (
   <Document>
     <AddressInput name="address" />
   </Document>
 );
 
-export const DefaultValue = (args: AddressInputProps) => (
+export const DefaultValue = () => (
   <Document>
-    <AddressInput name="address" value={{
+    <AddressInput name="address" defaultValue={{
       use: 'home',
       type: 'physical',
       line: ['123 Happy St'],

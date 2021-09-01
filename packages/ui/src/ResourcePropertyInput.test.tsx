@@ -189,7 +189,7 @@ describe('ResourcePropertyInput', () => {
       name: 'maritalStatus',
       defaultValue: maritalStatus
     });
-    expect(screen.getByDisplayValue('M')).not.toBeUndefined();
+    expect(screen.getByTestId('codeable-concept-input')).not.toBeUndefined();
   });
 
   test('Renders HumanName property', () => {

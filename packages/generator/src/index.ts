@@ -28,7 +28,6 @@ const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExt
 
 const searchParams = readJson('fhir/r4/search-parameters.json');
 const schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema6;
-const patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json');
 const definitions = schema.definitions as { [k: string]: JSONSchema6; };
 
 const fhirTypes: FhirType[] = [];
@@ -373,21 +372,6 @@ function buildValueSetElementTable(b: FileBuilder): void {
   b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("system")');`);
   b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("code")');`);
   b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("display")');`);
-}
-
-/**
- * Returns true if the resource type can be in a patient compartment.
- * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
- * @param resourceType The resource type.
- * @returns True if the resource type can be in a patient compartment.
- */
-function isInPatientCompartment(resourceType: string): boolean {
-  for (const resource of patientCompartment.resource) {
-    if (resource.code === resourceType) {
-      return resource.param && resource.param.length > 0;
-    }
-  }
-  return false;
 }
 
 function buildImports(fhirType: FhirType, includedTypes: Set<string>, referencedTypes: Set<string>): void {

@@ -356,7 +356,12 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
     }).filter(e => !!e);
   },
 
-  as(context: any, expression: Atom): any {
+  /**
+   * The as operator can be used to treat a value as a specific type.
+   * @param context The context value.
+   * @returns The value as the specific type.
+   */
+  as(context: any): any {
     return context;
   }
 };

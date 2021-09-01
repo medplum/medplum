@@ -1,5 +1,6 @@
 import { Operator } from '@medplum/core';
-import { getSearchParameters, parseSearchRequest } from './search';
+import { URL } from 'url';
+import { getSearchParameters, parseSearchRequest, parseSearchUrl } from './search';
 
 test('Parse Patient search', () => {
   expect(parseSearchRequest('Patient', {})).toMatchObject({
@@ -44,6 +45,17 @@ test('Parse page and count', () => {
 test('Patient has birthdate param', () => {
   const params = getSearchParameters('Patient');
   expect(params['birthdate']).not.toBeUndefined();
+});
+
+test('Parse URL', () => {
+  expect(parseSearchUrl(new URL('https://example.com/Patient?name=Alice'))).toMatchObject({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'name',
+      operator: Operator.EQUALS,
+      value: 'Alice'
+    }]
+  });
 });
 
 // Number
@@ -242,6 +254,100 @@ test('Parse search reference', () => {
   expect(parseSearchRequest('Observation', { 'subject': 'Patient/123' })).toMatchObject({
     resourceType: 'Observation',
     filters: [{ code: 'subject', operator: Operator.EQUALS, value: 'Patient/123' }]
+  });
+});
+
+// Quantity
+
+test('Parse search quantity equals', () => {
+  expect(parseSearchRequest('Observation', { 'value-quantity': '0.5' })).toMatchObject({
+    resourceType: 'Observation',
+    filters: [{ code: 'value-quantity', operator: Operator.EQUALS, value: '0.5' }]
+  });
+});
+
+test('Parse search quantity explicit equals', () => {
+  expect(parseSearchRequest('Observation', { 'value-quantity': 'eq0.5' })).toMatchObject({
+    resourceType: 'Observation',
+    filters: [{ code: 'value-quantity', operator: Operator.EQUALS, value: '0.5' }]
+  });
+});
+
+test('Parse search quantity not equals', () => {
+  expect(parseSearchRequest('Observation', { 'value-quantity': 'ne0.5' })).toMatchObject({
+    resourceType: 'Observation',
+    filters: [{ code: 'value-quantity', operator: Operator.NOT_EQUALS, value: '0.5' }]
+  });
+});
+
+test('Parse search quantity less than', () => {
+  expect(parseSearchRequest('Observation', { 'value-quantity': 'lt0.5' })).toMatchObject({
+    resourceType: 'Observation',
+    filters: [{ code: 'value-quantity', operator: Operator.LESS_THAN, value: '0.5' }]
+  });
+});
+
+test('Parse search quantity less than or equal', () => {
+  expect(parseSearchRequest('Observation', { 'value-quantity': 'le0.5' })).toMatchObject({
+    resourceType: 'Observation',
+    filters: [{ code: 'value-quantity', operator: Operator.LESS_THAN_OR_EQUALS, value: '0.5' }]
+  });
+});
+
+test('Parse search quantity greater than', () => {
+  expect(parseSearchRequest('Observation', { 'value-quantity': 'gt0.5' })).toMatchObject({
+    resourceType: 'Observation',
+    filters: [{ code: 'value-quantity', operator: Operator.GREATER_THAN, value: '0.5' }]
+  });
+});
+
+test('Parse search quantity greater than or equal', () => {
+  expect(parseSearchRequest('Observation', { 'value-quantity': 'ge0.5' })).toMatchObject({
+    resourceType: 'Observation',
+    filters: [{ code: 'value-quantity', operator: Operator.GREATER_THAN_OR_EQUALS, value: '0.5' }]
+  });
+});
+
+test('Parse search quantity units', () => {
+  expect(parseSearchRequest('Observation', { 'value-quantity': '5.4|https://unitsofmeasure.org|mg' })).toMatchObject({
+    resourceType: 'Observation',
+    filters: [{
+      code: 'value-quantity',
+      operator: Operator.EQUALS,
+      value: '5.4',
+      unitSystem: 'https://unitsofmeasure.org',
+      unitCode: 'mg'
+    }]
+  });
+});
+
+// URI
+
+test('Parse search URI contains', () => {
+  expect(parseSearchRequest('ValueSet', { 'url:contains': 'https://acme.org' })).toMatchObject({
+    resourceType: 'ValueSet',
+    filters: [{ code: 'url', operator: Operator.CONTAINS, value: 'https://acme.org' }]
+  });
+});
+
+test('Parse search URI exact', () => {
+  expect(parseSearchRequest('ValueSet', { 'url:exact': 'https://acme.org' })).toMatchObject({
+    resourceType: 'ValueSet',
+    filters: [{ code: 'url', operator: Operator.EXACT, value: 'https://acme.org' }]
+  });
+});
+
+test('Parse search URI above', () => {
+  expect(parseSearchRequest('ValueSet', { 'url:above': 'https://acme.org' })).toMatchObject({
+    resourceType: 'ValueSet',
+    filters: [{ code: 'url', operator: Operator.ABOVE, value: 'https://acme.org' }]
+  });
+});
+
+test('Parse search URI below', () => {
+  expect(parseSearchRequest('ValueSet', { 'url:below': 'https://acme.org' })).toMatchObject({
+    resourceType: 'ValueSet',
+    filters: [{ code: 'url', operator: Operator.BELOW, value: 'https://acme.org' }]
   });
 });
 

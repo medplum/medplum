@@ -13,7 +13,8 @@
   "scripts": {
     "clean": "rimraf dist/index.*",
     "build": "npm run clean && tsc",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint src/ --ext .ts,.tsx"
   },
   "devDependencies": {
     "@types/node": "16.7.3",
