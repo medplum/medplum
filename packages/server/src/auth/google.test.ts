@@ -82,7 +82,6 @@ describe('Google Auth', () => {
         credential: 'xyz'
       });
     expect(res.status).toBe(200);
-    expect(res.body.user).not.toBeUndefined();
     expect(res.body.profile).not.toBeUndefined();
     expect(res.body.idToken).not.toBeUndefined();
     expect(res.body.accessToken).not.toBeUndefined();

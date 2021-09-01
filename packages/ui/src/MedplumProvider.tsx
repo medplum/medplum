@@ -1,4 +1,4 @@
-import { MedplumClient, ProfileResource, User } from '@medplum/core';
+import { MedplumClient, ProfileResource } from '@medplum/core';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const reactContext = createContext(undefined as MedplumContext | undefined);
@@ -12,7 +12,6 @@ export interface MedplumProviderProps {
 export interface MedplumContext {
   medplum: MedplumClient;
   router: MedplumRouter;
-  user?: User;
   profile?: ProfileResource;
   loading: boolean;
 }
@@ -71,7 +70,6 @@ export function useMedplumRouter(): MedplumRouter {
  */
 function createMedplumContext(medplum: MedplumClient, router: MedplumRouter): MedplumContext {
   const [state, setState] = useState({
-    user: medplum.getUser(),
     profile: medplum.getProfile(),
     loading: false
   });
@@ -79,7 +77,6 @@ function createMedplumContext(medplum: MedplumClient, router: MedplumRouter): Me
   useEffect(() => {
     const eventListener = () => setState({
       ...state,
-      user: medplum.getUser(),
       profile: medplum.getProfile()
     });
 

@@ -20,7 +20,6 @@ export interface RegisterRequest {
 }
 
 export interface RegisterResponse {
-  user: User;
   project: Project;
   profile: ProfileResource;
 }
@@ -75,7 +74,6 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const practitioner = await createPractitioner(request, project);
   await createProjectMembership(user, project, practitioner);
   return {
-    user,
     project,
     profile: practitioner
   }
