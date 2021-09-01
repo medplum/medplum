@@ -39,126 +39,130 @@ const schema: IndexedStructureDefinition = {
   }
 };
 
-test('SearchFieldEditor add field with Add button', async () => {
-  window.prompt = jest.fn().mockImplementation(() => 'xyz');
+describe('SearchFieldEditor', () => {
 
-  let currSearch: SearchRequest = {
-    resourceType: 'Patient',
-    fields: ['name']
-  };
+  test('Add field with Add button', async () => {
+    window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
-  const utils = render(<SearchFieldEditor
-    schema={schema}
-    search={currSearch}
-    visible={true}
-    onOk={e => currSearch = e}
-    onCancel={() => console.log('onCancel')}
-  />);
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      fields: ['name']
+    };
 
-  await act(async () => {
-    (utils.getByTestId('available') as HTMLSelectElement).value = 'birthDate';
+    const utils = render(<SearchFieldEditor
+      schema={schema}
+      search={currSearch}
+      visible={true}
+      onOk={e => currSearch = e}
+      onCancel={() => console.log('onCancel')}
+    />);
+
+    await act(async () => {
+      (utils.getByTestId('available') as HTMLSelectElement).value = 'birthDate';
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(currSearch.fields).toMatchObject(['name', 'birthDate']);
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByText('Add'));
+  test('Add field with Enter key', async () => {
+    window.prompt = jest.fn().mockImplementation(() => 'xyz');
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      fields: ['name']
+    };
+
+    const utils = render(<SearchFieldEditor
+      schema={schema}
+      search={currSearch}
+      visible={true}
+      onOk={e => currSearch = e}
+      onCancel={() => console.log('onCancel')}
+    />);
+
+    await act(async () => {
+      (utils.getByTestId('available') as HTMLSelectElement).value = 'birthDate';
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId('available'), { key: 'Enter', code: 'Enter' });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(currSearch.fields).toMatchObject(['name', 'birthDate']);
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByText('OK'));
+  test('Remove field with Remove button', async () => {
+    window.prompt = jest.fn().mockImplementation(() => 'xyz');
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      fields: ['name', 'birthDate']
+    };
+
+    const utils = render(<SearchFieldEditor
+      schema={schema}
+      search={currSearch}
+      visible={true}
+      onOk={e => currSearch = e}
+      onCancel={() => console.log('onCancel')}
+    />);
+
+    await act(async () => {
+      (utils.getByTestId('selected') as HTMLSelectElement).value = 'birthDate';
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Remove'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(currSearch.fields).toMatchObject(['name']);
   });
 
-  expect(currSearch.fields).toMatchObject(['name', 'birthDate']);
-});
+  test('Remove field with Remove button', async () => {
+    window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
-test('SearchFieldEditor add field with Enter key', async () => {
-  window.prompt = jest.fn().mockImplementation(() => 'xyz');
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      fields: ['name', 'birthDate']
+    };
 
-  let currSearch: SearchRequest = {
-    resourceType: 'Patient',
-    fields: ['name']
-  };
+    const utils = render(<SearchFieldEditor
+      schema={schema}
+      search={currSearch}
+      visible={true}
+      onOk={e => currSearch = e}
+      onCancel={() => console.log('onCancel')}
+    />);
 
-  const utils = render(<SearchFieldEditor
-    schema={schema}
-    search={currSearch}
-    visible={true}
-    onOk={e => currSearch = e}
-    onCancel={() => console.log('onCancel')}
-  />);
+    await act(async () => {
+      (utils.getByTestId('selected') as HTMLSelectElement).value = 'birthDate';
+    });
 
-  await act(async () => {
-    (utils.getByTestId('available') as HTMLSelectElement).value = 'birthDate';
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId('selected'), { key: 'Enter', code: 'Enter' });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(currSearch.fields).toMatchObject(['name']);
   });
 
-  await act(async () => {
-    fireEvent.keyDown(screen.getByTestId('available'), { key: 'Enter', code: 'Enter' });
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByText('OK'));
-  });
-
-  expect(currSearch.fields).toMatchObject(['name', 'birthDate']);
-});
-
-test('SearchFieldEditor remove field with Remove button', async () => {
-  window.prompt = jest.fn().mockImplementation(() => 'xyz');
-
-  let currSearch: SearchRequest = {
-    resourceType: 'Patient',
-    fields: ['name', 'birthDate']
-  };
-
-  const utils = render(<SearchFieldEditor
-    schema={schema}
-    search={currSearch}
-    visible={true}
-    onOk={e => currSearch = e}
-    onCancel={() => console.log('onCancel')}
-  />);
-
-  await act(async () => {
-    (utils.getByTestId('selected') as HTMLSelectElement).value = 'birthDate';
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByText('Remove'));
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByText('OK'));
-  });
-
-  expect(currSearch.fields).toMatchObject(['name']);
-});
-
-test('SearchFieldEditor remove field with Remove button', async () => {
-  window.prompt = jest.fn().mockImplementation(() => 'xyz');
-
-  let currSearch: SearchRequest = {
-    resourceType: 'Patient',
-    fields: ['name', 'birthDate']
-  };
-
-  const utils = render(<SearchFieldEditor
-    schema={schema}
-    search={currSearch}
-    visible={true}
-    onOk={e => currSearch = e}
-    onCancel={() => console.log('onCancel')}
-  />);
-
-  await act(async () => {
-    (utils.getByTestId('selected') as HTMLSelectElement).value = 'birthDate';
-  });
-
-  await act(async () => {
-    fireEvent.keyDown(screen.getByTestId('selected'), { key: 'Enter', code: 'Enter' });
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByText('OK'));
-  });
-
-  expect(currSearch.fields).toMatchObject(['name']);
 });

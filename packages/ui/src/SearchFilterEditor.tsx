@@ -23,7 +23,10 @@ function FilterRow(props: FilterRowProps) {
     const resourceType = props.resourceType;
     const searchParams = props.schema.types[resourceType].searchParams as SearchParameter[];
     return (
-      <select defaultValue={searchParam?.code} onChange={e => setSearchParam(searchParams.find(p => p.code === e.target.value))}>
+      <select
+        data-testid="filter-field"
+        defaultValue={searchParam?.code}
+        onChange={e => setSearchParam(searchParams.find(p => p.code === e.target.value))}>
         <option value=""></option>
         {searchParams.map(param => (
           <option key={param.code} value={param.code}>{param.code}</option>
@@ -38,7 +41,10 @@ function FilterRow(props: FilterRowProps) {
     }
 
     return (
-      <select defaultValue={operator} onChange={e => setOperator(e.target.value as Operator)}>
+      <select
+        data-testid="filter-operation"
+        defaultValue={operator}
+        onChange={e => setOperator(e.target.value as Operator)}>
         {renderOperationOptions(searchParam)}
       </select>
     );
@@ -116,7 +122,7 @@ function FilterRow(props: FilterRowProps) {
       case 'fulltext':
       case 'token':
         return (
-          <input type="text" onChange={e => setValue(e.target.value)} />
+          <input data-testid="filter-value" type="text" onChange={e => setValue(e.target.value)} />
         );
 
       case 'numeric':
