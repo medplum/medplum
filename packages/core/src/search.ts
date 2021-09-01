@@ -13,6 +13,8 @@ export interface Filter {
   code: string;
   operator: Operator;
   value: string;
+  unitSystem?: string;
+  unitCode?: string;
 }
 
 export interface SortRule {

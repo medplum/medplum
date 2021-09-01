@@ -13,7 +13,8 @@
   "scripts": {
     "clean": "rimraf dist cdk.out",
     "cdk": "cdk",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint src/ --ext .ts,.tsx"
   },
   "dependencies": {
     "@aws-cdk/aws-cloudfront": "1.120.0",
@@ -35,6 +36,7 @@
     "@types/node": "16.7.3",
     "aws-cdk": "1.120.0",
     "constructs": "3.3.134",
+    "eslint": "7.32.0",
     "jest": "27.1.0",
     "rimraf": "3.0.2",
     "ts-node": "10.2.1",

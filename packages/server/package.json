@@ -16,7 +16,8 @@
     "prestart": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "lint": "eslint src/ --ext .ts,.tsx"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.27.0",

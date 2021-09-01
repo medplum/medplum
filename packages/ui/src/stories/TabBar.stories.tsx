@@ -2,16 +2,16 @@ import { Meta } from '@storybook/react';
 import React, { useState } from 'react';
 import { Document } from '../Document';
 import { Tab } from '../Tab';
-import { TabBar, TabBarProps } from '../TabBar';
-import { TabSwitch } from '../TabSwitch';
+import { TabBar } from '../TabBar';
 import { TabPanel } from '../TabPanel';
+import { TabSwitch } from '../TabSwitch';
 
 export default {
   title: 'Medplum/TabBar',
   component: TabBar,
 } as Meta;
 
-export const Basic = (args: TabBarProps) => {
+export const Basic = () => {
   const [value, setValue] = useState('item1');
   return (
     <>

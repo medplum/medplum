@@ -1,6 +1,6 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { AttachmentInput, AttachmentInputProps } from '../AttachmentInput';
+import { AttachmentInput } from '../AttachmentInput';
 import { Document } from '../Document';
 
 export default {
@@ -8,14 +8,14 @@ export default {
   component: AttachmentInput,
 } as Meta;
 
-export const Basic = (args: AttachmentInputProps) => (
+export const Basic = () => (
   <Document>
     <AttachmentInput name="attachment" />
   </Document>
 );
 
-export const DefaultValue = (args: AttachmentInputProps) => (
+export const DefaultValue = () => (
   <Document>
-    <AttachmentInput name="attachment" value={{ }} />
+    <AttachmentInput name="attachment" defaultValue={{}} />
   </Document>
 );

@@ -1,20 +1,20 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
-import { SmartText, SmartTextProps } from '../SmartText';
+import { SmartText } from '../SmartText';
 
 export default {
   title: 'Medplum/SmartText',
   component: SmartText,
 } as Meta;
 
-export const Basic = (args: SmartTextProps) => (
+export const Basic = () => (
   <Document>
     <SmartText />
   </Document>
 );
 
-export const DefaultValue = (args: SmartTextProps) => (
+export const DefaultValue = () => (
   <Document>
     <SmartText value="Hello world" />
   </Document>

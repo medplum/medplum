@@ -26,3 +26,5 @@ npm run build --workspace=packages/server
 # Test
 npx jest --runInBand
 
+# Lint
+npm run lint --workspaces

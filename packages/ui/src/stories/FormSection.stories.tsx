@@ -1,15 +1,15 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { FormSection, FormSectionProps } from '../FormSection';
-import { TextField } from '../TextField';
 import { Document } from '../Document';
+import { FormSection } from '../FormSection';
+import { TextField } from '../TextField';
 
 export default {
   title: 'Medplum/FormSection',
   component: FormSection,
 } as Meta;
 
-export const Basic = (args: FormSectionProps) => (
+export const Basic = () => (
   <Document>
     <FormSection title="Name" description="Friendly name description">
       <TextField id="name" value="John Smith" />
@@ -17,7 +17,7 @@ export const Basic = (args: FormSectionProps) => (
   </Document>
 );
 
-export const DefaultValue = (args: FormSectionProps) => (
+export const DefaultValue = () => (
   <Document>
     <FormSection title="Name" description="Friendly name description">
       <TextField id="name" value="John Smith" />

@@ -271,9 +271,9 @@ const parserBuilder = new ParserBuilder()
   .infixLeft('Symbol', Precedence.Union, (left: Atom, symbol: Token, right: Atom) => {
     switch (symbol.value) {
       case 'as':
-        return new BinaryOperatorAtom(left, right, (x, y) => x);
+        return new BinaryOperatorAtom(left, right, (x) => x);
       case 'is':
-        return new BinaryOperatorAtom(left, right, (x, y) => true);
+        return new BinaryOperatorAtom(left, right, () => true);
       case 'and':
         return new BinaryOperatorAtom(left, right, (x, y) => x && y);
       default:
