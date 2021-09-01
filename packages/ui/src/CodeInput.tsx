@@ -1,4 +1,4 @@
-import { Coding, ElementDefinition, ValueSet, ValueSetContains, ValueSetExpansion } from '@medplum/core';
+import { ElementDefinition, ValueSet, ValueSetContains, ValueSetExpansion } from '@medplum/core';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
 import { useMedplum } from './MedplumProvider';
@@ -6,38 +6,33 @@ import { useMedplum } from './MedplumProvider';
 export interface CodeInputProps {
   property: ElementDefinition;
   name: string;
-  defaultValue?: Coding | string;
+  defaultValue?: string;
 }
+
+const cachedDisplayValues: Record<string, string> = {};
 
 export function CodeInput(props: CodeInputProps) {
   const medplum = useMedplum();
 
   let defaultValue = undefined;
   if (props.defaultValue) {
-    if (typeof props.defaultValue === 'string') {
-      defaultValue = [{ code: props.defaultValue }];
-    } else {
-      defaultValue = [props.defaultValue];
-    }
+    defaultValue = [props.defaultValue];
   }
 
   return (
     <Autocomplete
-      loadOptions={(input: string): Promise<Coding[]> => {
+      loadOptions={(input: string): Promise<string[]> => {
         const system = props.property.binding?.valueSet as string;
-        const url = `fhir/R4/ValueSet/$expand?url=${encodeURIComponent(system)}&filter=${encodeURIComponent(input)}`;
-        return medplum.get(url)
+        return medplum.searchValueSet(system, input)
           .then((valueSet: ValueSet) => {
-            return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetContains[]).map(e => ({
-              system: e.system,
-              code: e.code,
-              display: e.display
-            } as Coding));
+            const contains = (valueSet.expansion as ValueSetExpansion).contains as ValueSetContains[];
+            contains.forEach(e => cachedDisplayValues[e.code as string] = e.display as string);
+            return contains.map(e => e.code as string);
           });
       }}
-      buildUnstructured={(str: string) => ({ code: str })}
-      getId={(item: Coding) => item.code as string}
-      getDisplay={(item: Coding) => <>{item.display || item.code}</>}
+      buildUnstructured={(str: string) => str}
+      getId={(item: string) => item}
+      getDisplay={(item: string) => <>{cachedDisplayValues[item] || item}</>}
       name={props.name}
       defaultValue={defaultValue}
     />

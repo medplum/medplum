@@ -5,6 +5,7 @@ import { AttachmentInput } from './AttachmentInput';
 import { Button } from './Button';
 import { CodeableConceptInput } from './CodeableConceptInput';
 import { CodeInput } from './CodeInput';
+import { CodingInput } from './CodingInput';
 import { ContactPointInput } from './ContactPointInput';
 import { FormSection } from './FormSection';
 import { parseForm } from './FormUtils';
@@ -149,8 +150,7 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
         <input type="number" name={name} data-testid={name} defaultValue={initial?.valueInteger} />
       );
     case PropertyType.code:
-    case PropertyType.Coding:
-      return <CodeInput property={property} name={name} defaultValue={initial?.valueCoding} />;
+      return <CodeInput property={property} name={name} defaultValue={initial?.valueString} />;
     case PropertyType.boolean:
       return (
         <input type="checkbox" name={name} value="true" />
@@ -165,6 +165,8 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
       return <AttachmentInput name={name} />;
     case PropertyType.CodeableConcept:
       return <CodeableConceptInput name={name} />;
+    case PropertyType.Coding:
+      return <CodingInput property={property} name={name} defaultValue={initial?.valueCoding} />;
     case PropertyType.ContactPoint:
       return <ContactPointInput name={name} />;
     case PropertyType.HumanName:

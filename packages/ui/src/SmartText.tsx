@@ -97,8 +97,7 @@ export function SmartText(props: SmartTextProps) {
     if (search2.length >= 2 && search2 !== lastSearch) {
       setLastSearch(search2);
 
-      const url = `fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://snomed.info/sct')}&filter=${encodeURIComponent(search2)}`;
-      medplum.get(url)
+      medplum.searchValueSet('https://snomed.info/sct', search2)
         .then(handleSearchResults);
     } else {
       closeSuggestions();

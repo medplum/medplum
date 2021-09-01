@@ -43,8 +43,13 @@ module.exports = (env, argv) => ({
   devServer: {
     port: 3000,
     hot: true,
+    devMiddleware: {
+      index: true,
+      publicPath: '/',
+      writeToDisk: true
+    },
     historyApiFallback: {
-      index: 'index.html'
+      index: '/index.html'
     }
   },
   optimization: {

@@ -2,7 +2,7 @@ import { ElementDefinition, MedplumClient, ValueSet } from '@medplum/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
-import { CodeInput } from './CodeInput';
+import { CodingInput } from './CodingInput';
 import { MedplumProvider } from './MedplumProvider';
 
 const statusProperty: ElementDefinition = {
@@ -56,7 +56,7 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-describe('CodeInput', () => {
+describe('CodingInput', () => {
 
   beforeAll(async () => {
     await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
@@ -76,28 +76,28 @@ describe('CodeInput', () => {
   test('Renders', () => {
     render(
       <MedplumProvider medplum={medplum} router={mockRouter}>
-        <CodeInput property={statusProperty} name="test" />
+        <CodingInput property={statusProperty} name="test" />
       </MedplumProvider>
     );
 
     expect(screen.getByTestId('autocomplete')).not.toBeUndefined();
   });
 
-  test('Renders string default value', () => {
+  test('Renders Coding default value', () => {
     render(
       <MedplumProvider medplum={medplum} router={mockRouter}>
-        <CodeInput property={statusProperty} name="test" defaultValue="xyz" />
+        <CodingInput property={statusProperty} name="test" defaultValue={{ code: 'abc' }} />
       </MedplumProvider>
     );
 
     expect(screen.getByTestId('autocomplete')).not.toBeUndefined();
-    expect(screen.getByText('xyz')).not.toBeUndefined();
+    expect(screen.getByText('abc')).not.toBeUndefined();
   });
 
   test('Searches for results', async () => {
     render(
       <MedplumProvider medplum={medplum} router={mockRouter}>
-        <CodeInput property={statusProperty} name="test" />
+        <CodingInput property={statusProperty} name="test" />
       </MedplumProvider>
     );
 

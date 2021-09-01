@@ -7,10 +7,8 @@ export interface IdentifierDisplayProps {
 
 export function IdentifierDisplay(props: IdentifierDisplayProps) {
   return (
-    <div style={{ marginBottom: 16 }}>
-      {props.value?.system}
-      <br />
-      {props.value?.value}
+    <div>
+      {props.value?.system}: {props.value?.value}
     </div>
   );
 }

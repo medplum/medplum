@@ -1,5 +1,5 @@
 import { Filter, IndexedStructureDefinition, Operator, SearchParameter, SearchRequest, stringify } from '@medplum/core';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog } from './Dialog';
 import { ReferenceInput } from './ReferenceInput';
 import { addFilter, deleteFilter } from './SearchUtils';
@@ -23,7 +23,10 @@ function FilterRow(props: FilterRowProps) {
     const resourceType = props.resourceType;
     const searchParams = props.schema.types[resourceType].searchParams as SearchParameter[];
     return (
-      <select defaultValue={searchParam?.code} onChange={e => setSearchParam(searchParams.find(p => p.code === e.target.value))}>
+      <select
+        data-testid="filter-field"
+        defaultValue={searchParam?.code}
+        onChange={e => setSearchParam(searchParams.find(p => p.code === e.target.value))}>
         <option value=""></option>
         {searchParams.map(param => (
           <option key={param.code} value={param.code}>{param.code}</option>
@@ -38,7 +41,10 @@ function FilterRow(props: FilterRowProps) {
     }
 
     return (
-      <select defaultValue={operator} onChange={e => setOperator(e.target.value as Operator)}>
+      <select
+        data-testid="filter-operation"
+        defaultValue={operator}
+        onChange={e => setOperator(e.target.value as Operator)}>
         {renderOperationOptions(searchParam)}
       </select>
     );
@@ -116,7 +122,7 @@ function FilterRow(props: FilterRowProps) {
       case 'fulltext':
       case 'token':
         return (
-          <input type="text" onChange={e => setValue(e.target.value)} />
+          <input data-testid="filter-value" type="text" onChange={e => setValue(e.target.value)} />
         );
 
       case 'numeric':
@@ -216,32 +222,36 @@ export interface SearchFilterEditorProps {
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps) {
-  const [state, setState] = useState({
-    search: JSON.parse(stringify(props.search)) as SearchRequest
-  });
+  const [search, setSearch] = useState<SearchRequest>(JSON.parse(stringify(props.search)) as SearchRequest);
+  const searchRef = useRef<SearchRequest>(search);
+  searchRef.current = search;
+
+  useEffect(() => {
+    setSearch(JSON.parse(stringify(props.search)) as SearchRequest);
+  }, [props.search]);
 
   function onAddFilter(filter: Filter) {
-    setState({ search: addFilter(state.search, filter.code, filter.operator, filter.value) });
+    setSearch(addFilter(searchRef.current, filter.code, filter.operator, filter.value));
   }
 
   function onDeleteFilter(filter: Filter) {
-    if (!state.search.filters) {
+    if (!searchRef.current.filters) {
       return;
     }
-    const index = state.search.filters.findIndex(f => Object.is(f, filter));
-    setState({ search: deleteFilter(state.search, index) });
+    const index = searchRef.current.filters.findIndex(f => Object.is(f, filter));
+    setSearch(deleteFilter(searchRef.current, index));
   }
 
   if (!props.visible) {
     return null;
   }
 
-  const filters = state.search.filters || [];
+  const filters = search.filters || [];
 
   return (
     <Dialog
       visible={props.visible}
-      onOk={() => props.onOk(state.search)}
+      onOk={() => props.onOk(searchRef.current)}
       onCancel={props.onCancel}>
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">

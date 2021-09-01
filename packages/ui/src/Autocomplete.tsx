@@ -55,6 +55,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     const newValues = props.multiple ? [...state.values, resource] : [resource];
 
     setState({
+      ...stateRef.current,
       focused: true,
       dropDownVisible: false,
       lastValue: '',
@@ -77,7 +78,6 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
   }
 
   function handleBlur(): void {
-    tryAddResource();
     setState({ ...stateRef.current, focused: false });
     dismissOnDelay();
   }
