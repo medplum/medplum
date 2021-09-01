@@ -25,6 +25,7 @@ export interface TimelineItemProps {
   profile?: Reference;
   socialEnabled?: boolean;
   children?: React.ReactNode;
+  padding?: boolean;
 }
 
 export function TimelineItem(props: TimelineItemProps) {
@@ -34,7 +35,7 @@ export function TimelineItem(props: TimelineItemProps) {
     <article className="medplum-timeline-item" data-testid="timeline-item">
       <div className="medplum-timeline-item-header">
         <div className="medplum-timeline-item-avatar">
-          <Avatar value={author} link={true} />
+          <Avatar value={author} link={true} size="medium" />
         </div>
         <div className="medplum-timeline-item-title">
           <ResourceName value={author} link={true} />
@@ -45,7 +46,14 @@ export function TimelineItem(props: TimelineItemProps) {
           </div>
         </div>
       </div>
-      {props.children}
+      {props.padding && (
+        <div style={{ padding: '2px 16px 16px 16px' }}>
+          {props.children}
+        </div>
+      )}
+      {!props.padding && (
+        <>{props.children}</>
+      )}
       {props.socialEnabled && (
         <div className="medplum-timeline-item-footer">
           <Button borderless={true}><ThumbUpIcon className="medplum-timeline-icon" /> Like</Button>

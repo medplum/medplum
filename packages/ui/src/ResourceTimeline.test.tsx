@@ -1,9 +1,9 @@
-import { Bundle, Communication, Encounter, Media, MedplumClient } from '@medplum/core';
+import { Attachment, Bundle, Communication, createReference, Encounter, getReferenceString, Media, MedplumClient, Operator, ProfileResource, Resource, SearchRequest } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
-import { EncounterTimeline, EncounterTimelineProps } from './EncounterTimeline';
 import { MedplumProvider } from './MedplumProvider';
+import { ResourceTimeline, ResourceTimelineProps } from './ResourceTimeline';
 
 const encounterId = randomUUID();
 
@@ -122,22 +122,49 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-describe('EncounterTimeline', () => {
+function buildEncounterSearch(encounter: Resource): SearchRequest[] {
+  const encounterReference = getReferenceString(encounter);
+  return [
+    {
+      resourceType: 'Communication',
+      filters: [{
+        code: 'encounter',
+        operator: Operator.EQUALS,
+        value: encounterReference
+      }],
+      count: 100
+    },
+    {
+      resourceType: 'Media',
+      filters: [{
+        code: 'encounter',
+        operator: Operator.EQUALS,
+        value: encounterReference
+      }],
+      count: 100
+    }
+  ];
+}
+
+describe('ResourceTimeline', () => {
 
   beforeAll(async () => {
     await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  const setup = (args: EncounterTimelineProps) => {
+  const setup = (args: ResourceTimelineProps) => {
     return render(
       <MedplumProvider medplum={medplum} router={mockRouter}>
-        <EncounterTimeline {...args} />
+        <ResourceTimeline {...args} />
       </MedplumProvider>
     );
   };
 
   test('Renders reference', async () => {
-    setup({ encounter: { reference: 'Encounter/' + encounterId } });
+    setup({
+      value: { reference: 'Encounter/' + encounterId },
+      buildSearchRequests: buildEncounterSearch
+    });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -149,7 +176,10 @@ describe('EncounterTimeline', () => {
   });
 
   test('Renders resource', async () => {
-    setup({ encounter });
+    setup({
+      value: encounter,
+      buildSearchRequests: buildEncounterSearch
+    });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -161,7 +191,17 @@ describe('EncounterTimeline', () => {
   });
 
   test('Create comment', async () => {
-    setup({ encounter });
+    setup({
+      value: encounter,
+      buildSearchRequests: buildEncounterSearch,
+      createCommunication: (resource: Resource, sender: ProfileResource, text: string) => ({
+        resourceType: 'Communication',
+        encounter: createReference(resource),
+        subject: (resource as Encounter).subject,
+        sender: createReference(sender),
+        payload: [{ contentString: text }]
+      })
+    });
 
     // Wait for initial load
     await act(async () => {
@@ -189,7 +229,17 @@ describe('EncounterTimeline', () => {
   });
 
   test('Upload media', async () => {
-    setup({ encounter });
+    setup({
+      value: encounter,
+      buildSearchRequests: buildEncounterSearch,
+      createMedia: (resource: Resource, operator: ProfileResource, content: Attachment) => ({
+        resourceType: 'Media',
+        encounter: createReference(resource),
+        subject: (resource as Encounter).subject,
+        operator: createReference(operator),
+        content
+      })
+    });
 
     // Wait for initial load
     await act(async () => {

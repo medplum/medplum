@@ -1,6 +1,5 @@
 import {
   Bundle,
-  Encounter,
   getDisplayString,
   Patient,
   Questionnaire,
@@ -13,6 +12,7 @@ import {
   keyReplacer,
   Loading,
   parseForm,
+  PatientTimeline,
   QuestionnaireForm,
   ResourceBlame,
   ResourceForm,
@@ -32,7 +32,7 @@ import { PatientHeader } from './PatientHeader';
 function getTabs(resourceType: string): string[] {
   const result = [];
 
-  if (resourceType === 'Encounter') {
+  if (resourceType === 'Encounter' || resourceType === 'Patient') {
     result.push('Timeline');
   }
 
@@ -167,9 +167,17 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         </form>
       );
     case 'timeline':
-      return (
-        <EncounterTimeline resource={props.resource as Encounter} />
-      );
+      if (props.resource.resourceType === 'Encounter') {
+        return (
+          <EncounterTimeline encounter={props.resource} />
+        );
+      }
+      if (props.resource.resourceType === 'Patient') {
+        return (
+          <PatientTimeline patient={props.resource} />
+        );
+      }
+      return null;
     case 'preview':
       return (
         <QuestionnaireForm

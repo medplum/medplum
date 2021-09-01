@@ -8,5 +8,5 @@ export default {
 } as Meta;
 
 export const Encounter = () => (
-  <EncounterTimeline reference={{ reference: 'Encounter/' + process.env.SAMPLE_ENCOUNTER_ID }} />
+  <EncounterTimeline encounter={{ reference: 'Encounter/' + process.env.SAMPLE_ENCOUNTER_ID }} />
 );

@@ -1,4 +1,4 @@
-import { Resource } from '@medplum/core';
+import { Bundle, BundleEntry, Resource } from '@medplum/core';
 
 /**
  * Returns a formatted date string.
@@ -27,4 +27,12 @@ function getIsoDateString(dateTime: string | Date | undefined): string {
   }
   const date = dateTime instanceof Date ? dateTime : new Date(dateTime);
   return date.toISOString();
+}
+
+export function sortBundleByDate(bundle: Bundle): void {
+  bundle.entry?.sort(bundleEntryDateComparator);
+}
+
+function bundleEntryDateComparator(a: BundleEntry, b: BundleEntry): number {
+  return resourceDateComparator(a.resource as Resource, b.resource as Resource);
 }
