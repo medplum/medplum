@@ -58,14 +58,14 @@ function getAge(patient: Patient): string | undefined {
   if (years >= 2) {
     return years.toString().padStart(3, '0') + 'Y';
   } else {
-    return months.toString().padStart(3, 'M') + 'M';
+    return months.toString().padStart(3, '0') + 'M';
   }
 }
 
 function getAgeInYears(birthDate: Date): number {
   const today = new Date();
   let years = today.getFullYear() - birthDate.getFullYear();
-  if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+  if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getUTCDate() < birthDate.getUTCDate())) {
     years--;
   }
   return years;
@@ -74,7 +74,7 @@ function getAgeInYears(birthDate: Date): number {
 function getAgeInMonths(birthDate: Date): number {
   const today = new Date();
   let months = (today.getFullYear() * 12 + today.getMonth()) - (birthDate.getFullYear() * 12 + birthDate.getMonth());
-  if (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()) {
+  if (today.getMonth() === birthDate.getMonth() && today.getUTCDate() < birthDate.getUTCDate()) {
     months--;
   }
   return months;

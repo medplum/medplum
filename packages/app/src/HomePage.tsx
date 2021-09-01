@@ -12,11 +12,11 @@ export function HomePage() {
   searchRef.current = search;
 
   useEffect(() => {
-    const search = parseSearchDefinition(location);
-    if (search.resourceType) {
-      setDefaultSearch(search);
+    const parsedSearch = parseSearchDefinition(location);
+    if (parsedSearch.resourceType) {
+      setDefaultSearch(parsedSearch);
     }
-    setSearch(search);
+    setSearch(parsedSearch);
   }, [location]);
 
   useEffect(() => {
