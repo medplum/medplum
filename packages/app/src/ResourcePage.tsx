@@ -51,6 +51,7 @@ export function ResourcePage() {
   const [error, setError] = useState();
 
   function loadResource() {
+    setError(undefined);
     setLoading(true);
     medplum.read(resourceType, id)
       .then(result => setValue(result))
