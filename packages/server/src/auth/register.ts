@@ -156,7 +156,8 @@ async function createProjectMembership(user: User, project: Project, practitione
     profile: createReference(practitioner),
     compartments: [
       createReference(project)
-    ]
+    ],
+    admin: true
   });
   assertOk(outcome);
   logger.info('Created: ' + (result as ProjectMembership).id);

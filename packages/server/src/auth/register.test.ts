@@ -69,7 +69,7 @@ describe('Register', () => {
     expect(res2.body.issue[0].expression[0]).toBe('email');
   });
 
-  test('Can access Project resource', async () => {
+  test('Cannot access Project resource', async () => {
     const res = await request(app)
       .post('/auth/register')
       .type('json')
@@ -88,7 +88,7 @@ describe('Register', () => {
       .get(`/fhir/R4/Project/${res.body.project.id}`)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
-    expect(res2.status).toBe(200);
+    expect(res2.status).toBe(404);
   });
 
   test('Can access Practitioner resource', async () => {

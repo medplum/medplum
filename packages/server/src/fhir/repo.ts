@@ -65,11 +65,11 @@ const publicResourceTypes = [
  * Reading and writing is limited to the system account.
  */
 const protectedResourceTypes = [
-  'ClientApplication',
   'JsonWebKey',
   'Login',
   'PasswordChangeRequest',
   'Project',
+  'ProjectMembership',
   'RefreshToken',
   'User',
 ];
@@ -701,17 +701,6 @@ export function getCompartments(resource: Resource): string[] {
     const patientId = getPatientId(resource, patientCompartmentProperties);
     if (patientId) {
       result.add(patientId);
-    }
-  }
-
-  if (resource.resourceType === 'Project' && resource.id) {
-    result.add(resource.id);
-  }
-
-  if (resource.resourceType === 'ProjectMembership') {
-    const projectId = resolveId(resource.project);
-    if (projectId) {
-      result.add(projectId);
     }
   }
 
