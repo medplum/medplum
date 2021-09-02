@@ -1,4 +1,4 @@
-import { assertOk, Bundle, BundleEntry, createReference, Operator, Practitioner, Project, ProjectMembership, User } from '@medplum/core';
+import { assertOk, createReference, Operator, Practitioner, Project, ProjectMembership, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -6,6 +6,7 @@ import { resetPassword } from '../auth/resetpassword';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret } from '../oauth';
+import { verifyProjectAdmin } from './utils';
 
 export const inviteValidators = [
   body('firstName').notEmpty().withMessage('First name is required'),
@@ -14,28 +15,12 @@ export const inviteValidators = [
 ];
 
 export async function inviteHandler(req: Request, res: Response) {
-  const { projectId } = req.params;
-
-  const [projectOutcome, project] = await repo.readResource<Project>('Project', projectId);
-  assertOk(projectOutcome);
-
-  const [membershipOutcome, bundle] = await repo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [{
-      code: 'project',
-      operator: Operator.EQUALS,
-      value: 'Project/' + projectId
-    }]
-  });
-  assertOk(membershipOutcome);
-
-  const memberships = ((bundle as Bundle<ProjectMembership>).entry as BundleEntry<ProjectMembership>[])
-    .map(entry => entry.resource as ProjectMembership);
-
-  if (!memberships.find(m => m.user?.reference === 'User/' + res.locals.user && m.admin)) {
+  const projectDetails = await verifyProjectAdmin(req, res);
+  if (!projectDetails) {
     return res.sendStatus(404);
   }
 
+  const { project } = projectDetails;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return sendOutcome(res, invalidRequest(errors));

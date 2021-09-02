@@ -4,6 +4,7 @@ import { asyncWrap } from '../async';
 import { repo } from '../fhir';
 import { authenticateToken } from '../oauth';
 import { inviteHandler, inviteValidators } from './invite';
+import { verifyProjectAdmin } from './utils';
 
 export const adminRouter = Router();
 adminRouter.use(authenticateToken);
@@ -38,28 +39,12 @@ adminRouter.get('/projects', asyncWrap(async (req: Request, res: Response) => {
 }));
 
 adminRouter.get('/projects/:projectId', asyncWrap(async (req: Request, res: Response) => {
-  const { projectId } = req.params;
-
-  const [projectOutcome, project] = await repo.readResource<Project>('Project', projectId);
-  assertOk(projectOutcome);
-
-  const [membershipOutcome, bundle] = await repo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [{
-      code: 'project',
-      operator: Operator.EQUALS,
-      value: 'Project/' + projectId
-    }]
-  });
-  assertOk(membershipOutcome);
-
-  const memberships = ((bundle as Bundle<ProjectMembership>).entry as BundleEntry<ProjectMembership>[])
-    .map(entry => entry.resource as ProjectMembership);
-
-  if (!memberships.find(m => m.user?.reference === 'User/' + res.locals.user && m.admin)) {
+  const projectDetails = await verifyProjectAdmin(req, res);
+  if (!projectDetails) {
     return res.sendStatus(404);
   }
 
+  const { project, memberships } = projectDetails;
   const members = [];
   for (const membership of memberships) {
     members.push({
