@@ -12,6 +12,7 @@ export interface MedplumServerConfig {
   authorizeUrl: string;
   tokenUrl: string;
   userInfoUrl: string;
+  appBaseUrl: string;
   binaryStorage: string;
   supportEmail: string;
   database: MedplumDatabaseConfig;

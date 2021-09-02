@@ -61318,6 +61318,14 @@
           "description": "The user requesting the password change.",
           "$ref": "#/definitions/Reference"
         },
+        "secret": {
+          "description": "Secret string used to verify the identity of the user.",
+          "$ref": "#/definitions/string"
+        },
+        "used": {
+          "description": "Whether this request has been used, and is therefore no longer valid.",
+          "$ref": "#/definitions/boolean"
+        },
         "redirectUri": {
           "description": "Redirect URI used when redirecting a client back to the client application.",
           "$ref": "#/definitions/string"
