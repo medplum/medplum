@@ -92,7 +92,8 @@ export class BackEnd extends cdk.Construct {
         secretStringTemplate: JSON.stringify({
           host: redisCluster.attrPrimaryEndPointAddress,
           port: redisCluster.attrPrimaryEndPointPort,
-          password: redisPassword.secretValueFromJson('password').toString()
+          password: redisPassword.secretValueFromJson('password').toString(),
+          tls: {}
         }),
         generateStringKey: 'unused'
       }

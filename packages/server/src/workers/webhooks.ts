@@ -1,5 +1,5 @@
 import { assertOk, BundleEntry, Extension, Operator, parseFhirPath, Resource, stringify, Subscription } from '@medplum/core';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
 import { URL } from 'url';
@@ -14,8 +14,10 @@ export interface WebhookJobData {
   readonly versionId: string;
 }
 
+const queueSchedulerName = 'WebhookQueueScheduler';
 const queueName = 'WebhookQueue';
 const jobName = 'WebhookJobData';
+let queueScheduler: QueueScheduler | undefined = undefined;
 let queue: Queue<WebhookJobData> | undefined = undefined;
 let worker: Worker<WebhookJobData> | undefined = undefined;
 
@@ -25,12 +27,24 @@ let worker: Worker<WebhookJobData> | undefined = undefined;
  * Sets up the BullMQ worker.
  */
 export function initWebhookWorker(config: MedplumRedisConfig): void {
-  const options: QueueBaseOptions = {
+  const defaultOptions: QueueBaseOptions = {
     connection: config
   };
 
-  queue = new Queue<WebhookJobData>(queueName, options);
-  worker = new Worker<WebhookJobData>(queueName, webhookProcessor, options);
+  queueScheduler = new QueueScheduler(queueSchedulerName, defaultOptions);
+
+  queue = new Queue<WebhookJobData>(queueName, {
+    ...defaultOptions,
+    defaultJobOptions: {
+      attempts: 18, // 1 second * 2^18 = 73 hours
+      backoff: {
+        type: 'exponential',
+        delay: 1000
+      }
+    }
+  });
+
+  worker = new Worker<WebhookJobData>(queueName, webhookProcessor, defaultOptions);
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => logger.info(`Failed job ${job.id} with ${err}`));
 }
@@ -40,6 +54,7 @@ export function initWebhookWorker(config: MedplumRedisConfig): void {
  * @param job BullMQ job definition.
  */
 async function webhookProcessor(job: Job<WebhookJobData>): Promise<void> {
+  logger.debug(`Webhook processor job ${job.id}`);
   try {
     await sendSubscriptions(job.data);
   } catch (ex) {
@@ -49,10 +64,16 @@ async function webhookProcessor(job: Job<WebhookJobData>): Promise<void> {
 
 /**
  * Shuts down the webhook worker.
+ * Closes the BullMQ scheduler.
  * Closes the BullMQ job queue.
  * Clsoes the BullMQ worker.
  */
 export async function closeWebhookWorker(): Promise<void> {
+  if (queueScheduler) {
+    await queueScheduler.close();
+    queueScheduler = undefined;
+  }
+
   if (queue) {
     await queue.close();
     queue = undefined;
@@ -69,8 +90,11 @@ export async function closeWebhookWorker(): Promise<void> {
  * @param job The webhook job details.
  */
 export function addWebhookJobData(job: WebhookJobData): void {
+  logger.debug(`Adding Webhook job`);
   if (queue) {
     queue.add(jobName, job);
+  } else {
+    logger.debug(`Webhook queue not initialized`);
   }
 }
 
