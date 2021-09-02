@@ -18,6 +18,7 @@ import { HomePage } from './HomePage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { ResourcePage } from './ResourcePage';
+import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
 
 export function App() {
@@ -70,6 +71,7 @@ export function App() {
       <Switch>
         <Route exact path="/signin"><SignInPage /></Route>
         <Route exact path="/resetpassword"><ResetPasswordPage /></Route>
+        <Route exact path="/setpassword/:id/:secret"><SetPasswordPage /></Route>
         <Route exact path="/register"><RegisterPage /></Route>
         <Route exact path="/changepassword"><ChangePasswordPage /></Route>
         <Route exact path="/forms/:id"><FormPage /></Route>

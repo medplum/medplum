@@ -48,6 +48,16 @@ export interface PasswordChangeRequest {
   readonly user?: Reference;
 
   /**
+   * Secret string used to verify the identity of the user.
+   */
+  readonly secret?: string;
+
+  /**
+   * Whether this request has been used, and is therefore no longer valid.
+   */
+  readonly used?: boolean;
+
+  /**
    * Redirect URI used when redirecting a client back to the client
    * application.
    */

@@ -14,6 +14,7 @@ fi
 
 set_version () {
   sed -i "s_\"version\": \"$OLD_VERSION\"_\"version\": \"$NEW_VERSION\"_g" $1
+  sed -i "s_\"@medplum/definitions\": \"$OLD_VERSION\"_\"@medplum/definitions\": \"$NEW_VERSION\"_g" $1
   sed -i "s_\"@medplum/core\": \"$OLD_VERSION\"_\"@medplum/core\": \"$NEW_VERSION\"_g" $1
   sed -i "s_\"@medplum/ui\": \"$OLD_VERSION\"_\"@medplum/ui\": \"$NEW_VERSION\"_g" $1
 }

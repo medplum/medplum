@@ -1,16 +1,16 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { allOk, assertOk, badRequest, Bundle, BundleEntry, Operator, User } from '@medplum/core';
+import { allOk, assertOk, badRequest, Bundle, BundleEntry, createReference, Operator, PasswordChangeRequest, User } from '@medplum/core';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
+import { generateSecret } from '../oauth';
 
 export const resetPasswordValidators = [
   body('email').isEmail().withMessage('Valid email address is required')
 ];
 
 export async function resetPasswordHandler(req: Request, res: Response) {
-
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return sendOutcome(res, invalidRequest(errors));
@@ -24,12 +24,22 @@ export async function resetPasswordHandler(req: Request, res: Response) {
       value: req.body.email
     }]
   });
-
   assertOk(existingOutcome);
 
   if (((existingBundle as Bundle).entry as BundleEntry[]).length === 0) {
     return sendOutcome(res, badRequest('User not found', 'email'));
   }
+
+  // Create the password change request
+  const [createOutcome, pcr] = await repo.createResource<PasswordChangeRequest>({
+    resourceType: 'PasswordChangeRequest',
+    user: createReference(existingBundle?.entry?.[0]?.resource as User),
+    secret: generateSecret(16)
+  });
+  assertOk(createOutcome);
+
+  // Build the reset URL
+  const url = `${getConfig().appBaseUrl}setpassword/${pcr?.id}/${pcr?.secret}`;
 
   const sesClient = new SESv2Client({ region: 'us-east-1' });
   await sesClient.send(new SendEmailCommand({
@@ -44,7 +54,19 @@ export async function resetPasswordHandler(req: Request, res: Response) {
         },
         Body: {
           Text: {
-            Data: 'Click here to reset your password'
+            Data: [
+              'Someone requested to reset your Medplum password.',
+              '',
+              'Please click on the following link:',
+              '',
+              url,
+              '',
+              'If you received this in error, you can safely ignore it.',
+              '',
+              'Thank you,',
+              'Medplum',
+              ''
+            ].join('\n')
           }
         },
       }

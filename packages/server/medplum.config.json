@@ -6,6 +6,7 @@
   "authorizeUrl": "http://host.docker.internal:5000/oauth2/authorize",
   "tokenUrl": "http://host.docker.internal:5000/oauth2/token",
   "userInfoUrl": "http://host.docker.internal:5000/oauth2/userinfo",
+  "appBaseUrl": "http://localhost:3000/",
   "binaryStorage": "s3:medplum-binary",
   "supportEmail": "Medplum <support@medplum.com>",
   "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
