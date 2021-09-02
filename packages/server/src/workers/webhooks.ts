@@ -1,4 +1,4 @@
-import { assertOk, BundleEntry, Extension, parseFhirPath, Resource, stringify, Subscription } from '@medplum/core';
+import { assertOk, BundleEntry, Extension, Operator, parseFhirPath, Resource, stringify, Subscription } from '@medplum/core';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
@@ -85,12 +85,12 @@ export async function sendSubscriptions(job: WebhookJobData): Promise<void> {
   assertOk(outcome);
 
   const subscriptions = await getSubscriptions();
+  logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
-    if (subscription.status !== 'active') {
-      continue;
-    }
     if (subscription.channel?.type === 'rest-hook') {
       sendRestHook(subscription, resource as Resource);
+    } else {
+      logger.debug(`Ignore subscription type "${subscription.channel?.type}"`);
     }
   }
 }
@@ -100,7 +100,14 @@ export async function sendSubscriptions(job: WebhookJobData): Promise<void> {
  * @returns The list of all subscriptions in this repository.
  */
 async function getSubscriptions(): Promise<Subscription[]> {
-  const [outcome, bundle] = await repo.search<Subscription>({ resourceType: 'Subscription' });
+  const [outcome, bundle] = await repo.search<Subscription>({
+    resourceType: 'Subscription',
+    filters: [{
+      code: 'status',
+      operator: Operator.EQUALS,
+      value: 'active'
+    }]
+  });
   assertOk(outcome);
   return (bundle?.entry as BundleEntry<Subscription>[]).map(e => e.resource as Subscription);
 }
@@ -113,16 +120,19 @@ async function getSubscriptions(): Promise<Subscription[]> {
 async function sendRestHook(subscription: Subscription, resource: Resource): Promise<void> {
   const url = subscription.channel?.endpoint;
   if (!url) {
+    logger.debug(`Ignore rest hook missing URL`);
     return;
   }
 
   const criteria = subscription.criteria;
   if (!criteria) {
+    logger.debug(`Ignore rest hook missing criteria`);
     return;
   }
 
   const searchRequest = parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
   if (resource.resourceType !== searchRequest.resourceType) {
+    logger.debug(`Ignore rest hook for different resourceType`);
     return;
   }
 
@@ -134,6 +144,7 @@ async function sendRestHook(subscription: Subscription, resource: Resource): Pro
         const values = fhirPath.eval(resource);
         const value = values.length > 0 ? values[0] : undefined;
         if (value !== filter.value) {
+          logger.debug(`Ignore rest hook for filter value (expected "${filter.value}", received "${value})`);
           return;
         }
       }
