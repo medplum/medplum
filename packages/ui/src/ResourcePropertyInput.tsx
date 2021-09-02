@@ -8,6 +8,7 @@ import { CodeableConceptInput } from './CodeableConceptInput';
 import { CodeInput } from './CodeInput';
 import { CodingInput } from './CodingInput';
 import { ContactPointInput } from './ContactPointInput';
+import { ExtensionInput } from './ExtensionInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
 import { ReferenceInput } from './ReferenceInput';
@@ -78,6 +79,8 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
       return <IdentifierInput name={name} defaultValue={value} />;
     case PropertyType.Reference:
       return <ReferenceInput property={property} name={name} defaultValue={value} />;
+    case PropertyType.Extension:
+      return <ExtensionInput name={name} defaultValue={value} />;
     default:
       return <BackboneElementInput schema={props.schema} property={property} name={name} defaultValue={value} />;
   }

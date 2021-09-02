@@ -48,7 +48,8 @@ describe('Webhook Worker', () => {
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
-      criteria: 'Patient?active=true',
+      status: 'active',
+      criteria: 'Patient',
       channel: {
         type: 'rest-hook',
         endpoint: url
@@ -85,7 +86,8 @@ describe('Webhook Worker', () => {
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
-      criteria: 'Patient?active=true',
+      status: 'active',
+      criteria: 'Patient',
       channel: {
         type: 'rest-hook',
         endpoint: url
@@ -130,7 +132,8 @@ describe('Webhook Worker', () => {
   test('Ignore non-webhook subscriptions', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
-      criteria: 'Patient?active=true',
+      status: 'active',
+      criteria: 'Patient',
       channel: {
         type: 'email'
       }
@@ -158,7 +161,8 @@ describe('Webhook Worker', () => {
   test('Ignore webhooks missing URL', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
-      criteria: 'Patient?active=true',
+      status: 'active',
+      criteria: 'Patient',
       channel: {
         type: 'rest-hook',
         endpoint: 'https://example.com/webhook'
@@ -187,6 +191,7 @@ describe('Webhook Worker', () => {
   test('Ignore webhooks with missing criteria', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
+      status: 'active',
       channel: {
         type: 'rest-hook',
         endpoint: 'https://example.com/webhook'
@@ -215,7 +220,38 @@ describe('Webhook Worker', () => {
   test('Ignore webhooks with different criteria resource type', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
+      status: 'active',
       criteria: 'Observation',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'https://example.com/webhook'
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).not.toBeUndefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
+    await sendSubscriptions(jobData);
+    expect(fetch).not.toHaveBeenCalledWith();
+  });
+
+  test('Ignore disabled webhooks', async () => {
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'off',
+      criteria: 'Patient',
       channel: {
         type: 'rest-hook',
         endpoint: 'https://example.com/webhook'
