@@ -123,8 +123,9 @@ describe('PatientHeader', () => {
 
   test('Age in years day after birthday', async () => {
     const birthDate = new Date();
-    birthDate.setFullYear(birthDate.getFullYear() - 30);
-    birthDate.setDate(birthDate.getDate() - 1);
+    birthDate.setUTCHours(0, 0, 0, 0);
+    birthDate.setUTCFullYear(birthDate.getUTCFullYear() - 30);
+    birthDate.setUTCDate(birthDate.getUTCDate() - 1);
 
     setup({
       resourceType: 'Patient',
@@ -140,8 +141,9 @@ describe('PatientHeader', () => {
 
   test('Age in years day before birthday', async () => {
     const birthDate = new Date();
-    birthDate.setFullYear(birthDate.getFullYear() - 30);
-    birthDate.setDate(birthDate.getDate() + 1);
+    birthDate.setUTCHours(0, 0, 0, 0);
+    birthDate.setUTCFullYear(birthDate.getUTCFullYear() - 30);
+    birthDate.setUTCDate(birthDate.getUTCDate() + 1);
 
     setup({
       resourceType: 'Patient',
@@ -157,9 +159,9 @@ describe('PatientHeader', () => {
 
   test('Age in months day after birthday', async () => {
     const birthDate = new Date();
-    birthDate.setFullYear(birthDate.getFullYear() - 2);
-    birthDate.setMonth(birthDate.getMonth() + 5);
-    birthDate.setDate(birthDate.getDate() - 1);
+    birthDate.setUTCHours(0, 0, 0, 0);
+    birthDate.setUTCMonth(birthDate.getUTCMonth() - 20);
+    birthDate.setUTCDate(birthDate.getUTCDate() - 1);
 
     setup({
       resourceType: 'Patient',
@@ -175,9 +177,9 @@ describe('PatientHeader', () => {
 
   test('Age in months day before birthday', async () => {
     const birthDate = new Date();
-    birthDate.setFullYear(birthDate.getFullYear() - 2);
-    birthDate.setMonth(birthDate.getMonth() + 5);
-    birthDate.setDate(birthDate.getDate() + 1);
+    birthDate.setUTCHours(0, 0, 0, 0);
+    birthDate.setUTCMonth(birthDate.getUTCMonth() - 20);
+    birthDate.setUTCDate(birthDate.getUTCDate() + 2);
 
     setup({
       resourceType: 'Patient',
