@@ -14,11 +14,11 @@ export function InvitePage() {
 
   useEffect(() => {
     medplum.get('admin/projects/' + id)
-      .then(result => {
-        setResult(result);
+      .then(response => {
+        setResult(response);
         setLoading(false);
       })
-      .catch(error => setError(error));
+      .catch(reason => setError(reason));
   }, [id]);
 
   if (error) {
@@ -73,7 +73,7 @@ export function InvitePage() {
           <div data-testid="success">
             <p>User created</p>
             <p>Email sent</p>
-            <p>Click <a href={'admin/projects/' + id}>here</a> to return to the project admin page</p>
+            <p>Click <a href={'/admin/projects/' + id}>here</a> to return to the project admin page</p>
           </div>
         )}
       </form>

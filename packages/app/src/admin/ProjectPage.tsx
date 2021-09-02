@@ -11,11 +11,11 @@ export function ProjectPage() {
 
   useEffect(() => {
     medplum.get('admin/projects/' + id)
-      .then(result => {
-        setResult(result);
+      .then(response => {
+        setResult(response);
         setLoading(false);
       })
-      .catch(error => setError(error));
+      .catch(reason => setError(reason));
   }, [id]);
 
   if (error) {
@@ -43,7 +43,7 @@ export function ProjectPage() {
         </thead>
         <tbody>
           {result.members.map((member: any) => (
-            <tr>
+            <tr key={member.profile}>
               <td><a href={'/' + member.profile}>{member.name}</a></td>
               <td>
                 <Button>Promote</Button>
