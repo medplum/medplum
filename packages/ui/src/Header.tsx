@@ -1,14 +1,14 @@
-import { Bundle, BundleEntry, HumanName, Operator, ProfileResource, Resource } from '@medplum/core';
+import { Bundle, BundleEntry, HumanName, Operator, Resource } from '@medplum/core';
 import React, { useState } from 'react';
 import { Autocomplete } from './Autocomplete';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
-import './Header.css';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
 import { ResourceName } from './ResourceName';
+import './Header.css';
 
 export interface HeaderProps {
   onLogo?: () => void;
