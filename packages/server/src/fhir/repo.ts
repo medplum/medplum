@@ -106,10 +106,10 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
-    return this.updateResource({
+    return this.updateResourceImpl({
       ...resource,
       id: randomUUID()
-    });
+    }, true);
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
@@ -195,6 +195,10 @@ export class Repository {
   }
 
   async updateResource<T extends Resource>(resource: T): RepositoryResult<T> {
+    return this.updateResourceImpl(resource, false);
+  }
+
+  private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): RepositoryResult<T> {
     const validateOutcome = validateResource(resource);
     if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
@@ -207,6 +211,10 @@ export class Repository {
 
     const [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
     if (!isOk(existingOutcome) && !isNotFound(existingOutcome)) {
+      return [existingOutcome, undefined];
+    }
+
+    if (!create && isNotFound(existingOutcome) && !this.canSetId()) {
       return [existingOutcome, undefined];
     }
 
@@ -651,6 +659,16 @@ export class Repository {
     }
 
     return this.context.author;
+  }
+
+  /**
+   * Determines if the current user can manually set the ID field.
+   * This is very powerful, and reserved for the system account.
+   * @returns True if the current user can manually set the ID field.
+   */
+  private canSetId(): boolean {
+    const authorRef = this.context.author.reference as string;
+    return authorRef === 'system';
   }
 
   /**
