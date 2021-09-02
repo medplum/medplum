@@ -63,36 +63,4 @@ describe('ProjectsPage', () => {
     expect(screen.getByText('Project 123')).not.toBeUndefined();
   });
 
-  // test('Submit success', async () => {
-  //   setup();
-
-  //   await act(async () => {
-  //     fireEvent.change(screen.getByTestId('oldPassword'), { target: { value: 'orange' } });
-  //     fireEvent.change(screen.getByTestId('newPassword'), { target: { value: 'purple' } });
-  //     fireEvent.change(screen.getByTestId('confirmPassword'), { target: { value: 'purple' } });
-  //   });
-
-  //   await act(async () => {
-  //     fireEvent.click(screen.getByTestId('submit'));
-  //   });
-
-  //   expect(screen.getByTestId('success')).not.toBeUndefined();
-  // });
-
-  // test('Wrong old password', async () => {
-  //   setup();
-
-  //   await act(async () => {
-  //     fireEvent.change(screen.getByTestId('oldPassword'), { target: { value: 'watermelon' } });
-  //     fireEvent.change(screen.getByTestId('newPassword'), { target: { value: 'purple' } });
-  //     fireEvent.change(screen.getByTestId('confirmPassword'), { target: { value: 'purple' } });
-  //   });
-
-  //   await act(async () => {
-  //     fireEvent.click(screen.getByTestId('submit'));
-  //   });
-
-  //   expect(screen.getByText('Incorrect password')).not.toBeUndefined();
-  // });
-
 });
