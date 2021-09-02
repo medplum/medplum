@@ -28,14 +28,10 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     }
     return <ResourceArrayDisplay property={property} values={value} />
   }
-
-  if (!value) {
-    return null;
-  }
-
   switch (propertyType) {
-    case PropertyType.SystemString:
     case PropertyType.boolean:
+      return <div>{value === undefined ? '' : new Boolean(value).toString()}</div>
+    case PropertyType.SystemString:
     case PropertyType.canonical:
     case PropertyType.code:
     case PropertyType.date:

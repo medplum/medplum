@@ -220,7 +220,7 @@ export function SearchControl(props: SearchControlProps) {
 
   const checkboxColumn = props.checkboxesEnabled;
   const search = props.search;
-  const fields = search.fields || ['id', 'meta.lastUpdated', 'name'];
+  const fields = search.fields || ['id', '_lastUpdated', 'name'];
   const resourceType = search.resourceType;
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
@@ -244,10 +244,6 @@ export function SearchControl(props: SearchControlProps) {
             size="small"
             onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
           >Filters</Button>
-          <Button
-            testid="export-button"
-            size="small"
-          >Export</Button>
           <Button
             testid="new-button"
             size="small"

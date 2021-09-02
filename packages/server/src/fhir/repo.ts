@@ -441,6 +441,11 @@ export class Repository {
    * @param sortRule The sort rule.
    */
   private addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+    if (sortRule.code === '_lastUpdated') {
+      builder.orderBy('lastUpdated', !!sortRule.descending);
+      return;
+    }
+
     const resourceType = searchRequest.resourceType;
     const param = getSearchParameter(resourceType, sortRule.code);
     if (!param || !param.code) {

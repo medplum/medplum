@@ -113,71 +113,71 @@ test('Delete filter', () => {
 });
 
 test('Add yesterday filter', () => {
-  expect(addYesterdayFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+  expect(addYesterdayFilter({ resourceType: 'Patient' }, '_lastUpdated'))
     .toMatchObject({
       resourceType: 'Patient',
       filters: [{
-        code: 'meta.lastUpdated'
+        code: '_lastUpdated'
       }]
     });
 });
 
 test('Add today filter', () => {
-  expect(addTodayFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+  expect(addTodayFilter({ resourceType: 'Patient' }, '_lastUpdated'))
     .toMatchObject({
       resourceType: 'Patient',
       filters: [{
-        code: 'meta.lastUpdated'
+        code: '_lastUpdated'
       }]
     });
 });
 
 test('Add tomorrow filter', () => {
-  expect(addTomorrowFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+  expect(addTomorrowFilter({ resourceType: 'Patient' }, '_lastUpdated'))
     .toMatchObject({
       resourceType: 'Patient',
       filters: [{
-        code: 'meta.lastUpdated'
+        code: '_lastUpdated'
       }]
     });
 });
 
 test('Add last month filter', () => {
-  expect(addLastMonthFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+  expect(addLastMonthFilter({ resourceType: 'Patient' }, '_lastUpdated'))
     .toMatchObject({
       resourceType: 'Patient',
       filters: [{
-        code: 'meta.lastUpdated'
+        code: '_lastUpdated'
       }]
     });
 });
 
 test('Add this month filter', () => {
-  expect(addThisMonthFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+  expect(addThisMonthFilter({ resourceType: 'Patient' }, '_lastUpdated'))
     .toMatchObject({
       resourceType: 'Patient',
       filters: [{
-        code: 'meta.lastUpdated'
+        code: '_lastUpdated'
       }]
     });
 });
 
 test('Add next month filter', () => {
-  expect(addNextMonthFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+  expect(addNextMonthFilter({ resourceType: 'Patient' }, '_lastUpdated'))
     .toMatchObject({
       resourceType: 'Patient',
       filters: [{
-        code: 'meta.lastUpdated'
+        code: '_lastUpdated'
       }]
     });
 });
 
 test('Add year to date filter', () => {
-  expect(addYearToDateFilter({ resourceType: 'Patient' }, 'meta.lastUpdated'))
+  expect(addYearToDateFilter({ resourceType: 'Patient' }, '_lastUpdated'))
     .toMatchObject({
       resourceType: 'Patient',
       filters: [{
-        code: 'meta.lastUpdated'
+        code: '_lastUpdated'
       }]
     });
 });
