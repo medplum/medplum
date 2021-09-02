@@ -6,6 +6,8 @@ export interface AutocompleteProps<T> {
   multiple?: boolean;
   autofocus?: boolean;
   defaultValue?: T[];
+  className?: string;
+  placeholder?: string;
   loadOptions: (input: string) => Promise<T[]>;
   buildUnstructured?: (input: string) => T;
   getId: (item: T) => string;
@@ -316,10 +318,12 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     }, 200);
   }
 
+  const baseClassName = props.className ?? 'medplum-autocomplete-container';
+
   return (
     <div
       data-testid="autocomplete"
-      className={'medplum-autocomplete-container' + (state.focused ? ' focused' : '')}
+      className={baseClassName + (state.focused ? ' focused' : '')}
       onClick={() => handleClick()}>
       <input
         type="hidden"
@@ -340,6 +344,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
           <input
             type="text"
             autoFocus={props.autofocus}
+            placeholder={state.values.length === 0 ? props.placeholder : undefined}
             autoComplete="off"
             autoCapitalize="off"
             spellCheck="true"
