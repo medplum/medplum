@@ -1,8 +1,9 @@
-import { assertOk, createReference, Operator, Practitioner, Project, ProjectMembership, User } from '@medplum/core';
+import { assertOk, Operator, Practitioner, Project, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { resetPassword } from '../auth/resetpassword';
+import { createPractitioner, createProjectMembership } from '../auth/utils';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret } from '../oauth';
@@ -27,7 +28,7 @@ export async function inviteHandler(req: Request, res: Response) {
   }
 
   const profile = await inviteUser({
-    project: project as Project,
+    project: project,
     firstName: req.body.firstName,
     lastName: req.body.lastName,
     email: req.body.email
@@ -51,7 +52,7 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
     await resetPassword(user);
   }
   const practitioner = await createPractitioner(request, project);
-  await createProjectMembership(user, project, practitioner);
+  await createProjectMembership(user, project, practitioner, false);
   return practitioner;
 }
 
@@ -84,47 +85,4 @@ async function createUser(request: InviteRequest): Promise<User> {
   assertOk(outcome);
   logger.info('Created: ' + (result as User).id);
   return result as User;
-}
-
-async function createPractitioner(request: InviteRequest, project: Project): Promise<Practitioner> {
-  logger.info(`Create practitioner: ${request.firstName} ${request.lastName}`);
-  const [outcome, result] = await repo.createResource<Practitioner>({
-    resourceType: 'Practitioner',
-    meta: {
-      project: project.id
-    },
-    name: [{
-      given: [request.firstName],
-      family: request.lastName
-    }],
-    telecom: [
-      {
-        system: 'email',
-        use: 'work',
-        value: request.email
-      }
-    ]
-  });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as Practitioner).id);
-  return result as Practitioner;
-}
-
-async function createProjectMembership(user: User, project: Project, practitioner: Practitioner): Promise<ProjectMembership> {
-  logger.info('Create project membership: ' + project.name);
-  const [outcome, result] = await repo.createResource<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    meta: {
-      project: project.id
-    },
-    project: createReference(project),
-    user: createReference(user),
-    profile: createReference(practitioner),
-    compartments: [
-      createReference(project)
-    ]
-  });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as ProjectMembership).id);
-  return result as ProjectMembership;
 }
