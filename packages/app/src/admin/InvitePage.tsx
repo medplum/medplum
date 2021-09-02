@@ -1,5 +1,5 @@
-import { OperationOutcome, RegisterRequest } from '@medplum/core';
-import { Button, Document, FormSection, Loading, parseForm, TextField, useMedplum } from '@medplum/ui';
+import { OperationOutcome } from '@medplum/core';
+import { Button, Document, Form, FormSection, Loading, TextField, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -37,10 +37,7 @@ export function InvitePage() {
     <Document width={600}>
       <h1>Admin / Projects / {result.project.name}</h1>
       <h3>Invite new member</h3>
-      <form onSubmit={(e: React.SyntheticEvent) => {
-        e.preventDefault();
-
-        const formData = parseForm(e.target as HTMLFormElement) as any as RegisterRequest;
+      <Form onSubmit={(formData: Record<string, string>) => {
         medplum.post('admin/projects/' + id + '/invite', formData)
           .then(() => setSuccess(true))
           .catch(err => {
@@ -76,7 +73,7 @@ export function InvitePage() {
             <p>Click <a href={'/admin/projects/' + id}>here</a> to return to the project admin page</p>
           </div>
         )}
-      </form>
+      </Form>
     </Document>
   );
 }

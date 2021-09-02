@@ -1,5 +1,5 @@
 import { OperationOutcome, RegisterRequest } from '@medplum/core';
-import { Button, Document, FormSection, Logo, MedplumLink, parseForm, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
 export function RegisterPage() {
@@ -9,11 +9,8 @@ export function RegisterPage() {
 
   return (
     <Document width={450}>
-      <form style={{ maxWidth: 400 }} onSubmit={(e: React.SyntheticEvent) => {
-        e.preventDefault();
-
-        const formData = parseForm(e.target as HTMLFormElement) as any as RegisterRequest;
-        medplum.register(formData)
+      <Form style={{ maxWidth: 400 }} onSubmit={(formData: Record<string, string>) => {
+        medplum.register(formData as any as RegisterRequest)
           .then(() => setSuccess(true))
           .catch(err => {
             if (err.outcome) {
@@ -55,7 +52,7 @@ export function RegisterPage() {
         {success && (
           <div data-testid="success">Email sent</div>
         )}
-      </form>
+      </Form>
     </Document>
   );
 }

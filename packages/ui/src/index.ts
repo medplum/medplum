@@ -16,6 +16,7 @@ export * from './DefaultTheme';
 export * from './Document';
 export * from './EncounterTimeline';
 export * from './FooterLinks';
+export * from './Form';
 export * from './FormSection';
 export * from './FormUtils';
 export * from './Header';

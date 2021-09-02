@@ -1,8 +1,8 @@
 import { GoogleCredentialResponse, OperationOutcome } from '@medplum/core';
 import React, { useState } from 'react';
 import { Button } from './Button';
+import { Form } from './Form';
 import { FormSection } from "./FormSection";
-import { parseForm } from './FormUtils';
 import { Logo } from './Logo';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
@@ -32,10 +32,7 @@ export function SignInForm(props: SignInFormProps) {
   }
 
   return (
-    <form style={{ maxWidth: 400 }} onSubmit={(e: React.SyntheticEvent) => {
-      e.preventDefault();
-
-      const formData = parseForm(e.target as HTMLFormElement);
+    <Form style={{ maxWidth: 400 }} onSubmit={(formData: Record<string, string>) => {
       const remember = !!props.remember;
       medplum.signIn(formData.email, formData.password, role, scope, remember)
         .then(() => props.onSuccess())
@@ -82,6 +79,6 @@ export function SignInForm(props: SignInFormProps) {
           }}>Sign in with Google</Button>
         </div>
       )}
-    </form>
+    </Form>
   );
 }

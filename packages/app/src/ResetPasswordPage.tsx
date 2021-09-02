@@ -1,5 +1,5 @@
 import { OperationOutcome } from '@medplum/core';
-import { Button, Document, FormSection, Logo, MedplumLink, parseForm, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
 export function ResetPasswordPage() {
@@ -9,10 +9,7 @@ export function ResetPasswordPage() {
 
   return (
     <Document width={450}>
-      <form style={{ maxWidth: 400 }} onSubmit={(e: React.SyntheticEvent) => {
-        e.preventDefault();
-
-        const formData = parseForm(e.target as HTMLFormElement);
+      <Form style={{ maxWidth: 400 }} onSubmit={(formData: Record<string, string>) => {
         medplum.post('auth/resetpassword', formData)
           .then(() => setSuccess(true))
           .catch(err => {
@@ -43,7 +40,7 @@ export function ResetPasswordPage() {
         {success && (
           <div data-testid="success">Email sent</div>
         )}
-      </form>
+      </Form>
     </Document>
   );
 }

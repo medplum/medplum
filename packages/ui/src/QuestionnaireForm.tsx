@@ -7,8 +7,8 @@ import { CodeableConceptInput } from './CodeableConceptInput';
 import { CodeInput } from './CodeInput';
 import { CodingInput } from './CodingInput';
 import { ContactPointInput } from './ContactPointInput';
+import { Form } from './Form';
 import { FormSection } from './FormSection';
-import { parseForm } from './FormUtils';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
 import { useMedplum } from './MedplumProvider';
@@ -31,15 +31,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
   }
 
   return (
-    <form
-      data-testid="questionnaire-form"
-      noValidate
-      autoComplete="off"
-      onSubmit={(e: React.FormEvent) => {
-        e.preventDefault();
-
-        const formData = parseForm(e.target as HTMLFormElement);
-
+    <Form
+      testid="questionnaire-form"
+      onSubmit={(formData: Record<string, string>) => {
         const items: QuestionnaireResponseItem[] = Object.entries(formData).map(([linkId, value]) => ({
           linkId,
           answer: [{
@@ -63,7 +57,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
         <QuestionnaireFormItemArray items={questionnaire.item} />
       )}
       <Button type="submit" size="large">OK</Button>
-    </form>
+    </Form>
   );
 }
 
