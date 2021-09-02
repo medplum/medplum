@@ -53,7 +53,7 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (method === 'POST' && url.endsWith('auth/login')) {
     result = {
-      user: { resourceType: 'User', id: '123' },
+      profile: { resourceType: 'Practitioner', id: '123' },
       accessToken: '123',
       refreshToken: '456'
     };
@@ -153,7 +153,7 @@ test('Client signIn', async () => {
   const client = new MedplumClient(defaultOptions);
   const result = await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   expect(result).not.toBeUndefined();
-  expect(result.resourceType).toBe('User');
+  expect(result.resourceType).toBe('Practitioner');
 });
 
 test('Client signInWithRedirect', async () => {

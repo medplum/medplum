@@ -2,11 +2,11 @@ import { HumanName, ProfileResource } from '@medplum/core';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
-import './Header.css';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
+import './Header.css';
 
 export interface HeaderProps {
   onLogo?: () => void;
@@ -43,7 +43,7 @@ export function Header(props: HeaderProps) {
           <MedplumLink testid="header-logo" onClick={props.onLogo}>
             Medplum
           </MedplumLink>
-          {auth.user && (
+          {auth.profile && (
             <div className="medplum-nav-search-container">
               <form role="search">
                 <input
@@ -80,7 +80,7 @@ export function Header(props: HeaderProps) {
             </div>
           )}
         </div>
-        {auth.user && (
+        {auth.profile && (
           <div className="medplum-nav-menu-container">
             <MedplumLink testid="header-profile-menu-button" onClick={() => setUserMenuVisible(true)}>
               <Avatar size="small" color="#f68d42" value={auth.profile as ProfileResource} />
@@ -97,7 +97,6 @@ export function Header(props: HeaderProps) {
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>
                   <div style={{ margin: '4px auto 4px auto', fontWeight: 'bold' }}><HumanNameDisplay value={auth.profile?.name?.[0] as HumanName} /></div>
-                  <div style={{ margin: '4px auto 8px auto' }}>{auth.user?.email}</div>
                   <Button testid="header-profile-link" onClick={() => {
                     setUserMenuVisible(false);
                     if (props.onProfile) {

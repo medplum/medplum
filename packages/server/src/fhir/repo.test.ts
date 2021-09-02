@@ -608,7 +608,7 @@ test('Compartment permissions', async () => {
   };
 
   const result1 = await registerNew(registration1);
-  expect(result1.user).not.toBeUndefined();
+  expect(result1.profile).not.toBeUndefined();
 
   const [loginOutcome1, login1] = await tryLogin({
     authMethod: 'password',
@@ -647,7 +647,7 @@ test('Compartment permissions', async () => {
   };
 
   const result2 = await registerNew(registration2);
-  expect(result2.user).not.toBeUndefined();
+  expect(result2.profile).not.toBeUndefined();
 
   const [loginOutcome2, login2] = await tryLogin({
     authMethod: 'password',

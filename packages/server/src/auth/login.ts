@@ -34,7 +34,6 @@ export async function loginHandler(req: Request, res: Response) {
   const loginDetails = await finalizeLogin(login as Login);
   return res.status(200).json({
     ...loginDetails.tokens,
-    user: loginDetails.user,
     profile: loginDetails.profile
   });
 }

@@ -77,7 +77,6 @@ export async function googleHandler(req: Request, res: Response) {
 
   return res.status(200).json({
     ...loginDetails.tokens,
-    user: loginDetails.user,
     profile: loginDetails.profile
   });
 }

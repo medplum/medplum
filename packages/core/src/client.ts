@@ -4,7 +4,7 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, Reference, Resource, SearchParameter, StructureDefinition, Subscription, User, ValueSet } from './fhir';
+import { Binary, Bundle, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
@@ -88,7 +88,6 @@ export interface FetchLike {
 }
 
 interface LoginResponse {
-  user: User;
   profile: any;
   accessToken: string;
   refreshToken: string;
@@ -128,7 +127,6 @@ export class MedplumClient extends EventTarget {
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
   private readonly onUnauthenticated?: () => void;
-  private user?: User;
   private profile?: ProfileResource;
 
   constructor(options: MedplumClientOptions) {
@@ -165,7 +163,6 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
-    this.user = undefined;
     this.profile = undefined;
     this.dispatchEvent({ type: 'change' });
   }
@@ -185,9 +182,9 @@ export class MedplumClient extends EventTarget {
   /**
    * Tries to register a new user.
    * @param request The registration request.
-   * @returns Promise to the user resource.
+   * @returns Promise to the user profile resource.
    */
-  register(request: RegisterRequest): Promise<User> {
+  register(request: RegisterRequest): Promise<ProfileResource> {
     return this.post('auth/register', request)
       .then((response: LoginResponse) => this.handleLoginResponse(response));
   }
@@ -199,14 +196,14 @@ export class MedplumClient extends EventTarget {
    * @param role The login role.
    * @param scope The OAuth2 login scope.
    * @param remember Optional flag to "remember" to generate a refresh token and persist in local storage.
-   * @returns Promise to the user resource.
+   * @returns Promise to the user profile resource.
    */
   signIn(
     email: string,
     password: string,
     role: string,
     scope: string,
-    remember?: boolean): Promise<User> {
+    remember?: boolean): Promise<ProfileResource> {
 
     return this.post('auth/login', {
       clientId: this.clientId,
@@ -223,9 +220,9 @@ export class MedplumClient extends EventTarget {
    * The response parameter is the result of a Google authentication.
    * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
    * @param googleResponse The Google credential response.
-   * @returns Promise to the user resource.
+   * @returns Promise to the user profile resource.
    */
-  signInWithGoogle(googleResponse: GoogleCredentialResponse): Promise<User> {
+  signInWithGoogle(googleResponse: GoogleCredentialResponse): Promise<ProfileResource> {
     return this.post('auth/google', googleResponse)
       .then((loginResponse: LoginResponse) => this.handleLoginResponse(loginResponse));
   }
@@ -234,15 +231,15 @@ export class MedplumClient extends EventTarget {
    * Handles a login response.
    * This can be used for both "register" and "signIn".
    * @param response The login response.
-   * @returns The login user.
+   * @returns The user profile.
    */
-  private handleLoginResponse(response: LoginResponse): User {
+  private handleLoginResponse(response: LoginResponse): ProfileResource {
     this.setAccessToken(response.accessToken);
     this.setRefreshToken(response.refreshToken);
-    this.setUser(response.user);
+    // this.setUser(response.user);
     this.setProfile(response.profile);
     this.dispatchEvent({ type: 'change' });
-    return response.user;
+    return response.profile;
   }
 
   /**
@@ -259,7 +256,7 @@ export class MedplumClient extends EventTarget {
    * Returns true if the user is signed in.
    * This may result in navigating away to the sign in page.
    */
-  signInWithRedirect(): Promise<User | void> | undefined {
+  signInWithRedirect(): Promise<ProfileResource | void> | undefined {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
@@ -466,18 +463,6 @@ export class MedplumClient extends EventTarget {
     });
   }
 
-  getUser(): User | undefined {
-    if (!this.user) {
-      this.user = this.storage.getObject('user');
-    }
-    return this.user;
-  }
-
-  private setUser(user: User | undefined): void {
-    this.storage.setObject('user', user);
-    this.user = user;
-  }
-
   getProfile(): ProfileResource | undefined {
     if (!this.profile) {
       this.profile = this.storage.getObject<ProfileResource>('profile');
@@ -628,7 +613,7 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
    * @param code The authorization code received by URL parameter.
    */
-  private processCode(code: string): Promise<User> {
+  private processCode(code: string): Promise<ProfileResource> {
     const pkceState = this.storage.getString('pkceState');
     if (!pkceState) {
       this.clear();
@@ -671,7 +656,7 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
    * @param formBody Token parameters in URL encoded format.
    */
-  private async fetchTokens(formBody: string): Promise<User> {
+  private async fetchTokens(formBody: string): Promise<ProfileResource> {
     if (!this.tokenUrl) {
       throw new Error('Missing token URL');
     }
@@ -690,7 +675,7 @@ export class MedplumClient extends EventTarget {
         return response.json();
       })
       .then(tokens => this.verifyTokens(tokens))
-      .then(() => this.getUser() as User);
+      .then(() => this.getProfile() as ProfileResource);
   }
 
   /**

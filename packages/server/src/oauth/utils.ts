@@ -27,7 +27,6 @@ export interface TokenResult {
 
 export interface LoginResult {
   readonly tokens: TokenResult;
-  readonly user: User;
   readonly profile: Resource;
 }
 
@@ -198,15 +197,11 @@ export async function finalizeLogin(login: Login): Promise<LoginResult> {
   const [tokensOutcome, tokens] = await getAuthTokens(login);
   assertOk(tokensOutcome);
 
-  const [userOutcome, user] = await repo.readReference<User>(login?.user as Reference);
-  assertOk(userOutcome);
-
   const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
   assertOk(profileOutcome);
 
   return {
     tokens: tokens as TokenResult,
-    user: user as User,
     profile: profile as ProfileResource
   };
 }

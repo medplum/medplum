@@ -56,7 +56,7 @@ describe('Reset Password', () => {
         password: 'password!@#'
       })
     expect(res.status).toBe(200);
-    expect(res.body.user).not.toBeUndefined();
+    expect(res.body.profile).not.toBeUndefined();
 
     const res2 = await request(app)
       .post('/auth/resetpassword')

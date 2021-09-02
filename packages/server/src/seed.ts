@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, ClientApplication, CodeSystem, CodeSystemConcept, createReference, isOk, OperationOutcomeError, Project, Resource, SearchParameter, StructureDefinition, User, ValueSet } from '@medplum/core';
+import { Bundle, BundleEntry, ClientApplication, CodeSystem, CodeSystemConcept, isOk, OperationOutcomeError, Project, Resource, SearchParameter, StructureDefinition, ValueSet } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { Pool } from 'pg';
@@ -16,7 +16,7 @@ export async function seedDatabase(): Promise<void> {
     return;
   }
 
-  const result = await registerNew({
+  await registerNew({
     admin: true,
     firstName: 'Medplum',
     lastName: 'Admin',
@@ -25,7 +25,7 @@ export async function seedDatabase(): Promise<void> {
     password: 'admin'
   });
 
-  await createPublicProject(result.user);
+  await createPublicProject();
   await createClientApplication();
   await createValueSetElements();
   await createSearchParameters();
@@ -54,13 +54,15 @@ async function isSeeded(): Promise<boolean> {
  * This is a special project that is available to all users.
  * It includes 'implementation' resources such as CapabilityStatement.
  */
-async function createPublicProject(owner: User): Promise<void> {
+async function createPublicProject(): Promise<void> {
   logger.info('Create Public project...');
   const [outcome, result] = await repo.updateResource<Project>({
     resourceType: 'Project',
     id: PUBLIC_PROJECT_ID,
     name: 'Public',
-    owner: createReference(owner)
+    owner: {
+      reference: 'Project/' + PUBLIC_PROJECT_ID
+    }
   });
 
   if (!isOk(outcome)) {
