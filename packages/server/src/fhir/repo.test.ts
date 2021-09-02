@@ -250,6 +250,29 @@ test('Update patient multiple names', async () => {
   expect(patient2?.name?.[1]?.family).toEqual('Jones');
 });
 
+test('Create Patient with custom ID', async () => {
+  const author = 'Practitioner/' + randomUUID();
+
+  const repo = new Repository({
+    project: MEDPLUM_PROJECT_ID,
+    author: {
+      reference: author
+    }
+  });
+
+  // Try to "update" a resource, which does not exist.
+  // Some FHIR systems allow users to set ID's.
+  // We do not.
+  const [createOutcome, patient] = await repo.updateResource<Patient>({
+    resourceType: 'Patient',
+    id: randomUUID(),
+    name: [{ given: ['Alice'], family: 'Smith' }]
+  });
+
+  expect(createOutcome.id).toEqual('not-found');
+  expect(patient).toBeUndefined();
+});
+
 test('Create Patient with no author', async () => {
   const [createOutcome, patient] = await repo.createResource<Patient>({
     resourceType: 'Patient',

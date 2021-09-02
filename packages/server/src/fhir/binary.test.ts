@@ -62,7 +62,7 @@ describe('Binary', () => {
 
   test('Update and read binary', async () => {
     const res = await request(app)
-      .put('/fhir/R4/Binary/4c57f787-dca0-411f-bfe2-322800208286')
+      .post('/fhir/R4/Binary')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'text/plain')
       .send('Hello world');
@@ -70,9 +70,16 @@ describe('Binary', () => {
 
     const binary = res.body;
     const res2 = await request(app)
+      .put('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .send('Hello world 2');
+    expect(res2.status).toBe(200);
+
+    const res3 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res3.status).toBe(200);
   });
 
 });
