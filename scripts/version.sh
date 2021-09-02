@@ -36,4 +36,5 @@ sed -i "s/sonar.projectVersion=$OLD_VERSION/sonar.projectVersion=$NEW_VERSION/g"
 sed -i "s/medplum-server:$OLD_VERSION/medplum-server:$NEW_VERSION/g" "scripts/deploy-server.sh"
 
 # Then update node_modules and package-lock.json
-npm i --legacy-peer-deps
+#npm i --legacy-peer-deps
+
