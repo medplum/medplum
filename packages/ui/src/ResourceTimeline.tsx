@@ -2,16 +2,16 @@ import { Attachment, Bundle, BundleEntry, Communication, Media, ProfileResource,
 import React, { useEffect, useRef, useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
-import { parseForm } from './FormUtils';
+import { Form } from './Form';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiff } from './ResourceDiff';
+import './ResourceTimeline.css';
 import { TextField } from './TextField';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
 import { sortBundleByDate, sortByDate } from './utils/format';
-import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps {
   value: Resource | Reference;
@@ -114,12 +114,9 @@ export const ResourceTimeline = (props: ResourceTimelineProps) => {
     <Timeline>
       <article className="medplum-timeline-item">
         <div className="medplum-timeline-item-header">
-          <form
-            data-testid="timeline-form"
-            onSubmit={(e: React.SyntheticEvent) => {
-              e.preventDefault();
-
-              const formData = parseForm(e.target as HTMLFormElement);
+          <Form
+            testid="timeline-form"
+            onSubmit={(formData: Record<string, string>) => {
               createComment(formData.text);
 
               const input = inputRef.current;
@@ -131,7 +128,7 @@ export const ResourceTimeline = (props: ResourceTimelineProps) => {
             <TextField id="text" testid="timeline-input" value="" inputRef={inputRef} />
             <Button type="submit">Comment</Button>
             <UploadButton onUpload={createMedia} />
-          </form>
+          </Form>
         </div>
       </article>
       {items.map(item => {

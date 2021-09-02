@@ -3,15 +3,15 @@ import {
   getDisplayString,
   Patient,
   Questionnaire,
-  Resource
+  Resource,
+  stringify
 } from '@medplum/core';
 import {
   Button,
   Document,
   EncounterTimeline,
-  keyReplacer,
+  Form,
   Loading,
-  parseForm,
   PatientTimeline,
   QuestionnaireForm,
   ResourceBlame,
@@ -152,19 +152,17 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
     case 'json':
       return (
-        <form onSubmit={e => {
-          e.preventDefault();
-          const formData = parseForm(e.target as HTMLFormElement);
+        <Form onSubmit={(formData: Record<string, string>) => {
           props.onSubmit(JSON.parse(formData.resource));
         }}>
           <textarea
             id="resource"
             data-testid="resource-json"
             name="resource"
-            defaultValue={JSON.stringify(props.resource, keyReplacer, 2)}
+            defaultValue={stringify(props.resource, true)}
           />
           <Button type="submit">OK</Button>
-        </form>
+        </Form>
       );
     case 'timeline':
       if (props.resource.resourceType === 'Encounter') {

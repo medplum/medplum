@@ -1,7 +1,7 @@
-import { Communication, createReference, Resource } from '@medplum/core';
+import { Communication, Resource } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
-import { parseForm } from './FormUtils';
+import { Form } from './Form';
 import { useMedplum } from './MedplumProvider';
 import { TextField } from './TextField';
 import './ChatControl.css';
@@ -12,10 +12,7 @@ export interface ChatControlProps {
 
 export function ChatControl(props: ChatControlProps) {
   const medplum = useMedplum();
-
   const sender = medplum.getProfile();
-  const senderRef = sender ? createReference(sender) : undefined;
-
   const [comms, setComms] = useState<Communication[]>([]);
   const commsRef = useRef(comms);
   commsRef.current = comms;
@@ -54,31 +51,12 @@ export function ChatControl(props: ChatControlProps) {
         })}
       </div>
 
-      <form
+      <Form
         style={{ maxWidth: 400 }}
-        onSubmit={(e: React.SyntheticEvent) => {
-          e.preventDefault();
-
-          const formData = parseForm(e.target as HTMLFormElement);
-          const content = formData.text;
-
-          medplum.create({
-            resourceType: 'Communication',
-            sender: senderRef,
-            payload: [{
-              contentString: content
-            }]
-          });
-
-          const input = inputRef.current;
-          if (input) {
-            input.value = '';
-            input.focus();
-          }
-        }}>
+        onSubmit={console.log}>
         <TextField id="text" value="" inputRef={inputRef} />
         <Button type="submit">Send</Button>
-      </form>
+      </Form>
     </div>
   );
 }

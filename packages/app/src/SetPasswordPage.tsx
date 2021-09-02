@@ -1,5 +1,5 @@
 import { OperationOutcome } from '@medplum/core';
-import { Button, Document, FormSection, Logo, parseForm, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Logo, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -11,10 +11,7 @@ export function SetPasswordPage() {
 
   return (
     <Document width={450}>
-      <form style={{ maxWidth: 400 }} onSubmit={(e: React.SyntheticEvent) => {
-        e.preventDefault();
-
-        const formData = parseForm(e.target as HTMLFormElement);
+      <Form style={{ maxWidth: 400 }} onSubmit={(formData: Record<string, string>) => {
         const body = {
           id,
           secret,
@@ -52,7 +49,7 @@ export function SetPasswordPage() {
         {success && (
           <div data-testid="success">Password set.  You can now <a href="/signin">sign in</a>.</div>
         )}
-      </form>
+      </Form>
     </Document>
   );
 }
