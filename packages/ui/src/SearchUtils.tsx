@@ -1,4 +1,4 @@
-import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
+import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, Resource, SearchRequest, stringify } from '@medplum/core';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
@@ -405,7 +405,7 @@ export function buildFieldNameString(schema: IndexedStructureDefinition, resourc
     return 'Version ID';
   }
 
-  if (key === 'meta.lastUpdated') {
+  if (key === '_lastUpdated') {
     return 'Last Updated';
   }
 
@@ -448,9 +448,12 @@ export function getFilterValueString(filter: Filter): JSX.Element | string {
  * @param {!string} key The field key.
  * @return {*} The value.
  */
-export function getValue(resource: any, key: string): string | undefined {
+export function getValue(resource: Resource, key: string): any | undefined {
+  if (key === '_lastUpdated') {
+    return resource.meta?.lastUpdated;
+  }
   try {
-    return key.split('.').reduce((o, i) => o[i], resource);
+    return key.split('.').reduce((o, i) => o[i], resource as any);
   } catch (ex) {
     return undefined;
   }
@@ -472,7 +475,7 @@ export function renderValue(schema: IndexedStructureDefinition, resourceType: st
     return value;
   }
 
-  if (key === 'meta.lastUpdated') {
+  if (key === '_lastUpdated') {
     return new Date(value).toLocaleString('en-US');
   }
 

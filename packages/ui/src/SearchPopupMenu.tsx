@@ -31,11 +31,11 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
 
   /**
    * Returns the ElementDefinition for the property.
-   * Handles some special cases (i.e., "meta.lastUpdated").
+   * Handles some special cases (i.e., "_lastUpdated").
    * @returns The element definition, if found.
    */
   function getProperty(): ElementDefinition | undefined {
-    if (props.property === 'meta.lastUpdated') {
+    if (props.property === '_lastUpdated') {
       return {
         type: [{
           code: 'datetime'

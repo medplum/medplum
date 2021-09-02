@@ -64,7 +64,7 @@ export enum Operator {
 export function parseSearchDefinition(location: { pathname: string, search?: string }): SearchRequest {
   const resourceType = location.pathname.split('/').pop() as string;
   const params = new URLSearchParams(location.search);
-  const fields = ['id', 'meta.versionId', 'meta.lastUpdated', 'name'];
+  const fields = ['id', 'meta.versionId', '_lastUpdated', 'name'];
   const filters: Filter[] = [];
   const sortRules: SortRule[] = [];
   let page = 0;

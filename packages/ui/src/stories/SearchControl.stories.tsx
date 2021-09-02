@@ -11,7 +11,7 @@ export default {
 export const Checkboxes = () => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
-    fields: ['id', 'meta.lastUpdated', 'name']
+    fields: ['id', '_lastUpdated', 'name']
   });
 
   return (
@@ -49,7 +49,7 @@ export const NoCheckboxes = () => {
 export const ExtraFields = () => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
-    fields: ['id', 'meta.lastUpdated', 'name', 'birthDate']
+    fields: ['id', '_lastUpdated', 'name', 'birthDate']
   });
 
   return (

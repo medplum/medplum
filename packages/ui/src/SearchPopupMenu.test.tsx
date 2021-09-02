@@ -352,7 +352,7 @@ describe('SearchPopupMenu', () => {
     expect(screen.getByText('Equals...')).not.toBeUndefined();
   });
 
-  test('Renders meta.lastUpdated', () => {
+  test('Renders _lastUpdated', () => {
     setup({
       schema,
       search: {
@@ -361,7 +361,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'meta.lastUpdated',
+      property: '_lastUpdated',
       onClose: jest.fn()
     });
 
