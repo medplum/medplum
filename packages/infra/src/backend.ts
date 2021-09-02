@@ -61,6 +61,7 @@ export class BackEnd extends cdk.Construct {
       description: 'Redis Security Group',
       allowAllOutbound: false,
     });
+    redisSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(6379));
 
     const redisPassword = new secretsmanager.Secret(this, 'RedisPassword', {
       generateSecretString: {
@@ -239,7 +240,7 @@ export class BackEnd extends cdk.Construct {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/RedisSecrets`,
       description: 'Redis secrets ARN',
-      stringValue: redisPassword.secretArn
+      stringValue: redisSecrets.secretArn
     });
 
     // Debug
