@@ -1,11 +1,13 @@
-import { HumanName, ProfileResource } from '@medplum/core';
+import { Bundle, BundleEntry, HumanName, Operator, Resource } from '@medplum/core';
 import React, { useState } from 'react';
+import { Autocomplete } from './Autocomplete';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
+import { ResourceName } from './ResourceName';
 import './Header.css';
 
 export interface HeaderProps {
@@ -26,14 +28,15 @@ export interface SidebarLink {
 }
 
 export function Header(props: HeaderProps) {
-  const auth = useMedplumContext();
-  const [searchHintsVisible, setSearchHintsVisible] = useState(false);
+  const context = useMedplumContext();
+  const medplum = context.medplum;
+  const router = context.router;
   const [userMenuVisible, setUserMenuVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
 
   return (
     <>
-      <header role="banner">
+      <header role="banner" data-testid="header">
         <div>
           <MedplumLink testid="header-menu-button" onClick={() => setSidebarVisible(!sidebarVisible)}>
             <svg xmlns="http://www.w3.org/2000/svg" style={{ width: 20, height: 20, verticalAlign: 'text-top' }} viewBox="0 0 20 20" fill="currentColor">
@@ -43,47 +46,39 @@ export function Header(props: HeaderProps) {
           <MedplumLink testid="header-logo" onClick={props.onLogo}>
             Medplum
           </MedplumLink>
-          {auth.profile && (
-            <div className="medplum-nav-search-container">
-              <form role="search">
-                <input
-                  name="q"
-                  type="text"
-                  placeholder="Search..."
-                  autoComplete="off"
-                  maxLength={240}
-                  className="medplum-nav-search-input"
-                  onFocus={() => setSearchHintsVisible(true)}
-                  onBlur={() => setSearchHintsVisible(false)}
-                />
-                <svg aria-hidden="true" className="medplum-nav-search-icon" width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-                  <path d="M18 16.5l-5.14-5.18h-.35a7 7 0 10-1.19 1.19v.35L16.5 18l1.5-1.5zM12 7A5 5 0 112 7a5 5 0 0110 0z" />
-                </svg>
-                <Popup
-                  visible={searchHintsVisible}
-                  activeClassName="medplum-nav-search-popover"
-                  onClose={() => setSearchHintsVisible(false)}>
-                  <div className="medplum-nav-search-hints">
-                    <div className="medplum-nav-search-hints-column">
-                      Patient?identifier=123456<br />
-                      Patient?identifier=ssn|123456<br />
-                      Patient?birthDate=1970-01-01<br />
-                    </div>
-                    <div className="medplum-nav-search-hints-column">
-                      Patient?identifier=123456<br />
-                      Patient?identifier=ssn|123456<br />
-                      Patient?birthDate=1970-01-01<br />
-                    </div>
-                  </div>
-                </Popup>
-              </form>
-            </div>
+          {context.profile && (
+            <Autocomplete
+              name="search"
+              className="medplum-nav-search-container"
+              placeholder="Search"
+              loadOptions={(input: string): Promise<Resource[]> => {
+                return medplum.search({
+                  resourceType: 'Patient',
+                  filters: [{
+                    code: 'name',
+                    operator: Operator.CONTAINS,
+                    value: input
+                  }]
+                })
+                  .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map(entry => entry.resource as Resource));
+              }}
+              getId={(item: Resource) => {
+                return item.id as string;
+              }}
+              getIcon={(item: Resource) => <Avatar value={item} />}
+              getDisplay={(item: Resource) => <ResourceName value={item} />}
+              onChange={(items: (Resource)[]) => {
+                if (items.length > 0) {
+                  router.push(`/${items[0].resourceType}/${items[0].id}`);
+                }
+              }}
+            />
           )}
         </div>
-        {auth.profile && (
+        {context.profile && (
           <div className="medplum-nav-menu-container">
             <MedplumLink testid="header-profile-menu-button" onClick={() => setUserMenuVisible(true)}>
-              <Avatar size="small" color="#f68d42" value={auth.profile as ProfileResource} />
+              <Avatar size="small" color="#f68d42" value={context.profile} />
             </MedplumLink>
             <Popup
               visible={userMenuVisible}
@@ -92,11 +87,11 @@ export function Header(props: HeaderProps) {
               onClose={() => setUserMenuVisible(false)}>
               <div className="medplum-nav-menu">
                 <div style={{ margin: 'auto', padding: '8px' }}>
-                  <Avatar size="large" value={auth.profile as ProfileResource} />
+                  <Avatar size="large" value={context.profile} />
                 </div>
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>
-                  <div style={{ margin: '4px auto 4px auto', fontWeight: 'bold' }}><HumanNameDisplay value={auth.profile?.name?.[0] as HumanName} /></div>
+                  <div style={{ margin: '4px auto 4px auto', fontWeight: 'bold' }}><HumanNameDisplay value={context.profile?.name?.[0] as HumanName} /></div>
                   <Button testid="header-profile-link" onClick={() => {
                     setUserMenuVisible(false);
                     if (props.onProfile) {
