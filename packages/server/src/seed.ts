@@ -59,7 +59,10 @@ async function createPublicProject(): Promise<void> {
   const [outcome, result] = await repo.updateResource<Project>({
     resourceType: 'Project',
     id: PUBLIC_PROJECT_ID,
-    name: 'Public'
+    name: 'Public',
+    owner: {
+      reference: 'Project/' + PUBLIC_PROJECT_ID
+    }
   });
 
   if (!isOk(outcome)) {
