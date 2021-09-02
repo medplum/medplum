@@ -3,7 +3,7 @@ import { parseForm } from './FormUtils';
 
 export interface FormProps {
   onSubmit?: (formData: Record<string, string>) => void;
-  style?: CSSProperties | undefined;
+  style?: CSSProperties;
   children?: React.ReactNode;
   testid?: string;
 }
