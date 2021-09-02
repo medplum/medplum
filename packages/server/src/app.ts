@@ -2,6 +2,7 @@ import { badRequest, OperationOutcome } from '@medplum/core';
 import { json, raw, urlencoded } from 'body-parser';
 import cors from 'cors';
 import { Express, NextFunction, Request, Response } from 'express';
+import { adminRouter } from './admin';
 import { authRouter } from './auth';
 import { dicomRouter } from './dicom/routes';
 import { fhirRouter, sendOutcome } from './fhir';
@@ -80,6 +81,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.get('/healthcheck', (req: Request, res: Response) => res.json({ ok: true }));
   app.get('/openapi.json', openApiHandler);
   app.use('/.well-known/', wellKnownRouter);
+  app.use('/admin/', adminRouter);
   app.use('/auth/', authRouter);
   app.use('/dicom/PS3/', dicomRouter);
   app.use('/fhir/R4/', fhirRouter);

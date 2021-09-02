@@ -30,10 +30,15 @@ export async function resetPasswordHandler(req: Request, res: Response) {
     return sendOutcome(res, badRequest('User not found', 'email'));
   }
 
+  await resetPassword(existingBundle?.entry?.[0]?.resource as User);
+  return sendOutcome(res, allOk);
+}
+
+export async function resetPassword(user: User) {
   // Create the password change request
   const [createOutcome, pcr] = await repo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
-    user: createReference(existingBundle?.entry?.[0]?.resource as User),
+    user: createReference(user),
     secret: generateSecret(16)
   });
   assertOk(createOutcome);
@@ -41,11 +46,12 @@ export async function resetPasswordHandler(req: Request, res: Response) {
   // Build the reset URL
   const url = `${getConfig().appBaseUrl}setpassword/${pcr?.id}/${pcr?.secret}`;
 
+  // Send the email
   const sesClient = new SESv2Client({ region: 'us-east-1' });
   await sesClient.send(new SendEmailCommand({
     FromEmailAddress: getConfig().supportEmail,
     Destination: {
-      ToAddresses: [req.body.email]
+      ToAddresses: [user.email as string]
     },
     Content: {
       Simple: {
@@ -72,6 +78,4 @@ export async function resetPasswordHandler(req: Request, res: Response) {
       }
     }
   }));
-
-  return sendOutcome(res, allOk);
 }

@@ -61070,6 +61070,10 @@
             "$ref": "#/definitions/Reference"
           },
           "type": "array"
+        },
+        "admin": {
+          "description": "Whether this user is a project administrator.",
+          "$ref": "#/definitions/boolean"
         }
       },
       "required": [

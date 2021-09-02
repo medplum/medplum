@@ -1,0 +1,82 @@
+import { OperationOutcome, RegisterRequest } from '@medplum/core';
+import { Button, Document, FormSection, Loading, parseForm, TextField, useMedplum } from '@medplum/ui';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+
+export function InvitePage() {
+  const { id } = useParams<{ id: string }>();
+  const medplum = useMedplum();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [result, setResult] = useState<any>();
+  const [error, setError] = useState();
+  const [outcome, setOutcome] = useState<OperationOutcome>();
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    medplum.get('admin/projects/' + id)
+      .then(response => {
+        setResult(response);
+        setLoading(false);
+      })
+      .catch(reason => setError(reason));
+  }, [id]);
+
+  if (error) {
+    return (
+      <Document>
+        <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>
+      </Document>
+    );
+  }
+
+  if (loading || !result) {
+    return <Loading />;
+  }
+
+  return (
+    <Document width={600}>
+      <h1>Admin / Projects / {result.project.name}</h1>
+      <h3>Invite new member</h3>
+      <form onSubmit={(e: React.SyntheticEvent) => {
+        e.preventDefault();
+
+        const formData = parseForm(e.target as HTMLFormElement) as any as RegisterRequest;
+        medplum.post('admin/projects/' + id + '/invite', formData)
+          .then(() => setSuccess(true))
+          .catch(err => {
+            if (err.outcome) {
+              setOutcome(err.outcome);
+            }
+          })
+      }}>
+        {!success && (
+          <>
+            <FormSection title="First Name">
+              <TextField id="firstName" type="text" testid="firstName" required={true} autoFocus={true} outcome={outcome} />
+            </FormSection>
+            <FormSection title="Last Name">
+              <TextField id="lastName" type="text" testid="lastName" required={true} outcome={outcome} />
+            </FormSection>
+            <FormSection title="Email">
+              <TextField id="email" type="email" testid="email" required={true} outcome={outcome} />
+            </FormSection>
+            <div className="medplum-signin-buttons">
+              <div>
+              </div>
+              <div>
+                <Button type="submit" testid="submit">Invite</Button>
+              </div>
+            </div>
+          </>
+        )}
+        {success && (
+          <div data-testid="success">
+            <p>User created</p>
+            <p>Email sent</p>
+            <p>Click <a href={'/admin/projects/' + id}>here</a> to return to the project admin page</p>
+          </div>
+        )}
+      </form>
+    </Document>
+  );
+}
