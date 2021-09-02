@@ -78,7 +78,7 @@ export function Header(props: HeaderProps) {
         {context.profile && (
           <div className="medplum-nav-menu-container">
             <MedplumLink testid="header-profile-menu-button" onClick={() => setUserMenuVisible(true)}>
-              <Avatar size="small" color="#f68d42" value={context.profile as ProfileResource} />
+              <Avatar size="small" color="#f68d42" value={context.profile} />
             </MedplumLink>
             <Popup
               visible={userMenuVisible}
@@ -87,7 +87,7 @@ export function Header(props: HeaderProps) {
               onClose={() => setUserMenuVisible(false)}>
               <div className="medplum-nav-menu">
                 <div style={{ margin: 'auto', padding: '8px' }}>
-                  <Avatar size="large" value={context.profile as ProfileResource} />
+                  <Avatar size="large" value={context.profile} />
                 </div>
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>
