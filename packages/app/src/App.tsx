@@ -10,6 +10,9 @@ import {
 } from '@medplum/ui';
 import React from 'react';
 import { Route, Router, Switch } from 'react-router-dom';
+import { InvitePage } from './admin/InvitePage';
+import { ProjectPage } from './admin/ProjectPage';
+import { ProjectsPage } from './admin/ProjectsPage';
 import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
 import { FormPage } from './FormPage';
@@ -41,27 +44,31 @@ export function App() {
             {
               title: 'Favorites',
               links: [
-                { label: 'Patient', href: '/Patient' },
-                { label: 'Practitioner', href: '/Practitioner' },
-                { label: 'Observation', href: '/Observation' },
-                { label: 'Organization', href: '/Organization' },
-                { label: 'Encounter', href: '/Encounter' },
-                { label: 'Questionnaire', href: '/Questionnaire' },
-                { label: 'StructureDefinition', href: '/StructureDefinition' },
+                { label: 'Patients', href: '/Patient' },
+                { label: 'Practitioners', href: '/Practitioner' },
+                { label: 'Observations', href: '/Observation' },
+                { label: 'Organizations', href: '/Organization' },
+                { label: 'Encounters', href: '/Encounter' },
+                { label: 'Questionnaires', href: '/Questionnaire' },
               ]
             },
             {
               title: 'Admin',
               links: [
-                { label: 'Project', href: '/Project' },
-                { label: 'ProjectMembership', href: '/ProjectMembership' },
+                { label: 'Projects', href: '/admin/projects' }
+              ]
+            },
+            {
+              title: 'Developer',
+              links: [
                 { label: 'Client Applications', href: '/ClientApplication' },
-                { label: 'Subscription', href: '/Subscription' }
+                { label: 'Subscriptions', href: '/Subscription' }
               ]
             },
             {
               title: 'Settings',
               links: [
+                { label: 'Profile', href: `/${profile.resourceType}/${profile.id}` },
                 { label: 'Change Password', href: '/changepassword' }
               ]
             }
@@ -75,6 +82,9 @@ export function App() {
         <Route exact path="/register"><RegisterPage /></Route>
         <Route exact path="/changepassword"><ChangePasswordPage /></Route>
         <Route exact path="/forms/:id"><FormPage /></Route>
+        <Route exact path="/admin/projects"><ProjectsPage /></Route>
+        <Route exact path="/admin/projects/:id"><ProjectPage /></Route>
+        <Route exact path="/admin/projects/:id/invite"><InvitePage /></Route>
         <Route exact path="/:resourceType/new"><CreateResourcePage /></Route>
         <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
         <Route exact path="/:resourceType?"><HomePage /></Route>

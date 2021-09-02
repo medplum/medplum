@@ -62,4 +62,9 @@ export interface ProjectMembership {
    * Collection of compartments that the user has been granted access.
    */
   readonly compartments?: Reference[];
+
+  /**
+   * Whether this user is a project administrator.
+   */
+  readonly admin?: boolean;
 }
