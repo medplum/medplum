@@ -28,6 +28,7 @@ describe('Reset Password', () => {
 
   beforeEach(() => {
     (SESv2Client as any).mockClear();
+    (SendEmailCommand as any).mockClear();
   });
 
   test('User not found', async () => {
