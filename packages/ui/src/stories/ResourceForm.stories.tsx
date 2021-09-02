@@ -44,11 +44,12 @@ export const Practitioner = () => (
   </Document>
 );
 
-export const User = () => (
+export const DiagnosticReport = () => (
   <Document>
     <ResourceForm
-      resourceType="User"
-      id={process.env.SAMPLE_USER_ID}
+      resource={{
+        resourceType: 'DiagnosticReport'
+      }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -61,6 +62,19 @@ export const Questionnaire = () => (
     <ResourceForm
       resource={{
         resourceType: 'Questionnaire'
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
+export const Subscription = () => (
+  <Document>
+    <ResourceForm
+      resource={{
+        resourceType: 'Subscription'
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);

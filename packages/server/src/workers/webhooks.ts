@@ -1,11 +1,11 @@
-import { assertOk, BundleEntry, Extension, Resource, stringify, Subscription } from '@medplum/core';
+import { assertOk, BundleEntry, Extension, parseFhirPath, Resource, stringify, Subscription } from '@medplum/core';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
 import { URL } from 'url';
 import { MedplumRedisConfig } from '../config';
 import { repo } from '../fhir';
-import { parseSearchUrl } from '../fhir/search';
+import { getSearchParameter, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 
 export interface WebhookJobData {
@@ -86,6 +86,9 @@ export async function sendSubscriptions(job: WebhookJobData): Promise<void> {
 
   const subscriptions = await getSubscriptions();
   for (const subscription of subscriptions) {
+    if (subscription.status !== 'active') {
+      continue;
+    }
     if (subscription.channel?.type === 'rest-hook') {
       sendRestHook(subscription, resource as Resource);
     }
@@ -121,6 +124,20 @@ async function sendRestHook(subscription: Subscription, resource: Resource): Pro
   const searchRequest = parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
   if (resource.resourceType !== searchRequest.resourceType) {
     return;
+  }
+
+  if (searchRequest.filters) {
+    for (const filter of searchRequest.filters) {
+      const searchParam = getSearchParameter(searchRequest.resourceType, filter.code);
+      if (searchParam) {
+        const fhirPath = parseFhirPath(searchParam.expression as string);
+        const values = fhirPath.eval(resource);
+        const value = values.length > 0 ? values[0] : undefined;
+        if (value !== filter.value) {
+          return;
+        }
+      }
+    }
   }
 
   const headers: HeadersInit = {

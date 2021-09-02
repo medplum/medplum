@@ -124,7 +124,7 @@ export function parseResourceForm(
   for (let i = 0; i < form.elements.length; i++) {
     const element = form.elements[i] as HTMLElement;
 
-    if (element instanceof HTMLInputElement) {
+    if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
       parseResourceInputElement(schema, resourceType, result, element);
 
     } else if (element instanceof HTMLSelectElement) {
@@ -148,14 +148,14 @@ function parseResourceInputElement(
   schema: IndexedStructureDefinition,
   resourceType: string,
   result: Resource,
-  el: HTMLInputElement): void {
+  el: HTMLInputElement | HTMLTextAreaElement): void {
 
   if (el.disabled) {
     // Ignore disabled elements
     return;
   }
 
-  if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) {
+  if ((el.type === 'checkbox' || el.type === 'radio') && !(el as HTMLInputElement).checked) {
     // Ignore unchecked radio or checkbox elements
     return;
   }
