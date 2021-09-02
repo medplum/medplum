@@ -40,7 +40,6 @@ export function App() {
             {
               title: 'Favorites',
               links: [
-                { label: 'Device', href: '/Device' },
                 { label: 'Patient', href: '/Patient' },
                 { label: 'Practitioner', href: '/Practitioner' },
                 { label: 'Observation', href: '/Observation' },
@@ -53,7 +52,6 @@ export function App() {
             {
               title: 'Admin',
               links: [
-                { label: 'User', href: '/User' },
                 { label: 'Project', href: '/Project' },
                 { label: 'ProjectMembership', href: '/ProjectMembership' },
                 { label: 'Client Applications', href: '/ClientApplication' },

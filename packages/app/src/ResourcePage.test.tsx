@@ -1,4 +1,4 @@
-import { Bundle, MedplumClient, notFound, Practitioner, Questionnaire, User } from '@medplum/core';
+import { Bundle, MedplumClient, notFound, Patient, Practitioner, Questionnaire, User } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -62,18 +62,25 @@ const practitionerSearchParameter: Bundle = {
   }]
 };
 
+const patient: Patient = {
+  resourceType: 'Patient',
+  id: '123',
+  identifier: [
+    { system: 'abc', value: '123' },
+    { system: 'def', value: '456' }
+  ],
+  name: [{
+    given: ['Alice'],
+    family: 'Smith'
+  }],
+  birthDate: '1990-01-01'
+};
+
 const patientSearchBundle: Bundle = {
   resourceType: 'Bundle',
   total: 100,
   entry: [{
-    resource: {
-      resourceType: 'Patient',
-      id: '123',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    }
+    resource: patient
   }]
 };
 
@@ -108,6 +115,10 @@ function mockFetch(url: string, options: any): Promise<any> {
   } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?name=Practitioner')) {
     result = practitionerSearchParameter;
   } else if (method === 'GET' && url.includes('/fhir/R4/Patient?')) {
+    result = patientSearchBundle;
+  } else if (method === 'GET' && url.includes('/fhir/R4/Patient/123')) {
+    result = patient;
+  } else if (method === 'GET' && url.includes('/fhir/R4/Patient/123/_history')) {
     result = patientSearchBundle;
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123')) {
     result = practitioner;
@@ -235,6 +246,22 @@ describe('ResourcePage', () => {
     });
 
     expect(screen.getByTestId('resource-json')).not.toBeUndefined();
+  });
+
+  test('Patient timeline', async () => {
+    setup('/Patient/123/timeline');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Timeline'));
+    });
+
+    expect(screen.getByText('Timeline')).not.toBeUndefined();
+
+    // Expect identifiers
+    expect(screen.getByText('abc')).not.toBeUndefined();
+    expect(screen.getByText('123')).not.toBeUndefined();
+    expect(screen.getByText('def')).not.toBeUndefined();
+    expect(screen.getByText('456')).not.toBeUndefined();
   });
 
   test('Encounter timeline', async () => {

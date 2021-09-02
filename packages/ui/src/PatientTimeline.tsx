@@ -1,33 +1,33 @@
-import { Attachment, createReference, Encounter, getReferenceString, Operator, ProfileResource, Reference, Resource } from '@medplum/core';
+import { Attachment, createReference, getReferenceString, Operator, Patient, ProfileResource, Reference, Resource } from '@medplum/core';
 import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 
-export interface EncounterTimelineProps {
-  encounter: Encounter | Reference;
+export interface PatientTimelineProps {
+  patient: Patient | Reference;
 }
 
-export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
+export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
   return (
     <ResourceTimeline
-      value={props.encounter}
-      buildSearchRequests={(encounter: Resource) => {
-        const encounterReference = getReferenceString(encounter);
+      value={props.patient}
+      buildSearchRequests={(patient: Resource) => {
+        const patientReference = getReferenceString(patient);
         return [
           {
             resourceType: 'Communication',
             filters: [{
-              code: 'encounter',
+              code: 'subject',
               operator: Operator.EQUALS,
-              value: encounterReference
+              value: patientReference
             }],
             count: 100
           },
           {
             resourceType: 'Media',
             filters: [{
-              code: 'encounter',
+              code: 'subject',
               operator: Operator.EQUALS,
-              value: encounterReference
+              value: patientReference
             }],
             count: 100
           }
@@ -35,15 +35,13 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
       }}
       createCommunication={(resource: Resource, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
-        encounter: createReference(resource),
-        subject: (resource as Encounter).subject,
+        subject: createReference(resource),
         sender: createReference(sender),
         payload: [{ contentString: text }]
       })}
       createMedia={(resource: Resource, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
-        encounter: createReference(resource),
-        subject: (resource as Encounter).subject,
+        subject: createReference(resource),
         operator: createReference(operator),
         content
       })}

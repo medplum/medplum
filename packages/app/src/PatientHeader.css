@@ -1,0 +1,27 @@
+
+.medplum-patient-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: white;
+  padding: 4px 10px;
+}
+
+.medplum-patient-header > .medplum-avatar {
+  margin: 5px;
+}
+
+.medplum-patient-header > dl {
+  margin: 5px 10px 5px 20px;
+}
+
+.medplum-patient-header dt {
+  color: #444;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.medplum-patient-header dd {
+  font-size: 16px;
+  font-weight: bold;
+}

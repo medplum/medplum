@@ -1,15 +1,15 @@
-import { Bundle, Communication, Encounter, Media, MedplumClient } from '@medplum/core';
+import { Bundle, Communication, Patient, Media, MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
-import { EncounterTimeline, EncounterTimelineProps } from './EncounterTimeline';
+import { PatientTimeline, PatientTimelineProps } from './PatientTimeline';
 import { MedplumProvider } from './MedplumProvider';
 
-const encounterId = randomUUID();
+const patientId = randomUUID();
 
-const encounter: Encounter = {
-  resourceType: 'Encounter',
-  id: encounterId
+const patient: Patient = {
+  resourceType: 'Patient',
+  id: patientId
 };
 
 const communications: Bundle = {
@@ -90,8 +90,8 @@ function mockFetch(url: string, options: any): Promise<any> {
         id: '123'
       }
     };
-  } else if (method === 'GET' && url.includes('/fhir/R4/Encounter/' + encounterId)) {
-    result = encounter;
+  } else if (method === 'GET' && url.includes('/fhir/R4/Patient/' + patientId)) {
+    result = patient;
   } else if (method === 'GET' && url.includes('/fhir/R4/Communication?')) {
     result = communications;
   } else if (method === 'GET' && url.includes('/fhir/R4/Media?')) {
@@ -122,22 +122,22 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-describe('EncounterTimeline', () => {
+describe('PatientTimeline', () => {
 
   beforeAll(async () => {
     await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  const setup = (args: EncounterTimelineProps) => {
+  const setup = (args: PatientTimelineProps) => {
     return render(
       <MedplumProvider medplum={medplum} router={mockRouter}>
-        <EncounterTimeline {...args} />
+        <PatientTimeline {...args} />
       </MedplumProvider>
     );
   };
 
   test('Renders reference', async () => {
-    setup({ encounter: { reference: 'Encounter/' + encounterId } });
+    setup({ patient: { reference: 'Patient/' + patientId } });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -149,7 +149,7 @@ describe('EncounterTimeline', () => {
   });
 
   test('Renders resource', async () => {
-    setup({ encounter });
+    setup({ patient });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -161,7 +161,7 @@ describe('EncounterTimeline', () => {
   });
 
   test('Create comment', async () => {
-    setup({ encounter });
+    setup({ patient });
 
     // Wait for initial load
     await act(async () => {
@@ -189,7 +189,7 @@ describe('EncounterTimeline', () => {
   });
 
   test('Upload media', async () => {
-    setup({ encounter });
+    setup({ patient });
 
     // Wait for initial load
     await act(async () => {

@@ -1,7 +1,7 @@
 import {
   Bundle,
-  Encounter,
   getDisplayString,
+  Patient,
   Questionnaire,
   Resource
 } from '@medplum/core';
@@ -12,6 +12,7 @@ import {
   keyReplacer,
   Loading,
   parseForm,
+  PatientTimeline,
   QuestionnaireForm,
   ResourceBlame,
   ResourceForm,
@@ -26,11 +27,12 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
+import { PatientHeader } from './PatientHeader';
 
 function getTabs(resourceType: string): string[] {
   const result = [];
 
-  if (resourceType === 'Encounter') {
+  if (resourceType === 'Encounter' || resourceType === 'Patient') {
     result.push('Timeline');
   }
 
@@ -85,15 +87,19 @@ export function ResourcePage() {
 
   return (
     <>
-      <div style={{
-        backgroundColor: 'white',
-        borderBottom: '2px solid #eee',
-        color: '#444',
-        fontWeight: 'bold',
-        padding: '15px 30px',
-      }}>
-        {value ? getDisplayString(value) : `${resourceType} ${id}`}
-      </div>
+      {resourceType === 'Patient' ? (
+        <PatientHeader patient={value as Patient} />
+      ) : (
+        <div style={{
+          backgroundColor: 'white',
+          borderBottom: '2px solid #eee',
+          color: '#444',
+          fontWeight: 'bold',
+          padding: '15px 30px',
+        }}>
+          {value ? getDisplayString(value) : `${resourceType} ${id}`}
+        </div>
+      )}
       <TabBar
         value={tab || defaultTab}
         onChange={(name: string) => history.push(`/${resourceType}/${id}/${name}`)}>
@@ -161,9 +167,17 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         </form>
       );
     case 'timeline':
-      return (
-        <EncounterTimeline resource={props.resource as Encounter} />
-      );
+      if (props.resource.resourceType === 'Encounter') {
+        return (
+          <EncounterTimeline encounter={props.resource} />
+        );
+      }
+      if (props.resource.resourceType === 'Patient') {
+        return (
+          <PatientTimeline patient={props.resource} />
+        );
+      }
+      return null;
     case 'preview':
       return (
         <QuestionnaireForm

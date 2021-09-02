@@ -127,10 +127,11 @@ export function getDateProperty(date: Date | string | undefined): Date | undefin
  * Removes objects with zero properties.
  * See: https://www.hl7.org/fhir/json.html
  * @param value The input value.
+ * @param pretty Optional flag to pretty-print the JSON.
  * @returns The resulting JSON string.
  */
-export function stringify(value: any): string {
-  return JSON.stringify(value, stringifyReplacer);
+export function stringify(value: any, pretty?: boolean): string {
+  return JSON.stringify(value, stringifyReplacer, pretty ? 2 : undefined);
 }
 
 /**

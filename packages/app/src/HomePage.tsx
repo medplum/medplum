@@ -12,7 +12,11 @@ export function HomePage() {
   searchRef.current = search;
 
   useEffect(() => {
-    setSearch(parseSearchDefinition(location));
+    const parsedSearch = parseSearchDefinition(location);
+    if (parsedSearch.resourceType) {
+      setDefaultSearch(parsedSearch);
+    }
+    setSearch(parsedSearch);
   }, [location]);
 
   useEffect(() => {
@@ -36,7 +40,6 @@ export function HomePage() {
 }
 
 function goToSearch(search: SearchRequest): void {
-  setDefaultSearch(search);
   history.push({
     pathname: `/${search.resourceType}`,
     search: formatSearchQuery(search)
@@ -48,7 +51,7 @@ function setDefaultSearch(search: SearchRequest): void {
 }
 
 function getDefaultSearch(): SearchRequest {
-  const value = localStorage.getItem('medplum-default-search');
+  const value = localStorage.getItem('defaultSearch');
   if (value) {
     return JSON.parse(value) as SearchRequest;
   }

@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, Meta } from '@medplum/core';
+import { Bundle, BundleEntry, Meta, stringify } from '@medplum/core';
 import { diff } from './diff';
 
 export interface BlameRow {
@@ -12,7 +12,7 @@ export function blame(history: Bundle): BlameRow[] {
   // Convert to array of array of lines
   const versions = (history.entry as BundleEntry[]).map(entry => ({
     meta: entry.resource?.meta as Meta,
-    lines: JSON.stringify(entry.resource, undefined, 2).match(/[^\r\n]+/g) as string[]
+    lines: stringify(entry.resource, true).match(/[^\r\n]+/g) as string[]
   }));
 
   // Start with array of lines from the first version
