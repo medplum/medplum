@@ -1,7 +1,7 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { assertOk, Binary, stringify } from '@medplum/core';
 import { Request, Response, Router } from 'express';
-import { mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { IncomingMessage } from 'http';
 import path from 'path';
 import { asyncWrap } from '../async';
@@ -42,7 +42,7 @@ binaryRouter.put('/:id', asyncWrap(async (req: Request, res: Response) => {
   });
   assertOk(outcome);
   await binaryStorage?.writeBinary(resource as Binary, req);
-  res.status(201).json(resource);
+  res.status(200).json(resource);
 }));
 
 // Get binary content
@@ -79,7 +79,10 @@ class FileSystemStorage implements BinaryStorage {
   }
 
   async writeBinary(binary: Binary, req: Request): Promise<void> {
-    mkdirSync(this.getDir(binary));
+    const dir = this.getDir(binary);
+    if (!existsSync(dir)) {
+      mkdirSync(dir);
+    }
     writeFileSync(this.getPath(binary), req.body, { encoding: 'binary' });
   }
 
