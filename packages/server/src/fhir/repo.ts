@@ -6,7 +6,7 @@ import validator from 'validator';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
 import { logger } from '../logger';
-import { addWebhookJobData } from '../workers/webhooks';
+import { addSubscriptionJobs } from '../workers/webhooks';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { definitions, validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
@@ -472,12 +472,7 @@ export class Repository {
   private async write(resource: Resource): Promise<void> {
     await this.writeResource(resource);
     await this.writeLookupTables(resource);
-
-    addWebhookJobData({
-      resourceType: resource.resourceType,
-      id: resource.id as string,
-      versionId: resource.meta?.versionId as string
-    });
+    await addSubscriptionJobs(resource);
   }
 
   private async writeResource(resource: Resource): Promise<void> {

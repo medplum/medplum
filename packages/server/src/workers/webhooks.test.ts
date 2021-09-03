@@ -1,11 +1,11 @@
-import { Patient, stringify, Subscription } from '@medplum/core';
-import { Queue } from 'bullmq';
-import { createHmac } from 'crypto';
+import { Observation, Patient, stringify, Subscription } from '@medplum/core';
+import { Job, Queue } from 'bullmq';
+import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
 import { repo } from '../fhir/repo';
-import { closeWebhookWorker, initWebhookWorker, sendSubscriptions, WebhookJobData } from './webhooks';
+import { closeWebhookWorker, initWebhookWorker, webhookProcessor } from './webhooks';
 
 jest.mock('bullmq');
 jest.mock('node-fetch');
@@ -27,20 +27,6 @@ describe('Webhook Worker', () => {
   beforeEach(async () => {
     await getClient().query('DELETE FROM "Subscription"');
     (fetch as any).mockClear();
-  });
-
-  test('Webhook on create', async () => {
-    const queue = (Queue as any).mock.instances[0];
-    queue.add.mockClear();
-
-    const [createOutcome, patient] = await repo.createResource<Patient>({
-      resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
-    });
-
-    expect(createOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
-    expect(queue.add).toHaveBeenCalled();
   });
 
   test('Send subscriptions', async () => {
@@ -72,8 +58,9 @@ describe('Webhook Worker', () => {
 
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
-    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
-    await sendSubscriptions(jobData);
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    await webhookProcessor(job);
+
     expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
       method: 'POST',
       body: stringify(patient)
@@ -114,11 +101,12 @@ describe('Webhook Worker', () => {
 
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
-    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
     const body = stringify(patient);
     const signature = createHmac('sha256', secret).update(body).digest('hex');
 
-    await sendSubscriptions(jobData);
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    await webhookProcessor(job);
+
     expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
       method: 'POST',
       body,
@@ -151,11 +139,7 @@ describe('Webhook Worker', () => {
 
     expect(patientOutcome.id).toEqual('created');
     expect(patient).not.toBeUndefined();
-    expect(queue.add).toHaveBeenCalled();
-
-    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
-    await sendSubscriptions(jobData);
-    expect(fetch).not.toHaveBeenCalledWith();
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
   test('Ignore webhooks missing URL', async () => {
@@ -165,7 +149,7 @@ describe('Webhook Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/webhook'
+        endpoint: ''
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
@@ -181,11 +165,7 @@ describe('Webhook Worker', () => {
 
     expect(patientOutcome.id).toEqual('created');
     expect(patient).not.toBeUndefined();
-    expect(queue.add).toHaveBeenCalled();
-
-    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
-    await sendSubscriptions(jobData);
-    expect(fetch).not.toHaveBeenCalledWith();
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
   test('Ignore webhooks with missing criteria', async () => {
@@ -210,11 +190,7 @@ describe('Webhook Worker', () => {
 
     expect(patientOutcome.id).toEqual('created');
     expect(patient).not.toBeUndefined();
-    expect(queue.add).toHaveBeenCalled();
-
-    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
-    await sendSubscriptions(jobData);
-    expect(fetch).not.toHaveBeenCalledWith();
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
   test('Ignore webhooks with different criteria resource type', async () => {
@@ -240,11 +216,40 @@ describe('Webhook Worker', () => {
 
     expect(patientOutcome.id).toEqual('created');
     expect(patient).not.toBeUndefined();
-    expect(queue.add).toHaveBeenCalled();
+    expect(queue.add).not.toHaveBeenCalled();
+  });
 
-    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
-    await sendSubscriptions(jobData);
-    expect(fetch).not.toHaveBeenCalledWith();
+  test('Ignore webhooks with different criteria parameter', async () => {
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'Observation?status=final',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'https://example.com/webhook'
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'preliminary',
+      code: { text: 'ok' }
+    });
+
+    expect(queue.add).not.toHaveBeenCalled();
+
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'ok' }
+    });
+
+    expect(queue.add).toHaveBeenCalled();
   });
 
   test('Ignore disabled webhooks', async () => {
@@ -270,11 +275,42 @@ describe('Webhook Worker', () => {
 
     expect(patientOutcome.id).toEqual('created');
     expect(patient).not.toBeUndefined();
-    expect(queue.add).toHaveBeenCalled();
+    expect(queue.add).not.toHaveBeenCalled();
+  });
 
-    const jobData = queue.add.mock.calls[0][1] as WebhookJobData;
-    await sendSubscriptions(jobData);
-    expect(fetch).not.toHaveBeenCalledWith();
+  test('Ignore resource changes in different project', async () => {
+    const project1 = randomUUID();
+    const project2 = randomUUID();
+
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      meta: {
+        project: project1
+      },
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'https://example.com/webhook'
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: {
+        project: project2
+      },
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).not.toBeUndefined();
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
 });
