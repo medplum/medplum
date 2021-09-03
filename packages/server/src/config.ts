@@ -69,9 +69,6 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     case 'aws':
       cachedConfig = await loadAwsConfig(configPath);
       break;
-    case 'prod': // TODO: Remove legacy support
-      cachedConfig = await loadAwsConfig('/medplum/prod/');
-      break;
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }

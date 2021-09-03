@@ -150,7 +150,7 @@ export class BackEnd extends cdk.Construct {
     // Task Containers
     const serviceContainer = taskDefinition.addContainer('MedplumTaskDefinition', {
       image: ecs.ContainerImage.fromEcrRepository(serviceRepo, 'latest'),
-      command: [name],
+      command: [`aws:/medplum/${name}/`],
       logging: logDriver,
     });
 
