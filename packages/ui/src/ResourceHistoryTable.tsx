@@ -1,9 +1,8 @@
 import { Bundle, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
-import { Avatar } from './Avatar';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
-import { ResourceName } from './ResourceName';
+import { ResourceBadge } from './ResourceBadge';
 import { formatDateTime } from './utils/format';
 
 export interface ResourceHistoryTableProps {
@@ -31,7 +30,6 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps) {
     <table className="table">
       <thead>
         <tr>
-          <th />
           <th>Author</th>
           <th>Date</th>
           <th>Version</th>
@@ -54,10 +52,7 @@ function HistoryRow(props: HistoryRowProps) {
   return (
     <tr>
       <td>
-        <Avatar size="small" value={props.version.meta?.author} />
-      </td>
-      <td>
-        <ResourceName value={props.version.meta?.author} link={true} />
+        <ResourceBadge value={props.version.meta?.author} link={true} />
       </td>
       <td>
         {formatDateTime(props.version.meta?.lastUpdated as string | Date)}
