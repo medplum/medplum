@@ -1,4 +1,4 @@
-import { assertOk, BundleEntry, Extension, Operator, parseFhirPath, Resource, stringify, Subscription } from '@medplum/core';
+import { assertOk, BundleEntry, Extension, Filter, Operator, parseFhirPath, Resource, SearchRequest, stringify, Subscription } from '@medplum/core';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
@@ -151,22 +151,43 @@ function matchesCriteria(resource: Resource, subscription: Subscription): boolea
     return false;
   }
 
+  return matchesSearchRequest(resource, searchRequest);
+}
+
+/**
+ * Determines if the resource matches the search request.
+ * @param resource The resource that was created or updated.
+ * @param searchRequest The subscription criteria as a search request.
+ * @returns True if the resource satisfies the search request.
+ */
+function matchesSearchRequest(resource: Resource, searchRequest: SearchRequest): boolean {
   if (searchRequest.filters) {
     for (const filter of searchRequest.filters) {
-      const searchParam = getSearchParameter(searchRequest.resourceType, filter.code);
-      if (searchParam) {
-        const fhirPath = parseFhirPath(searchParam.expression as string);
-        const values = fhirPath.eval(resource);
-        const value = values.length > 0 ? values[0] : undefined;
-        if (value !== filter.value) {
-          logger.debug(`Ignore rest hook for filter value (wanted "${filter.value}", received "${value})"`);
-          return false;
-        }
+      if (!matchesSearchFilter(resource, searchRequest, filter)) {
+        return false;
       }
     }
   }
+  return true;
+}
 
-  // The resource matches all of the subscription criteria.
+/**
+ * Determines if the resource matches the search filter.
+ * @param resource The resource that was created or updated.
+ * @param filter One of the filters of a subscription criteria.
+ * @returns True if the resource satisfies the search filter.
+ */
+function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
+  const searchParam = getSearchParameter(searchRequest.resourceType, filter.code);
+  if (searchParam) {
+    const fhirPath = parseFhirPath(searchParam.expression as string);
+    const values = fhirPath.eval(resource);
+    const value = values.length > 0 ? values[0] : undefined;
+    if (value !== filter.value) {
+      logger.debug(`Ignore rest hook for filter value (wanted "${filter.value}", received "${value})"`);
+      return false;
+    }
+  }
   return true;
 }
 
