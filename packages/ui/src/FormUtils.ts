@@ -199,7 +199,7 @@ function setValue(
   fullName: string,
   value: string): void {
 
-  if (!fullName) {
+  if (!fullName || !value) {
     return;
   }
 

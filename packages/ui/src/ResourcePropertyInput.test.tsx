@@ -179,7 +179,8 @@ describe('ResourcePropertyInput', () => {
   test('Renders CodeableConcept property', () => {
     const maritalStatus: CodeableConcept = {
       coding: [{
-        code: 'M'
+        code: 'M',
+        display: 'Married'
       }]
     };
 
@@ -189,7 +190,7 @@ describe('ResourcePropertyInput', () => {
       name: 'maritalStatus',
       defaultValue: maritalStatus
     });
-    expect(screen.getByTestId('codeable-concept-input')).not.toBeUndefined();
+    expect(screen.getByText('Married')).not.toBeUndefined();
   });
 
   test('Renders HumanName property', () => {
