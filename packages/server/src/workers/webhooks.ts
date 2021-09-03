@@ -9,6 +9,7 @@ import { getSearchParameter, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 
 export interface WebhookJobData {
+  readonly subscriptionId: string;
   readonly resourceType: string;
   readonly id: string;
   readonly versionId: string;
@@ -53,10 +54,10 @@ export function initWebhookWorker(config: MedplumRedisConfig): void {
  * Webhook job processor.
  * @param job BullMQ job definition.
  */
-async function webhookProcessor(job: Job<WebhookJobData>): Promise<void> {
+export async function webhookProcessor(job: Job<WebhookJobData>): Promise<void> {
   logger.debug(`Webhook processor job ${job.id}`);
   try {
-    await sendSubscriptions(job.data);
+    await sendWebhook(job.data);
   } catch (ex) {
     logger.error(`Subscrition failed with ${ex}`);
   }
@@ -86,10 +87,94 @@ export async function closeWebhookWorker(): Promise<void> {
 }
 
 /**
+ * Adds all subscription jobs for a given resource.
+ *
+ * There are a few important structural considerations:
+ * 1) One resource change can spawn multiple subscription jobs.
+ * 2) Subscription jobs can fail, and must be retried independently.
+ * 3) Subscriptions should be evaluated at the time of the resource change.
+ *
+ * So, when a resource changes (create or update), we evaluate all subscriptions
+ * at that moment in time.  For each matching subscription, we enqueue the job.
+ * The only purpose of the job is to make the outbound HTTP request,
+ * not to re-evaluate the subscription.
+ *
+ * @param resource The resource that was created or updated.
+ */
+export async function addSubscriptionJobs(resource: Resource): Promise<void> {
+  const subscriptions = await getSubscriptions();
+  logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
+  for (const subscription of subscriptions) {
+    if (matchesCriteria(resource, subscription)) {
+      addWebhookJobData({
+        subscriptionId: subscription.id as string,
+        resourceType: resource.resourceType,
+        id: resource.id as string,
+        versionId: resource.meta?.versionId as string
+      });
+    }
+  }
+}
+
+/**
+ * Determines if the resource matches the subscription criteria.
+ * @param resource The resource that was created or updated.
+ * @param subscription The subscription.
+ * @returns True if the resource matches the subscription criteria.
+ */
+function matchesCriteria(resource: Resource, subscription: Subscription): boolean {
+  if (resource.meta?.project !== subscription.meta?.project) {
+    logger.debug('Ignore resource in different project');
+    return false;
+  }
+
+  if (subscription.channel?.type !== 'rest-hook') {
+    logger.debug('Ignore non-webhook subscription');
+    return false;
+  }
+
+  const url = subscription.channel?.endpoint;
+  if (!url) {
+    logger.debug(`Ignore rest hook missing URL`);
+    return false;
+  }
+
+  const criteria = subscription.criteria;
+  if (!criteria) {
+    logger.debug(`Ignore rest hook missing criteria`);
+    return false;
+  }
+
+  const searchRequest = parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
+  if (resource.resourceType !== searchRequest.resourceType) {
+    logger.debug(`Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`);
+    return false;
+  }
+
+  if (searchRequest.filters) {
+    for (const filter of searchRequest.filters) {
+      const searchParam = getSearchParameter(searchRequest.resourceType, filter.code);
+      if (searchParam) {
+        const fhirPath = parseFhirPath(searchParam.expression as string);
+        const values = fhirPath.eval(resource);
+        const value = values.length > 0 ? values[0] : undefined;
+        if (value !== filter.value) {
+          logger.debug(`Ignore rest hook for filter value (wanted "${filter.value}", received "${value})"`);
+          return false;
+        }
+      }
+    }
+  }
+
+  // The resource matches all of the subscription criteria.
+  return true;
+}
+
+/**
  * Adds a webhook job to the queue.
  * @param job The webhook job details.
  */
-export function addWebhookJobData(job: WebhookJobData): void {
+function addWebhookJobData(job: WebhookJobData): void {
   logger.debug(`Adding Webhook job`);
   if (queue) {
     queue.add(jobName, job);
@@ -99,28 +184,7 @@ export function addWebhookJobData(job: WebhookJobData): void {
 }
 
 /**
- * Sends updates to all subscriptions for a resource that changed.
- * This should be called on both 'create' and 'update'.
- * Subscriptions are lazy-loaded once per repository.
- * @param resource The resource that changed.
- */
-export async function sendSubscriptions(job: WebhookJobData): Promise<void> {
-  const [outcome, resource] = await repo.readVersion(job.resourceType, job.id, job.versionId);
-  assertOk(outcome);
-
-  const subscriptions = await getSubscriptions();
-  logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
-  for (const subscription of subscriptions) {
-    if (subscription.channel?.type === 'rest-hook') {
-      sendRestHook(subscription, resource as Resource);
-    } else {
-      logger.debug(`Ignore subscription type "${subscription.channel?.type}"`);
-    }
-  }
-}
-
-/**
- * Lazy loads the list of all subscriptions in this repository.
+ * Loads the list of all subscriptions in this repository.
  * @returns The list of all subscriptions in this repository.
  */
 async function getSubscriptions(): Promise<Subscription[]> {
@@ -141,38 +205,20 @@ async function getSubscriptions(): Promise<Subscription[]> {
  * @param subscription The FHIR subscription resource.
  * @param resource The resource that changed.
  */
-async function sendRestHook(subscription: Subscription, resource: Resource): Promise<void> {
-  const url = subscription.channel?.endpoint;
+async function sendWebhook(jobData: WebhookJobData): Promise<void> {
+  const { subscriptionId, resourceType, id, versionId } = jobData;
+
+  const [subscriptionOutcome, subscription] = await repo.readResource<Subscription>('Subscription', subscriptionId);
+  assertOk(subscriptionOutcome);
+
+  const [resourceOutcome, resource] = await repo.readVersion(resourceType, id, versionId);
+  assertOk(resourceOutcome);
+
+  const url = subscription?.channel?.endpoint as string;
   if (!url) {
+    // This can happen if a user updates the Subscription after the job is created.
     logger.debug(`Ignore rest hook missing URL`);
     return;
-  }
-
-  const criteria = subscription.criteria;
-  if (!criteria) {
-    logger.debug(`Ignore rest hook missing criteria`);
-    return;
-  }
-
-  const searchRequest = parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
-  if (resource.resourceType !== searchRequest.resourceType) {
-    logger.debug(`Ignore rest hook for different resourceType`);
-    return;
-  }
-
-  if (searchRequest.filters) {
-    for (const filter of searchRequest.filters) {
-      const searchParam = getSearchParameter(searchRequest.resourceType, filter.code);
-      if (searchParam) {
-        const fhirPath = parseFhirPath(searchParam.expression as string);
-        const values = fhirPath.eval(resource);
-        const value = values.length > 0 ? values[0] : undefined;
-        if (value !== filter.value) {
-          logger.debug(`Ignore rest hook for filter value (expected "${filter.value}", received "${value})`);
-          return;
-        }
-      }
-    }
   }
 
   const headers: HeadersInit = {
@@ -182,7 +228,7 @@ async function sendRestHook(subscription: Subscription, resource: Resource): Pro
   const body = stringify(resource);
 
   const secret = getExtensionValue(
-    subscription,
+    subscription as Subscription,
     'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
 
   if (secret) {
@@ -196,6 +242,7 @@ async function sendRestHook(subscription: Subscription, resource: Resource): Pro
 
   } catch (error) {
     logger.info('Webhook error: ' + error);
+    throw error;
   }
 }
 
