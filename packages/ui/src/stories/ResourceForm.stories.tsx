@@ -57,6 +57,19 @@ export const DiagnosticReport = () => (
   </Document>
 );
 
+export const Observation = () => (
+  <Document>
+    <ResourceForm
+      resource={{
+        resourceType: 'Observation'
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const Questionnaire = () => (
   <Document>
     <ResourceForm

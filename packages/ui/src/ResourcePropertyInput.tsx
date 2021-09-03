@@ -68,7 +68,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     case PropertyType.Attachment:
       return <AttachmentInput name={name} defaultValue={value} />;
     case PropertyType.CodeableConcept:
-      return <CodeableConceptInput name={name} defaultValue={value} />;
+      return <CodeableConceptInput property={property} name={name} defaultValue={value} />;
     case PropertyType.Coding:
       return <CodingInput property={property} name={name} defaultValue={value} />;
     case PropertyType.ContactPoint:

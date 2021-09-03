@@ -158,7 +158,7 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
     case PropertyType.Attachment:
       return <AttachmentInput name={name} />;
     case PropertyType.CodeableConcept:
-      return <CodeableConceptInput name={name} />;
+      return <CodeableConceptInput property={property} name={name} />;
     case PropertyType.Coding:
       return <CodingInput property={property} name={name} defaultValue={initial?.valueCoding} />;
     case PropertyType.ContactPoint:
