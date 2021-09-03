@@ -233,7 +233,8 @@ export function SearchControl(props: SearchControlProps) {
       data-testid="search-control"
     >
       <div className="medplum-search-control-toolbar">
-        <div style={{ display: 'flex' }}>
+        <div>
+          <h1>{resourceType}</h1>
           <Button
             testid="fields-button"
             size="small"
@@ -251,7 +252,7 @@ export function SearchControl(props: SearchControlProps) {
           >New...</Button>
         </div>
         {lastResult && (
-          <div style={{ display: 'flex' }}>
+          <div>
             <span style={{ lineHeight: '28px', padding: '2px 6px', fontSize: '12px' }}>
               {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of {lastResult.total}
             </span>

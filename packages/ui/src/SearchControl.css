@@ -19,6 +19,14 @@
 
 .medplum-search-control-toolbar>div {
   display: flex;
+  align-items: center;
+}
+
+.medplum-search-control-toolbar h1 {
+  font-size: 14px;
+  font-weight: bold;
+  padding: 0 4px 0 1px;
+  margin: 0 4px 0 1px;
 }
 
 /*
