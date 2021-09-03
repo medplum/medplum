@@ -236,7 +236,6 @@ export class MedplumClient extends EventTarget {
   private handleLoginResponse(response: LoginResponse): ProfileResource {
     this.setAccessToken(response.accessToken);
     this.setRefreshToken(response.refreshToken);
-    // this.setUser(response.user);
     this.setProfile(response.profile);
     this.dispatchEvent({ type: 'change' });
     return response.profile;
