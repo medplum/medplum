@@ -1,0 +1,5 @@
+.medplum-resource-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

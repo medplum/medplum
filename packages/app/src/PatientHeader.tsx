@@ -14,19 +14,29 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
   }
   return (
     <div className="medplum-patient-header">
-      <Avatar value={patient} color={getDefaultColor(patient)} />
+      <Avatar value={patient} size="large" color={getDefaultColor(patient)} />
       <dl>
         <dt>Name</dt>
         <dd><HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} /></dd>
       </dl>
-      <dl>
-        <dt>DoB</dt>
-        <dd>{patient.birthDate}</dd>
-      </dl>
-      <dl>
-        <dt>Age</dt>
-        <dd>{getAge(patient)}</dd>
-      </dl>
+      {patient.birthDate && (
+        <>
+          <dl>
+            <dt>DoB</dt>
+            <dd>{patient.birthDate}</dd>
+          </dl>
+          <dl>
+            <dt>Age</dt>
+            <dd>{getAge(patient)}</dd>
+          </dl>
+        </>
+      )}
+      {patient.gender && (
+          <dl>
+            <dt>Gender</dt>
+            <dd>{patient.gender}</dd>
+          </dl>
+      )}
       {patient.identifier?.map(identifier => (
         <dl key={identifier.system}>
           <dt>{identifier.system}</dt>

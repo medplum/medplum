@@ -1,8 +1,8 @@
 .medplum-avatar {
   padding: 0;
-  width: 40px;
-  height: 40px;
-  line-height: 40px;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
   user-select: none;
   border-radius: 50%;
   overflow: hidden;
