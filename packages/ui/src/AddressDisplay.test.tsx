@@ -1,13 +1,16 @@
+import { render, screen } from '@testing-library/react';
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { AddressDisplay } from './AddressDisplay';
 
-test('AddressDisplay renders', () => {
-  const div = document.createElement('div');
-  ReactDOM.render(<AddressDisplay value={{ line: ['123 main st'], city: 'Happy' }} />, div);
-});
+describe('AddressDisplay', () => {
 
-test('AddressDisplay renders undefined value', () => {
-  const div = document.createElement('div');
-  ReactDOM.render(<AddressDisplay />, div);
+  test('Renders', () => {
+    render(<AddressDisplay value={{ line: ['123 main st'], city: 'Happy' }} />);
+    expect(screen.getByText('123 main st, Happy')).not.toBeUndefined();
+  });
+
+  test('Renders undefined value', () => {
+    render(<AddressDisplay />);
+  });
+
 });

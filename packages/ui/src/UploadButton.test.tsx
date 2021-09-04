@@ -31,96 +31,100 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-beforeAll(async () => {
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-});
+describe('UploadButton', () => {
 
-const setup = (args?: UploadButtonProps) => {
-  return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <UploadButton onUpload={attachment => console.log('upload', attachment)} {...args} />
-    </MedplumProvider>
-  );
-};
-
-test('UploadButton null files', async () => {
-  const results: Attachment[] = [];
-
-  setup({
-    onUpload: (attachment: Attachment) => {
-      results.push(attachment);
-    }
+  beforeAll(async () => {
+    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('upload-file-input'), { target: {} });
+  const setup = (args?: UploadButtonProps) => {
+    return render(
+      <MedplumProvider medplum={medplum} router={mockRouter}>
+        <UploadButton onUpload={attachment => console.log('upload', attachment)} {...args} />
+      </MedplumProvider>
+    );
+  };
+
+  test('Null files', async () => {
+    const results: Attachment[] = [];
+
+    setup({
+      onUpload: (attachment: Attachment) => {
+        results.push(attachment);
+      }
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('upload-file-input'), { target: {} });
+    });
+
+    expect(results.length).toEqual(0);
   });
 
-  expect(results.length).toEqual(0);
-});
+  test('Null file element', async () => {
+    const results: Attachment[] = [];
 
-test('UploadButton null file element', async () => {
-  const results: Attachment[] = [];
+    setup({
+      onUpload: (attachment: Attachment) => {
+        results.push(attachment);
+      }
+    });
 
-  setup({
-    onUpload: (attachment: Attachment) => {
-      results.push(attachment);
-    }
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files: [null] } });
+    });
+
+    expect(results.length).toEqual(0);
   });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files: [null] } });
+  test('File without filename', async () => {
+    const results: Attachment[] = [];
+
+    setup({
+      onUpload: (attachment: Attachment) => {
+        results.push(attachment);
+      }
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files: [{}] } });
+    });
+
+    expect(results.length).toEqual(0);
   });
 
-  expect(results.length).toEqual(0);
-});
+  test('Upload media', async () => {
+    const results: Attachment[] = [];
 
-test('UploadButton file without filename', async () => {
-  const results: Attachment[] = [];
+    setup({
+      onUpload: (attachment: Attachment) => {
+        results.push(attachment);
+      }
+    });
 
-  setup({
-    onUpload: (attachment: Attachment) => {
-      results.push(attachment);
-    }
+    await act(async () => {
+      const files = [
+        new File(['hello'], 'hello.txt', { type: 'text/plain' })
+      ];
+      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files } });
+    });
+
+    expect(results.length).toEqual(1);
   });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files: [{}] } });
-  });
+  test('Click button', async () => {
+    const results: Attachment[] = [];
 
-  expect(results.length).toEqual(0);
-});
+    setup({
+      onUpload: (attachment: Attachment) => {
+        results.push(attachment);
+      }
+    });
 
-test('UploadButton upload media', async () => {
-  const results: Attachment[] = [];
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('upload-button'));
+    });
 
-  setup({
-    onUpload: (attachment: Attachment) => {
-      results.push(attachment);
-    }
-  });
-
-  await act(async () => {
-    const files = [
-      new File(['hello'], 'hello.txt', { type: 'text/plain' })
-    ];
-    fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files } });
-  });
-
-  expect(results.length).toEqual(1);
-});
-
-test('UploadButton click button', async () => {
-  const results: Attachment[] = [];
-
-  setup({
-    onUpload: (attachment: Attachment) => {
-      results.push(attachment);
-    }
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('upload-button'));
   });
 
 });
