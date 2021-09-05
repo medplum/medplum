@@ -1,4 +1,4 @@
-import { buildTypeName, ElementDefinition, IndexedStructureDefinition, Resource, TypeSchema } from '@medplum/core';
+import { buildTypeName, ElementDefinition, IndexedStructureDefinition, Resource } from '@medplum/core';
 
 let nextKeyId = 1;
 
