@@ -234,7 +234,13 @@ export function SearchControl(props: SearchControlProps) {
     >
       <div className="medplum-search-control-toolbar">
         <div>
-          <h1>{resourceType}</h1>
+          <h1>
+            <a
+              href={`https://www.hl7.org/fhir/${resourceType.toLowerCase()}.html`}
+              target="_blank"
+              rel="noopener"
+            >{resourceType}</a>
+          </h1>
           <Button
             testid="fields-button"
             size="small"
