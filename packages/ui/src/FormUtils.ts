@@ -174,7 +174,7 @@ function setValue(
   let i = 0;
 
   while (i < nameParts.length) {
-    const typeDef = schema.types[typeName] as TypeSchema;
+    const typeDef = schema.types[typeName];
     const propertyName = nameParts[i];
     const property = typeDef.properties[propertyName];
     if (!property) {
@@ -190,7 +190,7 @@ function setValue(
       if (i === nameParts.length - 1) {
         // This is the last name part, so set the value.
         if (valueObj?.__removed) {
-          (array as any[]).splice(array.indexOf(element), 1);
+          array.splice(array.indexOf(element), 1);
         } else {
           Object.assign(element, valueObj);
         }
