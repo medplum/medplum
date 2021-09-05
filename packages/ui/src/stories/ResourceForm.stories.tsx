@@ -11,8 +11,9 @@ export default {
 export const Patient = () => (
   <Document>
     <ResourceForm
-      resourceType="Patient"
-      id={process.env.SAMPLE_PATIENT_ID}
+      defaultValue={{
+        reference: `Patient/${process.env.SAMPLE_PATIENT_ID}`
+      }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -23,8 +24,9 @@ export const Patient = () => (
 export const Organization = () => (
   <Document>
     <ResourceForm
-      resourceType="Organization"
-      id={process.env.SAMPLE_ORGANIZATION_ID}
+      defaultValue={{
+        reference: `Organization/${process.env.SAMPLE_ORGANIZATION_ID}`
+      }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -35,8 +37,9 @@ export const Organization = () => (
 export const Practitioner = () => (
   <Document>
     <ResourceForm
-      resourceType="Practitioner"
-      id={process.env.SAMPLE_PRACTITIONER_ID}
+      defaultValue={{
+        reference: `Practitioner/${process.env.SAMPLE_PRACTITIONER_ID}`
+      }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -47,7 +50,7 @@ export const Practitioner = () => (
 export const DiagnosticReport = () => (
   <Document>
     <ResourceForm
-      resource={{
+      defaultValue={{
         resourceType: 'DiagnosticReport'
       }}
       onSubmit={(formData: any) => {
@@ -60,7 +63,7 @@ export const DiagnosticReport = () => (
 export const Observation = () => (
   <Document>
     <ResourceForm
-      resource={{
+      defaultValue={{
         resourceType: 'Observation'
       }}
       onSubmit={(formData: any) => {
@@ -73,7 +76,7 @@ export const Observation = () => (
 export const Questionnaire = () => (
   <Document>
     <ResourceForm
-      resource={{
+      defaultValue={{
         resourceType: 'Questionnaire'
       }}
       onSubmit={(formData: any) => {
@@ -86,7 +89,7 @@ export const Questionnaire = () => (
 export const Subscription = () => (
   <Document>
     <ResourceForm
-      resource={{
+      defaultValue={{
         resourceType: 'Subscription'
       }}
       onSubmit={(formData: any) => {
