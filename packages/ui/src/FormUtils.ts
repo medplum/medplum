@@ -48,15 +48,9 @@ export function keyReplacer(k: string, v: string) {
  * @param form The HTML form element.
  */
 export function parseForm(form: HTMLFormElement): Record<string, string> {
-  if (!form || !form.elements) {
-    throw new Error('Invalid form');
-  }
-
   const result: Record<string, string> = {};
 
-  for (let i = 0; i < form.elements.length; i++) {
-    const element = form.elements[i] as HTMLElement;
-
+  for (const element of Array.from(form.elements)) {
     if (element instanceof HTMLInputElement) {
       parseInputElement(result, element);
 
@@ -99,9 +93,6 @@ function parseInputElement(result: Record<string, string>, el: HTMLInputElement)
  * @param el The select element.
  */
 function parseSelectElement(result: Record<string, string>, el: HTMLSelectElement): void {
-  if (el.selectedOptions.length === 0) {
-    return;
-  }
   result[el.name] = el.value;
 }
 
@@ -121,14 +112,9 @@ export function parseResourceForm(
 
   const result: Resource = (initial ? { ...initial } : {}) as Resource;
 
-  for (let i = 0; i < form.elements.length; i++) {
-    const element = form.elements[i] as HTMLElement;
-
+  for (const element of Array.from(form.elements)) {
     if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
       parseResourceInputElement(schema, resourceType, result, element);
-
-    } else if (element instanceof HTMLSelectElement) {
-      parseResourceSelectElement(schema, resourceType, result, element);
     }
   }
 
@@ -164,27 +150,6 @@ function parseResourceInputElement(
 }
 
 /**
- * Parses an HTML select element.
- * Sets the name/value pair if one is selected.
- * @param schema The schema / indexed structure definition.
- * @param resourceType The base resource type.
- * @param result The result builder.
- * @param el The select element.
- */
-function parseResourceSelectElement(
-  schema: IndexedStructureDefinition,
-  resourceType: string,
-  result: Resource,
-  el: HTMLSelectElement): void {
-
-  if (el.selectedOptions.length === 0) {
-    return;
-  }
-
-  setValue(schema, resourceType, result, el.name, el.value);
-}
-
-/**
  *
  * @param schema The schema / indexed structure definition.
  * @param resourceType The base resource type.
@@ -210,30 +175,22 @@ function setValue(
 
   while (i < nameParts.length) {
     const typeDef = schema.types[typeName];
-    if (!typeDef) {
-      return;
-    }
-
     const propertyName = nameParts[i];
     const property = typeDef.properties[propertyName];
     if (!property) {
       return;
     }
 
-    const valueObj = isStringProperty(property) ? value : parseJson(value);
+    const valueObj = parseValue(property, value);
     if (property.max === '*') {
       // This is an array property.
       // Use the next name part to find the correct element in the array.
-      let array = base[propertyName];
-      if (!array) {
-        array = base[propertyName] = [];
-      }
-      const arrayKey = nameParts[++i];
-      const element = getEntryByKey(array, arrayKey);
+      const array = getArrayOrCreate(base, propertyName);
+      const element = getEntryByKey(array, nameParts[++i]);
       if (i === nameParts.length - 1) {
         // This is the last name part, so set the value.
         if (valueObj?.__removed) {
-          (array as any[]).splice(array.indexOf(element), 1);
+          array.splice(array.indexOf(element), 1);
         } else {
           Object.assign(element, valueObj);
         }
@@ -262,6 +219,14 @@ function setValue(
   }
 }
 
+function getArrayOrCreate(base: any, propertyName: string): any[] {
+  let array = base[propertyName];
+  if (!array) {
+    array = base[propertyName] = [];
+  }
+  return array;
+}
+
 function getEntryByKey(array: any[], key: string) {
   const existing = array.find(e => e.__key === key);
   if (existing) {
@@ -270,6 +235,10 @@ function getEntryByKey(array: any[], key: string) {
   const created = { __key: key };
   array.push(created);
   return created;
+}
+
+function parseValue(elementDefinition: ElementDefinition, str: string): any {
+  return isStringProperty(elementDefinition) ? str : parseJson(str);
 }
 
 function parseJson(str: string): any {

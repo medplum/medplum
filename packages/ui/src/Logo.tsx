@@ -8,6 +8,7 @@ export interface LogoProps {
 export function Logo(props: LogoProps) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 491 491" style={{ width: props.size, height: props.size }}>
+      <title>Medplum Logo</title>
       <path fill={props.fill || "#ad7136"} d="M282 67c6-16 16-29 29-40L289 0c-22 17-37 41-43 68l17 23 19-24z" />
       <path fill={props.fill || "#654b87"} d="M311 63c-17 0-33 4-48 11-16-7-32-11-49-11-87 0-158 96-158 214s71 214 158 214c17 0 33-4 49-11 15 7 31 11 48 11 87 0 158-96 158-214S398 63 311 63z" />
       <path fill={props.fill || "#463068"} d="M231 489l-17 2c-87 0-158-96-158-214S127 63 214 63l17 1c-39 12-70 102-70 213s31 201 70 212z" />

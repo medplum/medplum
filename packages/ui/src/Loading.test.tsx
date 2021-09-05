@@ -1,8 +1,12 @@
+import { render, screen } from '@testing-library/react';
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { Loading } from './Loading';
 
-test('Loading renders', () => {
-  const div = document.createElement('div');
-  ReactDOM.render(<Loading />, div);
+describe('Loading', () => {
+
+  test('Renders', () => {
+    render(<Loading />);
+    expect(screen.getByRole('progressbar')).not.toBeUndefined();
+  });
+
 });

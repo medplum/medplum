@@ -59,7 +59,7 @@ export function AddressInput(props: AddressInputProps) {
         <tr>
           <td>
             <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
-            <select defaultValue={value?.use} onChange={e => setUse(e.currentTarget.value)}>
+            <select data-testid="address-use" defaultValue={value?.use} onChange={e => setUse(e.currentTarget.value)}>
               <option></option>
               <option>home</option>
               <option>mobile</option>
@@ -69,7 +69,7 @@ export function AddressInput(props: AddressInputProps) {
             </select>
           </td>
           <td>
-            <select defaultValue={value?.type} onChange={e => setType(e.currentTarget.value)}>
+            <select data-testid="address-type" defaultValue={value?.type} onChange={e => setType(e.currentTarget.value)}>
               <option></option>
               <option>postal</option>
               <option>physical</option>
@@ -77,19 +77,44 @@ export function AddressInput(props: AddressInputProps) {
             </select>
           </td>
           <td>
-            <input type="text" defaultValue={getLine(value, 0)} onChange={e => setLine1(e.currentTarget.value)} />
+            <input
+              type="text"
+              placeholder="Line 1"
+              defaultValue={getLine(value, 0)}
+              onChange={e => setLine1(e.currentTarget.value)}
+            />
           </td>
           <td>
-            <input type="text" defaultValue={getLine(value, 1)} onChange={e => setLine2(e.currentTarget.value)} />
+            <input
+              type="text"
+              placeholder="Line 2"
+              defaultValue={getLine(value, 1)}
+              onChange={e => setLine2(e.currentTarget.value)}
+            />
           </td>
           <td>
-            <input type="text" defaultValue={value.city} onChange={e => setCity(e.currentTarget.value)} />
+            <input
+              type="text"
+              placeholder="City"
+              defaultValue={value.city}
+              onChange={e => setCity(e.currentTarget.value)}
+            />
           </td>
           <td>
-            <input type="text" defaultValue={value.state} onChange={e => setState(e.currentTarget.value)} />
+            <input
+              type="text"
+              placeholder="State"
+              defaultValue={value.state}
+              onChange={e => setState(e.currentTarget.value)}
+            />
           </td>
           <td>
-            <input type="text" defaultValue={value.postalCode} onChange={e => setPostalCode(e.currentTarget.value)} />
+            <input
+              type="text"
+              placeholder="Postal Code"
+              defaultValue={value.postalCode}
+              onChange={e => setPostalCode(e.currentTarget.value)}
+            />
           </td>
         </tr>
       </tbody>

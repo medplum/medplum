@@ -16,7 +16,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
   function addAttachment(attachment: Attachment) {
     const copy = values.slice();
     copy.push(attachment);
-    setValues(copy);
+    setValues(ensureKeys(copy));
   }
 
   return (
