@@ -8,6 +8,7 @@ import { createBatch } from './batch';
 import { binaryRouter } from './binary';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
+import { getCapabilityStatement } from './metadata';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { validateResource } from './schema';
@@ -43,6 +44,11 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
     return res.json(data);
   };
   next();
+});
+
+// Metadata / CapabilityStatement
+fhirRouter.get('/metadata', (req: Request, res: Response) => {
+  res.status(200).json(getCapabilityStatement());
 });
 
 // Binary routes
