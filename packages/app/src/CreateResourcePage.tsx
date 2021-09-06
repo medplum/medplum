@@ -21,7 +21,7 @@ export function CreateResourcePage() {
       </div>
       <Document>
         <ResourceForm
-          resource={{ resourceType } as Resource}
+          defaultValue={{ resourceType } as Resource}
           onSubmit={(formData: Resource) => {
             medplum.create(formData)
               .then(result => history.push('/' + result.resourceType + '/' + result.id));

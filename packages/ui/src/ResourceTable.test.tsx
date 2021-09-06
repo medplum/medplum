@@ -1,8 +1,8 @@
 import { Bundle, MedplumClient, Practitioner, User } from '@medplum/core';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
-import { ResourceForm, ResourceFormProps } from './ResourceForm';
+import { ResourceTable, ResourceTableProps } from './ResourceTable';
 
 const user: User = {
   resourceType: 'User',
@@ -98,37 +98,29 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-describe('ResourceForm', () => {
+describe('ResourceTable', () => {
 
   beforeAll(async () => {
     await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  function setup(props: ResourceFormProps) {
+  function setup(props: ResourceTableProps) {
     return render(
       <MedplumProvider medplum={medplum} router={mockRouter}>
-        <ResourceForm {...props} />
+        <ResourceTable {...props} />
       </MedplumProvider>
     );
   }
 
-  test('Error on missing resource type', async () => {
-    const onSubmit = jest.fn();
-
-    setup({
-      defaultValue: {},
-      onSubmit
-    });
-  });
+  // test('Error on missing resource type', async () => {
+  //   expect(() => setup({ value: {} })).rejects.toEqual('Missing reference');
+  // });
 
   test('Renders empty Practitioner form', async () => {
-    const onSubmit = jest.fn();
-
     setup({
-      defaultValue: {
+      value: {
         resourceType: 'Practitioner'
-      },
-      onSubmit
+      }
     });
 
     await act(async () => {
@@ -140,13 +132,10 @@ describe('ResourceForm', () => {
   });
 
   test('Renders Practitioner resource', async () => {
-    const onSubmit = jest.fn();
-
     setup({
-      defaultValue: {
+      value: {
         reference: 'Practitioner/123'
-      },
-      onSubmit
+      }
     });
 
     await act(async () => {
@@ -155,27 +144,6 @@ describe('ResourceForm', () => {
 
     const control = screen.getByText('Resource Type');
     expect(control).not.toBeUndefined();
-  });
-
-  test('Submit form', async () => {
-    const onSubmit = jest.fn();
-
-    setup({
-      defaultValue: {
-        resourceType: 'Practitioner'
-      },
-      onSubmit
-    });
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
-    });
-
-    expect(onSubmit).toBeCalled();
   });
 
 });

@@ -10,12 +10,6 @@ export default {
 
 export const Patient = () => (
   <Document>
-    <ResourceTable resourceType="Patient" id={process.env.SAMPLE_PATIENT_ID} />
-  </Document>
-);
-
-export const User = () => (
-  <Document>
-    <ResourceTable resourceType="User" id={process.env.SAMPLE_USER_ID} />
+    <ResourceTable value={{ reference: `Patient/${process.env.SAMPLE_PATIENT_ID}` }} />
   </Document>
 );

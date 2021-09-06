@@ -1,8 +1,9 @@
-import { getPropertyDisplayName, IndexedStructureDefinition, Resource } from '@medplum/core';
+import { getPropertyDisplayName, IndexedStructureDefinition, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';
 import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+import { useResource } from './useResource';
 
 const DEFAULT_IGNORED_PROPERTIES = [
   'id',
@@ -16,29 +17,19 @@ const DEFAULT_IGNORED_PROPERTIES = [
 ];
 
 export interface ResourceTableProps {
-  resource?: Resource;
-  resourceType?: string;
-  id?: string;
+  value: Resource | Reference;
 }
 
 export function ResourceTable(props: ResourceTableProps) {
   const medplum = useMedplum();
+  const value = useResource(props.value);
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
-  const [value, setValue] = useState<Resource | undefined>(props.resource);
 
   useEffect(() => {
-    const resourceType = props.resourceType || props.resource?.resourceType;
-    if (!resourceType) {
-      throw new Error('Missing resourceType');
+    if (value) {
+      medplum.getTypeDefinition(value.resourceType).then(setSchema);
     }
-
-    medplum.getTypeDefinition(resourceType).then(typeSchema => setSchema(typeSchema));
-
-    if (!props.resource && props.resourceType && props.id) {
-      medplum.read(props.resourceType, props.id).then(result => setValue(result));
-    }
-
-  }, [props.resource, props.resourceType, props.id]);
+  }, [value]);
 
   if (!schema || !value) {
     return <div>Loading...</div>

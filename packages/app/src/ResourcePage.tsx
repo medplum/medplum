@@ -136,11 +136,11 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
   switch (props.name) {
     case 'details':
       return (
-        <ResourceTable resource={props.resource} />
+        <ResourceTable value={props.resource} />
       );
     case 'edit':
       return (
-        <ResourceForm resource={props.resource} onSubmit={props.onSubmit} />
+        <ResourceForm defaultValue={props.resource} onSubmit={props.onSubmit} />
       );
     case 'history':
       return (

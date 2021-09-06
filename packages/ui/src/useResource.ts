@@ -24,7 +24,7 @@ export function useResource(value: Reference | Resource | undefined): Resource |
     if (value) {
       if ('resourceType' in value) {
         setResource(value);
-      } else {
+      } else if ('reference' in value) {
         if (value.reference === 'system') {
           setResource(system);
         } else {

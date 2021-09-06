@@ -1,10 +1,11 @@
-import { getPropertyDisplayName, IndexedStructureDefinition, Resource } from '@medplum/core';
+import { getPropertyDisplayName, IndexedStructureDefinition, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
 import { FormSection } from './FormSection';
 import { parseResourceForm } from './FormUtils';
 import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
+import { useResource } from './useResource';
 
 const DEFAULT_IGNORED_PROPERTIES = [
   'id',
@@ -18,38 +19,22 @@ const DEFAULT_IGNORED_PROPERTIES = [
 ];
 
 export interface ResourceFormProps {
-  resource?: Resource;
-  resourceType?: string;
-  id?: string;
+  defaultValue: Resource | Reference;
   onSubmit: (formData: any) => void;
 }
 
 export function ResourceForm(props: ResourceFormProps) {
   const medplum = useMedplum();
+  const defaultValue = useResource(props.defaultValue);
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
-  const [value, setValue] = useState<Resource | undefined>(props.resource);
-  const [error, setError] = useState<string>();
+  const [value, setValue] = useState<Resource | undefined>();
 
   useEffect(() => {
-    const resourceType = props.resourceType || props.resource?.resourceType;
-    if (!resourceType) {
-      setError('Missing resourceType');
-      return;
+    if (defaultValue) {
+      setValue(defaultValue);
+      medplum.getTypeDefinition(defaultValue.resourceType).then(setSchema);
     }
-
-    medplum.getTypeDefinition(resourceType).then(typeSchema => setSchema(typeSchema));
-
-    if (!props.resource && props.resourceType && props.id) {
-      medplum.read(props.resourceType, props.id).then(result => setValue(result));
-    }
-
-  }, [props.resource, props.resourceType, props.id]);
-
-  if (error) {
-    return (
-      <div>{error}</div>
-    );
-  }
+  }, [defaultValue]);
 
   if (!schema || !value) {
     return (
