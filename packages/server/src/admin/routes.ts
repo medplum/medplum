@@ -1,8 +1,9 @@
-import { assertOk, Bundle, BundleEntry, Operator, Project, ProjectMembership, Reference } from '@medplum/core';
+import { allOk, assertOk, badRequest, Bundle, BundleEntry, Operator, Project, ProjectMembership, Reference, User } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { repo } from '../fhir';
+import { repo, sendOutcome } from '../fhir';
 import { authenticateToken } from '../oauth';
+import { createValueSetElements } from '../valuesets';
 import { inviteHandler, inviteValidators } from './invite';
 import { verifyProjectAdmin } from './utils';
 
@@ -62,4 +63,16 @@ adminRouter.get('/projects/:projectId', asyncWrap(async (req: Request, res: Resp
     },
     members
   });
+}));
+
+adminRouter.post('/super/valuesets', asyncWrap(async (req: Request, res: Response) => {
+  const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
+  assertOk(outcome);
+
+  if (!user?.admin) {
+    return sendOutcome(res, badRequest('Requires super administrator privileges'));
+  }
+
+  await createValueSetElements();
+  sendOutcome(res, allOk);
 }));
