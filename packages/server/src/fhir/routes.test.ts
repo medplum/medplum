@@ -42,6 +42,14 @@ describe('FHIR Routes', () => {
     await closeDatabase();
   });
 
+  test('Get CapabilityStatement', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/metadata`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toEqual('CapabilityStatement');
+  });
+
   test('Invalid JSON', async () => {
     const res = await request(app)
       .post(`/fhir/R4/`)
