@@ -9,6 +9,7 @@ import { fhirRouter, sendOutcome } from './fhir';
 import { logger } from './logger';
 import { oauthRouter } from './oauth';
 import { openApiHandler } from './openapi';
+import { scimRouter } from './scim';
 import { wellKnownRouter } from './wellknown';
 
 const corsOptions: cors.CorsOptions = {
@@ -86,7 +87,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.use('/dicom/PS3/', dicomRouter);
   app.use('/fhir/R4/', fhirRouter);
   app.use('/oauth2/', oauthRouter);
-  app.use('/scim/v2/', fhirRouter);
+  app.use('/scim/v2/', scimRouter);
   app.use(errorHandler);
   return app;
 }
