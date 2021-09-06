@@ -1,6 +1,8 @@
 import { Request, Response, Router } from 'express';
+import { authenticateToken } from '../oauth';
 
 export const scimRouter = Router();
+scimRouter.use(authenticateToken);
 
 // SCIM
 // http://www.simplecloud.info/
