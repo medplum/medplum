@@ -1,6 +1,7 @@
 import { Attachment, Binary } from '@medplum/core';
 import React, { useRef } from 'react';
 import { useMedplum } from './MedplumProvider';
+import { killEvent } from './utils/dom';
 
 export interface UploadButtonProps {
   onUpload: (attachment: Attachment) => void;
@@ -11,8 +12,7 @@ export function UploadButton(props: UploadButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function onFileChange(e: React.ChangeEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+    killEvent(e);
     const files = (e.target as HTMLInputElement).files;
     if (files) {
       Array.from(files).forEach(processFile);
@@ -60,8 +60,7 @@ export function UploadButton(props: UploadButtonProps) {
         data-testid="upload-button"
         className="btn"
         onClick={e => {
-          e.preventDefault();
-          e.stopPropagation();
+          killEvent(e);
           fileInputRef.current?.click();
         }}>Upload...</button>
     </>

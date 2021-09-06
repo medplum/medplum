@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from './Button';
 import { ensureKeys, generateKey } from './FormUtils';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
+import { killEvent } from './utils/dom';
 
 interface ResourceArrayProps {
   schema: IndexedStructureDefinition;
@@ -38,8 +39,7 @@ export function ResourceArrayInput(props: ResourceArrayProps) {
               <td>
                 <Button
                   onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                    killEvent(e);
                     const copy = values.slice();
                     copy[index].__removed = true;
                     setValues(copy);
@@ -52,8 +52,7 @@ export function ResourceArrayInput(props: ResourceArrayProps) {
             <td>
               <Button
                 onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
+                  killEvent(e);
                   const copy = values.slice();
                   copy.push({ __key: generateKey() });
                   setValues(copy);

@@ -1,5 +1,6 @@
 import React from 'react';
-import { useMedplumRouter } from "./MedplumProvider";
+import { useMedplumRouter } from './MedplumProvider';
+import { killEvent } from './utils/dom';
 
 export interface MedplumLinkProps {
   to?: string;
@@ -15,8 +16,7 @@ export function MedplumLink(props: MedplumLinkProps) {
       href={props.to || '#'}
       data-testid={props.testid || 'link'}
       onClick={(e: React.SyntheticEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
+        killEvent(e);
         if (props.to) {
           router.push(props.to);
         } else if (props.onClick) {
