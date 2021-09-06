@@ -31,7 +31,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
   lastValueRef.current = lastValue;
 
   useEffect(() => {
-    const interval = setInterval(() => handleTimer(), 150);
+    const interval = setInterval(handleTimer, 150);
     return () => clearInterval(interval);
   }, []);
 
@@ -201,9 +201,9 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     setLastValue(value);
 
     props.loadOptions(value)
-      .then((options: T[]) => {
-        setDropDownVisible(options.length > 0);
-        setOptions(options);
+      .then((newOptions: T[]) => {
+        setDropDownVisible(newOptions.length > 0);
+        setOptions(newOptions);
       })
       .catch(console.log);
   }
