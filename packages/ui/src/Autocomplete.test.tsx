@@ -140,14 +140,11 @@ describe('Autocomplete', () => {
 
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Alice' } });
-    });
-
-    expect(input.value).toBe('Alice');
-
-    await act(async () => {
       jest.advanceTimersByTime(1000);
       await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    expect(input.value).toBe('Alice');
 
     const dropdown = screen.getByTestId('dropdown');
     expect(dropdown).not.toBeUndefined();
@@ -222,7 +219,7 @@ describe('Autocomplete', () => {
     expect(el).not.toBeUndefined();
   });
 
-  test('Select resource with Enter key', async () => {
+  test('Select option with Enter key', async () => {
     render(
       <Autocomplete
         name="foo"
@@ -254,7 +251,39 @@ describe('Autocomplete', () => {
     expect(el).not.toBeUndefined();
   });
 
-  test('Select resource with separator key', async () => {
+  test('Select option with Tab key', async () => {
+    render(
+      <Autocomplete
+        name="foo"
+        loadOptions={async () => ['Alice Smith', 'Bob Jones']}
+        getId={(item: string) => item}
+        getDisplay={(item: string) => <span>{item}</span>}
+      />
+    );
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Alice"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Alice' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // Press "Tab"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Tab', code: 'Tab' });
+    });
+
+    const el = screen.getByText('Alice Smith');
+    expect(el).not.toBeUndefined();
+  });
+
+  test('Select option with separator key', async () => {
     render(
       <Autocomplete
         name="foo"
@@ -284,6 +313,40 @@ describe('Autocomplete', () => {
 
     const el = screen.getByText('Alice Smith');
     expect(el).not.toBeUndefined();
+  });
+
+  test('Select option with click', async () => {
+    const onChange = jest.fn();
+
+    render(
+      <Autocomplete
+        name="foo"
+        loadOptions={async () => ['Alice Smith', 'Bob Jones', 'Carol Brown']}
+        getId={(item: string) => item}
+        getDisplay={(item: string) => <span>{item}</span>}
+        onChange={onChange}
+      />
+    );
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Alice"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Alice' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // Click on "Bob Jones"
+    await act(async () => {
+      fireEvent.click(screen.getByText('Bob Jones'));
+    });
+
+    expect(onChange).toBeCalledWith(['Bob Jones']);
   });
 
   test('Select Create New', async () => {
@@ -318,6 +381,183 @@ describe('Autocomplete', () => {
     });
 
     expect(createNew).toBeCalled();
+  });
+
+  test('Ignore empty', async () => {
+    const onChange = jest.fn();
+
+    render(
+      <Autocomplete
+        name="foo"
+        loadOptions={async () => []}
+        getId={(item: string) => item}
+        getDisplay={(item: string) => <span>{item}</span>}
+        buildUnstructured={(item: string) => item}
+        onChange={onChange}
+      />
+    );
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Press "Tab"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Tab', code: 'Tab' });
+    });
+
+    expect(onChange).not.toBeCalled();
+  });
+
+  test('Build unstructured', async () => {
+    const onChange = jest.fn();
+
+    render(
+      <Autocomplete
+        name="foo"
+        loadOptions={async () => []}
+        getId={(item: string) => item}
+        getDisplay={(item: string) => <span>{item}</span>}
+        buildUnstructured={(item: string) => item}
+        onChange={onChange}
+      />
+    );
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "xyz"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'xyz' } });
+      input.value = 'xyz';
+    });
+
+    // Wait for the timers
+    // Dropdown will never come, because there are zero matches
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press "Tab"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Tab', code: 'Tab' });
+    });
+
+    expect(onChange).toBeCalled();
+    expect(screen.getByText('xyz')).not.toBeUndefined();
+  });
+
+  test('Hover over row', async () => {
+    const onChange = jest.fn();
+
+    render(
+      <Autocomplete
+        name="foo"
+        loadOptions={async () => ['Alice Smith', 'Bob Jones', 'Carol Brown']}
+        getId={(item: string) => item}
+        getDisplay={(item: string) => <span>{item}</span>}
+        onChange={onChange}
+      />
+    );
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Alice"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Alice' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // Hover over "Bob Jones"
+    await act(async () => {
+      fireEvent.mouseOver(screen.getByText('Bob Jones'));
+    });
+
+    const dropdown = screen.getByTestId('dropdown');
+    const option = dropdown.querySelector('.medplum-autocomplete-active');
+    expect(option).not.toBeUndefined();
+    expect(option?.innerHTML).toMatch(/Bob Jones/);
+
+    // Press "Tab"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Tab', code: 'Tab' });
+    });
+
+    expect(onChange).toBeCalledWith(['Bob Jones']);
+  });
+
+  test('Dropdown goes away if no input', async () => {
+    render(
+      <Autocomplete
+        name="foo"
+        loadOptions={async () => ['Alice Smith', 'Bob Jones']}
+        getId={(item: string) => item}
+        getDisplay={(item: string) => <span>{item}</span>}
+      />
+    );
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Alice"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Alice' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // Remove input
+    await act(async () => {
+      fireEvent.change(input, { target: { value: '' } });
+    });
+
+    // Wait for the drop down to go away
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    expect(screen.queryByTestId('dropdown')).toBeNull();
+  });
+
+  test('Down arrow does not go past last entry', async () => {
+    render(
+      <Autocomplete
+        name="foo"
+        loadOptions={async () => ['Alice Smith', 'Bob Jones', 'Carol Brown']}
+        getId={(item: string) => item}
+        getDisplay={(item: string) => <span>{item}</span>}
+      />
+    );
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Alice"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Alice' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // Press "ArrowDown" 10 times
+    for (let i = 0; i < 10; i++) {
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+      });
+    }
+
+    const dropdown = screen.getByTestId('dropdown');
+    const option = dropdown.querySelector('.medplum-autocomplete-active');
+    expect(option).not.toBeUndefined();
+    expect(option?.innerHTML).toMatch(/Carol Brown/);
   });
 
 });

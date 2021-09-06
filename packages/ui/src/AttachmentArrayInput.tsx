@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
 import { ensureKeys } from './FormUtils';
 import { UploadButton } from './UploadButton';
+import { killEvent } from './utils/dom';
 
 export interface AttachmentArrayInputProps {
   name: string;
@@ -41,8 +42,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
                 <button
                   className="btn"
                   onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                    killEvent(e);
                     const copy = values.slice();
                     (copy[index] as any).__removed = true;
                     setValues(copy);

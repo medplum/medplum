@@ -54,11 +54,16 @@ export default {
   component: Autocomplete,
 } as Meta;
 
+async function search(input: string): Promise<string[]> {
+  return presidents.filter(s => s.toLowerCase().includes(input.toLowerCase()))
+    .slice(0, 10);
+}
+
 export const Single = () => (
   <Document>
     <Autocomplete
       name="foo"
-      loadOptions={async (input: string) => presidents.filter(s => s.toLowerCase().includes(input.toLowerCase()))}
+      loadOptions={search}
       getId={(option: string) => option}
       getDisplay={(option: string) => (
         <div>{option}</div>
@@ -72,7 +77,7 @@ export const Multiple = () => (
     <Autocomplete
       name="foo"
       multiple={true}
-      loadOptions={async (input: string) => presidents.filter(s => s.toLowerCase().includes(input.toLowerCase()))}
+      loadOptions={search}
       getId={(option: string) => option}
       getDisplay={(option: string) => (
         <div>{option}</div>
@@ -86,7 +91,7 @@ export const Prefilled = () => (
     <Autocomplete
       name="foo"
       defaultValue={['Barack Obama']}
-      loadOptions={async (input: string) => presidents.filter(s => s.toLowerCase().includes(input.toLowerCase()))}
+      loadOptions={search}
       getId={(option: string) => option}
       getDisplay={(option: string) => (
         <div>{option}</div>

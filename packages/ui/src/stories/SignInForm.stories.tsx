@@ -15,9 +15,9 @@ export function Basic() {
   const ctx = useMedplumContext();
   return (
     <Document width={450}>
-      {ctx.user ? (
+      {ctx.profile ? (
         <div>
-          <pre>User: {JSON.stringify(ctx.user)}</pre>
+          <pre>User: {JSON.stringify(ctx.profile)}</pre>
           <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
             Sign out
           </Button>
@@ -33,9 +33,9 @@ export function WithLinks() {
   const ctx = useMedplumContext();
   return (
     <Document width={450}>
-      {ctx.user ? (
+      {ctx.profile ? (
         <div>
-          <pre>User: {JSON.stringify(ctx.user)}</pre>
+          <pre>User: {JSON.stringify(ctx.profile)}</pre>
           <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
             Sign out
           </Button>
@@ -56,9 +56,9 @@ export function WithFooter() {
   return (
     <>
       <Document width={450}>
-        {ctx.user ? (
+        {ctx.profile ? (
           <div>
-            <pre>User: {JSON.stringify(ctx.user)}</pre>
+            <pre>User: {JSON.stringify(ctx.profile)}</pre>
             <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
               Sign out
             </Button>
@@ -85,9 +85,9 @@ export function WithGoogle() {
   return (
     <>
       <Document width={450}>
-        {ctx.user ? (
+        {ctx.profile ? (
           <div>
-            <pre>User: {JSON.stringify(ctx.user)}</pre>
+            <pre>User: {JSON.stringify(ctx.profile)}</pre>
             <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
               Sign out
             </Button>

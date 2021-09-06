@@ -5,7 +5,7 @@
  * Stops event propagation.
  * @param e The event.
  */
-export function killEvent(e: React.SyntheticEvent) {
+export function killEvent(e: Event | React.SyntheticEvent) {
   e.preventDefault();
   e.stopPropagation();
 }

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Button } from './Button';
 import './Dialog.css';
+import { killEvent } from './utils/dom';
 
 export const DialogEventType = {
   SELECT: 'select'
@@ -53,8 +54,7 @@ export function Dialog(props: DialogProps) {
   }
 
   function handleMouseDown(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+    killEvent(e);
     document.addEventListener('mouseup', handleMouseUp, true);
     document.addEventListener('mousemove', handleMouseMove as any, true);
     setState({
@@ -69,8 +69,7 @@ export function Dialog(props: DialogProps) {
     if (!state.dragging) {
       return;
     }
-    e.preventDefault();
-    e.stopPropagation();
+    killEvent(e);
     document.removeEventListener('mouseup', handleMouseUp as any, true);
     document.removeEventListener('mousemove', handleMouseMove as any, true);
   }
@@ -79,8 +78,7 @@ export function Dialog(props: DialogProps) {
     if (!state.dragging) {
       return;
     }
-    e.preventDefault();
-    e.stopPropagation();
+    killEvent(e);
     setState({
       ...stateRef.current,
       x: e.clientX - state.dragX,

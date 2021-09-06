@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { killEvent } from './utils/dom';
 import './Autocomplete.css';
 
 export interface AutocompleteProps<T> {
@@ -17,54 +18,38 @@ export interface AutocompleteProps<T> {
   onCreateNew?: () => void;
 }
 
-interface AutocompleteState<T> {
-  focused: boolean,
-  lastValue: string,
-  dropDownVisible: boolean,
-  values: T[],
-  options: T[],
-  selectedIndex: number
-}
-
 export function Autocomplete<T>(props: AutocompleteProps<T>) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
+  const [lastValue, setLastValue] = useState('');
+  const [dropDownVisible, setDropDownVisible] = useState(false);
+  const [values, setValues] = useState(props.defaultValue ?? []);
+  const [options, setOptions] = useState<T[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
-  const [state, setState] = useState({
-    focused: false,
-    lastValue: '',
-    dropDownVisible: false,
-    values: props.defaultValue ?? [],
-    options: [],
-    selectedIndex: -1
-  } as AutocompleteState<T>);
-
-  const stateRef = useRef<AutocompleteState<T>>(state);
-  stateRef.current = state;
+  const lastValueRef = useRef<string>();
+  lastValueRef.current = lastValue;
 
   useEffect(() => {
-    const interval = setInterval(() => handleTimer(), 150);
+    const interval = setInterval(handleTimer, 150);
     return () => clearInterval(interval);
   }, []);
 
   /**
-   * Adds an resource to the list of selected resources.
-   * @param resource The resource.
+   * Adds an option to the list of selected options.
+   * @param option The option.
    */
-  function addResource(resource: T): void {
+  function addOption(option: T): void {
     const inputElement = inputRef.current as HTMLInputElement;
     inputElement.value = '';
 
-    const newValues = props.multiple ? [...state.values, resource] : [resource];
-
-    setState({
-      ...stateRef.current,
-      focused: true,
-      dropDownVisible: false,
-      lastValue: '',
-      values: newValues,
-      options: [],
-      selectedIndex: -1
-    });
+    const newValues = props.multiple ? [...values, option] : [option];
+    setFocused(true);
+    setDropDownVisible(false);
+    setLastValue('');
+    setValues(newValues);
+    setOptions([]);
+    setSelectedIndex(-1);
 
     if (props.onChange) {
       props.onChange(newValues);
@@ -76,11 +61,11 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
   }
 
   function handleFocus(): void {
-    setState({ ...stateRef.current, focused: true });
+    setFocused(true);
   }
 
   function handleBlur(): void {
-    setState({ ...stateRef.current, focused: false });
+    setFocused(false);
     dismissOnDelay();
   }
 
@@ -93,14 +78,12 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
 
       case 'ArrowUp':
         moveSelection(-1);
-        e.preventDefault();
-        e.stopPropagation();
+        killEvent(e);
         break;
 
       case 'ArrowDown':
         moveSelection(1);
-        e.preventDefault();
-        e.stopPropagation();
+        killEvent(e);
         break;
 
       case 'Backspace':
@@ -115,15 +98,14 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
 
   /**
    * Handles the "enter" or "tab" keys.  The enter key logic is:
-   * Try to add an resource with tryAddResource.  On success, cancel event.
+   * Try to add an option with tryAddOption.  On success, cancel event.
    * Otherwise, let the browser handle the enter key normally.
    *
    * @param e The key down event.
    */
   function handleSelectKey(e: React.KeyboardEvent): void {
-    if (tryAddResource()) {
-      e.preventDefault();
-      e.stopPropagation();
+    if (tryAddOption()) {
+      killEvent(e);
       inputRef.current?.focus();
     }
   }
@@ -142,13 +124,11 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
       return;
     }
 
-    const currState = stateRef.current;
-    if (currState.values && currState.values.length > 0) {
+    if (values.length > 0) {
       // If there are selected items,
       // then delete the last item.
-      setState({ ...currState, values: currState.values.slice(0, currState.values.length - 1) });
-      e.preventDefault();
-      e.stopPropagation();
+      killEvent(e);
+      setValues(values.slice(0, values.length - 1));
     }
   }
 
@@ -158,45 +138,43 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
    * The separator key logic is:
    * If the drop down is visible and something is selected, choose that.
    * If the drop down is visible but nothing is selected, choose the first.
-   * If there is content in the input, use that as a "gray" resource.
+   * If there is content in the input, use that as a "gray" option.
    * Otherwise, ignore.
    *
    * @param e The key down event.
    */
   function handleSeparatorKey(e: React.KeyboardEvent): void {
-    tryAddResource();
-    e.preventDefault();
-    e.stopPropagation();
+    tryAddOption();
+    killEvent(e);
     inputRef.current?.focus();
   }
 
   /**
-   * Tries to capture the existing input as an resource.
+   * Tries to capture the existing input as an option.
    *
-   * @return True if captured an resource; false otherwise.
+   * @return True if captured an option; false otherwise.
    */
-  function tryAddResource(): boolean {
-    let resource: T | undefined;
+  function tryAddOption(): boolean {
+    let option: T | undefined;
 
-    const currState = stateRef.current;
-    if (currState.selectedIndex >= 0 && currState.selectedIndex < currState.options.length) {
+    if (selectedIndex >= 0 && selectedIndex < options.length) {
       // Currently highlighted row
-      resource = currState.options[currState.selectedIndex];
+      option = options[selectedIndex];
 
-    } else if (currState.selectedIndex === -1 && currState.options.length > 0) {
+    } else if (selectedIndex === -1 && options.length > 0) {
       // Default to first row
-      resource = currState.options[0];
+      option = options[0];
 
     } else if (props.buildUnstructured && inputRef.current?.value) {
       // Build semi-structured item
-      resource = props.buildUnstructured(inputRef.current.value);
+      option = props.buildUnstructured(inputRef.current.value);
     }
 
-    if (!resource) {
+    if (!option) {
       return false;
     }
 
-    addResource(resource);
+    addOption(option);
     return true;
   }
 
@@ -207,32 +185,25 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
    */
   function handleTimer() {
     const value = inputRef.current?.value?.trim() || '';
-    const currState = stateRef.current;
-    if (value === currState.lastValue) {
+    if (value === lastValueRef.current) {
       // Nothing has changed, move on
       return;
     }
 
     if (!value) {
-      setState({
-        ...currState,
-        dropDownVisible: false,
-        lastValue: '',
-        options: [],
-        selectedIndex: -1
-      });
+      setDropDownVisible(false);
+      setLastValue('');
+      setOptions([]);
+      setSelectedIndex(-1);
       return;
     }
 
-    setState({ ...currState, lastValue: value });
+    setLastValue(value);
 
     props.loadOptions(value)
-      .then((resources: T[]) => {
-        setState({
-          ...stateRef.current,
-          dropDownVisible: resources.length > 0,
-          options: resources
-        });
+      .then((newOptions: T[]) => {
+        setDropDownVisible(newOptions.length > 0);
+        setOptions(newOptions);
       })
       .catch(console.log);
   }
@@ -242,9 +213,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
    * @param delta The amount to move the selection, up is negative.
    */
   function moveSelection(delta: number) {
-    const currState = stateRef.current;
-    const options = currState.options;
-    let index = currState.selectedIndex + delta;
+    let index = selectedIndex + delta;
 
     if (index < 0) {
       index = 0;
@@ -252,61 +221,26 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
       index = options.length - 1;
     }
 
-    setState({
-      ...currState,
-      selectedIndex: index
-    });
+    setSelectedIndex(index);
   }
 
   /**
    * Handles a hover event.
    * @param e The mouse event.
+   * @param index The drop down option index.
    */
-  function handleDropDownHover(e: React.MouseEvent) {
-    const target = e.currentTarget as HTMLElement;
-    if (!target) {
-      return;
-    }
-
-    const indexStr = target.dataset.index;
-    if (!indexStr) {
-      return;
-    }
-
-    setState({
-      ...stateRef.current,
-      selectedIndex: parseInt(indexStr)
-    });
+  function handleDropDownHover(e: React.MouseEvent, index: number): void {
+    setSelectedIndex(index);
   }
 
   /**
    * Handles a click event.
    * @param e The mouse event.
+   * @param option The drop down option.
    */
-  function handleDropDownClick(e: React.MouseEvent) {
-    const target = e.currentTarget as HTMLElement;
-    if (!target) {
-      return;
-    }
-
-    const indexStr = target.dataset.index;
-    if (!indexStr) {
-      return;
-    }
-
-    const index = parseInt(indexStr);
-    if (isNaN(index) || index < 0) {
-      return;
-    }
-
-    const options = stateRef.current.options;
-    if (index >= options.length) {
-      return;
-    }
-
-    e.preventDefault();
-    e.stopPropagation();
-    addResource(options[index]);
+  function handleDropDownClick(e: React.MouseEvent, option: T): void {
+    killEvent(e);
+    addOption(option);
   }
 
   /**
@@ -314,7 +248,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
    */
   function dismissOnDelay() {
     window.setTimeout(() => {
-      setState({ ...stateRef.current, dropDownVisible: false });
+      setDropDownVisible(false);
     }, 200);
   }
 
@@ -323,16 +257,16 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
   return (
     <div
       data-testid="autocomplete"
-      className={baseClassName + (state.focused ? ' focused' : '')}
+      className={baseClassName + (focused ? ' focused' : '')}
       onClick={() => handleClick()}>
       <input
         type="hidden"
         id={props.name}
         name={props.name}
         data-testid="hidden"
-        value={state.values.map(r => JSON.stringify(r)).join(',')} />
+        value={values.map(r => JSON.stringify(r)).join(',')} />
       <ul onClick={() => handleClick()}>
-        {state.values.map(value => (
+        {values.map(value => (
           <li
             key={props.getId(value)}
             data-testid="selected"
@@ -344,7 +278,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
           <input
             type="text"
             autoFocus={props.autofocus}
-            placeholder={state.values.length === 0 ? props.placeholder : undefined}
+            placeholder={values.length === 0 ? props.placeholder : undefined}
             autoComplete="off"
             autoCapitalize="off"
             spellCheck="true"
@@ -356,15 +290,14 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
           />
         </li>
       </ul>
-      {state.dropDownVisible && (
+      {dropDownVisible && (
         <div className="medplum-autocomplete" data-testid="dropdown">
-          {state.options.map((option, index) => (
+          {options.map((option, index) => (
             <div
               key={props.getId(option)}
-              data-index={index}
-              className={index === state.selectedIndex ? "medplum-autocomplete-row medplum-autocomplete-active" : "medplum-autocomplete-row"}
-              onMouseOver={e => handleDropDownHover(e)}
-              onClick={e => handleDropDownClick(e)}
+              className={index === selectedIndex ? "medplum-autocomplete-row medplum-autocomplete-active" : "medplum-autocomplete-row"}
+              onMouseOver={e => handleDropDownHover(e, index)}
+              onClick={e => handleDropDownClick(e, option)}
             >
               {props.getIcon && (
                 <div className="medplum-autocomplete-icon">{props.getIcon(option)}</div>
