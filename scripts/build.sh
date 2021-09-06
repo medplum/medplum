@@ -28,3 +28,15 @@ npx jest --runInBand
 
 # Lint
 npm run lint --workspaces
+
+# Build server tar
+tar -czvf medplum-server.tar.gz \
+  package.json \
+  package-lock.json \
+  packages/core/package.json \
+  packages/core/dist \
+  packages/definitions/package.json \
+  packages/definitions/dist \
+  packages/server/package.json \
+  packages/server/dist \
+  packages/server/templates
