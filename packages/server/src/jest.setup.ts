@@ -29,7 +29,7 @@ export async function initTestAuth() {
   });
 }
 
-async function initTestClientApplication(): Promise<ClientApplication> {
+export async function initTestClientApplication(): Promise<ClientApplication> {
   const [outcome, result] = await repo.createResource({
     resourceType: 'ClientApplication',
     project: {
