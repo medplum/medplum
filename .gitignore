@@ -31,3 +31,6 @@ coverage/
 # TypeScript incremental build
 tsconfig.tsbuildinfo
 
+# Server tarball
+medplum-server.tar.gz
+
