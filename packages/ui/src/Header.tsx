@@ -110,8 +110,8 @@ export function Header(props: HeaderProps) {
                 </div>
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px', fontSize: '12px' }}>
-                  <MedplumLink to="https://www.medplum.com/terms">Terms</MedplumLink>
-                  <MedplumLink to="https://www.medplum.com/privacy">Privacy</MedplumLink>
+                  <a href="https://www.medplum.com/terms">Terms</a>
+                  <a href="https://www.medplum.com/privacy">Privacy</a>
                 </div>
               </div>
             </Popup>
