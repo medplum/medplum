@@ -56,24 +56,24 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Configure AWS Credentials
-        if: github.ref == 'refs/heads/main'
+        if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main'
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Login to Amazon ECR
-        if: github.ref == 'refs/heads/main'
+        if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main'
         uses: aws-actions/amazon-ecr-login@v1
       - name: Deploy App
-        if: github.ref == 'refs/heads/main'
+        if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main'
         run: ./scripts/deploy-app.sh
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
           MEDPLUM_CLIENT_ID: ${{ secrets.MEDPLUM_CLIENT_ID }}
       - name: Deploy Server
-        if: github.ref == 'refs/heads/main'
+        if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main'
         run: ./scripts/deploy-server.sh
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
