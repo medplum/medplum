@@ -27,7 +27,7 @@ set -e
 set -x
 
 # Login to AWS ECR
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $DOCKER_SERVER
+#aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $DOCKER_SERVER
 
 # Build the Docker image
 docker build . -t $DOCKER_REPOSITORY:latest -t $DOCKER_REPOSITORY:$GITHUB_SHA
