@@ -4,7 +4,6 @@ import {
   DefaultTheme,
   FooterLinks,
   Header,
-  MedplumLink,
   useMedplum,
   useMedplumRouter
 } from '@medplum/ui';
@@ -92,8 +91,8 @@ export function App() {
       </Switch>
       {!profile && (
         <FooterLinks>
-          <MedplumLink to="https://www.medplum.com/privacy">Terms</MedplumLink>
-          <MedplumLink to="https://www.medplum.com/privacy">Privacy</MedplumLink>
+          <a href="https://www.medplum.com/privacy">Terms</a>
+          <a href="https://www.medplum.com/privacy">Privacy</a>
         </FooterLinks>
       )}
     </Router>
