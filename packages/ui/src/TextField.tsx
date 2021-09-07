@@ -41,7 +41,7 @@ export const TextField = (props: TextFieldProps) => {
 export interface SelectProps {
   name?: string;
   size?: 'small' | 'medium' | 'large';
-  value?: string;
+  defaultValue?: string;
   required?: boolean;
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLSelectElement>;
@@ -59,7 +59,7 @@ export const Select = (props: SelectProps) => {
       id={props.name}
       name={props.name}
       className={className}
-      defaultValue={props.value || ''}
+      defaultValue={props.defaultValue || ''}
       required={props.required}
       autoFocus={props.autoFocus}
       ref={props.inputRef}
