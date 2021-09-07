@@ -1,4 +1,4 @@
-import { SearchRequest } from '@medplum/core';
+import { IndexedStructureDefinition, SearchRequest } from '@medplum/core';
 import { Meta } from '@storybook/react';
 import React, { useState } from 'react';
 import { Button } from '../Button';
@@ -30,7 +30,8 @@ export const Example = () => {
         }}
       />
       <SearchFieldEditor
-        definition={search}
+        schema={{} as IndexedStructureDefinition}
+        search={search}
         visible={visible}
         onOk={e => setSearch(e)}
         onCancel={() => setVisible(false)}

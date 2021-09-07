@@ -1,5 +1,6 @@
-import { ElementDefinition, IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { ElementDefinition, IndexedStructureDefinition, OperationOutcome, PropertyType } from '@medplum/core';
 import React from 'react';
+import { TextField } from '.';
 import { AddressInput } from './AddressInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
 import { AttachmentInput } from './AttachmentInput';
@@ -20,6 +21,7 @@ export interface ResourcePropertyInputProps {
   name: string;
   defaultValue?: any;
   arrayElement?: boolean;
+  outcome?: OperationOutcome;
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
@@ -45,13 +47,13 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     case PropertyType.uri:
     case PropertyType.url:
       return (
-        <input type="text" name={name} defaultValue={value}></input>
+        <TextField type="text" name={name} defaultValue={value} outcome={props.outcome} />
       );
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
       return (
-        <input type="number" name={name} defaultValue={value}></input>
+        <TextField type="number" name={name} defaultValue={value} outcome={props.outcome} />
       );
     case PropertyType.code:
       return <CodeInput property={property} name={name} defaultValue={value} />;

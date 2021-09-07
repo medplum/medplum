@@ -31,11 +31,11 @@ export function SetPasswordPage() {
         </div>
         {!success && (
           <>
-            <FormSection title="New password">
-              <TextField id="password" type="password" testid="password" required={true} outcome={outcome} />
+            <FormSection title="New password" htmlFor="password" outcome={outcome}>
+              <TextField name="password" type="password" testid="password" required={true} outcome={outcome} />
             </FormSection>
-            <FormSection title="Confirm new password">
-              <TextField id="confirmPassword" type="password" testid="confirmPassword" required={true} outcome={outcome} />
+            <FormSection title="Confirm new password" htmlFor="confirmPassword" outcome={outcome}>
+              <TextField name="confirmPassword" type="password" testid="confirmPassword" required={true} outcome={outcome} />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div>

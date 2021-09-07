@@ -16,18 +16,18 @@ export const Basic = () => (
 
 export const DefaultValue = () => (
   <Document>
-    <TextField value="Hello world" />
+    <TextField defaultValue="Hello world" />
   </Document>
 );
 
 export const Small = () => (
   <Document>
-    <TextField size="small" value="Small" />
+    <TextField size="small" defaultValue="Small" />
   </Document>
 );
 
 export const Large = () => (
   <Document>
-    <TextField size="large" value="Large" />
+    <TextField size="large" defaultValue="Large" />
   </Document>
 );

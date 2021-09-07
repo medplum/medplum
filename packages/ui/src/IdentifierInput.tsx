@@ -16,7 +16,7 @@ export function IdentifierInput(props: IdentifierInputProps) {
           <td>
             <input name={props.name} type="hidden" value={stringify(value)} readOnly={true} />
             <TextField
-              value={value?.system}
+              defaultValue={value?.system}
               onChange={e => setValue({
                 ...value,
                 system: (e.currentTarget as HTMLInputElement).value
@@ -25,7 +25,7 @@ export function IdentifierInput(props: IdentifierInputProps) {
           </td>
           <td>
             <TextField
-              value={value?.value}
+              defaultValue={value?.value}
               onChange={e => setValue({
                 ...value,
                 value: (e.currentTarget as HTMLInputElement).value

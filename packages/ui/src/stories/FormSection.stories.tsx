@@ -12,7 +12,7 @@ export default {
 export const Basic = () => (
   <Document>
     <FormSection title="Name" description="Friendly name description">
-      <TextField id="name" value="John Smith" />
+      <TextField name="name" defaultValue="John Smith" />
     </FormSection>
   </Document>
 );
@@ -20,7 +20,7 @@ export const Basic = () => (
 export const DefaultValue = () => (
   <Document>
     <FormSection title="Name" description="Friendly name description">
-      <TextField id="name" value="John Smith" />
+      <TextField name="name" defaultValue="John Smith" />
     </FormSection>
   </Document>
 );

@@ -42,11 +42,11 @@ export function SignInForm(props: SignInFormProps) {
         <Logo size={32} />
         <h1>Sign in to Medplum</h1>
       </div>
-      <FormSection title="Email">
-        <TextField id="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
+      <FormSection title="Email" htmlFor="email" outcome={outcome}>
+        <TextField name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
       </FormSection>
-      <FormSection title="Password">
-        <TextField id="password" type="password" testid="password" required={true} outcome={outcome} />
+      <FormSection title="Password" htmlFor="password" outcome={outcome}>
+        <TextField name="password" type="password" testid="password" required={true} outcome={outcome} />
       </FormSection>
       <div className="medplum-signin-buttons">
         <div>
