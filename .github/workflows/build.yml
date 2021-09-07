@@ -66,6 +66,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: ./scripts/deploy-server.sh
         env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
           DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
           DOCKER_SERVER: ${{ secrets.DOCKER_SERVER }}
           ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}

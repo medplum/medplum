@@ -27,19 +27,18 @@ set -e
 set -x
 
 # Login to AWS ECR
-aws ecr get-login-password --profile medplum --region us-east-1 | docker login --username AWS --password-stdin $DOCKER_SERVER
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $DOCKER_SERVER
 
 # Build the Docker image
-docker build . -t $DOCKER_REPOSITORY:latest -t $DOCKER_REPOSITORY:0.1.6
+docker build . -t $DOCKER_REPOSITORY:latest -t $DOCKER_REPOSITORY:$GITHUB_SHA
 
 # Push the Docker image
-docker push $DOCKER_REPOSITORY:0.1.6
 docker push $DOCKER_REPOSITORY:latest
+docker push $DOCKER_REPOSITORY:$GITHUB_SHA
 
 # Update the medplum fargate service
 aws ecs update-service \
-  --profile medplum \
-  --region us-east-1 \
+  --region $AWS_REGION \
   --cluster $ECS_CLUSTER \
   --service $ECS_SERVICE \
   --force-new-deployment
