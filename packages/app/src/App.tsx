@@ -92,9 +92,8 @@ export function App() {
       </Switch>
       {!profile && (
         <FooterLinks>
-          <MedplumLink to="/help">Help</MedplumLink>
-          <MedplumLink to="/terms">Terms</MedplumLink>
-          <MedplumLink to="/privacy">Privacy</MedplumLink>
+          <MedplumLink to="https://www.medplum.com/privacy">Terms</MedplumLink>
+          <MedplumLink to="https://www.medplum.com/privacy">Privacy</MedplumLink>
         </FooterLinks>
       )}
     </Router>
