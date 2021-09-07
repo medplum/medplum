@@ -108,7 +108,6 @@ function FilterRow(props: FilterRowProps) {
         );
 
       default:
-        console.log('WARNING: Unhandled search parameter type: ' + param.type);
         return null;
     }
   }

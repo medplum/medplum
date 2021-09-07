@@ -30,7 +30,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
   }
   switch (propertyType) {
     case PropertyType.boolean:
-      return <div>{value === undefined ? '' : new Boolean(value).toString()}</div>
+      return <div>{value === undefined ? '' : Boolean(value).toString()}</div>
     case PropertyType.SystemString:
     case PropertyType.canonical:
     case PropertyType.code:
