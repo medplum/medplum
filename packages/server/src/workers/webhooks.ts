@@ -223,8 +223,7 @@ async function getSubscriptions(): Promise<Subscription[]> {
  * @param job The webhook job details.
  */
 export async function sendWebhook(job: Job<WebhookJobData>): Promise<void> {
-  const jobData = job.data as WebhookJobData;
-  const { subscriptionId, resourceType, id, versionId } = jobData;
+  const { subscriptionId, resourceType, id, versionId } = job.data;
 
   const [subscriptionOutcome, subscription] = await repo.readResource<Subscription>('Subscription', subscriptionId);
   assertOk(subscriptionOutcome);
