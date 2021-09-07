@@ -13,16 +13,14 @@ export function Tab(props: TabProps) {
   if (props.selected) {
     className += ' selected';
   }
+  // The onClick prop is set by TabBar as parent component.
+  // Using Tab outside of a TabBar is unsupported.
   return (
     <div
       role="button"
       tabIndex={0}
       className={className}
-      onClick={() => {
-        if (props.onClick) {
-          props.onClick(props.name);
-        }
-      }}
+      onClick={() => (props.onClick as (name: string) => void)(props.name)}
     >{props.label}</div>
   );
 }

@@ -19,9 +19,9 @@
   "devDependencies": {
     "@medplum/definitions": "0.1.6",
     "@types/jest": "27.0.1",
-    "@types/node": "16.7.3",
-    "@typescript-eslint/eslint-plugin": "4.29.3",
-    "@typescript-eslint/parser": "4.29.3",
+    "@types/node": "16.7.13",
+    "@typescript-eslint/eslint-plugin": "4.31.0",
+    "@typescript-eslint/parser": "4.31.0",
     "eslint": "7.32.0",
     "jest": "27.1.0",
     "rimraf": "3.0.2",

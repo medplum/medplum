@@ -144,6 +144,8 @@ export const ResourceTimeline = (props: ResourceTimelineProps) => {
             return <CommunicationTimelineItem key={item.id} communication={item} />;
           case 'Media':
             return <MediaTimelineItem key={item.id} media={item} />;
+          default:
+            return null;
         }
       })}
     </Timeline>

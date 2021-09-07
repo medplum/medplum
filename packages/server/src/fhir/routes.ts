@@ -65,11 +65,13 @@ fhirRouter.use('/([$]|%24)graphql', graphqlHTTP({
 // Create batch
 fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
-    return res.status(400).send('Unsupported content type');
+    res.status(400).send('Unsupported content type');
+    return;
   }
   const bundle = req.body;
   if (bundle.resourceType !== 'Bundle') {
-    return sendOutcome(res, badRequest('Not a bundle'));
+    sendOutcome(res, badRequest('Not a bundle'));
+    return;
   }
   const repo = res.locals.repo as Repository;
   const [outcome, result] = await createBatch(repo, bundle);
@@ -90,12 +92,14 @@ fhirRouter.get('/:resourceType', asyncWrap(async (req: Request, res: Response) =
 // Create resource
 fhirRouter.post('/:resourceType', asyncWrap(async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
-    return res.status(400).send('Unsupported content type');
+    res.status(400).send('Unsupported content type');
+    return;
   }
   const { resourceType } = req.params;
   const resource = req.body;
   if (resource.resourceType !== resourceType) {
-    return sendOutcome(res, badRequest('Incorrect resource type'));
+    sendOutcome(res, badRequest('Incorrect resource type'));
+    return;
   }
   const repo = res.locals.repo as Repository;
   const [outcome, result] = await repo.createResource(resource);
@@ -133,15 +137,18 @@ fhirRouter.get('/:resourceType/:id/_history/:vid', asyncWrap(async (req: Request
 // Update resource
 fhirRouter.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
-    return res.status(400).send('Unsupported content type');
+    res.status(400).send('Unsupported content type');
+    return;
   }
   const { resourceType, id } = req.params;
   const resource = req.body;
   if (resource.resourceType !== resourceType) {
-    return sendOutcome(res, badRequest('Incorrect resource type'));
+    sendOutcome(res, badRequest('Incorrect resource type'));
+    return;
   }
   if (resource.id !== id) {
-    return sendOutcome(res, badRequest('Incorrect ID'));
+    sendOutcome(res, badRequest('Incorrect ID'));
+    return;
   }
   const repo = res.locals.repo as Repository;
   const [outcome, result] = await repo.updateResource(resource);
@@ -161,7 +168,8 @@ fhirRouter.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Resp
 // Patch resource
 fhirRouter.patch('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
   if (!req.is('application/json-patch+json')) {
-    return res.status(400).send('Unsupported content type');
+    res.status(400).send('Unsupported content type');
+    return;
   }
   const { resourceType, id } = req.params;
   const patch = req.body as Operation[];
@@ -174,7 +182,8 @@ fhirRouter.patch('/:resourceType/:id', asyncWrap(async (req: Request, res: Respo
 // Validate create resource
 fhirRouter.post('/:resourceType/([$])validate', asyncWrap(async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
-    return res.status(400).send('Unsupported content type');
+    res.status(400).send('Unsupported content type');
+    return;
   }
   const outcome = validateResource(req.body);
   sendOutcome(res, outcome);

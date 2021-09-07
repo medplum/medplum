@@ -97,6 +97,7 @@ function buildPath(orig: string[], rev: string[]): PathNode | undefined {
   }
 
   // According to Myers, this cannot happen
+  return undefined;
 }
 
 function buildRevisions(startNode: PathNode, orig: string[], rev: string[]): Delta[] {

@@ -14,6 +14,8 @@ export function TabSwitch(props: TabSwitchProps) {
           child.type === TabPanel &&
           child.props.name === props.value) {
           return child;
+        } else {
+          return null;
         }
       })}
     </>

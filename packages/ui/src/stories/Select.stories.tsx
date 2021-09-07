@@ -21,7 +21,7 @@ export const Basic = () => (
 
 export const DefaultValue = () => (
   <Document>
-    <Select value="Foo">
+    <Select defaultValue="Foo">
       <option></option>
       <option>Foo</option>
       <option>Bar</option>
@@ -32,7 +32,7 @@ export const DefaultValue = () => (
 
 export const Small = () => (
   <Document>
-    <Select size="small" value="Foo">
+    <Select size="small" defaultValue="Foo">
       <option></option>
       <option>Foo</option>
       <option>Bar</option>
@@ -43,7 +43,7 @@ export const Small = () => (
 
 export const Large = () => (
   <Document>
-    <Select size="large" value="Foo">
+    <Select size="large" defaultValue="Foo">
       <option></option>
       <option>Foo</option>
       <option>Bar</option>

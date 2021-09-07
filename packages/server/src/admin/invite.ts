@@ -15,7 +15,7 @@ export const inviteValidators = [
   body('email').isEmail().withMessage('Valid email address is required')
 ];
 
-export async function inviteHandler(req: Request, res: Response) {
+export async function inviteHandler(req: Request, res: Response): Promise<Response> {
   const projectDetails = await verifyProjectAdmin(req, res);
   if (!projectDetails) {
     return res.sendStatus(404);
@@ -34,7 +34,7 @@ export async function inviteHandler(req: Request, res: Response) {
     email: req.body.email
   });
 
-  res.status(200).json({ profile });
+  return res.status(200).json({ profile });
 }
 
 export interface InviteRequest {
