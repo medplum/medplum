@@ -45,12 +45,6 @@ export function SmartText(props: SmartTextProps) {
       case 'ArrowDown':
         handleDownArrow(e);
         break;
-
-      case 'Period':
-        if (e.ctrlKey) {
-          handleCreateGroup(e);
-        }
-        break;
     }
   }
 
@@ -166,23 +160,6 @@ export function SmartText(props: SmartTextProps) {
       killEvent(e);
       setSelectedIndex(selectedIndex + 1);
     }
-  }
-
-  function handleCreateGroup(e: React.KeyboardEvent) {
-    killEvent(e);
-
-    const selection = window.getSelection();
-    if (!selection) {
-      return;
-    }
-
-    const oldContents = selection.getRangeAt(0).cloneContents();
-
-    const tempDiv = document.createElement('div');
-    tempDiv.appendChild(oldContents);
-
-    const newContents = '<div class="section">' + tempDiv.innerHTML + '</div>';
-    document.execCommand('insertHTML', false, newContents);
   }
 
   function applyReplacement() {
@@ -312,7 +289,7 @@ export function SmartText(props: SmartTextProps) {
         const siblings = element.parentNode.childNodes;
         const elementIndex = indexOfNode(siblings, element);
         if (elementIndex === -1) {
-          throw 'Element not found in parent list?';
+          throw new Error('Element not found in parent list');
         }
         element = element.parentNode as HTMLElement;
         offset = elementIndex + 1;
@@ -367,7 +344,7 @@ export function SmartText(props: SmartTextProps) {
         const siblings = element.parentNode.childNodes;
         const elementIndex = indexOfNode(siblings, element);
         if (elementIndex === -1) {
-          throw 'Element not found in parent list?';
+          throw new Error('Element not found in parent list');
         }
         element = element.parentNode as HTMLElement;
         offset = elementIndex - 1;
