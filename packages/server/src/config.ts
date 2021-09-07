@@ -113,7 +113,11 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
 
   let nextToken: string | undefined;
   do {
-    const response = await client.send(new GetParametersByPathCommand({ Path: path, NextToken: nextToken }));
+    const response = await client.send(new GetParametersByPathCommand({
+      Path: path,
+      NextToken: nextToken,
+      WithDecryption: true
+    }));
     if (response?.Parameters) {
       for (const param of response.Parameters) {
         const key = (param.Name as string).replace(path, '');
