@@ -11,6 +11,7 @@ set -x
 # Diagnostics
 node --version
 npm --version
+echo "MEDPLUM_CLIENT_ID=$MEDPLUM_CLIENT_ID"
 
 # Install
 [ ! -d "node_modules" ] && npm ci
@@ -30,7 +31,7 @@ npx jest --runInBand
 npm run lint --workspaces
 
 # Build server tar
-tar -czvf medplum-server.tar.gz \
+tar -czf medplum-server.tar.gz \
   package.json \
   package-lock.json \
   packages/core/package.json \
