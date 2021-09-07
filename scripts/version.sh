@@ -31,6 +31,3 @@ set_version "packages/ui/package.json"
 
 # Update sonar-project.properties
 sed -i "s/sonar.projectVersion=$OLD_VERSION/sonar.projectVersion=$NEW_VERSION/g" "sonar-project.properties"
-
-# Update deploy-server.sh
-sed -i "s/medplum-server:$OLD_VERSION/medplum-server:$NEW_VERSION/g" "scripts/deploy-server.sh"
