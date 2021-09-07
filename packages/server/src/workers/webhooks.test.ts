@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
 import { repo } from '../fhir/repo';
-import { closeWebhookWorker, initWebhookWorker, webhookProcessor } from './webhooks';
+import { closeWebhookWorker, initWebhookWorker, sendWebhook } from './webhooks';
 
 jest.mock('bullmq');
 jest.mock('node-fetch');
@@ -59,7 +59,7 @@ describe('Webhook Worker', () => {
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await webhookProcessor(job);
+    await sendWebhook(job);
 
     expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
       method: 'POST',
@@ -105,7 +105,7 @@ describe('Webhook Worker', () => {
     const signature = createHmac('sha256', secret).update(body).digest('hex');
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await webhookProcessor(job);
+    await sendWebhook(job);
 
     expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
       method: 'POST',

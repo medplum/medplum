@@ -50,6 +50,7 @@ export * from './SearchFilterEditor';
 export * from './SearchUtils';
 export * from './SignInForm';
 export * from './SmartText';
+export * from './SubscriptionTimeline';
 export * from './Tab';
 export * from './TabBar';
 export * from './TabPanel';

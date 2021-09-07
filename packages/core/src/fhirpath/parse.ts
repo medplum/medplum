@@ -208,6 +208,17 @@ class UnionAtom implements Atom {
   }
 }
 
+class IsAtom implements Atom {
+  constructor(
+    public readonly left: Atom,
+    public readonly right: Atom) { }
+
+  eval(context: any): any {
+    const desiredResourceType = (this.right as SymbolAtom).name;
+    return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
+  }
+}
+
 class FunctionAtom implements Atom {
   constructor(
     public readonly name: string,
@@ -273,7 +284,7 @@ const parserBuilder = new ParserBuilder()
       case 'as':
         return new BinaryOperatorAtom(left, right, (x) => x);
       case 'is':
-        return new BinaryOperatorAtom(left, right, () => true);
+        return new IsAtom(left, right);
       case 'and':
         return new BinaryOperatorAtom(left, right, (x, y) => x && y);
       default:

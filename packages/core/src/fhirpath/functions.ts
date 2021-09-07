@@ -1,4 +1,5 @@
 import { Atom } from './parse';
+import { toBoolean } from './utils';
 
 /**
  * Collection of FHIRPath functions.
@@ -214,7 +215,7 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   where(input: any[], criteria: Atom): any[] {
-    return input.filter(e => !!criteria.eval(e));
+    return input.filter(e => toBoolean(criteria.eval(e)));
   },
 
   /*

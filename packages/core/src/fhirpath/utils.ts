@@ -15,3 +15,15 @@ export function applyMaybeArray(context: any, fn: (context: any) => any): any {
     return fn(context);
   }
 }
+
+/**
+ * Converts any object into a boolean.
+ * @param obj Any value or array of values.
+ * @returns The converted boolean value according to FHIRPath rules.
+ */
+export function toBoolean(obj: any): boolean {
+  if (Array.isArray(obj) && obj.length === 0) {
+    return false;
+  }
+  return !!obj;
+}
