@@ -11,7 +11,6 @@ set -x
 # Diagnostics
 node --version
 npm --version
-echo "MEDPLUM_CLIENT_ID=$MEDPLUM_CLIENT_ID"
 
 # Install
 [ ! -d "node_modules" ] && npm ci

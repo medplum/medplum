@@ -41,7 +41,8 @@ module.exports = (env, argv) => ({
   plugins: [
     new DotenvPlugin({
       path: argv.mode === 'production' ? '.env.production' : '.env',
-      defaults: true
+      defaults: true,
+      systemvars: true
     }),
     new HtmlWebpackPlugin({
       template: 'src/index.html.ejs'
