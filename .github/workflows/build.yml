@@ -55,3 +55,18 @@ jobs:
         uses: coverallsapp/github-action@1.1.3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy App
+        if: github.ref == 'refs/heads/main'
+        run: ./scripts/deploy-app.sh
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
+          MEDPLUM_CLIENT_ID: ${{ secrets.MEDPLUM_CLIENT_ID }}
+      - name: Deploy Server
+        if: github.ref == 'refs/heads/main'
+        run: ./scripts/deploy-server.sh
+        env:
+          DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
+          DOCKER_SERVER: ${{ secrets.DOCKER_SERVER }}
+          ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
