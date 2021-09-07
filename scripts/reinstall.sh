@@ -9,5 +9,5 @@ rm -rf packages/graphiql/node_modules
 rm -rf packages/infra/node_modules
 rm -rf packages/server/node_modules
 rm -rf packages/ui/node_modules
-#npm ci
-
+rm package-lock.json
+npm i --legacy-peer-deps
