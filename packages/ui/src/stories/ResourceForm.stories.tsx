@@ -60,6 +60,33 @@ export const DiagnosticReport = () => (
   </Document>
 );
 
+export const DiagnosticReportIssues = () => (
+  <Document>
+    <ResourceForm
+      defaultValue={{
+        resourceType: 'DiagnosticReport'
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+      outcome={{
+        resourceType: 'OperationOutcome',
+        id: 'dabf3927-a936-427e-9320-2ff98b8bea46',
+        issue: [
+          {
+            severity: 'error',
+            code: 'structure',
+            details: {
+              text: 'Missing required property "code"'
+            },
+            expression: ['code']
+          }
+        ]
+      }}
+    />
+  </Document>
+);
+
 export const Observation = () => (
   <Document>
     <ResourceForm

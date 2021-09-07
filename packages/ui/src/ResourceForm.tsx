@@ -1,4 +1,4 @@
-import { getPropertyDisplayName, IndexedStructureDefinition, Reference, Resource } from '@medplum/core';
+import { getPropertyDisplayName, IndexedStructureDefinition, OperationOutcome, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
 import { FormSection } from './FormSection';
@@ -20,6 +20,7 @@ const DEFAULT_IGNORED_PROPERTIES = [
 
 export interface ResourceFormProps {
   defaultValue: Resource | Reference;
+  outcome?: OperationOutcome;
   onSubmit: (formData: any) => void;
 }
 
@@ -70,8 +71,19 @@ export function ResourceForm(props: ResourceFormProps) {
         }
         const property = entry[1];
         return (
-          <FormSection key={key} title={getPropertyDisplayName(property)} description={property.definition}>
-            <ResourcePropertyInput schema={schema} property={property} name={key} defaultValue={(value as any)[key]} />
+          <FormSection
+            key={key}
+            title={getPropertyDisplayName(property)}
+            description={property.definition}
+            htmlFor={key}
+            outcome={props.outcome}>
+            <ResourcePropertyInput
+              schema={schema}
+              property={property}
+              name={key}
+              defaultValue={(value as any)[key]}
+              outcome={props.outcome}
+            />
           </FormSection>
         );
       })}

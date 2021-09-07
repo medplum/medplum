@@ -24,14 +24,14 @@ export function ChangePasswordPage() {
         </div>
         {!success && (
           <>
-            <FormSection title="Old password">
-              <TextField id="oldPassword" type="password" testid="oldPassword" required={true} autoFocus={true} outcome={outcome} />
+            <FormSection title="Old password" htmlFor="oldPassword" outcome={outcome}>
+              <TextField name="oldPassword" type="password" testid="oldPassword" required={true} autoFocus={true} outcome={outcome} />
             </FormSection>
-            <FormSection title="New password">
-              <TextField id="newPassword" type="password" testid="newPassword" required={true} outcome={outcome} />
+            <FormSection title="New password" htmlFor="newPassword" outcome={outcome}>
+              <TextField name="newPassword" type="password" testid="newPassword" required={true} outcome={outcome} />
             </FormSection>
-            <FormSection title="Confirm new password">
-              <TextField id="confirmPassword" type="password" testid="confirmPassword" required={true} outcome={outcome} />
+            <FormSection title="Confirm new password" htmlFor="confirmPassword" outcome={outcome}>
+              <TextField name="confirmPassword" type="password" testid="confirmPassword" required={true} outcome={outcome} />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div>

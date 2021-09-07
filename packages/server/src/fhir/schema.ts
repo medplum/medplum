@@ -72,13 +72,7 @@ function checkProperty(
   const value = (resource as any)[propertyName];
 
   if (propertyDetails.type === 'array' && !Array.isArray(value)) {
-    issues.push({
-      severity: 'error',
-      code: 'structure',
-      details: {
-        text: 'Expected array for property "' + propertyName + '"'
-      }
-    });
+    issues.push(createIssue(propertyName, `Expected array for property "${propertyName}"`));
   }
 }
 
@@ -92,13 +86,7 @@ function checkAdditionalProperties(
       continue;
     }
     if (!(key in propertyDefinitions)) {
-      issues.push({
-        severity: 'error',
-        code: 'structure',
-        details: {
-          text: 'Invalid additional property "' + key + '"'
-        }
-      });
+      issues.push(createIssue(key, `Invalid additional property "${key}"`));
     }
   }
 }
@@ -112,26 +100,33 @@ function checkRequiredProperties(
   if (requiredProperties) {
     for (const key of requiredProperties) {
       if (!(key in resource)) {
-        issues.push({
-          severity: 'error',
-          code: 'structure',
-          details: {
-            text: 'Missing required property "' + key + '"'
-          }
-        });
+        issues.push(createIssue(key, `Missing required property "${key}"`));
       }
     }
   }
 }
 
-const validationError: (details: string) => OperationOutcome = (details: string) => ({
-  resourceType: 'OperationOutcome',
-  id: randomUUID(),
-  issue: [{
+function validationError(details: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: randomUUID(),
+    issue: [{
+      severity: 'error',
+      code: 'structure',
+      details: {
+        text: details
+      }
+    }]
+  };
+}
+
+function createIssue(expression: string, details: string): OperationOutcomeIssue {
+  return {
     severity: 'error',
     code: 'structure',
     details: {
       text: details
-    }
-  }]
-});
+    },
+    expression: [expression]
+  };
+}

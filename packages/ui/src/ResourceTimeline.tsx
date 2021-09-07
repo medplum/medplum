@@ -126,7 +126,7 @@ export const ResourceTimeline = (props: ResourceTimelineProps) => {
                   input.focus();
                 }
               }}>
-              <TextField id="text" testid="timeline-input" value="" inputRef={inputRef} />
+              <TextField name="text" testid="timeline-input" inputRef={inputRef} />
               <Button type="submit">Comment</Button>
               <UploadButton onUpload={createMedia} />
             </Form>

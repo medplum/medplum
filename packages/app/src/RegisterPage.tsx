@@ -25,19 +25,19 @@ export function RegisterPage() {
         {!success && (
           <>
             <FormSection title="First Name">
-              <TextField id="firstName" type="text" testid="firstName" required={true} autoFocus={true} outcome={outcome} />
+              <TextField name="firstName" type="text" testid="firstName" required={true} autoFocus={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Last Name">
-              <TextField id="lastName" type="text" testid="lastName" required={true} outcome={outcome} />
+              <TextField name="lastName" type="text" testid="lastName" required={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Project Name">
-              <TextField id="projectName" type="text" testid="projectName" required={true} outcome={outcome} />
+              <TextField name="projectName" type="text" testid="projectName" required={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Email">
-              <TextField id="email" type="email" testid="email" required={true} outcome={outcome} />
+              <TextField name="email" type="email" testid="email" required={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Password">
-              <TextField id="password" type="password" testid="password" required={true} outcome={outcome} />
+              <TextField name="password" type="password" testid="password" required={true} outcome={outcome} />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div>

@@ -16,6 +16,6 @@ export const Basic = () => (
 
 export const DefaultValue = () => (
   <Document>
-    <AttachmentArrayInput name="photo" values={[{}]} />
+    <AttachmentArrayInput name="photo" defaultValue={[{}]} />
   </Document>
 );

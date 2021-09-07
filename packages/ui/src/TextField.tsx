@@ -1,74 +1,71 @@
 import { OperationOutcome } from '@medplum/core';
 import React, { RefObject } from 'react';
+import { getIssuesForExpression } from './utils/outcomes';
 import './TextField.css';
 
 export interface TextFieldProps {
-  id?: string;
+  name?: string;
   type?: string;
   size?: 'small' | 'medium' | 'large';
-  value?: string;
+  defaultValue?: string;
   required?: boolean;
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLInputElement>;
   onChange?: (e: React.ChangeEvent) => void;
-  outcome?: OperationOutcome;
+  outcome?: OperationOutcome
   testid?: string;
 }
 
 export const TextField = (props: TextFieldProps) => {
   const className = props.size || '';
-  const issues = props.outcome?.issue?.filter(issue => issue.expression?.[0] === props.id);
+  const issues = getIssuesForExpression(props.outcome, props.name);
   const invalid = issues && issues.length > 0;
   return (
-    <>
-      <input
-        id={props.id}
-        name={props.id}
-        type={props.type || 'text'}
-        className={className}
-        defaultValue={props.value || ''}
-        required={props.required}
-        autoFocus={props.autoFocus}
-        ref={props.inputRef}
-        onChange={props.onChange}
-        aria-invalid={invalid}
-        aria-describedby={invalid ? props.id + '-errors' : ''}
-        data-testid={props.testid}
-      />
-      {invalid && (
-        <div id={props.id + '-errors'} className="medplum-input-error">
-          {issues?.map(issue => (
-            <div data-testid="text-field-error" key={issue.details?.text}>{issue.details?.text}</div>
-          ))}
-        </div>
-      )}
-    </>
+    <input
+      id={props.name}
+      name={props.name}
+      type={props.type || 'text'}
+      className={className}
+      defaultValue={props.defaultValue || ''}
+      required={props.required}
+      autoFocus={props.autoFocus}
+      ref={props.inputRef}
+      onChange={props.onChange}
+      aria-invalid={invalid}
+      aria-describedby={invalid ? props.name + '-errors' : ''}
+      data-testid={props.testid}
+    />
   );
 };
 
 export interface SelectProps {
-  id?: string;
+  name?: string;
   size?: 'small' | 'medium' | 'large';
-  value?: string;
+  defaultValue?: string;
   required?: boolean;
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLSelectElement>;
   onChange?: (e: React.ChangeEvent) => void;
   children: React.ReactNode;
+  outcome?: OperationOutcome
 }
 
 export const Select = (props: SelectProps) => {
   const className = props.size || '';
+  const issues = getIssuesForExpression(props.outcome, props.name);
+  const invalid = issues && issues.length > 0;
   return (
     <select
-      id={props.id}
-      name={props.id}
+      id={props.name}
+      name={props.name}
       className={className}
-      defaultValue={props.value || ''}
+      defaultValue={props.defaultValue || ''}
       required={props.required}
       autoFocus={props.autoFocus}
       ref={props.inputRef}
       onChange={props.onChange}
+      aria-invalid={invalid}
+      aria-describedby={invalid ? props.name + '-errors' : ''}
     >{props.children}</select>
   );
 };
