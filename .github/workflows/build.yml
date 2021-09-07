@@ -44,6 +44,9 @@ jobs:
       - name: Build Project
         run: ./scripts/build.sh
         env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
+          MEDPLUM_CLIENT_ID: ${{ secrets.MEDPLUM_CLIENT_ID }}
           POSTGRES_HOST: localhost
           POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
       - name: SonarCloud Scan
@@ -68,10 +71,6 @@ jobs:
       - name: Deploy App
         if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main'
         run: ./scripts/deploy-app.sh
-        env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
-          MEDPLUM_CLIENT_ID: ${{ secrets.MEDPLUM_CLIENT_ID }}
       - name: Deploy Server
         if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main'
         run: ./scripts/deploy-server.sh
