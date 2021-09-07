@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
 import { repo } from '../fhir/repo';
-import { closeWebhookWorker, initWebhookWorker, webhookProcessor } from './webhooks';
+import { closeWebhookWorker, initWebhookWorker, sendWebhook } from './webhooks';
 
 jest.mock('bullmq');
 jest.mock('node-fetch');
@@ -59,7 +59,7 @@ describe('Webhook Worker', () => {
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await webhookProcessor(job);
+    await sendWebhook(job);
 
     expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
       method: 'POST',
@@ -105,7 +105,7 @@ describe('Webhook Worker', () => {
     const signature = createHmac('sha256', secret).update(body).digest('hex');
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await webhookProcessor(job);
+    await sendWebhook(job);
 
     expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
       method: 'POST',
@@ -311,6 +311,79 @@ describe('Webhook Worker', () => {
     expect(patientOutcome.id).toEqual('created');
     expect(patient).not.toBeUndefined();
     expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  test('Retry on 400', async () => {
+    const url = 'https://example.com/webhook';
+
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: url
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).not.toBeUndefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    (fetch as any).mockImplementation(() => ({ status: 400 }));
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+
+    // If the job throws, then the QueueScheduler will retry
+    await expect(sendWebhook(job)).rejects.toThrow();
+  });
+
+  test('Retry on exception', async () => {
+    const url = 'https://example.com/webhook';
+
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: url
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).not.toBeUndefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    // (fetch as any).mockImplementation(() => ({ status: 400 }));
+    (fetch as any).mockImplementation(() => {
+      throw new Error();
+    });
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+
+    // If the job throws, then the QueueScheduler will retry
+    await expect(sendWebhook(job)).rejects.toThrow();
   });
 
 });

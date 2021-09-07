@@ -18,6 +18,7 @@ import {
   ResourceForm,
   ResourceHistoryTable,
   ResourceTable,
+  SubscriptionTimeline,
   Tab,
   TabBar,
   TabPanel,
@@ -32,7 +33,7 @@ import { PatientHeader } from './PatientHeader';
 function getTabs(resourceType: string): string[] {
   const result = [];
 
-  if (resourceType === 'Encounter' || resourceType === 'Patient') {
+  if (resourceType === 'Encounter' || resourceType === 'Patient' || resourceType === 'Subscription') {
     result.push('Timeline');
   }
 
@@ -173,6 +174,11 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       if (props.resource.resourceType === 'Patient') {
         return (
           <PatientTimeline patient={props.resource} />
+        );
+      }
+      if (props.resource.resourceType === 'Subscription') {
+        return (
+          <SubscriptionTimeline subscription={props.resource} />
         );
       }
       return null;

@@ -1,4 +1,5 @@
 import { readJson } from '@medplum/definitions';
+import { AuditEvent } from '..';
 import { Bundle, BundleEntry } from '../fhir/Bundle';
 import { Observation } from '../fhir/Observation';
 import { SearchParameter } from '../fhir/SearchParameter';
@@ -236,4 +237,32 @@ test('Eval FHIRPath resolve function', () => {
     resourceType: 'Patient',
     id: '123'
   }]);
+});
+
+test('Resolve is resourceType', () => {
+  const auditEvent: AuditEvent = {
+    resourceType: 'AuditEvent',
+    entity: [{
+      what: {
+        reference: 'Patient/123'
+      }
+    }]
+  };
+
+  const result = parseFhirPath('AuditEvent.entity.what.where(resolve() is Patient)').eval(auditEvent);
+  expect(result).toEqual([{ reference: 'Patient/123' }]);
+});
+
+test('Resolve is not resourceType', () => {
+  const auditEvent: AuditEvent = {
+    resourceType: 'AuditEvent',
+    entity: [{
+      what: {
+        reference: 'Subscription/123'
+      }
+    }]
+  };
+
+  const result = parseFhirPath('AuditEvent.entity.what.where(resolve() is Patient)').eval(auditEvent);
+  expect(result).toEqual([]);
 });

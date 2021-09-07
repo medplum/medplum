@@ -1,4 +1,4 @@
-import { assertOk, BundleEntry, Extension, Filter, Operator, parseFhirPath, Resource, SearchRequest, stringify, Subscription } from '@medplum/core';
+import { assertOk, AuditEvent, BundleEntry, createReference, Extension, Filter, Operator, parseFhirPath, Resource, SearchRequest, stringify, Subscription } from '@medplum/core';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
@@ -15,7 +15,17 @@ export interface WebhookJobData {
   readonly versionId: string;
 }
 
-const queueSchedulerName = 'WebhookQueueScheduler';
+/**
+ * AuditEvent outcome code.
+ * See: https://www.hl7.org/fhir/valueset-audit-event-outcome.html
+ */
+enum AuditEventOutcome {
+  Success = '0',
+  MinorFailure = '4',
+  SeriousFailure = '8',
+  MajorFailure = '12'
+}
+
 const queueName = 'WebhookQueue';
 const jobName = 'WebhookJobData';
 let queueScheduler: QueueScheduler | undefined = undefined;
@@ -32,7 +42,7 @@ export function initWebhookWorker(config: MedplumRedisConfig): void {
     connection: config
   };
 
-  queueScheduler = new QueueScheduler(queueSchedulerName, defaultOptions);
+  queueScheduler = new QueueScheduler(queueName, defaultOptions);
 
   queue = new Queue<WebhookJobData>(queueName, {
     ...defaultOptions,
@@ -45,22 +55,9 @@ export function initWebhookWorker(config: MedplumRedisConfig): void {
     }
   });
 
-  worker = new Worker<WebhookJobData>(queueName, webhookProcessor, defaultOptions);
+  worker = new Worker<WebhookJobData>(queueName, sendWebhook, defaultOptions);
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => logger.info(`Failed job ${job.id} with ${err}`));
-}
-
-/**
- * Webhook job processor.
- * @param job BullMQ job definition.
- */
-export async function webhookProcessor(job: Job<WebhookJobData>): Promise<void> {
-  logger.debug(`Webhook processor job ${job.id}`);
-  try {
-    await sendWebhook(job.data);
-  } catch (ex) {
-    logger.error(`Subscrition failed with ${ex}`);
-  }
 }
 
 /**
@@ -223,11 +220,10 @@ async function getSubscriptions(): Promise<Subscription[]> {
 
 /**
  * Sends a rest hook to the subscription.
- * @param subscription The FHIR subscription resource.
- * @param resource The resource that changed.
+ * @param job The webhook job details.
  */
-async function sendWebhook(jobData: WebhookJobData): Promise<void> {
-  const { subscriptionId, resourceType, id, versionId } = jobData;
+export async function sendWebhook(job: Job<WebhookJobData>): Promise<void> {
+  const { subscriptionId, resourceType, id, versionId } = job.data;
 
   const [subscriptionOutcome, subscription] = await repo.readResource<Subscription>('Subscription', subscriptionId);
   assertOk(subscriptionOutcome);
@@ -257,12 +253,32 @@ async function sendWebhook(jobData: WebhookJobData): Promise<void> {
   }
 
   logger.info('Sending rest hook to: ' + url);
+  let error: Error | undefined = undefined;
+
   try {
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
+    await createWebhookAuditEvent(
+      subscription as Subscription,
+      resource as Resource,
+      response.status === 200 ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
+      `Attempt ${job.attemptsMade} received status ${response.status}`);
 
-  } catch (error) {
-    logger.info('Webhook error: ' + error);
+    if (response.status >= 400) {
+      error = new Error('Received status ' + response.status);
+    }
+
+  } catch (ex) {
+    logger.info('Webhook exception: ' + ex);
+    await createWebhookAuditEvent(
+      subscription as Subscription,
+      resource as Resource,
+      AuditEventOutcome.MinorFailure,
+      `Attempt ${job.attemptsMade} received error ${ex}`);
+    error = ex as Error;
+  }
+
+  if (error) {
     throw error;
   }
 }
@@ -283,4 +299,42 @@ function getExtensionValue(resource: Resource, ...urls: string[]): string | unde
   }
 
   return curr?.valueString as string | undefined;
+}
+
+/**
+ * Creates an AuditEvent for a webhook attempt.
+ * @param subscription The rest-hook subscription.
+ * @param resource The resource that triggered the webhook.
+ * @param outcome The outcome code.
+ * @param outcomeDesc The outcome description text.
+ */
+async function createWebhookAuditEvent(
+  subscription: Subscription,
+  resource: Resource,
+  outcome: AuditEventOutcome,
+  outcomeDesc?: string): Promise<void> {
+
+  await repo.createResource<AuditEvent>({
+    resourceType: 'AuditEvent',
+    meta: {
+      project: subscription.meta?.project
+    },
+    recorded: new Date(),
+    type: {
+      code: 'transmit'
+    },
+    agent: [{
+      type: {
+        text: 'webhook'
+      }
+    }],
+    source: {
+      observer: createReference(subscription)
+    },
+    entity: [{
+      what: createReference(resource)
+    }],
+    outcome,
+    outcomeDesc
+  });
 }

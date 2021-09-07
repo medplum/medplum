@@ -1,5 +1,5 @@
 import { IndexedStructureDefinition, SearchRequest, stringify } from '@medplum/core';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog } from './Dialog';
 import { buildFieldNameString } from './SearchUtils';
 
@@ -19,13 +19,17 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
   const availableRef = useRef<HTMLSelectElement>(null);
   const selectedRef = useRef<HTMLSelectElement>(null);
 
+  useEffect(() => {
+    setState({ search: props.search });
+  }, [props.search]);
+
   /**
    * Handles a key down event on the "available" field.
    * If the user presses enter, it is a shortcut for the "Add" button.
    *
    * @param {KeyboardEvent} e The keyboard event.
    */
-   function handleAvailableKeyDown(e: React.KeyboardEvent) {
+  function handleAvailableKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
       onAddField();
     }

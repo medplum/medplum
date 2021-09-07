@@ -232,6 +232,7 @@ describe('ResourceTimeline', () => {
     setup({
       value: encounter,
       buildSearchRequests: buildEncounterSearch,
+      createCommunication: jest.fn(),
       createMedia: (resource: Resource, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         encounter: createReference(resource),

@@ -1,4 +1,4 @@
-import { Attachment, Bundle, BundleEntry, Communication, Media, ProfileResource, Reference, Resource, SearchRequest, stringify } from '@medplum/core';
+import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, Media, ProfileResource, Reference, Resource, SearchRequest, stringify } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
@@ -6,12 +6,12 @@ import { Form } from './Form';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiff } from './ResourceDiff';
-import './ResourceTimeline.css';
 import { TextField } from './TextField';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
 import { sortBundleByDate, sortByDate } from './utils/format';
+import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps {
   value: Resource | Reference;
@@ -112,30 +112,34 @@ export const ResourceTimeline = (props: ResourceTimelineProps) => {
 
   return (
     <Timeline>
-      <article className="medplum-timeline-item">
-        <div className="medplum-timeline-item-header">
-          <Form
-            testid="timeline-form"
-            onSubmit={(formData: Record<string, string>) => {
-              createComment(formData.text);
+      {props.createCommunication && (
+        <article className="medplum-timeline-item">
+          <div className="medplum-timeline-item-header">
+            <Form
+              testid="timeline-form"
+              onSubmit={(formData: Record<string, string>) => {
+                createComment(formData.text);
 
-              const input = inputRef.current;
-              if (input) {
-                input.value = '';
-                input.focus();
-              }
-            }}>
-            <TextField id="text" testid="timeline-input" value="" inputRef={inputRef} />
-            <Button type="submit">Comment</Button>
-            <UploadButton onUpload={createMedia} />
-          </Form>
-        </div>
-      </article>
+                const input = inputRef.current;
+                if (input) {
+                  input.value = '';
+                  input.focus();
+                }
+              }}>
+              <TextField id="text" testid="timeline-input" value="" inputRef={inputRef} />
+              <Button type="submit">Comment</Button>
+              <UploadButton onUpload={createMedia} />
+            </Form>
+          </div>
+        </article>
+      )}
       {items.map(item => {
         if (item.resourceType === resource.resourceType && item.id === resource.id) {
           return <HistoryTimelineItem key={item.meta?.versionId} history={history} version={item} />
         }
         switch (item.resourceType) {
+          case 'AuditEvent':
+            return <AuditEventTimelineItem key={item.id} auditEvent={item} />;
           case 'Communication':
             return <CommunicationTimelineItem key={item.id} communication={item} />;
           case 'Media':
@@ -197,6 +201,18 @@ function MediaTimelineItem(props: MediaTimelineItemProps) {
   return (
     <TimelineItem resource={props.media}>
       <AttachmentDisplay value={props.media.content} />
+    </TimelineItem>
+  );
+}
+
+interface AuditEventTimelineItemProps {
+  auditEvent: AuditEvent;
+}
+
+function AuditEventTimelineItem(props: AuditEventTimelineItemProps) {
+  return (
+    <TimelineItem resource={props.auditEvent} padding={true}>
+      <pre>{stringify(props.auditEvent, true)}</pre>
     </TimelineItem>
   );
 }
