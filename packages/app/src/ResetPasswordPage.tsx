@@ -25,7 +25,7 @@ export function ResetPasswordPage() {
         {!success && (
           <>
             <FormSection title="Email">
-              <TextField id="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
+              <TextField name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div>
