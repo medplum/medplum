@@ -1,26 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from './Button';
-import './Dialog.css';
 import { killEvent } from './utils/dom';
-
-export const DialogEventType = {
-  SELECT: 'select'
-};
-
-export const DialogButtonKeys = {
-  OK: 'ok'
-};
-
-export class DialogEvent extends Event {
-  key: string;
-  caption: string;
-
-  constructor(key: string, caption: string) {
-    super(key);
-    this.key = key;
-    this.caption = caption;
-  }
-}
+import './Dialog.css';
 
 export interface DialogProps {
   visible: boolean;
@@ -29,67 +10,40 @@ export interface DialogProps {
   onCancel: () => void;
 }
 
-interface DialogState {
-  x: number;
-  y: number;
-  dragging: boolean;
-  dragX: number;
-  dragY: number;
-}
-
 export function Dialog(props: DialogProps) {
-  const [state, setState] = useState<DialogState>({
-    x: 100,
-    y: 100,
-    dragging: false,
-    dragX: 0,
-    dragY: 0
-  });
-
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const [x, setX] = useState(100);
+  const [y, setY] = useState(100);
 
   if (!props.visible) {
     return null;
   }
 
-  function handleMouseDown(e: React.MouseEvent) {
-    killEvent(e);
+  function handleMouseDown(downEvent: React.MouseEvent) {
+    killEvent(downEvent);
+
+    const dragX = downEvent.clientX - x;
+    const dragY = downEvent.clientY - y;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      killEvent(moveEvent);
+      setX(moveEvent.clientX - dragX);
+      setY(moveEvent.clientY - dragY);
+    };
+
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      killEvent(upEvent);
+      document.removeEventListener('mouseup', handleMouseUp, true);
+      document.removeEventListener('mousemove', handleMouseMove, true);
+    };
+
     document.addEventListener('mouseup', handleMouseUp, true);
-    document.addEventListener('mousemove', handleMouseMove as any, true);
-    setState({
-      ...stateRef.current,
-      dragging: true,
-      dragX: e.clientX - state.x,
-      dragY: e.clientY - state.y
-    });
-  }
-
-  function handleMouseUp(e: MouseEvent) {
-    if (!state.dragging) {
-      return;
-    }
-    killEvent(e);
-    document.removeEventListener('mouseup', handleMouseUp as any, true);
-    document.removeEventListener('mousemove', handleMouseMove as any, true);
-  }
-
-  function handleMouseMove(e: MouseEvent) {
-    if (!state.dragging) {
-      return;
-    }
-    killEvent(e);
-    setState({
-      ...stateRef.current,
-      x: e.clientX - state.dragX,
-      y: e.clientY - state.dragY
-    });
+    document.addEventListener('mousemove', handleMouseMove, true);
   }
 
   return (
     <>
       <div className="modal-dialog-bg"></div>
-      <div className="modal-dialog" tabIndex={0} style={{ left: state.x + 'px', top: state.y + 'px' }}>
+      <div className="modal-dialog" data-testid="dialog" tabIndex={0} style={{ left: x + 'px', top: y + 'px' }}>
         <div className="modal-dialog-title" onMouseDown={e => handleMouseDown(e)}>
           <span className="modal-dialog-title-text">Dialog</span>
           <span className="modal-dialog-title-close" tabIndex={0} onClick={props.onCancel}>
