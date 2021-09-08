@@ -37,6 +37,12 @@ export interface RepositoryContext {
    * all queries will be restricted to those compartments.
    */
   compartments?: Reference[];
+
+  /**
+   * Optional flag for system administrators,
+   * which grants system-level access.
+   */
+  admin?: boolean;
 }
 
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
@@ -662,8 +668,7 @@ export class Repository {
    * @returns True if the current user can manually set the ID field.
    */
   private canSetId(): boolean {
-    const authorRef = this.context.author.reference as string;
-    return authorRef === 'system';
+    return this.isSystem() || this.isAdmin();
   }
 
   /**
@@ -671,8 +676,19 @@ export class Repository {
    * @returns True if the current user can manually set meta fields.
    */
   private canWriteMeta(): boolean {
-    const authorRef = this.context.author.reference as string;
-    return authorRef === 'system' || authorRef.startsWith('ClientApplication/');
+    return this.isSystem() || this.isAdmin() || this.isClientApplication();
+  }
+
+  private isSystem(): boolean {
+    return this.context.author.reference === 'system';
+  }
+
+  private isAdmin(): boolean {
+    return !!this.context.admin;
+  }
+
+  private isClientApplication(): boolean {
+    return !!this.context.author.reference?.startsWith('ClientApplication/');
   }
 }
 
@@ -823,7 +839,8 @@ export function getRepoForLogin(login: Login): Repository {
   return new Repository({
     project: resolveId(login.defaultProject) as string,
     author: login.profile as Reference,
-    compartments: login.compartments
+    compartments: login.compartments,
+    admin: login.admin
   });
 }
 

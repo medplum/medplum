@@ -61279,6 +61279,10 @@
         "defaultProject": {
           "description": "Reference to the default project for the duration of the login.",
           "$ref": "#/definitions/Reference"
+        },
+        "admin": {
+          "description": "Whether this login has system administrator privileges.",
+          "$ref": "#/definitions/boolean"
         }
       }
     },

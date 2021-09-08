@@ -112,6 +112,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     nonce: request.nonce,
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
+    admin: user.admin
   });
 }
 
