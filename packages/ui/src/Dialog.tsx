@@ -18,20 +18,20 @@ export function Dialog(props: DialogProps) {
     return null;
   }
 
-  function handleMouseDown(e: React.MouseEvent) {
-    killEvent(e);
+  function handleMouseDown(downEvent: React.MouseEvent) {
+    killEvent(downEvent);
 
-    const dragX = e.clientX - x;
-    const dragY = e.clientY - y;
+    const dragX = downEvent.clientX - x;
+    const dragY = downEvent.clientY - y;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      killEvent(e);
-      setX(e.clientX - dragX);
-      setY(e.clientY - dragY);
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      killEvent(moveEvent);
+      setX(moveEvent.clientX - dragX);
+      setY(moveEvent.clientY - dragY);
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
-      killEvent(e);
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      killEvent(upEvent);
       document.removeEventListener('mouseup', handleMouseUp, true);
       document.removeEventListener('mousemove', handleMouseMove, true);
     };
