@@ -131,4 +131,9 @@ export interface Login {
    * Reference to the default project for the duration of the login.
    */
   readonly defaultProject?: Reference;
+
+  /**
+   * Whether this login has system administrator privileges.
+   */
+  readonly admin?: boolean;
 }
