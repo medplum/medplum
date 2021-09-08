@@ -25,8 +25,8 @@ describe('OAuth2 Token', () => {
 
     const [outcome, result] = await repo.createResource({
       resourceType: 'ClientApplication',
-      project: {
-        reference: 'Project/' + MEDPLUM_PROJECT_ID
+      meta: {
+        project: MEDPLUM_PROJECT_ID
       },
       secret: 'big-long-string',
       redirectUri: 'https://example.com'

@@ -1,10 +1,11 @@
+import { ClientApplication } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
+import { generateSecret, initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
 const app = express();
@@ -111,6 +112,37 @@ describe('Register', () => {
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res2.status).toBe(200);
+  });
+
+  test('Can create a ClientApplication', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#'
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.profile).not.toBeUndefined();
+
+    const client: ClientApplication = {
+      resourceType: 'ClientApplication',
+      name: 'Test App',
+      secret: generateSecret(48),
+      redirectUri: 'https://example.com'
+    };
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/ClientApplication`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send(client);
+
+    expect(res2.status).toBe(201);
   });
 
 });

@@ -76,7 +76,9 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     client: createReference(client),
     profile: createReference(client),
     authTime: new Date(),
-    defaultProject: client.project,
+    defaultProject: {
+      reference: 'Project/' + client.meta?.project
+    },
     scope
   });
 

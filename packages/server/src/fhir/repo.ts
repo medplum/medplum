@@ -699,13 +699,6 @@ export function getCompartments(resource: Resource): string[] {
     }
   }
 
-  if (resource.resourceType === 'ClientApplication') {
-    const projectId = resolveId(resource.project);
-    if (projectId) {
-      result.add(projectId);
-    }
-  }
-
   return Array.from(result);
 }
 

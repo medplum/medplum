@@ -1,4 +1,4 @@
-import { ClientApplication, createReference, isOk, Login } from '@medplum/core';
+import { assertOk, ClientApplication, createReference, isOk, Login } from '@medplum/core';
 import { MEDPLUM_PROJECT_ID } from './constants';
 import { repo } from './fhir';
 import { generateAccessToken } from './oauth';
@@ -30,22 +30,14 @@ export async function initTestAuth() {
 }
 
 export async function initTestClientApplication(): Promise<ClientApplication> {
-  const [outcome, result] = await repo.createResource({
+  const [outcome, result] = await repo.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
-    project: {
-      reference: 'Project/' + MEDPLUM_PROJECT_ID
+    meta: {
+      project: MEDPLUM_PROJECT_ID
     },
     secret: 'big-long-string',
     redirectUri: 'https://example.com'
   } as ClientApplication);
-
-  if (!isOk(outcome)) {
-    throw new Error('Error creating application');
-  }
-
-  if (!result) {
-    throw new Error('ClientApplication is null');
-  }
-
-  return result;
+  assertOk(outcome);
+  return result as ClientApplication;
 }
