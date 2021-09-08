@@ -24,10 +24,10 @@
   "collectCoverage": true,
   "coverageDirectory": "coverage",
   "collectCoverageFrom": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "!src/**/*.d.ts",
-    "!src/stories/**/*.tsx"
+    "**/src/**/*.ts",
+    "**/src/**/*.tsx",
+    "!**/*.d.ts",
+    "!**/*.stories.tsx"
   ],
   "projects": [
     "packages/app",

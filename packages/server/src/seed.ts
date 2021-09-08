@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, ClientApplication, isOk, OperationOutcomeError, Project, Resource, SearchParameter, StructureDefinition } from '@medplum/core';
+import { assertOk, Bundle, BundleEntry, ClientApplication, isOk, OperationOutcomeError, Project, Resource, SearchParameter, StructureDefinition } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { registerNew } from './auth/register';
 import { MEDPLUM_CLIENT_APPLICATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
@@ -78,16 +78,13 @@ async function createClientApplication(): Promise<void> {
     resourceType: 'ClientApplication',
     id: MEDPLUM_CLIENT_APPLICATION_ID,
     name: 'OpenID Certification',
-    project: {
-      reference: 'Project/' + MEDPLUM_PROJECT_ID
+    meta: {
+      project: MEDPLUM_PROJECT_ID
     },
     secret: generateSecret(48),
     redirectUri: 'https://www.certification.openid.net/test/a/medplum/callback',
   });
-
-  if (!isOk(outcome)) {
-    throw new OperationOutcomeError(outcome);
-  }
+  assertOk(outcome);
 
   logger.info('Created: ' + (result as ClientApplication).id);
   logger.info('  name = ' + result?.name);

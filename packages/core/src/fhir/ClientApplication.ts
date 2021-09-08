@@ -4,7 +4,6 @@
  */
 
 import { Meta } from './Meta';
-import { Reference } from './Reference';
 
 /**
  * OAuth client application.
@@ -51,11 +50,6 @@ export interface ClientApplication {
    * A summary, characterization or explanation of the Client Application.
    */
   readonly description?: string;
-
-  /**
-   * Project where the client application is defined.
-   */
-  readonly project?: Reference;
 
   /**
    * Client secret string used to verify the identity of a client.
