@@ -4,7 +4,7 @@ import './TabBar.css';
 
 export interface TabBarProps {
   value?: string;
-  onChange?: (name: string) => void;
+  onChange: (name: string) => void;
   children: React.ReactNode;
 }
 
@@ -17,12 +17,10 @@ export function TabBar(props: TabBarProps) {
           if (React.isValidElement(child) && child.type === Tab) {
             return React.cloneElement(child as React.ReactElement<any>, {
               selected: child.props.name === props.value,
-              onClick: (name: string) => {
-                if (props.onChange) {
-                  props.onChange(name);
-                }
-              }
+              onClick: props.onChange
             });
+          } else {
+            return null;
           }
         })}
       </div>

@@ -47,7 +47,8 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
   });
 
   if (!isOk(outcome)) {
-    return renderTemplate(res, 'login', buildView(outcome));
+    renderTemplate(res, 'login', buildView(outcome));
+    return;
   }
 
   const cookieName = 'medplum-' + req.query.client_id;

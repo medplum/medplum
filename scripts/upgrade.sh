@@ -9,4 +9,4 @@ npx ncu -u --packageFile packages/graphiql/package.json
 npx ncu -u --packageFile packages/infra/package.json
 npx ncu -u --packageFile packages/server/package.json
 npx ncu -u --packageFile packages/ui/package.json
-npm i --legacy-peer-deps
+

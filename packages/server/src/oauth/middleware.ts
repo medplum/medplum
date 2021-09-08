@@ -13,7 +13,8 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) {
-    return res.sendStatus(401);
+    res.sendStatus(401);
+    return;
   }
 
   try {
@@ -21,7 +22,8 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     const claims = verifyResult.payload as MedplumAccessTokenClaims;
     const [loginOutcome, login] = await repo.readResource<Login>('Login', claims.login_id);
     if (!isOk(loginOutcome) || !login || login.revoked) {
-      return res.sendStatus(401);
+      res.sendStatus(401);
+      return;
     }
 
     res.locals.user = claims.username;
@@ -30,7 +32,8 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     res.locals.repo = getRepoForLogin(login);
   } catch (err) {
     logger.error('verify error', err);
-    return res.sendStatus(401);
+    res.sendStatus(401);
+    return;
   }
 
   next();

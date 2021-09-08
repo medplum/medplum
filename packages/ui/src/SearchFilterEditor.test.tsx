@@ -32,6 +32,11 @@ const schema: IndexedStructureDefinition = {
         resourceType: 'SearchParameter',
         code: 'birthdate',
         type: 'date'
+      },
+      {
+        resourceType: 'SearchParameter',
+        code: 'unknown',
+        type: 'unknown'
       }]
     },
     Observation: {
@@ -125,97 +130,27 @@ describe('SearchFilterEditor', () => {
     expect(currSearch.filters?.length).toEqual(0);
   });
 
-  // test('Add field with Enter key', async () => {
-  //   window.prompt = jest.fn().mockImplementation(() => 'xyz');
+  test('Handle unknown search param type', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient'
+    };
 
-  //   let currSearch: SearchRequest = {
-  //     resourceType: 'Patient',
-  //     fields: ['name']
-  //   };
+    render(<SearchFilterEditor
+      schema={schema}
+      search={currSearch}
+      visible={true}
+      onOk={e => currSearch = e}
+      onCancel={() => console.log('onCancel')}
+    />);
 
-  //   const utils = render(<SearchFilterEditor
-  //     schema={schema}
-  //     search={currSearch}
-  //     visible={true}
-  //     onOk={e => currSearch = e}
-  //     onCancel={() => console.log('onCancel')}
-  //   />);
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('filter-field'), { target: { value: 'unknown' } });
+    });
 
-  //   await act(async () => {
-  //     (utils.getByTestId('available') as HTMLSelectElement).value = 'birthDate';
-  //   });
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('filter-operation'), { target: { value: 'equals' } });
+    });
 
-  //   await act(async () => {
-  //     fireEvent.keyDown(screen.getByTestId('available'), { key: 'Enter', code: 'Enter' });
-  //   });
-
-  //   await act(async () => {
-  //     fireEvent.click(screen.getByText('OK'));
-  //   });
-
-  //   expect(currSearch.fields).toMatchObject(['name', 'birthDate']);
-  // });
-
-  // test('Remove field with Remove button', async () => {
-  //   window.prompt = jest.fn().mockImplementation(() => 'xyz');
-
-  //   let currSearch: SearchRequest = {
-  //     resourceType: 'Patient',
-  //     fields: ['name', 'birthDate']
-  //   };
-
-  //   const utils = render(<SearchFilterEditor
-  //     schema={schema}
-  //     search={currSearch}
-  //     visible={true}
-  //     onOk={e => currSearch = e}
-  //     onCancel={() => console.log('onCancel')}
-  //   />);
-
-  //   await act(async () => {
-  //     (utils.getByTestId('selected') as HTMLSelectElement).value = 'birthDate';
-  //   });
-
-  //   await act(async () => {
-  //     fireEvent.click(screen.getByText('Remove'));
-  //   });
-
-  //   await act(async () => {
-  //     fireEvent.click(screen.getByText('OK'));
-  //   });
-
-  //   expect(currSearch.fields).toMatchObject(['name']);
-  // });
-
-  // test('Remove field with Remove button', async () => {
-  //   window.prompt = jest.fn().mockImplementation(() => 'xyz');
-
-  //   let currSearch: SearchRequest = {
-  //     resourceType: 'Patient',
-  //     fields: ['name', 'birthDate']
-  //   };
-
-  //   const utils = render(<SearchFilterEditor
-  //     schema={schema}
-  //     search={currSearch}
-  //     visible={true}
-  //     onOk={e => currSearch = e}
-  //     onCancel={() => console.log('onCancel')}
-  //   />);
-
-  //   await act(async () => {
-  //     (utils.getByTestId('selected') as HTMLSelectElement).value = 'birthDate';
-  //   });
-
-  //   await act(async () => {
-  //     fireEvent.keyDown(screen.getByTestId('selected'), { key: 'Enter', code: 'Enter' });
-  //   });
-
-  //   await act(async () => {
-  //     fireEvent.click(screen.getByText('OK'));
-  //   });
-
-  //   expect(currSearch.fields).toMatchObject(['name']);
-  // });
-
+    expect(screen.queryByText('unknown')).not.toBeNull();
+  });
 });

@@ -68,6 +68,24 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(200);
   });
 
+  test('Create batch wrong content type', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .send('hello');
+    expect(res.status).toBe(400);
+  });
+
+  test('Create batch wrong resource type', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({ resourceType: 'Patient', name: [{ given: ['Homer'] }] });
+    expect(res.status).toBe(400);
+  });
+
   test('Create resource', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -88,6 +106,24 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send({ resourceType: 'Patientx' });
+    expect(res.status).toBe(400);
+  });
+
+  test('Create resource incorrect resource type', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({ resourceType: 'Patientx' });
+    expect(res.status).toBe(400);
+  });
+
+  test('Create resource invalid content type', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .send('hello');
     expect(res.status).toBe(400);
   });
 
@@ -117,6 +153,15 @@ describe('FHIR Routes', () => {
       .get(`/fhir/R4/Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12c`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(404);
+  });
+
+  test('Read resource minimal', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/Patient/${patientId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Prefer', 'return=minimal');
+    expect(res.status).toBe(200);
+    expect(res.text).toEqual('');
   });
 
   test('Read resource history', async () => {
@@ -210,6 +255,15 @@ describe('FHIR Routes', () => {
       .put(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
+    expect(res.status).toBe(400);
+  });
+
+  test('Update resource wrong content-type', async () => {
+    const res = await request(app)
+      .put(`/fhir/R4/Patient/${patientId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .send('hello');
     expect(res.status).toBe(400);
   });
 
@@ -319,6 +373,15 @@ describe('FHIR Routes', () => {
       .post(`/fhir/R4/Patient/$validate`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ resourceType: 'Patient', badProperty: 'bad' });
+    expect(res.status).toBe(400);
+  });
+
+  test('Validate wrong content type', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/$validate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .send('hello');
     expect(res.status).toBe(400);
   });
 

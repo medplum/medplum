@@ -1,25 +1,12 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
     "outDir": "dist",
-    "moduleResolution": "node",
-    "lib": [ "esnext" ],
-    "allowJs": true,
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "sourceMap": true,
-    "incremental": true
+    "lib": [
+      "esnext"
+    ]
   },
   "include": [
-    "src/**/*.js",
     "src/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
   ]
 }

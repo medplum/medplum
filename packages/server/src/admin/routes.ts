@@ -56,7 +56,7 @@ adminRouter.get('/projects/:projectId', asyncWrap(async (req: Request, res: Resp
     });
   }
 
-  res.status(200).json({
+  return res.status(200).json({
     project: {
       id: project?.id,
       name: project?.name
@@ -74,5 +74,5 @@ adminRouter.post('/super/valuesets', asyncWrap(async (req: Request, res: Respons
   }
 
   await createValueSetElements();
-  sendOutcome(res, allOk);
+  return sendOutcome(res, allOk);
 }));
