@@ -27,3 +27,16 @@ export function toBoolean(obj: any): boolean {
   }
   return !!obj;
 }
+
+/**
+ * Determines if two values are equal according to FHIRPath equality rules.
+ * @param x The first value.
+ * @param y The second value.
+ * @returns True if equal.
+ */
+export function fhirPathEquals(x: any, y: any): boolean {
+  if (x instanceof Date && y instanceof Date) {
+    return x.toISOString() === y.toISOString();
+  }
+  return x === y;
+}

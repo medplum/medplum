@@ -9,8 +9,11 @@ export interface Token extends TokenMatcher {
 }
 
 const matchers: TokenMatcher[] = [
-  { id: 'Comment', pattern: /\/\/.*$/ },
-  { id: 'StringLiteral', pattern: /'[^']*'/ },
+  // { id: 'Comment', pattern: /\/\/.*$/ },
+  { id: 'String', pattern: /'[^']*'/ },
+  { id: 'DateTime', pattern: /@[a-zA-Z0-9:._+-]*/ },
+  { id: 'Number', pattern: /-?\d{1,9}(\.\d{1,9})?/ },
+  { id: 'EmptySet', pattern: /\{\}/ },
   { id: '(', pattern: /\(/ },
   { id: ')', pattern: /\)/ },
   { id: '*', pattern: /\*/ },
@@ -18,11 +21,17 @@ const matchers: TokenMatcher[] = [
   { id: '+', pattern: /\+/ },
   { id: '-', pattern: /-/ },
   { id: '^', pattern: /\^/ },
-  { id: '!', pattern: /!/ },
   { id: '.', pattern: /\./ },
   { id: '|', pattern: /\|/ },
+  { id: '!=', pattern: /!=/ },
   { id: '=', pattern: /=/ },
-  { id: 'Number', pattern: /\d+/ },
+  { id: '!~', pattern: /!~/ },
+  { id: '~', pattern: /~/ },
+  { id: '<=', pattern: /<=/ },
+  { id: '<', pattern: /</ },
+  { id: '>=', pattern: />=/ },
+  { id: '>', pattern: />/ },
+  { id: '!', pattern: /!/ },
   { id: 'Symbol', pattern: /\w+/ },
 ];
 

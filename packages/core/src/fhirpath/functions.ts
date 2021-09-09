@@ -251,7 +251,7 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
    * @returns A collection containing only the first item in the input collection.
    */
   first(input: any[]): any[] {
-    return input.length === 0 ? [] : input.slice(0, 1);
+    return input.length === 0 ? [] : [input[0]];
   },
 
   /**
@@ -264,7 +264,7 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
    * @returns A collection containing only the last item in the input collection.
    */
   last(input: any[]): any[] {
-    return input.length === 0 ? [] : input.slice(input.length - 1, input.length);
+    return input.length === 0 ? [] : [input[input.length - 1]];
   },
 
   /**
@@ -364,5 +364,43 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
    */
   as(context: any): any {
     return context;
+  },
+
+  type(input: any[]): any {
+    const result = input.map(value => {
+      if (typeof value === 'boolean') {
+        return { namespace: 'System', name: 'Boolean' };
+      }
+      if (typeof value === 'number') {
+        return { namespace: 'System', name: 'Integer' };
+      }
+      if (typeof value === 'object' && 'resourceType' in value) {
+        return { namespace: 'FHIR', name: value.resourceType };
+      }
+      return null;
+    });
+    // console.log('type', input, result);
+    return result;
+  },
+
+  is(input: any[], typeName: Atom): boolean[] {
+    return input.map(() => true);
+  },
+
+  ofType(input: any[], typeName: Atom): any {
+    return input;
+  },
+
+  conformsTo(input: any[], systemAtom: Atom): boolean[] {
+    const system = systemAtom.eval(undefined) as string;
+    if (!system.startsWith('http://hl7.org/fhir/StructureDefinition/')) {
+      throw new Error('Expected a StructureDefinition URL');
+    }
+    const expectedResourceType = system.replace('http://hl7.org/fhir/StructureDefinition/', '');
+    return input.map(resource => resource?.resourceType === expectedResourceType);
+  },
+
+  not(input: any[]): boolean[] {
+    return input.map(value => !toBoolean(value));
   }
 };
