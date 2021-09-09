@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "root",
   "scripts": {
     "build": "sh ./scripts/build.sh",

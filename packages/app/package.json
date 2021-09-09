@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "@medplum/app",
   "version": "0.3.0",
   "description": "Medplum App",

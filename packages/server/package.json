@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "@medplum/server",
   "version": "0.3.0",
   "description": "Medplum Server",

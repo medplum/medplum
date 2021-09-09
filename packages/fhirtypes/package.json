@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "@medplum/fhirtypes",
   "version": "0.3.0",
   "description": "Medplum FHIR Type Definitions",

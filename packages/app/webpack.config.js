@@ -1,13 +1,16 @@
-const path = require('path');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-const DotenvPlugin = require('dotenv-webpack');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const dotenv = require('dotenv');
+import dotenv from 'dotenv';
+import DotenvPlugin from 'dotenv-webpack';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import path from 'path';
+import url from 'url';
+import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 
 dotenv.config();
 
-module.exports = (env, argv) => ({
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+
+export default (env, argv) => ({
   entry: './src/index.tsx',
   devtool: argv.mode === 'production' ? 'source-map' : 'eval-source-map',
   output: {
@@ -44,6 +47,9 @@ module.exports = (env, argv) => ({
         test: /\.(js|jsx|ts|tsx)$/,
         exclude: '/node_modules/',
         loader: 'babel-loader',
+        resolve: {
+          fullySpecified: false
+        }
       },
       {
         test: /\.css$/i,
