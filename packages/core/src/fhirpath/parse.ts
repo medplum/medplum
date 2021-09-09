@@ -1,7 +1,7 @@
 import { stringify } from '../utils';
 import { functions } from './functions';
 import { Token, tokenizer } from './tokenize';
-import { applyMaybeArray, fhirPathEquals } from './utils';
+import { applyMaybeArray, fhirPathEquals, fhirPathIs } from './utils';
 
 export interface Atom {
   eval(context: any): any;
@@ -52,7 +52,7 @@ class ParserBuilder {
   public infixRight(tokenType: string, precedence: number, builder: (left: Atom, token: Token, right: Atom) => Atom): ParserBuilder {
     return this.registerInfix(tokenType, {
       parse(parser, left, token) {
-        const right = parser.parse(precedence - 1)
+        const right = parser.parse(precedence + 1)
         return builder(left, token, right)
       },
       precedence
@@ -82,7 +82,7 @@ class Parser {
     return true;
   }
 
-  public parse(precedence = 0): Atom {
+  public parse(precedence = Precedence.MaximumPrecedence): Atom {
     const token = this.consume();
     const prefix = this.prefixParselets[token.id];
     if (!prefix) {
@@ -91,7 +91,7 @@ class Parser {
 
     let left = prefix.parse(this, token);
 
-    while (precedence < this.getPrecedence()) {
+    while (precedence > this.getPrecedence()) {
       const next = this.consume();
       const infix = this.infixParselets[next.id];
       left = infix.parse(this, left, next);
@@ -103,13 +103,13 @@ class Parser {
   private getPrecedence(): number {
     const nextToken = this.look();
     if (!nextToken) {
-      return 0;
+      return Precedence.MaximumPrecedence;
     }
     const parser = this.infixParselets[nextToken.id];
     if (parser) {
       return parser.precedence;
     }
-    return 0;
+    return Precedence.MaximumPrecedence;
   }
 
   private consume(): Token {
@@ -124,15 +124,41 @@ class Parser {
   }
 }
 
+/**
+ * Operator precedence
+ * See: https://hl7.org/fhirpath/#operator-precedence
+ */
 const enum Precedence {
-  Union = 2,
-  Equals = 1,
-  AddSub = 3,
-  MulDiv = 4,
-  Exp = 5,
-  Negate = 6,
-  Dot = 7,
-  FunctionCall = 8
+  FunctionCall = 0,
+  Dot = 1,
+  Indexer = 2,
+  UnaryAdd = 3,
+  UnarySubtract = 3,
+  Multiply = 4,
+  Divide = 4,
+  IntegerDivide = 4,
+  Modulo = 4,
+  Add = 5,
+  Subtract = 5,
+  Ampersand = 5,
+  Is = 6,
+  As = 6,
+  Union = 7,
+  GreaterThan = 8,
+  GreaterThanOrEquals = 8,
+  LessThan = 8,
+  LessThanOrEquals = 8,
+  Equals = 9,
+  Equivalent = 9,
+  NotEquals = 9,
+  NotEquivalent = 9,
+  In = 10,
+  Contains = 10,
+  And = 11,
+  Xor = 12,
+  Or = 12,
+  Implies = 13,
+  MaximumPrecedence = 100
 }
 
 export class FhirPathAtom implements Atom {
@@ -154,6 +180,9 @@ export class FhirPathAtom implements Atom {
       throw new Error(`FhirPathError on "${this.original}": ${error}`);
     }
   }
+  toString(): string {
+    return this.child.toString();
+  }
 }
 
 class LiteralAtom implements Atom {
@@ -161,12 +190,18 @@ class LiteralAtom implements Atom {
   eval(): any {
     return this.value;
   }
+  toString(): string {
+    return this.value.toString();
+  }
 }
 
 class SymbolAtom implements Atom {
   constructor(public readonly name: string) { }
   eval(context: any): any {
     return applyMaybeArray(context, e => e.resourceType === this.name ? e : e[this.name]);
+  }
+  toString(): string {
+    return this.name;
   }
 }
 
@@ -199,12 +234,19 @@ class BinaryOperatorAtom implements Atom {
     return applyMaybeArray(leftValue, (value) => this.impl(value, rightValue));
     // return applyMaybeArray(x, (value) => fhirPathEquals(value, y));
   }
+
+  toString(): string {
+    return '(' + this.left.toString() + ' ' + this.impl.toString() + ' ' + this.right.toString() + ')';
+  }
 }
 
 class DotAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) { }
   eval(context: any): Atom {
     return this.right.eval(this.left.eval(context));
+  }
+  toString() {
+    return this.left.toString() + '.' + this.right.toString();
   }
 }
 
@@ -226,8 +268,9 @@ class IsAtom implements Atom {
     public readonly right: Atom) { }
 
   eval(context: any): any {
-    const desiredResourceType = (this.right as SymbolAtom).name;
-    return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
+    const typeName = (this.right as SymbolAtom).name;
+    // return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
+    return applyMaybeArray(this.left.eval(context), e => fhirPathIs(e, typeName));
   }
 }
 
@@ -259,6 +302,7 @@ const PARENTHESES_PARSELET: PrefixParselet = {
 const FUNCTION_CALL_PARSELET: InfixParselet = {
   parse(parser: Parser, left: Atom) {
     if (!(left instanceof SymbolAtom)) {
+      console.log('Wanted symbol atom, got', left, left.toString());
       throw new Error('Unexpected parentheses');
     }
 
@@ -284,40 +328,40 @@ const parserBuilder = new ParserBuilder()
   .registerPrefix('EmptySet', { parse: () => new EmptySetAtom() })
   .registerPrefix('(', PARENTHESES_PARSELET)
   .registerInfix('(', FUNCTION_CALL_PARSELET)
-  .prefix('-', Precedence.Negate, (_, right) => new UnaryOperatorAtom(right, x => -x))
+  .prefix('-', Precedence.UnarySubtract, (_, right) => new UnaryOperatorAtom(right, x => -x))
   .infixLeft('.', Precedence.Dot, (left, _, right) => new DotAtom(left, right))
-  .infixRight('^', Precedence.Exp, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x ** y))
-  .infixLeft('/', Precedence.MulDiv, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x / y))
-  .infixLeft('*', Precedence.MulDiv, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x * y))
-  .infixLeft('+', Precedence.AddSub, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x + y))
-  .infixLeft('-', Precedence.AddSub, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x - y))
+  // .infixRight('^', Precedence.Exp, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x ** y))
+  .infixLeft('/', Precedence.Divide, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x / y))
+  .infixLeft('*', Precedence.Multiply, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x * y))
+  .infixLeft('+', Precedence.Add, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x + y))
+  .infixLeft('-', Precedence.Subtract, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x - y))
   .infixLeft('|', Precedence.Union, (left, _, right) => new UnionAtom(left, right))
   .infixLeft('=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => fhirPathEquals(x, y)))
   // .infixLeft('=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
   //   console.log('equals', x, y, typeof x, typeof y, fhirPathEquals(x, y));
   //   return fhirPathEquals(x, y);
   // }))
-  .infixLeft('!=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => !fhirPathEquals(x, y)))
+  .infixLeft('!=', Precedence.NotEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => !fhirPathEquals(x, y)))
   // .infixLeft('!=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
   //   console.log('not equals', x, y, !fhirPathEquals(x, y));
   //   return !fhirPathEquals(x, y);
   // }))
-  .infixLeft('~', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => stringify(x) === stringify(y)))
-  .infixLeft('!~', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => stringify(x) !== stringify(y)))
+  .infixLeft('~', Precedence.Equivalent, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => stringify(x) === stringify(y)))
+  .infixLeft('!~', Precedence.NotEquivalent, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => stringify(x) !== stringify(y)))
   // .infixLeft('!~', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
   //   console.log('not equivalent', x, y, stringify(x), stringify(y), stringify(x) !== stringify(y));
   //   // return x !== y;
   //   return stringify(x) !== stringify(y);
   // }))
-  .infixLeft('<', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x < y))
+  .infixLeft('<', Precedence.LessThan, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x < y))
   // .infixLeft('<', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => { 
   //   console.log('less than', x, y);
   //   return x < y; 
   // }))
-  .infixLeft('<=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x <= y))
-  .infixLeft('>', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x > y))
-  .infixLeft('>=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x >= y))
-  .infixLeft('Symbol', Precedence.Union, (left: Atom, symbol: Token, right: Atom) => {
+  .infixLeft('<=', Precedence.LessThanOrEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x <= y))
+  .infixLeft('>', Precedence.GreaterThan, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x > y))
+  .infixLeft('>=', Precedence.GreaterThanOrEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x >= y))
+  .infixLeft('Symbol', Precedence.Is, (left: Atom, symbol: Token, right: Atom) => {
     switch (symbol.value) {
       case 'as':
         return new BinaryOperatorAtom(left, right, (x) => x);
@@ -325,6 +369,10 @@ const parserBuilder = new ParserBuilder()
         return new IsAtom(left, right);
       case 'and':
         return new BinaryOperatorAtom(left, right, (x, y) => x && y);
+      case 'div':
+        return new BinaryOperatorAtom(left, right, (x, y) => (x / y) | 0);
+      case 'mod':
+        return new BinaryOperatorAtom(left, right, (x, y) => x % y);
       default:
         throw new Error('Cannot use ' + symbol.value + ' as infix operator');
     }
@@ -332,10 +380,11 @@ const parserBuilder = new ParserBuilder()
 
 export function parseFhirPath(input: string): FhirPathAtom {
   try {
-    return new FhirPathAtom(input, parserBuilder.construct(input).parse());
-    // const result = new FhirPathAtom(input, parserBuilder.construct(input).parse());
+    // return new FhirPathAtom(input, parserBuilder.construct(input).parse());
+    const result = new FhirPathAtom(input, parserBuilder.construct(input).parse());
     // console.log('result', result);
-    // return result;
+    // console.log('result', result.toString());
+    return result;
   } catch (error) {
     throw new Error(`FhirPathError on "${input}": ${error}`);
   }

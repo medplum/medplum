@@ -1,5 +1,5 @@
 import { Atom } from './parse';
-import { toBoolean } from './utils';
+import { fhirPathIs, toBoolean } from './utils';
 
 /**
  * Collection of FHIRPath functions.
@@ -331,6 +331,50 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
   },
 
   /*
+   * 5.7. Math
+   */
+
+  abs(input: any[]): any[] {
+    return applyMathFunc1(Math.abs, input);
+  },
+
+  ceiling(input: any[]): any[] {
+    return applyMathFunc1(Math.ceil, input);
+  },
+
+  exp(input: any[]): any[] {
+    return applyMathFunc1(Math.exp, input);
+  },
+
+  floor(input: any[]): any[] {
+    return applyMathFunc1(Math.floor, input);
+  },
+
+  ln(input: any[]): any[] {
+    return applyMathFunc1(Math.log, input);
+  },
+
+  log(input: any[], baseAtom: Atom): any[] {
+    return applyMathFunc2((value, base) => Math.log(value) / Math.log(base), input, baseAtom);
+  },
+
+  power(input: any[], expAtom: Atom): any[] {
+    return applyMathFunc2(Math.pow, input, expAtom);
+  },
+
+  round(input: any[]): any[] {
+    return applyMathFunc1(Math.round, input);
+  },
+
+  sqrt(input: any[]): any[] {
+    return applyMathFunc1(Math.sqrt, input);
+  },
+
+  truncate(input: any[]): any[] {
+    return applyMathFunc1(x => x | 0, input);
+  },
+
+  /*
    * Additional functions
    * See: https://hl7.org/fhir/fhirpath.html#functions
    */
@@ -379,15 +423,18 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
       }
       return null;
     });
-    // console.log('type', input, result);
+    console.log('type function', result);
     return result;
   },
 
-  is(input: any[], typeName: Atom): boolean[] {
-    return input.map(() => true);
+  is(input: any[], typeAtom: Atom): boolean[] {
+    const typeName = typeAtom.toString();
+    return input.map(value => fhirPathIs(value, typeName));
   },
 
-  ofType(input: any[], typeName: Atom): any {
+  ofType(input: any[], typeAtom: Atom): any {
+    const typeName = typeAtom.toString();
+    console.log('typeName', typeName);
     return input;
   },
 
@@ -402,5 +449,38 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
 
   not(input: any[]): boolean[] {
     return input.map(value => !toBoolean(value));
-  }
+  },
+
 };
+
+function applyMathFunc1(func: (x: number) => number, input: any[]): number[] {
+  if (input.length === 0) {
+    return input;
+  }
+  if (input.length > 1) {
+    throw new Error('Math function cannot be called with multiple items');
+  }
+  const value = input[0];
+  if (typeof value !== 'number') {
+    throw new Error('Math function cannot be called with non-number');
+  }
+  return [func(value)];
+}
+
+function applyMathFunc2(func: (x: number, y: number) => number, input: any[], helper: Atom): number[] {
+  if (input.length === 0) {
+    return input;
+  }
+  if (input.length > 1) {
+    throw new Error('Math function cannot be called with multiple items');
+  }
+  const value = input[0];
+  if (typeof value !== 'number') {
+    throw new Error('Math function cannot be called with non-number');
+  }
+  const y = helper.eval(undefined);
+  if (typeof y !== 'number') {
+    throw new Error('Math second argument must be a number');
+  }
+  return [func(value, y)];
+}

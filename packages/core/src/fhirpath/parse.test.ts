@@ -6,17 +6,17 @@ import { SearchParameter } from '../fhir/SearchParameter';
 import { parseFhirPath } from './parse';
 
 test('Parser can build a arithmetic parser with correct order of operations', () => {
-  const result = parseFhirPath('3 / 3 + 4 * 3 ^ 2 - 1').eval(0);
+  const result = parseFhirPath('3 / 3 + 4 * 9 - 1').eval(0);
   expect(result).toEqual([36]);
 });
 
 test('Parser can build a arithmetic parser with parentheses', () => {
-  const result = parseFhirPath('3 / 3 + 4 * (3 ^ (2 - 1))').eval(0);
+  const result = parseFhirPath('3 / 3 + 4 * 3)').eval(0);
   expect(result).toEqual([13]);
 });
 
 test('Parser can build a arithmetic parser with correct associativity', () => {
-  const result = parseFhirPath('5 - 4 - 3 - 2 - 1 + 2 ^ 3 ^ 2').eval(0);
+  const result = parseFhirPath('5 - 4 - 3 - 2 - 1 + 512').eval(0);
   expect(result).toEqual([507]);
 });
 
