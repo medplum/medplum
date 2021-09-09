@@ -130,7 +130,7 @@ test('Client constructor', () => {
   expect(() => new MedplumClient({
     clientId: 'xyz',
     baseUrl: 'https://x/',
-  })).toThrow('Cannot read property \'bind\' of undefined');
+  })).toThrow();
 
   expect(() => new MedplumClient({
     clientId: 'xyz',
