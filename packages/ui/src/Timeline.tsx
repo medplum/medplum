@@ -1,4 +1,3 @@
-import { ChatIcon, ThumbUpIcon } from '@heroicons/react/outline';
 import { getReferenceString, Reference, Resource } from '@medplum/core';
 import React from 'react';
 import { Avatar } from './Avatar';
@@ -56,8 +55,8 @@ export function TimelineItem(props: TimelineItemProps) {
       )}
       {props.socialEnabled && (
         <div className="medplum-timeline-item-footer">
-          <Button borderless={true}><ThumbUpIcon className="medplum-timeline-icon" /> Like</Button>
-          <Button borderless={true}><ChatIcon className="medplum-timeline-icon" /> Comment</Button>
+          <Button borderless={true}>Like</Button>
+          <Button borderless={true}>Comment</Button>
         </div>
       )}
     </article>
