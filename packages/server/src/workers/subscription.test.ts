@@ -5,23 +5,23 @@ import fetch from 'node-fetch';
 import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
 import { repo } from '../fhir/repo';
-import { closeWebhookWorker, initWebhookWorker, sendWebhook } from './webhooks';
+import { closeSubscriptionWorker, initSubscriptionWorker, sendSubscription } from './subscription';
 
 jest.mock('bullmq');
 jest.mock('node-fetch');
 
-describe('Webhook Worker', () => {
+describe('Subscription Worker', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
-    await initWebhookWorker(config.redis);
+    await initSubscriptionWorker(config.redis);
   });
 
   afterAll(async () => {
     await closeDatabase();
-    await closeWebhookWorker();
-    await closeWebhookWorker(); // Double close to ensure quite ignore
+    await closeSubscriptionWorker();
+    await closeSubscriptionWorker(); // Double close to ensure quite ignore
   });
 
   beforeEach(async () => {
@@ -30,7 +30,7 @@ describe('Webhook Worker', () => {
   });
 
   test('Send subscriptions', async () => {
-    const url = 'https://example.com/webhook';
+    const url = 'https://example.com/subscription';
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
@@ -59,7 +59,7 @@ describe('Webhook Worker', () => {
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendWebhook(job);
+    await sendSubscription(job);
 
     expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
       method: 'POST',
@@ -68,7 +68,7 @@ describe('Webhook Worker', () => {
   });
 
   test('Send subscriptions with signature', async () => {
-    const url = 'https://example.com/webhook';
+    const url = 'https://example.com/subscription';
     const secret = '0123456789';
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
@@ -105,7 +105,7 @@ describe('Webhook Worker', () => {
     const signature = createHmac('sha256', secret).update(body).digest('hex');
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendWebhook(job);
+    await sendSubscription(job);
 
     expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
       method: 'POST',
@@ -117,7 +117,7 @@ describe('Webhook Worker', () => {
     }));
   });
 
-  test('Ignore non-webhook subscriptions', async () => {
+  test('Ignore non-subscription subscriptions', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
@@ -142,7 +142,7 @@ describe('Webhook Worker', () => {
     expect(queue.add).not.toHaveBeenCalled();
   });
 
-  test('Ignore webhooks missing URL', async () => {
+  test('Ignore subscriptions missing URL', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
@@ -168,13 +168,13 @@ describe('Webhook Worker', () => {
     expect(queue.add).not.toHaveBeenCalled();
   });
 
-  test('Ignore webhooks with missing criteria', async () => {
+  test('Ignore subscriptions with missing criteria', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/webhook'
+        endpoint: 'https://example.com/subscription'
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
@@ -193,14 +193,14 @@ describe('Webhook Worker', () => {
     expect(queue.add).not.toHaveBeenCalled();
   });
 
-  test('Ignore webhooks with different criteria resource type', async () => {
+  test('Ignore subscriptions with different criteria resource type', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Observation',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/webhook'
+        endpoint: 'https://example.com/subscription'
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
@@ -219,14 +219,14 @@ describe('Webhook Worker', () => {
     expect(queue.add).not.toHaveBeenCalled();
   });
 
-  test('Ignore webhooks with different criteria parameter', async () => {
+  test('Ignore subscriptions with different criteria parameter', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Observation?status=final',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/webhook'
+        endpoint: 'https://example.com/subscription'
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
@@ -252,14 +252,14 @@ describe('Webhook Worker', () => {
     expect(queue.add).toHaveBeenCalled();
   });
 
-  test('Ignore disabled webhooks', async () => {
+  test('Ignore disabled subscriptions', async () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'off',
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/webhook'
+        endpoint: 'https://example.com/subscription'
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
@@ -291,7 +291,7 @@ describe('Webhook Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/webhook'
+        endpoint: 'https://example.com/subscription'
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
@@ -314,7 +314,7 @@ describe('Webhook Worker', () => {
   });
 
   test('Retry on 400', async () => {
-    const url = 'https://example.com/webhook';
+    const url = 'https://example.com/subscription';
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
@@ -345,11 +345,11 @@ describe('Webhook Worker', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
 
     // If the job throws, then the QueueScheduler will retry
-    await expect(sendWebhook(job)).rejects.toThrow();
+    await expect(sendSubscription(job)).rejects.toThrow();
   });
 
   test('Retry on exception', async () => {
-    const url = 'https://example.com/webhook';
+    const url = 'https://example.com/subscription';
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
@@ -383,7 +383,7 @@ describe('Webhook Worker', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
 
     // If the job throws, then the QueueScheduler will retry
-    await expect(sendWebhook(job)).rejects.toThrow();
+    await expect(sendSubscription(job)).rejects.toThrow();
   });
 
 });

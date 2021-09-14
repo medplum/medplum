@@ -8,7 +8,7 @@ import { repo } from '../fhir';
 import { getSearchParameter, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 
-export interface WebhookJobData {
+export interface SubscriptionJobData {
   readonly subscriptionId: string;
   readonly resourceType: string;
   readonly id: string;
@@ -26,25 +26,25 @@ enum AuditEventOutcome {
   MajorFailure = '12'
 }
 
-const queueName = 'WebhookQueue';
-const jobName = 'WebhookJobData';
+const queueName = 'SubscriptionQueue';
+const jobName = 'SubscriptionJobData';
 let queueScheduler: QueueScheduler | undefined = undefined;
-let queue: Queue<WebhookJobData> | undefined = undefined;
-let worker: Worker<WebhookJobData> | undefined = undefined;
+let queue: Queue<SubscriptionJobData> | undefined = undefined;
+let worker: Worker<SubscriptionJobData> | undefined = undefined;
 
 /**
- * Initializes the webhook worker.
+ * Initializes the subscription worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
  */
-export function initWebhookWorker(config: MedplumRedisConfig): void {
+export function initSubscriptionWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {
     connection: config
   };
 
   queueScheduler = new QueueScheduler(queueName, defaultOptions);
 
-  queue = new Queue<WebhookJobData>(queueName, {
+  queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 18, // 1 second * 2^18 = 73 hours
@@ -55,18 +55,18 @@ export function initWebhookWorker(config: MedplumRedisConfig): void {
     }
   });
 
-  worker = new Worker<WebhookJobData>(queueName, sendWebhook, defaultOptions);
+  worker = new Worker<SubscriptionJobData>(queueName, sendSubscription, defaultOptions);
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => logger.info(`Failed job ${job.id} with ${err}`));
 }
 
 /**
- * Shuts down the webhook worker.
+ * Shuts down the subscription worker.
  * Closes the BullMQ scheduler.
  * Closes the BullMQ job queue.
  * Clsoes the BullMQ worker.
  */
-export async function closeWebhookWorker(): Promise<void> {
+export async function closeSubscriptionWorker(): Promise<void> {
   if (queueScheduler) {
     await queueScheduler.close();
     queueScheduler = undefined;
@@ -103,7 +103,7 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
     if (matchesCriteria(resource, subscription)) {
-      addWebhookJobData({
+      addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
         id: resource.id as string,
@@ -125,14 +125,8 @@ function matchesCriteria(resource: Resource, subscription: Subscription): boolea
     return false;
   }
 
-  if (subscription.channel?.type !== 'rest-hook') {
-    logger.debug('Ignore non-webhook subscription');
-    return false;
-  }
-
-  const url = subscription.channel?.endpoint;
-  if (!url) {
-    logger.debug(`Ignore rest hook missing URL`);
+  if (!matchesChannelType(subscription)) {
+    logger.debug(`Ignore subscription without recognized channel type`);
     return false;
   }
 
@@ -149,6 +143,37 @@ function matchesCriteria(resource: Resource, subscription: Subscription): boolea
   }
 
   return matchesSearchRequest(resource, searchRequest);
+}
+
+/**
+ * Returns true if the subscription channel type is ok to execute.
+ * @param subscription The subscription resource.
+ * @returns True if the subscription channel type is ok to execute.
+ */
+function matchesChannelType(subscription: Subscription): boolean {
+  const channelType = subscription.channel?.type;
+
+  if (channelType === 'rest-hook') {
+    const url = subscription.channel?.endpoint;
+    if (!url) {
+      logger.debug(`Ignore rest-hook missing URL`);
+      return false;
+    }
+
+    return true;
+  }
+
+  if (channelType === 'action') {
+    const code = getExtensionValue(subscription, '');
+    if (!code) {
+      logger.debug(`Ignore code action missing code`);
+      return false;
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -189,15 +214,15 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
 }
 
 /**
- * Adds a webhook job to the queue.
- * @param job The webhook job details.
+ * Adds a subscription job to the queue.
+ * @param job The subscription job details.
  */
-function addWebhookJobData(job: WebhookJobData): void {
-  logger.debug(`Adding Webhook job`);
+function addSubscriptionJobData(job: SubscriptionJobData): void {
+  logger.debug(`Adding Subscription job`);
   if (queue) {
     queue.add(jobName, job);
   } else {
-    logger.debug(`Webhook queue not initialized`);
+    logger.debug(`Subscription queue not initialized`);
   }
 }
 
@@ -220,9 +245,9 @@ async function getSubscriptions(): Promise<Subscription[]> {
 
 /**
  * Sends a rest hook to the subscription.
- * @param job The webhook job details.
+ * @param job The subscription job details.
  */
-export async function sendWebhook(job: Job<WebhookJobData>): Promise<void> {
+export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<void> {
   const { subscriptionId, resourceType, id, versionId } = job.data;
 
   const [subscriptionOutcome, subscription] = await repo.readResource<Subscription>('Subscription', subscriptionId);
@@ -258,7 +283,7 @@ export async function sendWebhook(job: Job<WebhookJobData>): Promise<void> {
   try {
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
-    await createWebhookAuditEvent(
+    await createSubscriptionAuditEvent(
       subscription as Subscription,
       resource as Resource,
       response.status === 200 ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
@@ -269,8 +294,8 @@ export async function sendWebhook(job: Job<WebhookJobData>): Promise<void> {
     }
 
   } catch (ex) {
-    logger.info('Webhook exception: ' + ex);
-    await createWebhookAuditEvent(
+    logger.info('Subscription exception: ' + ex);
+    await createSubscriptionAuditEvent(
       subscription as Subscription,
       resource as Resource,
       AuditEventOutcome.MinorFailure,
@@ -302,13 +327,13 @@ function getExtensionValue(resource: Resource, ...urls: string[]): string | unde
 }
 
 /**
- * Creates an AuditEvent for a webhook attempt.
+ * Creates an AuditEvent for a subscription attempt.
  * @param subscription The rest-hook subscription.
- * @param resource The resource that triggered the webhook.
+ * @param resource The resource that triggered the subscription.
  * @param outcome The outcome code.
  * @param outcomeDesc The outcome description text.
  */
-async function createWebhookAuditEvent(
+async function createSubscriptionAuditEvent(
   subscription: Subscription,
   resource: Resource,
   outcome: AuditEventOutcome,
@@ -325,7 +350,7 @@ async function createWebhookAuditEvent(
     },
     agent: [{
       type: {
-        text: 'webhook'
+        text: 'subscription'
       }
     }],
     source: {

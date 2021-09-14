@@ -6,7 +6,7 @@ import { initBinaryStorage } from './fhir';
 import { logger } from './logger';
 import { initKeys } from './oauth';
 import { seedDatabase } from './seed';
-import { initWebhookWorker } from './workers/webhooks';
+import { initSubscriptionWorker } from './workers/subscription';
 
 async function main() {
   logger.info('Starting Medplum Server...');
@@ -23,7 +23,7 @@ async function main() {
   initBinaryStorage(config.binaryStorage);
 
   logger.debug('Initializing webhooks...');
-  initWebhookWorker(config.redis);
+  initSubscriptionWorker(config.redis);
   logger.debug('Webhooks initialized');
 
   const app = await initApp(express());
