@@ -17,15 +17,21 @@ export function applyMaybeArray(context: any, fn: (context: any) => any): any {
 }
 
 /**
+ * Determines if the input is an empty array.
+ * @param obj Any value or array of values.
+ * @returns True if the input is an empty array.
+ */
+export function isEmptyArray(obj: any): boolean {
+  return Array.isArray(obj) && obj.length === 0;
+}
+
+/**
  * Converts any object into a boolean.
  * @param obj Any value or array of values.
  * @returns The converted boolean value according to FHIRPath rules.
  */
 export function toBoolean(obj: any): boolean {
-  if (Array.isArray(obj) && obj.length === 0) {
-    return false;
-  }
-  return !!obj;
+  return isEmptyArray(obj) ? false : !!obj;
 }
 
 /**
@@ -34,8 +40,11 @@ export function toBoolean(obj: any): boolean {
  * @param y The second value.
  * @returns True if equal.
  */
-export function fhirPathEquals(x: any, y: any): boolean {
+export function fhirPathEquals(x: any, y: any): boolean | [] {
   // console.log('fhirPathEquals', x, y);
+  if (isEmptyArray(x) || isEmptyArray(y)) {
+    return [];
+  }
   if (x instanceof Date && y instanceof Date) {
     return x.toISOString() === y.toISOString();
   }

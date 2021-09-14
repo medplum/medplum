@@ -2,6 +2,11 @@ import { Atom } from './parse';
 import { fhirPathIs, toBoolean } from './utils';
 
 /**
+ * Temporary placholder for unimplemented methods.
+ */
+const stub = (input: any[]) => input;
+
+/**
  * Collection of FHIRPath functions.
  * See: https://hl7.org/fhirpath/#functions
  */
@@ -146,6 +151,10 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
     return false;
   },
 
+  subsetOf: stub,
+
+  supersetOf: stub,
+
   /**
    * Returns the integer count of the number of items in the input collection.
    * Returns 0 when the input collection is empty.
@@ -217,6 +226,12 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
   where(input: any[], criteria: Atom): any[] {
     return input.filter(e => toBoolean(criteria.eval(e)));
   },
+
+  select: stub,
+
+  repeat: stub,
+
+  ofType: stub,
 
   /*
    * 5.3 Subsetting
@@ -330,48 +345,450 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
     return input.slice(0, numValue);
   },
 
+  intersect: stub,
+
+  exclude: stub,
+
+  /*
+   * 5.4. Combining
+   *
+   * See: https://hl7.org/fhirpath/#combining
+   */
+
+  union: stub,
+
+  combine: stub,
+
+  /*
+   * 5.5. Conversion
+   *
+   * See: https://hl7.org/fhirpath/#conversion
+   */
+
+  iif: stub,
+
+  toBoolean(input: any[]): boolean[] {
+    if (input.length === 0) {
+      return [];
+    }
+    if (input.length > 1) {
+      throw new Error('Cannot call toBoolean with multiple items');
+    }
+    const value = input[0];
+    if (typeof value === 'boolean') {
+      return [value];
+    }
+    if (typeof value === 'number') {
+      return [!!value];
+    }
+    if (typeof value === 'string') {
+      if (['true', 't', 'yes', 'y', '1', '1.0'].includes(value)) {
+        return [true];
+      }
+      if (['false', 'f', 'no', 'n', '0', '0.0'].includes(value)) {
+        return [false];
+      }
+      return [];
+    }
+    return [toBoolean(value)];
+  },
+
+  convertsToBoolean: stub,
+
+  toInteger: stub,
+
+  convertsToInteger: stub,
+
+  toDate: stub,
+
+  convertsToDate: stub,
+
+  toDateTime: stub,
+
+  convertsToDateTime: stub,
+
+  toDecimal: stub,
+
+  convertsToDecimal: stub,
+
+  toQuantity: stub,
+
+  convertsToQuantity: stub,
+
+  toString: stub,
+
+  convertsToString: stub,
+
+  toTime: stub,
+
+  convertsToTime: stub,
+
+  /*
+   * 5.6. String Manipulation.
+   *
+   * See: https://hl7.org/fhirpath/#string-manipulation
+   */
+
+  /**
+   * Returns the 0-based index of the first position substring is found in the input string, or -1 if it is not found.
+   *
+   * If substring is an empty string (''), the function returns 0.
+   *
+   * If the input or substring is empty ({ }), the result is empty ({ }).
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#indexofsubstring-string-integer
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  indexOf(input: any[], substringAtom: Atom): number[] {
+    return applyStringFunc(
+      (str, substring) => str.indexOf(substring),
+      input,
+      substringAtom);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  substring(input: any[], startAtom: Atom, lengthAtom: Atom): string[] {
+    return applyStringFunc(
+      (str, start, length) => str.substr(start, length),
+      input,
+      startAtom,
+      lengthAtom);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  startsWith(input: any[], prefixAtom: Atom): boolean[] {
+    return applyStringFunc(
+      (str, prefix) => str.startsWith(prefix),
+      input,
+      prefixAtom);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  endsWith(input: any[], suffixAtom: Atom): boolean[] {
+    return applyStringFunc(
+      (str, suffix) => str.endsWith(suffix),
+      input,
+      suffixAtom);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  contains(input: any[], substringAtom: Atom): boolean[] {
+    return applyStringFunc(
+      (str, substring) => str.includes(substring),
+      input,
+      substringAtom);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  upper(input: any[]): string[] {
+    return applyStringFunc(
+      (str) => str.toUpperCase(),
+      input);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  lower(input: any[]): string[] {
+    return applyStringFunc(
+      (str) => str.toLowerCase(),
+      input);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  replace(input: any[], patternAtom: Atom, substitionAtom): string[] {
+    return applyStringFunc(
+      (str, pattern, substition) => str.replaceAll(pattern, substition),
+      input,
+      patternAtom,
+      substitionAtom);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  matches(input: any[], regexAtom: Atom): boolean[] {
+    return applyStringFunc(
+      (str, regex) => !!str.match(regex),
+      input,
+      regexAtom);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  replaceMatches(input: any[], regexAtom: Atom, substitionAtom): string[] {
+    return applyStringFunc(
+      (str, pattern, substition) => str.replaceAll(pattern, substition),
+      input,
+      regexAtom,
+      substitionAtom);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  length(input: any[]): number[] {
+    return applyStringFunc(
+      (str) => str.length,
+      input);
+  },
+
+  /**
+   *
+   * @param input The input collection.
+   * @returns The index of the substring.
+   */
+  toChars(input: any[]): string[][] {
+    return applyStringFunc(
+      (str) => str.split(''),
+      input);
+  },
+
   /*
    * 5.7. Math
    */
 
-  abs(input: any[]): any[] {
-    return applyMathFunc1(Math.abs, input);
+  /**
+   * Returns the absolute value of the input. When taking the absolute value of a quantity, the unit is unchanged.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#abs-integer-decimal-quantity
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  abs(input: any[]): number[] {
+    return applyMathFunc(Math.abs, input);
   },
 
-  ceiling(input: any[]): any[] {
-    return applyMathFunc1(Math.ceil, input);
+  /**
+   * Returns the first integer greater than or equal to the input.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#ceiling-integer
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  ceiling(input: any[]): number[] {
+    return applyMathFunc(Math.ceil, input);
   },
 
-  exp(input: any[]): any[] {
-    return applyMathFunc1(Math.exp, input);
+  /**
+   * Returns e raised to the power of the input.
+   *
+   * If the input collection contains an Integer, it will be implicitly converted to a Decimal and the result will be a Decimal.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#exp-decimal
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  exp(input: any[]): number[] {
+    return applyMathFunc(Math.exp, input);
   },
 
-  floor(input: any[]): any[] {
-    return applyMathFunc1(Math.floor, input);
+  /**
+   * Returns the first integer less than or equal to the input.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#floor-integer
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  floor(input: any[]): number[] {
+    return applyMathFunc(Math.floor, input);
   },
 
-  ln(input: any[]): any[] {
-    return applyMathFunc1(Math.log, input);
+  /**
+   * Returns the natural logarithm of the input (i.e. the logarithm base e).
+   *
+   * When used with an Integer, it will be implicitly converted to a Decimal.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#ln-decimal
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  ln(input: any[]): number[] {
+    return applyMathFunc(Math.log, input);
   },
 
-  log(input: any[], baseAtom: Atom): any[] {
-    return applyMathFunc2((value, base) => Math.log(value) / Math.log(base), input, baseAtom);
+  /**
+   * Returns the logarithm base base of the input number.
+   *
+   * When used with Integers, the arguments will be implicitly converted to Decimal.
+   *
+   * If base is empty, the result is empty.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#logbase-decimal-decimal
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  log(input: any[], baseAtom: Atom): number[] {
+    return applyMathFunc((value, base) => Math.log(value) / Math.log(base), input, baseAtom);
   },
 
-  power(input: any[], expAtom: Atom): any[] {
-    return applyMathFunc2(Math.pow, input, expAtom);
+  /**
+   * Raises a number to the exponent power. If this function is used with Integers, the result is an Integer. If the function is used with Decimals, the result is a Decimal. If the function is used with a mixture of Integer and Decimal, the Integer is implicitly converted to a Decimal and the result is a Decimal.
+   *
+   * If the power cannot be represented (such as the -1 raised to the 0.5), the result is empty.
+   *
+   * If the input is empty, or exponent is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#powerexponent-integer-decimal-integer-decimal
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  power(input: any[], expAtom: Atom): number[] {
+    return applyMathFunc(Math.pow, input, expAtom);
   },
 
-  round(input: any[]): any[] {
-    return applyMathFunc1(Math.round, input);
+  /**
+   * Rounds the decimal to the nearest whole number using a traditional round (i.e. 0.5 or higher will round to 1). If specified, the precision argument determines the decimal place at which the rounding will occur. If not specified, the rounding will default to 0 decimal places.
+   *
+   * If specified, the number of digits of precision must be >= 0 or the evaluation will end and signal an error to the calling environment.
+   *
+   * If the input collection contains a single item of type Integer, it will be implicitly converted to a Decimal.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#roundprecision-integer-decimal
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  round(input: any[]): number[] {
+    return applyMathFunc(Math.round, input);
   },
 
-  sqrt(input: any[]): any[] {
-    return applyMathFunc1(Math.sqrt, input);
+  /**
+   * Returns the square root of the input number as a Decimal.
+   *
+   * If the square root cannot be represented (such as the square root of -1), the result is empty.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * Note that this function is equivalent to raising a number of the power of 0.5 using the power() function.
+   *
+   * See: https://hl7.org/fhirpath/#sqrt-decimal
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  sqrt(input: any[]): number[] {
+    return applyMathFunc(Math.sqrt, input);
   },
 
-  truncate(input: any[]): any[] {
-    return applyMathFunc1(x => x | 0, input);
+  /**
+   * Returns the integer portion of the input.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#truncate-integer
+   *
+   * @param input The input collection.
+   * @returns A collection containing the result.
+   */
+  truncate(input: any[]): number[] {
+    return applyMathFunc(x => x | 0, input);
+  },
+
+  /*
+   * 5.8. Tree navigation
+   */
+
+  children: stub,
+
+  descendants: stub,
+
+  /*
+   * 5.9. Utility functions
+   */
+
+  trace(input: any[], nameAtom: Atom): any[] {
+    return input;
+  },
+
+  now(): Date[] {
+    return [new Date()];
+  },
+
+  timeOfDay(): Date[] {
+    return [new Date()];
+  },
+
+  today(): Date[] {
+    return [new Date()];
   },
 
   /*
@@ -432,12 +849,6 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
     return input.map(value => fhirPathIs(value, typeName));
   },
 
-  ofType(input: any[], typeAtom: Atom): any {
-    const typeName = typeAtom.toString();
-    console.log('typeName', typeName);
-    return input;
-  },
-
   conformsTo(input: any[], systemAtom: Atom): boolean[] {
     const system = systemAtom.eval(undefined) as string;
     if (!system.startsWith('http://hl7.org/fhir/StructureDefinition/')) {
@@ -453,21 +864,21 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
 
 };
 
-function applyMathFunc1(func: (x: number) => number, input: any[]): number[] {
+function applyStringFunc<T>(func: (str: string, ...args: any[]) => T, input: any[], ...argsAtoms: Atom[]): T[] {
   if (input.length === 0) {
     return input;
   }
   if (input.length > 1) {
-    throw new Error('Math function cannot be called with multiple items');
+    throw new Error('String function cannot be called with multiple items');
   }
   const value = input[0];
-  if (typeof value !== 'number') {
-    throw new Error('Math function cannot be called with non-number');
+  if (typeof value !== 'string') {
+    throw new Error('String function cannot be called with non-string');
   }
-  return [func(value)];
+  return [func(value, argsAtoms.map(atom => atom.eval(undefined)))];
 }
 
-function applyMathFunc2(func: (x: number, y: number) => number, input: any[], helper: Atom): number[] {
+function applyMathFunc(func: (x: number, ...args: any[]) => number, input: any[], ...argsAtoms: Atom[]): number[] {
   if (input.length === 0) {
     return input;
   }
@@ -478,9 +889,5 @@ function applyMathFunc2(func: (x: number, y: number) => number, input: any[], he
   if (typeof value !== 'number') {
     throw new Error('Math function cannot be called with non-number');
   }
-  const y = helper.eval(undefined);
-  if (typeof y !== 'number') {
-    throw new Error('Math second argument must be a number');
-  }
-  return [func(value, y)];
+  return [func(value, argsAtoms.map(atom => atom.eval(undefined)))];
 }

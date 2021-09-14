@@ -13,6 +13,10 @@ describe('Tokenizer', () => {
     ]);
   });
 
+  test('Quantity matching', () => {
+    expect(tokenizer.tokenize("1 'mg'")).toMatchObject([{ id: 'Quantity', value: "1 'mg'" }]);
+  });
+
   test('Number matching', () => {
     expect(tokenizer.tokenize('1')).toMatchObject([{ id: 'Number', value: '1' }]);
     expect(tokenizer.tokenize('1.0')).toMatchObject([{ id: 'Number', value: '1.0' }]);

@@ -1,7 +1,7 @@
 import { stringify } from '../utils';
 import { functions } from './functions';
 import { Token, tokenizer } from './tokenize';
-import { applyMaybeArray, fhirPathEquals, fhirPathIs } from './utils';
+import { applyMaybeArray, fhirPathEquals, fhirPathIs, toBoolean } from './utils';
 
 export interface Atom {
   eval(context: any): any;
@@ -231,6 +231,7 @@ class BinaryOperatorAtom implements Atom {
     // return this.impl(this.left.eval(context), this.right.eval(context));
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
+    // console.log('eval BinaryOperatorAtom', leftValue, rightValue, this.impl);
     return applyMaybeArray(leftValue, (value) => this.impl(value, rightValue));
     // return applyMaybeArray(x, (value) => fhirPathEquals(value, y));
   }
@@ -262,6 +263,22 @@ class UnionAtom implements Atom {
   }
 }
 
+class EqualsAtom implements Atom {
+  constructor(
+    public readonly left: Atom,
+    public readonly right: Atom) { }
+
+  eval(context: any): any {
+    // const typeName = (this.right as SymbolAtom).name;
+    // // return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
+    // return applyMaybeArray(this.left.eval(context), e => fhirPathIs(e, typeName));
+    // return toBoolean(this.left.eval(context)) || toBoolean(this.right.eval(context));
+    const leftValue = this.left.eval(context);
+    const rightValue = this.right.eval(context);
+    return fhirPathEquals(leftValue, rightValue);
+  }
+}
+
 class IsAtom implements Atom {
   constructor(
     public readonly left: Atom,
@@ -271,6 +288,55 @@ class IsAtom implements Atom {
     const typeName = (this.right as SymbolAtom).name;
     // return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
     return applyMaybeArray(this.left.eval(context), e => fhirPathIs(e, typeName));
+  }
+}
+
+class OrAtom implements Atom {
+  constructor(
+    public readonly left: Atom,
+    public readonly right: Atom) { }
+
+  eval(context: any): any {
+    const leftValue = this.left.eval(context);
+    if (toBoolean(leftValue)) {
+      return leftValue;
+    }
+
+    const rightValue = this.right.eval(context);
+    if (toBoolean(rightValue)) {
+      return rightValue;
+    }
+
+    return [];
+  }
+}
+
+class XorAtom implements Atom {
+  constructor(
+    public readonly left: Atom,
+    public readonly right: Atom) { }
+
+  eval(context: any): any {
+    const leftValue = this.left.eval(context);
+    // if (toBoolean(leftValue)) {
+    //   return leftValue;
+    // }
+
+    const rightValue = this.right.eval(context);
+    // if (toBoolean(rightValue)) {
+    //   return rightValue;
+    // }
+    
+    const leftBoolean = toBoolean(leftValue);
+    const rightBoolean = toBoolean(rightValue);
+
+    if (leftBoolean !== rightBoolean) {
+      return true;
+    }
+    return [];
+
+    // return [];
+    // return toBoolean(leftValue) === toBoolean(rightValue) ? 
   }
 }
 
@@ -323,8 +389,19 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
 const parserBuilder = new ParserBuilder()
   .registerPrefix('String', { parse: (_, token) => new LiteralAtom(token.value.substring(1, token.value.length - 1)) })
   .registerPrefix('DateTime', { parse: (_, token) => new LiteralAtom(new Date(token.value.substring(1))) })
+  .registerPrefix('Quantity', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
   .registerPrefix('Number', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
-  .registerPrefix('Symbol', { parse: (_, token) => new SymbolAtom(token.value) })
+  .registerPrefix('Symbol', {
+    parse: (_, token) => {
+      if (token.value === 'false') {
+        return new LiteralAtom(false);
+      }
+      if (token.value === 'true') {
+        return new LiteralAtom(true);
+      }
+      return new SymbolAtom(token.value);
+    }
+  })
   .registerPrefix('EmptySet', { parse: () => new EmptySetAtom() })
   .registerPrefix('(', PARENTHESES_PARSELET)
   .registerInfix('(', FUNCTION_CALL_PARSELET)
@@ -336,7 +413,8 @@ const parserBuilder = new ParserBuilder()
   .infixLeft('+', Precedence.Add, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x + y))
   .infixLeft('-', Precedence.Subtract, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x - y))
   .infixLeft('|', Precedence.Union, (left, _, right) => new UnionAtom(left, right))
-  .infixLeft('=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => fhirPathEquals(x, y)))
+  .infixLeft('=', Precedence.Equals, (left, _, right) => new EqualsAtom(left, right))
+  // .infixLeft('=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => fhirPathEquals(x, y)))
   // .infixLeft('=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
   //   console.log('equals', x, y, typeof x, typeof y, fhirPathEquals(x, y));
   //   return fhirPathEquals(x, y);
@@ -363,16 +441,20 @@ const parserBuilder = new ParserBuilder()
   .infixLeft('>=', Precedence.GreaterThanOrEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x >= y))
   .infixLeft('Symbol', Precedence.Is, (left: Atom, symbol: Token, right: Atom) => {
     switch (symbol.value) {
-      case 'as':
-        return new BinaryOperatorAtom(left, right, (x) => x);
-      case 'is':
-        return new IsAtom(left, right);
       case 'and':
         return new BinaryOperatorAtom(left, right, (x, y) => x && y);
+      case 'as':
+        return new BinaryOperatorAtom(left, right, (x) => x);
       case 'div':
         return new BinaryOperatorAtom(left, right, (x, y) => (x / y) | 0);
+      case 'is':
+        return new IsAtom(left, right);
       case 'mod':
         return new BinaryOperatorAtom(left, right, (x, y) => x % y);
+      case 'or':
+        return new OrAtom(left, right);
+        case 'xor':
+          return new XorAtom(left, right);
       default:
         throw new Error('Cannot use ' + symbol.value + ' as infix operator');
     }
