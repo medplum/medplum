@@ -40,7 +40,6 @@ module.exports = (env, argv) => ({
   },
   plugins: [
     new DotenvPlugin({
-      path: argv.mode === 'production' ? '.env.production' : '.env',
       defaults: true,
       systemvars: true
     }),

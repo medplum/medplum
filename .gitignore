@@ -8,7 +8,6 @@ node_modules/
 
 # Dotenv
 .env
-.env.production
 
 # Output
 packages/app/dist/

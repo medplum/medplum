@@ -1,4 +1,5 @@
 const path = require('path');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const DotenvPlugin = require('dotenv-webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -15,8 +16,11 @@ module.exports = (env, argv) => ({
     extensions: ['.ts', '.tsx', '.js']
   },
   plugins: [
+    new BundleAnalyzerPlugin({
+      analyzerMode: 'static',
+      openAnalyzer: false
+    }),
     new DotenvPlugin({
-      path: argv.mode === 'production' ? '.env.production' : '.env',
       defaults: true,
       systemvars: true
     }),
