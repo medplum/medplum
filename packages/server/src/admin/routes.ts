@@ -66,18 +66,6 @@ adminRouter.get('/projects/:projectId', asyncWrap(async (req: Request, res: Resp
   });
 }));
 
-adminRouter.post('/super/structuredefinitions', asyncWrap(async (req: Request, res: Response) => {
-  const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
-  assertOk(outcome);
-
-  if (!user?.admin) {
-    return sendOutcome(res, badRequest('Requires super administrator privileges'));
-  }
-
-  await createValueSetElements();
-  return sendOutcome(res, allOk);
-}));
-
 adminRouter.post('/super/valuesets', asyncWrap(async (req: Request, res: Response) => {
   const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
   assertOk(outcome);

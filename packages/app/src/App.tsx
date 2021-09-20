@@ -63,7 +63,8 @@ export function App() {
               title: 'Developer',
               links: [
                 { label: 'Client Applications', href: '/ClientApplication' },
-                { label: 'Subscriptions', href: '/Subscription' }
+                { label: 'Subscriptions', href: '/Subscription' },
+                { label: 'Bots', href: '/Bot' }
               ]
             },
             {

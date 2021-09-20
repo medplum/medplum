@@ -1,11 +1,11 @@
-import { assertOk, AuditEvent, BundleEntry, createReference, Extension, Filter, Operator, parseFhirPath, Resource, SearchRequest, stringify, Subscription } from '@medplum/core';
+import { assertOk, AuditEvent, Bot, BundleEntry, createReference, Extension, Filter, Operator, parseFhirPath, Resource, SearchRequest, stringify, Subscription } from '@medplum/core';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
 import { URL } from 'url';
 import vm from 'vm';
 import { MedplumRedisConfig } from '../config';
-import { repo } from '../fhir';
+import { repo, Repository } from '../fhir';
 import { getSearchParameter, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 
@@ -164,19 +164,6 @@ function matchesChannelType(subscription: Subscription): boolean {
     return true;
   }
 
-  if (channelType === 'action') {
-    const code = getExtensionValue(
-      subscription as Subscription,
-      'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode');
-
-    if (!code) {
-      logger.debug(`Ignore code action missing code`);
-      return false;
-    }
-
-    return true;
-  }
-
   return false;
 }
 
@@ -262,9 +249,11 @@ export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<v
 
   const channelType = subscription?.channel?.type;
   if (channelType === 'rest-hook') {
-    await sendRestHook(job, subscription as Subscription, resource as Resource);
-  } else if (channelType === 'action') {
-    await execAction(job, subscription as Subscription, resource as Resource);
+    if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
+      await execBot(job, subscription as Subscription, resource as Resource);
+    } else {
+      await sendRestHook(job, subscription as Subscription, resource as Resource);
+    }
   }
 }
 
@@ -288,10 +277,7 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
 
   const body = stringify(resource);
 
-  const secret = getExtensionValue(
-    subscription as Subscription,
-    'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
-
+  const secret = getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
   if (secret) {
     headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
   }
@@ -303,8 +289,8 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
     await createSubscriptionAuditEvent(
-      subscription as Subscription,
-      resource as Resource,
+      subscription,
+      resource,
       response.status === 200 ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received status ${response.status}`);
 
@@ -315,8 +301,8 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
   } catch (ex) {
     logger.info('Subscription exception: ' + ex);
     await createSubscriptionAuditEvent(
-      subscription as Subscription,
-      resource as Resource,
+      subscription,
+      resource,
       AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received error ${ex}`);
     error = ex as Error;
@@ -328,31 +314,39 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
 }
 
 /**
- * Executes an action sbuscription.
+ * Executes a Bot sbuscription.
  * @param job The subscription job details.
  * @param subscription The subscription.
  * @param resource The resource that triggered the subscription.
  */
-export async function execAction(job: Job<SubscriptionJobData>, subscription: Subscription, resource: Resource): Promise<void> {
-  console.log('CODY: Execute!');
-  console.log('job', job.id);
-  console.log('subscription', subscription.id);
-  console.log('resource', resource.id);
+export async function execBot(job: Job<SubscriptionJobData>, subscription: Subscription, resource: Resource): Promise<void> {
+  const url = subscription?.channel?.endpoint as string;
+  if (!url) {
+    // This can happen if a user updates the Subscription after the job is created.
+    logger.debug(`Ignore rest hook missing URL`);
+    return;
+  }
 
-  const sandbox = {
-    resource,
-    console,
-    repo
-  };
+  // URL should be a Bot reference string
+  const [botOutcome, bot] = await repo.readReference<Bot>({ reference: url });
+  assertOk(botOutcome);
 
-  const code = getExtensionValue(
-    subscription as Subscription,
-    'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode');
-
+  const code = bot?.code;
   if (!code) {
     logger.debug('Ignore action subscription missing code');
     return;
   }
+
+  const botRepo = new Repository({
+    project: bot?.meta?.project as string,
+    author: createReference(bot as Bot)
+  });
+
+  const sandbox = {
+    resource,
+    console,
+    repo: botRepo
+  };
 
   const options: vm.RunningScriptOptions = {
     timeout: 100
@@ -361,7 +355,7 @@ export async function execAction(job: Job<SubscriptionJobData>, subscription: Su
   try {
     vm.runInNewContext(code, sandbox, options);
   } catch (error) {
-    console.log('execAction error', error);
+    console.log('execBot error', error);
   }
 }
 
