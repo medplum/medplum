@@ -3,7 +3,8 @@ import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { repo, sendOutcome } from '../fhir';
 import { authenticateToken } from '../oauth';
-import { createValueSetElements } from '../valuesets';
+import { createStructureDefinitions } from '../seeds/structuredefinitions';
+import { createValueSetElements } from '../seeds/valuesets';
 import { inviteHandler, inviteValidators } from './invite';
 import { verifyProjectAdmin } from './utils';
 
@@ -74,5 +75,17 @@ adminRouter.post('/super/valuesets', asyncWrap(async (req: Request, res: Respons
   }
 
   await createValueSetElements();
+  return sendOutcome(res, allOk);
+}));
+
+adminRouter.post('/super/structuredefinitions', asyncWrap(async (req: Request, res: Response) => {
+  const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
+  assertOk(outcome);
+
+  if (!user?.admin) {
+    return sendOutcome(res, badRequest('Requires super administrator privileges'));
+  }
+
+  await createStructureDefinitions();
   return sendOutcome(res, allOk);
 }));

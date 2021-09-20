@@ -1,4 +1,5 @@
 import {
+  Bot,
   Bundle,
   getDisplayString,
   Patient,
@@ -8,6 +9,7 @@ import {
 } from '@medplum/core';
 import {
   Button,
+  DefaultResourceTimeline,
   Document,
   EncounterTimeline,
   Form,
@@ -18,7 +20,6 @@ import {
   ResourceForm,
   ResourceHistoryTable,
   ResourceTable,
-  SubscriptionTimeline,
   Tab,
   TabBar,
   TabPanel,
@@ -35,6 +36,10 @@ function getTabs(resourceType: string): string[] {
 
   if (resourceType === 'Encounter' || resourceType === 'Patient' || resourceType === 'Subscription') {
     result.push('Timeline');
+  }
+
+  if (resourceType === 'Bot') {
+    result.push('Timeline', 'Editor');
   }
 
   if (resourceType === 'Questionnaire') {
@@ -165,23 +170,38 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           <Button type="submit">OK</Button>
         </Form>
       );
+    case 'editor':
+      return (
+        <Form onSubmit={(formData: Record<string, string>) => {
+          props.onSubmit({
+            ...JSON.parse(stringify(props.resource)),
+            code: formData.code
+          });
+        }}>
+          <textarea
+            id="code"
+            data-testid="resource-code"
+            name="code"
+            defaultValue={(props.resource as Bot).code}
+          />
+          <Button type="submit">OK</Button>
+        </Form>
+      );
     case 'timeline':
-      if (props.resource.resourceType === 'Encounter') {
-        return (
-          <EncounterTimeline encounter={props.resource} />
-        );
+      switch (props.resource.resourceType) {
+        case 'Encounter':
+          return (
+            <EncounterTimeline encounter={props.resource} />
+          );
+        case 'Patient':
+          return (
+            <PatientTimeline patient={props.resource} />
+          );
+        default:
+          return (
+            <DefaultResourceTimeline resource={props.resource} />
+          );
       }
-      if (props.resource.resourceType === 'Patient') {
-        return (
-          <PatientTimeline patient={props.resource} />
-        );
-      }
-      if (props.resource.resourceType === 'Subscription') {
-        return (
-          <SubscriptionTimeline subscription={props.resource} />
-        );
-      }
-      return null;
     case 'preview':
       return (
         <QuestionnaireForm

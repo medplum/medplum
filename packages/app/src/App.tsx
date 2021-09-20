@@ -47,6 +47,7 @@ export function App() {
                 { label: 'Practitioners', href: '/Practitioner' },
                 { label: 'Observations', href: '/Observation' },
                 { label: 'Organizations', href: '/Organization' },
+                { label: 'Service Requests', href: '/ServiceRequest' },
                 { label: 'Encounters', href: '/Encounter' },
                 { label: 'Diagnostic Reports', href: '/DiagnosticReport' },
                 { label: 'Questionnaires', href: '/Questionnaire' },
@@ -62,7 +63,8 @@ export function App() {
               title: 'Developer',
               links: [
                 { label: 'Client Applications', href: '/ClientApplication' },
-                { label: 'Subscriptions', href: '/Subscription' }
+                { label: 'Subscriptions', href: '/Subscription' },
+                { label: 'Bots', href: '/Bot' }
               ]
             },
             {

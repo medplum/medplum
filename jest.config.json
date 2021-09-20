@@ -27,12 +27,17 @@
     "**/src/**/*.ts",
     "**/src/**/*.tsx",
     "!**/*.d.ts",
-    "!**/*.stories.tsx"
+    "!**/*.stories.tsx",
+    "!**/webpack.config.js",
+    "!**/stories/**",
+    "!**/jest.sequencer.js",
+    "!packages/core/src/fhir/**/*.ts",
+    "!packages/generator/**/*.ts",
+    "!packages/server/src/migrations/**/*.ts"
   ],
   "projects": [
     "packages/app",
     "packages/core",
-    "packages/generator",
     "packages/infra",
     "packages/server",
     "packages/ui"

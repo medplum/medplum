@@ -1,11 +1,12 @@
-import { assertOk, Bundle, BundleEntry, ClientApplication, isOk, OperationOutcomeError, Project, Resource, SearchParameter, StructureDefinition } from '@medplum/core';
+import { assertOk, Bundle, BundleEntry, ClientApplication, isOk, OperationOutcomeError, Project, SearchParameter } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { registerNew } from './auth/register';
 import { MEDPLUM_CLIENT_APPLICATION_ID, MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from './constants';
 import { repo } from './fhir';
 import { logger } from './logger';
 import { generateSecret } from './oauth';
-import { createValueSetElements } from './valuesets';
+import { createStructureDefinitions } from './seeds/structuredefinitions';
+import { createValueSetElements } from './seeds/valuesets';
 
 export async function seedDatabase(): Promise<void> {
   if (await isSeeded()) {
@@ -113,29 +114,5 @@ async function createSearchParameters(): Promise<void> {
     }
 
     logger.debug('Created: ' + (result as SearchParameter).id);
-  }
-}
-
-/**
- * Creates all StructureDefinition resources.
- */
-async function createStructureDefinitions(): Promise<void> {
-  const structureDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
-  for (const entry of (structureDefinitions.entry as BundleEntry[])) {
-    const resource = entry.resource as Resource;
-
-    if (resource.resourceType === 'StructureDefinition' && resource.name) {
-      logger.debug('StructureDefinition: ' + resource.name);
-      const [outcome, result] = await repo.createResource<StructureDefinition>({
-        ...resource,
-        text: undefined
-      });
-
-      if (!isOk(outcome)) {
-        throw new OperationOutcomeError(outcome);
-      }
-
-      logger.debug('Created: ' + (result as StructureDefinition).id);
-    }
   }
 }
