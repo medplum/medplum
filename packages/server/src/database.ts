@@ -1,6 +1,7 @@
 import { Pool, PoolClient } from 'pg';
 import { MedplumDatabaseConfig } from './config';
 import * as v1 from './migrations/v1';
+import * as v2 from './migrations/v2';
 
 let pool: Pool | undefined;
 
@@ -54,5 +55,10 @@ async function migrate(client: PoolClient): Promise<void> {
   if (version < 1) {
     await v1.run(client);
     await client.query('UPDATE "DatabaseMigration" SET "version"=1 WHERE "id"=1');
+  }
+
+  if (version < 2) {
+    await v2.run(client);
+    await client.query('UPDATE "DatabaseMigration" SET "version"=2 WHERE "id"=2');
   }
 }

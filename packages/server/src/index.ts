@@ -22,9 +22,9 @@ async function main() {
   await seedDatabase();
   initBinaryStorage(config.binaryStorage);
 
-  logger.debug('Initializing webhooks...');
+  logger.debug('Initializing workers...');
   initSubscriptionWorker(config.redis);
-  logger.debug('Webhooks initialized');
+  logger.debug('Workers initialized');
 
   const app = await initApp(express());
   app.listen(5000);

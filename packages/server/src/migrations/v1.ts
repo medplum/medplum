@@ -3675,6 +3675,21 @@ export async function run(client: PoolClient) {
     "lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL
   )`);
 
+  await client.query(`CREATE TABLE IF NOT EXISTS "Bot" (
+    "id" UUID NOT NULL PRIMARY KEY,
+    "content" TEXT NOT NULL,
+    "lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL,
+    "compartments" UUID[] NOT NULL,
+    "name" TEXT
+  )`);
+
+  await client.query(`CREATE TABLE IF NOT EXISTS "Bot_History" (
+    "versionId" UUID NOT NULL PRIMARY KEY,
+    "id" UUID NOT NULL,
+    "content" TEXT NOT NULL,
+    "lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL
+  )`);
+
   await client.query(`CREATE TABLE IF NOT EXISTS "Address" (
     "id" UUID NOT NULL PRIMARY KEY,
     "resourceId" UUID NOT NULL,

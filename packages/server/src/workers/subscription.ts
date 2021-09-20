@@ -3,6 +3,7 @@ import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
 import { URL } from 'url';
+import vm from 'vm';
 import { MedplumRedisConfig } from '../config';
 import { repo } from '../fhir';
 import { getSearchParameter, parseSearchUrl } from '../fhir/search';
@@ -164,7 +165,10 @@ function matchesChannelType(subscription: Subscription): boolean {
   }
 
   if (channelType === 'action') {
-    const code = getExtensionValue(subscription, '');
+    const code = getExtensionValue(
+      subscription as Subscription,
+      'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode');
+
     if (!code) {
       logger.debug(`Ignore code action missing code`);
       return false;
@@ -244,7 +248,7 @@ async function getSubscriptions(): Promise<Subscription[]> {
 }
 
 /**
- * Sends a rest hook to the subscription.
+ * Sends a subscription.
  * @param job The subscription job details.
  */
 export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<void> {
@@ -256,6 +260,21 @@ export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<v
   const [resourceOutcome, resource] = await repo.readVersion(resourceType, id, versionId);
   assertOk(resourceOutcome);
 
+  const channelType = subscription?.channel?.type;
+  if (channelType === 'rest-hook') {
+    await sendRestHook(job, subscription as Subscription, resource as Resource);
+  } else if (channelType === 'action') {
+    await execAction(job, subscription as Subscription, resource as Resource);
+  }
+}
+
+/**
+ * Sends a rest-hook subscription.
+ * @param job The subscription job details.
+ * @param subscription The subscription.
+ * @param resource The resource that triggered the subscription.
+ */
+export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: Subscription, resource: Resource): Promise<void> {
   const url = subscription?.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
@@ -305,6 +324,44 @@ export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<v
 
   if (error) {
     throw error;
+  }
+}
+
+/**
+ * Executes an action sbuscription.
+ * @param job The subscription job details.
+ * @param subscription The subscription.
+ * @param resource The resource that triggered the subscription.
+ */
+export async function execAction(job: Job<SubscriptionJobData>, subscription: Subscription, resource: Resource): Promise<void> {
+  console.log('CODY: Execute!');
+  console.log('job', job.id);
+  console.log('subscription', subscription.id);
+  console.log('resource', resource.id);
+
+  const sandbox = {
+    resource,
+    console,
+    repo
+  };
+
+  const code = getExtensionValue(
+    subscription as Subscription,
+    'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode');
+
+  if (!code) {
+    logger.debug('Ignore action subscription missing code');
+    return;
+  }
+
+  const options: vm.RunningScriptOptions = {
+    timeout: 100
+  };
+
+  try {
+    vm.runInNewContext(code, sandbox, options);
+  } catch (error) {
+    console.log('execAction error', error);
   }
 }
 

@@ -1,5 +1,6 @@
 import {
   Bundle,
+  Extension,
   getDisplayString,
   Patient,
   Questionnaire,
@@ -33,8 +34,12 @@ import { PatientHeader } from './PatientHeader';
 function getTabs(resourceType: string): string[] {
   const result = [];
 
-  if (resourceType === 'Encounter' || resourceType === 'Patient' || resourceType === 'Subscription') {
+  if (resourceType === 'Encounter' || resourceType === 'Patient') {
     result.push('Timeline');
+  }
+
+  if (resourceType === 'Subscription') {
+    result.push('Timeline', 'Action');
   }
 
   if (resourceType === 'Questionnaire') {
@@ -165,6 +170,22 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           <Button type="submit">OK</Button>
         </Form>
       );
+    case 'action':
+      return (
+        <Form onSubmit={(formData: Record<string, string>) => {
+          const updated = JSON.parse(stringify(props.resource));
+          setCode(updated, formData.code);
+          props.onSubmit(updated);
+        }}>
+          <textarea
+            id="code"
+            data-testid="resource-code"
+            name="code"
+            defaultValue={getCode(props.resource)}
+          />
+          <Button type="submit">OK</Button>
+        </Form>
+      );
     case 'timeline':
       if (props.resource.resourceType === 'Encounter') {
         return (
@@ -193,4 +214,39 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
   }
   return null;
+}
+
+function getCode(resource: Resource): string | undefined {
+  const extensions = (resource as any).extension;
+  if (extensions) {
+    for (const extension of extensions) {
+      if (extension.url === 'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode') {
+        return extension.valueString;
+      }
+    }
+  }
+  return undefined;
+}
+
+function setCode(resource: Resource, code: string): void {
+  let extensions = (resource as any).extension;
+  if (!extensions) {
+    extensions = (resource as any).extension = [];
+  }
+
+  let extension: Extension | undefined = undefined;
+  for (const e of extensions) {
+    if (e.url === 'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode') {
+      extension = e;
+      break;
+    }
+  }
+
+  if (!extension) {
+    extension = {
+      url: 'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode'
+    };
+  }
+
+  (extension as any).valueString = code;
 }

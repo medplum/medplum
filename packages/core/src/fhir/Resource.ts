@@ -14,6 +14,7 @@ import { Basic } from './Basic';
 import { Binary } from './Binary';
 import { BiologicallyDerivedProduct } from './BiologicallyDerivedProduct';
 import { BodyStructure } from './BodyStructure';
+import { Bot } from './Bot';
 import { Bundle } from './Bundle';
 import { CapabilityStatement } from './CapabilityStatement';
 import { CarePlan } from './CarePlan';
@@ -168,6 +169,7 @@ export type Resource = Account
   | Binary
   | BiologicallyDerivedProduct
   | BodyStructure
+  | Bot
   | Bundle
   | CapabilityStatement
   | CarePlan

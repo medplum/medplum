@@ -65406,7 +65406,7 @@
     }
   },
   {
-    "fullUrl" : "http://hl7.org/fhir/SearchParameter/Project-name",
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Project-name",
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "Project-name",
@@ -65423,7 +65423,7 @@
     }
   },
   {
-    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ProjectMembership-project",
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-project",
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "ProjectMembership-project",
@@ -65441,7 +65441,7 @@
     }
   },
   {
-    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ProjectMembership-user",
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-user",
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "ProjectMembership-user",
@@ -65459,7 +65459,7 @@
     }
   },
   {
-    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ClientApplication-name",
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "ClientApplication-name",
@@ -65476,6 +65476,7 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/JsonWebKey-active",
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "JsonWebKey-active",
@@ -65493,6 +65494,7 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/User-email",
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "User-email",
@@ -65509,6 +65511,7 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Login-code",
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "Login-code",
@@ -65525,6 +65528,7 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Login-cookie",
     "resource" : {
       "resourceType" : "SearchParameter",
       "id" : "Login-cookie",
@@ -65537,6 +65541,23 @@
       "type" : "token",
       "expression" : "Login.cookie",
       "xpath" : "f:Login/f:cookie",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Bot-name",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Bot-name",
+      "url" : "https://medplum.com/fhir/SearchParameter/Bot-name",
+      "version" : "4.0.1",
+      "name" : "name",
+      "publisher" : "Medplum",
+      "code" : "name",
+      "base" : ["Bot"],
+      "type" : "string",
+      "expression" : "Bot.name",
+      "xpath" : "f:Bot/f:name",
       "xpathUsage" : "normal"
     }
   }]
