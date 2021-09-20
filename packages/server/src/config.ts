@@ -19,6 +19,7 @@ export interface MedplumServerConfig {
   redis: MedplumRedisConfig;
   googleClientId?: string;
   googleClientSecret?: string;
+  adminClientId?: string;
 }
 
 /**

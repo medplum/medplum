@@ -3,6 +3,7 @@ import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
 import validator from 'validator';
+import { getConfig } from '../config';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
 import { logger } from '../logger';
@@ -684,11 +685,16 @@ export class Repository {
   }
 
   private isAdmin(): boolean {
-    return !!this.context.admin;
+    return !!this.context.admin || this.isAdminClient();
   }
 
   private isClientApplication(): boolean {
     return !!this.context.author.reference?.startsWith('ClientApplication/');
+  }
+
+  private isAdminClient(): boolean {
+    const { adminClientId } = getConfig();
+    return !!adminClientId && this.context.author.reference === 'ClientApplication/' + adminClientId;
   }
 }
 
