@@ -1,4 +1,4 @@
-import { Observation, Patient, stringify, Subscription } from '@medplum/core';
+import { assertOk, AuditEvent, Bot, getReferenceString, Observation, Operator, Patient, stringify, Subscription } from '@medplum/core';
 import { Job, Queue } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
@@ -384,6 +384,122 @@ describe('Subscription Worker', () => {
 
     // If the job throws, then the QueueScheduler will retry
     await expect(sendSubscription(job)).rejects.toThrow();
+  });
+
+  test('Execute bot subscriptions', async () => {
+    const nonce = randomUUID();
+
+    const [botOutcome, bot] = await repo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+      description: 'Test Bot',
+      code: `console.log('${nonce}');`
+    });
+    expect(botOutcome.id).toEqual('created');
+    expect(bot).not.toBeUndefined();
+
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: getReferenceString(bot as Bot)
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).not.toBeUndefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    (fetch as any).mockImplementation(() => ({ status: 200 }));
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    await sendSubscription(job);
+    expect(fetch).not.toHaveBeenCalled();
+
+    const [searchOutcome, bundle] = await repo.search<AuditEvent>({
+      resourceType: 'AuditEvent',
+      filters: [{
+        code: 'source',
+        operator: Operator.EQUALS,
+        value: getReferenceString(subscription as Subscription)
+      }]
+    });
+    assertOk(searchOutcome);
+    expect(bundle).not.toBeUndefined();
+    expect(bundle?.entry?.length).toEqual(1);
+    expect(bundle?.entry?.[0]?.resource?.outcome).toEqual('0');
+    expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
+    expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
+  });
+
+  test('Bot failure', async () => {
+    const nonce = randomUUID();
+
+    const [botOutcome, bot] = await repo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+      description: 'Test Bot',
+      code: `throw new Error('${nonce}');`
+    });
+    expect(botOutcome.id).toEqual('created');
+    expect(bot).not.toBeUndefined();
+
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: getReferenceString(bot as Bot)
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).not.toBeUndefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    (fetch as any).mockImplementation(() => ({ status: 200 }));
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    await sendSubscription(job);
+    expect(fetch).not.toHaveBeenCalled();
+
+    const [searchOutcome, bundle] = await repo.search<AuditEvent>({
+      resourceType: 'AuditEvent',
+      filters: [{
+        code: 'source',
+        operator: Operator.EQUALS,
+        value: getReferenceString(subscription as Subscription)
+      }]
+    });
+    assertOk(searchOutcome);
+    expect(bundle).not.toBeUndefined();
+    expect(bundle?.entry?.length).toEqual(1);
+    expect(bundle?.entry?.[0]?.resource?.outcome).not.toEqual('0');
+    expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain('Error');
+    expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
   });
 
 });

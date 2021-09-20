@@ -337,6 +337,13 @@ export async function execBot(job: Job<SubscriptionJobData>, subscription: Subsc
     return;
   }
 
+  const botLog = [];
+
+  const botConsole = {
+    ...console,
+    log: (...params: any[]) => botLog.push(params)
+  };
+
   const botRepo = new Repository({
     project: bot?.meta?.project as string,
     author: createReference(bot as Bot)
@@ -344,7 +351,7 @@ export async function execBot(job: Job<SubscriptionJobData>, subscription: Subsc
 
   const sandbox = {
     resource,
-    console,
+    console: botConsole,
     repo: botRepo
   };
 
@@ -352,11 +359,17 @@ export async function execBot(job: Job<SubscriptionJobData>, subscription: Subsc
     timeout: 100
   };
 
+  let outcome: AuditEventOutcome = AuditEventOutcome.Success;
+
   try {
     vm.runInNewContext(code, sandbox, options);
+    botLog.push('Success');
   } catch (error) {
-    console.log('execBot error', error);
+    outcome = AuditEventOutcome.MinorFailure;
+    botLog.push('Error:', (error as Error).message);
   }
+
+  await createSubscriptionAuditEvent(subscription, resource, outcome, JSON.stringify(botLog, undefined, 2));
 }
 
 /**
