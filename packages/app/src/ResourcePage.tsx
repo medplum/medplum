@@ -1,6 +1,6 @@
 import {
+  Bot,
   Bundle,
-  Extension,
   getDisplayString,
   Patient,
   Questionnaire,
@@ -9,6 +9,7 @@ import {
 } from '@medplum/core';
 import {
   Button,
+  DefaultResourceTimeline,
   Document,
   EncounterTimeline,
   Form,
@@ -19,7 +20,6 @@ import {
   ResourceForm,
   ResourceHistoryTable,
   ResourceTable,
-  SubscriptionTimeline,
   Tab,
   TabBar,
   TabPanel,
@@ -34,12 +34,12 @@ import { PatientHeader } from './PatientHeader';
 function getTabs(resourceType: string): string[] {
   const result = [];
 
-  if (resourceType === 'Encounter' || resourceType === 'Patient') {
+  if (resourceType === 'Encounter' || resourceType === 'Patient' || resourceType === 'Subscription') {
     result.push('Timeline');
   }
 
-  if (resourceType === 'Subscription') {
-    result.push('Timeline', 'Action');
+  if (resourceType === 'Bot') {
+    result.push('Timeline', 'Editor');
   }
 
   if (resourceType === 'Questionnaire') {
@@ -170,39 +170,38 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           <Button type="submit">OK</Button>
         </Form>
       );
-    case 'action':
+    case 'editor':
       return (
         <Form onSubmit={(formData: Record<string, string>) => {
-          const updated = JSON.parse(stringify(props.resource));
-          setCode(updated, formData.code);
-          props.onSubmit(updated);
+          props.onSubmit({
+            ...JSON.parse(stringify(props.resource)),
+            code: formData.code
+          });
         }}>
           <textarea
             id="code"
             data-testid="resource-code"
             name="code"
-            defaultValue={getCode(props.resource)}
+            defaultValue={(props.resource as Bot).code}
           />
           <Button type="submit">OK</Button>
         </Form>
       );
     case 'timeline':
-      if (props.resource.resourceType === 'Encounter') {
-        return (
-          <EncounterTimeline encounter={props.resource} />
-        );
+      switch (props.resource.resourceType) {
+        case 'Encounter':
+          return (
+            <EncounterTimeline encounter={props.resource} />
+          );
+        case 'Patient':
+          return (
+            <PatientTimeline patient={props.resource} />
+          );
+        default:
+          return (
+            <DefaultResourceTimeline resource={props.resource} />
+          );
       }
-      if (props.resource.resourceType === 'Patient') {
-        return (
-          <PatientTimeline patient={props.resource} />
-        );
-      }
-      if (props.resource.resourceType === 'Subscription') {
-        return (
-          <SubscriptionTimeline subscription={props.resource} />
-        );
-      }
-      return null;
     case 'preview':
       return (
         <QuestionnaireForm
@@ -214,39 +213,4 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
   }
   return null;
-}
-
-function getCode(resource: Resource): string | undefined {
-  const extensions = (resource as any).extension;
-  if (extensions) {
-    for (const extension of extensions) {
-      if (extension.url === 'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode') {
-        return extension.valueString;
-      }
-    }
-  }
-  return undefined;
-}
-
-function setCode(resource: Resource, code: string): void {
-  let extensions = (resource as any).extension;
-  if (!extensions) {
-    extensions = (resource as any).extension = [];
-  }
-
-  let extension: Extension | undefined = undefined;
-  for (const e of extensions) {
-    if (e.url === 'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode') {
-      extension = e;
-      break;
-    }
-  }
-
-  if (!extension) {
-    extension = {
-      url: 'https://www.medplum.com/fhir/StructureDefinition-subscriptionActionCode'
-    };
-  }
-
-  (extension as any).valueString = code;
 }

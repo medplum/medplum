@@ -2,8 +2,8 @@ import { Bundle, MedplumClient, Subscription } from '@medplum/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { DefaultResourceTimeline, DefaultResourceTimelineProps } from './DefaultResourceTimeline';
 import { MedplumProvider } from './MedplumProvider';
-import { SubscriptionTimeline, SubscriptionTimelineProps } from './SubscriptionTimeline';
 
 const subscriptionId = randomUUID();
 
@@ -74,22 +74,22 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-describe('SubscriptionTimeline', () => {
+describe('DefaultResourceTimeline', () => {
 
   beforeAll(async () => {
     await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  const setup = (args: SubscriptionTimelineProps) => {
+  const setup = (args: DefaultResourceTimelineProps) => {
     return render(
       <MedplumProvider medplum={medplum} router={mockRouter}>
-        <SubscriptionTimeline {...args} />
+        <DefaultResourceTimeline {...args} />
       </MedplumProvider>
     );
   };
 
   test('Renders reference', async () => {
-    setup({ subscription: { reference: 'Subscription/' + subscriptionId } });
+    setup({ resource: { reference: 'Subscription/' + subscriptionId } });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -101,7 +101,7 @@ describe('SubscriptionTimeline', () => {
   });
 
   test('Renders resource', async () => {
-    setup({ subscription });
+    setup({ resource: subscription });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));

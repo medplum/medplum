@@ -250,7 +250,7 @@ export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<v
   const channelType = subscription?.channel?.type;
   if (channelType === 'rest-hook') {
     if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(job, subscription as Subscription, resource as Resource);
+      await execBot(job, subscription, resource as Resource);
     } else {
       await sendRestHook(job, subscription as Subscription, resource as Resource);
     }
