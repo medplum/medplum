@@ -64,19 +64,16 @@ export enum Operator {
 export function parseSearchDefinition(location: { pathname: string, search?: string }): SearchRequest {
   const resourceType = location.pathname.split('/').pop() as string;
   const params = new URLSearchParams(location.search);
-  const fields = ['id', 'meta.versionId', '_lastUpdated', 'name'];
   const filters: Filter[] = [];
   const sortRules: SortRule[] = [];
+  let fields;
   let page = 0;
   let count = 10;
 
   params.forEach((value, key) => {
     if (key === '_fields') {
-      fields.length = 0;
-      fields.push(...value.split(','));
-      return;
-    }
-    if (key === '_sort') {
+      fields = value.split(',');
+    } else if (key === '_sort') {
       if (value.startsWith('-')) {
         sortRules.push({ code: value.substr(1), descending: true });
       } else {

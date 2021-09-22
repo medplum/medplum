@@ -2,6 +2,8 @@ import {
   Bot,
   Bundle,
   getDisplayString,
+  OperationOutcome,
+  OperationOutcomeError,
   Patient,
   Questionnaire,
   Resource,
@@ -58,10 +60,10 @@ export function ResourcePage() {
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
   const [error, setError] = useState();
 
-  function loadResource() {
+  function loadResource(): Promise<void> {
     setError(undefined);
     setLoading(true);
-    medplum.read(resourceType, id)
+    return medplum.read(resourceType, id)
       .then(result => setValue(result))
       .then(() => medplum.readHistory(resourceType, id))
       .then(result => setHistoryBundle(result))
@@ -120,8 +122,11 @@ export function ResourcePage() {
                 resource={value}
                 resourceHistory={historyBundle}
                 onSubmit={(resource: Resource) => {
-                  medplum.update(resource).then(() => loadResource());
+                  medplum.update(resource)
+                    .then(loadResource)
+                    .catch(setError);
                 }}
+                outcome={(error as OperationOutcomeError | undefined)?.outcome}
               />
             </TabPanel>
           ))}
@@ -136,6 +141,7 @@ interface ResourceTabProps {
   resource: Resource;
   resourceHistory: Bundle;
   onSubmit: (resource: Resource) => void;
+  outcome?: OperationOutcome;
 }
 
 function ResourceTab(props: ResourceTabProps): JSX.Element | null {
@@ -146,7 +152,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
     case 'edit':
       return (
-        <ResourceForm defaultValue={props.resource} onSubmit={props.onSubmit} />
+        <ResourceForm defaultValue={props.resource} onSubmit={props.onSubmit} outcome={props.outcome} />
       );
     case 'history':
       return (

@@ -220,7 +220,7 @@ export function SearchControl(props: SearchControlProps) {
 
   const checkboxColumn = props.checkboxesEnabled;
   const search = props.search;
-  const fields = search.fields || ['id', '_lastUpdated', 'name'];
+  const fields = search.fields || ['id', '_lastUpdated'];
   const resourceType = search.resourceType;
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
