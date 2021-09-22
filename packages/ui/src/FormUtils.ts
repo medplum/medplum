@@ -21,7 +21,7 @@ export function ensureKeys<T>(array: T[] | undefined): T[] {
   }
 
   array.forEach(obj => {
-    if (typeof obj === 'object') {
+    if (obj && typeof obj === 'object') {
       const objAsAny = obj as any;
       if (!objAsAny.__key) {
         objAsAny.__key = generateKey();
