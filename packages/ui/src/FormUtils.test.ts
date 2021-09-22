@@ -151,4 +151,7 @@ describe('FormUtils', () => {
     expect(resource.item?.[0]?.text).toEqual('XYZ');
   });
 
+  test('Ensure keys handles null', () => {
+    expect(ensureKeys([null])).toMatchObject([null]);
+  });
 });
