@@ -35,7 +35,6 @@ export function MedplumLink(props: MedplumLinkProps) {
         } else if (props.to) {
           router.push(href);
         }
-        return false;
       }}
     >{props.children}</a>
   );

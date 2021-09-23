@@ -43,7 +43,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
         {props.value?.map((observation, index) => (
           <ObservationRow
             key={'obs-' + index}
-            value={observation as Observation | Reference<Observation>}
+            value={observation}
           />
         ))}
       </tbody>
