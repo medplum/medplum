@@ -66,7 +66,7 @@ function setDefaultResourceType(resourceType: string): void {
   }
 }
 
-function getDefaultSearchForResourceType(resourceType: string): SearchRequest {
+export function getDefaultSearchForResourceType(resourceType: string): SearchRequest {
   const value = localStorage.getItem(resourceType + '-defaultSearch');
   if (value) {
     return JSON.parse(value) as SearchRequest;

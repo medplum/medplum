@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react';
 import { MemoryRouter, Route, Switch } from 'react-router-dom';
 import { history } from './history';
-import { HomePage } from './HomePage';
+import { getDefaultSearchForResourceType, HomePage } from './HomePage';
 
 const patientStructureBundle: Bundle = {
   resourceType: 'Bundle',
@@ -167,6 +167,17 @@ describe('HomePage', () => {
     });
 
     expect(mockRouter.push).toBeCalled();
+  });
+
+  test('Default search fields', () => {
+    expect(getDefaultSearchForResourceType('Patient').fields).toEqual(['id', '_lastUpdated', 'name', 'birthDate', 'gender']);
+    expect(getDefaultSearchForResourceType('Practitioner').fields).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultSearchForResourceType('Organization').fields).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultSearchForResourceType('Questionnaire').fields).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultSearchForResourceType('DiagnosticReport').fields).toEqual(['id', '_lastUpdated', 'subject']);
+    expect(getDefaultSearchForResourceType('Encounter').fields).toEqual(['id', '_lastUpdated', 'subject']);
+    expect(getDefaultSearchForResourceType('Observation').fields).toEqual(['id', '_lastUpdated', 'subject']);
+    expect(getDefaultSearchForResourceType('ServiceRequest').fields).toEqual(['id', '_lastUpdated', 'subject']);
   });
 
 });
