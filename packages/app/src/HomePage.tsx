@@ -14,7 +14,10 @@ export function HomePage() {
   useEffect(() => {
     const parsedSearch = parseSearchDefinition(location);
     if (parsedSearch.resourceType) {
-      setDefaultSearch(parsedSearch);
+      setDefaultResourceType(parsedSearch.resourceType);
+      if (parsedSearch.fields && parsedSearch.fields.length > 0) {
+        setDefaultSearchForResourceType(parsedSearch);
+      }
     }
     setSearch(parsedSearch);
   }, [location]);
@@ -22,6 +25,9 @@ export function HomePage() {
   useEffect(() => {
     if (!search.resourceType) {
       goToSearch(getDefaultSearch());
+    }
+    if (!search.fields || search.fields.length === 0) {
+      goToSearch(getDefaultSearchForResourceType(search.resourceType));
     }
   }, [search]);
 
@@ -46,14 +52,52 @@ function goToSearch(search: SearchRequest): void {
   });
 }
 
-function setDefaultSearch(search: SearchRequest): void {
-  localStorage.setItem('defaultSearch', JSON.stringify(search));
+function getDefaultSearch(): SearchRequest {
+  return getDefaultSearchForResourceType(getDefaultResourceType());
 }
 
-function getDefaultSearch(): SearchRequest {
-  const value = localStorage.getItem('defaultSearch');
+function getDefaultResourceType(): string {
+  return localStorage.getItem('defaultResourceType') || 'Patient';
+}
+
+function setDefaultResourceType(resourceType: string): void {
+  if (resourceType) {
+    localStorage.setItem('defaultResourceType', resourceType);
+  }
+}
+
+export function getDefaultSearchForResourceType(resourceType: string): SearchRequest {
+  const value = localStorage.getItem(resourceType + '-defaultSearch');
   if (value) {
     return JSON.parse(value) as SearchRequest;
   }
-  return { resourceType: 'Patient' };
+  const fields = ['id', '_lastUpdated'];
+  switch (resourceType) {
+    case 'Patient':
+      fields.push('name', 'birthDate', 'gender');
+      break;
+    case 'Practitioner':
+    case 'Organization':
+    case 'Questionnaire':
+      fields.push('name');
+      break;
+    case 'DiagnosticReport':
+    case 'Encounter':
+    case 'Observation':
+    case 'ServiceRequest':
+      fields.push('subject');
+      break;
+  }
+  return {
+    resourceType,
+    fields,
+    sortRules: [{
+      code: '_lastUpdated',
+      descending: true
+    }]
+  };
+}
+
+function setDefaultSearchForResourceType(search: SearchRequest): void {
+  localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
 }

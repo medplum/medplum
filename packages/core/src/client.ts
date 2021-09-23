@@ -539,6 +539,11 @@ export class MedplumClient extends EventTarget {
       return this.handleUnauthenticated(method, url, contentType, body, blob);
     }
 
+    if (response.status === 304) {
+      // No change
+      return undefined;
+    }
+
     const obj = blob ? await response.blob() : await response.json();
     if (obj.resourceType === 'OperationOutcome' && !isOk(obj)) {
       return Promise.reject(new OperationOutcomeError(obj));

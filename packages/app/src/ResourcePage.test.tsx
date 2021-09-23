@@ -174,10 +174,10 @@ describe('ResourcePage', () => {
     setup('/Practitioner/not-found');
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('error'));
+      await waitFor(() => screen.getByText('Resource not found'));
     });
 
-    expect(screen.getByTestId('error')).not.toBeUndefined();
+    expect(screen.getByText('Resource not found')).not.toBeUndefined();
   });
 
   test('Details tab renders', async () => {

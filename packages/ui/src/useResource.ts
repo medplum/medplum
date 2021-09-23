@@ -21,6 +21,7 @@ export function useResource(value: Reference | Resource | undefined): Resource |
   const [resource, setResource] = useState<Resource | undefined>();
 
   useEffect(() => {
+    let subscribed = true;
     if (value) {
       if ('resourceType' in value) {
         setResource(value);
@@ -29,9 +30,15 @@ export function useResource(value: Reference | Resource | undefined): Resource |
           setResource(system);
         } else {
           medplum.readCachedReference(value).then(setResource);
+          medplum.readCachedReference(value).then(r => {
+            if (subscribed) {
+              setResource(r);
+            }
+          });
         }
       }
     }
+    return (() => subscribed = false) as (() => void);
   }, [value]);
 
   return resource;

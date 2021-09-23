@@ -93,6 +93,18 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
     result = patientSearchParameterBundle;
+
+  } else if (method === 'PUT' && url.endsWith('Patient/777')) {
+    result = {
+      status: 304 // Not modified
+    };
+
+  } else if (method === 'PUT' && url.endsWith('Patient/888')) {
+    result = {
+      status: 400,
+      resourceType: 'OperationOutcome',
+      id: 'bad-request'
+    };
   }
 
   const response: any = {
@@ -309,6 +321,18 @@ test('Client update resource', async () => {
   expect(result).not.toBeUndefined();
   expect((result as any).request.options.method).toBe('PUT');
   expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
+});
+
+test('Not modified', async () => {
+  const client = new MedplumClient(defaultOptions);
+  const result = await client.update({ resourceType: 'Patient', id: '777' });
+  expect(result).toBeUndefined();
+});
+
+test('Bad Request', async () => {
+  const client = new MedplumClient(defaultOptions);
+  const promise = client.update({ resourceType: 'Patient', id: '888' });
+  expect(promise).rejects.toMatchObject({});
 });
 
 test('Client read binary', async () => {
