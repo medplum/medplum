@@ -1,4 +1,4 @@
-import { getReferenceString, Reference, Resource } from '@medplum/core';
+import { Reference, Resource } from '@medplum/core';
 import React from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
@@ -29,7 +29,6 @@ export interface TimelineItemProps {
 
 export function TimelineItem(props: TimelineItemProps) {
   const author = props.profile ?? props.resource.meta?.author;
-  const url = `/${getReferenceString(props.resource)}`;
   return (
     <article className="medplum-timeline-item" data-testid="timeline-item">
       <div className="medplum-timeline-item-header">
@@ -39,9 +38,9 @@ export function TimelineItem(props: TimelineItemProps) {
         <div className="medplum-timeline-item-title">
           <ResourceName value={author} link={true} />
           <div className="medplum-timeline-item-subtitle">
-            <MedplumLink to={url}>{formatDateTime(props.resource.meta?.lastUpdated)}</MedplumLink>
+            <MedplumLink to={props.resource}>{formatDateTime(props.resource.meta?.lastUpdated)}</MedplumLink>
             <span>&middot;</span>
-            <MedplumLink to={url}>{props.resource.resourceType}</MedplumLink>
+            <MedplumLink to={props.resource}>{props.resource.resourceType}</MedplumLink>
           </div>
         </div>
       </div>

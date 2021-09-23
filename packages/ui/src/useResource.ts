@@ -16,9 +16,9 @@ const system: Device = {
  * @param value The resource or reference to resource.
  * @returns The resolved resource.
  */
-export function useResource(value: Reference | Resource | undefined): Resource | undefined {
+export function useResource<T extends Resource>(value: Reference<T> | T | undefined): T | undefined {
   const medplum = useMedplum();
-  const [resource, setResource] = useState<Resource | undefined>();
+  const [resource, setResource] = useState<T | undefined>();
 
   useEffect(() => {
     let subscribed = true;
@@ -27,9 +27,8 @@ export function useResource(value: Reference | Resource | undefined): Resource |
         setResource(value);
       } else if ('reference' in value) {
         if (value.reference === 'system') {
-          setResource(system);
+          setResource(system as T);
         } else {
-          medplum.readCachedReference(value).then(setResource);
           medplum.readCachedReference(value).then(r => {
             if (subscribed) {
               setResource(r);

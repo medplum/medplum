@@ -59,7 +59,7 @@ export function main() {
   writeIndexFile(Object.keys(parentTypes).sort());
   writeResourceFile(Object.entries(parentTypes).filter(e => e[1].resource).map(e => e[0]).sort());
   Object.values(parentTypes).forEach(fhirType => writeInterfaceFile(fhirType));
-  writeMigrations();
+  //writeMigrations();
 }
 
 function buildType(resourceType: string, definition: JSONSchema6): FhirType | undefined {
@@ -152,7 +152,7 @@ function writeInterfaceFile(fhirType: FhirType): void {
 
 function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   const resourceType = fhirType.outputName;
-  const genericTypes = ['Bundle', 'BundleEntry', 'OperationOutcome'];
+  const genericTypes = ['Bundle', 'BundleEntry', 'OperationOutcome', 'Reference'];
   const genericModifier = genericTypes.includes(resourceType) ? '<T extends Resource = Resource>' : '';
 
   b.newLine();
@@ -183,7 +183,7 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   }
 }
 
-function writeMigrations(): void {
+export function writeMigrations(): void {
   const b = new FileBuilder(INDENT);
   buildMigrationUp(b);
   writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
@@ -390,12 +390,15 @@ function buildImports(fhirType: FhirType, includedTypes: Set<string>, referenced
 }
 
 function cleanReferencedType(typeName: string): string | undefined {
+  if (typeName === 'T') {
+    return 'Resource';
+  }
+
   if (typeName.startsWith('\'') ||
     isLowerCase(typeName.charAt(0)) ||
     typeName === 'Date | string' ||
     typeName === '(Date | string)[]' ||
-    typeName === 'BundleEntry<T>[]' ||
-    typeName === 'T') {
+    typeName === 'BundleEntry<T>[]') {
     return undefined;
   }
 
@@ -417,6 +420,10 @@ function getTypeScriptType(property: Property): string {
   }
 
   if (property.resourceType === 'Bundle_Entry' && property.name === 'resource') {
+    return 'T';
+  }
+
+  if (property.resourceType === 'Reference' && property.name === 'resource') {
     return 'T';
   }
 

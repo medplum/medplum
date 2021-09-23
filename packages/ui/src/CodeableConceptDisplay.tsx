@@ -1,4 +1,4 @@
-import { CodeableConcept, stringify } from '@medplum/core';
+import { CodeableConcept } from '@medplum/core';
 import React from 'react';
 
 export interface CodeableConceptInputProps {
@@ -7,9 +7,14 @@ export interface CodeableConceptInputProps {
 
 export function CodeableConceptDisplay(props: CodeableConceptInputProps) {
   const value = props.value;
+  if (!value) {
+    return null;
+  }
+
+  const text = value.text ?? value.coding?.[0]?.display ?? value.coding?.[0]?.code;
   return (
-    <div>
-      {stringify(value)}
-    </div>
+    <>
+      {text}
+    </>
   );
 }

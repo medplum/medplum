@@ -302,10 +302,10 @@ export class MedplumClient extends EventTarget {
       `&filter=${encodeURIComponent(filter)}`);
   }
 
-  read(resourceType: string, id: string): Promise<Resource> {
+  read<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const cacheKey = resourceType + '/' + id;
     const promise = this.get(this.fhirUrl(resourceType, id))
-      .then((resource: Resource) => {
+      .then((resource: T) => {
         this.resourceCache.set(cacheKey, resource);
         return resource;
       });
@@ -313,12 +313,12 @@ export class MedplumClient extends EventTarget {
     return promise;
   }
 
-  readCached(resourceType: string, id: string): Promise<Resource> {
-    const cached = this.resourceCache.get(resourceType + '/' + id);
+  readCached<T extends Resource>(resourceType: string, id: string): Promise<T> {
+    const cached = this.resourceCache.get(resourceType + '/' + id) as T | Promise<T> | undefined;
     return cached ? Promise.resolve(cached) : this.read(resourceType, id);
   }
 
-  readReference(reference: Reference): Promise<Resource> {
+  readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
     const refString = reference?.reference;
     if (!refString) {
       return Promise.reject('Missing reference');
@@ -327,7 +327,7 @@ export class MedplumClient extends EventTarget {
     return this.read(resourceType, id);
   }
 
-  readCachedReference(reference: Reference): Promise<Resource> {
+  readCachedReference<T extends Resource>(reference: Reference<T>): Promise<T> {
     const refString = reference?.reference;
     if (!refString) {
       return Promise.reject('Missing reference');
@@ -377,7 +377,7 @@ export class MedplumClient extends EventTarget {
       });
   }
 
-  readHistory(resourceType: string, id: string): Promise<Bundle> {
+  readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
     return this.get(this.fhirUrl(resourceType, id, '_history'));
   }
 

@@ -10,7 +10,7 @@ import { Resource } from './Resource';
 /**
  * A reference from one resource to another.
  */
-export interface Reference {
+export interface Reference<T extends Resource = Resource> {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -75,5 +75,5 @@ export interface Reference {
   /**
    * Optional Resource referred to by this reference.
    */
-  readonly resource?: Resource;
+  readonly resource?: T;
 }

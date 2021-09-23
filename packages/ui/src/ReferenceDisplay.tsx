@@ -12,12 +12,12 @@ export function ReferenceDisplay(props: ReferenceDisplayProps) {
   }
   if (props.value.reference && props.value.display) {
     return (
-      <MedplumLink to={'/' + props.value.reference}>{props.value.display}</MedplumLink>
+      <MedplumLink to={props.value}>{props.value.display}</MedplumLink>
     );
   }
   if (props.value.reference) {
     return (
-      <MedplumLink to={'/' + props.value.reference}>{props.value.reference}</MedplumLink>
+      <MedplumLink to={props.value}>{props.value.reference}</MedplumLink>
     );
   }
   return (
