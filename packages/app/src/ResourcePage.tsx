@@ -6,6 +6,7 @@ import {
   OperationOutcomeError,
   Patient,
   Questionnaire,
+  Reference,
   Resource,
   stringify
 } from '@medplum/core';
@@ -16,6 +17,7 @@ import {
   EncounterTimeline,
   Form,
   Loading,
+  MedplumLink,
   PatientTimeline,
   QuestionnaireForm,
   ResourceBlame,
@@ -26,6 +28,7 @@ import {
   TabBar,
   TabPanel,
   TabSwitch,
+  TitleBar,
   useMedplum
 } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
@@ -52,13 +55,26 @@ function getTabs(resourceType: string): string[] {
   return result;
 }
 
+function getPatient(resource: Resource): Patient | Reference | undefined {
+  if (resource.resourceType === 'Patient') {
+    return resource;
+  }
+  if (resource.resourceType === 'DiagnosticReport' ||
+    resource.resourceType === 'Encounter' ||
+    resource.resourceType === 'Observation' ||
+    resource.resourceType === 'ServiceRequest') {
+    return resource.subject;
+  }
+  return undefined;
+}
+
 export function ResourcePage() {
   const { resourceType, id, tab } = useParams<{ resourceType: string, id: string, tab: string }>();
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [value, setValue] = useState<Resource | undefined>();
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
-  const [error, setError] = useState();
+  const [error, setError] = useState<OperationOutcomeError | undefined>();
 
   function loadResource(): Promise<void> {
     setError(undefined);
@@ -78,35 +94,32 @@ export function ResourcePage() {
     loadResource();
   }, [resourceType, id]);
 
-  if (error) {
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (!value || !historyBundle) {
     return (
       <Document>
-        <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>
+        <h1>Resource not found</h1>
+        <MedplumLink to={`/${resourceType}`}>Return to search page</MedplumLink>
       </Document>
     );
   }
 
-  if (loading || !value || !historyBundle) {
-    return <Loading />;
-  }
-
   const tabs = getTabs(resourceType);
   const defaultTab = tabs[0].toLowerCase();
+  const patient = getPatient(value);
 
   return (
     <>
-      {resourceType === 'Patient' ? (
-        <PatientHeader patient={value as Patient} />
-      ) : (
-        <div style={{
-          backgroundColor: 'white',
-          borderBottom: '2px solid #eee',
-          color: '#444',
-          fontWeight: 'bold',
-          padding: '15px 30px',
-        }}>
-          {value ? getDisplayString(value) : `${resourceType} ${id}`}
-        </div>
+      {patient && (
+        <PatientHeader patient={patient} />
+      )}
+      {resourceType !== 'Patient' && (
+        <TitleBar>
+          <h1>{value ? getDisplayString(value) : `${resourceType} ${id}`}</h1>
+        </TitleBar>
       )}
       <TabBar
         value={tab || defaultTab}
@@ -114,6 +127,9 @@ export function ResourcePage() {
         {tabs.map(t => <Tab key={t} name={t.toLowerCase()} label={t} />)}
       </TabBar>
       <Document>
+        {error && (
+          <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>
+        )}
         <TabSwitch value={tab || defaultTab}>
           {tabs.map(t => (
             <TabPanel key={t} name={t.toLowerCase()}>
@@ -126,7 +142,7 @@ export function ResourcePage() {
                     .then(loadResource)
                     .catch(setError);
                 }}
-                outcome={(error as OperationOutcomeError | undefined)?.outcome}
+                outcome={error?.outcome}
               />
             </TabPanel>
           ))}

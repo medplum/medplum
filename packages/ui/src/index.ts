@@ -56,4 +56,5 @@ export * from './TabPanel';
 export * from './TabSwitch';
 export * from './TextField';
 export * from './Timeline';
+export * from './TitleBar';
 export * from './useResource';

@@ -7,6 +7,7 @@ import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import { buildFieldNameString, getFilterValueString, getValue, movePage, renderValue } from './SearchUtils';
+import { TitleBar } from './TitleBar';
 import { killEvent } from './utils/dom';
 import './SearchControl.css';
 
@@ -232,7 +233,7 @@ export function SearchControl(props: SearchControlProps) {
       onContextMenu={e => killEvent(e)}
       data-testid="search-control"
     >
-      <div className="medplum-search-control-toolbar">
+      <TitleBar>
         <div>
           <h1>
             <a
@@ -274,7 +275,7 @@ export function SearchControl(props: SearchControlProps) {
             >&gt;&gt;</Button>
           </div>
         )}
-      </div>
+      </TitleBar>
       <table>
         <thead>
           <tr>

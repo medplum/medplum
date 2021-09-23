@@ -6,30 +6,6 @@
 }
 
 /*
- * Toolbar
- */
-
-.medplum-search-control-toolbar {
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  background: var(--medplum-surface);
-  padding: 3px 4px 4px 2px;
-}
-
-.medplum-search-control-toolbar>div {
-  display: flex;
-  align-items: center;
-}
-
-.medplum-search-control-toolbar h1 {
-  font-size: 14px;
-  font-weight: bold;
-  padding: 0 4px 0 1px;
-  margin: 0 4px 0 1px;
-}
-
-/*
  * Table styles
  */
 

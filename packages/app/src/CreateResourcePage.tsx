@@ -1,5 +1,5 @@
 import { OperationOutcomeError, Resource } from '@medplum/core';
-import { Document, ResourceForm, useMedplum } from '@medplum/ui';
+import { Document, ResourceForm, TitleBar, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { history } from './history';
@@ -11,15 +11,9 @@ export function CreateResourcePage() {
 
   return (
     <>
-      <div style={{
-        backgroundColor: 'white',
-        borderBottom: '2px solid #eee',
-        color: '#444',
-        fontWeight: 'bold',
-        padding: '15px 30px',
-      }}>
-        New&nbsp;{resourceType}
-      </div>
+      <TitleBar>
+        <h1>New&nbsp;{resourceType}</h1>
+      </TitleBar>
       <Document>
         <ResourceForm
           defaultValue={{ resourceType } as Resource}
@@ -29,7 +23,7 @@ export function CreateResourcePage() {
               .then(result => history.push('/' + result.resourceType + '/' + result.id))
               .catch(setError);
           }}
-          outcome={(error as OperationOutcomeError | undefined)?.outcome}
+          outcome={error?.outcome}
         />
       </Document>
     </>

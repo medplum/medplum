@@ -2,7 +2,7 @@ import { Bundle, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { Router } from 'react-router-dom';
+import { MemoryRouter, Route, Switch } from 'react-router-dom';
 import { history } from './history';
 import { HomePage } from './HomePage';
 
@@ -96,71 +96,87 @@ beforeAll(async () => {
   await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
 });
 
-const setup = () => {
+// const setup = () => {
+//   return render(
+//     <MedplumProvider medplum={medplum} router={mockRouter}>
+//       <Router history={history}>
+//         <HomePage />
+//       </Router>
+//     </MedplumProvider>
+//   );
+// };
+
+const setup = (url = '/Patient') => {
   return render(
     <MedplumProvider medplum={medplum} router={mockRouter}>
-      <Router history={history}>
-        <HomePage />
-      </Router>
+      <MemoryRouter initialEntries={[url]} initialIndex={0}>
+        <Switch>
+          <Route exact path="/:resourceType?"><HomePage /></Route>
+        </Switch>
+      </MemoryRouter>
     </MedplumProvider>
   );
 };
 
-test('HomePage renders', async () => {
-  setup();
+describe('HomePage', () => {
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
+  test('Renders', async () => {
+    setup();
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
   });
 
-  const control = screen.getByTestId('search-control');
-  expect(control).not.toBeUndefined();
-});
+  test('Next page button', async () => {
+    history.push = jest.fn();
 
-test('HomePage next page button', async () => {
-  history.push = jest.fn();
+    setup();
 
-  setup();
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('next-page-button'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('next-page-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('next-page-button'));
+    });
+
+    expect(history.push).toBeCalled();
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('next-page-button'));
+  test('Prev page button', async () => {
+    history.push = jest.fn();
+
+    setup();
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('prev-page-button'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('prev-page-button'));
+    });
+
+    expect(history.push).toBeCalled();
   });
 
-  expect(history.push).toBeCalled();
-});
+  test('New button', async () => {
+    mockRouter.push = jest.fn();
 
-test('HomePage prev page button', async () => {
-  history.push = jest.fn();
+    setup();
 
-  setup();
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('new-button'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('prev-page-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('new-button'));
+    });
+
+    expect(mockRouter.push).toBeCalled();
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('prev-page-button'));
-  });
-
-  expect(history.push).toBeCalled();
-});
-
-test('HomePage new button', async () => {
-  mockRouter.push = jest.fn();
-
-  setup();
-
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('new-button'));
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('new-button'));
-  });
-
-  expect(mockRouter.push).toBeCalled();
 });

@@ -38,10 +38,7 @@ export function useResource(value: Reference | Resource | undefined): Resource |
         }
       }
     }
-    return () => {
-      subscribed = false;
-      return;
-    };
+    return (() => subscribed = false) as (() => void);
   }, [value]);
 
   return resource;
