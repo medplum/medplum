@@ -31,7 +31,7 @@ export interface MedplumClientOptions {
    * Optional.  Default value is "https://api.medplum.com/".
    * Use this to point to a custom Medplum deployment.
    */
-  baseUrl: string;
+  baseUrl?: string;
 
   /**
    * OAuth2 authorize URL.
@@ -271,9 +271,6 @@ export class MedplumClient extends EventTarget {
    * See: https://docs.aws.amazon.com/cognito/latest/developerguide/logout-endpoint.html
    */
   signOutWithRedirect(): void {
-    if (!this.logoutUrl) {
-      throw new Error('Missing logout URL');
-    }
     window.location.assign(this.logoutUrl);
   }
 
@@ -341,7 +338,7 @@ export class MedplumClient extends EventTarget {
 
   getTypeDefinition(resourceType: string): Promise<IndexedStructureDefinition> {
     if (!resourceType) {
-      throw new Error('Missing resourceType');
+      return Promise.reject('Missing resourceType');
     }
     const cached = this.schema.get(resourceType);
     if (cached) {
