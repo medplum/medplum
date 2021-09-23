@@ -1,9 +1,9 @@
 import { getDisplayString, getImageSrc, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
+import './Avatar.css';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { useResource } from './useResource';
-import './Avatar.css';
 
 export interface AvatarProps {
   size?: 'xsmall' | 'small' | 'medium' | 'large';
@@ -40,7 +40,7 @@ export const Avatar = (props: AvatarProps) => {
       data-testid="avatar"
     >
       {props.link && resource ? (
-        <MedplumLink to={`/${resource.resourceType}/${resource.id}`}>
+        <MedplumLink to={resource}>
           {innerContent}
         </MedplumLink>
       ) : (
