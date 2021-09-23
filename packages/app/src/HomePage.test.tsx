@@ -96,16 +96,6 @@ beforeAll(async () => {
   await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
 });
 
-// const setup = () => {
-//   return render(
-//     <MedplumProvider medplum={medplum} router={mockRouter}>
-//       <Router history={history}>
-//         <HomePage />
-//       </Router>
-//     </MedplumProvider>
-//   );
-// };
-
 const setup = (url = '/Patient') => {
   return render(
     <MedplumProvider medplum={medplum} router={mockRouter}>

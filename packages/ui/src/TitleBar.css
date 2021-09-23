@@ -10,7 +10,7 @@
   color: var(--medplum-gray-800);
 }
 
-.medplum-title-bar>div {
+.medplum-title-bar > div {
   display: flex;
   align-items: center;
 }
