@@ -1,6 +1,7 @@
 import {
   Bot,
   Bundle,
+  DiagnosticReport,
   getDisplayString,
   OperationOutcome,
   OperationOutcomeError,
@@ -13,6 +14,7 @@ import {
 import {
   Button,
   DefaultResourceTimeline,
+  DiagnosticReportDisplay,
   Document,
   EncounterTimeline,
   Form,
@@ -24,6 +26,7 @@ import {
   ResourceForm,
   ResourceHistoryTable,
   ResourceTable,
+  ServiceRequestTimeline,
   Tab,
   TabBar,
   TabPanel,
@@ -39,7 +42,10 @@ import { PatientHeader } from './PatientHeader';
 function getTabs(resourceType: string): string[] {
   const result = [];
 
-  if (resourceType === 'Encounter' || resourceType === 'Patient' || resourceType === 'Subscription') {
+  if (resourceType === 'Encounter' ||
+    resourceType === 'Patient' ||
+    resourceType === 'Subscription' ||
+    resourceType === 'ServiceRequest') {
     result.push('Timeline');
   }
 
@@ -49,6 +55,10 @@ function getTabs(resourceType: string): string[] {
 
   if (resourceType === 'Questionnaire') {
     result.push('Preview', 'Builder');
+  }
+
+  if (resourceType === 'DiagnosticReport') {
+    result.push('Report');
   }
 
   result.push('Details', 'Edit', 'History', 'Blame', 'JSON');
@@ -219,6 +229,10 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           return (
             <PatientTimeline patient={props.resource} />
           );
+        case 'ServiceRequest':
+          return (
+            <ServiceRequestTimeline serviceRequest={props.resource} />
+          );
         default:
           return (
             <DefaultResourceTimeline resource={props.resource} />
@@ -232,6 +246,10 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             console.log('formData', formData);
           }}
         />
+      );
+    case 'report':
+      return (
+        <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />
       );
   }
   return null;

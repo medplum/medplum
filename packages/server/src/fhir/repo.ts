@@ -502,6 +502,8 @@ export class Repository {
       }
     }
 
+    console.log('CODY columns', JSON.stringify(columns, undefined, 2));
+
     await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(client);
 
     await new InsertQuery(resourceType + '_History', {

@@ -1,17 +1,18 @@
-import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, Media, ProfileResource, Reference, Resource, SearchRequest, stringify } from '@medplum/core';
+import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, DiagnosticReport, Media, ProfileResource, Reference, Resource, SearchRequest, stringify } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
+import { DiagnosticReportDisplay } from '.';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
 import { Form } from './Form';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiff } from './ResourceDiff';
+import './ResourceTimeline.css';
 import { TextField } from './TextField';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
 import { sortBundleByDate, sortByDate } from './utils/format';
-import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps {
   value: Resource | Reference;
@@ -142,6 +143,8 @@ export const ResourceTimeline = (props: ResourceTimelineProps) => {
             return <AuditEventTimelineItem key={item.id} auditEvent={item} />;
           case 'Communication':
             return <CommunicationTimelineItem key={item.id} communication={item} />;
+          case 'DiagnosticReport':
+            return <DiagnosticReportTimelineItem key={item.id} diagnosticReport={item} />;
           case 'Media':
             return <MediaTimelineItem key={item.id} media={item} />;
           default:
@@ -215,6 +218,18 @@ function AuditEventTimelineItem(props: AuditEventTimelineItemProps) {
   return (
     <TimelineItem resource={props.auditEvent} padding={true}>
       <pre>{stringify(props.auditEvent, true)}</pre>
+    </TimelineItem>
+  );
+}
+
+interface DiagnosticReportTimelineItemProps {
+  diagnosticReport: DiagnosticReport;
+}
+
+function DiagnosticReportTimelineItem(props: DiagnosticReportTimelineItemProps) {
+  return (
+    <TimelineItem resource={props.diagnosticReport} padding={true}>
+      <DiagnosticReportDisplay value={props.diagnosticReport} />
     </TimelineItem>
   );
 }

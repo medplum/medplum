@@ -1,51 +1,42 @@
-import { Attachment, createReference, getReferenceString, Operator, Patient, ProfileResource, Reference, Resource } from '@medplum/core';
+import { Attachment, createReference, getReferenceString, Operator, ProfileResource, Reference, Resource, ServiceRequest } from '@medplum/core';
 import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 
-export interface PatientTimelineProps {
-  patient: Patient | Reference;
+export interface ServiceRequestTimelineProps {
+  serviceRequest: ServiceRequest | Reference;
 }
 
-export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
+export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.Element {
   return (
     <ResourceTimeline
-      value={props.patient}
-      buildSearchRequests={(patient: Resource) => {
-        const patientReference = getReferenceString(patient);
+      value={props.serviceRequest}
+      buildSearchRequests={(serviceRequest: Resource) => {
+        const serviceRequestReference = getReferenceString(serviceRequest);
         return [
           {
             resourceType: 'Communication',
             filters: [{
-              code: 'subject',
+              code: 'based-on',
               operator: Operator.EQUALS,
-              value: patientReference
+              value: serviceRequestReference
             }],
             count: 100
           },
           {
             resourceType: 'Media',
             filters: [{
-              code: 'subject',
+              code: 'based-on',
               operator: Operator.EQUALS,
-              value: patientReference
-            }],
-            count: 100
-          },
-          {
-            resourceType: 'ServiceRequest',
-            filters: [{
-              code: 'subject',
-              operator: Operator.EQUALS,
-              value: patientReference
+              value: serviceRequestReference
             }],
             count: 100
           },
           {
             resourceType: 'DiagnosticReport',
             filters: [{
-              code: 'subject',
+              code: 'based-on',
               operator: Operator.EQUALS,
-              value: patientReference
+              value: serviceRequestReference
             }],
             count: 100
           }
@@ -53,13 +44,15 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
       }}
       createCommunication={(resource: Resource, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
-        subject: createReference(resource),
+        basedOn: [createReference(resource)],
+        subject: (resource as ServiceRequest).subject,
         sender: createReference(sender),
         payload: [{ contentString: text }]
       })}
       createMedia={(resource: Resource, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
-        subject: createReference(resource),
+        basedOn: [createReference(resource)],
+        subject: (resource as ServiceRequest).subject,
         operator: createReference(operator),
         content
       })}

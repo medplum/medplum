@@ -59,7 +59,7 @@ export function main() {
   writeIndexFile(Object.keys(parentTypes).sort());
   writeResourceFile(Object.entries(parentTypes).filter(e => e[1].resource).map(e => e[0]).sort());
   Object.values(parentTypes).forEach(fhirType => writeInterfaceFile(fhirType));
-  //writeMigrations();
+  writeMigrations();
 }
 
 function buildType(resourceType: string, definition: JSONSchema6): FhirType | undefined {
@@ -186,7 +186,7 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
 export function writeMigrations(): void {
   const b = new FileBuilder(INDENT);
   buildMigrationUp(b);
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
+  // writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
@@ -258,9 +258,23 @@ function buildSearchColumns(resourceType: string): string[] {
       continue;
     }
     const columnName = convertCodeToColumnName(searchParam.code);
+    // if (resourceType === 'DiagnosticReport' && searchParam.code === 'based-on') {
+    //   console.log('DiagnosticReport', searchParam.code, columnName);
+    //   console.log('searchParam', JSON.stringify(searchParam, undefined, 2));
+    //   console.log('isArrayParam', isArrayParam(resourceType, columnName));
+    // }
+
+    if (isArrayParam(resourceType, searchParam.code) !== isArrayParam(resourceType, columnName)) {
+      console.log(
+        `Wrong column type for ${resourceType}.${columnName}`,
+        isArrayParam(resourceType, searchParam.code),
+        isArrayParam(resourceType, columnName)
+      );
+    }
+
     if (searchParam.code === 'active') {
       result.push(`"${columnName}" BOOLEAN`)
-    } else if (isArrayParam(resourceType, searchParam.code)) {
+    } else if (isArrayParam(resourceType, columnName)) {
       result.push(`"${columnName}" TEXT[]`)
     } else {
       result.push(`"${columnName}" TEXT`)
@@ -306,14 +320,23 @@ function isLookupTableParam(searchParam: any) {
 function isArrayParam(resourceType: string, propertyName: string): boolean {
   const typeDef = definitions[resourceType];
   if (!typeDef) {
+    // if (resourceType === 'DiagnosticReport' && propertyName === 'basedOn') {
+    //   console.log('no typedef?');
+    // }
     return false;
   }
 
   const propertyDef = typeDef.properties?.[propertyName];
   if (!propertyDef) {
+    // if (resourceType === 'DiagnosticReport' && propertyName === 'basedOn') {
+    //   console.log('no properytDef?');
+    // }
     return false;
   }
 
+  // if (resourceType === 'DiagnosticReport' && propertyName === 'basedOn') {
+  //   console.log('propertyDef', JSON.stringify(propertyDef, undefined, 2));
+  // }
   return (propertyDef as JSONSchema6).type === 'array';
 }
 
