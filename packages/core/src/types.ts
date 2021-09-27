@@ -69,7 +69,6 @@ export enum PropertyType {
   uuid = 'uuid',
 }
 
-
 /**
  * An IndexedStructureDefinition is a lookup-optimized version of a StructureDefinition.
  *
@@ -121,15 +120,24 @@ export interface TypeSchema {
  * @param structureDefinition The original StructureDefinition.
  * @return An indexed IndexedStructureDefinition.
  */
-export function indexStructureDefinition(structureDefinition: StructureDefinition): IndexedStructureDefinition {
+export function indexStructureDefinition(structureDefinition: StructureDefinition, output?: IndexedStructureDefinition): IndexedStructureDefinition {
   const typeName = structureDefinition.name;
-  if (!typeName || typeName === 'Resource') {
+  if (!typeName) { //} || typeName === 'Resource') {
+    console.log('typeName', typeName);
     throw new Error('Invalid StructureDefinition');
   }
 
-  const output = {
-    types: {}
-  } as IndexedStructureDefinition;
+  if (!output) {
+    output = {
+      types: {}
+    } as IndexedStructureDefinition;
+  }
+
+  output.types[typeName] = {
+    display: typeName,
+    description: structureDefinition.description,
+    properties: {}
+  };
 
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
@@ -137,10 +145,10 @@ export function indexStructureDefinition(structureDefinition: StructureDefinitio
     const filtered = elements.filter(e => e.path !== typeName && e.path && e.type && e.type.length > 0);
 
     // First pass, build types
-    filtered.forEach(element => indexType(output, element));
+    filtered.forEach(element => indexType(output as IndexedStructureDefinition, element));
 
     // Second pass, build properties
-    filtered.forEach(element => indexProperty(output, element));
+    filtered.forEach(element => indexProperty(output as IndexedStructureDefinition, element));
   }
 
   return output;
@@ -180,7 +188,7 @@ function indexProperty(output: IndexedStructureDefinition, element: ElementDefin
 }
 
 export function buildTypeName(components: string[]): string {
-  return components.map(capitalize).join('_');
+  return components.map(capitalize).join('');
 }
 
 export function capitalize(word: string): string {

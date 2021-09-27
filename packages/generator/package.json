@@ -18,6 +18,7 @@
     "test": "jest"
   },
   "devDependencies": {
+    "@medplum/core": "0.1.6",
     "@medplum/definitions": "0.1.6",
     "@types/jest": "27.0.2",
     "@types/json-schema": "7.0.9",
