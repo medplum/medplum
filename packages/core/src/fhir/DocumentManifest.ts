@@ -169,8 +169,7 @@ export interface DocumentManifest {
 }
 
 /**
- * A collection of documents compiled for a purpose together with
- * metadata that applies to the collection.
+ * Related identifiers or resources associated with the DocumentManifest.
  */
 export interface DocumentManifestRelated {
 

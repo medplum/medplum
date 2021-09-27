@@ -261,11 +261,7 @@ export interface MedicationDispense {
 }
 
 /**
- * Indicates that a medication product is to be or has been dispensed for
- * a named person/patient.  This includes a description of the medication
- * product (supply) provided and the instructions for administering the
- * medication.  The medication dispense is the result of a pharmacy
- * system responding to a medication order.
+ * Indicates who or what performed the event.
  */
 export interface MedicationDispensePerformer {
 
@@ -318,11 +314,11 @@ export interface MedicationDispensePerformer {
 }
 
 /**
- * Indicates that a medication product is to be or has been dispensed for
- * a named person/patient.  This includes a description of the medication
- * product (supply) provided and the instructions for administering the
- * medication.  The medication dispense is the result of a pharmacy
- * system responding to a medication order.
+ * Indicates whether or not substitution was made as part of the
+ * dispense.  In some cases, substitution will be expected but does not
+ * happen, in other cases substitution is not expected but does happen.
+ * This block explains what substitution did or did not happen and why.
+ * If nothing is specified, substitution was not done.
  */
 export interface MedicationDispenseSubstitution {
 

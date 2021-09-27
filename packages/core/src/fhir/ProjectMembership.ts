@@ -6,10 +6,6 @@
 import { Meta } from './Meta';
 import { Reference } from './Reference';
 
-/**
- * Medplum project membership. A project membership grants a user access
- * to a project.
- */
 export interface ProjectMembership {
 
   /**
@@ -54,7 +50,8 @@ export interface ProjectMembership {
   readonly user?: Reference;
 
   /**
-   * User that is granted access to the project.
+   * Reference to the resource that represents the user profile within the
+   * project.
    */
   readonly profile?: Reference;
 
@@ -62,9 +59,4 @@ export interface ProjectMembership {
    * Collection of compartments that the user has been granted access.
    */
   readonly compartments?: Reference[];
-
-  /**
-   * Whether this user is a project administrator.
-   */
-  readonly admin?: boolean;
 }

@@ -159,10 +159,8 @@ export interface Group {
 }
 
 /**
- * Represents a defined collection of entities that may be discussed or
- * acted upon collectively but which are not expected to act
- * collectively, and are not formally or legally recognized; i.e. a
- * collection of entities that isn't an Organization.
+ * Identifies traits whose presence r absence is shared by members of the
+ * group.
  */
 export interface GroupCharacteristic {
 
@@ -250,10 +248,7 @@ export interface GroupCharacteristic {
 }
 
 /**
- * Represents a defined collection of entities that may be discussed or
- * acted upon collectively but which are not expected to act
- * collectively, and are not formally or legally recognized; i.e. a
- * collection of entities that isn't an Organization.
+ * Identifies the resource instances that are members of the group.
  */
 export interface GroupMember {
 

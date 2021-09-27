@@ -24,16 +24,14 @@ interface FhirType {
 const baseResourceProperties = ['id', 'meta', 'implicitRules', 'language'];
 const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
 
-const resourceDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
-const structureDefinitions = {
-  types: {}
-} as IndexedStructureDefinition;
-for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
-  const resource = entry.resource as Resource;
-  if (resource.resourceType === 'StructureDefinition' && resource.name) {
-    indexStructureDefinition(resource, structureDefinitions);
-  }
-}
+// const resourceDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
+const structureDefinitions = { types: {} } as IndexedStructureDefinition;
+// for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
+//   const resource = entry.resource as Resource;
+//   if (resource.resourceType === 'StructureDefinition' && resource.name) {
+//     indexStructureDefinition(resource, structureDefinitions);
+//   }
+// }
 
 const searchParams = readJson('fhir/r4/search-parameters.json');
 // const schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema6;
@@ -45,6 +43,9 @@ const fhirTypesMap: Record<string, FhirType> = {};
 const v3Builder = new FileBuilder();
 
 export function main() {
+  buildStructureDefinitions('profiles-types.json');
+  buildStructureDefinitions('profiles-resources.json');
+  // buildStructureDefinitions('profiles-others.json');
 
   // for (const [resourceType, definition] of Object.entries(definitions)) {
   //   const fhirType = buildType(resourceType, definition);
@@ -71,7 +72,11 @@ export function main() {
 
   for (const fhirType of fhirTypes) {
     if (fhirType.parentType) {
-      parentTypes[fhirType.parentType].subTypes.push(fhirType);
+      // if (!(fhirType.parentType in parentTypes)) {
+      //   console.log('wtf, parentType=' + fhirType.parentType + ', childType=' + fhirType.outputName);
+      // }
+      // parentTypes[fhirType.parentType].subTypes.push(fhirType);
+      fhirTypesMap[fhirType.parentType].subTypes.push(fhirType);
     }
   }
 
@@ -81,21 +86,39 @@ export function main() {
   writeMigrations();
 }
 
+function buildStructureDefinitions(fileName: string): void {
+  const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
+  for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
+    const resource = entry.resource as Resource;
+    if (resource.resourceType === 'StructureDefinition' &&
+      resource.name &&
+      resource.name !== 'Resource' &&
+      resource.name !== 'BackboneElement' &&
+      resource.name !== 'DomainResource' &&
+      resource.name !== 'MetadataResource' &&
+      resource.name[0] !== resource.name[0].toLowerCase()) {
+      indexStructureDefinition(resource, structureDefinitions);
+    }
+  }
+}
+
 function buildType(resourceType: string, definition: TypeSchema): FhirType | undefined {
   if (!definition.properties) {
     return undefined;
   }
 
-  let parentType;
-  let outputName;
-  if (resourceType.includes('_')) {
-    const parts = resourceType.split('_');
-    parentType = parts[0];
-    outputName = parts[1].startsWith(parts[0]) ? parts[1] : parts[0] + parts[1];
-  } else {
-    parentType = undefined;
-    outputName = resourceType;
-  }
+  // let parentType;
+  // let outputName;
+  // if (resourceType.includes('_')) {
+  //   const parts = resourceType.split('_');
+  //   parentType = parts[0];
+  //   outputName = parts[1].startsWith(parts[0]) ? parts[1] : parts[0] + parts[1];
+  // } else {
+  //   parentType = undefined;
+  //   outputName = resourceType;
+  // }
+
+  // console.log(resourceType, parentType, outputName);
 
   const properties: Property[] = [];
   const propertyNames = new Set<string>();
@@ -117,8 +140,8 @@ function buildType(resourceType: string, definition: TypeSchema): FhirType | und
   return {
     definition,
     inputName: resourceType,
-    parentType,
-    outputName,
+    parentType: definition.parentType,
+    outputName: resourceType,
     properties,
     subTypes: [],
     resource: containsAll(propertyNames, baseResourceProperties),
@@ -187,15 +210,13 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
 
   for (const property of fhirType.properties) {
     b.newLine();
-    // generateJavadoc(b, property.definition.definition);
-
-    // const typeName = getTypeScriptType(property);
-    // if (property.name.endsWith('[x]')) {
-    //   b.append('// TODO');
-    // } else {
-    //   b.append('readonly ' + property.name + '?: ' + typeName + ';');
-    // }
     writeInterfaceProperty(b, fhirType, property);
+  }
+
+  if (fhirType.outputName === 'Reference') {
+    b.newLine();
+    generateJavadoc(b, 'Optional Resource referred to by this reference.');
+    b.append('readonly resource?: T;');
   }
 
   b.indentCount--;
@@ -209,26 +230,27 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
 }
 
 function writeInterfaceProperty(b: FileBuilder, fhirType: FhirType, property: Property): void {
+  // const typeName = getTypeScriptType(property);
+  // if (property.name.endsWith('[x]')) {
+  //   const baseName = property.name.replace('[x]', '');
+  //   const propertyTypes = property.definition.type as ElementDefinitionType[];
+  //   for (const propertyType of propertyTypes) {
+  //     const code = propertyType.code as string;
+  //     b.newLine();
+  //     generateJavadoc(b, property.definition.definition);
+  //     b.append(`readonly ${baseName}${capitalize(code)}?: ${getTypeScriptTypeFromDefinition(code)};`);
+  //   }
+  // } else {
+  //   b.newLine();
+  //   generateJavadoc(b, property.definition.definition);
+  //   b.append('readonly ' + property.name + '?: ' + typeName + ';');
+  // }
 
-  const typeName = getTypeScriptType(property);
-  if (property.name.endsWith('[x]')) {
-    //b.append('// TODO');
-    const baseName = property.name.replace('[x]', '');
-    const propertyTypes = property.definition.type as ElementDefinitionType[];
-    for (const propertyType of propertyTypes) {
-      const code = propertyType.code as string;
-      b.newLine();
-      generateJavadoc(b, property.definition.definition);
-      // b.append('readonly ' + property.name + '?: ' + typeName + ';');
-      b.append(`readonly ${baseName}${capitalize(code)}?: ${getTypeScriptTypeFromDefinition(code)};`);
-    }
-  } else {
+  for (const typeScriptProperty of getTypeScriptProperties(property)) {
     b.newLine();
     generateJavadoc(b, property.definition.definition);
-    b.append('readonly ' + property.name + '?: ' + typeName + ';');
+    b.append('readonly ' + typeScriptProperty.name + '?: ' + typeScriptProperty.typeName + ';');
   }
-
-  // property.definition.type
 }
 
 export function writeMigrations(): void {
@@ -472,7 +494,7 @@ function getColumnType(resourceType: string, searchParam: SearchParameter): stri
     if (i === expression.length - 1) {
       // propertyType = propertyDef.type?.[0]?.code;
       propertyType = propertyTypeCode;
-    } else if (propertyTypeCode === 'BackboneElement') {
+    } else if (propertyTypeCode === 'Element' || propertyTypeCode === 'BackboneElement') {
       baseType = baseType + capitalize(propertyName);
     } else {
       baseType = propertyTypeCode;
@@ -625,14 +647,42 @@ function buildImports(fhirType: FhirType, includedTypes: Set<string>, referenced
   includedTypes.add(fhirType.outputName);
 
   for (const property of fhirType.properties) {
-    const cleanName = cleanReferencedType(getTypeScriptType(property));
-    if (cleanName) {
-      referencedTypes.add(cleanName);
+    // const cleanName = cleanReferencedType(getTypeScriptType(property));
+    // if (fhirType.outputName === 'ActivityDefinition') {
+    //   // console.log('prop', property.name, getTypeScriptType(property), cleanName);
+    //   console.log('prop', property.name);
+    // }
+    // if (cleanName) {
+    //   referencedTypes.add(cleanName);
+    // }
+
+    for (const typeScriptProperty of getTypeScriptProperties(property)) {
+      // if (fhirType.outputName === 'ActivityDefinition') {
+      //   console.log('prop', property.name, typeScriptProperty.name, typeScriptProperty.typeName);
+      // }
+      const cleanName = cleanReferencedType(typeScriptProperty.typeName);
+      if (cleanName) {
+        referencedTypes.add(cleanName);
+      }
     }
   }
 
+  // if (fhirType.outputName === 'ActivityDefinition') {
+  //   console.log('ActivityDefinition referencedTypes', referencedTypes);
+  // }
+
   for (const subType of fhirType.subTypes) {
     buildImports(subType, includedTypes, referencedTypes);
+  }
+
+  if (fhirType.outputName === 'Reference') {
+    referencedTypes.add('Resource');
+  }
+
+  if (fhirType.outputName === 'Timing') {
+    console.log('Timing imports wtf');
+    console.log('includedTypes', includedTypes);
+    console.log('referencedTypes', referencedTypes);
   }
 }
 
@@ -652,70 +702,89 @@ function cleanReferencedType(typeName: string): string | undefined {
   return typeName.replace('[]', '');
 }
 
-function getTypeScriptType(property: Property): string {
-  // const constValue = property.definition['const'];
-  // if (constValue) {
-  //   return '\'' + constValue + '\'';
-  // }
-
-  if (property.resourceType === 'OperationOutcome' && property.name === 'resource') {
-    return 'T';
+function getTypeScriptProperties(property: Property): { name: string, typeName: string }[] {
+  if (property.name === 'resource' &&
+    ['BundleEntry', 'OperationOutcome', 'Reference'].includes(property.resourceType)) {
+    // return 'T';
+    return [{ name: 'resource', typeName: 'T' }];
   }
 
   if (property.resourceType === 'Bundle' && property.name === 'entry') {
-    return 'BundleEntry<T>[]';
+    // return 'BundleEntry<T>[]';
+    return [{ name: 'entry', typeName: 'BundleEntry<T>[]' }];
   }
 
-  if (property.resourceType === 'Bundle_Entry' && property.name === 'resource') {
-    return 'T';
-  }
-
-  if (property.resourceType === 'Reference' && property.name === 'resource') {
-    return 'T';
-  }
-
-  // // const typeValue = property.definition.type;
-  let typeValue = property.definition.type?.[0]?.code;
-
-  if (typeValue === 'BackboneElement') {
-    typeValue = property.resourceType + capitalize(property.name);
-  }
-  // if (typeValue) {
-  //   // if (typeValue === 'array') {
-  //   if (property.definition.max === '*') {
-  //     // const itemDefinition = property.definition.items as JSONSchema6 | undefined;
-  //     // if (itemDefinition && itemDefinition.$ref) {
-  //     //   const itemType = getTypeScriptTypeFromDefinition(itemDefinition.$ref);
-  //     //   if (itemType.includes(' | ')) {
-  //     //     return '(' + itemType + ')[]';
-  //     //   } else {
-  //     //     return itemType + '[]';
-  //     //   }
-  //     // } else if (itemDefinition && itemDefinition.enum) {
-  //     //   return 'string[]';
-  //     // } else {
-  //     //   return 'any[]';
-  //     // }
-  //     return typeValue + '[]';
-  //   } else {
-  //     return getTypeScriptTypeFromDefinition(typeValue as string);
-  //   }
-
-  const typeName = getTypeScriptTypeFromDefinition(typeValue as string);
-  return property.definition.max === '*' ? typeName + '[]' : typeName;
+  // if (property.resourceType === 'Bundle_Entry' && property.name === 'resource') {
+  //   return 'T';
   // }
 
-  // if (property.definition.enum) {
-  //   return 'string';
+  // if (property.resourceType === 'Reference' && property.name === 'resource') {
+  //   return 'T';
   // }
 
-  // const ref = property.definition.$ref;
-  // if (ref) {
-  //   return getTypeScriptTypeFromDefinition(ref);
+  // let typeValue = property.definition.type?.[0]?.code;
+
+  // if (typeValue === 'BackboneElement') {
+  //   typeValue = property.resourceType + capitalize(property.name);
   // }
 
-  // return 'any';
+  const result = [];
+  // return property.definition.max === '*' ? typeName + '[]' : typeName;
+
+  if (property.name.endsWith('[x]')) {
+    const baseName = property.name.replace('[x]', '');
+    const propertyTypes = property.definition.type as ElementDefinitionType[];
+    for (const propertyType of propertyTypes) {
+      const code = propertyType.code as string;
+      // b.newLine();
+      // generateJavadoc(b, property.definition.definition);
+      // b.append(`readonly ${baseName}${capitalize(code)}?: ${getTypeScriptTypeFromDefinition(code)};`);
+      result.push({
+        name: baseName + capitalize(code),
+        typeName: getTypeScriptTypeForProperty(property, propertyType)
+      });
+    }
+  } else {
+    // b.newLine();
+    // generateJavadoc(b, property.definition.definition);
+    // b.append('readonly ' + property.name + '?: ' + typeName + ';');
+    // const typeName = getTypeScriptTypeFromDefinition(typeValue as string);
+    // const typeName
+    result.push({
+      name: property.name,
+      typeName: getTypeScriptTypeForProperty(property, property.definition?.type?.[0] as ElementDefinitionType)
+    });
+  }
+
+  return result;
 }
+
+// function getTypeScriptType(property: Property): string {
+//   if (property.resourceType === 'OperationOutcome' && property.name === 'resource') {
+//     return 'T';
+//   }
+
+//   if (property.resourceType === 'Bundle' && property.name === 'entry') {
+//     return 'BundleEntry<T>[]';
+//   }
+
+//   if (property.resourceType === 'Bundle_Entry' && property.name === 'resource') {
+//     return 'T';
+//   }
+
+//   if (property.resourceType === 'Reference' && property.name === 'resource') {
+//     return 'T';
+//   }
+
+//   let typeValue = property.definition.type?.[0]?.code;
+
+//   if (typeValue === 'BackboneElement') {
+//     typeValue = property.resourceType + capitalize(property.name);
+//   }
+
+//   const typeName = getTypeScriptTypeFromDefinition(typeValue as string);
+//   return property.definition.max === '*' ? typeName + '[]' : typeName;
+// }
 
 
 function generateJavadoc(b: FileBuilder, text: string | undefined): void {
@@ -734,52 +803,92 @@ function generateJavadoc(b: FileBuilder, text: string | undefined): void {
   b.append(' */');
 }
 
-function getTypeScriptTypeFromDefinition(ref: string): string {
-  ref = ref.replace('#/definitions/', '');
+function getTypeScriptTypeForProperty(property: Property, typeDefinition: ElementDefinitionType): string {
+  // const baseType = getTypeScriptTypeFromCode(typeDefinition.code);
+  //   return typeDefinition.max === '*' ? baseType + '[]' : baseType;
+  // }
 
-  switch (ref) {
-    case 'boolean':
-      return 'boolean';
+  // function getTypeScriptTypeFromCode(typeDefinition: ElementDefinitionType): string {
+  //   // ref = ref.replace('#/definitions/', '');
+  //   const ref = typeDefinition.code;
+
+  let baseType = typeDefinition.code as string;
+
+  switch (baseType) {
+    // case 'boolean':
+    //   baseType = 'boolean';
+    //   break;
 
     case 'base64Binary':
     case 'canonical':
     case 'code':
     case 'id':
     case 'markdown':
+    case 'oid':
     case 'string':
     case 'uri':
     case 'url':
+    case 'uuid':
     case 'xhtml':
     case 'http://hl7.org/fhirpath/System.String':
-      return 'string';
+      baseType = 'string';
+      break;
 
     case 'date':
     case 'dateTime':
     case 'instant':
     case 'time':
-      return 'Date | string';
+      // return 'Date | string';
+      baseType = 'Date | string';
+      break;
 
     case 'decimal':
     case 'integer':
     case 'positiveInt':
     case 'unsignedInt':
     case 'number':
-      return 'number';
+      // return 'number';
+      baseType = 'number';
+      break;
 
     case 'ResourceList':
-      return 'Resource';
+      // return 'Resource';
+      baseType = 'Resource';
+      break;
+
+    case 'Element':
+    case 'BackboneElement':
+      // if (typeValue === 'BackboneElement') {
+      //   typeValue = property.resourceType + capitalize(property.name);
+      // }
+      baseType = property.resourceType + capitalize(property.name);
+      break;
   }
 
-  if (ref.indexOf('_') >= 0) {
-    const parts = ref.split('_');
-    if (parts[1].startsWith(parts[0])) {
-      return parts[1];
-    } else {
-      return parts[0] + parts[1];
+
+  // if (ref.indexOf('_') >= 0) {
+  //   const parts = ref.split('_');
+  //   if (parts[1].startsWith(parts[0])) {
+  //     return parts[1];
+  //   } else {
+  //     return parts[0] + parts[1];
+  //   }
+  // }
+
+  // if (ref === 'BackboneElement') {
+
+  // }
+
+  // return ref;
+  // return property.definition.max === '*' ? baseType + '[]' : baseType;
+
+  if (property.definition.max === '*') {
+    if (baseType.includes(' | ')) {
+      return `(${baseType})[]`;
     }
+    return baseType + '[]';
   }
-
-  return ref;
+  return baseType;
 }
 
 function containsAll(set: Set<string>, values: string[]): boolean {

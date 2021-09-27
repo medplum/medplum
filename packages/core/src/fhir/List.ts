@@ -167,7 +167,7 @@ export interface List {
 }
 
 /**
- * A list is a curated collection of resources.
+ * Entries in this list.
  */
 export interface ListEntry {
 

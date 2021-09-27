@@ -206,65 +206,8 @@ export interface MedicinalProduct {
 }
 
 /**
- * Detailed definition of a medicinal product, typically for uses other
- * than direct patient care (e.g. regulatory use).
- */
-export interface MedicinalProductCountryLanguage {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Country code for where this name applies.
-   */
-  readonly country?: CodeableConcept;
-
-  /**
-   * Jurisdiction code for where this name applies.
-   */
-  readonly jurisdiction?: CodeableConcept;
-
-  /**
-   * Language code for this name.
-   */
-  readonly language?: CodeableConcept;
-}
-
-/**
- * Detailed definition of a medicinal product, typically for uses other
- * than direct patient care (e.g. regulatory use).
+ * An operation applied to the product, for manufacturing or
+ * adminsitrative purpose.
  */
 export interface MedicinalProductManufacturingBusinessOperation {
 
@@ -335,8 +278,7 @@ export interface MedicinalProductManufacturingBusinessOperation {
 }
 
 /**
- * Detailed definition of a medicinal product, typically for uses other
- * than direct patient care (e.g. regulatory use).
+ * The product's name, including full name and possibly coded parts.
  */
 export interface MedicinalProductName {
 
@@ -383,19 +325,74 @@ export interface MedicinalProductName {
   /**
    * Coding words or phrases of the name.
    */
-  readonly namePart?: MedicinalProductNamePart[];
+  readonly namePart?: MedicinalProductNameNamePart[];
 
   /**
    * Country where the name applies.
    */
-  readonly countryLanguage?: MedicinalProductCountryLanguage[];
+  readonly countryLanguage?: MedicinalProductNameCountryLanguage[];
 }
 
 /**
- * Detailed definition of a medicinal product, typically for uses other
- * than direct patient care (e.g. regulatory use).
+ * Country where the name applies.
  */
-export interface MedicinalProductNamePart {
+export interface MedicinalProductNameCountryLanguage {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Country code for where this name applies.
+   */
+  readonly country?: CodeableConcept;
+
+  /**
+   * Jurisdiction code for where this name applies.
+   */
+  readonly jurisdiction?: CodeableConcept;
+
+  /**
+   * Language code for this name.
+   */
+  readonly language?: CodeableConcept;
+}
+
+/**
+ * Coding words or phrases of the name.
+ */
+export interface MedicinalProductNameNamePart {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -444,8 +441,8 @@ export interface MedicinalProductNamePart {
 }
 
 /**
- * Detailed definition of a medicinal product, typically for uses other
- * than direct patient care (e.g. regulatory use).
+ * Indicates if the medicinal product has an orphan designation for the
+ * treatment of a rare disease.
  */
 export interface MedicinalProductSpecialDesignation {
 

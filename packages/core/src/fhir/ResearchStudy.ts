@@ -251,13 +251,9 @@ export interface ResearchStudy {
 }
 
 /**
- * A process where a researcher or organization plans and then executes a
- * series of steps intended to increase the field of healthcare-related
- * knowledge.  This includes studies of safety, efficacy, comparative
- * effectiveness and other information about medications, devices,
- * therapies and other interventional and investigative techniques.  A
- * ResearchStudy involves the gathering of information about human or
- * animal subjects.
+ * Describes an expected sequence of events for one of the participants
+ * of a study.  E.g. Exposure to drug A, wash-out, exposure to drug B,
+ * wash-out, follow-up.
  */
 export interface ResearchStudyArm {
 
@@ -315,13 +311,9 @@ export interface ResearchStudyArm {
 }
 
 /**
- * A process where a researcher or organization plans and then executes a
- * series of steps intended to increase the field of healthcare-related
- * knowledge.  This includes studies of safety, efficacy, comparative
- * effectiveness and other information about medications, devices,
- * therapies and other interventional and investigative techniques.  A
- * ResearchStudy involves the gathering of information about human or
- * animal subjects.
+ * A goal that the study is aiming to achieve in terms of a scientific
+ * question to be answered by the analysis of data collected during the
+ * study.
  */
 export interface ResearchStudyObjective {
 

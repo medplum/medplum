@@ -179,7 +179,7 @@ export interface MedicationAdministration {
    * attribute is true). For many administrations, such as swallowing a
    * tablet the use of dateTime is more appropriate.
    */
-  readonly effectiveDateTime?: string;
+  readonly effectiveDateTime?: Date | string;
 
   /**
    * A specific date/time or interval of time during which the
@@ -238,11 +238,8 @@ export interface MedicationAdministration {
 }
 
 /**
- * Describes the event of a patient consuming or otherwise being
- * administered a medication.  This may be as simple as swallowing a
- * tablet or it may be a long running infusion.  Related resources tie
- * this event to the authorizing prescription, and the specific encounter
- * between patient and health care practitioner.
+ * Describes the medication dosage information details e.g. dose, rate,
+ * site, route, etc.
  */
 export interface MedicationAdministrationDosage {
 
@@ -338,11 +335,8 @@ export interface MedicationAdministrationDosage {
 }
 
 /**
- * Describes the event of a patient consuming or otherwise being
- * administered a medication.  This may be as simple as swallowing a
- * tablet or it may be a long running infusion.  Related resources tie
- * this event to the authorizing prescription, and the specific encounter
- * between patient and health care practitioner.
+ * Indicates who or what performed the medication administration and how
+ * they were involved.
  */
 export interface MedicationAdministrationPerformer {
 

@@ -10,8 +10,9 @@ import { Reference } from './Reference';
 import { Timing } from './Timing';
 
 /**
- * A description of a triggering event. Triggering events can be named
- * events, data events, or periodic, as determined by the type element.
+ * Base StructureDefinition for TriggerDefinition Type: A description of
+ * a triggering event. Triggering events can be named events, data
+ * events, or periodic, as determined by the type element.
  */
 export interface TriggerDefinition {
 
@@ -56,12 +57,12 @@ export interface TriggerDefinition {
   /**
    * The timing of the event (if this is a periodic trigger).
    */
-  readonly timingDate?: string;
+  readonly timingDate?: Date | string;
 
   /**
    * The timing of the event (if this is a periodic trigger).
    */
-  readonly timingDateTime?: string;
+  readonly timingDateTime?: Date | string;
 
   /**
    * The triggering data of the event (if this is a data trigger). If more

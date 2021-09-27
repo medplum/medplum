@@ -200,9 +200,7 @@ export interface Location {
 }
 
 /**
- * Details and position information for a physical place where services
- * are provided and resources and participants may be stored, found,
- * contained, or accommodated.
+ * What days/times during a week is this location usually open.
  */
 export interface LocationHoursOfOperation {
 
@@ -264,9 +262,8 @@ export interface LocationHoursOfOperation {
 }
 
 /**
- * Details and position information for a physical place where services
- * are provided and resources and participants may be stored, found,
- * contained, or accommodated.
+ * The absolute geographic location of the Location, expressed using the
+ * WGS84 datum (This is the same co-ordinate system used in KML).
  */
 export interface LocationPosition {
 

@@ -291,8 +291,8 @@ export interface EvidenceVariable {
 }
 
 /**
- * The EvidenceVariable resource describes a &quot;PICO&quot; element that
- * knowledge (evidence, assertion, recommendation) is about.
+ * A characteristic that defines the members of the evidence element.
+ * Multiple characteristics are applied with &quot;and&quot; semantics.
  */
 export interface EvidenceVariableCharacteristic {
 
@@ -400,7 +400,7 @@ export interface EvidenceVariableCharacteristic {
   /**
    * Indicates what effective period the study covers.
    */
-  readonly participantEffectiveDateTime?: string;
+  readonly participantEffectiveDateTime?: Date | string;
 
   /**
    * Indicates what effective period the study covers.

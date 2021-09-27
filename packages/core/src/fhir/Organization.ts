@@ -154,11 +154,7 @@ export interface Organization {
 }
 
 /**
- * A formally or informally recognized grouping of people or
- * organizations formed for the purpose of achieving some form of
- * collective action.  Includes companies, institutions, corporations,
- * departments, community groups, healthcare practice groups,
- * payer/insurer, etc.
+ * Contact for the organization for a certain purpose.
  */
 export interface OrganizationContact {
 

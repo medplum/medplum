@@ -168,10 +168,7 @@ export interface EpisodeOfCare {
 }
 
 /**
- * An association between a patient and an organization / healthcare
- * provider(s) during which time encounters may occur. The managing
- * organization assumes a level of responsibility for the patient during
- * this time.
+ * The list of diagnosis relevant to this episode of care.
  */
 export interface EpisodeOfCareDiagnosis {
 
@@ -229,10 +226,8 @@ export interface EpisodeOfCareDiagnosis {
 }
 
 /**
- * An association between a patient and an organization / healthcare
- * provider(s) during which time encounters may occur. The managing
- * organization assumes a level of responsibility for the patient during
- * this time.
+ * The history of statuses that the EpisodeOfCare has been through
+ * (without requiring processing the history of the resource).
  */
 export interface EpisodeOfCareStatusHistory {
 

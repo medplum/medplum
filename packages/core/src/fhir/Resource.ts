@@ -72,12 +72,10 @@ import { ImmunizationRecommendation } from './ImmunizationRecommendation';
 import { ImplementationGuide } from './ImplementationGuide';
 import { InsurancePlan } from './InsurancePlan';
 import { Invoice } from './Invoice';
-import { JsonWebKey } from './JsonWebKey';
 import { Library } from './Library';
 import { Linkage } from './Linkage';
 import { List } from './List';
 import { Location } from './Location';
-import { Login } from './Login';
 import { Measure } from './Measure';
 import { MeasureReport } from './MeasureReport';
 import { Media } from './Media';
@@ -109,7 +107,6 @@ import { OperationOutcome } from './OperationOutcome';
 import { Organization } from './Organization';
 import { OrganizationAffiliation } from './OrganizationAffiliation';
 import { Parameters } from './Parameters';
-import { PasswordChangeRequest } from './PasswordChangeRequest';
 import { Patient } from './Patient';
 import { PaymentNotice } from './PaymentNotice';
 import { PaymentReconciliation } from './PaymentReconciliation';
@@ -227,12 +224,10 @@ export type Resource = Account
   | ImplementationGuide
   | InsurancePlan
   | Invoice
-  | JsonWebKey
   | Library
   | Linkage
   | List
   | Location
-  | Login
   | Measure
   | MeasureReport
   | Media
@@ -264,7 +259,6 @@ export type Resource = Account
   | Organization
   | OrganizationAffiliation
   | Parameters
-  | PasswordChangeRequest
   | Patient
   | PaymentNotice
   | PaymentReconciliation

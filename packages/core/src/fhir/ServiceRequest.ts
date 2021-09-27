@@ -220,7 +220,7 @@ export interface ServiceRequest {
   /**
    * The date/time at which the requested service should occur.
    */
-  readonly occurrenceDateTime?: string;
+  readonly occurrenceDateTime?: Date | string;
 
   /**
    * The date/time at which the requested service should occur.

@@ -8,7 +8,8 @@ import { Extension } from './Extension';
 import { Range } from './Range';
 
 /**
- * A populatioof people with some set of grouping criteria.
+ * Base StructureDefinition for Population Type: A populatioof people
+ * with some set of grouping criteria.
  */
 export interface Population {
 

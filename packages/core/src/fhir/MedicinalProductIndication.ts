@@ -143,7 +143,8 @@ export interface MedicinalProductIndication {
 }
 
 /**
- * Indication for the Medicinal Product.
+ * Information about the use of the medicinal product in relation to
+ * other therapies described as part of the indication.
  */
 export interface MedicinalProductIndicationOtherTherapy {
 

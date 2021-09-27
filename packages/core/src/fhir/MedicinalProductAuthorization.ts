@@ -184,7 +184,7 @@ export interface MedicinalProductAuthorization {
 }
 
 /**
- * The regulatory authorization of a medicinal product.
+ * Authorization in areas within a country.
  */
 export interface MedicinalProductAuthorizationJurisdictionalAuthorization {
 
@@ -250,7 +250,8 @@ export interface MedicinalProductAuthorizationJurisdictionalAuthorization {
 }
 
 /**
- * The regulatory authorization of a medicinal product.
+ * The regulatory procedure for granting or amending a marketing
+ * authorization.
  */
 export interface MedicinalProductAuthorizationProcedure {
 
@@ -307,10 +308,5 @@ export interface MedicinalProductAuthorizationProcedure {
   /**
    * Date of procedure.
    */
-  readonly dateDateTime?: string;
-
-  /**
-   * Applcations submitted to obtain a marketing authorization.
-   */
-  readonly application?: MedicinalProductAuthorizationProcedure[];
+  readonly dateDateTime?: Date | string;
 }

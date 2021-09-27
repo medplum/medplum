@@ -149,7 +149,7 @@ export interface SupplyRequest {
   /**
    * When the request should be fulfilled.
    */
-  readonly occurrenceDateTime?: string;
+  readonly occurrenceDateTime?: Date | string;
 
   /**
    * When the request should be fulfilled.
@@ -198,8 +198,8 @@ export interface SupplyRequest {
 }
 
 /**
- * A record of a request for a medication, substance or device used in
- * the healthcare setting.
+ * Specific parameters for the ordered item.  For example, the size of
+ * the indicated item.
  */
 export interface SupplyRequestParameter {
 

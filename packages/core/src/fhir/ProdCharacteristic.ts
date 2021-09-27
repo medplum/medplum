@@ -9,9 +9,9 @@ import { Extension } from './Extension';
 import { Quantity } from './Quantity';
 
 /**
- * The marketing status describes the date when a medicinal product is
- * actually put on the market or the date as of which it is no longer
- * available.
+ * Base StructureDefinition for ProdCharacteristic Type: The marketing
+ * status describes the date when a medicinal product is actually put on
+ * the market or the date as of which it is no longer available.
  */
 export interface ProdCharacteristic {
 

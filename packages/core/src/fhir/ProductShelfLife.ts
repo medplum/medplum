@@ -9,8 +9,9 @@ import { Identifier } from './Identifier';
 import { Quantity } from './Quantity';
 
 /**
- * The shelf-life and storage information for a medicinal product item or
- * container can be described using this class.
+ * Base StructureDefinition for ProductShelfLife Type: The shelf-life and
+ * storage information for a medicinal product item or container can be
+ * described using this class.
  */
 export interface ProductShelfLife {
 

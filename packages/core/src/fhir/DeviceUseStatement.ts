@@ -139,7 +139,7 @@ export interface DeviceUseStatement {
   /**
    * How often the device was used.
    */
-  readonly timingDateTime?: string;
+  readonly timingDateTime?: Date | string;
 
   /**
    * The time at which the statement was made/recorded.

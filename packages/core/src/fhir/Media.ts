@@ -151,7 +151,7 @@ export interface Media {
   /**
    * The date and time(s) at which the media was collected.
    */
-  readonly createdDateTime?: string;
+  readonly createdDateTime?: Date | string;
 
   /**
    * The date and time(s) at which the media was collected.

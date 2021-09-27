@@ -341,446 +341,9 @@ export interface Contract {
 }
 
 /**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
- */
-export interface ContractAction {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * True if the term prohibits the  action.
-   */
-  readonly doNotPerform?: boolean;
-
-  /**
-   * Activity or service obligation to be done or not done, performed or
-   * not performed, effectuated or not by this Contract term.
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * Entity of the action.
-   */
-  readonly subject?: ContractSubject[];
-
-  /**
-   * Reason or purpose for the action stipulated by this Contract
-   * Provision.
-   */
-  readonly intent?: CodeableConcept;
-
-  /**
-   * Id [identifier??] of the clause or question text related to this
-   * action in the referenced form or QuestionnaireResponse.
-   */
-  readonly linkId?: string[];
-
-  /**
-   * Current state of the term action.
-   */
-  readonly status?: CodeableConcept;
-
-  /**
-   * Encounter or Episode with primary association to specified term
-   * activity.
-   */
-  readonly context?: Reference;
-
-  /**
-   * Id [identifier??] of the clause or question text related to the
-   * requester of this action in the referenced form or
-   * QuestionnaireResponse.
-   */
-  readonly contextLinkId?: string[];
-
-  /**
-   * When action happens.
-   */
-  readonly occurrenceDateTime?: string;
-
-  /**
-   * When action happens.
-   */
-  readonly occurrencePeriod?: Period;
-
-  /**
-   * When action happens.
-   */
-  readonly occurrenceTiming?: Timing;
-
-  /**
-   * Who or what initiated the action and has responsibility for its
-   * activation.
-   */
-  readonly requester?: Reference[];
-
-  /**
-   * Id [identifier??] of the clause or question text related to the
-   * requester of this action in the referenced form or
-   * QuestionnaireResponse.
-   */
-  readonly requesterLinkId?: string[];
-
-  /**
-   * The type of individual that is desired or required to perform or not
-   * perform the action.
-   */
-  readonly performerType?: CodeableConcept[];
-
-  /**
-   * The type of role or competency of an individual desired or required to
-   * perform or not perform the action.
-   */
-  readonly performerRole?: CodeableConcept;
-
-  /**
-   * Indicates who or what is being asked to perform (or not perform) the
-   * ction.
-   */
-  readonly performer?: Reference;
-
-  /**
-   * Id [identifier??] of the clause or question text related to the reason
-   * type or reference of this  action in the referenced form or
-   * QuestionnaireResponse.
-   */
-  readonly performerLinkId?: string[];
-
-  /**
-   * Rationale for the action to be performed or not performed. Describes
-   * why the action is permitted or prohibited.
-   */
-  readonly reasonCode?: CodeableConcept[];
-
-  /**
-   * Indicates another resource whose existence justifies permitting or not
-   * permitting this action.
-   */
-  readonly reasonReference?: Reference[];
-
-  /**
-   * Describes why the action is to be performed or not performed in
-   * textual form.
-   */
-  readonly reason?: string[];
-
-  /**
-   * Id [identifier??] of the clause or question text related to the reason
-   * type or reference of this  action in the referenced form or
-   * QuestionnaireResponse.
-   */
-  readonly reasonLinkId?: string[];
-
-  /**
-   * Comments made about the term action made by the requester, performer,
-   * subject or other participants.
-   */
-  readonly note?: Annotation[];
-
-  /**
-   * Security labels that protects the action.
-   */
-  readonly securityLabelNumber?: number[];
-}
-
-/**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
- */
-export interface ContractAnswer {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueBoolean?: boolean;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueDecimal?: number;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueInteger?: number;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueDate?: string;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueDateTime?: string;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueTime?: string;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueString?: string;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueUri?: string;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueAttachment?: Attachment;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueCoding?: Coding;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueQuantity?: Quantity;
-
-  /**
-   * Response to an offer clause or question text,  which enables selection
-   * of values to be agreed to, e.g., the period of participation, the date
-   * of occupancy of a rental, warrently duration, or whether biospecimen
-   * may be used for further research.
-   */
-  readonly valueReference?: Reference;
-}
-
-/**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
- */
-export interface ContractAsset {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Differentiates the kind of the asset .
-   */
-  readonly scope?: CodeableConcept;
-
-  /**
-   * Target entity type about which the term may be concerned.
-   */
-  readonly type?: CodeableConcept[];
-
-  /**
-   * Associated entities.
-   */
-  readonly typeReference?: Reference[];
-
-  /**
-   * May be a subtype or part of an offered asset.
-   */
-  readonly subtype?: CodeableConcept[];
-
-  /**
-   * Specifies the applicability of the term to an asset resource instance,
-   * and instances it refers to orinstances that refer to it, and/or are
-   * owned by the offeree.
-   */
-  readonly relationship?: Coding;
-
-  /**
-   * Circumstance of the asset.
-   */
-  readonly context?: ContractContext[];
-
-  /**
-   * Description of the quality and completeness of the asset that imay be
-   * a factor in its valuation.
-   */
-  readonly condition?: string;
-
-  /**
-   * Type of Asset availability for use or ownership.
-   */
-  readonly periodType?: CodeableConcept[];
-
-  /**
-   * Asset relevant contractual time period.
-   */
-  readonly period?: Period[];
-
-  /**
-   * Time period of asset use.
-   */
-  readonly usePeriod?: Period[];
-
-  /**
-   * Clause or question text (Prose Object) concerning the asset in a
-   * linked form, such as a QuestionnaireResponse used in the formation of
-   * the contract.
-   */
-  readonly text?: string;
-
-  /**
-   * Id [identifier??] of the clause or question text about the asset in
-   * the referenced form or QuestionnaireResponse.
-   */
-  readonly linkId?: string[];
-
-  /**
-   * Response to assets.
-   */
-  readonly answer?: ContractAnswer[];
-
-  /**
-   * Security labels that protects the asset.
-   */
-  readonly securityLabelNumber?: number[];
-
-  /**
-   * Contract Valued Item List.
-   */
-  readonly valuedItem?: ContractValuedItem[];
-}
-
-/**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
+ * Precusory content developed with a focus and intent of supporting the
+ * formation a Contract instance, which may be associated with and
+ * transformable into a Contract.
  */
 export interface ContractContentDefinition {
 
@@ -861,68 +424,13 @@ export interface ContractContentDefinition {
 }
 
 /**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
- */
-export interface ContractContext {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Asset context reference may include the creator, custodian, or owning
-   * Person or Organization (e.g., bank, repository),  location held, e.g.,
-   * building,  jurisdiction.
-   */
-  readonly reference?: Reference;
-
-  /**
-   * Coded representation of the context generally or of the Referenced
-   * entity, such as the asset holder type or location.
-   */
-  readonly code?: CodeableConcept[];
-
-  /**
-   * Context description.
-   */
-  readonly text?: string;
-}
-
-/**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
+ * The &quot;patient friendly language&quot; versionof the Contract in whole or in
+ * parts. &quot;Patient friendly language&quot; means the representation of the
+ * Contract and Contract Provisions in a manner that is readily
+ * accessible and understandable by a layperson in accordance with best
+ * practices for communication styles that ensure that those agreeing to
+ * or signing the Contract understand the roles, actions, obligations,
+ * responsibilities, and implication of the agreement.
  */
 export interface ContractFriendly {
 
@@ -977,8 +485,7 @@ export interface ContractFriendly {
 }
 
 /**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
+ * List of Legal expressions or representations of this Contract.
  */
 export interface ContractLegal {
 
@@ -1029,158 +536,8 @@ export interface ContractLegal {
 }
 
 /**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
- */
-export interface ContractOffer {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Unique identifier for this particular Contract Provision.
-   */
-  readonly identifier?: Identifier[];
-
-  /**
-   * Offer Recipient.
-   */
-  readonly party?: ContractParty[];
-
-  /**
-   * The owner of an asset has the residual control rights over the asset:
-   * the right to decide all usages of the asset in any way not
-   * inconsistent with a prior contract, custom, or law (Hart, 1995, p.
-   * 30).
-   */
-  readonly topic?: Reference;
-
-  /**
-   * Type of Contract Provision such as specific requirements, purposes for
-   * actions, obligations, prohibitions, e.g. life time maximum benefit.
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * Type of choice made by accepting party with respect to an offer made
-   * by an offeror/ grantee.
-   */
-  readonly decision?: CodeableConcept;
-
-  /**
-   * How the decision about a Contract was conveyed.
-   */
-  readonly decisionMode?: CodeableConcept[];
-
-  /**
-   * Response to offer text.
-   */
-  readonly answer?: ContractAnswer[];
-
-  /**
-   * Human readable form of this Contract Offer.
-   */
-  readonly text?: string;
-
-  /**
-   * The id of the clause or question text of the offer in the referenced
-   * questionnaire/response.
-   */
-  readonly linkId?: string[];
-
-  /**
-   * Security labels that protects the offer.
-   */
-  readonly securityLabelNumber?: number[];
-}
-
-/**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
- */
-export interface ContractParty {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Participant in the offer.
-   */
-  readonly reference?: Reference[];
-
-  /**
-   * How the party participates in the offer.
-   */
-  readonly role?: CodeableConcept;
-}
-
-/**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
+ * List of Computable Policy Rule Language Representations of this
+ * Contract.
  */
 export interface ContractRule {
 
@@ -1233,74 +590,10 @@ export interface ContractRule {
 }
 
 /**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
- */
-export interface ContractSecurityLabel {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Number used to link this term or term element to the applicable
-   * Security Label.
-   */
-  readonly number?: number[];
-
-  /**
-   * Security label privacy tag that species the level of confidentiality
-   * protection required for this term and/or term elements.
-   */
-  readonly classification?: Coding;
-
-  /**
-   * Security label privacy tag that species the applicable privacy and
-   * security policies governing this term and/or term elements.
-   */
-  readonly category?: Coding[];
-
-  /**
-   * Security label privacy tag that species the manner in which term
-   * and/or term elements are to be protected.
-   */
-  readonly control?: Coding[];
-}
-
-/**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
+ * Parties with legal standing in the Contract, including the principal
+ * parties, the grantor(s) and grantee(s), which are any person or
+ * organization bound by the contract, and any ancillary parties, which
+ * facilitate the execution of the contract such as a notary or witness.
  */
 export interface ContractSigner {
 
@@ -1356,60 +649,8 @@ export interface ContractSigner {
 }
 
 /**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
- */
-export interface ContractSubject {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The entity the action is performed or not performed on or for.
-   */
-  readonly reference?: Reference[];
-
-  /**
-   * Role type of agent assigned roles in this Contract.
-   */
-  readonly role?: CodeableConcept;
-}
-
-/**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
+ * One or more Contract Provisions, which may be related and conveyed as
+ * a group, and may contain nested groups.
  */
 export interface ContractTerm {
 
@@ -1497,36 +738,434 @@ export interface ContractTerm {
    * Security labels that protect the handling of information about the
    * term and its elements, which may be specifically identified..
    */
-  readonly securityLabel?: ContractSecurityLabel[];
+  readonly securityLabel?: ContractTermSecurityLabel[];
 
   /**
    * The matter of concern in the context of this provision of the
    * agrement.
    */
-  readonly offer?: ContractOffer;
+  readonly offer?: ContractTermOffer;
 
   /**
    * Contract Term Asset List.
    */
-  readonly asset?: ContractAsset[];
+  readonly asset?: ContractTermAsset[];
 
   /**
    * An actor taking a role in an activity for which it can be assigned
    * some degree of responsibility for the activity taking place.
    */
-  readonly action?: ContractAction[];
-
-  /**
-   * Nested group of Contract Provisions.
-   */
-  readonly group?: ContractTerm[];
+  readonly action?: ContractTermAction[];
 }
 
 /**
- * Legally enforceable, formally recorded unilateral or bilateral
- * directive i.e., a policy or agreement.
+ * An actor taking a role in an activity for which it can be assigned
+ * some degree of responsibility for the activity taking place.
  */
-export interface ContractValuedItem {
+export interface ContractTermAction {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * True if the term prohibits the  action.
+   */
+  readonly doNotPerform?: boolean;
+
+  /**
+   * Activity or service obligation to be done or not done, performed or
+   * not performed, effectuated or not by this Contract term.
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * Entity of the action.
+   */
+  readonly subject?: ContractTermActionSubject[];
+
+  /**
+   * Reason or purpose for the action stipulated by this Contract
+   * Provision.
+   */
+  readonly intent?: CodeableConcept;
+
+  /**
+   * Id [identifier??] of the clause or question text related to this
+   * action in the referenced form or QuestionnaireResponse.
+   */
+  readonly linkId?: string[];
+
+  /**
+   * Current state of the term action.
+   */
+  readonly status?: CodeableConcept;
+
+  /**
+   * Encounter or Episode with primary association to specified term
+   * activity.
+   */
+  readonly context?: Reference;
+
+  /**
+   * Id [identifier??] of the clause or question text related to the
+   * requester of this action in the referenced form or
+   * QuestionnaireResponse.
+   */
+  readonly contextLinkId?: string[];
+
+  /**
+   * When action happens.
+   */
+  readonly occurrenceDateTime?: Date | string;
+
+  /**
+   * When action happens.
+   */
+  readonly occurrencePeriod?: Period;
+
+  /**
+   * When action happens.
+   */
+  readonly occurrenceTiming?: Timing;
+
+  /**
+   * Who or what initiated the action and has responsibility for its
+   * activation.
+   */
+  readonly requester?: Reference[];
+
+  /**
+   * Id [identifier??] of the clause or question text related to the
+   * requester of this action in the referenced form or
+   * QuestionnaireResponse.
+   */
+  readonly requesterLinkId?: string[];
+
+  /**
+   * The type of individual that is desired or required to perform or not
+   * perform the action.
+   */
+  readonly performerType?: CodeableConcept[];
+
+  /**
+   * The type of role or competency of an individual desired or required to
+   * perform or not perform the action.
+   */
+  readonly performerRole?: CodeableConcept;
+
+  /**
+   * Indicates who or what is being asked to perform (or not perform) the
+   * ction.
+   */
+  readonly performer?: Reference;
+
+  /**
+   * Id [identifier??] of the clause or question text related to the reason
+   * type or reference of this  action in the referenced form or
+   * QuestionnaireResponse.
+   */
+  readonly performerLinkId?: string[];
+
+  /**
+   * Rationale for the action to be performed or not performed. Describes
+   * why the action is permitted or prohibited.
+   */
+  readonly reasonCode?: CodeableConcept[];
+
+  /**
+   * Indicates another resource whose existence justifies permitting or not
+   * permitting this action.
+   */
+  readonly reasonReference?: Reference[];
+
+  /**
+   * Describes why the action is to be performed or not performed in
+   * textual form.
+   */
+  readonly reason?: string[];
+
+  /**
+   * Id [identifier??] of the clause or question text related to the reason
+   * type or reference of this  action in the referenced form or
+   * QuestionnaireResponse.
+   */
+  readonly reasonLinkId?: string[];
+
+  /**
+   * Comments made about the term action made by the requester, performer,
+   * subject or other participants.
+   */
+  readonly note?: Annotation[];
+
+  /**
+   * Security labels that protects the action.
+   */
+  readonly securityLabelNumber?: number[];
+}
+
+/**
+ * Entity of the action.
+ */
+export interface ContractTermActionSubject {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The entity the action is performed or not performed on or for.
+   */
+  readonly reference?: Reference[];
+
+  /**
+   * Role type of agent assigned roles in this Contract.
+   */
+  readonly role?: CodeableConcept;
+}
+
+/**
+ * Contract Term Asset List.
+ */
+export interface ContractTermAsset {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Differentiates the kind of the asset .
+   */
+  readonly scope?: CodeableConcept;
+
+  /**
+   * Target entity type about which the term may be concerned.
+   */
+  readonly type?: CodeableConcept[];
+
+  /**
+   * Associated entities.
+   */
+  readonly typeReference?: Reference[];
+
+  /**
+   * May be a subtype or part of an offered asset.
+   */
+  readonly subtype?: CodeableConcept[];
+
+  /**
+   * Specifies the applicability of the term to an asset resource instance,
+   * and instances it refers to orinstances that refer to it, and/or are
+   * owned by the offeree.
+   */
+  readonly relationship?: Coding;
+
+  /**
+   * Circumstance of the asset.
+   */
+  readonly context?: ContractTermAssetContext[];
+
+  /**
+   * Description of the quality and completeness of the asset that imay be
+   * a factor in its valuation.
+   */
+  readonly condition?: string;
+
+  /**
+   * Type of Asset availability for use or ownership.
+   */
+  readonly periodType?: CodeableConcept[];
+
+  /**
+   * Asset relevant contractual time period.
+   */
+  readonly period?: Period[];
+
+  /**
+   * Time period of asset use.
+   */
+  readonly usePeriod?: Period[];
+
+  /**
+   * Clause or question text (Prose Object) concerning the asset in a
+   * linked form, such as a QuestionnaireResponse used in the formation of
+   * the contract.
+   */
+  readonly text?: string;
+
+  /**
+   * Id [identifier??] of the clause or question text about the asset in
+   * the referenced form or QuestionnaireResponse.
+   */
+  readonly linkId?: string[];
+
+  /**
+   * Security labels that protects the asset.
+   */
+  readonly securityLabelNumber?: number[];
+
+  /**
+   * Contract Valued Item List.
+   */
+  readonly valuedItem?: ContractTermAssetValuedItem[];
+}
+
+/**
+ * Circumstance of the asset.
+ */
+export interface ContractTermAssetContext {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Asset context reference may include the creator, custodian, or owning
+   * Person or Organization (e.g., bank, repository),  location held, e.g.,
+   * building,  jurisdiction.
+   */
+  readonly reference?: Reference;
+
+  /**
+   * Coded representation of the context generally or of the Referenced
+   * entity, such as the asset holder type or location.
+   */
+  readonly code?: CodeableConcept[];
+
+  /**
+   * Context description.
+   */
+  readonly text?: string;
+}
+
+/**
+ * Contract Valued Item List.
+ */
+export interface ContractTermAssetValuedItem {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -1652,4 +1291,356 @@ export interface ContractValuedItem {
    * this condition.
    */
   readonly securityLabelNumber?: number[];
+}
+
+/**
+ * The matter of concern in the context of this provision of the
+ * agrement.
+ */
+export interface ContractTermOffer {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Unique identifier for this particular Contract Provision.
+   */
+  readonly identifier?: Identifier[];
+
+  /**
+   * Offer Recipient.
+   */
+  readonly party?: ContractTermOfferParty[];
+
+  /**
+   * The owner of an asset has the residual control rights over the asset:
+   * the right to decide all usages of the asset in any way not
+   * inconsistent with a prior contract, custom, or law (Hart, 1995, p.
+   * 30).
+   */
+  readonly topic?: Reference;
+
+  /**
+   * Type of Contract Provision such as specific requirements, purposes for
+   * actions, obligations, prohibitions, e.g. life time maximum benefit.
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * Type of choice made by accepting party with respect to an offer made
+   * by an offeror/ grantee.
+   */
+  readonly decision?: CodeableConcept;
+
+  /**
+   * How the decision about a Contract was conveyed.
+   */
+  readonly decisionMode?: CodeableConcept[];
+
+  /**
+   * Response to offer text.
+   */
+  readonly answer?: ContractTermOfferAnswer[];
+
+  /**
+   * Human readable form of this Contract Offer.
+   */
+  readonly text?: string;
+
+  /**
+   * The id of the clause or question text of the offer in the referenced
+   * questionnaire/response.
+   */
+  readonly linkId?: string[];
+
+  /**
+   * Security labels that protects the offer.
+   */
+  readonly securityLabelNumber?: number[];
+}
+
+/**
+ * Response to offer text.
+ */
+export interface ContractTermOfferAnswer {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueBoolean?: boolean;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueDecimal?: number;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueInteger?: number;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueDate?: Date | string;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueDateTime?: Date | string;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueTime?: Date | string;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueString?: string;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueUri?: string;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueAttachment?: Attachment;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueCoding?: Coding;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueQuantity?: Quantity;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  readonly valueReference?: Reference;
+}
+
+/**
+ * Offer Recipient.
+ */
+export interface ContractTermOfferParty {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Participant in the offer.
+   */
+  readonly reference?: Reference[];
+
+  /**
+   * How the party participates in the offer.
+   */
+  readonly role?: CodeableConcept;
+}
+
+/**
+ * Security labels that protect the handling of information about the
+ * term and its elements, which may be specifically identified..
+ */
+export interface ContractTermSecurityLabel {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Number used to link this term or term element to the applicable
+   * Security Label.
+   */
+  readonly number?: number[];
+
+  /**
+   * Security label privacy tag that species the level of confidentiality
+   * protection required for this term and/or term elements.
+   */
+  readonly classification?: Coding;
+
+  /**
+   * Security label privacy tag that species the applicable privacy and
+   * security policies governing this term and/or term elements.
+   */
+  readonly category?: Coding[];
+
+  /**
+   * Security label privacy tag that species the manner in which term
+   * and/or term elements are to be protected.
+   */
+  readonly control?: Coding[];
 }

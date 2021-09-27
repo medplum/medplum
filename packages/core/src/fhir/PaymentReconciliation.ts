@@ -177,8 +177,8 @@ export interface PaymentReconciliation {
 }
 
 /**
- * This resource provides the details including amount of a payment and
- * allocates the payment items being paid.
+ * Distribution of the payment amount for a previously acknowledged
+ * payable.
  */
 export interface PaymentReconciliationDetail {
 
@@ -274,8 +274,8 @@ export interface PaymentReconciliationDetail {
 }
 
 /**
- * This resource provides the details including amount of a payment and
- * allocates the payment items being paid.
+ * A note that describes or explains the processing in a human readable
+ * form.
  */
 export interface PaymentReconciliationProcessNote {
 

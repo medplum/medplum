@@ -141,7 +141,7 @@ export interface RiskAssessment {
   /**
    * The date (and possibly time) the risk assessment was performed.
    */
-  readonly occurrenceDateTime?: string;
+  readonly occurrenceDateTime?: Date | string;
 
   /**
    * The date (and possibly time) the risk assessment was performed.
@@ -193,8 +193,7 @@ export interface RiskAssessment {
 }
 
 /**
- * An assessment of the likely outcome(s) for a patient or other subject
- * as well as the likelihood of each outcome.
+ * Describes the expected outcome for the subject.
  */
 export interface RiskAssessmentPrediction {
 

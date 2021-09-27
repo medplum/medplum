@@ -197,93 +197,15 @@ export interface SubstanceSourceMaterial {
 }
 
 /**
- * Source material shall capture information on the taxonomic and
- * anatomical origins as well as the fraction of a material that can
- * result in or can be modified to form a substance. This set of data
- * elements shall be used to define polymer substances isolated from
- * biological matrices. Taxonomic and anatomical origins shall be
- * described using a controlled vocabulary as required. This information
- * is captured for naturally derived polymers ( . starch) and
- * structurally diverse substances. For Organisms belonging to the
- * Kingdom Plantae the Substance level defines the fresh material of a
- * single species or infraspecies, the Herbal Drug and the Herbal
- * preparation. For Herbal preparations, the fraction information will be
- * captured at the Substance information level and additional information
- * for herbal extracts will be captured at the Specified Substance Group
- * 1 information level. See for further explanation the Substance Class:
- * Structurally Diverse and the herbal annex.
- */
-export interface SubstanceSourceMaterialAuthor {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The type of author of an organism species shall be specified. The
-   * parenthetical author of an organism species refers to the first author
-   * who published the plant/animal name (of any rank). The primary author
-   * of an organism species refers to the first author(s), who validly
-   * published the plant/animal name.
-   */
-  readonly authorType?: CodeableConcept;
-
-  /**
-   * The author of an organism species shall be specified. The author year
-   * of an organism shall also be specified when applicable; refers to the
-   * year in which the first author(s) published the infraspecific
-   * plant/animal name (of any rank).
-   */
-  readonly authorDescription?: string;
-}
-
-/**
- * Source material shall capture information on the taxonomic and
- * anatomical origins as well as the fraction of a material that can
- * result in or can be modified to form a substance. This set of data
- * elements shall be used to define polymer substances isolated from
- * biological matrices. Taxonomic and anatomical origins shall be
- * described using a controlled vocabulary as required. This information
- * is captured for naturally derived polymers ( . starch) and
- * structurally diverse substances. For Organisms belonging to the
- * Kingdom Plantae the Substance level defines the fresh material of a
- * single species or infraspecies, the Herbal Drug and the Herbal
- * preparation. For Herbal preparations, the fraction information will be
- * captured at the Substance information level and additional information
- * for herbal extracts will be captured at the Specified Substance Group
- * 1 information level. See for further explanation the Substance Class:
- * Structurally Diverse and the herbal annex.
+ * Many complex materials are fractions of parts of plants, animals, or
+ * minerals. Fraction elements are often necessary to define both
+ * Substances and Specified Group 1 Substances. For substances derived
+ * from Plants, fraction information will be captured at the Substance
+ * information level ( . Oils, Juices and Exudates). Additional
+ * information for Extracts, such as extraction solvent composition, will
+ * be captured at the Specified Substance Group 1 information level. For
+ * plasma-derived products fraction information will be captured at the
+ * Substance and the Specified Substance Group 1 levels.
  */
 export interface SubstanceSourceMaterialFractionDescription {
 
@@ -337,109 +259,10 @@ export interface SubstanceSourceMaterialFractionDescription {
 }
 
 /**
- * Source material shall capture information on the taxonomic and
- * anatomical origins as well as the fraction of a material that can
- * result in or can be modified to form a substance. This set of data
- * elements shall be used to define polymer substances isolated from
- * biological matrices. Taxonomic and anatomical origins shall be
- * described using a controlled vocabulary as required. This information
- * is captured for naturally derived polymers ( . starch) and
- * structurally diverse substances. For Organisms belonging to the
- * Kingdom Plantae the Substance level defines the fresh material of a
- * single species or infraspecies, the Herbal Drug and the Herbal
- * preparation. For Herbal preparations, the fraction information will be
- * captured at the Substance information level and additional information
- * for herbal extracts will be captured at the Specified Substance Group
- * 1 information level. See for further explanation the Substance Class:
- * Structurally Diverse and the herbal annex.
- */
-export interface SubstanceSourceMaterialHybrid {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The identifier of the maternal species constituting the hybrid
-   * organism shall be specified based on a controlled vocabulary. For
-   * plants, the parents aren&rsquo;t always known, and it is unlikely that it
-   * will be known which is maternal and which is paternal.
-   */
-  readonly maternalOrganismId?: string;
-
-  /**
-   * The name of the maternal species constituting the hybrid organism
-   * shall be specified. For plants, the parents aren&rsquo;t always known, and
-   * it is unlikely that it will be known which is maternal and which is
-   * paternal.
-   */
-  readonly maternalOrganismName?: string;
-
-  /**
-   * The identifier of the paternal species constituting the hybrid
-   * organism shall be specified based on a controlled vocabulary.
-   */
-  readonly paternalOrganismId?: string;
-
-  /**
-   * The name of the paternal species constituting the hybrid organism
-   * shall be specified.
-   */
-  readonly paternalOrganismName?: string;
-
-  /**
-   * The hybrid type of an organism shall be specified.
-   */
-  readonly hybridType?: CodeableConcept;
-}
-
-/**
- * Source material shall capture information on the taxonomic and
- * anatomical origins as well as the fraction of a material that can
- * result in or can be modified to form a substance. This set of data
- * elements shall be used to define polymer substances isolated from
- * biological matrices. Taxonomic and anatomical origins shall be
- * described using a controlled vocabulary as required. This information
- * is captured for naturally derived polymers ( . starch) and
- * structurally diverse substances. For Organisms belonging to the
- * Kingdom Plantae the Substance level defines the fresh material of a
- * single species or infraspecies, the Herbal Drug and the Herbal
- * preparation. For Herbal preparations, the fraction information will be
- * captured at the Substance information level and additional information
- * for herbal extracts will be captured at the Specified Substance Group
- * 1 information level. See for further explanation the Substance Class:
- * Structurally Diverse and the herbal annex.
+ * This subclause describes the organism which the substance is derived
+ * from. For vaccines, the parent organism shall be specified based on
+ * these subclause elements. As an example, full taxonomy will be
+ * described for the Substance Name: ., Leaf.
  */
 export interface SubstanceSourceMaterialOrganism {
 
@@ -513,37 +336,155 @@ export interface SubstanceSourceMaterialOrganism {
   /**
    * 4.9.13.6.1 Author type (Conditional).
    */
-  readonly author?: SubstanceSourceMaterialAuthor[];
+  readonly author?: SubstanceSourceMaterialOrganismAuthor[];
 
   /**
    * 4.9.13.8.1 Hybrid species maternal organism ID (Optional).
    */
-  readonly hybrid?: SubstanceSourceMaterialHybrid;
+  readonly hybrid?: SubstanceSourceMaterialOrganismHybrid;
 
   /**
    * 4.9.13.7.1 Kingdom (Conditional).
    */
-  readonly organismGeneral?: SubstanceSourceMaterialOrganismGeneral;
+  readonly organismGeneral?: SubstanceSourceMaterialOrganismOrganismGeneral;
 }
 
 /**
- * Source material shall capture information on the taxonomic and
- * anatomical origins as well as the fraction of a material that can
- * result in or can be modified to form a substance. This set of data
- * elements shall be used to define polymer substances isolated from
- * biological matrices. Taxonomic and anatomical origins shall be
- * described using a controlled vocabulary as required. This information
- * is captured for naturally derived polymers ( . starch) and
- * structurally diverse substances. For Organisms belonging to the
- * Kingdom Plantae the Substance level defines the fresh material of a
- * single species or infraspecies, the Herbal Drug and the Herbal
- * preparation. For Herbal preparations, the fraction information will be
- * captured at the Substance information level and additional information
- * for herbal extracts will be captured at the Specified Substance Group
- * 1 information level. See for further explanation the Substance Class:
- * Structurally Diverse and the herbal annex.
+ * 4.9.13.6.1 Author type (Conditional).
  */
-export interface SubstanceSourceMaterialOrganismGeneral {
+export interface SubstanceSourceMaterialOrganismAuthor {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The type of author of an organism species shall be specified. The
+   * parenthetical author of an organism species refers to the first author
+   * who published the plant/animal name (of any rank). The primary author
+   * of an organism species refers to the first author(s), who validly
+   * published the plant/animal name.
+   */
+  readonly authorType?: CodeableConcept;
+
+  /**
+   * The author of an organism species shall be specified. The author year
+   * of an organism shall also be specified when applicable; refers to the
+   * year in which the first author(s) published the infraspecific
+   * plant/animal name (of any rank).
+   */
+  readonly authorDescription?: string;
+}
+
+/**
+ * 4.9.13.8.1 Hybrid species maternal organism ID (Optional).
+ */
+export interface SubstanceSourceMaterialOrganismHybrid {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The identifier of the maternal species constituting the hybrid
+   * organism shall be specified based on a controlled vocabulary. For
+   * plants, the parents aren&rsquo;t always known, and it is unlikely that it
+   * will be known which is maternal and which is paternal.
+   */
+  readonly maternalOrganismId?: string;
+
+  /**
+   * The name of the maternal species constituting the hybrid organism
+   * shall be specified. For plants, the parents aren&rsquo;t always known, and
+   * it is unlikely that it will be known which is maternal and which is
+   * paternal.
+   */
+  readonly maternalOrganismName?: string;
+
+  /**
+   * The identifier of the paternal species constituting the hybrid
+   * organism shall be specified based on a controlled vocabulary.
+   */
+  readonly paternalOrganismId?: string;
+
+  /**
+   * The name of the paternal species constituting the hybrid organism
+   * shall be specified.
+   */
+  readonly paternalOrganismName?: string;
+
+  /**
+   * The hybrid type of an organism shall be specified.
+   */
+  readonly hybridType?: CodeableConcept;
+}
+
+/**
+ * 4.9.13.7.1 Kingdom (Conditional).
+ */
+export interface SubstanceSourceMaterialOrganismOrganismGeneral {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -602,21 +543,7 @@ export interface SubstanceSourceMaterialOrganismGeneral {
 }
 
 /**
- * Source material shall capture information on the taxonomic and
- * anatomical origins as well as the fraction of a material that can
- * result in or can be modified to form a substance. This set of data
- * elements shall be used to define polymer substances isolated from
- * biological matrices. Taxonomic and anatomical origins shall be
- * described using a controlled vocabulary as required. This information
- * is captured for naturally derived polymers ( . starch) and
- * structurally diverse substances. For Organisms belonging to the
- * Kingdom Plantae the Substance level defines the fresh material of a
- * single species or infraspecies, the Herbal Drug and the Herbal
- * preparation. For Herbal preparations, the fraction information will be
- * captured at the Substance information level and additional information
- * for herbal extracts will be captured at the Specified Substance Group
- * 1 information level. See for further explanation the Substance Class:
- * Structurally Diverse and the herbal annex.
+ * To do.
  */
 export interface SubstanceSourceMaterialPartDescription {
 

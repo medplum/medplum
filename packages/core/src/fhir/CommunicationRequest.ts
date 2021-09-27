@@ -182,7 +182,7 @@ export interface CommunicationRequest {
   /**
    * The time when this communication is to occur.
    */
-  readonly occurrenceDateTime?: string;
+  readonly occurrenceDateTime?: Date | string;
 
   /**
    * The time when this communication is to occur.
@@ -232,9 +232,8 @@ export interface CommunicationRequest {
 }
 
 /**
- * A request to convey information; e.g. the CDS system proposes that an
- * alert be sent to a responsible provider, the CDS system proposes that
- * the public health agency be notified about a reportable condition.
+ * Text, attachment(s), or resource(s) to be communicated to the
+ * recipient.
  */
 export interface CommunicationRequestPayload {
 

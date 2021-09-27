@@ -356,7 +356,7 @@ export interface ActivityDefinition {
    * The period, timing or frequency upon which the described activity is
    * to occur.
    */
-  readonly timingDateTime?: string;
+  readonly timingDateTime?: Date | string;
 
   /**
    * The period, timing or frequency upon which the described activity is
@@ -459,9 +459,11 @@ export interface ActivityDefinition {
 }
 
 /**
- * This resource allows for the definition of some activity to be
- * performed, independent of a particular patient, practitioner, or other
- * performance context.
+ * Dynamic values that will be evaluated to produce values for elements
+ * of the resulting resource. For example, if the dosage of a medication
+ * must be computed based on the patient's weight, a dynamic value would
+ * be used to specify an expression that calculated the weight, and the
+ * path on the request resource that would contain the result.
  */
 export interface ActivityDefinitionDynamicValue {
 
@@ -520,9 +522,7 @@ export interface ActivityDefinitionDynamicValue {
 }
 
 /**
- * This resource allows for the definition of some activity to be
- * performed, independent of a particular patient, practitioner, or other
- * performance context.
+ * Indicates who should participate in performing the action described.
  */
 export interface ActivityDefinitionParticipant {
 

@@ -82,9 +82,7 @@ export interface Parameters {
 }
 
 /**
- * This resource is a non-persisted resource used to pass information
- * into and back from an [operation](operations.html). It has no other
- * use, and there is no RESTful endpoint associated with it.
+ * A parameter passed to or received from the operation.
  */
 export interface ParametersParameter {
 
@@ -151,12 +149,12 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
-  readonly valueDate?: string;
+  readonly valueDate?: Date | string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueDateTime?: string;
+  readonly valueDateTime?: Date | string;
 
   /**
    * If the parameter is a data type.
@@ -171,7 +169,7 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
-  readonly valueInstant?: string;
+  readonly valueInstant?: Date | string;
 
   /**
    * If the parameter is a data type.
@@ -201,7 +199,7 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
-  readonly valueTime?: string;
+  readonly valueTime?: Date | string;
 
   /**
    * If the parameter is a data type.
@@ -382,9 +380,4 @@ export interface ParametersParameter {
    * If the parameter is a whole resource.
    */
   readonly resource?: Resource;
-
-  /**
-   * A named part of a multi-part parameter.
-   */
-  readonly part?: ParametersParameter[];
 }

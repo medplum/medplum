@@ -146,7 +146,7 @@ export interface DiagnosticReport {
    * the procedure or of specimen collection(s), but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveDateTime?: string;
+  readonly effectiveDateTime?: Date | string;
 
   /**
    * The time or time-period the observed values are related to. When the
@@ -221,12 +221,9 @@ export interface DiagnosticReport {
 }
 
 /**
- * The findings and interpretation of diagnostic  tests performed on
- * patients, groups of patients, devices, and locations, and/or specimens
- * derived from these. The report includes clinical context such as
- * requesting and provider information, and some mix of atomic results,
- * images, textual and coded interpretations, and formatted
- * representation of diagnostic reports.
+ * A list of key images associated with this report. The images are
+ * generally created during the diagnostic process, and may be directly
+ * of the patient, or of treated specimens (i.e. slides of interest).
  */
 export interface DiagnosticReportMedia {
 

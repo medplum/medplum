@@ -241,7 +241,7 @@ export interface HealthcareService {
 }
 
 /**
- * The details of a healthcare service available at a location.
+ * A collection of times that the Service Site is available.
  */
 export interface HealthcareServiceAvailableTime {
 
@@ -306,7 +306,8 @@ export interface HealthcareServiceAvailableTime {
 }
 
 /**
- * The details of a healthcare service available at a location.
+ * Does this service have specific eligibility requirements that need to
+ * be met in order to use the service?
  */
 export interface HealthcareServiceEligibility {
 
@@ -357,7 +358,8 @@ export interface HealthcareServiceEligibility {
 }
 
 /**
- * The details of a healthcare service available at a location.
+ * The HealthcareService is not available during this period of time due
+ * to the provided reason.
  */
 export interface HealthcareServiceNotAvailable {
 

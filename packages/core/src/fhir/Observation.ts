@@ -170,7 +170,7 @@ export interface Observation {
    * of the procedure or of specimen collection, but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveDateTime?: string;
+  readonly effectiveDateTime?: Date | string;
 
   /**
    * The time or time-period the observed value is asserted as being true.
@@ -197,7 +197,7 @@ export interface Observation {
    * of the procedure or of specimen collection, but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveInstant?: string;
+  readonly effectiveInstant?: Date | string;
 
   /**
    * The date and time this version of the observation was made available
@@ -263,13 +263,13 @@ export interface Observation {
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueTime?: string;
+  readonly valueTime?: Date | string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueDateTime?: string;
+  readonly valueDateTime?: Date | string;
 
   /**
    * The information determined as a result of making the observation, if
@@ -348,8 +348,11 @@ export interface Observation {
 }
 
 /**
- * Measurements and simple assertions made about a patient, device or
- * other subject.
+ * Some observations have multiple component observations.  These
+ * component observations are expressed as separate code value pairs that
+ * share the same attributes.  Examples include systolic and diastolic
+ * component observations for blood pressure measurement and multiple
+ * component observations for genetics observations.
  */
 export interface ObservationComponent {
 
@@ -446,13 +449,13 @@ export interface ObservationComponent {
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueTime?: string;
+  readonly valueTime?: Date | string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueDateTime?: string;
+  readonly valueDateTime?: Date | string;
 
   /**
    * The information determined as a result of making the observation, if
@@ -471,17 +474,13 @@ export interface ObservationComponent {
    * low, normal.
    */
   readonly interpretation?: CodeableConcept[];
-
-  /**
-   * Guidance on how to interpret the value by comparison to a normal or
-   * recommended range.
-   */
-  readonly referenceRange?: ObservationReferenceRange[];
 }
 
 /**
- * Measurements and simple assertions made about a patient, device or
- * other subject.
+ * Guidance on how to interpret the value by comparison to a normal or
+ * recommended range.  Multiple reference ranges are interpreted as an
+ * &quot;OR&quot;.   In other words, to represent two distinct target populations,
+ * two `referenceRange` elements would be used.
  */
 export interface ObservationReferenceRange {
 

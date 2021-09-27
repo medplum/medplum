@@ -130,7 +130,7 @@ export interface Immunization {
   /**
    * Date vaccine administered or was to be administered.
    */
-  readonly occurrenceDateTime?: string;
+  readonly occurrenceDateTime?: Date | string;
 
   /**
    * Date vaccine administered or was to be administered.
@@ -259,9 +259,8 @@ export interface Immunization {
 }
 
 /**
- * Describes the event of a patient being administered a vaccine or a
- * record of an immunization as reported by a patient, a clinician or
- * another party.
+ * Educational material presented to the patient (or guardian) at the
+ * time of vaccine administration.
  */
 export interface ImmunizationEducation {
 
@@ -323,9 +322,7 @@ export interface ImmunizationEducation {
 }
 
 /**
- * Describes the event of a patient being administered a vaccine or a
- * record of an immunization as reported by a patient, a clinician or
- * another party.
+ * Indicates who performed the immunization event.
  */
 export interface ImmunizationPerformer {
 
@@ -377,9 +374,8 @@ export interface ImmunizationPerformer {
 }
 
 /**
- * Describes the event of a patient being administered a vaccine or a
- * record of an immunization as reported by a patient, a clinician or
- * another party.
+ * The protocol (set of recommendations) being followed by the provider
+ * who administered the dose.
  */
 export interface ImmunizationProtocolApplied {
 
@@ -458,9 +454,8 @@ export interface ImmunizationProtocolApplied {
 }
 
 /**
- * Describes the event of a patient being administered a vaccine or a
- * record of an immunization as reported by a patient, a clinician or
- * another party.
+ * Categorical data indicating that an adverse event is associated in
+ * time to an immunization.
  */
 export interface ImmunizationReaction {
 

@@ -341,8 +341,8 @@ export interface ResearchElementDefinition {
 }
 
 /**
- * The ResearchElementDefinition resource describes a &quot;PICO&quot; element that
- * knowledge (evidence, assertion, recommendation) is about.
+ * A characteristic that defines the members of the research element.
+ * Multiple characteristics are applied with &quot;and&quot; semantics.
  */
 export interface ResearchElementDefinitionCharacteristic {
 
@@ -438,7 +438,7 @@ export interface ResearchElementDefinitionCharacteristic {
   /**
    * Indicates what effective period the study covers.
    */
-  readonly studyEffectiveDateTime?: string;
+  readonly studyEffectiveDateTime?: Date | string;
 
   /**
    * Indicates what effective period the study covers.
@@ -474,7 +474,7 @@ export interface ResearchElementDefinitionCharacteristic {
   /**
    * Indicates what effective period the study covers.
    */
-  readonly participantEffectiveDateTime?: string;
+  readonly participantEffectiveDateTime?: Date | string;
 
   /**
    * Indicates what effective period the study covers.

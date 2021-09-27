@@ -229,8 +229,7 @@ export interface DeviceDefinition {
 }
 
 /**
- * The characteristics, operational status and capabilities of a
- * medical-related component of a medical device.
+ * Device capabilities.
  */
 export interface DeviceDefinitionCapability {
 
@@ -281,8 +280,7 @@ export interface DeviceDefinitionCapability {
 }
 
 /**
- * The characteristics, operational status and capabilities of a
- * medical-related component of a medical device.
+ * A name given to the device to identify it.
  */
 export interface DeviceDefinitionDeviceName {
 
@@ -335,8 +333,8 @@ export interface DeviceDefinitionDeviceName {
 }
 
 /**
- * The characteristics, operational status and capabilities of a
- * medical-related component of a medical device.
+ * A substance used to create the material(s) of which the device is
+ * made.
  */
 export interface DeviceDefinitionMaterial {
 
@@ -392,8 +390,8 @@ export interface DeviceDefinitionMaterial {
 }
 
 /**
- * The characteristics, operational status and capabilities of a
- * medical-related component of a medical device.
+ * The actual configuration settings of a device as it actually operates,
+ * e.g., regulation status, time properties.
  */
 export interface DeviceDefinitionProperty {
 
@@ -450,8 +448,9 @@ export interface DeviceDefinitionProperty {
 }
 
 /**
- * The characteristics, operational status and capabilities of a
- * medical-related component of a medical device.
+ * The capabilities supported on a  device, the standards to which the
+ * device conforms for a particular purpose, and used for the
+ * communication.
  */
 export interface DeviceDefinitionSpecialization {
 
@@ -502,8 +501,10 @@ export interface DeviceDefinitionSpecialization {
 }
 
 /**
- * The characteristics, operational status and capabilities of a
- * medical-related component of a medical device.
+ * Unique device identifier (UDI) assigned to device label or package.
+ * Note that the Device may include multiple udiCarriers as it either may
+ * include just the udiCarrier for the jurisdiction it is sold, or for
+ * multiple jurisdictions it could have been sold.
  */
 export interface DeviceDefinitionUdiDeviceIdentifier {
 

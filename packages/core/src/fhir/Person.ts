@@ -150,8 +150,7 @@ export interface Person {
 }
 
 /**
- * Demographics and administrative information about a person independent
- * of a specific health-related context.
+ * Link to a resource that concerns the same actual person.
  */
 export interface PersonLink {
 

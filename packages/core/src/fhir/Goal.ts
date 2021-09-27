@@ -145,7 +145,7 @@ export interface Goal {
   /**
    * The date or event after which the goal should begin being pursued.
    */
-  readonly startDate?: string;
+  readonly startDate?: Date | string;
 
   /**
    * The date or event after which the goal should begin being pursued.
@@ -197,10 +197,7 @@ export interface Goal {
 }
 
 /**
- * Describes the intended objective(s) for a patient, group or
- * organization care, for example, weight loss, restoring an activity of
- * daily living, obtaining herd immunity via immunization, meeting a
- * process improvement objective, etc.
+ * Indicates what should be done by when.
  */
 export interface GoalTarget {
 
@@ -326,7 +323,7 @@ export interface GoalTarget {
    * Indicates either the date or the duration after start by which the
    * goal should be met.
    */
-  readonly dueDate?: string;
+  readonly dueDate?: Date | string;
 
   /**
    * Indicates either the date or the duration after start by which the

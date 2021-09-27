@@ -182,120 +182,7 @@ export interface InsurancePlan {
 }
 
 /**
- * Details of a Health Insurance product/plan provided by an
- * organization.
- */
-export interface InsurancePlanBenefit {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Type of benefit (primary care; speciality care; inpatient;
-   * outpatient).
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * The referral requirements to have access/coverage for this benefit.
-   */
-  readonly requirement?: string;
-
-  /**
-   * The specific limits on the benefit.
-   */
-  readonly limit?: InsurancePlanLimit[];
-}
-
-/**
- * Details of a Health Insurance product/plan provided by an
- * organization.
- */
-export interface InsurancePlanBenefit1 {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Type of specific benefit (preventative; primary care office visit;
-   * speciality office visit; hospitalization; emergency room; urgent
-   * care).
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * List of the costs associated with a specific benefit.
-   */
-  readonly cost?: InsurancePlanCost[];
-}
-
-/**
- * Details of a Health Insurance product/plan provided by an
- * organization.
+ * The contact for the health insurance product for a certain purpose.
  */
 export interface InsurancePlanContact {
 
@@ -357,74 +244,7 @@ export interface InsurancePlanContact {
 }
 
 /**
- * Details of a Health Insurance product/plan provided by an
- * organization.
- */
-export interface InsurancePlanCost {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Type of cost (copay; individual cap; family cap; coinsurance;
-   * deductible).
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * Whether the cost applies to in-network or out-of-network providers
-   * (in-network; out-of-network; other).
-   */
-  readonly applicability?: CodeableConcept;
-
-  /**
-   * Additional information about the cost, such as information about
-   * funding sources (e.g. HSA, HRA, FSA, RRA).
-   */
-  readonly qualifiers?: CodeableConcept[];
-
-  /**
-   * The actual cost value. (some of the costs may be represented as
-   * percentages rather than currency, e.g. 10% coinsurance).
-   */
-  readonly value?: Quantity;
-}
-
-/**
- * Details of a Health Insurance product/plan provided by an
- * organization.
+ * Details about the coverage offered by the insurance product.
  */
 export interface InsurancePlanCoverage {
 
@@ -477,14 +297,13 @@ export interface InsurancePlanCoverage {
   /**
    * Specific benefits under this type of coverage.
    */
-  readonly benefit?: InsurancePlanBenefit[];
+  readonly benefit?: InsurancePlanCoverageBenefit[];
 }
 
 /**
- * Details of a Health Insurance product/plan provided by an
- * organization.
+ * Specific benefits under this type of coverage.
  */
-export interface InsurancePlanGeneralCost {
+export interface InsurancePlanCoverageBenefit {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -522,32 +341,26 @@ export interface InsurancePlanGeneralCost {
   readonly modifierExtension?: Extension[];
 
   /**
-   * Type of cost.
+   * Type of benefit (primary care; speciality care; inpatient;
+   * outpatient).
    */
   readonly type?: CodeableConcept;
 
   /**
-   * Number of participants enrolled in the plan.
+   * The referral requirements to have access/coverage for this benefit.
    */
-  readonly groupSize?: number;
+  readonly requirement?: string;
 
   /**
-   * Value of the cost.
+   * The specific limits on the benefit.
    */
-  readonly cost?: Money;
-
-  /**
-   * Additional information about the general costs associated with this
-   * plan.
-   */
-  readonly comment?: string;
+  readonly limit?: InsurancePlanCoverageBenefitLimit[];
 }
 
 /**
- * Details of a Health Insurance product/plan provided by an
- * organization.
+ * The specific limits on the benefit.
  */
-export interface InsurancePlanLimit {
+export interface InsurancePlanCoverageBenefitLimit {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -597,8 +410,7 @@ export interface InsurancePlanLimit {
 }
 
 /**
- * Details of a Health Insurance product/plan provided by an
- * organization.
+ * Details about an insurance plan.
  */
 export interface InsurancePlanPlan {
 
@@ -663,19 +475,80 @@ export interface InsurancePlanPlan {
   /**
    * Overall costs associated with the plan.
    */
-  readonly generalCost?: InsurancePlanGeneralCost[];
+  readonly generalCost?: InsurancePlanPlanGeneralCost[];
 
   /**
    * Costs associated with the coverage provided by the product.
    */
-  readonly specificCost?: InsurancePlanSpecificCost[];
+  readonly specificCost?: InsurancePlanPlanSpecificCost[];
 }
 
 /**
- * Details of a Health Insurance product/plan provided by an
- * organization.
+ * Overall costs associated with the plan.
  */
-export interface InsurancePlanSpecificCost {
+export interface InsurancePlanPlanGeneralCost {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Type of cost.
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * Number of participants enrolled in the plan.
+   */
+  readonly groupSize?: number;
+
+  /**
+   * Value of the cost.
+   */
+  readonly cost?: Money;
+
+  /**
+   * Additional information about the general costs associated with this
+   * plan.
+   */
+  readonly comment?: string;
+}
+
+/**
+ * Costs associated with the coverage provided by the product.
+ */
+export interface InsurancePlanPlanSpecificCost {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -721,5 +594,123 @@ export interface InsurancePlanSpecificCost {
   /**
    * List of the specific benefits under this category of benefit.
    */
-  readonly benefit?: InsurancePlanBenefit1[];
+  readonly benefit?: InsurancePlanPlanSpecificCostBenefit[];
+}
+
+/**
+ * List of the specific benefits under this category of benefit.
+ */
+export interface InsurancePlanPlanSpecificCostBenefit {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Type of specific benefit (preventative; primary care office visit;
+   * speciality office visit; hospitalization; emergency room; urgent
+   * care).
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * List of the costs associated with a specific benefit.
+   */
+  readonly cost?: InsurancePlanPlanSpecificCostBenefitCost[];
+}
+
+/**
+ * List of the costs associated with a specific benefit.
+ */
+export interface InsurancePlanPlanSpecificCostBenefitCost {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Type of cost (copay; individual cap; family cap; coinsurance;
+   * deductible).
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * Whether the cost applies to in-network or out-of-network providers
+   * (in-network; out-of-network; other).
+   */
+  readonly applicability?: CodeableConcept;
+
+  /**
+   * Additional information about the cost, such as information about
+   * funding sources (e.g. HSA, HRA, FSA, RRA).
+   */
+  readonly qualifiers?: CodeableConcept[];
+
+  /**
+   * The actual cost value. (some of the costs may be represented as
+   * percentages rather than currency, e.g. 10% coinsurance).
+   */
+  readonly value?: Quantity;
 }

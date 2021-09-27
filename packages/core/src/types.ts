@@ -111,7 +111,8 @@ export interface TypeSchema {
   properties: { [name: string]: ElementDefinition };
   searchParams?: SearchParameter[];
   description?: string;
-  backboneElement?: boolean;
+  parentType?: string;
+  // backboneElement?: boolean;
 }
 
 /**
@@ -163,11 +164,19 @@ export function indexStructureDefinition(structureDefinition: StructureDefinitio
  */
 function indexType(output: IndexedStructureDefinition, element: ElementDefinition): void {
   const path = element.path as string;
+  const typeCode = element.type?.[0]?.code;
+  if (typeCode !== 'Element' && typeCode !== 'BackboneElement') {
+    return;
+  }
+  // console.log('indexType', path, typeCode);
   const parts = path.split('.');
-  const typeName = buildTypeName(parts.slice(0, parts.length - 1));
+  const typeName = buildTypeName(parts);
+  // const typeName = buildTypeName(path.split('.'));
   if (!(typeName in output.types)) {
     output.types[typeName] = {
       display: typeName,
+      description: element.definition,
+      parentType: buildTypeName(parts.slice(0, parts.length - 1)),
       properties: {}
     };
   }
@@ -183,6 +192,10 @@ function indexProperty(output: IndexedStructureDefinition, element: ElementDefin
   const parts = path.split('.');
   const typeName = buildTypeName(parts.slice(0, parts.length - 1));
   const typeSchema = output.types[typeName];
+  if (!typeSchema) {
+    console.log(`wut: no output type for "${typeName}`);
+    return;
+  }
   const key = parts[parts.length - 1];
   typeSchema.properties[key] = element;
 }

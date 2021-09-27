@@ -195,8 +195,7 @@ export interface CompartmentDefinition {
 }
 
 /**
- * A compartment definition that defines how resources are accessed on a
- * server.
+ * Information about how a resource is related to the compartment.
  */
 export interface CompartmentDefinitionResource {
 

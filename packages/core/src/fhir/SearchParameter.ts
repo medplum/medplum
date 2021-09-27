@@ -272,8 +272,7 @@ export interface SearchParameter {
 }
 
 /**
- * A search parameter that defines a named search item that can be used
- * to search/filter on a resource.
+ * Used to define the parts of a composite search parameter.
  */
 export interface SearchParameterComponent {
 

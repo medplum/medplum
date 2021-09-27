@@ -247,9 +247,7 @@ export interface Appointment {
 }
 
 /**
- * A booking of a healthcare event among patient(s), practitioner(s),
- * related person(s) and/or device(s) for a specific date/time. This may
- * result in one or more Encounter(s).
+ * List of participants involved in the appointment.
  */
 export interface AppointmentParticipant {
 

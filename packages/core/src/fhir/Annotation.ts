@@ -7,8 +7,8 @@ import { Extension } from './Extension';
 import { Reference } from './Reference';
 
 /**
- * A  text note which also  contains information about who made the
- * statement and when.
+ * Base StructureDefinition for Annotation Type: A  text note which also
+ * contains information about who made the statement and when.
  */
 export interface Annotation {
 

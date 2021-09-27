@@ -5,12 +5,12 @@
 
 import { Coding } from './Coding';
 import { Extension } from './Extension';
-import { Reference } from './Reference';
 
 /**
- * The metadata about a resource. This is content in the resource that is
- * maintained by the infrastructure. Changes to the content might not
- * always be associated with version changes to the resource.
+ * Base StructureDefinition for Meta Type: The metadata about a resource.
+ * This is content in the resource that is maintained by the
+ * infrastructure. Changes to the content might not always be associated
+ * with version changes to the resource.
  */
 export interface Meta {
 
@@ -44,17 +44,18 @@ export interface Meta {
 
   /**
    * A uri that identifies the source system of the resource. This provides
-   * a minimal amount of [[[Provenance]]] information that can be used to
-   * track or differentiate the source of information in the resource. The
-   * source may identify another FHIR server, document, message, database,
-   * etc.
+   * a minimal amount of [Provenance](provenance.html#) information that
+   * can be used to track or differentiate the source of information in the
+   * resource. The source may identify another FHIR server, document,
+   * message, database, etc.
    */
   readonly source?: string;
 
   /**
-   * A list of profiles (references to [[[StructureDefinition]]] resources)
-   * that this resource claims to conform to. The URL is a reference to
-   * [[[StructureDefinition.url]]].
+   * A list of profiles (references to
+   * [StructureDefinition](structuredefinition.html#) resources) that this
+   * resource claims to conform to. The URL is a reference to
+   * [StructureDefinition.url](structuredefinition-definitions.html#StructureDefinition.url).
    */
   readonly profile?: string[];
 
@@ -71,14 +72,4 @@ export interface Meta {
    * the meaning of a resource.
    */
   readonly tag?: Coding[];
-
-  /**
-   * The project that contains this resource.
-   */
-  readonly project?: string;
-
-  /**
-   * The individual, device or organization who initiated the last change.
-   */
-  readonly author?: Reference;
 }

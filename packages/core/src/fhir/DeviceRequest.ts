@@ -184,7 +184,7 @@ export interface DeviceRequest {
    * &quot;Three times a day&quot;; &quot;1/2 an hour before breakfast for 10 days from
    * 23-Dec 2011:&quot;; &quot;15 Oct 2013, 17 Oct 2013 and 1 Nov 2013&quot;.
    */
-  readonly occurrenceDateTime?: string;
+  readonly occurrenceDateTime?: Date | string;
 
   /**
    * The timing schedule for the use of the device. The Schedule data type
@@ -262,9 +262,8 @@ export interface DeviceRequest {
 }
 
 /**
- * Represents a request for a patient to employ a medical device. The
- * device may be an implantable device, or an external assistive device,
- * such as a walker.
+ * Specific parameters for the ordered item.  For example, the prism
+ * value for lenses.
  */
 export interface DeviceRequestParameter {
 

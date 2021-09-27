@@ -8,7 +8,8 @@ import { Identifier } from './Identifier';
 import { Resource } from './Resource';
 
 /**
- * A reference from one resource to another.
+ * Base StructureDefinition for Reference Type: A reference from one
+ * resource to another.
  */
 export interface Reference<T extends Resource = Resource> {
 

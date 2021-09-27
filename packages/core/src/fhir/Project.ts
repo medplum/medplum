@@ -6,10 +6,6 @@
 import { Meta } from './Meta';
 import { Reference } from './Reference';
 
-/**
- * Medplum project. A Medplum project is the top-level entity for
- * Medplum. A project is an isolated set of resources.
- */
 export interface Project {
 
   /**
@@ -54,7 +50,7 @@ export interface Project {
   readonly description?: string;
 
   /**
-   * Indicates the user with responsibility for managing the Project.
+   * A name associated with the Project.
    */
   readonly owner?: Reference;
 }

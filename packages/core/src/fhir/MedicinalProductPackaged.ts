@@ -145,7 +145,7 @@ export interface MedicinalProductPackaged {
 }
 
 /**
- * A medicinal product in a container or package.
+ * Batch numbering.
  */
 export interface MedicinalProductPackagedBatchIdentifier {
 
@@ -197,7 +197,8 @@ export interface MedicinalProductPackagedBatchIdentifier {
 }
 
 /**
- * A medicinal product in a container or package.
+ * A packaging item, as a contained for medicine, possibly with other
+ * packaging items within.
  */
 export interface MedicinalProductPackagedPackageItem {
 
@@ -271,11 +272,6 @@ export interface MedicinalProductPackagedPackageItem {
    * The manufactured item as contained in the packaged medicinal product.
    */
   readonly manufacturedItem?: Reference[];
-
-  /**
-   * Allows containers within containers.
-   */
-  readonly packageItem?: MedicinalProductPackagedPackageItem[];
 
   /**
    * Dimensions, color etc.

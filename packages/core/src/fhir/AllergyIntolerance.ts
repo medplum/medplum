@@ -168,7 +168,7 @@ export interface AllergyIntolerance {
    * Estimated or actual date,  date-time, or age when allergy or
    * intolerance was identified.
    */
-  readonly onsetDateTime?: string;
+  readonly onsetDateTime?: Date | string;
 
   /**
    * Estimated or actual date,  date-time, or age when allergy or
@@ -232,8 +232,8 @@ export interface AllergyIntolerance {
 }
 
 /**
- * Risk of harmful or undesirable, physiological response which is unique
- * to an individual and associated with exposure to a substance.
+ * Details about each adverse reaction event linked to exposure to the
+ * identified substance.
  */
 export interface AllergyIntoleranceReaction {
 

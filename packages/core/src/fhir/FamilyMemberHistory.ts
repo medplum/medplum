@@ -165,7 +165,7 @@ export interface FamilyMemberHistory {
   /**
    * The actual or approximate date of birth of the relative.
    */
-  readonly bornDate?: string;
+  readonly bornDate?: Date | string;
 
   /**
    * The actual or approximate date of birth of the relative.
@@ -217,7 +217,7 @@ export interface FamilyMemberHistory {
    * Deceased flag or the actual or approximate age of the relative at the
    * time of death for the family member history record.
    */
-  readonly deceasedDate?: string;
+  readonly deceasedDate?: Date | string;
 
   /**
    * Deceased flag or the actual or approximate age of the relative at the
@@ -254,8 +254,10 @@ export interface FamilyMemberHistory {
 }
 
 /**
- * Significant health conditions for a person related to the patient
- * relevant in the context of care for the patient.
+ * The significant Conditions (or condition) that the family member had.
+ * This is a repeating section to allow a system to represent more than
+ * one condition per resource, though there is nothing stopping multiple
+ * resources - one per condition.
  */
 export interface FamilyMemberHistoryCondition {
 

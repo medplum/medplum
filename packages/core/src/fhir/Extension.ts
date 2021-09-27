@@ -36,7 +36,8 @@ import { TriggerDefinition } from './TriggerDefinition';
 import { UsageContext } from './UsageContext';
 
 /**
- * Optional Extension Element - found in all resources.
+ * Base StructureDefinition for Extension Type: Optional Extension
+ * Element - found in all resources.
  */
 export interface Extension {
 
@@ -90,13 +91,13 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDate?: string;
+  readonly valueDate?: Date | string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDateTime?: string;
+  readonly valueDateTime?: Date | string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -114,7 +115,7 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueInstant?: string;
+  readonly valueInstant?: Date | string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -150,7 +151,7 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueTime?: string;
+  readonly valueTime?: Date | string;
 
   /**
    * Value of extension - must be one of a constrained set of the data

@@ -171,8 +171,7 @@ export interface VerificationResult {
 }
 
 /**
- * Describes validation requirements, source(s), status and dates for one
- * or more elements.
+ * Information about the entity attesting to information.
  */
 export interface VerificationResultAttestation {
 
@@ -259,8 +258,7 @@ export interface VerificationResultAttestation {
 }
 
 /**
- * Describes validation requirements, source(s), status and dates for one
- * or more elements.
+ * Information about the primary source(s) involved in validation.
  */
 export interface VerificationResultPrimarySource {
 
@@ -341,8 +339,7 @@ export interface VerificationResultPrimarySource {
 }
 
 /**
- * Describes validation requirements, source(s), status and dates for one
- * or more elements.
+ * Information about the entity validating information.
  */
 export interface VerificationResultValidator {
 

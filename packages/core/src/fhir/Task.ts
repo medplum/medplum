@@ -302,7 +302,8 @@ export interface Task {
 }
 
 /**
- * A task to be performed.
+ * Additional information that may be needed in the execution of the
+ * task.
  */
 export interface TaskInput {
 
@@ -370,12 +371,12 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDate?: string;
+  readonly valueDate?: Date | string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDateTime?: string;
+  readonly valueDateTime?: Date | string;
 
   /**
    * The value of the input parameter as a basic type.
@@ -390,7 +391,7 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueInstant?: string;
+  readonly valueInstant?: Date | string;
 
   /**
    * The value of the input parameter as a basic type.
@@ -420,7 +421,7 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueTime?: string;
+  readonly valueTime?: Date | string;
 
   /**
    * The value of the input parameter as a basic type.
@@ -599,7 +600,7 @@ export interface TaskInput {
 }
 
 /**
- * A task to be performed.
+ * Outputs produced by the Task.
  */
 export interface TaskOutput {
 
@@ -666,12 +667,12 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDate?: string;
+  readonly valueDate?: Date | string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDateTime?: string;
+  readonly valueDateTime?: Date | string;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -686,7 +687,7 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueInstant?: string;
+  readonly valueInstant?: Date | string;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -716,7 +717,7 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueTime?: string;
+  readonly valueTime?: Date | string;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -895,7 +896,10 @@ export interface TaskOutput {
 }
 
 /**
- * A task to be performed.
+ * If the Task.focus is a request resource and the task is seeking
+ * fulfillment (i.e. is asking for the request to be actioned), this
+ * element identifies any limitations on what parts of the referenced
+ * request should be actioned.
  */
 export interface TaskRestriction {
 

@@ -171,8 +171,9 @@ export interface ObservationDefinition {
 }
 
 /**
- * Set of definitional characteristics for a kind of observation or
- * measurement produced or consumed by an orderable health care service.
+ * Multiple  ranges of results qualified by different contexts for
+ * ordinal or continuous observations conforming to this
+ * ObservationDefinition.
  */
 export interface ObservationDefinitionQualifiedInterval {
 
@@ -259,8 +260,7 @@ export interface ObservationDefinitionQualifiedInterval {
 }
 
 /**
- * Set of definitional characteristics for a kind of observation or
- * measurement produced or consumed by an orderable health care service.
+ * Characteristics for quantitative results of this observation.
  */
 export interface ObservationDefinitionQuantitativeDetails {
 

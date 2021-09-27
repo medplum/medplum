@@ -152,7 +152,7 @@ export interface Condition {
    * Estimated or actual date or date-time  the condition began, in the
    * opinion of the clinician.
    */
-  readonly onsetDateTime?: string;
+  readonly onsetDateTime?: Date | string;
 
   /**
    * Estimated or actual date or date-time  the condition began, in the
@@ -184,7 +184,7 @@ export interface Condition {
    * connotations associated with &quot;remission&quot; or &quot;resolution&quot; - Conditions
    * are never really resolved, but they can abate.
    */
-  readonly abatementDateTime?: string;
+  readonly abatementDateTime?: Date | string;
 
   /**
    * The date or estimated date that the condition resolved or went into
@@ -257,8 +257,9 @@ export interface Condition {
 }
 
 /**
- * A clinical condition, problem, diagnosis, or other event, situation,
- * issue, or clinical concept that has risen to a level of concern.
+ * Supporting evidence / manifestations that are the basis of the
+ * Condition's verification status, such as evidence that confirmed or
+ * refuted the condition.
  */
 export interface ConditionEvidence {
 
@@ -310,8 +311,8 @@ export interface ConditionEvidence {
 }
 
 /**
- * A clinical condition, problem, diagnosis, or other event, situation,
- * issue, or clinical concept that has risen to a level of concern.
+ * Clinical stage or grade of a condition. May include formal severity
+ * assessments.
  */
 export interface ConditionStage {
 

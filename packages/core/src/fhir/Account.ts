@@ -161,9 +161,8 @@ export interface Account {
 }
 
 /**
- * A financial tool for tracking value accrued for a particular purpose.
- * In the healthcare field, used to track charges for a patient, cost
- * centers, etc.
+ * The party(s) that are responsible for covering the payment of this
+ * account, and what order should they be applied to the account.
  */
 export interface AccountCoverage {
 
@@ -219,9 +218,8 @@ export interface AccountCoverage {
 }
 
 /**
- * A financial tool for tracking value accrued for a particular purpose.
- * In the healthcare field, used to track charges for a patient, cost
- * centers, etc.
+ * The parties responsible for balancing the account if other payment
+ * options fall short.
  */
 export interface AccountGuarantor {
 

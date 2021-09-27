@@ -172,7 +172,7 @@ export interface Specimen {
 }
 
 /**
- * A sample to be used for analysis.
+ * Details concerning the specimen collection.
  */
 export interface SpecimenCollection {
 
@@ -220,7 +220,7 @@ export interface SpecimenCollection {
    * Time when specimen was collected from subject - the physiologically
    * relevant time.
    */
-  readonly collectedDateTime?: string;
+  readonly collectedDateTime?: Date | string;
 
   /**
    * Time when specimen was collected from subject - the physiologically
@@ -266,7 +266,8 @@ export interface SpecimenCollection {
 }
 
 /**
- * A sample to be used for analysis.
+ * The container holding the specimen.  The recursive nature of
+ * containers; i.e. blood in tube in tray in rack is not addressed here.
  */
 export interface SpecimenContainer {
 
@@ -348,7 +349,7 @@ export interface SpecimenContainer {
 }
 
 /**
- * A sample to be used for analysis.
+ * Details concerning processing and processing steps for the specimen.
  */
 export interface SpecimenProcessing {
 
@@ -407,7 +408,7 @@ export interface SpecimenProcessing {
    * For example the time of sample fixation or the period of time the
    * sample was in formalin.
    */
-  readonly timeDateTime?: string;
+  readonly timeDateTime?: Date | string;
 
   /**
    * A record of the time or period when the specimen processing occurred.
