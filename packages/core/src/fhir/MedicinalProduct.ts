@@ -259,7 +259,7 @@ export interface MedicinalProductManufacturingBusinessOperation {
   /**
    * Regulatory authorization date.
    */
-  readonly effectiveDate?: Date | string;
+  readonly effectiveDate?: string;
 
   /**
    * To indicate if this proces is commercially confidential.
@@ -514,7 +514,7 @@ export interface MedicinalProductSpecialDesignation {
   /**
    * Date when the designation was granted.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Animal species for which this applies.

@@ -128,7 +128,7 @@ export interface Specimen {
   /**
    * Time when specimen was received for processing or testing.
    */
-  readonly receivedTime?: Date | string;
+  readonly receivedTime?: string;
 
   /**
    * Reference to the parent (source) specimen which is used when the
@@ -220,7 +220,7 @@ export interface SpecimenCollection {
    * Time when specimen was collected from subject - the physiologically
    * relevant time.
    */
-  readonly collectedDateTime?: Date | string;
+  readonly collectedDateTime?: string;
 
   /**
    * Time when specimen was collected from subject - the physiologically
@@ -408,7 +408,7 @@ export interface SpecimenProcessing {
    * For example the time of sample fixation or the period of time the
    * sample was in formalin.
    */
-  readonly timeDateTime?: Date | string;
+  readonly timeDateTime?: string;
 
   /**
    * A record of the time or period when the specimen processing occurred.

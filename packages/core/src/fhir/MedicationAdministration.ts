@@ -179,7 +179,7 @@ export interface MedicationAdministration {
    * attribute is true). For many administrations, such as swallowing a
    * tablet the use of dateTime is more appropriate.
    */
-  readonly effectiveDateTime?: Date | string;
+  readonly effectiveDateTime?: string;
 
   /**
    * A specific date/time or interval of time during which the

@@ -146,7 +146,7 @@ export interface Composition {
    * The composition editing time, when the composition was last logically
    * changed by the author.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Identifies who is responsible for the information in the composition,
@@ -243,7 +243,7 @@ export interface CompositionAttester {
   /**
    * When the composition was attested by the party.
    */
-  readonly time?: Date | string;
+  readonly time?: string;
 
   /**
    * Who attested the composition in the specified way.
@@ -479,4 +479,9 @@ export interface CompositionSection {
    * typically has some text explaining the empty reason.
    */
   readonly emptyReason?: CodeableConcept;
+
+  /**
+   * A nested sub-section within this section.
+   */
+  readonly section?: CompositionSection[];
 }

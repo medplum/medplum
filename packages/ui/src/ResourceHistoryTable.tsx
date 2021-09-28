@@ -55,7 +55,7 @@ function HistoryRow(props: HistoryRowProps) {
         <ResourceBadge value={props.version.meta?.author} link={true} />
       </td>
       <td>
-        {formatDateTime(props.version.meta?.lastUpdated as string | Date)}
+        {formatDateTime(props.version.meta?.lastUpdated as string)}
       </td>
       <td>
         <MedplumLink to={getVersionUrl(props.version)}>

@@ -182,7 +182,7 @@ export interface CommunicationRequest {
   /**
    * The time when this communication is to occur.
    */
-  readonly occurrenceDateTime?: Date | string;
+  readonly occurrenceDateTime?: string;
 
   /**
    * The time when this communication is to occur.
@@ -193,7 +193,7 @@ export interface CommunicationRequest {
    * For draft requests, indicates the date of initial creation.  For
    * requests with other statuses, indicates the date of activation.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The device, individual, or organization who initiated the request and

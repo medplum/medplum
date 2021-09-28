@@ -381,4 +381,10 @@ export interface MedicinalProductIngredientSubstance {
    * The ingredient substance.
    */
   readonly code?: CodeableConcept;
+
+  /**
+   * Quantity of the substance or specified substance present in the
+   * manufactured item or pharmaceutical product.
+   */
+  readonly strength?: MedicinalProductIngredientSpecifiedSubstanceStrength[];
 }

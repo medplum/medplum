@@ -149,7 +149,7 @@ export interface SupplyRequest {
   /**
    * When the request should be fulfilled.
    */
-  readonly occurrenceDateTime?: Date | string;
+  readonly occurrenceDateTime?: string;
 
   /**
    * When the request should be fulfilled.
@@ -164,7 +164,7 @@ export interface SupplyRequest {
   /**
    * When the request was made.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The device, practitioner, etc. who initiated the request.

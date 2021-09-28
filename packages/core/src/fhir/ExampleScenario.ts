@@ -149,7 +149,7 @@ export interface ExampleScenario {
    * change when the substantive content of the example scenario changes.
    * (e.g. the 'content logical definition').
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the example
@@ -556,6 +556,11 @@ export interface ExampleScenarioProcessStep {
   readonly modifierExtension?: Extension[];
 
   /**
+   * Nested process.
+   */
+  readonly process?: ExampleScenarioProcess[];
+
+  /**
    * If there is a pause in the flow.
    */
   readonly pause?: boolean;
@@ -624,6 +629,11 @@ export interface ExampleScenarioProcessStepAlternative {
    * alternative should occur rather than the base step.
    */
   readonly description?: string;
+
+  /**
+   * What happens in each alternative option.
+   */
+  readonly step?: ExampleScenarioProcessStep[];
 }
 
 /**
@@ -705,4 +715,14 @@ export interface ExampleScenarioProcessStepOperation {
    * Whether the receiver is deactivated right after the transaction.
    */
   readonly receiverActive?: boolean;
+
+  /**
+   * Each resource instance used by the initiator.
+   */
+  readonly request?: ExampleScenarioInstanceContainedInstance;
+
+  /**
+   * Each resource instance used by the responder.
+   */
+  readonly response?: ExampleScenarioInstanceContainedInstance;
 }

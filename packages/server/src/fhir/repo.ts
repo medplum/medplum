@@ -613,7 +613,7 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns The last updated date.
    */
-  private getLastUpdated(resource: Resource): Date | string {
+  private getLastUpdated(resource: Resource): string {
     // If the resource has a specified "lastUpdated",
     // and the current context is a ClientApplication (i.e., OAuth client credentials),
     // then allow the ClientApplication to set the date.
@@ -623,7 +623,7 @@ export class Repository {
     }
 
     // Otherwise, use "now"
-    return new Date();
+    return new Date().toISOString();
   }
 
   /**

@@ -20,7 +20,7 @@ const auditEvents: Bundle = {
         resourceType: 'AuditEvent',
         id: randomUUID(),
         meta: {
-          lastUpdated: new Date(),
+          lastUpdated: new Date().toISOString(),
           author: {
             reference: 'Practitioner/123'
           }

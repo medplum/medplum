@@ -141,7 +141,7 @@ export interface ClaimResponse {
   /**
    * The date this resource was created.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * The party responsible for authorization, adjudication and
@@ -198,6 +198,12 @@ export interface ClaimResponse {
    * service lines.
    */
   readonly addItem?: ClaimResponseAddItem[];
+
+  /**
+   * The adjudication results which are presented at the header level
+   * rather than at the line-item or add-item levels.
+   */
+  readonly adjudication?: ClaimResponseItemAdjudication[];
 
   /**
    * Categorized monetary totals for the adjudication.
@@ -335,7 +341,7 @@ export interface ClaimResponseAddItem {
    * The date or dates when the service or product was supplied, performed
    * or completed.
    */
-  readonly servicedDate?: Date | string;
+  readonly servicedDate?: string;
 
   /**
    * The date or dates when the service or product was supplied, performed
@@ -400,6 +406,11 @@ export interface ClaimResponseAddItem {
    * adjudication of this item.
    */
   readonly noteNumber?: number[];
+
+  /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ClaimResponseItemAdjudication[];
 
   /**
    * The second-tier service adjudications for payor added services.
@@ -493,6 +504,11 @@ export interface ClaimResponseAddItemDetail {
   readonly noteNumber?: number[];
 
   /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ClaimResponseItemAdjudication[];
+
+  /**
    * The third-tier service adjudications for payor added services.
    */
   readonly subDetail?: ClaimResponseAddItemDetailSubDetail[];
@@ -582,6 +598,11 @@ export interface ClaimResponseAddItemDetailSubDetail {
    * adjudication of this item.
    */
   readonly noteNumber?: number[];
+
+  /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ClaimResponseItemAdjudication[];
 }
 
 /**
@@ -915,6 +936,11 @@ export interface ClaimResponseItemDetail {
   readonly noteNumber?: number[];
 
   /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ClaimResponseItemAdjudication[];
+
+  /**
    * A sub-detail adjudication of a simple product or service.
    */
   readonly subDetail?: ClaimResponseItemDetailSubDetail[];
@@ -970,6 +996,11 @@ export interface ClaimResponseItemDetailSubDetail {
    * adjudication of this item.
    */
   readonly noteNumber?: number[];
+
+  /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ClaimResponseItemAdjudication[];
 }
 
 /**
@@ -1033,7 +1064,7 @@ export interface ClaimResponsePayment {
    * Estimated date the payment will be issued or the actual issue date of
    * payment.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Benefits payable less any payment adjustment.

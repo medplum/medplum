@@ -133,7 +133,7 @@ export interface CoverageEligibilityRequest {
    * The date or dates when the enclosed suite of services were performed
    * or completed.
    */
-  readonly servicedDate?: Date | string;
+  readonly servicedDate?: string;
 
   /**
    * The date or dates when the enclosed suite of services were performed
@@ -144,7 +144,7 @@ export interface CoverageEligibilityRequest {
   /**
    * The date when this resource was created.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * Person who created the request.

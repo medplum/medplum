@@ -170,7 +170,7 @@ export interface Observation {
    * of the procedure or of specimen collection, but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveDateTime?: Date | string;
+  readonly effectiveDateTime?: string;
 
   /**
    * The time or time-period the observed value is asserted as being true.
@@ -197,14 +197,14 @@ export interface Observation {
    * of the procedure or of specimen collection, but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveInstant?: Date | string;
+  readonly effectiveInstant?: string;
 
   /**
    * The date and time this version of the observation was made available
    * to providers, typically after the results have been reviewed and
    * verified.
    */
-  readonly issued?: Date | string;
+  readonly issued?: string;
 
   /**
    * Who was responsible for asserting the observed value as &quot;true&quot;.
@@ -263,13 +263,13 @@ export interface Observation {
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * The information determined as a result of making the observation, if
@@ -449,13 +449,13 @@ export interface ObservationComponent {
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * The information determined as a result of making the observation, if
@@ -474,6 +474,12 @@ export interface ObservationComponent {
    * low, normal.
    */
   readonly interpretation?: CodeableConcept[];
+
+  /**
+   * Guidance on how to interpret the value by comparison to a normal or
+   * recommended range.
+   */
+  readonly referenceRange?: ObservationReferenceRange[];
 }
 
 /**

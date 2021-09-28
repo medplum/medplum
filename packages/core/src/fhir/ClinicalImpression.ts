@@ -143,7 +143,7 @@ export interface ClinicalImpression {
   /**
    * The point in time or period over which the subject was assessed.
    */
-  readonly effectiveDateTime?: Date | string;
+  readonly effectiveDateTime?: string;
 
   /**
    * The point in time or period over which the subject was assessed.
@@ -153,7 +153,7 @@ export interface ClinicalImpression {
   /**
    * Indicates when the documentation of the assessment was complete.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The clinician performing the assessment.

@@ -190,7 +190,7 @@ export interface MedicationStatement {
    * patient is/was/will be taking the medication (or was not taking, when
    * the MedicationStatement.taken element is No).
    */
-  readonly effectiveDateTime?: Date | string;
+  readonly effectiveDateTime?: string;
 
   /**
    * The interval of time during which it is being asserted that the
@@ -203,7 +203,7 @@ export interface MedicationStatement {
    * The date when the medication statement was asserted by the information
    * source.
    */
-  readonly dateAsserted?: Date | string;
+  readonly dateAsserted?: string;
 
   /**
    * The person or organization that provided the information about the

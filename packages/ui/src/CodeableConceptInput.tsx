@@ -1,4 +1,4 @@
-import { CodeableConcept, ElementDefinition, stringify, ValueSet, ValueSetContains, ValueSetExpansion } from '@medplum/core';
+import { CodeableConcept, ElementDefinition, stringify, ValueSet, ValueSetExpansion, ValueSetExpansionContains } from '@medplum/core';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
 import { useMedplum } from './MedplumProvider';
@@ -23,7 +23,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps) {
         const system = props.property.binding?.valueSet as string;
         return medplum.searchValueSet(system, input)
           .then((valueSet: ValueSet) => {
-            return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetContains[]).map(valueSetElementToCodeableConcept);
+            return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[]).map(valueSetElementToCodeableConcept);
           });
       }}
       buildUnstructured={buildUnstructured}
@@ -35,7 +35,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps) {
   );
 }
 
-function valueSetElementToCodeableConcept(element: ValueSetContains): CodeableConcept {
+function valueSetElementToCodeableConcept(element: ValueSetExpansionContains): CodeableConcept {
   return {
     text: element.display,
     coding: [{

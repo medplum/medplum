@@ -150,7 +150,7 @@ export interface ChargeItem {
   /**
    * Date/time(s) or duration when the charged service was applied.
    */
-  readonly occurrenceDateTime?: Date | string;
+  readonly occurrenceDateTime?: string;
 
   /**
    * Date/time(s) or duration when the charged service was applied.
@@ -220,7 +220,7 @@ export interface ChargeItem {
   /**
    * Date the charge item was entered.
    */
-  readonly enteredDate?: Date | string;
+  readonly enteredDate?: string;
 
   /**
    * Describes why the event occurred in coded or textual form.

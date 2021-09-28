@@ -214,7 +214,7 @@ export interface BiologicallyDerivedProductCollection {
   /**
    * Time of product collection.
    */
-  readonly collectedDateTime?: Date | string;
+  readonly collectedDateTime?: string;
 
   /**
    * Time of product collection.
@@ -272,7 +272,7 @@ export interface BiologicallyDerivedProductManipulation {
   /**
    * Time of manipulation.
    */
-  readonly timeDateTime?: Date | string;
+  readonly timeDateTime?: string;
 
   /**
    * Time of manipulation.
@@ -340,7 +340,7 @@ export interface BiologicallyDerivedProductProcessing {
   /**
    * Time of processing.
    */
-  readonly timeDateTime?: Date | string;
+  readonly timeDateTime?: string;
 
   /**
    * Time of processing.

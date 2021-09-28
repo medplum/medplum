@@ -145,7 +145,7 @@ export interface Goal {
   /**
    * The date or event after which the goal should begin being pursued.
    */
-  readonly startDate?: Date | string;
+  readonly startDate?: string;
 
   /**
    * The date or event after which the goal should begin being pursued.
@@ -161,7 +161,7 @@ export interface Goal {
    * Identifies when the current status.  I.e. When initially created, when
    * achieved, when cancelled, etc.
    */
-  readonly statusDate?: Date | string;
+  readonly statusDate?: string;
 
   /**
    * Captures the reason for the current status.
@@ -323,7 +323,7 @@ export interface GoalTarget {
    * Indicates either the date or the duration after start by which the
    * goal should be met.
    */
-  readonly dueDate?: Date | string;
+  readonly dueDate?: string;
 
   /**
    * Indicates either the date or the duration after start by which the

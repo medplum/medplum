@@ -6,6 +6,9 @@
 import { Attachment } from './Attachment';
 import { Meta } from './Meta';
 
+/**
+ * Bot account for automated actions.
+ */
 export interface Bot {
 
   /**

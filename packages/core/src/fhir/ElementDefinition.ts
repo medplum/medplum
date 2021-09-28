@@ -236,13 +236,13 @@ export interface ElementDefinition {
    * The value that should be used if there is no value stated in the
    * instance (e.g. 'if not otherwise specified, the abstract is false').
    */
-  readonly defaultValueDate?: Date | string;
+  readonly defaultValueDate?: string;
 
   /**
    * The value that should be used if there is no value stated in the
    * instance (e.g. 'if not otherwise specified, the abstract is false').
    */
-  readonly defaultValueDateTime?: Date | string;
+  readonly defaultValueDateTime?: string;
 
   /**
    * The value that should be used if there is no value stated in the
@@ -260,7 +260,7 @@ export interface ElementDefinition {
    * The value that should be used if there is no value stated in the
    * instance (e.g. 'if not otherwise specified, the abstract is false').
    */
-  readonly defaultValueInstant?: Date | string;
+  readonly defaultValueInstant?: string;
 
   /**
    * The value that should be used if there is no value stated in the
@@ -296,7 +296,7 @@ export interface ElementDefinition {
    * The value that should be used if there is no value stated in the
    * instance (e.g. 'if not otherwise specified, the abstract is false').
    */
-  readonly defaultValueTime?: Date | string;
+  readonly defaultValueTime?: string;
 
   /**
    * The value that should be used if there is no value stated in the
@@ -559,7 +559,7 @@ export interface ElementDefinition {
    * is ignored, and all values must be an exact match (case and accent
    * sensitive). Missing elements/attributes must also be missing.
    */
-  readonly fixedDate?: Date | string;
+  readonly fixedDate?: string;
 
   /**
    * Specifies a value that SHALL be exactly the value  for this element in
@@ -567,7 +567,7 @@ export interface ElementDefinition {
    * is ignored, and all values must be an exact match (case and accent
    * sensitive). Missing elements/attributes must also be missing.
    */
-  readonly fixedDateTime?: Date | string;
+  readonly fixedDateTime?: string;
 
   /**
    * Specifies a value that SHALL be exactly the value  for this element in
@@ -591,7 +591,7 @@ export interface ElementDefinition {
    * is ignored, and all values must be an exact match (case and accent
    * sensitive). Missing elements/attributes must also be missing.
    */
-  readonly fixedInstant?: Date | string;
+  readonly fixedInstant?: string;
 
   /**
    * Specifies a value that SHALL be exactly the value  for this element in
@@ -639,7 +639,7 @@ export interface ElementDefinition {
    * is ignored, and all values must be an exact match (case and accent
    * sensitive). Missing elements/attributes must also be missing.
    */
-  readonly fixedTime?: Date | string;
+  readonly fixedTime?: string;
 
   /**
    * Specifies a value that SHALL be exactly the value  for this element in
@@ -1039,7 +1039,7 @@ export interface ElementDefinition {
    * 2. If a complex object: it must match (recursively) the pattern value
    * 3. If an array: it must match (recursively) the pattern value.
    */
-  readonly patternDate?: Date | string;
+  readonly patternDate?: string;
 
   /**
    * Specifies a value that the value in the instance SHALL follow - that
@@ -1063,7 +1063,7 @@ export interface ElementDefinition {
    * 2. If a complex object: it must match (recursively) the pattern value
    * 3. If an array: it must match (recursively) the pattern value.
    */
-  readonly patternDateTime?: Date | string;
+  readonly patternDateTime?: string;
 
   /**
    * Specifies a value that the value in the instance SHALL follow - that
@@ -1135,7 +1135,7 @@ export interface ElementDefinition {
    * 2. If a complex object: it must match (recursively) the pattern value
    * 3. If an array: it must match (recursively) the pattern value.
    */
-  readonly patternInstant?: Date | string;
+  readonly patternInstant?: string;
 
   /**
    * Specifies a value that the value in the instance SHALL follow - that
@@ -1279,7 +1279,7 @@ export interface ElementDefinition {
    * 2. If a complex object: it must match (recursively) the pattern value
    * 3. If an array: it must match (recursively) the pattern value.
    */
-  readonly patternTime?: Date | string;
+  readonly patternTime?: string;
 
   /**
    * Specifies a value that the value in the instance SHALL follow - that
@@ -2132,28 +2132,28 @@ export interface ElementDefinition {
    * This is allowed for the types date, dateTime, instant, time, decimal,
    * integer, and Quantity.
    */
-  readonly minValueDate?: Date | string;
+  readonly minValueDate?: string;
 
   /**
    * The minimum allowed value for the element. The value is inclusive.
    * This is allowed for the types date, dateTime, instant, time, decimal,
    * integer, and Quantity.
    */
-  readonly minValueDateTime?: Date | string;
+  readonly minValueDateTime?: string;
 
   /**
    * The minimum allowed value for the element. The value is inclusive.
    * This is allowed for the types date, dateTime, instant, time, decimal,
    * integer, and Quantity.
    */
-  readonly minValueInstant?: Date | string;
+  readonly minValueInstant?: string;
 
   /**
    * The minimum allowed value for the element. The value is inclusive.
    * This is allowed for the types date, dateTime, instant, time, decimal,
    * integer, and Quantity.
    */
-  readonly minValueTime?: Date | string;
+  readonly minValueTime?: string;
 
   /**
    * The minimum allowed value for the element. The value is inclusive.
@@ -2195,28 +2195,28 @@ export interface ElementDefinition {
    * This is allowed for the types date, dateTime, instant, time, decimal,
    * integer, and Quantity.
    */
-  readonly maxValueDate?: Date | string;
+  readonly maxValueDate?: string;
 
   /**
    * The maximum allowed value for the element. The value is inclusive.
    * This is allowed for the types date, dateTime, instant, time, decimal,
    * integer, and Quantity.
    */
-  readonly maxValueDateTime?: Date | string;
+  readonly maxValueDateTime?: string;
 
   /**
    * The maximum allowed value for the element. The value is inclusive.
    * This is allowed for the types date, dateTime, instant, time, decimal,
    * integer, and Quantity.
    */
-  readonly maxValueInstant?: Date | string;
+  readonly maxValueInstant?: string;
 
   /**
    * The maximum allowed value for the element. The value is inclusive.
    * This is allowed for the types date, dateTime, instant, time, decimal,
    * integer, and Quantity.
    */
-  readonly maxValueTime?: Date | string;
+  readonly maxValueTime?: string;
 
   /**
    * The maximum allowed value for the element. The value is inclusive.
@@ -2526,13 +2526,13 @@ export interface ElementDefinitionExample {
    * The actual value for the element, which must be one of the types
    * allowed for this element.
    */
-  readonly valueDate?: Date | string;
+  readonly valueDate?: string;
 
   /**
    * The actual value for the element, which must be one of the types
    * allowed for this element.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * The actual value for the element, which must be one of the types
@@ -2550,7 +2550,7 @@ export interface ElementDefinitionExample {
    * The actual value for the element, which must be one of the types
    * allowed for this element.
    */
-  readonly valueInstant?: Date | string;
+  readonly valueInstant?: string;
 
   /**
    * The actual value for the element, which must be one of the types
@@ -2586,7 +2586,7 @@ export interface ElementDefinitionExample {
    * The actual value for the element, which must be one of the types
    * allowed for this element.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * The actual value for the element, which must be one of the types

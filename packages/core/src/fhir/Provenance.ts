@@ -119,12 +119,12 @@ export interface Provenance {
   /**
    * The period during which the activity occurred.
    */
-  readonly occurredDateTime?: Date | string;
+  readonly occurredDateTime?: string;
 
   /**
    * The instant of time at which the activity was recorded.
    */
-  readonly recorded?: Date | string;
+  readonly recorded?: string;
 
   /**
    * Policy or plan the activity was defined by. Typically, a single
@@ -281,4 +281,12 @@ export interface ProvenanceEntity {
    * maybe absolute or relative.
    */
   readonly what?: Reference;
+
+  /**
+   * The entity is attributed to an agent to express the agent's
+   * responsibility for that entity, possibly along with other agents. This
+   * description can be understood as shorthand for saying that the agent
+   * was responsible for the activity which generated the entity.
+   */
+  readonly agent?: ProvenanceAgent[];
 }

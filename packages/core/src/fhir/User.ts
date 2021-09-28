@@ -5,6 +5,9 @@
 
 import { Meta } from './Meta';
 
+/**
+ * OAuth user.
+ */
 export interface User {
 
   /**
@@ -48,4 +51,9 @@ export interface User {
    * Whether this user is a system administrator.
    */
   readonly admin?: boolean;
+
+  /**
+   * Encrypted hash of the user's password.
+   */
+  readonly passwordHash?: string;
 }

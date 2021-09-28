@@ -108,7 +108,7 @@ export interface VisionPrescription {
   /**
    * The date this resource was created.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * A resource reference to the person to whom the vision prescription
@@ -126,7 +126,7 @@ export interface VisionPrescription {
   /**
    * The date (and perhaps time) when the prescription was written.
    */
-  readonly dateWritten?: Date | string;
+  readonly dateWritten?: string;
 
   /**
    * The healthcare professional responsible for authorizing the

@@ -112,7 +112,6 @@ export interface TypeSchema {
   searchParams?: SearchParameter[];
   description?: string;
   parentType?: string;
-  // backboneElement?: boolean;
 }
 
 /**
@@ -123,8 +122,7 @@ export interface TypeSchema {
  */
 export function indexStructureDefinition(structureDefinition: StructureDefinition, output?: IndexedStructureDefinition): IndexedStructureDefinition {
   const typeName = structureDefinition.name;
-  if (!typeName) { //} || typeName === 'Resource') {
-    console.log('typeName', typeName);
+  if (!typeName) {
     throw new Error('Invalid StructureDefinition');
   }
 
@@ -143,7 +141,7 @@ export function indexStructureDefinition(structureDefinition: StructureDefinitio
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
     // Filter out any elements missing path or type
-    const filtered = elements.filter(e => e.path !== typeName && e.path && e.type && e.type.length > 0);
+    const filtered = elements.filter(e => e.path !== typeName && e.path);// && e.type && e.type.length > 0);
 
     // First pass, build types
     filtered.forEach(element => indexType(output as IndexedStructureDefinition, element));
@@ -168,10 +166,8 @@ function indexType(output: IndexedStructureDefinition, element: ElementDefinitio
   if (typeCode !== 'Element' && typeCode !== 'BackboneElement') {
     return;
   }
-  // console.log('indexType', path, typeCode);
   const parts = path.split('.');
   const typeName = buildTypeName(parts);
-  // const typeName = buildTypeName(path.split('.'));
   if (!(typeName in output.types)) {
     output.types[typeName] = {
       display: typeName,
@@ -190,12 +186,11 @@ function indexType(output: IndexedStructureDefinition, element: ElementDefinitio
 function indexProperty(output: IndexedStructureDefinition, element: ElementDefinition): void {
   const path = element.path as string;
   const parts = path.split('.');
-  const typeName = buildTypeName(parts.slice(0, parts.length - 1));
-  const typeSchema = output.types[typeName];
-  if (!typeSchema) {
-    console.log(`wut: no output type for "${typeName}`);
+  if (parts.length === 1) {
     return;
   }
+  const typeName = buildTypeName(parts.slice(0, parts.length - 1));
+  const typeSchema = output.types[typeName];
   const key = parts[parts.length - 1];
   typeSchema.properties[key] = element;
 }
@@ -226,4 +221,139 @@ export function getPropertyDisplayName(property: ElementDefinition): string {
     .join(' ')
     .replace('_', ' ')
     .replace(/\s+/g, ' ');
+}
+
+export enum SearchParameterType {
+  BOOLEAN = 'BOOLEAN',
+  NUMBER = 'NUMBER',
+  QUANTITY = 'QUANTITY',
+  TEXT = 'TEXT',
+  REFERENCE = 'REFERENCE',
+  DATE = 'DATE',
+  DATETIME = 'DATETIME',
+  PERIOD = 'PERIOD'
+}
+
+export interface SearchParameterDetails {
+  type: SearchParameterType;
+  array?: boolean;
+}
+
+/**
+ * Returns the type details of a SearchParameter.
+ *
+ * The SearchParameter resource has a "type" parameter, but that is missing some critical information.
+ *
+ * For example:
+ *   1) The "date" type includes "date", "datetime", and "period".
+ *   2) The "token" type includes enums and booleans.
+ *   3) Arrays/multiple values are not reflected at all.
+ *
+ * @param structureDefinitions Collection of StructureDefinition resources indexed by name.
+ * @param resourceType The root resource type.
+ * @param searchParam The search parameter.
+ * @returns The search parameter type details.
+ */
+export function getSearchParameterType(
+  structureDefinitions: IndexedStructureDefinition,
+  resourceType: string,
+  searchParam: SearchParameter): SearchParameterDetails {
+
+  if (!searchParam.expression) {
+    // This happens on compound types
+    return { type: SearchParameterType.TEXT };
+  }
+
+  const expression = getExpressionForResourcetype(resourceType, searchParam.expression)?.split('.');
+  if (!expression) {
+    // This happens on compound types
+    return { type: SearchParameterType.TEXT };
+  }
+
+  let baseType = resourceType;
+  let propertyType = undefined;
+  let array = false;
+
+  for (let i = 1; i < expression.length; i++) {
+    const propertyName = expression[i];
+
+    const typeDef = structureDefinitions.types[baseType];
+    if (!typeDef) {
+      // This happens on complex types such as "UsageContext"
+      return { type: SearchParameterType.TEXT, array };
+    }
+
+    const propertyDef = typeDef.properties?.[propertyName];
+    if (!propertyDef) {
+      // This happens on complex properties such as "collected[x]"/"collectedDateTime"/"collectedPeriod"
+      return { type: SearchParameterType.TEXT, array };
+    }
+
+    if (propertyDef.max === '*') {
+      array = true;
+    }
+
+    const propertyTypeCode = propertyDef.type?.[0].code;
+    if (!propertyTypeCode) {
+      // This happens when one of parent properties uses contentReference
+      return { type: SearchParameterType.TEXT, array };
+    }
+
+    if (i === expression.length - 1) {
+      propertyType = propertyTypeCode;
+    } else if (propertyTypeCode === 'Element' || propertyTypeCode === 'BackboneElement') {
+      baseType = baseType + capitalize(propertyName);
+    } else {
+      baseType = propertyTypeCode;
+    }
+  }
+
+  let type = SearchParameterType.TEXT;
+  switch (searchParam.type) {
+    case 'date':
+      type = SearchParameterType.DATE;
+      break;
+    case 'number':
+      type = SearchParameterType.NUMBER;
+      break;
+    case 'quantity':
+      type = SearchParameterType.QUANTITY;
+      break;
+    case 'token':
+      if (propertyType === 'boolean') {
+        type = SearchParameterType.BOOLEAN;
+      }
+      break;
+  }
+
+  return { type, array };
+}
+
+function getExpressionForResourcetype(resourceType: string, expression: string): string | undefined {
+  const expressions = expression.split(' | ');
+  for (const e of expressions) {
+    const simplified = simplifyExpression(e);
+    if (simplified.startsWith(resourceType + '.')) {
+      return simplified;
+    }
+  }
+  return undefined;
+}
+
+function simplifyExpression(input: string): string {
+  let result = input.trim();
+
+  if (result.startsWith('(') && result.endsWith(')')) {
+    result = result.substring(1, result.length - 1);
+  }
+
+  if (result.includes(' as ')) {
+    result = result.substring(0, result.indexOf(' as '));
+  }
+
+  if (result.includes('.where(')) {
+    result = result.substring(0, result.indexOf('.where('));
+  }
+
+  return result;
 }

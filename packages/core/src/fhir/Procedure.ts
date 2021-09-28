@@ -171,7 +171,7 @@ export interface Procedure {
    * span more than one date, and also allows for the length of the
    * procedure to be captured.
    */
-  readonly performedDateTime?: Date | string;
+  readonly performedDateTime?: string;
 
   /**
    * Estimated or actual date, date-time, period, or age when the procedure

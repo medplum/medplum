@@ -149,12 +149,12 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
-  readonly valueDate?: Date | string;
+  readonly valueDate?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * If the parameter is a data type.
@@ -169,7 +169,7 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
-  readonly valueInstant?: Date | string;
+  readonly valueInstant?: string;
 
   /**
    * If the parameter is a data type.
@@ -199,7 +199,7 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * If the parameter is a data type.
@@ -380,4 +380,9 @@ export interface ParametersParameter {
    * If the parameter is a whole resource.
    */
   readonly resource?: Resource;
+
+  /**
+   * A named part of a multi-part parameter.
+   */
+  readonly part?: ParametersParameter[];
 }

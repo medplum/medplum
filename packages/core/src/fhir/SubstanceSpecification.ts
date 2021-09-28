@@ -164,6 +164,12 @@ export interface SubstanceSpecification {
   readonly name?: SubstanceSpecificationName[];
 
   /**
+   * The molecular weight or weight range (for proteins, polymers or
+   * nucleic acids).
+   */
+  readonly molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight[];
+
+  /**
    * A link between this substance and another, with details of the
    * relationship.
    */
@@ -244,7 +250,7 @@ export interface SubstanceSpecificationCode {
    * The date at which the code status is changed as part of the
    * terminology maintenance.
    */
-  readonly statusDate?: Date | string;
+  readonly statusDate?: string;
 
   /**
    * Any comment can be provided in this field, if necessary.
@@ -415,6 +421,16 @@ export interface SubstanceSpecificationName {
   readonly jurisdiction?: CodeableConcept[];
 
   /**
+   * A synonym of this name.
+   */
+  readonly synonym?: SubstanceSpecificationName[];
+
+  /**
+   * A translation for this name.
+   */
+  readonly translation?: SubstanceSpecificationName[];
+
+  /**
    * Details of the official nature of this name.
    */
   readonly official?: SubstanceSpecificationNameOfficial[];
@@ -478,7 +494,7 @@ export interface SubstanceSpecificationNameOfficial {
   /**
    * Date of official name change.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 }
 
 /**
@@ -737,6 +753,12 @@ export interface SubstanceSpecificationStructure {
    * non-natural isotopic ratio.
    */
   readonly isotope?: SubstanceSpecificationStructureIsotope[];
+
+  /**
+   * The molecular weight or weight range (for proteins, polymers or
+   * nucleic acids).
+   */
+  readonly molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight;
 
   /**
    * Supporting literature.

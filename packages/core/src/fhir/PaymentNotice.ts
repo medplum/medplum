@@ -117,7 +117,7 @@ export interface PaymentNotice {
   /**
    * The date when this resource was created.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * The practitioner who is responsible for the services rendered to the
@@ -133,7 +133,7 @@ export interface PaymentNotice {
   /**
    * The date when the above payment action occurred.
    */
-  readonly paymentDate?: Date | string;
+  readonly paymentDate?: string;
 
   /**
    * The party who will receive or has received payment that is the subject

@@ -133,7 +133,7 @@ export interface Invoice {
   /**
    * Date/time(s) of when this Invoice was posted.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Indicates who or what performed or participated in the charged
@@ -157,6 +157,15 @@ export interface Invoice {
    * ChargeItem resource.
    */
   readonly lineItem?: InvoiceLineItem[];
+
+  /**
+   * The total amount for the Invoice may be calculated as the sum of the
+   * line items with surcharges/deductions that apply in certain
+   * conditions.  The priceComponent element can be used to offer
+   * transparency to the recipient of the Invoice of how the total price
+   * was calculated.
+   */
+  readonly totalPriceComponent?: InvoiceLineItemPriceComponent[];
 
   /**
    * Invoice total , taxes excluded.

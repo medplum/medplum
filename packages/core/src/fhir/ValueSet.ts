@@ -157,7 +157,7 @@ export interface ValueSet {
    * The date (and optionally time) when the value set was created or
    * revised (e.g. the 'content logical definition').
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the value
@@ -279,7 +279,7 @@ export interface ValueSetCompose {
    * included in the compose that are not already tied to a specific
    * version.
    */
-  readonly lockedDate?: Date | string;
+  readonly lockedDate?: string;
 
   /**
    * Whether inactive codes - codes that are not approved for current use -
@@ -296,6 +296,12 @@ export interface ValueSetCompose {
    * Include one or more codes from a code system or other value set(s).
    */
   readonly include?: ValueSetComposeInclude[];
+
+  /**
+   * Exclude one or more codes from the value set based on code system
+   * filters and/or other value sets.
+   */
+  readonly exclude?: ValueSetComposeInclude[];
 }
 
 /**
@@ -610,7 +616,7 @@ export interface ValueSetExpansion {
   /**
    * The time at which the expansion was produced by the expanding system.
    */
-  readonly timestamp?: Date | string;
+  readonly timestamp?: string;
 
   /**
    * The total number of concepts in the expansion. If the number of
@@ -722,6 +728,19 @@ export interface ValueSetExpansionContains {
    * The recommended display for this item in the expansion.
    */
   readonly display?: string;
+
+  /**
+   * Additional representations for this item - other languages, aliases,
+   * specialized purposes, used for particular purposes, etc. These are
+   * relevant when the conditions of the expansion do not fix to a single
+   * correct representation.
+   */
+  readonly designation?: ValueSetComposeIncludeConceptDesignation[];
+
+  /**
+   * Other codes and entries contained under this entry in the hierarchy.
+   */
+  readonly contains?: ValueSetExpansionContains[];
 }
 
 /**
@@ -807,5 +826,5 @@ export interface ValueSetExpansionParameter {
   /**
    * The value of the parameter.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 }

@@ -126,7 +126,7 @@ export interface DetectedIssue {
   /**
    * The date or period when the detected issue was initially identified.
    */
-  readonly identifiedDateTime?: Date | string;
+  readonly identifiedDateTime?: string;
 
   /**
    * The date or period when the detected issue was initially identified.
@@ -279,7 +279,7 @@ export interface DetectedIssueMitigation {
   /**
    * Indicates when the mitigating action was documented.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Identifies the practitioner who determined the mitigation and takes

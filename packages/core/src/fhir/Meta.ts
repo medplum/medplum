@@ -5,6 +5,7 @@
 
 import { Coding } from './Coding';
 import { Extension } from './Extension';
+import { Reference } from './Reference';
 
 /**
  * Base StructureDefinition for Meta Type: The metadata about a resource.
@@ -40,7 +41,7 @@ export interface Meta {
   /**
    * When the resource last changed - e.g. when the version changed.
    */
-  readonly lastUpdated?: Date | string;
+  readonly lastUpdated?: string;
 
   /**
    * A uri that identifies the source system of the resource. This provides
@@ -72,4 +73,14 @@ export interface Meta {
    * the meaning of a resource.
    */
   readonly tag?: Coding[];
+
+  /**
+   * The project that contains this resource.
+   */
+  readonly project?: string;
+
+  /**
+   * The individual, device or organization who initiated the last change.
+   */
+  readonly author?: Reference;
 }

@@ -274,6 +274,11 @@ export interface MedicinalProductPackagedPackageItem {
   readonly manufacturedItem?: Reference[];
 
   /**
+   * Allows containers within containers.
+   */
+  readonly packageItem?: MedicinalProductPackagedPackageItem[];
+
+  /**
    * Dimensions, color etc.
    */
   readonly physicalCharacteristics?: ProdCharacteristic;

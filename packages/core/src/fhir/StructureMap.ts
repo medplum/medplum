@@ -180,7 +180,7 @@ export interface StructureMap {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the structure map changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -440,6 +440,11 @@ export interface StructureMapGroupRule {
   readonly target?: StructureMapGroupRuleTarget[];
 
   /**
+   * Rules contained in this rule.
+   */
+  readonly rule?: StructureMapGroupRule[];
+
+  /**
    * Which other rules to apply in the context of this rule.
    */
   readonly dependent?: StructureMapGroupRuleDependent[];
@@ -588,12 +593,12 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueDate?: Date | string;
+  readonly defaultValueDate?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueDateTime?: Date | string;
+  readonly defaultValueDateTime?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -608,7 +613,7 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueInstant?: Date | string;
+  readonly defaultValueInstant?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -638,7 +643,7 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueTime?: Date | string;
+  readonly defaultValueTime?: string;
 
   /**
    * A value to use if there is no existing value in the source object.

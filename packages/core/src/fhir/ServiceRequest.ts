@@ -220,7 +220,7 @@ export interface ServiceRequest {
   /**
    * The date/time at which the requested service should occur.
    */
-  readonly occurrenceDateTime?: Date | string;
+  readonly occurrenceDateTime?: string;
 
   /**
    * The date/time at which the requested service should occur.
@@ -247,7 +247,7 @@ export interface ServiceRequest {
   /**
    * When the request transitioned to being actionable.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The individual who initiated the request and has responsibility for

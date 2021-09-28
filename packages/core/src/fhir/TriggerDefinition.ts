@@ -57,12 +57,12 @@ export interface TriggerDefinition {
   /**
    * The timing of the event (if this is a periodic trigger).
    */
-  readonly timingDate?: Date | string;
+  readonly timingDate?: string;
 
   /**
    * The timing of the event (if this is a periodic trigger).
    */
-  readonly timingDateTime?: Date | string;
+  readonly timingDateTime?: string;
 
   /**
    * The triggering data of the event (if this is a data trigger). If more

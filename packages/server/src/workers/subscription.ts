@@ -408,7 +408,7 @@ async function createSubscriptionAuditEvent(
     meta: {
       project: subscription.meta?.project
     },
-    recorded: new Date(),
+    recorded: new Date().toISOString(),
     type: {
       code: 'transmit'
     },

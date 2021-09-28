@@ -158,7 +158,7 @@ export interface CodeSystem {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the code system changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the code
@@ -347,6 +347,13 @@ export interface CodeSystemConcept {
    * A property value for this concept.
    */
   readonly property?: CodeSystemConceptProperty[];
+
+  /**
+   * Defines children of a concept to produce a hierarchy of concepts. The
+   * nature of the relationships is variable (is-a/contains/categorizes) -
+   * see hierarchyMeaning.
+   */
+  readonly concept?: CodeSystemConcept[];
 }
 
 /**
@@ -479,7 +486,7 @@ export interface CodeSystemConceptProperty {
   /**
    * The value of this property.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * The value of this property.

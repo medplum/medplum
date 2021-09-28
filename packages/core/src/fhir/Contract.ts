@@ -154,7 +154,7 @@ export interface Contract {
   /**
    * When this  Contract was issued.
    */
-  readonly issued?: Date | string;
+  readonly issued?: string;
 
   /**
    * Relevant time or time-period when this Contract is applicable.
@@ -406,7 +406,7 @@ export interface ContractContentDefinition {
    * if the status code changes. In addition, it should change when the
    * substantive content of the contract changes.
    */
-  readonly publicationDate?: Date | string;
+  readonly publicationDate?: string;
 
   /**
    * amended | appended | cancelled | disputed | entered-in-error |
@@ -697,7 +697,7 @@ export interface ContractTerm {
   /**
    * When this Contract Provision was issued.
    */
-  readonly issued?: Date | string;
+  readonly issued?: string;
 
   /**
    * Relevant time or time-period when this Contract Provision is
@@ -756,6 +756,11 @@ export interface ContractTerm {
    * some degree of responsibility for the activity taking place.
    */
   readonly action?: ContractTermAction[];
+
+  /**
+   * Nested group of Contract Provisions.
+   */
+  readonly group?: ContractTerm[];
 }
 
 /**
@@ -848,7 +853,7 @@ export interface ContractTermAction {
   /**
    * When action happens.
    */
-  readonly occurrenceDateTime?: Date | string;
+  readonly occurrenceDateTime?: string;
 
   /**
    * When action happens.
@@ -1093,6 +1098,11 @@ export interface ContractTermAsset {
   readonly linkId?: string[];
 
   /**
+   * Response to assets.
+   */
+  readonly answer?: ContractTermOfferAnswer[];
+
+  /**
    * Security labels that protects the asset.
    */
   readonly securityLabelNumber?: number[];
@@ -1221,7 +1231,7 @@ export interface ContractTermAssetValuedItem {
    * Indicates the time during which this Contract ValuedItem information
    * is effective.
    */
-  readonly effectiveTime?: Date | string;
+  readonly effectiveTime?: string;
 
   /**
    * Specifies the units by which the Contract Valued Item is measured or
@@ -1268,7 +1278,7 @@ export interface ContractTermAssetValuedItem {
   /**
    * When payment is due.
    */
-  readonly paymentDate?: Date | string;
+  readonly paymentDate?: string;
 
   /**
    * Who will make payment.
@@ -1461,7 +1471,7 @@ export interface ContractTermOfferAnswer {
    * of occupancy of a rental, warrently duration, or whether biospecimen
    * may be used for further research.
    */
-  readonly valueDate?: Date | string;
+  readonly valueDate?: string;
 
   /**
    * Response to an offer clause or question text,  which enables selection
@@ -1469,7 +1479,7 @@ export interface ContractTermOfferAnswer {
    * of occupancy of a rental, warrently duration, or whether biospecimen
    * may be used for further research.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * Response to an offer clause or question text,  which enables selection
@@ -1477,7 +1487,7 @@ export interface ContractTermOfferAnswer {
    * of occupancy of a rental, warrently duration, or whether biospecimen
    * may be used for further research.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * Response to an offer clause or question text,  which enables selection

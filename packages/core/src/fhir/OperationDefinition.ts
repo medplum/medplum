@@ -154,7 +154,7 @@ export interface OperationDefinition {
    * change when the substantive content of the operation definition
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -424,6 +424,11 @@ export interface OperationDefinitionParameter {
    * that are expected to resolve to this resource.
    */
   readonly referencedFrom?: OperationDefinitionParameterReferencedFrom[];
+
+  /**
+   * The parts of a nested Parameter.
+   */
+  readonly part?: OperationDefinitionParameter[];
 }
 
 /**

@@ -147,7 +147,7 @@ export interface ExplanationOfBenefit {
   /**
    * The date this resource was created.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * Individual who created the claim, predetermination or
@@ -308,6 +308,12 @@ export interface ExplanationOfBenefit {
   readonly addItem?: ExplanationOfBenefitAddItem[];
 
   /**
+   * The adjudication results which are presented at the header level
+   * rather than at the line-item or add-item levels.
+   */
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+
+  /**
    * Categorized monetary totals for the adjudication.
    */
   readonly total?: ExplanationOfBenefitTotal[];
@@ -390,7 +396,7 @@ export interface ExplanationOfBenefitAccident {
    * Date of an accident event  related to the products and services
    * contained in the claim.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The type or context of the accident event for the purposes of
@@ -496,7 +502,7 @@ export interface ExplanationOfBenefitAddItem {
    * The date or dates when the service or product was supplied, performed
    * or completed.
    */
-  readonly servicedDate?: Date | string;
+  readonly servicedDate?: string;
 
   /**
    * The date or dates when the service or product was supplied, performed
@@ -561,6 +567,11 @@ export interface ExplanationOfBenefitAddItem {
    * adjudication of this item.
    */
   readonly noteNumber?: number[];
+
+  /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
 
   /**
    * The second-tier service adjudications for payor added services.
@@ -654,6 +665,11 @@ export interface ExplanationOfBenefitAddItemDetail {
   readonly noteNumber?: number[];
 
   /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+
+  /**
    * The third-tier service adjudications for payor added services.
    */
   readonly subDetail?: ExplanationOfBenefitAddItemDetailSubDetail[];
@@ -743,6 +759,11 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
    * adjudication of this item.
    */
   readonly noteNumber?: number[];
+
+  /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
 }
 
 /**
@@ -1211,7 +1232,7 @@ export interface ExplanationOfBenefitItem {
    * The date or dates when the service or product was supplied, performed
    * or completed.
    */
-  readonly servicedDate?: Date | string;
+  readonly servicedDate?: string;
 
   /**
    * The date or dates when the service or product was supplied, performed
@@ -1485,6 +1506,11 @@ export interface ExplanationOfBenefitItemDetail {
   readonly noteNumber?: number[];
 
   /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+
+  /**
    * Third-tier of goods and services.
    */
   readonly subDetail?: ExplanationOfBenefitItemDetailSubDetail[];
@@ -1602,6 +1628,11 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * adjudication of this item.
    */
   readonly noteNumber?: number[];
+
+  /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
 }
 
 /**
@@ -1718,7 +1749,7 @@ export interface ExplanationOfBenefitPayment {
    * Estimated date the payment will be issued or the actual issue date of
    * payment.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Benefits payable less any payment adjustment.
@@ -1785,7 +1816,7 @@ export interface ExplanationOfBenefitProcedure {
   /**
    * Date and optionally time the procedure was performed.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The code or reference to a Procedure resource which identifies the
@@ -1987,7 +2018,7 @@ export interface ExplanationOfBenefitSupportingInfo {
   /**
    * The date when or period to which this information refers.
    */
-  readonly timingDate?: Date | string;
+  readonly timingDate?: string;
 
   /**
    * The date when or period to which this information refers.

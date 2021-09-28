@@ -136,7 +136,7 @@ export interface List {
   /**
    * The date that the list was prepared.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The entity responsible for deciding what the contents of the list
@@ -220,7 +220,7 @@ export interface ListEntry {
   /**
    * When this item was added to the list.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * A reference to the actual resource from which data was derived.

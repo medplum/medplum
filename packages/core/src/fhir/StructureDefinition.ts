@@ -160,7 +160,7 @@ export interface StructureDefinition {
    * change when the substantive content of the structure definition
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the

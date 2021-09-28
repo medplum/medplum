@@ -156,7 +156,7 @@ export interface TestScript {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the test script changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the test
@@ -1156,6 +1156,11 @@ export interface TestScriptTeardownAction {
    * modifierExtension itself).
    */
   readonly modifierExtension?: Extension[];
+
+  /**
+   * An operation would involve a REST request to a server.
+   */
+  readonly operation?: TestScriptSetupActionOperation;
 }
 
 /**
@@ -1255,6 +1260,17 @@ export interface TestScriptTestAction {
    * modifierExtension itself).
    */
   readonly modifierExtension?: Extension[];
+
+  /**
+   * An operation would involve a REST request to a server.
+   */
+  readonly operation?: TestScriptSetupActionOperation;
+
+  /**
+   * Evaluates the results of previous operations to determine if the
+   * server under test behaves appropriately.
+   */
+  readonly assert?: TestScriptSetupActionAssert;
 }
 
 /**

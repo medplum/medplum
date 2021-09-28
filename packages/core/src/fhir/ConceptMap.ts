@@ -155,7 +155,7 @@ export interface ConceptMap {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the concept map changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the concept
@@ -443,6 +443,15 @@ export interface ConceptMapGroupElementTarget {
    * and it has the specified value.
    */
   readonly dependsOn?: ConceptMapGroupElementTargetDependsOn[];
+
+  /**
+   * A set of additional outcomes from this mapping to other elements. To
+   * properly execute this mapping, the specified element must be mapped to
+   * some data element or source that is in context. The mapping may still
+   * be useful without a place for the additional data elements, but the
+   * equivalence cannot be relied on.
+   */
+  readonly product?: ConceptMapGroupElementTargetDependsOn[];
 }
 
 /**

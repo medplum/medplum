@@ -153,7 +153,7 @@ export interface ImplementationGuide {
    * change when the substantive content of the implementation guide
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -429,6 +429,11 @@ export interface ImplementationGuideDefinitionPage {
    * A code that indicates how the page is generated.
    */
   readonly generation?: string;
+
+  /**
+   * Nested Pages/Sections under this page.
+   */
+  readonly page?: ImplementationGuideDefinitionPage[];
 }
 
 /**

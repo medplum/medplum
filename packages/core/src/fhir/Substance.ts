@@ -240,7 +240,7 @@ export interface SubstanceInstance {
    * When the substance is no longer valid to use. For some substances, a
    * single arbitrary date is used for expiry.
    */
-  readonly expiry?: Date | string;
+  readonly expiry?: string;
 
   /**
    * The amount of the substance.

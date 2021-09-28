@@ -195,7 +195,7 @@ export interface ResearchElementDefinition {
    * change when the substantive content of the research element definition
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the research
@@ -262,14 +262,14 @@ export interface ResearchElementDefinition {
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: Date | string;
+  readonly approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: Date | string;
+  readonly lastReviewDate?: string;
 
   /**
    * The period during which the research element definition content was or
@@ -438,7 +438,7 @@ export interface ResearchElementDefinitionCharacteristic {
   /**
    * Indicates what effective period the study covers.
    */
-  readonly studyEffectiveDateTime?: Date | string;
+  readonly studyEffectiveDateTime?: string;
 
   /**
    * Indicates what effective period the study covers.
@@ -474,7 +474,7 @@ export interface ResearchElementDefinitionCharacteristic {
   /**
    * Indicates what effective period the study covers.
    */
-  readonly participantEffectiveDateTime?: Date | string;
+  readonly participantEffectiveDateTime?: string;
 
   /**
    * Indicates what effective period the study covers.

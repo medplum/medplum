@@ -134,7 +134,7 @@ export interface TestReport {
   /**
    * When the TestScript was executed and this TestReport was generated.
    */
-  readonly issued?: Date | string;
+  readonly issued?: string;
 
   /**
    * A participant in the test execution, either the execution engine, a
@@ -513,6 +513,11 @@ export interface TestReportTeardownAction {
    * modifierExtension itself).
    */
   readonly modifierExtension?: Extension[];
+
+  /**
+   * An operation would involve a REST request to a server.
+   */
+  readonly operation?: TestReportSetupActionOperation;
 }
 
 /**
@@ -612,4 +617,14 @@ export interface TestReportTestAction {
    * modifierExtension itself).
    */
   readonly modifierExtension?: Extension[];
+
+  /**
+   * An operation would involve a REST request to a server.
+   */
+  readonly operation?: TestReportSetupActionOperation;
+
+  /**
+   * The results of the assertion performed on the previous operations.
+   */
+  readonly assert?: TestReportSetupActionAssert;
 }

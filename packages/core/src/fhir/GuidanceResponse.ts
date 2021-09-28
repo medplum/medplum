@@ -155,7 +155,7 @@ export interface GuidanceResponse {
   /**
    * Indicates when the guidance response was processed.
    */
-  readonly occurrenceDateTime?: Date | string;
+  readonly occurrenceDateTime?: string;
 
   /**
    * Provides a reference to the device that performed the guidance.

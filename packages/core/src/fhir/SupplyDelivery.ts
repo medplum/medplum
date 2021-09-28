@@ -138,7 +138,7 @@ export interface SupplyDelivery {
   /**
    * The date or time(s) the activity occurred.
    */
-  readonly occurrenceDateTime?: Date | string;
+  readonly occurrenceDateTime?: string;
 
   /**
    * The date or time(s) the activity occurred.

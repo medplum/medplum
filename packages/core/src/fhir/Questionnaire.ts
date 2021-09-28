@@ -172,7 +172,7 @@ export interface Questionnaire {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the questionnaire changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -225,14 +225,14 @@ export interface Questionnaire {
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: Date | string;
+  readonly approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: Date | string;
+  readonly lastReviewDate?: string;
 
   /**
    * The period during which the questionnaire content was or is planned to
@@ -401,6 +401,12 @@ export interface QuestionnaireItem {
    * initially rendering the questionnaire for user input.
    */
   readonly initial?: QuestionnaireItemInitial[];
+
+  /**
+   * Text, questions and other groups to be nested beneath a question or
+   * group.
+   */
+  readonly item?: QuestionnaireItem[];
 }
 
 /**
@@ -451,12 +457,12 @@ export interface QuestionnaireItemAnswerOption {
   /**
    * A potential answer that's allowed as the answer to this question.
    */
-  readonly valueDate?: Date | string;
+  readonly valueDate?: string;
 
   /**
    * A potential answer that's allowed as the answer to this question.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * A potential answer that's allowed as the answer to this question.
@@ -555,19 +561,19 @@ export interface QuestionnaireItemEnableWhen {
    * A value that the referenced question is tested using the specified
    * operator in order for the item to be enabled.
    */
-  readonly answerDate?: Date | string;
+  readonly answerDate?: string;
 
   /**
    * A value that the referenced question is tested using the specified
    * operator in order for the item to be enabled.
    */
-  readonly answerDateTime?: Date | string;
+  readonly answerDateTime?: string;
 
   /**
    * A value that the referenced question is tested using the specified
    * operator in order for the item to be enabled.
    */
-  readonly answerTime?: Date | string;
+  readonly answerTime?: string;
 
   /**
    * A value that the referenced question is tested using the specified
@@ -653,17 +659,17 @@ export interface QuestionnaireItemInitial {
   /**
    * The actual value to for an initial answer.
    */
-  readonly valueDate?: Date | string;
+  readonly valueDate?: string;
 
   /**
    * The actual value to for an initial answer.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * The actual value to for an initial answer.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * The actual value to for an initial answer.

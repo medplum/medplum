@@ -143,7 +143,7 @@ export interface GraphDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the graph definition changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the graph
@@ -332,6 +332,11 @@ export interface GraphDefinitionLinkTarget {
    * Compartment Consistency Rules.
    */
   readonly compartment?: GraphDefinitionLinkTargetCompartment[];
+
+  /**
+   * Additional links from target resource.
+   */
+  readonly link?: GraphDefinitionLink[];
 }
 
 /**

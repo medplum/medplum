@@ -177,7 +177,7 @@ export interface RequestGroup {
   /**
    * Indicates when the request group was created.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * Provides a reference to the author of the request group.
@@ -306,7 +306,7 @@ export interface RequestGroupAction {
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingDateTime?: Date | string;
+  readonly timingDateTime?: string;
 
   /**
    * An optional value describing when the action should be performed.
@@ -373,6 +373,11 @@ export interface RequestGroupAction {
    * CommunicationRequest).
    */
   readonly resource?: Reference;
+
+  /**
+   * Sub actions.
+   */
+  readonly action?: RequestGroupAction[];
 }
 
 /**

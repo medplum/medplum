@@ -153,7 +153,7 @@ export interface CapabilityStatement {
    * change when the substantive content of the capability statement
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -651,6 +651,20 @@ export interface CapabilityStatementRest {
    * A specification of restful operations supported by the system.
    */
   readonly interaction?: CapabilityStatementRestInteraction[];
+
+  /**
+   * Search parameters that are supported for searching all resources for
+   * implementations to support and/or make use of - either references to
+   * ones defined in the specification, or additional ones defined for/by
+   * the implementation.
+   */
+  readonly searchParam?: CapabilityStatementRestResourceSearchParam[];
+
+  /**
+   * Definition of an operation or a named query together with its
+   * parameters and their meaning and type.
+   */
+  readonly operation?: CapabilityStatementRestResourceOperation[];
 
   /**
    * An absolute URI which is a reference to the definition of a
@@ -1174,5 +1188,5 @@ export interface CapabilityStatementSoftware {
   /**
    * Date this version of the software was released.
    */
-  readonly releaseDate?: Date | string;
+  readonly releaseDate?: string;
 }

@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, capitalize, ElementDefinition, ElementDefinitionType, IndexedStructureDefinition, indexStructureDefinition, Resource, SearchParameter, TypeSchema } from '@medplum/core';
+import { Bundle, BundleEntry, capitalize, ElementDefinition, ElementDefinitionType, IndexedStructureDefinition, indexStructureDefinition, Resource, TypeSchema } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
@@ -23,37 +23,13 @@ interface FhirType {
 
 const baseResourceProperties = ['id', 'meta', 'implicitRules', 'language'];
 const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
-
-// const resourceDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
 const structureDefinitions = { types: {} } as IndexedStructureDefinition;
-// for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
-//   const resource = entry.resource as Resource;
-//   if (resource.resourceType === 'StructureDefinition' && resource.name) {
-//     indexStructureDefinition(resource, structureDefinitions);
-//   }
-// }
-
-const searchParams = readJson('fhir/r4/search-parameters.json');
-// const schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema6;
-// const definitions = schema.definitions as { [k: string]: JSONSchema6; };
-
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
-
-const v3Builder = new FileBuilder();
 
 export function main() {
   buildStructureDefinitions('profiles-types.json');
   buildStructureDefinitions('profiles-resources.json');
-  // buildStructureDefinitions('profiles-others.json');
-
-  // for (const [resourceType, definition] of Object.entries(definitions)) {
-  //   const fhirType = buildType(resourceType, definition);
-  //   if (fhirType) {
-  //     fhirTypes.push(fhirType);
-  //     fhirTypesMap[fhirType.outputName] = fhirType;
-  //   }
-  // }
 
   for (const [resourceType, definition] of Object.entries(structureDefinitions.types)) {
     const fhirType = buildType(resourceType, definition);
@@ -72,10 +48,6 @@ export function main() {
 
   for (const fhirType of fhirTypes) {
     if (fhirType.parentType) {
-      // if (!(fhirType.parentType in parentTypes)) {
-      //   console.log('wtf, parentType=' + fhirType.parentType + ', childType=' + fhirType.outputName);
-      // }
-      // parentTypes[fhirType.parentType].subTypes.push(fhirType);
       fhirTypesMap[fhirType.parentType].subTypes.push(fhirType);
     }
   }
@@ -83,7 +55,6 @@ export function main() {
   writeIndexFile(Object.keys(parentTypes).sort());
   writeResourceFile(Object.entries(parentTypes).filter(e => e[1].resource).map(e => e[0]).sort());
   Object.values(parentTypes).forEach(fhirType => writeInterfaceFile(fhirType));
-  writeMigrations();
 }
 
 function buildStructureDefinitions(fileName: string): void {
@@ -96,7 +67,7 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'BackboneElement' &&
       resource.name !== 'DomainResource' &&
       resource.name !== 'MetadataResource' &&
-      resource.name[0] !== resource.name[0].toLowerCase()) {
+      !isLowerCase(resource.name[0])) {
       indexStructureDefinition(resource, structureDefinitions);
     }
   }
@@ -106,19 +77,6 @@ function buildType(resourceType: string, definition: TypeSchema): FhirType | und
   if (!definition.properties) {
     return undefined;
   }
-
-  // let parentType;
-  // let outputName;
-  // if (resourceType.includes('_')) {
-  //   const parts = resourceType.split('_');
-  //   parentType = parts[0];
-  //   outputName = parts[1].startsWith(parts[0]) ? parts[1] : parts[0] + parts[1];
-  // } else {
-  //   parentType = undefined;
-  //   outputName = resourceType;
-  // }
-
-  // console.log(resourceType, parentType, outputName);
 
   const properties: Property[] = [];
   const propertyNames = new Set<string>();
@@ -230,22 +188,6 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
 }
 
 function writeInterfaceProperty(b: FileBuilder, fhirType: FhirType, property: Property): void {
-  // const typeName = getTypeScriptType(property);
-  // if (property.name.endsWith('[x]')) {
-  //   const baseName = property.name.replace('[x]', '');
-  //   const propertyTypes = property.definition.type as ElementDefinitionType[];
-  //   for (const propertyType of propertyTypes) {
-  //     const code = propertyType.code as string;
-  //     b.newLine();
-  //     generateJavadoc(b, property.definition.definition);
-  //     b.append(`readonly ${baseName}${capitalize(code)}?: ${getTypeScriptTypeFromDefinition(code)};`);
-  //   }
-  // } else {
-  //   b.newLine();
-  //   generateJavadoc(b, property.definition.definition);
-  //   b.append('readonly ' + property.name + '?: ' + typeName + ';');
-  // }
-
   for (const typeScriptProperty of getTypeScriptProperties(property)) {
     b.newLine();
     generateJavadoc(b, property.definition.definition);
@@ -253,413 +195,11 @@ function writeInterfaceProperty(b: FileBuilder, fhirType: FhirType, property: Pr
   }
 }
 
-export function writeMigrations(): void {
-
-  v3Builder.append('import { PoolClient } from \'pg\';');
-  v3Builder.newLine();
-  v3Builder.append('export async function run(client: PoolClient) {');
-  v3Builder.indentCount++;
-
-  const b = new FileBuilder();
-  buildMigrationUp(b);
-  // writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
-
-  v3Builder.indentCount--;
-  v3Builder.append('}');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v3.ts'), v3Builder.toString(), 'utf8');
-}
-
-function buildMigrationUp(b: FileBuilder): void {
-  b.append('import { PoolClient } from \'pg\';');
-  b.newLine();
-  b.append('export async function run(client: PoolClient) {');
-  b.indentCount++;
-
-  for (const fhirType of fhirTypes) {
-    buildCreateTables(b, fhirType);
-  }
-
-  buildAddressTable(b);
-  buildContactPointTable(b);
-  buildIdentifierTable(b);
-  buildHumanNameTable(b);
-  buildValueSetElementTable(b);
-  b.indentCount--;
-  b.append('}');
-}
-
-function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
-  if (fhirType.parentType || !fhirType.resource) {
-    // Don't create a table if fhirType is a subtype or not a resource type
-    return;
-  }
-
-  const resourceType = fhirType.outputName;
-  if (resourceType === 'Resource' || resourceType === 'DomainResource') {
-    // Don't create tables for base types
-    return;
-  }
-
-  const columns = [
-    '"id" UUID NOT NULL PRIMARY KEY',
-    '"content" TEXT NOT NULL',
-    '"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL',
-    '"compartments" UUID[] NOT NULL',
-  ];
-
-  columns.push(...buildSearchColumns(resourceType));
-
-  b.newLine();
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '" (');
-  b.indentCount++;
-  for (let i = 0; i < columns.length; i++) {
-    b.append(columns[i] + (i !== columns.length - 1 ? ',' : ''));
-  }
-  b.indentCount--;
-  b.append(')`);')
-  b.newLine();
-
-  buildSearchIndexes(b, resourceType);
-
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '_History" (');
-  b.indentCount++;
-  b.append('"versionId" UUID NOT NULL PRIMARY KEY,');
-  b.append('"id" UUID NOT NULL,');
-  b.append('"content" TEXT NOT NULL,');
-  b.append('"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL');
-  b.indentCount--;
-  b.append(')`);')
-  b.newLine();
-}
-
-function buildSearchColumns(resourceType: string): string[] {
-  const result: string[] = [];
-  for (const entry of searchParams.entry) {
-    const searchParam = entry.resource;
-    if (!searchParam.base?.includes(resourceType)) {
-      continue;
-    }
-    if (isLookupTableParam(searchParam)) {
-      continue;
-    }
-
-    const columnName = convertCodeToColumnName(searchParam.code);
-    let oldColumnType;
-    if (searchParam.code === 'active') {
-      oldColumnType = 'BOOLEAN';
-    } else if (isArrayParam(resourceType, columnName)) {
-      oldColumnType = 'TEXT[]';
-    } else {
-      oldColumnType = 'TEXT';
-    }
-
-    const newColumnType = getColumnType(resourceType, searchParam);
-    result.push(`"${columnName}" ${newColumnType}`);
-
-    if (oldColumnType !== newColumnType) {
-      // console.log(
-      //   `Wrong column type for ${resourceType}.${columnName}`,
-      //   oldColumnType,
-      //   newColumnType
-      // );
-
-      let conversion;
-      if (oldColumnType === 'TEXT' && newColumnType === 'TEXT[]') {
-        conversion = `USING array["${columnName}"]::TEXT[]`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'DATE') {
-        conversion = `USING "${columnName}"::DATE`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'DATE[]') {
-        conversion = `USING array["${columnName}"]::DATE[]`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'BOOLEAN') {
-        conversion = `USING "${columnName}"::BOOLEAN`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'BOOLEAN[]') {
-        conversion = `USING array["${columnName}"]::BOOLEAN[]`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'DOUBLE PRECISION') {
-        conversion = `USING "${columnName}"::DOUBLE PRECISION`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'DOUBLE PRECISION[]') {
-        conversion = `USING array["${columnName}"]::DOUBLE PRECISION[]`;
-      } else {
-        console.log('UNKNOWN conversion: ', oldColumnType, newColumnType);
-      }
-
-      v3Builder.appendNoWrap(`await client.query('ALTER TABLE "${resourceType}" ALTER COLUMN "${columnName}" TYPE ${newColumnType} ${conversion}');`);
-    }
-  }
-  return result;
-}
-
-function isLookupTableParam(searchParam: any) {
-  // Identifier
-  if (searchParam.code === 'identifier' && searchParam.type === 'token') {
-    return true;
-  }
-
-  // HumanName
-  const nameParams = ['individual-given', 'individual-family',
-    'Patient-name', 'Person-name', 'Practitioner-name', 'RelatedPerson-name'];
-  if (nameParams.includes(searchParam.id)) {
-    return true;
-  }
-
-  // Telecom
-  const telecomParams = ['individual-telecom', 'individual-email', 'individual-phone',
-    'OrganizationAffiliation-telecom', 'OrganizationAffiliation-email', 'OrganizationAffiliation-phone'];
-  if (telecomParams.includes(searchParam.id)) {
-    return true;
-  }
-
-  // Address
-  const addressParams = ['individual-address', 'InsurancePlan-address', 'Location-address', 'Organization-address'];
-  if (addressParams.includes(searchParam.id)) {
-    return true;
-  }
-
-  // "address-"
-  if (searchParam.code?.startsWith('address-')) {
-    return true;
-  }
-
-  return false;
-}
-
-const CODY_UNKNOWN_TYPES: Record<string, boolean> = {};
-
-function getColumnType(resourceType: string, searchParam: SearchParameter): string {
-  // const expression = searchParam.expression?.split('.');
-  if (!searchParam.expression) {
-    console.log('WARN: missing expression', JSON.stringify(searchParam, undefined, 2));
-    return 'TEXT';
-  }
-
-  const expression = getExpressionForResourcetype(resourceType, searchParam.expression)?.split('.');
-  if (!expression) {
-    // console.log('WARN: missing expression', JSON.stringify(searchParam, undefined, 2));
-    // This happens on compound types
-    return 'TEXT';
-  }
-
-  if (expression.length < 2) {
-    console.log('WARN: expression has less than 2 elements? ' + searchParam.expression);
-    return 'TEXT';
-  }
-
-  // if (expression.length > 2) {
-  //   console.log('WARN: expression has more than 2 elements? ' + searchParam.expression);
-  // }
-
-  let baseType = resourceType;
-  let propertyType = undefined;
-  let array = false;
-
-  for (let i = 1; i < expression.length; i++) {
-    const propertyName = expression[i];
-
-    const typeDef = structureDefinitions.types[baseType];
-    if (!typeDef) {
-      // This happens on complex types such as "UsageContext"
-      return array ? 'TEXT[]' : 'TEXT';
-    }
-
-    const propertyDef = typeDef.properties?.[propertyName];
-    if (!propertyDef) {
-      // This happens on complex properties such as "collected[x]"/"collectedDateTime"/"collectedPeriod"
-      return array ? 'TEXT[]' : 'TEXT';
-    }
-
-    // let propertyType;
-    // // let propertyType = (propertyDef as JSONSchema6).type as string;
-    // let array;
-    // if (propertyType === 'array') {
-    //   propertyType = (propertyDef as any).items.$ref;
-    //   array = true;
-    // }
-    // if (propertyDef.type === 'array') {
-    //   propertyType = propertyDef.items.$ref;
-    //   array = true;
-    // } else {
-    //   propertyType = propertyDef.$ref;
-    //   array = false;
-    // }
-
-    if (propertyDef.max === '*') {
-      array = true;
-    }
-
-    const propertyTypeCode = propertyDef.type?.[0].code;
-    if (!propertyTypeCode) {
-      console.log('WARN: unknown property type', searchParam.expression);
-      return array ? 'TEXT[]' : 'TEXT';
-    }
-
-    if (i === expression.length - 1) {
-      // propertyType = propertyDef.type?.[0]?.code;
-      propertyType = propertyTypeCode;
-    } else if (propertyTypeCode === 'Element' || propertyTypeCode === 'BackboneElement') {
-      baseType = baseType + capitalize(propertyName);
-    } else {
-      baseType = propertyTypeCode;
-    }
-  }
-
-  let baseColumnType = 'TEXT';
-  const searchParamType = searchParam.type as string;
-  switch (searchParamType) {
-    case 'boolean':
-      baseColumnType = 'BOOLEAN';
-      break;
-    case 'date':
-      baseColumnType = 'DATE';
-      break;
-    case 'number':
-    case 'quantity':
-      baseColumnType = 'DOUBLE PRECISION';
-      break;
-    case 'composite':
-    case 'reference':
-    case 'special':
-    case 'string':
-    case 'uri':
-    case 'url':
-      baseColumnType = 'TEXT';
-      break;
-    case 'token':
-      if (propertyType === 'boolean') {
-        baseColumnType = 'BOOLEAN';
-      } else {
-        baseColumnType = 'TEXT';
-      }
-      break;
-    default:
-      if (!CODY_UNKNOWN_TYPES[searchParamType]) {
-        console.log('WARN: CODY: searchParam.type', searchParam.type);
-        CODY_UNKNOWN_TYPES[searchParamType] = true;
-      }
-  }
-
-  // const isArray = (propertyDef as JSONSchema6).type === 'array';
-  // return baseColumnType +
-  return array ? baseColumnType + '[]' : baseColumnType;
-}
-
-function getExpressionForResourcetype(resourceType: string, expression: string): string | undefined {
-  const expressions = expression.split(' | ');
-  for (const e of expressions) {
-    const simplified = simplifyExpression(e);
-    if (simplified.startsWith(resourceType + '.')) {
-      return simplified;
-    }
-  }
-  return undefined;
-}
-
-function simplifyExpression(input: string): string {
-  let result = input.trim();
-
-  if (result.startsWith('(') && result.endsWith(')')) {
-    result = result.substring(1, result.length - 1);
-  }
-
-  if (result.includes(' as ')) {
-    result = result.substring(0, result.indexOf(' as '));
-  }
-
-  if (result.includes('.where(')) {
-    result = result.substring(0, result.indexOf('.where('));
-  }
-
-  return result;
-}
-
-function isArrayParam(resourceType: string, propertyName: string): boolean {
-  // const typeDef = definitions[resourceType];
-  const typeDef = structureDefinitions.types[resourceType];
-  if (!typeDef) {
-    return false;
-  }
-
-  const propertyDef = typeDef.properties?.[propertyName];
-  if (!propertyDef) {
-    return false;
-  }
-
-  // return (propertyDef as JSONSchema6).type === 'array';
-  return propertyDef.max === '*';
-}
-
-function buildSearchIndexes(b: FileBuilder, resourceType: string): void {
-  if (resourceType === 'User') {
-    b.append(`await client.query('CREATE UNIQUE INDEX ON "User" ("email")');`);
-  }
-}
-
-function buildAddressTable(b: FileBuilder): void {
-  buildLookupTable(b, 'Address', ['address', 'city', 'country', 'postalCode', 'state', 'use']);
-}
-
-function buildContactPointTable(b: FileBuilder): void {
-  buildLookupTable(b, 'ContactPoint', ['system', 'value']);
-}
-
-function buildIdentifierTable(b: FileBuilder): void {
-  buildLookupTable(b, 'Identifier', ['system', 'value']);
-}
-
-function buildHumanNameTable(b: FileBuilder): void {
-  buildLookupTable(b, 'HumanName', ['name', 'given', 'family']);
-}
-
-function buildLookupTable(b: FileBuilder, tableName: string, columns: string[]): void {
-  b.newLine();
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + tableName + '" (');
-  b.indentCount++;
-  b.append('"id" UUID NOT NULL PRIMARY KEY,');
-  b.append('"resourceId" UUID NOT NULL,');
-  b.append('"index" INTEGER NOT NULL,');
-  b.append('"content" TEXT NOT NULL,');
-  for (let i = 0; i < columns.length; i++) {
-    b.append(`"${columns[i]}" TEXT` + (i !== columns.length - 1 ? ',' : ''));
-  }
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
-  for (const column of columns) {
-    b.append(`await client.query('CREATE INDEX ON "${tableName}" ("${column}")');`);
-  }
-}
-
-function buildValueSetElementTable(b: FileBuilder): void {
-  b.newLine();
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "ValueSetElement" (');
-  b.indentCount++;
-  b.append('"id" UUID NOT NULL PRIMARY KEY,');
-  b.append('"system" TEXT,');
-  b.append('"code" TEXT,');
-  b.append('"display" TEXT');
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
-  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("system")');`);
-  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("code")');`);
-  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("display")');`);
-}
-
 function buildImports(fhirType: FhirType, includedTypes: Set<string>, referencedTypes: Set<string>): void {
   includedTypes.add(fhirType.outputName);
 
   for (const property of fhirType.properties) {
-    // const cleanName = cleanReferencedType(getTypeScriptType(property));
-    // if (fhirType.outputName === 'ActivityDefinition') {
-    //   // console.log('prop', property.name, getTypeScriptType(property), cleanName);
-    //   console.log('prop', property.name);
-    // }
-    // if (cleanName) {
-    //   referencedTypes.add(cleanName);
-    // }
-
     for (const typeScriptProperty of getTypeScriptProperties(property)) {
-      // if (fhirType.outputName === 'ActivityDefinition') {
-      //   console.log('prop', property.name, typeScriptProperty.name, typeScriptProperty.typeName);
-      // }
       const cleanName = cleanReferencedType(typeScriptProperty.typeName);
       if (cleanName) {
         referencedTypes.add(cleanName);
@@ -667,22 +207,12 @@ function buildImports(fhirType: FhirType, includedTypes: Set<string>, referenced
     }
   }
 
-  // if (fhirType.outputName === 'ActivityDefinition') {
-  //   console.log('ActivityDefinition referencedTypes', referencedTypes);
-  // }
-
   for (const subType of fhirType.subTypes) {
     buildImports(subType, includedTypes, referencedTypes);
   }
 
   if (fhirType.outputName === 'Reference') {
     referencedTypes.add('Resource');
-  }
-
-  if (fhirType.outputName === 'Timing') {
-    console.log('Timing imports wtf');
-    console.log('includedTypes', includedTypes);
-    console.log('referencedTypes', referencedTypes);
   }
 }
 
@@ -693,8 +223,6 @@ function cleanReferencedType(typeName: string): string | undefined {
 
   if (typeName.startsWith('\'') ||
     isLowerCase(typeName.charAt(0)) ||
-    typeName === 'Date | string' ||
-    typeName === '(Date | string)[]' ||
     typeName === 'BundleEntry<T>[]') {
     return undefined;
   }
@@ -705,51 +233,32 @@ function cleanReferencedType(typeName: string): string | undefined {
 function getTypeScriptProperties(property: Property): { name: string, typeName: string }[] {
   if (property.name === 'resource' &&
     ['BundleEntry', 'OperationOutcome', 'Reference'].includes(property.resourceType)) {
-    // return 'T';
     return [{ name: 'resource', typeName: 'T' }];
   }
 
   if (property.resourceType === 'Bundle' && property.name === 'entry') {
-    // return 'BundleEntry<T>[]';
     return [{ name: 'entry', typeName: 'BundleEntry<T>[]' }];
   }
 
-  // if (property.resourceType === 'Bundle_Entry' && property.name === 'resource') {
-  //   return 'T';
-  // }
-
-  // if (property.resourceType === 'Reference' && property.name === 'resource') {
-  //   return 'T';
-  // }
-
-  // let typeValue = property.definition.type?.[0]?.code;
-
-  // if (typeValue === 'BackboneElement') {
-  //   typeValue = property.resourceType + capitalize(property.name);
-  // }
-
   const result = [];
-  // return property.definition.max === '*' ? typeName + '[]' : typeName;
-
-  if (property.name.endsWith('[x]')) {
+  if (property.definition.contentReference) {
+    const baseName = property.definition.contentReference.replace('#', '').split('.').map(capitalize).join('');
+    const typeName = property.definition.max === '*' ? baseName + '[]' : baseName;
+    result.push({
+      name: property.name,
+      typeName
+    });
+  } else if (property.name.endsWith('[x]')) {
     const baseName = property.name.replace('[x]', '');
     const propertyTypes = property.definition.type as ElementDefinitionType[];
     for (const propertyType of propertyTypes) {
       const code = propertyType.code as string;
-      // b.newLine();
-      // generateJavadoc(b, property.definition.definition);
-      // b.append(`readonly ${baseName}${capitalize(code)}?: ${getTypeScriptTypeFromDefinition(code)};`);
       result.push({
         name: baseName + capitalize(code),
         typeName: getTypeScriptTypeForProperty(property, propertyType)
       });
     }
   } else {
-    // b.newLine();
-    // generateJavadoc(b, property.definition.definition);
-    // b.append('readonly ' + property.name + '?: ' + typeName + ';');
-    // const typeName = getTypeScriptTypeFromDefinition(typeValue as string);
-    // const typeName
     result.push({
       name: property.name,
       typeName: getTypeScriptTypeForProperty(property, property.definition?.type?.[0] as ElementDefinitionType)
@@ -758,34 +267,6 @@ function getTypeScriptProperties(property: Property): { name: string, typeName: 
 
   return result;
 }
-
-// function getTypeScriptType(property: Property): string {
-//   if (property.resourceType === 'OperationOutcome' && property.name === 'resource') {
-//     return 'T';
-//   }
-
-//   if (property.resourceType === 'Bundle' && property.name === 'entry') {
-//     return 'BundleEntry<T>[]';
-//   }
-
-//   if (property.resourceType === 'Bundle_Entry' && property.name === 'resource') {
-//     return 'T';
-//   }
-
-//   if (property.resourceType === 'Reference' && property.name === 'resource') {
-//     return 'T';
-//   }
-
-//   let typeValue = property.definition.type?.[0]?.code;
-
-//   if (typeValue === 'BackboneElement') {
-//     typeValue = property.resourceType + capitalize(property.name);
-//   }
-
-//   const typeName = getTypeScriptTypeFromDefinition(typeValue as string);
-//   return property.definition.max === '*' ? typeName + '[]' : typeName;
-// }
-
 
 function generateJavadoc(b: FileBuilder, text: string | undefined): void {
   if (!text) {
@@ -804,21 +285,9 @@ function generateJavadoc(b: FileBuilder, text: string | undefined): void {
 }
 
 function getTypeScriptTypeForProperty(property: Property, typeDefinition: ElementDefinitionType): string {
-  // const baseType = getTypeScriptTypeFromCode(typeDefinition.code);
-  //   return typeDefinition.max === '*' ? baseType + '[]' : baseType;
-  // }
-
-  // function getTypeScriptTypeFromCode(typeDefinition: ElementDefinitionType): string {
-  //   // ref = ref.replace('#/definitions/', '');
-  //   const ref = typeDefinition.code;
-
   let baseType = typeDefinition.code as string;
 
   switch (baseType) {
-    // case 'boolean':
-    //   baseType = 'boolean';
-    //   break;
-
     case 'base64Binary':
     case 'canonical':
     case 'code':
@@ -838,8 +307,7 @@ function getTypeScriptTypeForProperty(property: Property, typeDefinition: Elemen
     case 'dateTime':
     case 'instant':
     case 'time':
-      // return 'Date | string';
-      baseType = 'Date | string';
+      baseType = 'string';
       break;
 
     case 'decimal':
@@ -847,40 +315,18 @@ function getTypeScriptTypeForProperty(property: Property, typeDefinition: Elemen
     case 'positiveInt':
     case 'unsignedInt':
     case 'number':
-      // return 'number';
       baseType = 'number';
       break;
 
     case 'ResourceList':
-      // return 'Resource';
       baseType = 'Resource';
       break;
 
     case 'Element':
     case 'BackboneElement':
-      // if (typeValue === 'BackboneElement') {
-      //   typeValue = property.resourceType + capitalize(property.name);
-      // }
       baseType = property.resourceType + capitalize(property.name);
       break;
   }
-
-
-  // if (ref.indexOf('_') >= 0) {
-  //   const parts = ref.split('_');
-  //   if (parts[1].startsWith(parts[0])) {
-  //     return parts[1];
-  //   } else {
-  //     return parts[0] + parts[1];
-  //   }
-  // }
-
-  // if (ref === 'BackboneElement') {
-
-  // }
-
-  // return ref;
-  // return property.definition.max === '*' ? baseType + '[]' : baseType;
 
   if (property.definition.max === '*') {
     if (baseType.includes(' | ')) {
@@ -915,20 +361,6 @@ function escapeHtml(unsafe: string): string {
     .replace(/‘/g, '&lsquo;')
     .replace(/’/g, '&rsquo;')
     .replace(/…/g, '&hellip;');
-}
-
-/**
- * Converts a hyphen-delimited code to camelCase string.
- * @param code The search parameter code.
- * @returns The SQL column name.
- */
-function convertCodeToColumnName(code: string): string {
-  return code.split('-')
-    .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
-}
-
-function upperFirst(word: string): string {
-  return word.charAt(0).toUpperCase() + word.substr(1);
 }
 
 if (process.argv[1].endsWith('index.ts')) {

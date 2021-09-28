@@ -140,7 +140,7 @@ export interface RelatedPerson {
   /**
    * The date on which the related person was born.
    */
-  readonly birthDate?: Date | string;
+  readonly birthDate?: string;
 
   /**
    * Address where the related person can be contacted or visited.

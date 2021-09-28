@@ -146,7 +146,7 @@ export interface DiagnosticReport {
    * the procedure or of specimen collection(s), but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveDateTime?: Date | string;
+  readonly effectiveDateTime?: string;
 
   /**
    * The time or time-period the observed values are related to. When the
@@ -160,7 +160,7 @@ export interface DiagnosticReport {
    * The date and time that this version of the report was made available
    * to providers, typically after the report was reviewed and verified.
    */
-  readonly issued?: Date | string;
+  readonly issued?: string;
 
   /**
    * The diagnostic service that is responsible for issuing the report.

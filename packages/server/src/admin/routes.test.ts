@@ -134,7 +134,7 @@ describe('Admin routes', () => {
       resourceType: 'Login',
       client: createReference(client),
       profile: createReference(practitioner as Practitioner),
-      authTime: new Date(),
+      authTime: new Date().toISOString(),
       scope: 'openid'
     });
     assertOk(loginOutcome);

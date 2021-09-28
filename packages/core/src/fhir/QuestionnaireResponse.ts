@@ -145,7 +145,7 @@ export interface QuestionnaireResponse {
   /**
    * The date and/or time that this set of answers were last changed.
    */
-  readonly authored?: Date | string;
+  readonly authored?: string;
 
   /**
    * Person who received the answers to the questions in the
@@ -228,6 +228,11 @@ export interface QuestionnaireResponseItem {
    * The respondent's answer(s) to the question.
    */
   readonly answer?: QuestionnaireResponseItemAnswer[];
+
+  /**
+   * Questions or sub-groups nested beneath a question or group.
+   */
+  readonly item?: QuestionnaireResponseItem[];
 }
 
 /**
@@ -292,19 +297,19 @@ export interface QuestionnaireResponseItemAnswer {
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueDate?: Date | string;
+  readonly valueDate?: string;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
@@ -341,4 +346,9 @@ export interface QuestionnaireResponseItemAnswer {
    * question.
    */
   readonly valueReference?: Reference;
+
+  /**
+   * Nested groups and/or questions found within this particular answer.
+   */
+  readonly item?: QuestionnaireResponseItem[];
 }

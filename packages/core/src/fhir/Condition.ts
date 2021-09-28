@@ -152,7 +152,7 @@ export interface Condition {
    * Estimated or actual date or date-time  the condition began, in the
    * opinion of the clinician.
    */
-  readonly onsetDateTime?: Date | string;
+  readonly onsetDateTime?: string;
 
   /**
    * Estimated or actual date or date-time  the condition began, in the
@@ -184,7 +184,7 @@ export interface Condition {
    * connotations associated with &quot;remission&quot; or &quot;resolution&quot; - Conditions
    * are never really resolved, but they can abate.
    */
-  readonly abatementDateTime?: Date | string;
+  readonly abatementDateTime?: string;
 
   /**
    * The date or estimated date that the condition resolved or went into
@@ -222,7 +222,7 @@ export interface Condition {
    * The recordedDate represents when this particular Condition record was
    * created in the system, which is often a system-generated date.
    */
-  readonly recordedDate?: Date | string;
+  readonly recordedDate?: string;
 
   /**
    * Individual who recorded the record and takes responsibility for its

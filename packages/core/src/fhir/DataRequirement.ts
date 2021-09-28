@@ -215,7 +215,7 @@ export interface DataRequirementDateFilter {
    * to the specified dateTime. If a Duration is specified, the filter will
    * return only those data items that fall within Duration before now.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * The value of the filter. If period is specified, the filter will

@@ -195,7 +195,7 @@ export interface MedicationBatch {
   /**
    * When this specific batch of product will expire.
    */
-  readonly expirationDate?: Date | string;
+  readonly expirationDate?: string;
 }
 
 /**

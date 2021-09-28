@@ -138,7 +138,7 @@ export interface FamilyMemberHistory {
    * The date (and possibly time) when the family member history was
    * recorded or last updated.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * This will either be a name or a description; e.g. &quot;Aunt Susan&quot;, &quot;my
@@ -165,7 +165,7 @@ export interface FamilyMemberHistory {
   /**
    * The actual or approximate date of birth of the relative.
    */
-  readonly bornDate?: Date | string;
+  readonly bornDate?: string;
 
   /**
    * The actual or approximate date of birth of the relative.
@@ -217,7 +217,7 @@ export interface FamilyMemberHistory {
    * Deceased flag or the actual or approximate age of the relative at the
    * time of death for the family member history record.
    */
-  readonly deceasedDate?: Date | string;
+  readonly deceasedDate?: string;
 
   /**
    * Deceased flag or the actual or approximate age of the relative at the

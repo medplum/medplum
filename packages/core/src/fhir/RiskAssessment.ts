@@ -141,7 +141,7 @@ export interface RiskAssessment {
   /**
    * The date (and possibly time) the risk assessment was performed.
    */
-  readonly occurrenceDateTime?: Date | string;
+  readonly occurrenceDateTime?: string;
 
   /**
    * The date (and possibly time) the risk assessment was performed.

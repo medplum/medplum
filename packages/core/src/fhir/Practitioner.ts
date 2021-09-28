@@ -135,7 +135,7 @@ export interface Practitioner {
   /**
    * The date of birth for the practitioner.
    */
-  readonly birthDate?: Date | string;
+  readonly birthDate?: string;
 
   /**
    * Image of the person.

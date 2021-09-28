@@ -225,12 +225,12 @@ export interface Task {
   /**
    * The date and time this task was created.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The date and time of last modification to this task.
    */
-  readonly lastModified?: Date | string;
+  readonly lastModified?: string;
 
   /**
    * The creator of the task.
@@ -371,12 +371,12 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDate?: Date | string;
+  readonly valueDate?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * The value of the input parameter as a basic type.
@@ -391,7 +391,7 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueInstant?: Date | string;
+  readonly valueInstant?: string;
 
   /**
    * The value of the input parameter as a basic type.
@@ -421,7 +421,7 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * The value of the input parameter as a basic type.
@@ -667,12 +667,12 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDate?: Date | string;
+  readonly valueDate?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -687,7 +687,7 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueInstant?: Date | string;
+  readonly valueInstant?: string;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -717,7 +717,7 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * The value of the Output parameter as a basic type.

@@ -111,14 +111,8 @@ export function getImageSrc(resource: Resource): string | undefined {
  * @param date The date property value, which could be a string or a Date object.
  * @returns A Date object.
  */
-export function getDateProperty(date: Date | string | undefined): Date | undefined {
-  if (date instanceof Date) {
-    return date;
-  }
-  if (typeof date === 'string') {
-    return new Date(date);
-  }
-  return undefined;
+export function getDateProperty(date: string | undefined): Date | undefined {
+  return date ? new Date(date) : undefined;
 }
 
 /**

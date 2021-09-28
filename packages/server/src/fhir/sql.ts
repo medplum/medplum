@@ -1,6 +1,6 @@
 import { Client, Pool } from "pg";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export enum ColumnType {
   UUID = 'uuid',

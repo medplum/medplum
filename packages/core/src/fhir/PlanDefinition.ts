@@ -196,7 +196,7 @@ export interface PlanDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the plan definition changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the plan
@@ -255,14 +255,14 @@ export interface PlanDefinition {
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: Date | string;
+  readonly approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: Date | string;
+  readonly lastReviewDate?: string;
 
   /**
    * The period during which the plan definition content was or is planned
@@ -464,7 +464,7 @@ export interface PlanDefinitionAction {
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingDateTime?: Date | string;
+  readonly timingDateTime?: string;
 
   /**
    * An optional value describing when the action should be performed.
@@ -555,6 +555,14 @@ export interface PlanDefinitionAction {
    * resource that would contain the result.
    */
   readonly dynamicValue?: PlanDefinitionActionDynamicValue[];
+
+  /**
+   * Sub actions that are contained within the action. The behavior of this
+   * action determines the functionality of the sub-actions. For example, a
+   * selection behavior of at-most-one indicates that of the sub-actions,
+   * at most one may be chosen as part of realizing the action definition.
+   */
+  readonly action?: PlanDefinitionAction[];
 }
 
 /**

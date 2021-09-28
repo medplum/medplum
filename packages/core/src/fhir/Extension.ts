@@ -91,13 +91,13 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDate?: Date | string;
+  readonly valueDate?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDateTime?: Date | string;
+  readonly valueDateTime?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -115,7 +115,7 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueInstant?: Date | string;
+  readonly valueInstant?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -151,7 +151,7 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueTime?: Date | string;
+  readonly valueTime?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data

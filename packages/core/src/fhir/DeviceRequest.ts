@@ -184,7 +184,7 @@ export interface DeviceRequest {
    * &quot;Three times a day&quot;; &quot;1/2 an hour before breakfast for 10 days from
    * 23-Dec 2011:&quot;; &quot;15 Oct 2013, 17 Oct 2013 and 1 Nov 2013&quot;.
    */
-  readonly occurrenceDateTime?: Date | string;
+  readonly occurrenceDateTime?: string;
 
   /**
    * The timing schedule for the use of the device. The Schedule data type
@@ -205,7 +205,7 @@ export interface DeviceRequest {
   /**
    * When the request transitioned to being actionable.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The individual who initiated the request and has responsibility for
