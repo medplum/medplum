@@ -79,6 +79,9 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     defaultProject: {
       reference: 'Project/' + client.meta?.project
     },
+    compartments: [{
+      reference: 'Project/' + client.meta?.project
+    }],
     scope
   });
 
