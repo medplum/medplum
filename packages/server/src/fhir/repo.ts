@@ -410,7 +410,6 @@ export class Repository {
     }
 
     const details = getSearchParameterDetails(getStructureDefinitions(), resourceType, param);
-    // const columnName = convertCodeToColumnName(param.code);
     if (param.type === 'string') {
       this.addStringSearchFilter(builder, details, filter);
     } else if (param.type === 'token') {
@@ -439,7 +438,6 @@ export class Repository {
   }
 
   private addReferenceSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
-    // const columnName = convertCodeToColumnName(param.code as string);
     // TODO: Support optional resource type when known (param.target.length === 1)
     // TODO: Support reference queries (filter.value === 'Patient?identifier=123')
     builder.where(details.columnName, Operator.EQUALS, filter.value);
@@ -478,7 +476,6 @@ export class Repository {
       return;
     }
 
-    // const columnName = convertCodeToColumnName(param.code);
     const details = getSearchParameterDetails(getStructureDefinitions(), resourceType, param);
     builder.orderBy(details.columnName, !!sortRule.descending);
   }
@@ -533,12 +530,10 @@ export class Repository {
     }
 
     const details = getSearchParameterDetails(getStructureDefinitions(), resource.resourceType, searchParam);
-    // const columnName = convertCodeToColumnName(searchParam.code as string);
     const fhirPath = parseFhirPath(searchParam.expression as string);
     const values = fhirPath.eval(resource);
 
     if (values.length > 0) {
-      // if (this.isArrayParam(resource.resourceType, columnName)) {
       if (details.array) {
         columns[details.columnName] = values.map(v => this.buildColumnValue(searchParam, v));
       } else {
@@ -546,26 +541,6 @@ export class Repository {
       }
     }
   }
-
-  // /**
-  //  * Determines if the property is an array value.
-  //  * @param resourceType The FHIR resource type.
-  //  * @param propertyName The property name.
-  //  * @returns True if the property is an array.
-  //  */
-  // private isArrayParam(resourceType: string, propertyName: string): boolean {
-  //   const typeDef = definitions[resourceType];
-  //   if (!typeDef?.properties) {
-  //     return false;
-  //   }
-
-  //   const propertyDef = typeDef.properties[propertyName];
-  //   if (!propertyDef) {
-  //     return false;
-  //   }
-
-  //   return propertyDef.type === 'array';
-  // }
 
   private buildColumnValue(searchParam: SearchParameter, value: any): any {
     if (searchParam.type === 'boolean') {
@@ -827,20 +802,6 @@ function getPatientIdFromReference(reference: Reference): string | undefined {
 function resolveId(reference: Reference | undefined): string | undefined {
   return reference?.reference?.split('/')[1];
 }
-
-// /**
-//  * Converts a hyphen-delimited code to camelCase string.
-//  * @param code The search parameter code.
-//  * @returns The SQL column name.
-//  */
-// function convertCodeToColumnName(code: string): string {
-//   return code.split('-')
-//     .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
-// }
-
-// function upperFirst(word: string): string {
-//   return word.charAt(0).toUpperCase() + word.substr(1);
-// }
 
 /**
  * Creates a repository object for the user login object.

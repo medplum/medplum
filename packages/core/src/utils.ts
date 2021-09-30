@@ -190,3 +190,7 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
   }
   return window.btoa(result.join(''));
 }
+
+export function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.substr(1);
+}
