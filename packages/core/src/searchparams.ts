@@ -1,4 +1,6 @@
-import { capitalize, IndexedStructureDefinition, SearchParameter } from ".";
+import { SearchParameter } from './fhir';
+import { IndexedStructureDefinition } from './types';
+import { capitalize } from './utils';
 
 export enum SearchParameterType {
   BOOLEAN = 'BOOLEAN',
@@ -38,15 +40,10 @@ export function getSearchParameterDetails(
   searchParam: SearchParameter): SearchParameterDetails {
 
   const columnName = convertCodeToColumnName(searchParam.code as string);
-
-  if (!searchParam.expression) {
-    // This happens on compound types
-    return { columnName, type: SearchParameterType.TEXT };
-  }
-
-  const expression = getExpressionForResourcetype(resourceType, searchParam.expression)?.split('.');
+  const expression = getExpressionForResourceType(resourceType, searchParam.expression as string)?.split('.');
   if (!expression) {
     // This happens on compound types
+    // In the future, explore returning multiple column definitions
     return { columnName, type: SearchParameterType.TEXT };
   }
 
@@ -56,16 +53,10 @@ export function getSearchParameterDetails(
 
   for (let i = 1; i < expression.length; i++) {
     const propertyName = expression[i];
-
-    const typeDef = structureDefinitions.types[baseType];
-    if (!typeDef) {
-      // This happens on complex types such as "UsageContext"
-      return { columnName, type: SearchParameterType.TEXT, array };
-    }
-
-    const propertyDef = typeDef.properties?.[propertyName];
+    const propertyDef = structureDefinitions.types[baseType]?.properties?.[propertyName];
     if (!propertyDef) {
       // This happens on complex properties such as "collected[x]"/"collectedDateTime"/"collectedPeriod"
+      // In the future, explore returning multiple column definitions
       return { columnName, type: SearchParameterType.TEXT, array };
     }
 
@@ -73,21 +64,37 @@ export function getSearchParameterDetails(
       array = true;
     }
 
-    const propertyTypeCode = propertyDef.type?.[0].code;
-    if (!propertyTypeCode) {
+    propertyType = propertyDef.type?.[0].code;
+    if (!propertyType) {
       // This happens when one of parent properties uses contentReference
+      // In the future, explore following the reference
       return { columnName, type: SearchParameterType.TEXT, array };
     }
 
-    if (i === expression.length - 1) {
-      propertyType = propertyTypeCode;
-    } else if (propertyTypeCode === 'Element' || propertyTypeCode === 'BackboneElement') {
-      baseType = baseType + capitalize(propertyName);
-    } else {
-      baseType = propertyTypeCode;
+    if (i < expression.length - 1) {
+      if (propertyType === 'Element' || propertyType === 'BackboneElement') {
+        baseType = baseType + capitalize(propertyName);
+      } else {
+        baseType = propertyType;
+      }
     }
   }
 
+  const type = getSearchParameterType(searchParam, propertyType as string);
+  return { columnName, type, array };
+}
+
+/**
+ * Converts a hyphen-delimited code to camelCase string.
+ * @param code The search parameter code.
+ * @returns The SQL column name.
+ */
+function convertCodeToColumnName(code: string): string {
+  return code.split('-')
+    .reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
+}
+
+function getSearchParameterType(searchParam: SearchParameter, propertyType: string): SearchParameterType {
   let type = SearchParameterType.TEXT;
   switch (searchParam.type) {
     case 'date':
@@ -108,21 +115,10 @@ export function getSearchParameterDetails(
       }
       break;
   }
-
-  return { columnName, type, array };
+  return type;
 }
 
-/**
- * Converts a hyphen-delimited code to camelCase string.
- * @param code The search parameter code.
- * @returns The SQL column name.
- */
-function convertCodeToColumnName(code: string): string {
-  return code.split('-')
-    .reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
-}
-
-function getExpressionForResourcetype(resourceType: string, expression: string): string | undefined {
+function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {
   const expressions = expression.split(' | ');
   for (const e of expressions) {
     const simplified = simplifyExpression(e);

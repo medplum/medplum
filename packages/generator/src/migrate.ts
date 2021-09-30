@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, getSearchParameterDetails, IndexedStructureDefinition, indexStructureDefinition, Resource, SearchParameterDetails, SearchParameterType, TypeSchema } from '@medplum/core';
+import { Bundle, BundleEntry, getSearchParameterDetails, IndexedStructureDefinition, indexStructureDefinition, isLowerCase, Resource, SearchParameterDetails, SearchParameterType, TypeSchema } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
@@ -133,7 +133,6 @@ function buildSearchColumns(resourceType: string): string[] {
 
     const details = getSearchParameterDetails(structureDefinitions, resourceType, searchParam);
     const columnName = details.columnName;
-    // const columnName = convertCodeToColumnName(searchParam.code);
     let oldColumnType;
     if (searchParam.code === 'active') {
       oldColumnType = 'BOOLEAN';
@@ -145,8 +144,6 @@ function buildSearchColumns(resourceType: string): string[] {
 
     const newColumnType = getColumnType(details);
     result.push(`"${columnName}" ${newColumnType}`);
-
-    // console.log(resourceType, columnName, oldColumnType, newColumnType);
 
     if (oldColumnType !== newColumnType) {
       let conversion;
@@ -298,24 +295,6 @@ function buildValueSetElementTable(b: FileBuilder): void {
   b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("code")');`);
   b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("display")');`);
 }
-
-function isLowerCase(c: string): boolean {
-  return c === c.toLowerCase();
-}
-
-// /**
-//  * Converts a hyphen-delimited code to camelCase string.
-//  * @param code The search parameter code.
-//  * @returns The SQL column name.
-//  */
-// function convertCodeToColumnName(code: string): string {
-//   return code.split('-')
-//     .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
-// }
-
-// function upperFirst(word: string): string {
-//   return word.charAt(0).toUpperCase() + word.substr(1);
-// }
 
 if (process.argv[1].endsWith('migrate.ts')) {
   main();

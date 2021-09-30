@@ -1,55 +1,18 @@
-import { SearchParameter } from '.';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { Bundle, BundleEntry, indexStructureDefinition, isLowerCase, Resource, SearchParameter } from '.';
 import { getSearchParameterDetails, SearchParameterType } from './searchparams';
 import { IndexedStructureDefinition } from './types';
 
-const structureDefinitions: IndexedStructureDefinition = {
-  types: {
-    'Patient': {
-      display: 'Patient',
-      properties: {
-        'name': {
-          path: 'Patient.name',
-          max: '*'
-        },
-        'active': {
-          path: 'Patient.active',
-          max: '1',
-          type: [{
-            code: 'boolean'
-          }]
-        },
-        'birthDate': {
-          path: 'Patient.birthDate',
-          max: '1',
-          type: [{
-            code: 'date'
-          }]
-        },
-        'link': {
-          path: 'Patient.link',
-          max: '*',
-          type: [{
-            code: 'BackboneElement'
-          }]
-        }
-      }
-    },
-    'PatientLink': {
-      display: 'Patient Link',
-      properties: {
-        'other': {
-          path: 'Patient.link.other',
-          max: '1',
-          type: [{
-            code: 'Reference'
-          }]
-        }
-      }
-    }
-  }
-};
+const searchParams = readJson('fhir/r4/search-parameters.json');
+const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 
 describe('SearchParameterDetails', () => {
+
+  beforeAll(() => {
+    buildStructureDefinitions('profiles-types.json');
+    buildStructureDefinitions('profiles-resources.json');
+  });
 
   test('Get details', () => {
     const individualPhoneticParam: SearchParameter = {
@@ -109,18 +72,6 @@ describe('SearchParameterDetails', () => {
     expect(details.type).toEqual(SearchParameterType.REFERENCE);
   });
 
-  test('Missing expression', () => {
-    const missingExpressionParam: SearchParameter = {
-      resourceType: 'SearchParameter',
-      code: 'test',
-      type: 'string'
-    };
-
-    const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
-    expect(details).not.toBeUndefined();
-    expect(details.columnName).toEqual('test');
-  });
-
   test('Missing expression for resource type', () => {
     const missingExpressionParam: SearchParameter = {
       resourceType: 'SearchParameter',
@@ -160,4 +111,37 @@ describe('SearchParameterDetails', () => {
     expect(details.columnName).toEqual('test');
   });
 
+  test('Everything', () => {
+    // Make sure that getSearchParameterDetails returns successfully for all known parameters.
+    for (const resourceType of Object.keys(structureDefinitions.types)) {
+      for (const entry of searchParams.entry) {
+        const searchParam = entry.resource;
+        if (searchParam.base?.includes(resourceType)) {
+          const details = getSearchParameterDetails(structureDefinitions, resourceType, searchParam);
+          expect(details).not.toBeUndefined();
+        }
+      }
+    }
+  });
+
 });
+
+function buildStructureDefinitions(fileName: string): void {
+  const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
+  for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
+    const resource = entry.resource as Resource;
+    if (resource.resourceType === 'StructureDefinition' &&
+      resource.name &&
+      resource.name !== 'Resource' &&
+      resource.name !== 'BackboneElement' &&
+      resource.name !== 'DomainResource' &&
+      resource.name !== 'MetadataResource' &&
+      !isLowerCase(resource.name[0])) {
+      indexStructureDefinition(resource, structureDefinitions);
+    }
+  }
+}
+
+function readJson(filename: string): any {
+  return JSON.parse(readFileSync(resolve(__dirname, '../../definitions/dist/', filename), 'utf8'));
+}
