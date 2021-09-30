@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, getSearchParameterType, IndexedStructureDefinition, indexStructureDefinition, Resource, SearchParameter, SearchParameterType, TypeSchema } from '@medplum/core';
+import { Bundle, BundleEntry, getSearchParameterDetails, IndexedStructureDefinition, indexStructureDefinition, Resource, SearchParameterDetails, SearchParameterType, TypeSchema } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
@@ -51,7 +51,7 @@ function buildMigrationUp(b: FileBuilder): void {
   b.append('export async function run(client: PoolClient) {');
   b.indentCount++;
 
-  for (const [resourceType, typeSchema] of Object.entries(structureDefinitions)) {
+  for (const [resourceType, typeSchema] of Object.entries(structureDefinitions.types)) {
     buildCreateTables(b, resourceType, typeSchema);
   }
 
@@ -65,7 +65,7 @@ function buildMigrationUp(b: FileBuilder): void {
 }
 
 function isResourceType(typeSchema: TypeSchema): boolean {
-  if (typeSchema.parentType) {
+  if (typeSchema.parentType || !typeSchema.properties) {
     return false;
   }
   for (const propertyName of ['id', 'meta', 'implicitRules', 'language']) {
@@ -84,6 +84,7 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
 
   if (!isResourceType(fhirType)) {
     // Don't create a table if fhirType is a subtype or not a resource type
+    console.log('Not a resource type', resourceType, fhirType.display);
     return;
   }
 
@@ -130,7 +131,9 @@ function buildSearchColumns(resourceType: string): string[] {
       continue;
     }
 
-    const columnName = convertCodeToColumnName(searchParam.code);
+    const details = getSearchParameterDetails(structureDefinitions, resourceType, searchParam);
+    const columnName = details.columnName;
+    // const columnName = convertCodeToColumnName(searchParam.code);
     let oldColumnType;
     if (searchParam.code === 'active') {
       oldColumnType = 'BOOLEAN';
@@ -140,8 +143,10 @@ function buildSearchColumns(resourceType: string): string[] {
       oldColumnType = 'TEXT';
     }
 
-    const newColumnType = getColumnType(resourceType, searchParam);
+    const newColumnType = getColumnType(details);
     result.push(`"${columnName}" ${newColumnType}`);
+
+    // console.log(resourceType, columnName, oldColumnType, newColumnType);
 
     if (oldColumnType !== newColumnType) {
       let conversion;
@@ -203,8 +208,8 @@ function isLookupTableParam(searchParam: any) {
   return false;
 }
 
-function getColumnType(resourceType: string, searchParam: SearchParameter): string {
-  const details = getSearchParameterType(structureDefinitions, resourceType, searchParam);
+function getColumnType(details: SearchParameterDetails): string {
+  // const details = getSearchParameterDetails(structureDefinitions, resourceType, searchParam);
   let baseColumnType = 'TEXT';
   switch (details.type) {
     case SearchParameterType.BOOLEAN:
@@ -298,20 +303,20 @@ function isLowerCase(c: string): boolean {
   return c === c.toLowerCase();
 }
 
-/**
- * Converts a hyphen-delimited code to camelCase string.
- * @param code The search parameter code.
- * @returns The SQL column name.
- */
-function convertCodeToColumnName(code: string): string {
-  return code.split('-')
-    .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
-}
+// /**
+//  * Converts a hyphen-delimited code to camelCase string.
+//  * @param code The search parameter code.
+//  * @returns The SQL column name.
+//  */
+// function convertCodeToColumnName(code: string): string {
+//   return code.split('-')
+//     .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
+// }
 
-function upperFirst(word: string): string {
-  return word.charAt(0).toUpperCase() + word.substr(1);
-}
+// function upperFirst(word: string): string {
+//   return word.charAt(0).toUpperCase() + word.substr(1);
+// }
 
-if (process.argv[1].endsWith('index.ts')) {
+if (process.argv[1].endsWith('migrate.ts')) {
   main();
 }

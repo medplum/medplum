@@ -15,6 +15,7 @@
     "build": "npm run clean && tsc",
     "lint": "eslint src/ --ext .ts,.tsx",
     "generate": "ts-node src/index.ts",
+    "migrate": "ts-node src/migrate.ts",
     "test": "jest"
   },
   "devDependencies": {

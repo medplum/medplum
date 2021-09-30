@@ -110,6 +110,9 @@ function buildType(resourceType: string, definition: TypeSchema): FhirType | und
 function writeIndexFile(names: string[]): void {
   const b = new FileBuilder();
   for (const resourceType of [...names, 'Resource'].sort()) {
+    if (resourceType === 'MoneyQuantity' || resourceType === 'SimpleQuantity') {
+      continue;
+    }
     b.append('export * from \'./' + resourceType + '\';');
   }
   writeFileSync(resolve(__dirname, '../../core/src/fhir/index.ts'), b.toString(), 'utf8');
@@ -135,6 +138,10 @@ function writeResourceFile(names: string[]): void {
 }
 
 function writeInterfaceFile(fhirType: FhirType): void {
+  if (fhirType.properties.length === 0 && fhirType.subTypes.length === 0) {
+    return;
+  }
+
   const includedTypes = new Set<string>();
   const referencedTypes = new Set<string>();
   buildImports(fhirType, includedTypes, referencedTypes);
@@ -152,7 +159,7 @@ function writeInterfaceFile(fhirType: FhirType): void {
 
 function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   const resourceType = fhirType.outputName;
-  const genericTypes = ['Bundle', 'BundleEntry', 'OperationOutcome', 'Reference'];
+  const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
   const genericModifier = genericTypes.includes(resourceType) ? '<T extends Resource = Resource>' : '';
 
   b.newLine();

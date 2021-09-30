@@ -13,7 +13,7 @@ import { Resource } from './Resource';
  * A collection of error, warning, or information messages that result
  * from a system action.
  */
-export interface OperationOutcome<T extends Resource = Resource> {
+export interface OperationOutcome {
 
   /**
    * This is a OperationOutcome resource

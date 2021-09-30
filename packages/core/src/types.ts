@@ -235,8 +235,9 @@ export enum SearchParameterType {
 }
 
 export interface SearchParameterDetails {
-  type: SearchParameterType;
-  array?: boolean;
+  readonly columnName: string;
+  readonly type: SearchParameterType;
+  readonly array?: boolean;
 }
 
 /**
@@ -254,20 +255,22 @@ export interface SearchParameterDetails {
  * @param searchParam The search parameter.
  * @returns The search parameter type details.
  */
-export function getSearchParameterType(
+export function getSearchParameterDetails(
   structureDefinitions: IndexedStructureDefinition,
   resourceType: string,
   searchParam: SearchParameter): SearchParameterDetails {
 
+  const columnName = convertCodeToColumnName(searchParam.code as string);
+
   if (!searchParam.expression) {
     // This happens on compound types
-    return { type: SearchParameterType.TEXT };
+    return { columnName, type: SearchParameterType.TEXT };
   }
 
   const expression = getExpressionForResourcetype(resourceType, searchParam.expression)?.split('.');
   if (!expression) {
     // This happens on compound types
-    return { type: SearchParameterType.TEXT };
+    return { columnName, type: SearchParameterType.TEXT };
   }
 
   let baseType = resourceType;
@@ -280,13 +283,13 @@ export function getSearchParameterType(
     const typeDef = structureDefinitions.types[baseType];
     if (!typeDef) {
       // This happens on complex types such as "UsageContext"
-      return { type: SearchParameterType.TEXT, array };
+      return { columnName, type: SearchParameterType.TEXT, array };
     }
 
     const propertyDef = typeDef.properties?.[propertyName];
     if (!propertyDef) {
       // This happens on complex properties such as "collected[x]"/"collectedDateTime"/"collectedPeriod"
-      return { type: SearchParameterType.TEXT, array };
+      return { columnName, type: SearchParameterType.TEXT, array };
     }
 
     if (propertyDef.max === '*') {
@@ -296,7 +299,7 @@ export function getSearchParameterType(
     const propertyTypeCode = propertyDef.type?.[0].code;
     if (!propertyTypeCode) {
       // This happens when one of parent properties uses contentReference
-      return { type: SearchParameterType.TEXT, array };
+      return { columnName, type: SearchParameterType.TEXT, array };
     }
 
     if (i === expression.length - 1) {
@@ -326,7 +329,21 @@ export function getSearchParameterType(
       break;
   }
 
-  return { type, array };
+  return { columnName, type, array };
+}
+
+/**
+ * Converts a hyphen-delimited code to camelCase string.
+ * @param code The search parameter code.
+ * @returns The SQL column name.
+ */
+function convertCodeToColumnName(code: string): string {
+  return code.split('-')
+    .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
+}
+
+function upperFirst(word: string): string {
+  return word.charAt(0).toUpperCase() + word.substr(1);
 }
 
 function getExpressionForResourcetype(resourceType: string, expression: string): string | undefined {
