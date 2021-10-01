@@ -146,7 +146,7 @@ export interface Composition {
    * The composition editing time, when the composition was last logically
    * changed by the author.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Identifies who is responsible for the information in the composition,
@@ -195,16 +195,8 @@ export interface Composition {
 }
 
 /**
- * A set of healthcare-related information that is assembled together
- * into a single logical package that provides a single coherent
- * statement of meaning, establishes its own context and that has
- * clinical attestation with regard to who is making the statement. A
- * Composition defines the structure and narrative content necessary for
- * a document. However, a Composition alone does not constitute a
- * document. Rather, the Composition must be the first entry in a Bundle
- * where Bundle.type=document, and any other resources referenced from
- * Composition must be included as subsequent entries in the Bundle (for
- * example Patient, Practitioner, Encounter, etc.).
+ * A participant who has attested to the accuracy of the
+ * composition/document.
  */
 export interface CompositionAttester {
 
@@ -251,7 +243,7 @@ export interface CompositionAttester {
   /**
    * When the composition was attested by the party.
    */
-  readonly time?: Date | string;
+  readonly time?: string;
 
   /**
    * Who attested the composition in the specified way.
@@ -260,16 +252,8 @@ export interface CompositionAttester {
 }
 
 /**
- * A set of healthcare-related information that is assembled together
- * into a single logical package that provides a single coherent
- * statement of meaning, establishes its own context and that has
- * clinical attestation with regard to who is making the statement. A
- * Composition defines the structure and narrative content necessary for
- * a document. However, a Composition alone does not constitute a
- * document. Rather, the Composition must be the first entry in a Bundle
- * where Bundle.type=document, and any other resources referenced from
- * Composition must be included as subsequent entries in the Bundle (for
- * example Patient, Practitioner, Encounter, etc.).
+ * The clinical service, such as a colonoscopy or an appendectomy, being
+ * documented.
  */
 export interface CompositionEvent {
 
@@ -333,16 +317,8 @@ export interface CompositionEvent {
 }
 
 /**
- * A set of healthcare-related information that is assembled together
- * into a single logical package that provides a single coherent
- * statement of meaning, establishes its own context and that has
- * clinical attestation with regard to who is making the statement. A
- * Composition defines the structure and narrative content necessary for
- * a document. However, a Composition alone does not constitute a
- * document. Rather, the Composition must be the first entry in a Bundle
- * where Bundle.type=document, and any other resources referenced from
- * Composition must be included as subsequent entries in the Bundle (for
- * example Patient, Practitioner, Encounter, etc.).
+ * Relationships that this composition has with other compositions or
+ * documents that already exist.
  */
 export interface CompositionRelatesTo {
 
@@ -399,16 +375,7 @@ export interface CompositionRelatesTo {
 }
 
 /**
- * A set of healthcare-related information that is assembled together
- * into a single logical package that provides a single coherent
- * statement of meaning, establishes its own context and that has
- * clinical attestation with regard to who is making the statement. A
- * Composition defines the structure and narrative content necessary for
- * a document. However, a Composition alone does not constitute a
- * document. Rather, the Composition must be the first entry in a Bundle
- * where Bundle.type=document, and any other resources referenced from
- * Composition must be included as subsequent entries in the Bundle (for
- * example Patient, Practitioner, Encounter, etc.).
+ * The root of the sections that make up the composition.
  */
 export interface CompositionSection {
 

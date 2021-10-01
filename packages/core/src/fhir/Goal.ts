@@ -161,7 +161,7 @@ export interface Goal {
    * Identifies when the current status.  I.e. When initially created, when
    * achieved, when cancelled, etc.
    */
-  readonly statusDate?: Date | string;
+  readonly statusDate?: string;
 
   /**
    * Captures the reason for the current status.
@@ -197,10 +197,7 @@ export interface Goal {
 }
 
 /**
- * Describes the intended objective(s) for a patient, group or
- * organization care, for example, weight loss, restoring an activity of
- * daily living, obtaining herd immunity via immunization, meeting a
- * process improvement objective, etc.
+ * Indicates what should be done by when.
  */
 export interface GoalTarget {
 

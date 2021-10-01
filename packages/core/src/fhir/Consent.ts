@@ -128,7 +128,7 @@ export interface Consent {
   /**
    * When this  Consent was issued / created / indexed.
    */
-  readonly dateTime?: Date | string;
+  readonly dateTime?: string;
 
   /**
    * Either the Grantor, which is the entity responsible for granting the
@@ -188,123 +188,9 @@ export interface Consent {
 }
 
 /**
- * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
- * identified recipient(s) or recipient role(s) to perform one or more
- * actions within a given policy context, for specific purposes and
- * periods of time.
- */
-export interface ConsentActor {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * How the individual is involved in the resources content that is
-   * described in the exception.
-   */
-  readonly role?: CodeableConcept;
-
-  /**
-   * The resource that identifies the actor. To identify actors by type,
-   * use group to identify a set of actors by some property they share
-   * (e.g. 'admitting officers').
-   */
-  readonly reference?: Reference;
-}
-
-/**
- * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
- * identified recipient(s) or recipient role(s) to perform one or more
- * actions within a given policy context, for specific purposes and
- * periods of time.
- */
-export interface ConsentData {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * How the resource reference is interpreted when testing consent
-   * restrictions.
-   */
-  readonly meaning?: string;
-
-  /**
-   * A reference to a specific resource that defines which resources are
-   * covered by this consent.
-   */
-  readonly reference?: Reference;
-}
-
-/**
- * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
- * identified recipient(s) or recipient role(s) to perform one or more
- * actions within a given policy context, for specific purposes and
- * periods of time.
+ * The references to the policies that are included in this consent
+ * scope. Policies may be organizational, but are often defined
+ * jurisdictionally, or in law.
  */
 export interface ConsentPolicy {
 
@@ -359,10 +245,8 @@ export interface ConsentPolicy {
 }
 
 /**
- * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
- * identified recipient(s) or recipient role(s) to perform one or more
- * actions within a given policy context, for specific purposes and
- * periods of time.
+ * An exception to the base policy of this consent. An exception can be
+ * an addition or removal of access permissions.
  */
 export interface ConsentProvision {
 
@@ -416,7 +300,7 @@ export interface ConsentProvision {
    * Who or what is controlled by this rule. Use group to identify a set of
    * actors by some property they share (e.g. 'admitting officers').
    */
-  readonly actor?: ConsentActor[];
+  readonly actor?: ConsentProvisionActor[];
 
   /**
    * Actions controlled by this Rule.
@@ -457,7 +341,7 @@ export interface ConsentProvision {
    * The resources controlled by this rule if specific resources are
    * referenced.
    */
-  readonly data?: ConsentData[];
+  readonly data?: ConsentProvisionData[];
 
   /**
    * Rules which provide exceptions to the base rule or subrules.
@@ -466,10 +350,118 @@ export interface ConsentProvision {
 }
 
 /**
- * A record of a healthcare consumer&rsquo;s  choices, which permits or denies
- * identified recipient(s) or recipient role(s) to perform one or more
- * actions within a given policy context, for specific purposes and
- * periods of time.
+ * Who or what is controlled by this rule. Use group to identify a set of
+ * actors by some property they share (e.g. 'admitting officers').
+ */
+export interface ConsentProvisionActor {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * How the individual is involved in the resources content that is
+   * described in the exception.
+   */
+  readonly role?: CodeableConcept;
+
+  /**
+   * The resource that identifies the actor. To identify actors by type,
+   * use group to identify a set of actors by some property they share
+   * (e.g. 'admitting officers').
+   */
+  readonly reference?: Reference;
+}
+
+/**
+ * The resources controlled by this rule if specific resources are
+ * referenced.
+ */
+export interface ConsentProvisionData {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * How the resource reference is interpreted when testing consent
+   * restrictions.
+   */
+  readonly meaning?: string;
+
+  /**
+   * A reference to a specific resource that defines which resources are
+   * covered by this consent.
+   */
+  readonly reference?: Reference;
+}
+
+/**
+ * Whether a treatment instruction (e.g. artificial respiration yes or
+ * no) was verified with the patient, his/her family or another
+ * authorized person.
  */
 export interface ConsentVerification {
 
@@ -522,5 +514,5 @@ export interface ConsentVerification {
   /**
    * Date verification was collected.
    */
-  readonly verificationDate?: Date | string;
+  readonly verificationDate?: string;
 }

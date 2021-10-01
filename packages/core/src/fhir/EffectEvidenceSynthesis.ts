@@ -155,7 +155,7 @@ export interface EffectEvidenceSynthesis {
    * change when the substantive content of the effect evidence synthesis
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the effect
@@ -209,14 +209,14 @@ export interface EffectEvidenceSynthesis {
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: Date | string;
+  readonly approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: Date | string;
+  readonly lastReviewDate?: string;
 
   /**
    * The period during which the effect evidence synthesis content was or
@@ -319,9 +319,7 @@ export interface EffectEvidenceSynthesis {
 }
 
 /**
- * The EffectEvidenceSynthesis resource describes the difference in an
- * outcome between exposures states in a population where the effect
- * estimate is derived from a combination of research studies.
+ * A description of the certainty of the effect estimate.
  */
 export interface EffectEvidenceSynthesisCertainty {
 
@@ -374,15 +372,13 @@ export interface EffectEvidenceSynthesisCertainty {
   /**
    * A description of a component of the overall certainty.
    */
-  readonly certaintySubcomponent?: EffectEvidenceSynthesisCertaintySubcomponent[];
+  readonly certaintySubcomponent?: EffectEvidenceSynthesisCertaintyCertaintySubcomponent[];
 }
 
 /**
- * The EffectEvidenceSynthesis resource describes the difference in an
- * outcome between exposures states in a population where the effect
- * estimate is derived from a combination of research studies.
+ * A description of a component of the overall certainty.
  */
-export interface EffectEvidenceSynthesisCertaintySubcomponent {
+export interface EffectEvidenceSynthesisCertaintyCertaintySubcomponent {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -437,9 +433,7 @@ export interface EffectEvidenceSynthesisCertaintySubcomponent {
 }
 
 /**
- * The EffectEvidenceSynthesis resource describes the difference in an
- * outcome between exposures states in a population where the effect
- * estimate is derived from a combination of research studies.
+ * The estimated effect of the exposure variant.
  */
 export interface EffectEvidenceSynthesisEffectEstimate {
 
@@ -506,15 +500,13 @@ export interface EffectEvidenceSynthesisEffectEstimate {
   /**
    * A description of the precision of the estimate for the effect.
    */
-  readonly precisionEstimate?: EffectEvidenceSynthesisPrecisionEstimate[];
+  readonly precisionEstimate?: EffectEvidenceSynthesisEffectEstimatePrecisionEstimate[];
 }
 
 /**
- * The EffectEvidenceSynthesis resource describes the difference in an
- * outcome between exposures states in a population where the effect
- * estimate is derived from a combination of research studies.
+ * A description of the precision of the estimate for the effect.
  */
-export interface EffectEvidenceSynthesisPrecisionEstimate {
+export interface EffectEvidenceSynthesisEffectEstimatePrecisionEstimate {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -573,9 +565,8 @@ export interface EffectEvidenceSynthesisPrecisionEstimate {
 }
 
 /**
- * The EffectEvidenceSynthesis resource describes the difference in an
- * outcome between exposures states in a population where the effect
- * estimate is derived from a combination of research studies.
+ * A description of the results for each exposure considered in the
+ * effect estimate.
  */
 export interface EffectEvidenceSynthesisResultsByExposure {
 
@@ -637,9 +628,7 @@ export interface EffectEvidenceSynthesisResultsByExposure {
 }
 
 /**
- * The EffectEvidenceSynthesis resource describes the difference in an
- * outcome between exposures states in a population where the effect
- * estimate is derived from a combination of research studies.
+ * A description of the size of the sample involved in the synthesis.
  */
 export interface EffectEvidenceSynthesisSampleSize {
 

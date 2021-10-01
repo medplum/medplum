@@ -104,7 +104,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     profile,
     defaultProject: project,
     compartments,
-    authTime: new Date(),
+    authTime: new Date().toISOString(),
     code: generateSecret(16),
     cookie: generateSecret(16),
     refreshSecret,

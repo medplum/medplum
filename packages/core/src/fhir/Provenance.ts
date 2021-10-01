@@ -124,7 +124,7 @@ export interface Provenance {
   /**
    * The instant of time at which the activity was recorded.
    */
-  readonly recorded?: Date | string;
+  readonly recorded?: string;
 
   /**
    * Policy or plan the activity was defined by. Typically, a single
@@ -169,17 +169,8 @@ export interface Provenance {
 }
 
 /**
- * Provenance of a resource is a record that describes entities and
- * processes involved in producing and delivering or otherwise
- * influencing that resource. Provenance provides a critical foundation
- * for assessing authenticity, enabling trust, and allowing
- * reproducibility. Provenance assertions are a form of contextual
- * metadata and can themselves become important records with their own
- * provenance. Provenance statement indicates clinical significance in
- * terms of confidence in authenticity, reliability, and trustworthiness,
- * integrity, and stage in lifecycle (e.g. Document Completion - has the
- * artifact been legally authenticated), all of which may impact
- * security, privacy, and trust policies.
+ * An actor taking a role in an activity  for which it can be assigned
+ * some degree of responsibility for the activity taking place.
  */
 export interface ProvenanceAgent {
 
@@ -241,17 +232,7 @@ export interface ProvenanceAgent {
 }
 
 /**
- * Provenance of a resource is a record that describes entities and
- * processes involved in producing and delivering or otherwise
- * influencing that resource. Provenance provides a critical foundation
- * for assessing authenticity, enabling trust, and allowing
- * reproducibility. Provenance assertions are a form of contextual
- * metadata and can themselves become important records with their own
- * provenance. Provenance statement indicates clinical significance in
- * terms of confidence in authenticity, reliability, and trustworthiness,
- * integrity, and stage in lifecycle (e.g. Document Completion - has the
- * artifact been legally authenticated), all of which may impact
- * security, privacy, and trust policies.
+ * An entity used in this activity.
  */
 export interface ProvenanceEntity {
 

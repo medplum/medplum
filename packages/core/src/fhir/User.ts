@@ -42,17 +42,18 @@ export interface User {
   readonly language?: string;
 
   /**
-   * User email.
+   * The email address that uniquely identifies the user.  This email
+   * address must be globally unique within the server.
    */
   readonly email?: string;
-
-  /**
-   * Encrypted hash of the user's password.
-   */
-  readonly passwordHash?: string;
 
   /**
    * Whether this user is a system administrator.
    */
   readonly admin?: boolean;
+
+  /**
+   * Encrypted hash of the user's password.
+   */
+  readonly passwordHash?: string;
 }

@@ -21930,6 +21930,30 @@
             "description" : "Codes that represent various types of tags, commonly workflow-related; e.g. \"Needs review by Dr. Jones\".",
             "valueSet" : "http://hl7.org/fhir/ValueSet/common-tags"
           }
+        },
+        {
+          "id" : "Meta.project",
+          "path" : "Meta.project",
+          "short" : "The project that contains this resource.",
+          "definition" : "The project that contains this resource.",
+          "comment" : "The project that contains this resource.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "uri"
+          }]
+        },
+        {
+          "id" : "Meta.author",
+          "path" : "Meta.author",
+          "short" : "The individual, device or organization who initiated the last change.",
+          "definition" : "The individual, device or organization who initiated the last change.",
+          "comment" : "The individual, device or organization who initiated the last change.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "Reference"
+          }]
         }]
       },
       "differential" : {

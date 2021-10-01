@@ -44,8 +44,8 @@ const questionnaireStructureDefinition: IndexedStructureDefinition = {
         }
       }
     },
-    Questionnaire_Item: {
-      display: 'Questionnaire_Item',
+    QuestionnaireItem: {
+      display: 'Questionnaire Item',
       properties: {
         text: {
           id: 'Questionnaire.item.text',

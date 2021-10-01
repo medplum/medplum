@@ -174,10 +174,9 @@ export interface DetectedIssue {
 }
 
 /**
- * Indicates an actual or potential clinical issue with or between one or
- * more active or proposed clinical actions for a patient; e.g. Drug-drug
- * interaction, Ineffective treatment frequency, Procedure-condition
- * conflict, etc.
+ * Supporting evidence or manifestations that provide the basis for
+ * identifying the detected issue such as a GuidanceResponse or
+ * MeasureReport.
  */
 export interface DetectedIssueEvidence {
 
@@ -229,10 +228,10 @@ export interface DetectedIssueEvidence {
 }
 
 /**
- * Indicates an actual or potential clinical issue with or between one or
- * more active or proposed clinical actions for a patient; e.g. Drug-drug
- * interaction, Ineffective treatment frequency, Procedure-condition
- * conflict, etc.
+ * Indicates an action that has been taken or is committed to reduce or
+ * eliminate the likelihood of the risk identified by the detected issue
+ * from manifesting.  Can also reflect an observation of known mitigating
+ * factors that may reduce/eliminate the need for any action.
  */
 export interface DetectedIssueMitigation {
 
@@ -280,7 +279,7 @@ export interface DetectedIssueMitigation {
   /**
    * Indicates when the mitigating action was documented.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Identifies the practitioner who determined the mitigation and takes

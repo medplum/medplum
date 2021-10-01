@@ -139,13 +139,13 @@ export interface CatalogEntry {
   /**
    * The date until which this catalog entry is expected to be active.
    */
-  readonly validTo?: Date | string;
+  readonly validTo?: string;
 
   /**
    * Typically date of issue is different from the beginning of the
    * validity. This can be used to see when an item was last updated.
    */
-  readonly lastUpdated?: Date | string;
+  readonly lastUpdated?: string;
 
   /**
    * Used for examplefor Out of Formulary, or any specifics.
@@ -165,8 +165,8 @@ export interface CatalogEntry {
 }
 
 /**
- * Catalog entries are wrappers that contextualize items included in a
- * catalog.
+ * Used for example, to point to a substance, or to a device used to
+ * administer a medication.
  */
 export interface CatalogEntryRelatedEntry {
 

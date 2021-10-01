@@ -156,7 +156,7 @@ export interface TestScript {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the test script changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the test
@@ -257,10 +257,413 @@ export interface TestScript {
 }
 
 /**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
+ * An abstract server used in operations within this test script in the
+ * destination element.
  */
-export interface TestScriptAction {
+export interface TestScriptDestination {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Abstract name given to a destination server in this test script.  The
+   * name is provided as a number starting at 1.
+   */
+  readonly index?: number;
+
+  /**
+   * The type of destination profile the test system supports.
+   */
+  readonly profile?: Coding;
+}
+
+/**
+ * Fixture in the test script - by reference (uri). All fixtures are
+ * required for the test script to execute.
+ */
+export interface TestScriptFixture {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Whether or not to implicitly create the fixture during setup. If true,
+   * the fixture is automatically created on each server being tested
+   * during setup, therefore no create operation is required for this
+   * fixture in the TestScript.setup section.
+   */
+  readonly autocreate?: boolean;
+
+  /**
+   * Whether or not to implicitly delete the fixture during teardown. If
+   * true, the fixture is automatically deleted on each server being tested
+   * during teardown, therefore no delete operation is required for this
+   * fixture in the TestScript.teardown section.
+   */
+  readonly autodelete?: boolean;
+
+  /**
+   * Reference to the resource (containing the contents of the resource
+   * needed for operations).
+   */
+  readonly resource?: Reference;
+}
+
+/**
+ * The required capability must exist and are assumed to function
+ * correctly on the FHIR server being tested.
+ */
+export interface TestScriptMetadata {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * A link to the FHIR specification that this test is covering.
+   */
+  readonly link?: TestScriptMetadataLink[];
+
+  /**
+   * Capabilities that must exist and are assumed to function correctly on
+   * the FHIR server being tested.
+   */
+  readonly capability?: TestScriptMetadataCapability[];
+}
+
+/**
+ * Capabilities that must exist and are assumed to function correctly on
+ * the FHIR server being tested.
+ */
+export interface TestScriptMetadataCapability {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Whether or not the test execution will require the given capabilities
+   * of the server in order for this test script to execute.
+   */
+  readonly required?: boolean;
+
+  /**
+   * Whether or not the test execution will validate the given capabilities
+   * of the server in order for this test script to execute.
+   */
+  readonly validated?: boolean;
+
+  /**
+   * Description of the capabilities that this test script is requiring the
+   * server to support.
+   */
+  readonly description?: string;
+
+  /**
+   * Which origin server these requirements apply to.
+   */
+  readonly origin?: number[];
+
+  /**
+   * Which server these requirements apply to.
+   */
+  readonly destination?: number;
+
+  /**
+   * Links to the FHIR specification that describes this interaction and
+   * the resources involved in more detail.
+   */
+  readonly link?: string[];
+
+  /**
+   * Minimum capabilities required of server for test script to execute
+   * successfully.   If server does not meet at a minimum the referenced
+   * capability statement, then all tests in this script are skipped.
+   */
+  readonly capabilities?: string;
+}
+
+/**
+ * A link to the FHIR specification that this test is covering.
+ */
+export interface TestScriptMetadataLink {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * URL to a particular requirement or feature within the FHIR
+   * specification.
+   */
+  readonly url?: string;
+
+  /**
+   * Short description of the link.
+   */
+  readonly description?: string;
+}
+
+/**
+ * An abstract server used in operations within this test script in the
+ * origin element.
+ */
+export interface TestScriptOrigin {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Abstract name given to an origin server in this test script.  The name
+   * is provided as a number starting at 1.
+   */
+  readonly index?: number;
+
+  /**
+   * The type of origin profile the test system supports.
+   */
+  readonly profile?: Coding;
+}
+
+/**
+ * A series of required setup operations before tests are executed.
+ */
+export interface TestScriptSetup {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Action would contain either an operation or an assertion.
+   */
+  readonly action?: TestScriptSetupAction[];
+}
+
+/**
+ * Action would contain either an operation or an assertion.
+ */
+export interface TestScriptSetupAction {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -300,120 +703,20 @@ export interface TestScriptAction {
   /**
    * The operation to perform.
    */
-  readonly operation?: TestScriptOperation;
+  readonly operation?: TestScriptSetupActionOperation;
 
   /**
    * Evaluates the results of previous operations to determine if the
    * server under test behaves appropriately.
    */
-  readonly assert?: TestScriptAssert;
+  readonly assert?: TestScriptSetupActionAssert;
 }
 
 /**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
+ * Evaluates the results of previous operations to determine if the
+ * server under test behaves appropriately.
  */
-export interface TestScriptAction1 {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * An operation would involve a REST request to a server.
-   */
-  readonly operation?: TestScriptOperation;
-
-  /**
-   * Evaluates the results of previous operations to determine if the
-   * server under test behaves appropriately.
-   */
-  readonly assert?: TestScriptAssert;
-}
-
-/**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
- */
-export interface TestScriptAction2 {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * An operation would involve a REST request to a server.
-   */
-  readonly operation?: TestScriptOperation;
-}
-
-/**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
- */
-export interface TestScriptAssert {
+export interface TestScriptSetupActionAssert {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -580,316 +883,9 @@ export interface TestScriptAssert {
 }
 
 /**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
+ * The operation to perform.
  */
-export interface TestScriptCapability {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Whether or not the test execution will require the given capabilities
-   * of the server in order for this test script to execute.
-   */
-  readonly required?: boolean;
-
-  /**
-   * Whether or not the test execution will validate the given capabilities
-   * of the server in order for this test script to execute.
-   */
-  readonly validated?: boolean;
-
-  /**
-   * Description of the capabilities that this test script is requiring the
-   * server to support.
-   */
-  readonly description?: string;
-
-  /**
-   * Which origin server these requirements apply to.
-   */
-  readonly origin?: number[];
-
-  /**
-   * Which server these requirements apply to.
-   */
-  readonly destination?: number;
-
-  /**
-   * Links to the FHIR specification that describes this interaction and
-   * the resources involved in more detail.
-   */
-  readonly link?: string[];
-
-  /**
-   * Minimum capabilities required of server for test script to execute
-   * successfully.   If server does not meet at a minimum the referenced
-   * capability statement, then all tests in this script are skipped.
-   */
-  readonly capabilities?: string;
-}
-
-/**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
- */
-export interface TestScriptDestination {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Abstract name given to a destination server in this test script.  The
-   * name is provided as a number starting at 1.
-   */
-  readonly index?: number;
-
-  /**
-   * The type of destination profile the test system supports.
-   */
-  readonly profile?: Coding;
-}
-
-/**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
- */
-export interface TestScriptFixture {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Whether or not to implicitly create the fixture during setup. If true,
-   * the fixture is automatically created on each server being tested
-   * during setup, therefore no create operation is required for this
-   * fixture in the TestScript.setup section.
-   */
-  readonly autocreate?: boolean;
-
-  /**
-   * Whether or not to implicitly delete the fixture during teardown. If
-   * true, the fixture is automatically deleted on each server being tested
-   * during teardown, therefore no delete operation is required for this
-   * fixture in the TestScript.teardown section.
-   */
-  readonly autodelete?: boolean;
-
-  /**
-   * Reference to the resource (containing the contents of the resource
-   * needed for operations).
-   */
-  readonly resource?: Reference;
-}
-
-/**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
- */
-export interface TestScriptLink {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * URL to a particular requirement or feature within the FHIR
-   * specification.
-   */
-  readonly url?: string;
-
-  /**
-   * Short description of the link.
-   */
-  readonly description?: string;
-}
-
-/**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
- */
-export interface TestScriptMetadata {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * A link to the FHIR specification that this test is covering.
-   */
-  readonly link?: TestScriptLink[];
-
-  /**
-   * Capabilities that must exist and are assumed to function correctly on
-   * the FHIR server being tested.
-   */
-  readonly capability?: TestScriptCapability[];
-}
-
-/**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
- */
-export interface TestScriptOperation {
+export interface TestScriptSetupActionOperation {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -994,7 +990,7 @@ export interface TestScriptOperation {
   /**
    * Header elements would be used to set HTTP headers.
    */
-  readonly requestHeader?: TestScriptRequestHeader[];
+  readonly requestHeader?: TestScriptSetupActionOperationRequestHeader[];
 
   /**
    * The fixture id (maybe new) to map to the request.
@@ -1024,63 +1020,9 @@ export interface TestScriptOperation {
 }
 
 /**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
+ * Header elements would be used to set HTTP headers.
  */
-export interface TestScriptOrigin {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Abstract name given to an origin server in this test script.  The name
-   * is provided as a number starting at 1.
-   */
-  readonly index?: number;
-
-  /**
-   * The type of origin profile the test system supports.
-   */
-  readonly profile?: Coding;
-}
-
-/**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
- */
-export interface TestScriptRequestHeader {
+export interface TestScriptSetupActionOperationRequestHeader {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -1129,55 +1071,8 @@ export interface TestScriptRequestHeader {
 }
 
 /**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
- */
-export interface TestScriptSetup {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Action would contain either an operation or an assertion.
-   */
-  readonly action?: TestScriptAction[];
-}
-
-/**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
+ * A series of operations required to clean up after all the tests are
+ * executed (successfully or otherwise).
  */
 export interface TestScriptTeardown {
 
@@ -1219,12 +1114,57 @@ export interface TestScriptTeardown {
   /**
    * The teardown action will only contain an operation.
    */
-  readonly action?: TestScriptAction2[];
+  readonly action?: TestScriptTeardownAction[];
 }
 
 /**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
+ * The teardown action will only contain an operation.
+ */
+export interface TestScriptTeardownAction {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * An operation would involve a REST request to a server.
+   */
+  readonly operation?: TestScriptSetupActionOperation;
+}
+
+/**
+ * A test in this script.
  */
 export interface TestScriptTest {
 
@@ -1278,12 +1218,64 @@ export interface TestScriptTest {
   /**
    * Action would contain either an operation or an assertion.
    */
-  readonly action?: TestScriptAction1[];
+  readonly action?: TestScriptTestAction[];
 }
 
 /**
- * A structured set of tests against a FHIR server or client
- * implementation to determine compliance against the FHIR specification.
+ * Action would contain either an operation or an assertion.
+ */
+export interface TestScriptTestAction {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * An operation would involve a REST request to a server.
+   */
+  readonly operation?: TestScriptSetupActionOperation;
+
+  /**
+   * Evaluates the results of previous operations to determine if the
+   * server under test behaves appropriately.
+   */
+  readonly assert?: TestScriptSetupActionAssert;
+}
+
+/**
+ * Variable is set based either on element value in response body or on
+ * header field value in the response headers.
  */
 export interface TestScriptVariable {
 

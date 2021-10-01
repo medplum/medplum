@@ -186,12 +186,12 @@ export interface Communication {
   /**
    * The time when this communication was sent.
    */
-  readonly sent?: Date | string;
+  readonly sent?: string;
 
   /**
    * The time when this communication arrived at the destination.
    */
-  readonly received?: Date | string;
+  readonly received?: string;
 
   /**
    * The entity (e.g. person, organization, clinical information system,
@@ -235,9 +235,8 @@ export interface Communication {
 }
 
 /**
- * An occurrence of information being transmitted; e.g. an alert that was
- * sent to a responsible provider, a public health agency that was
- * notified about a reportable condition.
+ * Text, attachment(s), or resource(s) that was communicated to the
+ * recipient.
  */
 export interface CommunicationPayload {
 

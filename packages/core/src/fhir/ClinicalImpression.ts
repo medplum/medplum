@@ -153,7 +153,7 @@ export interface ClinicalImpression {
   /**
    * Indicates when the documentation of the assessment was complete.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The clinician performing the assessment.
@@ -224,14 +224,8 @@ export interface ClinicalImpression {
 }
 
 /**
- * A record of a clinical assessment performed to determine what
- * problem(s) may affect the patient and before planning the treatments
- * or management strategies that are best to manage a patient's
- * condition. Assessments are often 1:1 with a clinical consultation /
- * encounter,  but this varies greatly depending on the clinical
- * workflow. This resource is called &quot;ClinicalImpression&quot; rather than
- * &quot;ClinicalAssessment&quot; to avoid confusion with the recording of
- * assessment tools such as Apgar score.
+ * Specific findings or diagnoses that were considered likely or relevant
+ * to ongoing treatment.
  */
 export interface ClinicalImpressionFinding {
 
@@ -289,14 +283,11 @@ export interface ClinicalImpressionFinding {
 }
 
 /**
- * A record of a clinical assessment performed to determine what
- * problem(s) may affect the patient and before planning the treatments
- * or management strategies that are best to manage a patient's
- * condition. Assessments are often 1:1 with a clinical consultation /
- * encounter,  but this varies greatly depending on the clinical
- * workflow. This resource is called &quot;ClinicalImpression&quot; rather than
- * &quot;ClinicalAssessment&quot; to avoid confusion with the recording of
- * assessment tools such as Apgar score.
+ * One or more sets of investigations (signs, symptoms, etc.). The actual
+ * grouping of investigations varies greatly depending on the type and
+ * context of the assessment. These investigations may include data
+ * generated during the assessment process, or data previously generated
+ * and recorded that is pertinent to the outcomes.
  */
 export interface ClinicalImpressionInvestigation {
 

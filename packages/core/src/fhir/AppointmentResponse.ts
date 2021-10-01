@@ -110,14 +110,14 @@ export interface AppointmentResponse {
    * Date/Time that the appointment is to take place, or requested new
    * start time.
    */
-  readonly start?: Date | string;
+  readonly start?: string;
 
   /**
    * This may be either the same as the appointment request to confirm the
    * details of the appointment, or alternately a new time to request a
    * re-negotiation of the end time.
    */
-  readonly end?: Date | string;
+  readonly end?: string;
 
   /**
    * Role of participant in the appointment.

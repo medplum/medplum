@@ -1,19 +1,17 @@
+import { Bundle, BundleEntry, capitalize, ElementDefinition, ElementDefinitionType, IndexedStructureDefinition, indexStructureDefinition, Resource, TypeSchema } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { writeFileSync } from 'fs';
-import { JSONSchema6 } from 'json-schema';
 import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
-
-const INDENT = ' '.repeat(2);
 
 interface Property {
   resourceType: string;
   name: string;
-  definition: JSONSchema6;
+  definition: ElementDefinition;
 }
 
 interface FhirType {
-  definition: JSONSchema6;
+  definition: TypeSchema;
   inputName: string;
   parentType?: string;
   outputName: string;
@@ -23,19 +21,17 @@ interface FhirType {
   domainResource: boolean;
 }
 
-const baseResourceProperties = ['resourceType', 'id', 'meta', 'implicitRules', 'language'];
+const baseResourceProperties = ['id', 'meta', 'implicitRules', 'language'];
 const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
-
-const searchParams = readJson('fhir/r4/search-parameters.json');
-const schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema6;
-const definitions = schema.definitions as { [k: string]: JSONSchema6; };
-
+const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
 
 export function main() {
+  buildStructureDefinitions('profiles-types.json');
+  buildStructureDefinitions('profiles-resources.json');
 
-  for (const [resourceType, definition] of Object.entries(definitions)) {
+  for (const [resourceType, definition] of Object.entries(structureDefinitions.types)) {
     const fhirType = buildType(resourceType, definition);
     if (fhirType) {
       fhirTypes.push(fhirType);
@@ -52,30 +48,34 @@ export function main() {
 
   for (const fhirType of fhirTypes) {
     if (fhirType.parentType) {
-      parentTypes[fhirType.parentType].subTypes.push(fhirType);
+      fhirTypesMap[fhirType.parentType].subTypes.push(fhirType);
     }
   }
 
   writeIndexFile(Object.keys(parentTypes).sort());
   writeResourceFile(Object.entries(parentTypes).filter(e => e[1].resource).map(e => e[0]).sort());
   Object.values(parentTypes).forEach(fhirType => writeInterfaceFile(fhirType));
-  //writeMigrations();
 }
 
-function buildType(resourceType: string, definition: JSONSchema6): FhirType | undefined {
+function buildStructureDefinitions(fileName: string): void {
+  const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
+  for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
+    const resource = entry.resource as Resource;
+    if (resource.resourceType === 'StructureDefinition' &&
+      resource.name &&
+      resource.name !== 'Resource' &&
+      resource.name !== 'BackboneElement' &&
+      resource.name !== 'DomainResource' &&
+      resource.name !== 'MetadataResource' &&
+      !isLowerCase(resource.name[0])) {
+      indexStructureDefinition(resource, structureDefinitions);
+    }
+  }
+}
+
+function buildType(resourceType: string, definition: TypeSchema): FhirType | undefined {
   if (!definition.properties) {
     return undefined;
-  }
-
-  let parentType;
-  let outputName;
-  if (resourceType.includes('_')) {
-    const parts = resourceType.split('_');
-    parentType = parts[0];
-    outputName = parts[1].startsWith(parts[0]) ? parts[1] : parts[0] + parts[1];
-  } else {
-    parentType = undefined;
-    outputName = resourceType;
   }
 
   const properties: Property[] = [];
@@ -89,7 +89,7 @@ function buildType(resourceType: string, definition: JSONSchema6): FhirType | un
     properties.push({
       resourceType,
       name: propertyName,
-      definition: propertyDefinition as JSONSchema6
+      definition: propertyDefinition
     });
 
     propertyNames.add(propertyName);
@@ -98,8 +98,8 @@ function buildType(resourceType: string, definition: JSONSchema6): FhirType | un
   return {
     definition,
     inputName: resourceType,
-    parentType,
-    outputName,
+    parentType: definition.parentType,
+    outputName: resourceType,
     properties,
     subTypes: [],
     resource: containsAll(propertyNames, baseResourceProperties),
@@ -108,15 +108,18 @@ function buildType(resourceType: string, definition: JSONSchema6): FhirType | un
 }
 
 function writeIndexFile(names: string[]): void {
-  const b = new FileBuilder(INDENT);
+  const b = new FileBuilder();
   for (const resourceType of [...names, 'Resource'].sort()) {
+    if (resourceType === 'MoneyQuantity' || resourceType === 'SimpleQuantity') {
+      continue;
+    }
     b.append('export * from \'./' + resourceType + '\';');
   }
   writeFileSync(resolve(__dirname, '../../core/src/fhir/index.ts'), b.toString(), 'utf8');
 }
 
 function writeResourceFile(names: string[]): void {
-  const b = new FileBuilder(INDENT);
+  const b = new FileBuilder();
   for (const resourceType of names) {
     b.append('import { ' + resourceType + ' } from \'./' + resourceType + '\';');
   }
@@ -135,11 +138,15 @@ function writeResourceFile(names: string[]): void {
 }
 
 function writeInterfaceFile(fhirType: FhirType): void {
+  if (fhirType.properties.length === 0 && fhirType.subTypes.length === 0) {
+    return;
+  }
+
   const includedTypes = new Set<string>();
   const referencedTypes = new Set<string>();
   buildImports(fhirType, includedTypes, referencedTypes);
 
-  const b = new FileBuilder(INDENT);
+  const b = new FileBuilder();
   for (const referencedType of Array.from(referencedTypes).sort()) {
     if (!includedTypes.has(referencedType)) {
       b.append('import { ' + referencedType + ' } from \'./' + referencedType + '\';');
@@ -152,7 +159,7 @@ function writeInterfaceFile(fhirType: FhirType): void {
 
 function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   const resourceType = fhirType.outputName;
-  const genericTypes = ['Bundle', 'BundleEntry', 'OperationOutcome', 'Reference'];
+  const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
   const genericModifier = genericTypes.includes(resourceType) ? '<T extends Resource = Resource>' : '';
 
   b.newLine();
@@ -160,16 +167,21 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   b.append('export interface ' + resourceType + genericModifier + ' {');
   b.indentCount++;
 
+  if (fhirType.resource) {
+    b.newLine();
+    generateJavadoc(b, `This is a ${resourceType} resource`);
+    b.append(`readonly resourceType: '${resourceType}';`);
+  }
+
   for (const property of fhirType.properties) {
     b.newLine();
-    generateJavadoc(b, property.definition.description);
+    writeInterfaceProperty(b, fhirType, property);
+  }
 
-    const typeName = getTypeScriptType(property);
-    if (property.name === 'resourceType') {
-      b.append('readonly ' + property.name + ': ' + typeName + ';');
-    } else {
-      b.append('readonly ' + property.name + '?: ' + typeName + ';');
-    }
+  if (fhirType.outputName === 'Reference') {
+    b.newLine();
+    generateJavadoc(b, 'Optional Resource referred to by this reference.');
+    b.append('readonly resource?: T;');
   }
 
   b.indentCount--;
@@ -178,214 +190,36 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   fhirType.subTypes.sort((t1, t2) => t1.outputName.localeCompare(t2.outputName));
 
   for (const subType of fhirType.subTypes) {
-    b.newLine();
     writeInterface(b, subType);
   }
 }
 
-export function writeMigrations(): void {
-  const b = new FileBuilder(INDENT);
-  buildMigrationUp(b);
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
-}
-
-function buildMigrationUp(b: FileBuilder): void {
-  b.append('import { PoolClient } from \'pg\';');
-  b.newLine();
-  b.append('export async function run(client: PoolClient) {');
-  b.indentCount++;
-
-  for (const fhirType of fhirTypes) {
-    buildCreateTables(b, fhirType);
+function writeInterfaceProperty(b: FileBuilder, fhirType: FhirType, property: Property): void {
+  for (const typeScriptProperty of getTypeScriptProperties(property)) {
+    b.newLine();
+    generateJavadoc(b, property.definition.definition);
+    b.append('readonly ' + typeScriptProperty.name + '?: ' + typeScriptProperty.typeName + ';');
   }
-
-  buildAddressTable(b);
-  buildContactPointTable(b);
-  buildIdentifierTable(b);
-  buildHumanNameTable(b);
-  buildValueSetElementTable(b);
-  b.indentCount--;
-  b.append('}');
-}
-
-function buildCreateTables(b: FileBuilder, fhirType: FhirType): void {
-  if (fhirType.parentType || !fhirType.resource) {
-    // Don't create a table if fhirType is a subtype or not a resource type
-    return;
-  }
-
-  const resourceType = fhirType.outputName;
-  const columns = [
-    '"id" UUID NOT NULL PRIMARY KEY',
-    '"content" TEXT NOT NULL',
-    '"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL',
-    '"compartments" UUID[] NOT NULL',
-  ];
-
-  columns.push(...buildSearchColumns(resourceType));
-
-  b.newLine();
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '" (');
-  b.indentCount++;
-  for (let i = 0; i < columns.length; i++) {
-    b.append(columns[i] + (i !== columns.length - 1 ? ',' : ''));
-  }
-  b.indentCount--;
-  b.append(')`);')
-  b.newLine();
-
-  buildSearchIndexes(b, resourceType);
-
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '_History" (');
-  b.indentCount++;
-  b.append('"versionId" UUID NOT NULL PRIMARY KEY,');
-  b.append('"id" UUID NOT NULL,');
-  b.append('"content" TEXT NOT NULL,');
-  b.append('"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL');
-  b.indentCount--;
-  b.append(')`);')
-  b.newLine();
-}
-
-function buildSearchColumns(resourceType: string): string[] {
-  const result: string[] = [];
-  for (const entry of searchParams.entry) {
-    const searchParam = entry.resource;
-    if (!searchParam.base?.includes(resourceType)) {
-      continue;
-    }
-    if (isLookupTableParam(searchParam)) {
-      continue;
-    }
-    const columnName = convertCodeToColumnName(searchParam.code);
-    if (searchParam.code === 'active') {
-      result.push(`"${columnName}" BOOLEAN`)
-    } else if (isArrayParam(resourceType, searchParam.code)) {
-      result.push(`"${columnName}" TEXT[]`)
-    } else {
-      result.push(`"${columnName}" TEXT`)
-    }
-  }
-  return result;
-}
-
-function isLookupTableParam(searchParam: any) {
-  // Identifier
-  if (searchParam.code === 'identifier' && searchParam.type === 'token') {
-    return true;
-  }
-
-  // HumanName
-  const nameParams = ['individual-given', 'individual-family',
-    'Patient-name', 'Person-name', 'Practitioner-name', 'RelatedPerson-name'];
-  if (nameParams.includes(searchParam.id)) {
-    return true;
-  }
-
-  // Telecom
-  const telecomParams = ['individual-telecom', 'individual-email', 'individual-phone',
-    'OrganizationAffiliation-telecom', 'OrganizationAffiliation-email', 'OrganizationAffiliation-phone'];
-  if (telecomParams.includes(searchParam.id)) {
-    return true;
-  }
-
-  // Address
-  const addressParams = ['individual-address', 'InsurancePlan-address', 'Location-address', 'Organization-address'];
-  if (addressParams.includes(searchParam.id)) {
-    return true;
-  }
-
-  // "address-"
-  if (searchParam.code?.startsWith('address-')) {
-    return true;
-  }
-
-  return false;
-}
-
-function isArrayParam(resourceType: string, propertyName: string): boolean {
-  const typeDef = definitions[resourceType];
-  if (!typeDef) {
-    return false;
-  }
-
-  const propertyDef = typeDef.properties?.[propertyName];
-  if (!propertyDef) {
-    return false;
-  }
-
-  return (propertyDef as JSONSchema6).type === 'array';
-}
-
-function buildSearchIndexes(b: FileBuilder, resourceType: string): void {
-  if (resourceType === 'User') {
-    b.append(`await client.query('CREATE UNIQUE INDEX ON "User" ("email")');`);
-  }
-}
-
-function buildAddressTable(b: FileBuilder): void {
-  buildLookupTable(b, 'Address', ['address', 'city', 'country', 'postalCode', 'state', 'use']);
-}
-
-function buildContactPointTable(b: FileBuilder): void {
-  buildLookupTable(b, 'ContactPoint', ['system', 'value']);
-}
-
-function buildIdentifierTable(b: FileBuilder): void {
-  buildLookupTable(b, 'Identifier', ['system', 'value']);
-}
-
-function buildHumanNameTable(b: FileBuilder): void {
-  buildLookupTable(b, 'HumanName', ['name', 'given', 'family']);
-}
-
-function buildLookupTable(b: FileBuilder, tableName: string, columns: string[]): void {
-  b.newLine();
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + tableName + '" (');
-  b.indentCount++;
-  b.append('"id" UUID NOT NULL PRIMARY KEY,');
-  b.append('"resourceId" UUID NOT NULL,');
-  b.append('"index" INTEGER NOT NULL,');
-  b.append('"content" TEXT NOT NULL,');
-  for (let i = 0; i < columns.length; i++) {
-    b.append(`"${columns[i]}" TEXT` + (i !== columns.length - 1 ? ',' : ''));
-  }
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
-  for (const column of columns) {
-    b.append(`await client.query('CREATE INDEX ON "${tableName}" ("${column}")');`);
-  }
-}
-
-function buildValueSetElementTable(b: FileBuilder): void {
-  b.newLine();
-  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "ValueSetElement" (');
-  b.indentCount++;
-  b.append('"id" UUID NOT NULL PRIMARY KEY,');
-  b.append('"system" TEXT,');
-  b.append('"code" TEXT,');
-  b.append('"display" TEXT');
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
-  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("system")');`);
-  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("code")');`);
-  b.append(`await client.query('CREATE INDEX ON "ValueSetElement" ("display")');`);
 }
 
 function buildImports(fhirType: FhirType, includedTypes: Set<string>, referencedTypes: Set<string>): void {
   includedTypes.add(fhirType.outputName);
 
   for (const property of fhirType.properties) {
-    const cleanName = cleanReferencedType(getTypeScriptType(property));
-    if (cleanName) {
-      referencedTypes.add(cleanName);
+    for (const typeScriptProperty of getTypeScriptProperties(property)) {
+      const cleanName = cleanReferencedType(typeScriptProperty.typeName);
+      if (cleanName) {
+        referencedTypes.add(cleanName);
+      }
     }
   }
 
   for (const subType of fhirType.subTypes) {
     buildImports(subType, includedTypes, referencedTypes);
+  }
+
+  if (fhirType.outputName === 'Reference') {
+    referencedTypes.add('Resource');
   }
 }
 
@@ -396,8 +230,6 @@ function cleanReferencedType(typeName: string): string | undefined {
 
   if (typeName.startsWith('\'') ||
     isLowerCase(typeName.charAt(0)) ||
-    typeName === 'Date | string' ||
-    typeName === '(Date | string)[]' ||
     typeName === 'BundleEntry<T>[]') {
     return undefined;
   }
@@ -405,61 +237,43 @@ function cleanReferencedType(typeName: string): string | undefined {
   return typeName.replace('[]', '');
 }
 
-function getTypeScriptType(property: Property): string {
-  const constValue = property.definition['const'];
-  if (constValue) {
-    return '\'' + constValue + '\'';
-  }
-
-  if (property.resourceType === 'OperationOutcome' && property.name === 'resource') {
-    return 'T';
+function getTypeScriptProperties(property: Property): { name: string, typeName: string }[] {
+  if (property.name === 'resource' &&
+    ['BundleEntry', 'OperationOutcome', 'Reference'].includes(property.resourceType)) {
+    return [{ name: 'resource', typeName: 'T' }];
   }
 
   if (property.resourceType === 'Bundle' && property.name === 'entry') {
-    return 'BundleEntry<T>[]';
+    return [{ name: 'entry', typeName: 'BundleEntry<T>[]' }];
   }
 
-  if (property.resourceType === 'Bundle_Entry' && property.name === 'resource') {
-    return 'T';
-  }
-
-  if (property.resourceType === 'Reference' && property.name === 'resource') {
-    return 'T';
-  }
-
-  const typeValue = property.definition.type;
-  if (typeValue) {
-    if (typeValue === 'array') {
-      const itemDefinition = property.definition.items as JSONSchema6 | undefined;
-      if (itemDefinition && itemDefinition.$ref) {
-        const itemType = getTypeScriptTypeFromDefinition(itemDefinition.$ref);
-        if (itemType.includes(' | ')) {
-          return '(' + itemType + ')[]';
-        } else {
-          return itemType + '[]';
-        }
-      } else if (itemDefinition && itemDefinition.enum) {
-        return 'string[]';
-      } else {
-        return 'any[]';
-      }
-    } else {
-      return getTypeScriptTypeFromDefinition(typeValue as string);
+  const result = [];
+  if (property.definition.contentReference) {
+    const baseName = property.definition.contentReference.replace('#', '').split('.').map(capitalize).join('');
+    const typeName = property.definition.max === '*' ? baseName + '[]' : baseName;
+    result.push({
+      name: property.name,
+      typeName
+    });
+  } else if (property.name.endsWith('[x]')) {
+    const baseName = property.name.replace('[x]', '');
+    const propertyTypes = property.definition.type as ElementDefinitionType[];
+    for (const propertyType of propertyTypes) {
+      const code = propertyType.code as string;
+      result.push({
+        name: baseName + capitalize(code),
+        typeName: getTypeScriptTypeForProperty(property, propertyType)
+      });
     }
+  } else {
+    result.push({
+      name: property.name,
+      typeName: getTypeScriptTypeForProperty(property, property.definition?.type?.[0] as ElementDefinitionType)
+    });
   }
 
-  if (property.definition.enum) {
-    return 'string';
-  }
-
-  const ref = property.definition.$ref;
-  if (ref) {
-    return getTypeScriptTypeFromDefinition(ref);
-  }
-
-  return 'any';
+  return result;
 }
-
 
 function generateJavadoc(b: FileBuilder, text: string | undefined): void {
   if (!text) {
@@ -477,51 +291,57 @@ function generateJavadoc(b: FileBuilder, text: string | undefined): void {
   b.append(' */');
 }
 
-function getTypeScriptTypeFromDefinition(ref: string): string {
-  ref = ref.replace('#/definitions/', '');
+function getTypeScriptTypeForProperty(property: Property, typeDefinition: ElementDefinitionType): string {
+  let baseType = typeDefinition.code as string;
 
-  switch (ref) {
-    case 'boolean':
-      return 'boolean';
-
+  switch (baseType) {
     case 'base64Binary':
     case 'canonical':
     case 'code':
     case 'id':
     case 'markdown':
+    case 'oid':
     case 'string':
     case 'uri':
     case 'url':
+    case 'uuid':
     case 'xhtml':
-      return 'string';
+    case 'http://hl7.org/fhirpath/System.String':
+      baseType = 'string';
+      break;
 
     case 'date':
     case 'dateTime':
     case 'instant':
     case 'time':
-      return 'Date | string';
+      baseType = 'string';
+      break;
 
     case 'decimal':
     case 'integer':
     case 'positiveInt':
     case 'unsignedInt':
     case 'number':
-      return 'number';
+      baseType = 'number';
+      break;
 
     case 'ResourceList':
-      return 'Resource';
+      baseType = 'Resource';
+      break;
+
+    case 'Element':
+    case 'BackboneElement':
+      baseType = property.resourceType + capitalize(property.name);
+      break;
   }
 
-  if (ref.indexOf('_') >= 0) {
-    const parts = ref.split('_');
-    if (parts[1].startsWith(parts[0])) {
-      return parts[1];
-    } else {
-      return parts[0] + parts[1];
+  if (property.definition.max === '*') {
+    if (baseType.includes(' | ')) {
+      return `(${baseType})[]`;
     }
+    return baseType + '[]';
   }
-
-  return ref;
+  return baseType;
 }
 
 function containsAll(set: Set<string>, values: string[]): boolean {
@@ -548,20 +368,6 @@ function escapeHtml(unsafe: string): string {
     .replace(/‘/g, '&lsquo;')
     .replace(/’/g, '&rsquo;')
     .replace(/…/g, '&hellip;');
-}
-
-/**
- * Converts a hyphen-delimited code to camelCase string.
- * @param code The search parameter code.
- * @returns The SQL column name.
- */
-function convertCodeToColumnName(code: string): string {
-  return code.split('-')
-    .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
-}
-
-function upperFirst(word: string): string {
-  return word.charAt(0).toUpperCase() + word.substr(1);
 }
 
 if (process.argv[1].endsWith('index.ts')) {

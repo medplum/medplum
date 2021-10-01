@@ -205,7 +205,7 @@ export interface DeviceRequest {
   /**
    * When the request transitioned to being actionable.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The individual who initiated the request and has responsibility for
@@ -262,9 +262,8 @@ export interface DeviceRequest {
 }
 
 /**
- * Represents a request for a patient to employ a medical device. The
- * device may be an implantable device, or an external assistive device,
- * such as a walker.
+ * Specific parameters for the ordered item.  For example, the prism
+ * value for lenses.
  */
 export interface DeviceRequestParameter {
 

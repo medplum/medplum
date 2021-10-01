@@ -173,8 +173,8 @@ export interface CareTeam {
 }
 
 /**
- * The Care Team includes all the people and organizations who plan to
- * participate in the coordination and delivery of care for a patient.
+ * Identifies all people and organizations who are expected to be
+ * involved in the care team.
  */
 export interface CareTeamParticipant {
 

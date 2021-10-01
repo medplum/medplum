@@ -167,7 +167,7 @@ export interface SubstanceSpecification {
    * The molecular weight or weight range (for proteins, polymers or
    * nucleic acids).
    */
-  readonly molecularWeight?: SubstanceSpecificationMolecularWeight[];
+  readonly molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight[];
 
   /**
    * A link between this substance and another, with details of the
@@ -197,8 +197,7 @@ export interface SubstanceSpecification {
 }
 
 /**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
+ * Codes associated with the substance.
  */
 export interface SubstanceSpecificationCode {
 
@@ -251,7 +250,7 @@ export interface SubstanceSpecificationCode {
    * The date at which the code status is changed as part of the
    * terminology maintenance.
    */
-  readonly statusDate?: Date | string;
+  readonly statusDate?: string;
 
   /**
    * Any comment can be provided in this field, if necessary.
@@ -265,76 +264,7 @@ export interface SubstanceSpecificationCode {
 }
 
 /**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
- */
-export interface SubstanceSpecificationIsotope {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Substance identifier for each non-natural or radioisotope.
-   */
-  readonly identifier?: Identifier;
-
-  /**
-   * Substance name for each non-natural or radioisotope.
-   */
-  readonly name?: CodeableConcept;
-
-  /**
-   * The type of isotopic substitution present in a single substance.
-   */
-  readonly substitution?: CodeableConcept;
-
-  /**
-   * Half life - for a non-natural nuclide.
-   */
-  readonly halfLife?: Quantity;
-
-  /**
-   * The molecular weight or weight range (for proteins, polymers or
-   * nucleic acids).
-   */
-  readonly molecularWeight?: SubstanceSpecificationMolecularWeight;
-}
-
-/**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
+ * Moiety, for structural modifications.
  */
 export interface SubstanceSpecificationMoiety {
 
@@ -415,69 +345,7 @@ export interface SubstanceSpecificationMoiety {
 }
 
 /**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
- */
-export interface SubstanceSpecificationMolecularWeight {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The method by which the molecular weight was determined.
-   */
-  readonly method?: CodeableConcept;
-
-  /**
-   * Type of molecular weight such as exact, average (also known as. number
-   * average), weight average.
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * Used to capture quantitative values for a variety of elements. If only
-   * limits are given, the arithmetic mean would be the average. If only a
-   * single definite value for a given element is given, it would be
-   * captured in this field.
-   */
-  readonly amount?: Quantity;
-}
-
-/**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
+ * Names applicable to this substance.
  */
 export interface SubstanceSpecificationName {
 
@@ -565,7 +433,7 @@ export interface SubstanceSpecificationName {
   /**
    * Details of the official nature of this name.
    */
-  readonly official?: SubstanceSpecificationOfficial[];
+  readonly official?: SubstanceSpecificationNameOfficial[];
 
   /**
    * Supporting literature.
@@ -574,10 +442,9 @@ export interface SubstanceSpecificationName {
 }
 
 /**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
+ * Details of the official nature of this name.
  */
-export interface SubstanceSpecificationOfficial {
+export interface SubstanceSpecificationNameOfficial {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -627,12 +494,12 @@ export interface SubstanceSpecificationOfficial {
   /**
    * Date of official name change.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 }
 
 /**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
+ * General specifications for this substance, including how it is related
+ * to other substances.
  */
 export interface SubstanceSpecificationProperty {
 
@@ -711,8 +578,8 @@ export interface SubstanceSpecificationProperty {
 }
 
 /**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
+ * A link between this substance and another, with details of the
+ * relationship.
  */
 export interface SubstanceSpecificationRelationship {
 
@@ -821,66 +688,7 @@ export interface SubstanceSpecificationRelationship {
 }
 
 /**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
- */
-export interface SubstanceSpecificationRepresentation {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The type of structure (e.g. Full, Partial, Representative).
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * The structural representation as text string in a format e.g. InChI,
-   * SMILES, MOLFILE, CDX.
-   */
-  readonly representation?: string;
-
-  /**
-   * An attached file with the structural representation.
-   */
-  readonly attachment?: Attachment;
-}
-
-/**
- * The detailed description of a substance, typically at a level beyond
- * what is used for prescribing.
+ * Structural information.
  */
 export interface SubstanceSpecificationStructure {
 
@@ -944,13 +752,13 @@ export interface SubstanceSpecificationStructure {
    * Applicable for single substances that contain a radionuclide or a
    * non-natural isotopic ratio.
    */
-  readonly isotope?: SubstanceSpecificationIsotope[];
+  readonly isotope?: SubstanceSpecificationStructureIsotope[];
 
   /**
    * The molecular weight or weight range (for proteins, polymers or
    * nucleic acids).
    */
-  readonly molecularWeight?: SubstanceSpecificationMolecularWeight;
+  readonly molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight;
 
   /**
    * Supporting literature.
@@ -960,5 +768,191 @@ export interface SubstanceSpecificationStructure {
   /**
    * Molecular structural representation.
    */
-  readonly representation?: SubstanceSpecificationRepresentation[];
+  readonly representation?: SubstanceSpecificationStructureRepresentation[];
+}
+
+/**
+ * Applicable for single substances that contain a radionuclide or a
+ * non-natural isotopic ratio.
+ */
+export interface SubstanceSpecificationStructureIsotope {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Substance identifier for each non-natural or radioisotope.
+   */
+  readonly identifier?: Identifier;
+
+  /**
+   * Substance name for each non-natural or radioisotope.
+   */
+  readonly name?: CodeableConcept;
+
+  /**
+   * The type of isotopic substitution present in a single substance.
+   */
+  readonly substitution?: CodeableConcept;
+
+  /**
+   * Half life - for a non-natural nuclide.
+   */
+  readonly halfLife?: Quantity;
+
+  /**
+   * The molecular weight or weight range (for proteins, polymers or
+   * nucleic acids).
+   */
+  readonly molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight;
+}
+
+/**
+ * The molecular weight or weight range (for proteins, polymers or
+ * nucleic acids).
+ */
+export interface SubstanceSpecificationStructureIsotopeMolecularWeight {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The method by which the molecular weight was determined.
+   */
+  readonly method?: CodeableConcept;
+
+  /**
+   * Type of molecular weight such as exact, average (also known as. number
+   * average), weight average.
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * Used to capture quantitative values for a variety of elements. If only
+   * limits are given, the arithmetic mean would be the average. If only a
+   * single definite value for a given element is given, it would be
+   * captured in this field.
+   */
+  readonly amount?: Quantity;
+}
+
+/**
+ * Molecular structural representation.
+ */
+export interface SubstanceSpecificationStructureRepresentation {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The type of structure (e.g. Full, Partial, Representative).
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * The structural representation as text string in a format e.g. InChI,
+   * SMILES, MOLFILE, CDX.
+   */
+  readonly representation?: string;
+
+  /**
+   * An attached file with the structural representation.
+   */
+  readonly attachment?: Attachment;
 }

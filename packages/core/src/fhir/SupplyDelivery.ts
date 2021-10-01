@@ -169,7 +169,7 @@ export interface SupplyDelivery {
 }
 
 /**
- * Record of delivery of what is supplied.
+ * The item that is being delivered or has been supplied.
  */
 export interface SupplyDeliverySuppliedItem {
 

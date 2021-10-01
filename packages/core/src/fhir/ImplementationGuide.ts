@@ -153,7 +153,7 @@ export interface ImplementationGuide {
    * change when the substantive content of the implementation guide
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -244,11 +244,8 @@ export interface ImplementationGuide {
 }
 
 /**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
+ * The information needed by an IG publisher tool to publish the whole
+ * implementation guide.
  */
 export interface ImplementationGuideDefinition {
 
@@ -291,7 +288,7 @@ export interface ImplementationGuideDefinition {
    * A logical group of resources. Logical groups can be used when building
    * pages.
    */
-  readonly grouping?: ImplementationGuideGrouping[];
+  readonly grouping?: ImplementationGuideDefinitionGrouping[];
 
   /**
    * A resource that is part of the implementation guide. Conformance
@@ -299,150 +296,30 @@ export interface ImplementationGuideDefinition {
    * etc.) are obvious candidates for inclusion, but any kind of resource
    * can be included as an example resource.
    */
-  readonly resource?: ImplementationGuideResource[];
+  readonly resource?: ImplementationGuideDefinitionResource[];
 
   /**
    * A page / section in the implementation guide. The root page is the
    * implementation guide home page.
    */
-  readonly page?: ImplementationGuidePage;
+  readonly page?: ImplementationGuideDefinitionPage;
 
   /**
    * Defines how IG is built by tools.
    */
-  readonly parameter?: ImplementationGuideParameter[];
+  readonly parameter?: ImplementationGuideDefinitionParameter[];
 
   /**
    * A template for building resources.
    */
-  readonly template?: ImplementationGuideTemplate[];
+  readonly template?: ImplementationGuideDefinitionTemplate[];
 }
 
 /**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
+ * A logical group of resources. Logical groups can be used when building
+ * pages.
  */
-export interface ImplementationGuideDependsOn {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * A canonical reference to the Implementation guide for the dependency.
-   */
-  readonly uri?: string;
-
-  /**
-   * The NPM package name for the Implementation Guide that this IG depends
-   * on.
-   */
-  readonly packageId?: string;
-
-  /**
-   * The version of the IG that is depended on, when the correct version is
-   * required to understand the IG correctly.
-   */
-  readonly version?: string;
-}
-
-/**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
- */
-export interface ImplementationGuideGlobal {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The type of resource that all instances must conform to.
-   */
-  readonly type?: string;
-
-  /**
-   * A reference to the profile that all instances must conform to.
-   */
-  readonly profile?: string;
-}
-
-/**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
- */
-export interface ImplementationGuideGrouping {
+export interface ImplementationGuideDefinitionGrouping {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -492,89 +369,10 @@ export interface ImplementationGuideGrouping {
 }
 
 /**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
+ * A page / section in the implementation guide. The root page is the
+ * implementation guide home page.
  */
-export interface ImplementationGuideManifest {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * A pointer to official web page, PDF or other rendering of the
-   * implementation guide.
-   */
-  readonly rendering?: string;
-
-  /**
-   * A resource that is part of the implementation guide. Conformance
-   * resources (value set, structure definition, capability statements
-   * etc.) are obvious candidates for inclusion, but any kind of resource
-   * can be included as an example resource.
-   */
-  readonly resource?: ImplementationGuideResource1[];
-
-  /**
-   * Information about a page within the IG.
-   */
-  readonly page?: ImplementationGuidePage1[];
-
-  /**
-   * Indicates a relative path to an image that exists within the IG.
-   */
-  readonly image?: string[];
-
-  /**
-   * Indicates the relative path of an additional non-page, non-image file
-   * that is part of the IG - e.g. zip, jar and similar files that could be
-   * the target of a hyperlink in a derived IG.
-   */
-  readonly other?: string[];
-}
-
-/**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
- */
-export interface ImplementationGuidePage {
+export interface ImplementationGuideDefinitionPage {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -635,77 +433,13 @@ export interface ImplementationGuidePage {
   /**
    * Nested Pages/Sections under this page.
    */
-  readonly page?: ImplementationGuidePage[];
+  readonly page?: ImplementationGuideDefinitionPage[];
 }
 
 /**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
+ * Defines how IG is built by tools.
  */
-export interface ImplementationGuidePage1 {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Relative path to the page.
-   */
-  readonly name?: string;
-
-  /**
-   * Label for the page intended for human display.
-   */
-  readonly title?: string;
-
-  /**
-   * The name of an anchor available on the page.
-   */
-  readonly anchor?: string[];
-}
-
-/**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
- */
-export interface ImplementationGuideParameter {
+export interface ImplementationGuideDefinitionParameter {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -756,13 +490,12 @@ export interface ImplementationGuideParameter {
 }
 
 /**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
+ * A resource that is part of the implementation guide. Conformance
+ * resources (value set, structure definition, capability statements
+ * etc.) are obvious candidates for inclusion, but any kind of resource
+ * can be included as an example resource.
  */
-export interface ImplementationGuideResource {
+export interface ImplementationGuideDefinitionResource {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -845,13 +578,309 @@ export interface ImplementationGuideResource {
 }
 
 /**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
+ * A template for building resources.
  */
-export interface ImplementationGuideResource1 {
+export interface ImplementationGuideDefinitionTemplate {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Type of template specified.
+   */
+  readonly code?: string;
+
+  /**
+   * The source location for the template.
+   */
+  readonly source?: string;
+
+  /**
+   * The scope in which the template applies.
+   */
+  readonly scope?: string;
+}
+
+/**
+ * Another implementation guide that this implementation depends on.
+ * Typically, an implementation guide uses value sets, profiles
+ * etc.defined in other implementation guides.
+ */
+export interface ImplementationGuideDependsOn {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * A canonical reference to the Implementation guide for the dependency.
+   */
+  readonly uri?: string;
+
+  /**
+   * The NPM package name for the Implementation Guide that this IG depends
+   * on.
+   */
+  readonly packageId?: string;
+
+  /**
+   * The version of the IG that is depended on, when the correct version is
+   * required to understand the IG correctly.
+   */
+  readonly version?: string;
+}
+
+/**
+ * A set of profiles that all resources covered by this implementation
+ * guide must conform to.
+ */
+export interface ImplementationGuideGlobal {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The type of resource that all instances must conform to.
+   */
+  readonly type?: string;
+
+  /**
+   * A reference to the profile that all instances must conform to.
+   */
+  readonly profile?: string;
+}
+
+/**
+ * Information about an assembled implementation guide, created by the
+ * publication tooling.
+ */
+export interface ImplementationGuideManifest {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * A pointer to official web page, PDF or other rendering of the
+   * implementation guide.
+   */
+  readonly rendering?: string;
+
+  /**
+   * A resource that is part of the implementation guide. Conformance
+   * resources (value set, structure definition, capability statements
+   * etc.) are obvious candidates for inclusion, but any kind of resource
+   * can be included as an example resource.
+   */
+  readonly resource?: ImplementationGuideManifestResource[];
+
+  /**
+   * Information about a page within the IG.
+   */
+  readonly page?: ImplementationGuideManifestPage[];
+
+  /**
+   * Indicates a relative path to an image that exists within the IG.
+   */
+  readonly image?: string[];
+
+  /**
+   * Indicates the relative path of an additional non-page, non-image file
+   * that is part of the IG - e.g. zip, jar and similar files that could be
+   * the target of a hyperlink in a derived IG.
+   */
+  readonly other?: string[];
+}
+
+/**
+ * Information about a page within the IG.
+ */
+export interface ImplementationGuideManifestPage {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Relative path to the page.
+   */
+  readonly name?: string;
+
+  /**
+   * Label for the page intended for human display.
+   */
+  readonly title?: string;
+
+  /**
+   * The name of an anchor available on the page.
+   */
+  readonly anchor?: string[];
+}
+
+/**
+ * A resource that is part of the implementation guide. Conformance
+ * resources (value set, structure definition, capability statements
+ * etc.) are obvious candidates for inclusion, but any kind of resource
+ * can be included as an example resource.
+ */
+export interface ImplementationGuideManifestResource {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -911,64 +940,4 @@ export interface ImplementationGuideResource1 {
    * The relative path for primary page for this resource within the IG.
    */
   readonly relativePath?: string;
-}
-
-/**
- * A set of rules of how a particular interoperability or standards
- * problem is solved - typically through the use of FHIR resources. This
- * resource is used to gather all the parts of an implementation guide
- * into a logical whole and to publish a computable definition of all the
- * parts.
- */
-export interface ImplementationGuideTemplate {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Type of template specified.
-   */
-  readonly code?: string;
-
-  /**
-   * The source location for the template.
-   */
-  readonly source?: string;
-
-  /**
-   * The scope in which the template applies.
-   */
-  readonly scope?: string;
 }

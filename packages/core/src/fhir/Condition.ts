@@ -222,7 +222,7 @@ export interface Condition {
    * The recordedDate represents when this particular Condition record was
    * created in the system, which is often a system-generated date.
    */
-  readonly recordedDate?: Date | string;
+  readonly recordedDate?: string;
 
   /**
    * Individual who recorded the record and takes responsibility for its
@@ -257,8 +257,9 @@ export interface Condition {
 }
 
 /**
- * A clinical condition, problem, diagnosis, or other event, situation,
- * issue, or clinical concept that has risen to a level of concern.
+ * Supporting evidence / manifestations that are the basis of the
+ * Condition's verification status, such as evidence that confirmed or
+ * refuted the condition.
  */
 export interface ConditionEvidence {
 
@@ -310,8 +311,8 @@ export interface ConditionEvidence {
 }
 
 /**
- * A clinical condition, problem, diagnosis, or other event, situation,
- * issue, or clinical concept that has risen to a level of concern.
+ * Clinical stage or grade of a condition. May include formal severity
+ * assessments.
  */
 export interface ConditionStage {
 

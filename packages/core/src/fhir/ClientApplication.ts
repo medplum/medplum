@@ -5,9 +5,6 @@
 
 import { Meta } from './Meta';
 
-/**
- * OAuth client application.
- */
 export interface ClientApplication {
 
   /**
@@ -42,12 +39,12 @@ export interface ClientApplication {
   readonly language?: string;
 
   /**
-   * Human friendly display name that describes the client application.
+   * A name associated with the ClientApplication.
    */
   readonly name?: string;
 
   /**
-   * A summary, characterization or explanation of the Client Application.
+   * A summary, characterization or explanation of the ClientApplication.
    */
   readonly description?: string;
 

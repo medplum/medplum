@@ -204,7 +204,7 @@ export interface Observation {
    * to providers, typically after the results have been reviewed and
    * verified.
    */
-  readonly issued?: Date | string;
+  readonly issued?: string;
 
   /**
    * Who was responsible for asserting the observed value as &quot;true&quot;.
@@ -348,8 +348,11 @@ export interface Observation {
 }
 
 /**
- * Measurements and simple assertions made about a patient, device or
- * other subject.
+ * Some observations have multiple component observations.  These
+ * component observations are expressed as separate code value pairs that
+ * share the same attributes.  Examples include systolic and diastolic
+ * component observations for blood pressure measurement and multiple
+ * component observations for genetics observations.
  */
 export interface ObservationComponent {
 
@@ -480,8 +483,10 @@ export interface ObservationComponent {
 }
 
 /**
- * Measurements and simple assertions made about a patient, device or
- * other subject.
+ * Guidance on how to interpret the value by comparison to a normal or
+ * recommended range.  Multiple reference ranges are interpreted as an
+ * &quot;OR&quot;.   In other words, to represent two distinct target populations,
+ * two `referenceRange` elements would be used.
  */
 export interface ObservationReferenceRange {
 

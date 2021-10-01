@@ -20,7 +20,7 @@ const communications: Bundle = {
         resourceType: 'Communication',
         id: randomUUID(),
         meta: {
-          lastUpdated: new Date(),
+          lastUpdated: new Date().toISOString(),
           author: {
             reference: 'Practitioner/123'
           }
@@ -41,7 +41,7 @@ const media: Bundle = {
         resourceType: 'Media',
         id: randomUUID(),
         meta: {
-          lastUpdated: new Date(),
+          lastUpdated: new Date().toISOString(),
           author: {
             reference: 'Practitioner/123'
           }

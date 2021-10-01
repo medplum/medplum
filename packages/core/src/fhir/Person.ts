@@ -120,7 +120,7 @@ export interface Person {
   /**
    * The birth date for the person.
    */
-  readonly birthDate?: Date | string;
+  readonly birthDate?: string;
 
   /**
    * One or more addresses for the person.
@@ -150,8 +150,7 @@ export interface Person {
 }
 
 /**
- * Demographics and administrative information about a person independent
- * of a specific health-related context.
+ * Link to a resource that concerns the same actual person.
  */
 export interface PersonLink {
 

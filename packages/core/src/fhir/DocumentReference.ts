@@ -149,7 +149,7 @@ export interface DocumentReference {
   /**
    * When the document reference was created.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Identifies who is responsible for adding the information to the
@@ -202,12 +202,8 @@ export interface DocumentReference {
 }
 
 /**
- * A reference to a document of any kind for any purpose. Provides
- * metadata about the document so that the document can be discovered and
- * managed. The scope of a document is any seralized object with a
- * mime-type, so includes formal patient centric documents (CDA), cliical
- * notes, scanned paper, and non-patient specific documents like policy
- * text.
+ * The document and format referenced. There may be multiple content
+ * element repetitions, each with a different format.
  */
 export interface DocumentReferenceContent {
 
@@ -261,12 +257,7 @@ export interface DocumentReferenceContent {
 }
 
 /**
- * A reference to a document of any kind for any purpose. Provides
- * metadata about the document so that the document can be discovered and
- * managed. The scope of a document is any seralized object with a
- * mime-type, so includes formal patient centric documents (CDA), cliical
- * notes, scanned paper, and non-patient specific documents like policy
- * text.
+ * The clinical context in which the document was prepared.
  */
 export interface DocumentReferenceContext {
 
@@ -351,12 +342,8 @@ export interface DocumentReferenceContext {
 }
 
 /**
- * A reference to a document of any kind for any purpose. Provides
- * metadata about the document so that the document can be discovered and
- * managed. The scope of a document is any seralized object with a
- * mime-type, so includes formal patient centric documents (CDA), cliical
- * notes, scanned paper, and non-patient specific documents like policy
- * text.
+ * Relationships that this document has with other document references
+ * that already exist.
  */
 export interface DocumentReferenceRelatesTo {
 

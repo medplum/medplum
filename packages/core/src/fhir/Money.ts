@@ -6,7 +6,8 @@
 import { Extension } from './Extension';
 
 /**
- * An amount of economic utility in some recognized currency.
+ * Base StructureDefinition for Money Type: An amount of economic utility
+ * in some recognized currency.
  */
 export interface Money {
 

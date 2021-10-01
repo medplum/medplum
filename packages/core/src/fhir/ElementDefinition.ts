@@ -37,7 +37,8 @@ import { TriggerDefinition } from './TriggerDefinition';
 import { UsageContext } from './UsageContext';
 
 /**
- * Captures constraints on each element within the resource, profile, or
+ * Base StructureDefinition for ElementDefinition Type: Captures
+ * constraints on each element within the resource, profile, or
  * extension.
  */
 export interface ElementDefinition {
@@ -2317,8 +2318,14 @@ export interface ElementDefinition {
 }
 
 /**
- * Captures constraints on each element within the resource, profile, or
- * extension.
+ * Information about the base definition of the element, provided to make
+ * it unnecessary for tools to trace the deviation of the element through
+ * the derived and related profiles. When the element definition is not
+ * the original definition of an element - i.g. either in a constraint on
+ * another type, or for elements from a super type in a snap shot - then
+ * the information in provided in the element definition may be different
+ * to the base definition. On the original definition of the element, it
+ * will be same.
  */
 export interface ElementDefinitionBase {
 
@@ -2339,29 +2346,11 @@ export interface ElementDefinitionBase {
   readonly extension?: Extension[];
 
   /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
    * The Path that identifies the base element - this matches the
    * ElementDefinition.path for that element. Across FHIR, there is only
    * one base definition of any element - that is, an element definition on
-   * a [[[StructureDefinition]]] without a StructureDefinition.base.
+   * a [StructureDefinition](structuredefinition.html#) without a
+   * StructureDefinition.base.
    */
   readonly path?: string;
 
@@ -2377,8 +2366,8 @@ export interface ElementDefinitionBase {
 }
 
 /**
- * Captures constraints on each element within the resource, profile, or
- * extension.
+ * Binds to a value set if this element is coded (code, Coding,
+ * CodeableConcept, Quantity), or the data types (string, uri).
  */
 export interface ElementDefinitionBinding {
 
@@ -2397,25 +2386,6 @@ export interface ElementDefinitionBinding {
    * as part of the definition of the extension.
    */
   readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
 
   /**
    * Indicates the degree of conformance expectations associated with this
@@ -2437,8 +2407,8 @@ export interface ElementDefinitionBinding {
 }
 
 /**
- * Captures constraints on each element within the resource, profile, or
- * extension.
+ * Formal constraints such as co-occurrence and other constraints that
+ * can be computationally evaluated within the context of the instance.
  */
 export interface ElementDefinitionConstraint {
 
@@ -2457,25 +2427,6 @@ export interface ElementDefinitionConstraint {
    * as part of the definition of the extension.
    */
   readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
 
   /**
    * Allows identification of which elements have their cardinalities
@@ -2521,62 +2472,8 @@ export interface ElementDefinitionConstraint {
 }
 
 /**
- * Captures constraints on each element within the resource, profile, or
- * extension.
- */
-export interface ElementDefinitionDiscriminator {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * How the element value is interpreted when discrimination is evaluated.
-   */
-  readonly type?: string;
-
-  /**
-   * A FHIRPath expression, using [the simple subset of
-   * FHIRPath](fhirpath.html#simple), that is used to identify the element
-   * on which discrimination is based.
-   */
-  readonly path?: string;
-}
-
-/**
- * Captures constraints on each element within the resource, profile, or
- * extension.
+ * A sample value for this element demonstrating the type of information
+ * that would typically be found in the element.
  */
 export interface ElementDefinitionExample {
 
@@ -2595,25 +2492,6 @@ export interface ElementDefinitionExample {
    * as part of the definition of the extension.
    */
   readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
 
   /**
    * Describes the purpose of this example amoung the set of examples.
@@ -2922,8 +2800,8 @@ export interface ElementDefinitionExample {
 }
 
 /**
- * Captures constraints on each element within the resource, profile, or
- * extension.
+ * Identifies a concept from an external specification that roughly
+ * corresponds to this element.
  */
 export interface ElementDefinitionMapping {
 
@@ -2942,25 +2820,6 @@ export interface ElementDefinitionMapping {
    * as part of the definition of the extension.
    */
   readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
 
   /**
    * An internal reference to the definition of a mapping.
@@ -2985,8 +2844,14 @@ export interface ElementDefinitionMapping {
 }
 
 /**
- * Captures constraints on each element within the resource, profile, or
- * extension.
+ * Indicates that the element is sliced into a set of alternative
+ * definitions (i.e. in a structure definition, there are multiple
+ * different constraints on a single element in the base resource).
+ * Slicing can be used in any resource that has cardinality ..* on the
+ * base resource, or any resource with a choice of types. The set of
+ * slices is any elements that come after this in the element sequence
+ * that have the same path, until a shorter path occurs (the shorter path
+ * terminates the set).
  */
 export interface ElementDefinitionSlicing {
 
@@ -3007,32 +2872,13 @@ export interface ElementDefinitionSlicing {
   readonly extension?: Extension[];
 
   /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
    * Designates which child elements are used to discriminate between the
    * slices when processing an instance. If one or more discriminators are
    * provided, the value of the child elements in the instance data SHALL
    * completely distinguish which slice the element in the resource matches
    * based on the allowed values for those elements in each of the slices.
    */
-  readonly discriminator?: ElementDefinitionDiscriminator[];
+  readonly discriminator?: ElementDefinitionSlicingDiscriminator[];
 
   /**
    * A human-readable text description of how the slicing works. If there
@@ -3057,10 +2903,13 @@ export interface ElementDefinitionSlicing {
 }
 
 /**
- * Captures constraints on each element within the resource, profile, or
- * extension.
+ * Designates which child elements are used to discriminate between the
+ * slices when processing an instance. If one or more discriminators are
+ * provided, the value of the child elements in the instance data SHALL
+ * completely distinguish which slice the element in the resource matches
+ * based on the allowed values for those elements in each of the slices.
  */
-export interface ElementDefinitionType {
+export interface ElementDefinitionSlicingDiscriminator {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -3079,23 +2928,39 @@ export interface ElementDefinitionType {
   readonly extension?: Extension[];
 
   /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
+   * How the element value is interpreted when discrimination is evaluated.
    */
-  readonly modifierExtension?: Extension[];
+  readonly type?: string;
+
+  /**
+   * A FHIRPath expression, using [the simple subset of
+   * FHIRPath](fhirpath.html#simple), that is used to identify the element
+   * on which discrimination is based.
+   */
+  readonly path?: string;
+}
+
+/**
+ * The data type or resource that the value of this element is permitted
+ * to be.
+ */
+export interface ElementDefinitionType {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
 
   /**
    * URL of Data type or Resource that is a(or the) type used for this

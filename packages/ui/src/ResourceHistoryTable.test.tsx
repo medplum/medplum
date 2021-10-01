@@ -34,7 +34,7 @@ const historyBundle: Bundle = {
         resourceType: 'Patient',
         id: patientId,
         meta: {
-          lastUpdated: new Date(),
+          lastUpdated: new Date().toISOString(),
           versionId: version2Id,
           author: {
             reference: 'Practitioner/456'

@@ -8,9 +8,9 @@ import { Extension } from './Extension';
 import { Period } from './Period';
 
 /**
- * The marketing status describes the date when a medicinal product is
- * actually put on the market or the date as of which it is no longer
- * available.
+ * Base StructureDefinition for MarketingStatus Type: The marketing
+ * status describes the date when a medicinal product is actually put on
+ * the market or the date as of which it is no longer available.
  */
 export interface MarketingStatus {
 
@@ -92,5 +92,5 @@ export interface MarketingStatus {
    * refers to the release of the Medicinal Product into the distribution
    * chain.
    */
-  readonly restoreDate?: Date | string;
+  readonly restoreDate?: string;
 }

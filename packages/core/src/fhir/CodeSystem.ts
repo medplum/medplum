@@ -158,7 +158,7 @@ export interface CodeSystem {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the code system changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the code
@@ -276,9 +276,9 @@ export interface CodeSystem {
 }
 
 /**
- * The CodeSystem resource is used to declare the existence of and
- * describe a code system or code system supplement and its key
- * properties, and optionally define a part or all of its content.
+ * Concepts that are in the code system. The concept definitions are
+ * inherently hierarchical, but the definitions must be consulted to
+ * determine what the meanings of the hierarchical relationships are.
  */
 export interface CodeSystemConcept {
 
@@ -341,12 +341,12 @@ export interface CodeSystemConcept {
    * Additional representations for the concept - other languages, aliases,
    * specialized purposes, used for particular purposes, etc.
    */
-  readonly designation?: CodeSystemDesignation[];
+  readonly designation?: CodeSystemConceptDesignation[];
 
   /**
    * A property value for this concept.
    */
-  readonly property?: CodeSystemProperty1[];
+  readonly property?: CodeSystemConceptProperty[];
 
   /**
    * Defines children of a concept to produce a hierarchy of concepts. The
@@ -357,11 +357,10 @@ export interface CodeSystemConcept {
 }
 
 /**
- * The CodeSystem resource is used to declare the existence of and
- * describe a code system or code system supplement and its key
- * properties, and optionally define a part or all of its content.
+ * Additional representations for the concept - other languages, aliases,
+ * specialized purposes, used for particular purposes, etc.
  */
-export interface CodeSystemDesignation {
+export interface CodeSystemConceptDesignation {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -415,145 +414,9 @@ export interface CodeSystemDesignation {
 }
 
 /**
- * The CodeSystem resource is used to declare the existence of and
- * describe a code system or code system supplement and its key
- * properties, and optionally define a part or all of its content.
+ * A property value for this concept.
  */
-export interface CodeSystemFilter {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The code that identifies this filter when it is used as a filter in
-   * [[[ValueSet]]].compose.include.filter.
-   */
-  readonly code?: string;
-
-  /**
-   * A description of how or why the filter is used.
-   */
-  readonly description?: string;
-
-  /**
-   * A list of operators that can be used with the filter.
-   */
-  readonly operator?: string[];
-
-  /**
-   * A description of what the value for the filter should be.
-   */
-  readonly value?: string;
-}
-
-/**
- * The CodeSystem resource is used to declare the existence of and
- * describe a code system or code system supplement and its key
- * properties, and optionally define a part or all of its content.
- */
-export interface CodeSystemProperty {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * A code that is used to identify the property. The code is used
-   * internally (in CodeSystem.concept.property.code) and also externally,
-   * such as in property filters.
-   */
-  readonly code?: string;
-
-  /**
-   * Reference to the formal meaning of the property. One possible source
-   * of meaning is the [Concept
-   * Properties](codesystem-concept-properties.html) code system.
-   */
-  readonly uri?: string;
-
-  /**
-   * A description of the property- why it is defined, and how its value
-   * might be used.
-   */
-  readonly description?: string;
-
-  /**
-   * The type of the property value. Properties of type &quot;code&quot; contain a
-   * code defined by the code system (e.g. a reference to another defined
-   * concept).
-   */
-  readonly type?: string;
-}
-
-/**
- * The CodeSystem resource is used to declare the existence of and
- * describe a code system or code system supplement and its key
- * properties, and optionally define a part or all of its content.
- */
-export interface CodeSystemProperty1 {
+export interface CodeSystemConceptProperty {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -629,4 +492,136 @@ export interface CodeSystemProperty1 {
    * The value of this property.
    */
   readonly valueDecimal?: number;
+}
+
+/**
+ * A filter that can be used in a value set compose statement when
+ * selecting concepts using a filter.
+ */
+export interface CodeSystemFilter {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The code that identifies this filter when it is used as a filter in
+   * [ValueSet](valueset.html#).compose.include.filter.
+   */
+  readonly code?: string;
+
+  /**
+   * A description of how or why the filter is used.
+   */
+  readonly description?: string;
+
+  /**
+   * A list of operators that can be used with the filter.
+   */
+  readonly operator?: string[];
+
+  /**
+   * A description of what the value for the filter should be.
+   */
+  readonly value?: string;
+}
+
+/**
+ * A property defines an additional slot through which additional
+ * information can be provided about a concept.
+ */
+export interface CodeSystemProperty {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * A code that is used to identify the property. The code is used
+   * internally (in CodeSystem.concept.property.code) and also externally,
+   * such as in property filters.
+   */
+  readonly code?: string;
+
+  /**
+   * Reference to the formal meaning of the property. One possible source
+   * of meaning is the [Concept
+   * Properties](codesystem-concept-properties.html) code system.
+   */
+  readonly uri?: string;
+
+  /**
+   * A description of the property- why it is defined, and how its value
+   * might be used.
+   */
+  readonly description?: string;
+
+  /**
+   * The type of the property value. Properties of type &quot;code&quot; contain a
+   * code defined by the code system (e.g. a reference to another defined
+   * concept).
+   */
+  readonly type?: string;
 }

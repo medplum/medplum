@@ -247,7 +247,7 @@ export interface ServiceRequest {
   /**
    * When the request transitioned to being actionable.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The individual who initiated the request and has responsibility for

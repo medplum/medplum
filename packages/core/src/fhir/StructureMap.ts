@@ -180,7 +180,7 @@ export interface StructureMap {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the structure map changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -248,60 +248,8 @@ export interface StructureMap {
 }
 
 /**
- * A Map of relationships between 2 structures that can be used to
- * transform data.
- */
-export interface StructureMapDependent {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Name of a rule or group to apply.
-   */
-  readonly name?: string;
-
-  /**
-   * Variable to pass to the rule or group.
-   */
-  readonly variable?: string[];
-}
-
-/**
- * A Map of relationships between 2 structures that can be used to
- * transform data.
+ * Organizes the mapping into manageable chunks for human review/ease of
+ * maintenance.
  */
 export interface StructureMapGroup {
 
@@ -366,19 +314,19 @@ export interface StructureMapGroup {
    * A name assigned to an instance of data. The instance must be provided
    * when the mapping is invoked.
    */
-  readonly input?: StructureMapInput[];
+  readonly input?: StructureMapGroupInput[];
 
   /**
    * Transform Rule from source to target.
    */
-  readonly rule?: StructureMapRule[];
+  readonly rule?: StructureMapGroupRule[];
 }
 
 /**
- * A Map of relationships between 2 structures that can be used to
- * transform data.
+ * A name assigned to an instance of data. The instance must be provided
+ * when the mapping is invoked.
  */
-export interface StructureMapInput {
+export interface StructureMapGroupInput {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -437,77 +385,9 @@ export interface StructureMapInput {
 }
 
 /**
- * A Map of relationships between 2 structures that can be used to
- * transform data.
+ * Transform Rule from source to target.
  */
-export interface StructureMapParameter {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Parameter value - variable or literal.
-   */
-  readonly valueId?: string;
-
-  /**
-   * Parameter value - variable or literal.
-   */
-  readonly valueString?: string;
-
-  /**
-   * Parameter value - variable or literal.
-   */
-  readonly valueBoolean?: boolean;
-
-  /**
-   * Parameter value - variable or literal.
-   */
-  readonly valueInteger?: number;
-
-  /**
-   * Parameter value - variable or literal.
-   */
-  readonly valueDecimal?: number;
-}
-
-/**
- * A Map of relationships between 2 structures that can be used to
- * transform data.
- */
-export interface StructureMapRule {
+export interface StructureMapGroupRule {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -552,22 +432,22 @@ export interface StructureMapRule {
   /**
    * Source inputs to the mapping.
    */
-  readonly source?: StructureMapSource[];
+  readonly source?: StructureMapGroupRuleSource[];
 
   /**
    * Content to create because of this mapping rule.
    */
-  readonly target?: StructureMapTarget[];
+  readonly target?: StructureMapGroupRuleTarget[];
 
   /**
    * Rules contained in this rule.
    */
-  readonly rule?: StructureMapRule[];
+  readonly rule?: StructureMapGroupRule[];
 
   /**
    * Which other rules to apply in the context of this rule.
    */
-  readonly dependent?: StructureMapDependent[];
+  readonly dependent?: StructureMapGroupRuleDependent[];
 
   /**
    * Documentation for this instance of data.
@@ -576,10 +456,60 @@ export interface StructureMapRule {
 }
 
 /**
- * A Map of relationships between 2 structures that can be used to
- * transform data.
+ * Which other rules to apply in the context of this rule.
  */
-export interface StructureMapSource {
+export interface StructureMapGroupRuleDependent {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Name of a rule or group to apply.
+   */
+  readonly name?: string;
+
+  /**
+   * Variable to pass to the rule or group.
+   */
+  readonly variable?: string[];
+}
+
+/**
+ * Source inputs to the mapping.
+ */
+export interface StructureMapGroupRuleSource {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -924,72 +854,9 @@ export interface StructureMapSource {
 }
 
 /**
- * A Map of relationships between 2 structures that can be used to
- * transform data.
+ * Content to create because of this mapping rule.
  */
-export interface StructureMapStructure {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The canonical reference to the structure.
-   */
-  readonly url?: string;
-
-  /**
-   * How the referenced structure is used in this mapping.
-   */
-  readonly mode?: string;
-
-  /**
-   * The name used for this type in the map.
-   */
-  readonly alias?: string;
-
-  /**
-   * Documentation that describes how the structure is used in the mapping.
-   */
-  readonly documentation?: string;
-}
-
-/**
- * A Map of relationships between 2 structures that can be used to
- * transform data.
- */
-export interface StructureMapTarget {
+export interface StructureMapGroupRuleTarget {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -1064,5 +931,134 @@ export interface StructureMapTarget {
   /**
    * Parameters to the transform.
    */
-  readonly parameter?: StructureMapParameter[];
+  readonly parameter?: StructureMapGroupRuleTargetParameter[];
+}
+
+/**
+ * Parameters to the transform.
+ */
+export interface StructureMapGroupRuleTargetParameter {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Parameter value - variable or literal.
+   */
+  readonly valueId?: string;
+
+  /**
+   * Parameter value - variable or literal.
+   */
+  readonly valueString?: string;
+
+  /**
+   * Parameter value - variable or literal.
+   */
+  readonly valueBoolean?: boolean;
+
+  /**
+   * Parameter value - variable or literal.
+   */
+  readonly valueInteger?: number;
+
+  /**
+   * Parameter value - variable or literal.
+   */
+  readonly valueDecimal?: number;
+}
+
+/**
+ * A structure definition used by this map. The structure definition may
+ * describe instances that are converted, or the instances that are
+ * produced.
+ */
+export interface StructureMapStructure {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The canonical reference to the structure.
+   */
+  readonly url?: string;
+
+  /**
+   * How the referenced structure is used in this mapping.
+   */
+  readonly mode?: string;
+
+  /**
+   * The name used for this type in the map.
+   */
+  readonly alias?: string;
+
+  /**
+   * Documentation that describes how the structure is used in the mapping.
+   */
+  readonly documentation?: string;
 }

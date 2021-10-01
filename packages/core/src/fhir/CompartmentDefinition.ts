@@ -142,7 +142,7 @@ export interface CompartmentDefinition {
    * change when the substantive content of the compartment definition
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -195,8 +195,7 @@ export interface CompartmentDefinition {
 }
 
 /**
- * A compartment definition that defines how resources are accessed on a
- * server.
+ * Information about how a resource is related to the compartment.
  */
 export interface CompartmentDefinitionResource {
 

@@ -108,7 +108,7 @@ export interface VisionPrescription {
   /**
    * The date this resource was created.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * A resource reference to the person to whom the vision prescription
@@ -126,7 +126,7 @@ export interface VisionPrescription {
   /**
    * The date (and perhaps time) when the prescription was written.
    */
-  readonly dateWritten?: Date | string;
+  readonly dateWritten?: string;
 
   /**
    * The healthcare professional responsible for authorizing the
@@ -142,8 +142,8 @@ export interface VisionPrescription {
 }
 
 /**
- * An authorization for the provision of glasses and/or contact lenses to
- * a patient.
+ * Contain the details of  the individual lens specifications and serves
+ * as the authorization for the fullfillment by certified professionals.
  */
 export interface VisionPrescriptionLensSpecification {
 
@@ -211,7 +211,7 @@ export interface VisionPrescriptionLensSpecification {
   /**
    * Allows for adjustment on two axis.
    */
-  readonly prism?: VisionPrescriptionPrism[];
+  readonly prism?: VisionPrescriptionLensSpecificationPrism[];
 
   /**
    * Power adjustment for multifocal lenses measured in dioptres (0.25
@@ -256,10 +256,9 @@ export interface VisionPrescriptionLensSpecification {
 }
 
 /**
- * An authorization for the provision of glasses and/or contact lenses to
- * a patient.
+ * Allows for adjustment on two axis.
  */
-export interface VisionPrescriptionPrism {
+export interface VisionPrescriptionLensSpecificationPrism {
 
   /**
    * Unique id for the element within a resource (for internal references).

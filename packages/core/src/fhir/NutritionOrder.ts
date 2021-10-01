@@ -150,7 +150,7 @@ export interface NutritionOrder {
   /**
    * The date and time that this nutrition order was requested.
    */
-  readonly dateTime?: Date | string;
+  readonly dateTime?: string;
 
   /**
    * The practitioner that holds legal responsibility for ordering the
@@ -214,74 +214,8 @@ export interface NutritionOrder {
 }
 
 /**
- * A request to supply a diet, formula feeding (enteral) or oral
- * nutritional supplement to a patient/resident.
- */
-export interface NutritionOrderAdministration {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The time period and frequency at which the enteral formula should be
-   * delivered to the patient.
-   */
-  readonly schedule?: Timing;
-
-  /**
-   * The volume of formula to provide to the patient per the specified
-   * administration schedule.
-   */
-  readonly quantity?: Quantity;
-
-  /**
-   * The rate of administration of formula via a feeding pump, e.g. 60 mL
-   * per hour, according to the specified schedule.
-   */
-  readonly rateQuantity?: Quantity;
-
-  /**
-   * The rate of administration of formula via a feeding pump, e.g. 60 mL
-   * per hour, according to the specified schedule.
-   */
-  readonly rateRatio?: Ratio;
-}
-
-/**
- * A request to supply a diet, formula feeding (enteral) or oral
- * nutritional supplement to a patient/resident.
+ * Feeding provided through the gastrointestinal tract via a tube,
+ * catheter, or stoma that delivers nutrition distal to the oral cavity.
  */
 export interface NutritionOrderEnteralFormula {
 
@@ -368,7 +302,7 @@ export interface NutritionOrderEnteralFormula {
    * this would be an instruction to increase the rate of continuous
    * feeding every 2 hours.
    */
-  readonly administration?: NutritionOrderAdministration[];
+  readonly administration?: NutritionOrderEnteralFormulaAdministration[];
 
   /**
    * The maximum total quantity of formula that may be administered to a
@@ -384,10 +318,13 @@ export interface NutritionOrderEnteralFormula {
 }
 
 /**
- * A request to supply a diet, formula feeding (enteral) or oral
- * nutritional supplement to a patient/resident.
+ * Formula administration instructions as structured data.  This
+ * repeating structure allows for changing the administration rate or
+ * volume over time for both bolus and continuous feeding.  An example of
+ * this would be an instruction to increase the rate of continuous
+ * feeding every 2 hours.
  */
-export interface NutritionOrderNutrient {
+export interface NutritionOrderEnteralFormulaAdministration {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -425,19 +362,32 @@ export interface NutritionOrderNutrient {
   readonly modifierExtension?: Extension[];
 
   /**
-   * The nutrient that is being modified such as carbohydrate or sodium.
+   * The time period and frequency at which the enteral formula should be
+   * delivered to the patient.
    */
-  readonly modifier?: CodeableConcept;
+  readonly schedule?: Timing;
 
   /**
-   * The quantity of the specified nutrient to include in diet.
+   * The volume of formula to provide to the patient per the specified
+   * administration schedule.
    */
-  readonly amount?: Quantity;
+  readonly quantity?: Quantity;
+
+  /**
+   * The rate of administration of formula via a feeding pump, e.g. 60 mL
+   * per hour, according to the specified schedule.
+   */
+  readonly rateQuantity?: Quantity;
+
+  /**
+   * The rate of administration of formula via a feeding pump, e.g. 60 mL
+   * per hour, according to the specified schedule.
+   */
+  readonly rateRatio?: Ratio;
 }
 
 /**
- * A request to supply a diet, formula feeding (enteral) or oral
- * nutritional supplement to a patient/resident.
+ * Diet given orally in contrast to enteral (tube) feeding.
  */
 export interface NutritionOrderOralDiet {
 
@@ -494,13 +444,13 @@ export interface NutritionOrderOralDiet {
    * (for example carbohydrate, fiber or sodium) required for the oral
    * diet.
    */
-  readonly nutrient?: NutritionOrderNutrient[];
+  readonly nutrient?: NutritionOrderOralDietNutrient[];
 
   /**
    * Class that describes any texture modifications required for the
    * patient to safely consume various types of solid foods.
    */
-  readonly texture?: NutritionOrderTexture[];
+  readonly texture?: NutritionOrderOralDietTexture[];
 
   /**
    * The required consistency (e.g. honey-thick, nectar-thick, thin,
@@ -516,8 +466,115 @@ export interface NutritionOrderOralDiet {
 }
 
 /**
- * A request to supply a diet, formula feeding (enteral) or oral
- * nutritional supplement to a patient/resident.
+ * Class that defines the quantity and type of nutrient modifications
+ * (for example carbohydrate, fiber or sodium) required for the oral
+ * diet.
+ */
+export interface NutritionOrderOralDietNutrient {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The nutrient that is being modified such as carbohydrate or sodium.
+   */
+  readonly modifier?: CodeableConcept;
+
+  /**
+   * The quantity of the specified nutrient to include in diet.
+   */
+  readonly amount?: Quantity;
+}
+
+/**
+ * Class that describes any texture modifications required for the
+ * patient to safely consume various types of solid foods.
+ */
+export interface NutritionOrderOralDietTexture {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Any texture modifications (for solid foods) that should be made, e.g.
+   * easy to chew, chopped, ground, and pureed.
+   */
+  readonly modifier?: CodeableConcept;
+
+  /**
+   * The food type(s) (e.g. meats, all foods)  that the texture
+   * modification applies to.  This could be all foods types.
+   */
+  readonly foodType?: CodeableConcept;
+}
+
+/**
+ * Oral nutritional products given in order to add further nutritional
+ * value to the patient's diet.
  */
 export interface NutritionOrderSupplement {
 
@@ -585,58 +642,4 @@ export interface NutritionOrderSupplement {
    * oral supplement.
    */
   readonly instruction?: string;
-}
-
-/**
- * A request to supply a diet, formula feeding (enteral) or oral
- * nutritional supplement to a patient/resident.
- */
-export interface NutritionOrderTexture {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Any texture modifications (for solid foods) that should be made, e.g.
-   * easy to chew, chopped, ground, and pureed.
-   */
-  readonly modifier?: CodeableConcept;
-
-  /**
-   * The food type(s) (e.g. meats, all foods)  that the texture
-   * modification applies to.  This could be all foods types.
-   */
-  readonly foodType?: CodeableConcept;
 }

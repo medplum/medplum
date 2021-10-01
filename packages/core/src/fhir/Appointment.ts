@@ -178,12 +178,12 @@ export interface Appointment {
   /**
    * Date/Time that the appointment is to take place.
    */
-  readonly start?: Date | string;
+  readonly start?: string;
 
   /**
    * Date/Time that the appointment is to conclude.
    */
-  readonly end?: Date | string;
+  readonly end?: string;
 
   /**
    * Number of minutes that the appointment is to take. This can be less
@@ -208,7 +208,7 @@ export interface Appointment {
    * could have been before the resource was created on the FHIR server,
    * and should remain unchanged over the lifespan of the appointment.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * Additional comments about the appointment.
@@ -247,9 +247,7 @@ export interface Appointment {
 }
 
 /**
- * A booking of a healthcare event among patient(s), practitioner(s),
- * related person(s) and/or device(s) for a specific date/time. This may
- * result in one or more Encounter(s).
+ * List of participants involved in the appointment.
  */
 export interface AppointmentParticipant {
 

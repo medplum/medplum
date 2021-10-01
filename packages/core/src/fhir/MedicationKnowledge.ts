@@ -231,7 +231,7 @@ export interface MedicationKnowledge {
 }
 
 /**
- * Information about a medication that is used to support knowledge.
+ * Guidelines for the administration of the medication.
  */
 export interface MedicationKnowledgeAdministrationGuidelines {
 
@@ -273,7 +273,7 @@ export interface MedicationKnowledgeAdministrationGuidelines {
   /**
    * Dosage for the medication for the specific guidelines.
    */
-  readonly dosage?: MedicationKnowledgeDosage[];
+  readonly dosage?: MedicationKnowledgeAdministrationGuidelinesDosage[];
 
   /**
    * Indication for use that apply to the specific administration
@@ -291,11 +291,122 @@ export interface MedicationKnowledgeAdministrationGuidelines {
    * Characteristics of the patient that are relevant to the administration
    * guidelines (for example, height, weight, gender, etc.).
    */
-  readonly patientCharacteristics?: MedicationKnowledgePatientCharacteristics[];
+  readonly patientCharacteristics?: MedicationKnowledgeAdministrationGuidelinesPatientCharacteristics[];
 }
 
 /**
- * Information about a medication that is used to support knowledge.
+ * Dosage for the medication for the specific guidelines.
+ */
+export interface MedicationKnowledgeAdministrationGuidelinesDosage {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The type of dosage (for example, prophylaxis, maintenance,
+   * therapeutic, etc.).
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * Dosage for the medication for the specific guidelines.
+   */
+  readonly dosage?: Dosage[];
+}
+
+/**
+ * Characteristics of the patient that are relevant to the administration
+ * guidelines (for example, height, weight, gender, etc.).
+ */
+export interface MedicationKnowledgeAdministrationGuidelinesPatientCharacteristics {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Specific characteristic that is relevant to the administration
+   * guideline (e.g. height, weight, gender).
+   */
+  readonly characteristicCodeableConcept?: CodeableConcept;
+
+  /**
+   * Specific characteristic that is relevant to the administration
+   * guideline (e.g. height, weight, gender).
+   */
+  readonly characteristicQuantity?: Quantity;
+
+  /**
+   * The specific characteristic (e.g. height, weight, gender, etc.).
+   */
+  readonly value?: string[];
+}
+
+/**
+ * The price of the medication.
  */
 export interface MedicationKnowledgeCost {
 
@@ -352,59 +463,8 @@ export interface MedicationKnowledgeCost {
 }
 
 /**
- * Information about a medication that is used to support knowledge.
- */
-export interface MedicationKnowledgeDosage {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The type of dosage (for example, prophylaxis, maintenance,
-   * therapeutic, etc.).
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * Dosage for the medication for the specific guidelines.
-   */
-  readonly dosage?: Dosage[];
-}
-
-/**
- * Information about a medication that is used to support knowledge.
+ * Specifies descriptive properties of the medicine, such as color,
+ * shape, imprints, etc.
  */
 export interface MedicationKnowledgeDrugCharacteristic {
 
@@ -471,7 +531,7 @@ export interface MedicationKnowledgeDrugCharacteristic {
 }
 
 /**
- * Information about a medication that is used to support knowledge.
+ * Identifies a particular constituent of interest in the product.
  */
 export interface MedicationKnowledgeIngredient {
 
@@ -537,7 +597,8 @@ export interface MedicationKnowledgeIngredient {
 }
 
 /**
- * Information about a medication that is used to support knowledge.
+ * The time course of drug absorption, distribution, metabolism and
+ * excretion of a medication from the body.
  */
 export interface MedicationKnowledgeKinetics {
 
@@ -594,58 +655,8 @@ export interface MedicationKnowledgeKinetics {
 }
 
 /**
- * Information about a medication that is used to support knowledge.
- */
-export interface MedicationKnowledgeMaxDispense {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The maximum number of units of the medication that can be dispensed.
-   */
-  readonly quantity?: Quantity;
-
-  /**
-   * The period that applies to the maximum number of units.
-   */
-  readonly period?: Duration;
-}
-
-/**
- * Information about a medication that is used to support knowledge.
+ * Categorization of the medication within a formulary or classification
+ * system.
  */
 export interface MedicationKnowledgeMedicineClassification {
 
@@ -698,7 +709,7 @@ export interface MedicationKnowledgeMedicineClassification {
 }
 
 /**
- * Information about a medication that is used to support knowledge.
+ * The program under which the medication is reviewed.
  */
 export interface MedicationKnowledgeMonitoringProgram {
 
@@ -749,7 +760,7 @@ export interface MedicationKnowledgeMonitoringProgram {
 }
 
 /**
- * Information about a medication that is used to support knowledge.
+ * Associated documentation about the medication.
  */
 export interface MedicationKnowledgeMonograph {
 
@@ -801,7 +812,7 @@ export interface MedicationKnowledgeMonograph {
 }
 
 /**
- * Information about a medication that is used to support knowledge.
+ * Information that only applies to packages (not products).
  */
 export interface MedicationKnowledgePackaging {
 
@@ -853,65 +864,7 @@ export interface MedicationKnowledgePackaging {
 }
 
 /**
- * Information about a medication that is used to support knowledge.
- */
-export interface MedicationKnowledgePatientCharacteristics {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Specific characteristic that is relevant to the administration
-   * guideline (e.g. height, weight, gender).
-   */
-  readonly characteristicCodeableConcept?: CodeableConcept;
-
-  /**
-   * Specific characteristic that is relevant to the administration
-   * guideline (e.g. height, weight, gender).
-   */
-  readonly characteristicQuantity?: Quantity;
-
-  /**
-   * The specific characteristic (e.g. height, weight, gender, etc.).
-   */
-  readonly value?: string[];
-}
-
-/**
- * Information about a medication that is used to support knowledge.
+ * Regulatory information about a medication.
  */
 export interface MedicationKnowledgeRegulatory {
 
@@ -959,22 +912,173 @@ export interface MedicationKnowledgeRegulatory {
    * Specifies if changes are allowed when dispensing a medication from a
    * regulatory perspective.
    */
-  readonly substitution?: MedicationKnowledgeSubstitution[];
+  readonly substitution?: MedicationKnowledgeRegulatorySubstitution[];
 
   /**
    * Specifies the schedule of a medication in jurisdiction.
    */
-  readonly schedule?: MedicationKnowledgeSchedule[];
+  readonly schedule?: MedicationKnowledgeRegulatorySchedule[];
 
   /**
    * The maximum number of units of the medication that can be dispensed in
    * a period.
    */
-  readonly maxDispense?: MedicationKnowledgeMaxDispense;
+  readonly maxDispense?: MedicationKnowledgeRegulatoryMaxDispense;
 }
 
 /**
- * Information about a medication that is used to support knowledge.
+ * The maximum number of units of the medication that can be dispensed in
+ * a period.
+ */
+export interface MedicationKnowledgeRegulatoryMaxDispense {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The maximum number of units of the medication that can be dispensed.
+   */
+  readonly quantity?: Quantity;
+
+  /**
+   * The period that applies to the maximum number of units.
+   */
+  readonly period?: Duration;
+}
+
+/**
+ * Specifies the schedule of a medication in jurisdiction.
+ */
+export interface MedicationKnowledgeRegulatorySchedule {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Specifies the specific drug schedule.
+   */
+  readonly schedule?: CodeableConcept;
+}
+
+/**
+ * Specifies if changes are allowed when dispensing a medication from a
+ * regulatory perspective.
+ */
+export interface MedicationKnowledgeRegulatorySubstitution {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Specifies the type of substitution allowed.
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * Specifies if regulation allows for changes in the medication when
+   * dispensing.
+   */
+  readonly allowed?: boolean;
+}
+
+/**
+ * Associated or related knowledge about a medication.
  */
 export interface MedicationKnowledgeRelatedMedicationKnowledge {
 
@@ -1022,102 +1126,4 @@ export interface MedicationKnowledgeRelatedMedicationKnowledge {
    * Associated documentation about the associated medication knowledge.
    */
   readonly reference?: Reference[];
-}
-
-/**
- * Information about a medication that is used to support knowledge.
- */
-export interface MedicationKnowledgeSchedule {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Specifies the specific drug schedule.
-   */
-  readonly schedule?: CodeableConcept;
-}
-
-/**
- * Information about a medication that is used to support knowledge.
- */
-export interface MedicationKnowledgeSubstitution {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Specifies the type of substitution allowed.
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * Specifies if regulation allows for changes in the medication when
-   * dispensing.
-   */
-  readonly allowed?: boolean;
 }

@@ -19,7 +19,7 @@ export const Basic = () => (
       resource={{
         resourceType: 'Communication',
         id: '123',
-        meta: { lastUpdated: new Date('2021-01-01T12:00:00Z') }
+        meta: { lastUpdated: '2021-01-01T12:00:00Z' }
       }}>
       <div style={{ padding: '2px 16px' }}>
         <p>Hello world</p>
@@ -30,7 +30,7 @@ export const Basic = () => (
       resource={{
         resourceType: 'Media',
         id: '123',
-        meta: { lastUpdated: new Date('2021-01-01T12:00:00Z') }
+        meta: { lastUpdated: '2021-01-01T12:00:00Z' }
       }}>
       <img src="https://storybook.medplum.com/assets/papercut.jpg" alt="Papercut" title="Papercut" />
     </TimelineItem>
@@ -39,7 +39,7 @@ export const Basic = () => (
       resource={{
         resourceType: 'Media',
         id: '123',
-        meta: { lastUpdated: new Date('2021-01-01T12:00:00Z') }
+        meta: { lastUpdated: '2021-01-01T12:00:00Z' }
       }}>
       <video src="https://storybook.medplum.com/assets/injury.mp4" controls></video>
     </TimelineItem>

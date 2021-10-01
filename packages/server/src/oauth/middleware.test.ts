@@ -34,7 +34,7 @@ describe('Auth middleware', () => {
       resourceType: 'Login',
       client: createReference(client),
       profile: createReference(client),
-      authTime: new Date(),
+      authTime: new Date().toISOString(),
       scope
     });
 
@@ -78,7 +78,7 @@ describe('Auth middleware', () => {
       resourceType: 'Login',
       client: createReference(client),
       profile: createReference(client),
-      authTime: new Date(),
+      authTime: new Date().toISOString(),
       revoked: true,
       scope
     });

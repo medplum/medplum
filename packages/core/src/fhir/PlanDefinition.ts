@@ -196,7 +196,7 @@ export interface PlanDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the plan definition changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the plan
@@ -255,14 +255,14 @@ export interface PlanDefinition {
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: Date | string;
+  readonly approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: Date | string;
+  readonly lastReviewDate?: string;
 
   /**
    * The period during which the plan definition content was or is planned
@@ -328,11 +328,7 @@ export interface PlanDefinition {
 }
 
 /**
- * This resource allows for the definition of various types of plans as a
- * sharable, consumable, and executable artifact. The resource is general
- * enough to support the description of a broad range of clinical
- * artifacts such as clinical decision support rules, order sets and
- * protocols.
+ * An action or group of actions to be taken as part of the plan.
  */
 export interface PlanDefinitionAction {
 
@@ -447,7 +443,7 @@ export interface PlanDefinitionAction {
    * An expression that describes applicability criteria or start/stop
    * conditions for the action.
    */
-  readonly condition?: PlanDefinitionCondition[];
+  readonly condition?: PlanDefinitionActionCondition[];
 
   /**
    * Defines input data requirements for the action.
@@ -463,7 +459,7 @@ export interface PlanDefinitionAction {
    * A relationship to another action such as &quot;before&quot; or &quot;30-60 minutes
    * after start of&quot;.
    */
-  readonly relatedAction?: PlanDefinitionRelatedAction[];
+  readonly relatedAction?: PlanDefinitionActionRelatedAction[];
 
   /**
    * An optional value describing when the action should be performed.
@@ -498,7 +494,7 @@ export interface PlanDefinitionAction {
   /**
    * Indicates who should participate in performing the action described.
    */
-  readonly participant?: PlanDefinitionParticipant[];
+  readonly participant?: PlanDefinitionActionParticipant[];
 
   /**
    * The type of action to perform (create, update, remove).
@@ -558,7 +554,7 @@ export interface PlanDefinitionAction {
    * specify an expression that calculated the weight, and the path on the
    * resource that would contain the result.
    */
-  readonly dynamicValue?: PlanDefinitionDynamicValue[];
+  readonly dynamicValue?: PlanDefinitionActionDynamicValue[];
 
   /**
    * Sub actions that are contained within the action. The behavior of this
@@ -570,13 +566,10 @@ export interface PlanDefinitionAction {
 }
 
 /**
- * This resource allows for the definition of various types of plans as a
- * sharable, consumable, and executable artifact. The resource is general
- * enough to support the description of a broad range of clinical
- * artifacts such as clinical decision support rules, order sets and
- * protocols.
+ * An expression that describes applicability criteria or start/stop
+ * conditions for the action.
  */
-export interface PlanDefinitionCondition {
+export interface PlanDefinitionActionCondition {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -626,13 +619,13 @@ export interface PlanDefinitionCondition {
 }
 
 /**
- * This resource allows for the definition of various types of plans as a
- * sharable, consumable, and executable artifact. The resource is general
- * enough to support the description of a broad range of clinical
- * artifacts such as clinical decision support rules, order sets and
- * protocols.
+ * Customizations that should be applied to the statically defined
+ * resource. For example, if the dosage of a medication must be computed
+ * based on the patient's weight, a customization would be used to
+ * specify an expression that calculated the weight, and the path on the
+ * resource that would contain the result.
  */
-export interface PlanDefinitionDynamicValue {
+export interface PlanDefinitionActionDynamicValue {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -689,11 +682,126 @@ export interface PlanDefinitionDynamicValue {
 }
 
 /**
- * This resource allows for the definition of various types of plans as a
- * sharable, consumable, and executable artifact. The resource is general
- * enough to support the description of a broad range of clinical
- * artifacts such as clinical decision support rules, order sets and
- * protocols.
+ * Indicates who should participate in performing the action described.
+ */
+export interface PlanDefinitionActionParticipant {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The type of participant in the action.
+   */
+  readonly type?: string;
+
+  /**
+   * The role the participant should play in performing the described
+   * action.
+   */
+  readonly role?: CodeableConcept;
+}
+
+/**
+ * A relationship to another action such as &quot;before&quot; or &quot;30-60 minutes
+ * after start of&quot;.
+ */
+export interface PlanDefinitionActionRelatedAction {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The element id of the related action.
+   */
+  readonly actionId?: string;
+
+  /**
+   * The relationship of this action to the related action.
+   */
+  readonly relationship?: string;
+
+  /**
+   * A duration or range of durations to apply to the relationship. For
+   * example, 30-60 minutes before.
+   */
+  readonly offsetDuration?: Duration;
+
+  /**
+   * A duration or range of durations to apply to the relationship. For
+   * example, 30-60 minutes before.
+   */
+  readonly offsetRange?: Range;
+}
+
+/**
+ * Goals that describe what the activities within the plan are intended
+ * to achieve. For example, weight loss, restoring an activity of daily
+ * living, obtaining herd immunity via immunization, meeting a process
+ * improvement objective, etc.
  */
 export interface PlanDefinitionGoal {
 
@@ -772,140 +880,13 @@ export interface PlanDefinitionGoal {
   /**
    * Indicates what should be done and within what timeframe.
    */
-  readonly target?: PlanDefinitionTarget[];
+  readonly target?: PlanDefinitionGoalTarget[];
 }
 
 /**
- * This resource allows for the definition of various types of plans as a
- * sharable, consumable, and executable artifact. The resource is general
- * enough to support the description of a broad range of clinical
- * artifacts such as clinical decision support rules, order sets and
- * protocols.
+ * Indicates what should be done and within what timeframe.
  */
-export interface PlanDefinitionParticipant {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The type of participant in the action.
-   */
-  readonly type?: string;
-
-  /**
-   * The role the participant should play in performing the described
-   * action.
-   */
-  readonly role?: CodeableConcept;
-}
-
-/**
- * This resource allows for the definition of various types of plans as a
- * sharable, consumable, and executable artifact. The resource is general
- * enough to support the description of a broad range of clinical
- * artifacts such as clinical decision support rules, order sets and
- * protocols.
- */
-export interface PlanDefinitionRelatedAction {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The element id of the related action.
-   */
-  readonly actionId?: string;
-
-  /**
-   * The relationship of this action to the related action.
-   */
-  readonly relationship?: string;
-
-  /**
-   * A duration or range of durations to apply to the relationship. For
-   * example, 30-60 minutes before.
-   */
-  readonly offsetDuration?: Duration;
-
-  /**
-   * A duration or range of durations to apply to the relationship. For
-   * example, 30-60 minutes before.
-   */
-  readonly offsetRange?: Range;
-}
-
-/**
- * This resource allows for the definition of various types of plans as a
- * sharable, consumable, and executable artifact. The resource is general
- * enough to support the description of a broad range of clinical
- * artifacts such as clinical decision support rules, order sets and
- * protocols.
- */
-export interface PlanDefinitionTarget {
+export interface PlanDefinitionGoalTarget {
 
   /**
    * Unique id for the element within a resource (for internal references).

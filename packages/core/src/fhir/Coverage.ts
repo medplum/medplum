@@ -201,8 +201,7 @@ export interface Coverage {
 }
 
 /**
- * Financial instrument which may be used to reimburse or pay for health
- * care products and services. Includes both insurance and self-payment.
+ * A suite of underwriter specific classifiers.
  */
 export interface CoverageClass {
 
@@ -261,8 +260,9 @@ export interface CoverageClass {
 }
 
 /**
- * Financial instrument which may be used to reimburse or pay for health
- * care products and services. Includes both insurance and self-payment.
+ * A suite of codes indicating the cost category and associated amount
+ * which have been detailed in the policy and may have been  included on
+ * the health card.
  */
 export interface CoverageCostToBeneficiary {
 
@@ -320,14 +320,14 @@ export interface CoverageCostToBeneficiary {
    * A suite of codes indicating exceptions or reductions to patient costs
    * and their effective periods.
    */
-  readonly exception?: CoverageException[];
+  readonly exception?: CoverageCostToBeneficiaryException[];
 }
 
 /**
- * Financial instrument which may be used to reimburse or pay for health
- * care products and services. Includes both insurance and self-payment.
+ * A suite of codes indicating exceptions or reductions to patient costs
+ * and their effective periods.
  */
-export interface CoverageException {
+export interface CoverageCostToBeneficiaryException {
 
   /**
    * Unique id for the element within a resource (for internal references).

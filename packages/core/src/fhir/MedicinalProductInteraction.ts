@@ -131,8 +131,7 @@ export interface MedicinalProductInteraction {
 }
 
 /**
- * The interactions of the medicinal product with other medicinal
- * products, or other forms of interactions.
+ * The specific medication, food or laboratory test that interacts.
  */
 export interface MedicinalProductInteractionInteractant {
 

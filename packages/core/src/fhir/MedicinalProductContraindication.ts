@@ -132,8 +132,8 @@ export interface MedicinalProductContraindication {
 }
 
 /**
- * The clinical particulars - indications, contraindications etc. of a
- * medicinal product, including for regulatory purposes.
+ * Information about the use of the medicinal product in relation to
+ * other therapies described as part of the indication.
  */
 export interface MedicinalProductContraindicationOtherTherapy {
 

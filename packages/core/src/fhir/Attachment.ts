@@ -6,7 +6,8 @@
 import { Extension } from './Extension';
 
 /**
- * For referring to data content defined in other formats.
+ * Base StructureDefinition for Attachment Type: For referring to data
+ * content defined in other formats.
  */
 export interface Attachment {
 
@@ -69,5 +70,5 @@ export interface Attachment {
   /**
    * The date that the attachment was first created.
    */
-  readonly creation?: Date | string;
+  readonly creation?: string;
 }

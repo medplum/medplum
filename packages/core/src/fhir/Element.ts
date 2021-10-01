@@ -6,7 +6,8 @@
 import { Extension } from './Extension';
 
 /**
- * Base definition for all elements in a resource.
+ * Base StructureDefinition for Element Type: Base definition for all
+ * elements in a resource.
  */
 export interface Element {
 

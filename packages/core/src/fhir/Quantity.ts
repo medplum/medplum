@@ -6,10 +6,10 @@
 import { Extension } from './Extension';
 
 /**
- * A measured amount (or an amount that can potentially be measured).
- * Note that measured amounts include amounts that are not precisely
- * quantified, including amounts involving arbitrary units and floating
- * currencies.
+ * Base StructureDefinition for Quantity Type: A measured amount (or an
+ * amount that can potentially be measured). Note that measured amounts
+ * include amounts that are not precisely quantified, including amounts
+ * involving arbitrary units and floating currencies.
  */
 export interface Quantity {
 
@@ -36,10 +36,7 @@ export interface Quantity {
   readonly value?: number;
 
   /**
-   * How the value should be understood and represented - whether the
-   * actual value is greater or less than the stated value due to
-   * measurement issues; e.g. if the comparator is &quot;&lt;&quot; , then the real
-   * value is &lt; stated value.
+   * Not allowed to be used in this context
    */
   readonly comparator?: string;
 

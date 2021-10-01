@@ -11,7 +11,7 @@ export async function initTestAuth() {
     resourceType: 'Login',
     client: createReference(client),
     profile: createReference(client),
-    authTime: new Date(),
+    authTime: new Date().toISOString(),
     scope
   });
 

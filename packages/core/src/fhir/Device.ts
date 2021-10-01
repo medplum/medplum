@@ -140,13 +140,13 @@ export interface Device {
   /**
    * The date and time when the device was manufactured.
    */
-  readonly manufactureDate?: Date | string;
+  readonly manufactureDate?: string;
 
   /**
    * The date and time beyond which this device is no longer valid or
    * should not be used (if applicable).
    */
-  readonly expirationDate?: Date | string;
+  readonly expirationDate?: string;
 
   /**
    * Lot number assigned by the manufacturer.
@@ -166,7 +166,7 @@ export interface Device {
    * when the device represents one of the names available from
    * DeviceDefinition.
    */
-  readonly deviceName?: DeviceName[];
+  readonly deviceName?: DeviceDeviceName[];
 
   /**
    * The model number for the device.
@@ -248,11 +248,13 @@ export interface Device {
 }
 
 /**
- * A type of a manufactured item that is used in the provision of
- * healthcare without being substantially changed through that activity.
- * The device may be a medical or non-medical device.
+ * This represents the manufacturer's name of the device as provided by
+ * the device, from a UDI label, or by a person describing the Device.
+ * This typically would be used when a person provides the name(s) or
+ * when the device represents one of the names available from
+ * DeviceDefinition.
  */
-export interface DeviceName {
+export interface DeviceDeviceName {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -303,9 +305,8 @@ export interface DeviceName {
 }
 
 /**
- * A type of a manufactured item that is used in the provision of
- * healthcare without being substantially changed through that activity.
- * The device may be a medical or non-medical device.
+ * The actual configuration settings of a device as it actually operates,
+ * e.g., regulation status, time properties.
  */
 export interface DeviceProperty {
 
@@ -362,9 +363,9 @@ export interface DeviceProperty {
 }
 
 /**
- * A type of a manufactured item that is used in the provision of
- * healthcare without being substantially changed through that activity.
- * The device may be a medical or non-medical device.
+ * The capabilities supported on a  device, the standards to which the
+ * device conforms for a particular purpose, and used for the
+ * communication.
  */
 export interface DeviceSpecialization {
 
@@ -415,9 +416,10 @@ export interface DeviceSpecialization {
 }
 
 /**
- * A type of a manufactured item that is used in the provision of
- * healthcare without being substantially changed through that activity.
- * The device may be a medical or non-medical device.
+ * Unique device identifier (UDI) assigned to device label or package.
+ * Note that the Device may include multiple udiCarriers as it either may
+ * include just the udiCarrier for the jurisdiction it is sold, or for
+ * multiple jurisdictions it could have been sold.
  */
 export interface DeviceUdiCarrier {
 
@@ -507,9 +509,8 @@ export interface DeviceUdiCarrier {
 }
 
 /**
- * A type of a manufactured item that is used in the provision of
- * healthcare without being substantially changed through that activity.
- * The device may be a medical or non-medical device.
+ * The actual design of the device or software version running on the
+ * device.
  */
 export interface DeviceVersion {
 

@@ -177,7 +177,7 @@ export interface RequestGroup {
   /**
    * Indicates when the request group was created.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * Provides a reference to the author of the request group.
@@ -208,9 +208,7 @@ export interface RequestGroup {
 }
 
 /**
- * A group of related requests that can be used to capture intended
- * activities that have inter-dependencies such as &quot;give this medication
- * after that one&quot;.
+ * The actions, if any, produced by the evaluation of the artifact.
  */
 export interface RequestGroupAction {
 
@@ -297,13 +295,13 @@ export interface RequestGroupAction {
    * An expression that describes applicability criteria, or start/stop
    * conditions for the action.
    */
-  readonly condition?: RequestGroupCondition[];
+  readonly condition?: RequestGroupActionCondition[];
 
   /**
    * A relationship to another action such as &quot;before&quot; or &quot;30-60 minutes
    * after start of&quot;.
    */
-  readonly relatedAction?: RequestGroupRelatedAction[];
+  readonly relatedAction?: RequestGroupActionRelatedAction[];
 
   /**
    * An optional value describing when the action should be performed.
@@ -383,11 +381,10 @@ export interface RequestGroupAction {
 }
 
 /**
- * A group of related requests that can be used to capture intended
- * activities that have inter-dependencies such as &quot;give this medication
- * after that one&quot;.
+ * An expression that describes applicability criteria, or start/stop
+ * conditions for the action.
  */
-export interface RequestGroupCondition {
+export interface RequestGroupActionCondition {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -437,11 +434,10 @@ export interface RequestGroupCondition {
 }
 
 /**
- * A group of related requests that can be used to capture intended
- * activities that have inter-dependencies such as &quot;give this medication
- * after that one&quot;.
+ * A relationship to another action such as &quot;before&quot; or &quot;30-60 minutes
+ * after start of&quot;.
  */
-export interface RequestGroupRelatedAction {
+export interface RequestGroupActionRelatedAction {
 
   /**
    * Unique id for the element within a resource (for internal references).

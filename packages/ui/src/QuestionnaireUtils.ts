@@ -1,4 +1,4 @@
-import { PropertyType, Questionnaire, QuestionnaireInitial, QuestionnaireItem } from '@medplum/core';
+import { PropertyType, Questionnaire, QuestionnaireItem, QuestionnaireItemInitial } from '@medplum/core';
 
 export enum QuestionnaireItemType {
   group = 'group',
@@ -45,7 +45,7 @@ function addInitialValueToItem(item: QuestionnaireItem, values: Record<string, s
     return item;
   }
 
-  let initialValue: QuestionnaireInitial | undefined = undefined;
+  let initialValue: QuestionnaireItemInitial | undefined = undefined;
   switch (type) {
     case PropertyType.boolean:
       initialValue = { valueBoolean: suppliedValue === 'true' };

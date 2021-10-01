@@ -116,7 +116,7 @@ export interface Basic {
   /**
    * Identifies when the resource was first created.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * Indicates who was responsible for creating the resource instance.

@@ -131,7 +131,7 @@ export interface ImagingStudy {
   /**
    * Date and time the study started.
    */
-  readonly started?: Date | string;
+  readonly started?: string;
 
   /**
    * A list of the diagnostic requests that resulted in this imaging study
@@ -221,134 +221,7 @@ export interface ImagingStudy {
 }
 
 /**
- * Representation of the content produced in a DICOM imaging study. A
- * study comprises a set of series, each of which includes a set of
- * Service-Object Pair Instances (SOP Instances - images or other data)
- * acquired or produced in a common context.  A series is of only one
- * modality (e.g. X-ray, CT, MR, ultrasound), but a study may have
- * multiple series of different modalities.
- */
-export interface ImagingStudyInstance {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The DICOM SOP Instance UID for this image or other DICOM content.
-   */
-  readonly uid?: string;
-
-  /**
-   * DICOM instance  type.
-   */
-  readonly sopClass?: Coding;
-
-  /**
-   * The number of instance in the series.
-   */
-  readonly number?: number;
-
-  /**
-   * The description of the instance.
-   */
-  readonly title?: string;
-}
-
-/**
- * Representation of the content produced in a DICOM imaging study. A
- * study comprises a set of series, each of which includes a set of
- * Service-Object Pair Instances (SOP Instances - images or other data)
- * acquired or produced in a common context.  A series is of only one
- * modality (e.g. X-ray, CT, MR, ultrasound), but a study may have
- * multiple series of different modalities.
- */
-export interface ImagingStudyPerformer {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Distinguishes the type of involvement of the performer in the series.
-   */
-  readonly function?: CodeableConcept;
-
-  /**
-   * Indicates who or what performed the series.
-   */
-  readonly actor?: Reference;
-}
-
-/**
- * Representation of the content produced in a DICOM imaging study. A
- * study comprises a set of series, each of which includes a set of
- * Service-Object Pair Instances (SOP Instances - images or other data)
- * acquired or produced in a common context.  A series is of only one
- * modality (e.g. X-ray, CT, MR, ultrasound), but a study may have
- * multiple series of different modalities.
+ * Each study has one or more series of images or other content.
  */
 export interface ImagingStudySeries {
 
@@ -448,16 +321,129 @@ export interface ImagingStudySeries {
   /**
    * The date and time the series was started.
    */
-  readonly started?: Date | string;
+  readonly started?: string;
 
   /**
    * Indicates who or what performed the series and how they were involved.
    */
-  readonly performer?: ImagingStudyPerformer[];
+  readonly performer?: ImagingStudySeriesPerformer[];
 
   /**
    * A single SOP instance within the series, e.g. an image, or
    * presentation state.
    */
-  readonly instance?: ImagingStudyInstance[];
+  readonly instance?: ImagingStudySeriesInstance[];
+}
+
+/**
+ * A single SOP instance within the series, e.g. an image, or
+ * presentation state.
+ */
+export interface ImagingStudySeriesInstance {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The DICOM SOP Instance UID for this image or other DICOM content.
+   */
+  readonly uid?: string;
+
+  /**
+   * DICOM instance  type.
+   */
+  readonly sopClass?: Coding;
+
+  /**
+   * The number of instance in the series.
+   */
+  readonly number?: number;
+
+  /**
+   * The description of the instance.
+   */
+  readonly title?: string;
+}
+
+/**
+ * Indicates who or what performed the series and how they were involved.
+ */
+export interface ImagingStudySeriesPerformer {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Distinguishes the type of involvement of the performer in the series.
+   */
+  readonly function?: CodeableConcept;
+
+  /**
+   * Indicates who or what performed the series.
+   */
+  readonly actor?: Reference;
 }

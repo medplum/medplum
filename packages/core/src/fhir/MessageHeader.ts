@@ -178,11 +178,7 @@ export interface MessageHeader {
 }
 
 /**
- * The header for a message exchange that is either requesting or
- * responding to an action.  The reference(s) that are the subject of the
- * action as well as other information related to the action are
- * typically transmitted in a bundle in which the MessageHeader resource
- * instance is the first resource in the bundle.
+ * The destination application which the message is intended for.
  */
 export interface MessageHeaderDestination {
 
@@ -246,11 +242,8 @@ export interface MessageHeaderDestination {
 }
 
 /**
- * The header for a message exchange that is either requesting or
- * responding to an action.  The reference(s) that are the subject of the
- * action as well as other information related to the action are
- * typically transmitted in a bundle in which the MessageHeader resource
- * instance is the first resource in the bundle.
+ * Information about the message that this message is a response to.
+ * Only present if this message is a response.
  */
 export interface MessageHeaderResponse {
 
@@ -308,11 +301,7 @@ export interface MessageHeaderResponse {
 }
 
 /**
- * The header for a message exchange that is either requesting or
- * responding to an action.  The reference(s) that are the subject of the
- * action as well as other information related to the action are
- * typically transmitted in a bundle in which the MessageHeader resource
- * instance is the first resource in the bundle.
+ * The source application from which this message originated.
  */
 export interface MessageHeaderSource {
 

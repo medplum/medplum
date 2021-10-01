@@ -164,7 +164,7 @@ export interface SupplyRequest {
   /**
    * When the request was made.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The device, practitioner, etc. who initiated the request.
@@ -198,8 +198,8 @@ export interface SupplyRequest {
 }
 
 /**
- * A record of a request for a medication, substance or device used in
- * the healthcare setting.
+ * Specific parameters for the ordered item.  For example, the size of
+ * the indicated item.
  */
 export interface SupplyRequestParameter {
 

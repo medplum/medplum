@@ -151,7 +151,7 @@ export interface TerminologyCapabilities {
    * change when the substantive content of the terminology capabilities
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -270,10 +270,7 @@ export interface TerminologyCapabilities {
 }
 
 /**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * Whether the $closure operation is supported.
  */
 export interface TerminologyCapabilitiesClosure {
 
@@ -319,10 +316,9 @@ export interface TerminologyCapabilitiesClosure {
 }
 
 /**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * Identifies a code system that is supported by the server. If there is
+ * a no code system URL, then this declares the general assumptions a
+ * client can make about support for any CodeSystem resource.
  */
 export interface TerminologyCapabilitiesCodeSystem {
 
@@ -370,7 +366,7 @@ export interface TerminologyCapabilitiesCodeSystem {
    * For the code system, a list of versions that are supported by the
    * server.
    */
-  readonly version?: TerminologyCapabilitiesVersion[];
+  readonly version?: TerminologyCapabilitiesCodeSystemVersion[];
 
   /**
    * True if subsumption is supported for this version of the code system.
@@ -379,396 +375,10 @@ export interface TerminologyCapabilitiesCodeSystem {
 }
 
 /**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * For the code system, a list of versions that are supported by the
+ * server.
  */
-export interface TerminologyCapabilitiesExpansion {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Whether the server can return nested value sets.
-   */
-  readonly hierarchical?: boolean;
-
-  /**
-   * Whether the server supports paging on expansion.
-   */
-  readonly paging?: boolean;
-
-  /**
-   * Allow request for incomplete expansions?
-   */
-  readonly incomplete?: boolean;
-
-  /**
-   * Supported expansion parameter.
-   */
-  readonly parameter?: TerminologyCapabilitiesParameter[];
-
-  /**
-   * Documentation about text searching works.
-   */
-  readonly textFilter?: string;
-}
-
-/**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface TerminologyCapabilitiesFilter {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Code of the property supported.
-   */
-  readonly code?: string;
-
-  /**
-   * Operations supported for the property.
-   */
-  readonly op?: string[];
-}
-
-/**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface TerminologyCapabilitiesImplementation {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Information about the specific installation that this terminology
-   * capability statement relates to.
-   */
-  readonly description?: string;
-
-  /**
-   * An absolute base URL for the implementation.
-   */
-  readonly url?: string;
-}
-
-/**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface TerminologyCapabilitiesParameter {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Expansion Parameter name.
-   */
-  readonly name?: string;
-
-  /**
-   * Description of support for parameter.
-   */
-  readonly documentation?: string;
-}
-
-/**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface TerminologyCapabilitiesSoftware {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Name the software is known by.
-   */
-  readonly name?: string;
-
-  /**
-   * The version identifier for the software covered by this statement.
-   */
-  readonly version?: string;
-}
-
-/**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface TerminologyCapabilitiesTranslation {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Whether the client must identify the map.
-   */
-  readonly needsMap?: boolean;
-}
-
-/**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface TerminologyCapabilitiesValidateCode {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Whether translations are validated.
-   */
-  readonly translations?: boolean;
-}
-
-/**
- * A TerminologyCapabilities resource documents a set of capabilities
- * (behaviors) of a FHIR Terminology Server that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface TerminologyCapabilitiesVersion {
+export interface TerminologyCapabilitiesCodeSystemVersion {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -829,10 +439,382 @@ export interface TerminologyCapabilitiesVersion {
   /**
    * Filter Properties supported.
    */
-  readonly filter?: TerminologyCapabilitiesFilter[];
+  readonly filter?: TerminologyCapabilitiesCodeSystemVersionFilter[];
 
   /**
    * Properties supported for $lookup.
    */
   readonly property?: string[];
+}
+
+/**
+ * Filter Properties supported.
+ */
+export interface TerminologyCapabilitiesCodeSystemVersionFilter {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Code of the property supported.
+   */
+  readonly code?: string;
+
+  /**
+   * Operations supported for the property.
+   */
+  readonly op?: string[];
+}
+
+/**
+ * Information about the
+ * [ValueSet/$expand](valueset-operation-expand.html) operation.
+ */
+export interface TerminologyCapabilitiesExpansion {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Whether the server can return nested value sets.
+   */
+  readonly hierarchical?: boolean;
+
+  /**
+   * Whether the server supports paging on expansion.
+   */
+  readonly paging?: boolean;
+
+  /**
+   * Allow request for incomplete expansions?
+   */
+  readonly incomplete?: boolean;
+
+  /**
+   * Supported expansion parameter.
+   */
+  readonly parameter?: TerminologyCapabilitiesExpansionParameter[];
+
+  /**
+   * Documentation about text searching works.
+   */
+  readonly textFilter?: string;
+}
+
+/**
+ * Supported expansion parameter.
+ */
+export interface TerminologyCapabilitiesExpansionParameter {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Expansion Parameter name.
+   */
+  readonly name?: string;
+
+  /**
+   * Description of support for parameter.
+   */
+  readonly documentation?: string;
+}
+
+/**
+ * Identifies a specific implementation instance that is described by the
+ * terminology capability statement - i.e. a particular installation,
+ * rather than the capabilities of a software program.
+ */
+export interface TerminologyCapabilitiesImplementation {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Information about the specific installation that this terminology
+   * capability statement relates to.
+   */
+  readonly description?: string;
+
+  /**
+   * An absolute base URL for the implementation.
+   */
+  readonly url?: string;
+}
+
+/**
+ * Software that is covered by this terminology capability statement.  It
+ * is used when the statement describes the capabilities of a particular
+ * software version, independent of an installation.
+ */
+export interface TerminologyCapabilitiesSoftware {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Name the software is known by.
+   */
+  readonly name?: string;
+
+  /**
+   * The version identifier for the software covered by this statement.
+   */
+  readonly version?: string;
+}
+
+/**
+ * Information about the
+ * [ConceptMap/$translate](conceptmap-operation-translate.html)
+ * operation.
+ */
+export interface TerminologyCapabilitiesTranslation {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Whether the client must identify the map.
+   */
+  readonly needsMap?: boolean;
+}
+
+/**
+ * Information about the
+ * [ValueSet/$validate-code](valueset-operation-validate-code.html)
+ * operation.
+ */
+export interface TerminologyCapabilitiesValidateCode {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Whether translations are validated.
+   */
+  readonly translations?: boolean;
 }

@@ -113,8 +113,9 @@ export interface Linkage {
 }
 
 /**
- * Identifies two or more records (resource instances) that refer to the
- * same real-world &quot;occurrence&quot;.
+ * Identifies which record considered as the reference to the same
+ * real-world occurrence as well as how the items should be evaluated
+ * within the collection of linked items.
  */
 export interface LinkageItem {
 

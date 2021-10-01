@@ -143,7 +143,7 @@ export interface GraphDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the graph definition changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the graph
@@ -201,81 +201,7 @@ export interface GraphDefinition {
 }
 
 /**
- * A formal computable definition of a graph of resources - that is, a
- * coherent set of resources that form a graph by following references.
- * The Graph Definition resource defines a set and makes rules about the
- * set.
- */
-export interface GraphDefinitionCompartment {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Defines how the compartment rule is used - whether it it is used to
-   * test whether resources are subject to the rule, or whether it is a
-   * rule that must be followed.
-   */
-  readonly use?: string;
-
-  /**
-   * Identifies the compartment.
-   */
-  readonly code?: string;
-
-  /**
-   * identical | matching | different | no-rule | custom.
-   */
-  readonly rule?: string;
-
-  /**
-   * Custom rule, as a FHIRPath expression.
-   */
-  readonly expression?: string;
-
-  /**
-   * Documentation for FHIRPath expression.
-   */
-  readonly description?: string;
-}
-
-/**
- * A formal computable definition of a graph of resources - that is, a
- * coherent set of resources that form a graph by following references.
- * The Graph Definition resource defines a set and makes rules about the
- * set.
+ * Links this graph makes rules about.
  */
 export interface GraphDefinitionLink {
 
@@ -344,16 +270,13 @@ export interface GraphDefinitionLink {
   /**
    * Potential target for the link.
    */
-  readonly target?: GraphDefinitionTarget[];
+  readonly target?: GraphDefinitionLinkTarget[];
 }
 
 /**
- * A formal computable definition of a graph of resources - that is, a
- * coherent set of resources that form a graph by following references.
- * The Graph Definition resource defines a set and makes rules about the
- * set.
+ * Potential target for the link.
  */
-export interface GraphDefinitionTarget {
+export interface GraphDefinitionLinkTarget {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -408,10 +331,78 @@ export interface GraphDefinitionTarget {
   /**
    * Compartment Consistency Rules.
    */
-  readonly compartment?: GraphDefinitionCompartment[];
+  readonly compartment?: GraphDefinitionLinkTargetCompartment[];
 
   /**
    * Additional links from target resource.
    */
   readonly link?: GraphDefinitionLink[];
+}
+
+/**
+ * Compartment Consistency Rules.
+ */
+export interface GraphDefinitionLinkTargetCompartment {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Defines how the compartment rule is used - whether it it is used to
+   * test whether resources are subject to the rule, or whether it is a
+   * rule that must be followed.
+   */
+  readonly use?: string;
+
+  /**
+   * Identifies the compartment.
+   */
+  readonly code?: string;
+
+  /**
+   * identical | matching | different | no-rule | custom.
+   */
+  readonly rule?: string;
+
+  /**
+   * Custom rule, as a FHIRPath expression.
+   */
+  readonly expression?: string;
+
+  /**
+   * Documentation for FHIRPath expression.
+   */
+  readonly description?: string;
 }

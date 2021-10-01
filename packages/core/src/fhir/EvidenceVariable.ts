@@ -172,7 +172,7 @@ export interface EvidenceVariable {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the evidence variable changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the evidence
@@ -225,14 +225,14 @@ export interface EvidenceVariable {
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: Date | string;
+  readonly approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: Date | string;
+  readonly lastReviewDate?: string;
 
   /**
    * The period during which the evidence variable content was or is
@@ -291,8 +291,8 @@ export interface EvidenceVariable {
 }
 
 /**
- * The EvidenceVariable resource describes a &quot;PICO&quot; element that
- * knowledge (evidence, assertion, recommendation) is about.
+ * A characteristic that defines the members of the evidence element.
+ * Multiple characteristics are applied with &quot;and&quot; semantics.
  */
 export interface EvidenceVariableCharacteristic {
 

@@ -157,7 +157,7 @@ export interface ValueSet {
    * The date (and optionally time) when the value set was created or
    * revised (e.g. the 'content logical definition').
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the value
@@ -231,10 +231,10 @@ export interface ValueSet {
 }
 
 /**
- * A ValueSet resource instance specifies a set of codes drawn from one
- * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
+ * A set of criteria that define the contents of the value set by
+ * including or excluding codes selected from the specified code
+ * system(s) that the value set draws from. This is also known as the
+ * Content Logical Definition (CLD).
  */
 export interface ValueSetCompose {
 
@@ -279,7 +279,7 @@ export interface ValueSetCompose {
    * included in the compose that are not already tied to a specific
    * version.
    */
-  readonly lockedDate?: Date | string;
+  readonly lockedDate?: string;
 
   /**
    * Whether inactive codes - codes that are not approved for current use -
@@ -295,22 +295,93 @@ export interface ValueSetCompose {
   /**
    * Include one or more codes from a code system or other value set(s).
    */
-  readonly include?: ValueSetInclude[];
+  readonly include?: ValueSetComposeInclude[];
 
   /**
    * Exclude one or more codes from the value set based on code system
    * filters and/or other value sets.
    */
-  readonly exclude?: ValueSetInclude[];
+  readonly exclude?: ValueSetComposeInclude[];
 }
 
 /**
- * A ValueSet resource instance specifies a set of codes drawn from one
- * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
+ * Include one or more codes from a code system or other value set(s).
  */
-export interface ValueSetConcept {
+export interface ValueSetComposeInclude {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * An absolute URI which is the code system from which the selected codes
+   * come from.
+   */
+  readonly system?: string;
+
+  /**
+   * The version of the code system that the codes are selected from, or
+   * the special version '*' for all versions.
+   */
+  readonly version?: string;
+
+  /**
+   * Specifies a concept to be included or excluded.
+   */
+  readonly concept?: ValueSetComposeIncludeConcept[];
+
+  /**
+   * Select concepts by specify a matching criterion based on the
+   * properties (including relationships) defined by the system, or on
+   * filters defined by the system. If multiple filters are specified, they
+   * SHALL all be true.
+   */
+  readonly filter?: ValueSetComposeIncludeFilter[];
+
+  /**
+   * Selects the concepts found in this value set (based on its value set
+   * definition). This is an absolute URI that is a reference to
+   * ValueSet.url.  If multiple value sets are specified this includes the
+   * union of the contents of all of the referenced value sets.
+   */
+  readonly valueSet?: string[];
+}
+
+/**
+ * Specifies a concept to be included or excluded.
+ */
+export interface ValueSetComposeIncludeConcept {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -364,16 +435,221 @@ export interface ValueSetConcept {
    * set - other languages, aliases, specialized purposes, used for
    * particular purposes, etc.
    */
-  readonly designation?: ValueSetDesignation[];
+  readonly designation?: ValueSetComposeIncludeConceptDesignation[];
 }
 
 /**
- * A ValueSet resource instance specifies a set of codes drawn from one
- * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
+ * Additional representations for this concept when used in this value
+ * set - other languages, aliases, specialized purposes, used for
+ * particular purposes, etc.
  */
-export interface ValueSetContains {
+export interface ValueSetComposeIncludeConceptDesignation {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The language this designation is defined for.
+   */
+  readonly language?: string;
+
+  /**
+   * A code that represents types of uses of designations.
+   */
+  readonly use?: Coding;
+
+  /**
+   * The text value for this designation.
+   */
+  readonly value?: string;
+}
+
+/**
+ * Select concepts by specify a matching criterion based on the
+ * properties (including relationships) defined by the system, or on
+ * filters defined by the system. If multiple filters are specified, they
+ * SHALL all be true.
+ */
+export interface ValueSetComposeIncludeFilter {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * A code that identifies a property or a filter defined in the code
+   * system.
+   */
+  readonly property?: string;
+
+  /**
+   * The kind of operation to perform as a part of the filter criteria.
+   */
+  readonly op?: string;
+
+  /**
+   * The match value may be either a code defined by the system, or a
+   * string value, which is a regex match on the literal string of the
+   * property value  (if the filter represents a property defined in
+   * CodeSystem) or of the system filter value (if the filter represents a
+   * filter defined in CodeSystem) when the operation is 'regex', or one of
+   * the values (true and false), when the operation is 'exists'.
+   */
+  readonly value?: string;
+}
+
+/**
+ * A value set can also be &quot;expanded&quot;, where the value set is turned into
+ * a simple collection of enumerated codes. This element holds the
+ * expansion, if it has been performed.
+ */
+export interface ValueSetExpansion {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * An identifier that uniquely identifies this expansion of the valueset,
+   * based on a unique combination of the provided parameters, the system
+   * default parameters, and the underlying system code system versions
+   * etc. Systems may re-use the same identifier as long as those factors
+   * remain the same, and the expansion is the same, but are not required
+   * to do so. This is a business identifier.
+   */
+  readonly identifier?: string;
+
+  /**
+   * The time at which the expansion was produced by the expanding system.
+   */
+  readonly timestamp?: string;
+
+  /**
+   * The total number of concepts in the expansion. If the number of
+   * concept nodes in this resource is less than the stated number, then
+   * the server can return more using the offset parameter.
+   */
+  readonly total?: number;
+
+  /**
+   * If paging is being used, the offset at which this resource starts.
+   * I.e. this resource is a partial view into the expansion. If paging is
+   * not being used, this element SHALL NOT be present.
+   */
+  readonly offset?: number;
+
+  /**
+   * A parameter that controlled the expansion process. These parameters
+   * may be used by users of expanded value sets to check whether the
+   * expansion is suitable for a particular purpose, or to pick the correct
+   * expansion.
+   */
+  readonly parameter?: ValueSetExpansionParameter[];
+
+  /**
+   * The codes that are contained in the value set expansion.
+   */
+  readonly contains?: ValueSetExpansionContains[];
+}
+
+/**
+ * The codes that are contained in the value set expansion.
+ */
+export interface ValueSetExpansionContains {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -459,308 +735,21 @@ export interface ValueSetContains {
    * relevant when the conditions of the expansion do not fix to a single
    * correct representation.
    */
-  readonly designation?: ValueSetDesignation[];
+  readonly designation?: ValueSetComposeIncludeConceptDesignation[];
 
   /**
    * Other codes and entries contained under this entry in the hierarchy.
    */
-  readonly contains?: ValueSetContains[];
+  readonly contains?: ValueSetExpansionContains[];
 }
 
 /**
- * A ValueSet resource instance specifies a set of codes drawn from one
- * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
+ * A parameter that controlled the expansion process. These parameters
+ * may be used by users of expanded value sets to check whether the
+ * expansion is suitable for a particular purpose, or to pick the correct
+ * expansion.
  */
-export interface ValueSetDesignation {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The language this designation is defined for.
-   */
-  readonly language?: string;
-
-  /**
-   * A code that represents types of uses of designations.
-   */
-  readonly use?: Coding;
-
-  /**
-   * The text value for this designation.
-   */
-  readonly value?: string;
-}
-
-/**
- * A ValueSet resource instance specifies a set of codes drawn from one
- * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
- */
-export interface ValueSetExpansion {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * An identifier that uniquely identifies this expansion of the valueset,
-   * based on a unique combination of the provided parameters, the system
-   * default parameters, and the underlying system code system versions
-   * etc. Systems may re-use the same identifier as long as those factors
-   * remain the same, and the expansion is the same, but are not required
-   * to do so. This is a business identifier.
-   */
-  readonly identifier?: string;
-
-  /**
-   * The time at which the expansion was produced by the expanding system.
-   */
-  readonly timestamp?: Date | string;
-
-  /**
-   * The total number of concepts in the expansion. If the number of
-   * concept nodes in this resource is less than the stated number, then
-   * the server can return more using the offset parameter.
-   */
-  readonly total?: number;
-
-  /**
-   * If paging is being used, the offset at which this resource starts.
-   * I.e. this resource is a partial view into the expansion. If paging is
-   * not being used, this element SHALL NOT be present.
-   */
-  readonly offset?: number;
-
-  /**
-   * A parameter that controlled the expansion process. These parameters
-   * may be used by users of expanded value sets to check whether the
-   * expansion is suitable for a particular purpose, or to pick the correct
-   * expansion.
-   */
-  readonly parameter?: ValueSetParameter[];
-
-  /**
-   * The codes that are contained in the value set expansion.
-   */
-  readonly contains?: ValueSetContains[];
-}
-
-/**
- * A ValueSet resource instance specifies a set of codes drawn from one
- * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
- */
-export interface ValueSetFilter {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * A code that identifies a property or a filter defined in the code
-   * system.
-   */
-  readonly property?: string;
-
-  /**
-   * The kind of operation to perform as a part of the filter criteria.
-   */
-  readonly op?: string;
-
-  /**
-   * The match value may be either a code defined by the system, or a
-   * string value, which is a regex match on the literal string of the
-   * property value  (if the filter represents a property defined in
-   * CodeSystem) or of the system filter value (if the filter represents a
-   * filter defined in CodeSystem) when the operation is 'regex', or one of
-   * the values (true and false), when the operation is 'exists'.
-   */
-  readonly value?: string;
-}
-
-/**
- * A ValueSet resource instance specifies a set of codes drawn from one
- * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
- */
-export interface ValueSetInclude {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * An absolute URI which is the code system from which the selected codes
-   * come from.
-   */
-  readonly system?: string;
-
-  /**
-   * The version of the code system that the codes are selected from, or
-   * the special version '*' for all versions.
-   */
-  readonly version?: string;
-
-  /**
-   * Specifies a concept to be included or excluded.
-   */
-  readonly concept?: ValueSetConcept[];
-
-  /**
-   * Select concepts by specify a matching criterion based on the
-   * properties (including relationships) defined by the system, or on
-   * filters defined by the system. If multiple filters are specified, they
-   * SHALL all be true.
-   */
-  readonly filter?: ValueSetFilter[];
-
-  /**
-   * Selects the concepts found in this value set (based on its value set
-   * definition). This is an absolute URI that is a reference to
-   * ValueSet.url.  If multiple value sets are specified this includes the
-   * union of the contents of all of the referenced value sets.
-   */
-  readonly valueSet?: string[];
-}
-
-/**
- * A ValueSet resource instance specifies a set of codes drawn from one
- * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
- */
-export interface ValueSetParameter {
+export interface ValueSetExpansionParameter {
 
   /**
    * Unique id for the element within a resource (for internal references).

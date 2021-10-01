@@ -144,7 +144,7 @@ export interface DeviceUseStatement {
   /**
    * The time at which the statement was made/recorded.
    */
-  readonly recordedOn?: Date | string;
+  readonly recordedOn?: string;
 
   /**
    * Who reported the device was being used by the patient.

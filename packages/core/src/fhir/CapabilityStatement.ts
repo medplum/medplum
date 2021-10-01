@@ -153,7 +153,7 @@ export interface CapabilityStatement {
    * change when the substantive content of the capability statement
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -287,10 +287,7 @@ export interface CapabilityStatement {
 }
 
 /**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * A document definition.
  */
 export interface CapabilityStatementDocument {
 
@@ -350,66 +347,9 @@ export interface CapabilityStatementDocument {
 }
 
 /**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface CapabilityStatementEndpoint {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * A list of the messaging transport protocol(s) identifiers, supported
-   * by this endpoint.
-   */
-  readonly protocol?: Coding;
-
-  /**
-   * The network address of the endpoint. For solutions that do not use
-   * network addresses for routing, it can be just an identifier.
-   */
-  readonly address?: string;
-}
-
-/**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * Identifies a specific implementation instance that is described by the
+ * capability statement - i.e. a particular installation, rather than the
+ * capabilities of a software program.
  */
 export interface CapabilityStatementImplementation {
 
@@ -468,12 +408,9 @@ export interface CapabilityStatementImplementation {
 }
 
 /**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * A description of the messaging capabilities of the solution.
  */
-export interface CapabilityStatementInteraction {
+export interface CapabilityStatementMessaging {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -511,25 +448,236 @@ export interface CapabilityStatementInteraction {
   readonly modifierExtension?: Extension[];
 
   /**
-   * Coded identifier of the operation, supported by the system resource.
+   * An endpoint (network accessible address) to which messages and/or
+   * replies are to be sent.
    */
-  readonly code?: string;
+  readonly endpoint?: CapabilityStatementMessagingEndpoint[];
 
   /**
-   * Guidance specific to the implementation of this operation, such as
-   * 'delete is a logical delete' or 'updates are only allowed with version
-   * id' or 'creates permitted from pre-authorized certificates only'.
+   * Length if the receiver's reliable messaging cache in minutes (if a
+   * receiver) or how long the cache length on the receiver should be (if a
+   * sender).
+   */
+  readonly reliableCache?: number;
+
+  /**
+   * Documentation about the system's messaging capabilities for this
+   * endpoint not otherwise documented by the capability statement.  For
+   * example, the process for becoming an authorized messaging exchange
+   * partner.
    */
   readonly documentation?: string;
+
+  /**
+   * References to message definitions for messages this system can send or
+   * receive.
+   */
+  readonly supportedMessage?: CapabilityStatementMessagingSupportedMessage[];
 }
 
 /**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * An endpoint (network accessible address) to which messages and/or
+ * replies are to be sent.
  */
-export interface CapabilityStatementInteraction1 {
+export interface CapabilityStatementMessagingEndpoint {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * A list of the messaging transport protocol(s) identifiers, supported
+   * by this endpoint.
+   */
+  readonly protocol?: Coding;
+
+  /**
+   * The network address of the endpoint. For solutions that do not use
+   * network addresses for routing, it can be just an identifier.
+   */
+  readonly address?: string;
+}
+
+/**
+ * References to message definitions for messages this system can send or
+ * receive.
+ */
+export interface CapabilityStatementMessagingSupportedMessage {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The mode of this event declaration - whether application is sender or
+   * receiver.
+   */
+  readonly mode?: string;
+
+  /**
+   * Points to a message definition that identifies the messaging event,
+   * message structure, allowed responses, etc.
+   */
+  readonly definition?: string;
+}
+
+/**
+ * A definition of the restful capabilities of the solution, if any.
+ */
+export interface CapabilityStatementRest {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Identifies whether this portion of the statement is describing the
+   * ability to initiate or receive restful operations.
+   */
+  readonly mode?: string;
+
+  /**
+   * Information about the system's restful capabilities that apply across
+   * all applications, such as security.
+   */
+  readonly documentation?: string;
+
+  /**
+   * Information about security implementation from an interface
+   * perspective - what a client needs to know.
+   */
+  readonly security?: CapabilityStatementRestSecurity;
+
+  /**
+   * A specification of the restful capabilities of the solution for a
+   * specific resource type.
+   */
+  readonly resource?: CapabilityStatementRestResource[];
+
+  /**
+   * A specification of restful operations supported by the system.
+   */
+  readonly interaction?: CapabilityStatementRestInteraction[];
+
+  /**
+   * Search parameters that are supported for searching all resources for
+   * implementations to support and/or make use of - either references to
+   * ones defined in the specification, or additional ones defined for/by
+   * the implementation.
+   */
+  readonly searchParam?: CapabilityStatementRestResourceSearchParam[];
+
+  /**
+   * Definition of an operation or a named query together with its
+   * parameters and their meaning and type.
+   */
+  readonly operation?: CapabilityStatementRestResourceOperation[];
+
+  /**
+   * An absolute URI which is a reference to the definition of a
+   * compartment that the system supports. The reference is to a
+   * CompartmentDefinition resource by its canonical URL .
+   */
+  readonly compartment?: string[];
+}
+
+/**
+ * A specification of restful operations supported by the system.
+ */
+export interface CapabilityStatementRestInteraction {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -580,154 +728,10 @@ export interface CapabilityStatementInteraction1 {
 }
 
 /**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * A specification of the restful capabilities of the solution for a
+ * specific resource type.
  */
-export interface CapabilityStatementMessaging {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * An endpoint (network accessible address) to which messages and/or
-   * replies are to be sent.
-   */
-  readonly endpoint?: CapabilityStatementEndpoint[];
-
-  /**
-   * Length if the receiver's reliable messaging cache in minutes (if a
-   * receiver) or how long the cache length on the receiver should be (if a
-   * sender).
-   */
-  readonly reliableCache?: number;
-
-  /**
-   * Documentation about the system's messaging capabilities for this
-   * endpoint not otherwise documented by the capability statement.  For
-   * example, the process for becoming an authorized messaging exchange
-   * partner.
-   */
-  readonly documentation?: string;
-
-  /**
-   * References to message definitions for messages this system can send or
-   * receive.
-   */
-  readonly supportedMessage?: CapabilityStatementSupportedMessage[];
-}
-
-/**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface CapabilityStatementOperation {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The name of the operation or query. For an operation, this is the name
-   * prefixed with $ and used in the URL. For a query, this is the name
-   * used in the _query parameter when the query is called.
-   */
-  readonly name?: string;
-
-  /**
-   * Where the formal definition can be found. If a server references the
-   * base definition of an Operation (i.e. from the specification itself
-   * such as
-   * ```http://hl7.org/fhir/OperationDefinition/ValueSet-expand```), that
-   * means it supports the full capabilities of the operation - e.g. both
-   * GET and POST invocation.  If it only supports a subset, it must define
-   * its own custom [[[OperationDefinition]]] with a 'base' of the original
-   * OperationDefinition.  The custom definition would describe the
-   * specific subset of functionality supported.
-   */
-  readonly definition?: string;
-
-  /**
-   * Documentation that describes anything special about the operation
-   * behavior, possibly detailing different behavior for system, type and
-   * instance-level invocation of the operation.
-   */
-  readonly documentation?: string;
-}
-
-/**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface CapabilityStatementResource {
+export interface CapabilityStatementRestResource {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -797,7 +801,7 @@ export interface CapabilityStatementResource {
   /**
    * Identifies a restful operation supported by the solution.
    */
-  readonly interaction?: CapabilityStatementInteraction[];
+  readonly interaction?: CapabilityStatementRestResourceInteraction[];
 
   /**
    * This field is set to no-version to specify that the system does not
@@ -865,7 +869,7 @@ export interface CapabilityStatementResource {
    * either references to ones defined in the specification, or additional
    * ones defined for/by the implementation.
    */
-  readonly searchParam?: CapabilityStatementSearchParam[];
+  readonly searchParam?: CapabilityStatementRestResourceSearchParam[];
 
   /**
    * Definition of an operation or a named query together with its
@@ -873,16 +877,13 @@ export interface CapabilityStatementResource {
    * operation for details about how to invoke the operation, and the
    * parameters.
    */
-  readonly operation?: CapabilityStatementOperation[];
+  readonly operation?: CapabilityStatementRestResourceOperation[];
 }
 
 /**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * Identifies a restful operation supported by the solution.
  */
-export interface CapabilityStatementRest {
+export interface CapabilityStatementRestResourceInteraction {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -920,63 +921,95 @@ export interface CapabilityStatementRest {
   readonly modifierExtension?: Extension[];
 
   /**
-   * Identifies whether this portion of the statement is describing the
-   * ability to initiate or receive restful operations.
+   * Coded identifier of the operation, supported by the system resource.
    */
-  readonly mode?: string;
+  readonly code?: string;
 
   /**
-   * Information about the system's restful capabilities that apply across
-   * all applications, such as security.
+   * Guidance specific to the implementation of this operation, such as
+   * 'delete is a logical delete' or 'updates are only allowed with version
+   * id' or 'creates permitted from pre-authorized certificates only'.
    */
   readonly documentation?: string;
-
-  /**
-   * Information about security implementation from an interface
-   * perspective - what a client needs to know.
-   */
-  readonly security?: CapabilityStatementSecurity;
-
-  /**
-   * A specification of the restful capabilities of the solution for a
-   * specific resource type.
-   */
-  readonly resource?: CapabilityStatementResource[];
-
-  /**
-   * A specification of restful operations supported by the system.
-   */
-  readonly interaction?: CapabilityStatementInteraction1[];
-
-  /**
-   * Search parameters that are supported for searching all resources for
-   * implementations to support and/or make use of - either references to
-   * ones defined in the specification, or additional ones defined for/by
-   * the implementation.
-   */
-  readonly searchParam?: CapabilityStatementSearchParam[];
-
-  /**
-   * Definition of an operation or a named query together with its
-   * parameters and their meaning and type.
-   */
-  readonly operation?: CapabilityStatementOperation[];
-
-  /**
-   * An absolute URI which is a reference to the definition of a
-   * compartment that the system supports. The reference is to a
-   * CompartmentDefinition resource by its canonical URL .
-   */
-  readonly compartment?: string[];
 }
 
 /**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * Definition of an operation or a named query together with its
+ * parameters and their meaning and type. Consult the definition of the
+ * operation for details about how to invoke the operation, and the
+ * parameters.
  */
-export interface CapabilityStatementSearchParam {
+export interface CapabilityStatementRestResourceOperation {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The name of the operation or query. For an operation, this is the name
+   * prefixed with $ and used in the URL. For a query, this is the name
+   * used in the _query parameter when the query is called.
+   */
+  readonly name?: string;
+
+  /**
+   * Where the formal definition can be found. If a server references the
+   * base definition of an Operation (i.e. from the specification itself
+   * such as
+   * ```http://hl7.org/fhir/OperationDefinition/ValueSet-expand```), that
+   * means it supports the full capabilities of the operation - e.g. both
+   * GET and POST invocation.  If it only supports a subset, it must define
+   * its own custom [OperationDefinition](operationdefinition.html#) with a
+   * 'base' of the original OperationDefinition.  The custom definition
+   * would describe the specific subset of functionality supported.
+   */
+  readonly definition?: string;
+
+  /**
+   * Documentation that describes anything special about the operation
+   * behavior, possibly detailing different behavior for system, type and
+   * instance-level invocation of the operation.
+   */
+  readonly documentation?: string;
+}
+
+/**
+ * Search parameters for implementations to support and/or make use of -
+ * either references to ones defined in the specification, or additional
+ * ones defined for/by the implementation.
+ */
+export interface CapabilityStatementRestResourceSearchParam {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -1021,8 +1054,9 @@ export interface CapabilityStatementSearchParam {
   /**
    * An absolute URI that is a formal reference to where this parameter was
    * first defined, so that a client can be confident of the meaning of the
-   * search parameter (a reference to [[[SearchParameter.url]]]). This
-   * element SHALL be populated if the search parameter refers to a
+   * search parameter (a reference to
+   * [SearchParameter.url](searchparameter-definitions.html#SearchParameter.url)).
+   * This element SHALL be populated if the search parameter refers to a
    * SearchParameter defined by the FHIR core specification or externally
    * defined IGs.
    */
@@ -1042,12 +1076,10 @@ export interface CapabilityStatementSearchParam {
 }
 
 /**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * Information about security implementation from an interface
+ * perspective - what a client needs to know.
  */
-export interface CapabilityStatementSecurity {
+export interface CapabilityStatementRestSecurity {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -1102,10 +1134,9 @@ export interface CapabilityStatementSecurity {
 }
 
 /**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
+ * Software that is covered by this capability statement.  It is used
+ * when the capability statement describes the capabilities of a
+ * particular software version, independent of an installation.
  */
 export interface CapabilityStatementSoftware {
 
@@ -1157,61 +1188,5 @@ export interface CapabilityStatementSoftware {
   /**
    * Date this version of the software was released.
    */
-  readonly releaseDate?: Date | string;
-}
-
-/**
- * A Capability Statement documents a set of capabilities (behaviors) of
- * a FHIR Server for a particular version of FHIR that may be used as a
- * statement of actual server functionality or a statement of required or
- * desired server implementation.
- */
-export interface CapabilityStatementSupportedMessage {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The mode of this event declaration - whether application is sender or
-   * receiver.
-   */
-  readonly mode?: string;
-
-  /**
-   * Points to a message definition that identifies the messaging event,
-   * message structure, allowed responses, etc.
-   */
-  readonly definition?: string;
+  readonly releaseDate?: string;
 }

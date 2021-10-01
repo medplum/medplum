@@ -245,9 +245,14 @@ export interface Encounter {
 }
 
 /**
- * An interaction between a patient and healthcare provider(s) for the
- * purpose of providing healthcare service(s) or assessing the health
- * status of a patient.
+ * The class history permits the tracking of the encounters transitions
+ * without needing to go  through the resource history.  This would be
+ * used for a case where an admission starts of as an emergency
+ * encounter, then transitions into an inpatient scenario. Doing this and
+ * not restarting a new encounter ensures that any lab/diagnostic results
+ * can more easily follow the patient and not require re-processing and
+ * not get lost or cancelled during a kind of discharge from emergency to
+ * inpatient.
  */
 export interface EncounterClassHistory {
 
@@ -298,9 +303,7 @@ export interface EncounterClassHistory {
 }
 
 /**
- * An interaction between a patient and healthcare provider(s) for the
- * purpose of providing healthcare service(s) or assessing the health
- * status of a patient.
+ * The list of diagnosis relevant to this encounter.
  */
 export interface EncounterDiagnosis {
 
@@ -360,9 +363,7 @@ export interface EncounterDiagnosis {
 }
 
 /**
- * An interaction between a patient and healthcare provider(s) for the
- * purpose of providing healthcare service(s) or assessing the health
- * status of a patient.
+ * Details about the admission to a healthcare service.
  */
 export interface EncounterHospitalization {
 
@@ -451,9 +452,7 @@ export interface EncounterHospitalization {
 }
 
 /**
- * An interaction between a patient and healthcare provider(s) for the
- * purpose of providing healthcare service(s) or assessing the health
- * status of a patient.
+ * List of locations where  the patient has been during this encounter.
  */
 export interface EncounterLocation {
 
@@ -517,9 +516,7 @@ export interface EncounterLocation {
 }
 
 /**
- * An interaction between a patient and healthcare provider(s) for the
- * purpose of providing healthcare service(s) or assessing the health
- * status of a patient.
+ * The list of people responsible for providing the service.
  */
 export interface EncounterParticipant {
 
@@ -577,9 +574,9 @@ export interface EncounterParticipant {
 }
 
 /**
- * An interaction between a patient and healthcare provider(s) for the
- * purpose of providing healthcare service(s) or assessing the health
- * status of a patient.
+ * The status history permits the encounter resource to contain the
+ * status history without needing to read through the historical versions
+ * of the resource, or even have the server store them.
  */
 export interface EncounterStatusHistory {
 

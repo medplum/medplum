@@ -141,7 +141,7 @@ export interface Immunization {
    * The date the occurrence of the immunization was first captured in the
    * record - potentially significantly after the occurrence of the event.
    */
-  readonly recorded?: Date | string;
+  readonly recorded?: string;
 
   /**
    * An indication that the content of the record is based on information
@@ -175,7 +175,7 @@ export interface Immunization {
   /**
    * Date vaccine batch expires.
    */
-  readonly expirationDate?: Date | string;
+  readonly expirationDate?: string;
 
   /**
    * Body site where vaccine was administered.
@@ -259,9 +259,8 @@ export interface Immunization {
 }
 
 /**
- * Describes the event of a patient being administered a vaccine or a
- * record of an immunization as reported by a patient, a clinician or
- * another party.
+ * Educational material presented to the patient (or guardian) at the
+ * time of vaccine administration.
  */
 export interface ImmunizationEducation {
 
@@ -314,18 +313,16 @@ export interface ImmunizationEducation {
   /**
    * Date the educational material was published.
    */
-  readonly publicationDate?: Date | string;
+  readonly publicationDate?: string;
 
   /**
    * Date the educational material was given to the patient.
    */
-  readonly presentationDate?: Date | string;
+  readonly presentationDate?: string;
 }
 
 /**
- * Describes the event of a patient being administered a vaccine or a
- * record of an immunization as reported by a patient, a clinician or
- * another party.
+ * Indicates who performed the immunization event.
  */
 export interface ImmunizationPerformer {
 
@@ -377,9 +374,8 @@ export interface ImmunizationPerformer {
 }
 
 /**
- * Describes the event of a patient being administered a vaccine or a
- * record of an immunization as reported by a patient, a clinician or
- * another party.
+ * The protocol (set of recommendations) being followed by the provider
+ * who administered the dose.
  */
 export interface ImmunizationProtocolApplied {
 
@@ -458,9 +454,8 @@ export interface ImmunizationProtocolApplied {
 }
 
 /**
- * Describes the event of a patient being administered a vaccine or a
- * record of an immunization as reported by a patient, a clinician or
- * another party.
+ * Categorical data indicating that an adverse event is associated in
+ * time to an immunization.
  */
 export interface ImmunizationReaction {
 
@@ -502,7 +497,7 @@ export interface ImmunizationReaction {
   /**
    * Date of reaction to the immunization.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Details of the reaction.

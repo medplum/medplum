@@ -188,7 +188,7 @@ export interface CarePlan {
    * Represents when this particular CarePlan record was created in the
    * system, which is often a system-generated date.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * When populated, the author is responsible for the care plan.  The care
@@ -241,10 +241,9 @@ export interface CarePlan {
 }
 
 /**
- * Describes the intention of how one or more practitioners intend to
- * deliver care for a particular patient, group or community for a period
- * of time, possibly limited to care for a specific condition or set of
- * conditions.
+ * Identifies a planned action to occur as part of the plan.  For
+ * example, a medication to be used, lab tests to perform,
+ * self-monitoring, education, etc.
  */
 export interface CarePlanActivity {
 
@@ -315,16 +314,15 @@ export interface CarePlanActivity {
    * plan system (e.g. form driven) that doesn't know about specific
    * resources such as procedure etc.
    */
-  readonly detail?: CarePlanDetail;
+  readonly detail?: CarePlanActivityDetail;
 }
 
 /**
- * Describes the intention of how one or more practitioners intend to
- * deliver care for a particular patient, group or community for a period
- * of time, possibly limited to care for a specific condition or set of
- * conditions.
+ * A simple summary of a planned activity suitable for a general care
+ * plan system (e.g. form driven) that doesn't know about specific
+ * resources such as procedure etc.
  */
-export interface CarePlanDetail {
+export interface CarePlanActivityDetail {
 
   /**
    * Unique id for the element within a resource (for internal references).

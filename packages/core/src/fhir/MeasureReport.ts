@@ -134,7 +134,7 @@ export interface MeasureReport {
   /**
    * The date this measure report was generated.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The individual, location, or organization that is reporting the data.
@@ -166,62 +166,8 @@ export interface MeasureReport {
 }
 
 /**
- * The MeasureReport resource contains the results of the calculation of
- * a measure; and optionally a reference to the resources involved in
- * that calculation.
- */
-export interface MeasureReportComponent {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The code for the stratum component value.
-   */
-  readonly code?: CodeableConcept;
-
-  /**
-   * The stratum component value.
-   */
-  readonly value?: CodeableConcept;
-}
-
-/**
- * The MeasureReport resource contains the results of the calculation of
- * a measure; and optionally a reference to the resources involved in
- * that calculation.
+ * The results of the calculation, one for each population group in the
+ * measure.
  */
 export interface MeasureReportGroup {
 
@@ -270,7 +216,7 @@ export interface MeasureReportGroup {
    * The populations that make up the population group, one for each type
    * of population appropriate for the measure.
    */
-  readonly population?: MeasureReportPopulation[];
+  readonly population?: MeasureReportGroupPopulation[];
 
   /**
    * The measure score for this population group, calculated as appropriate
@@ -283,15 +229,14 @@ export interface MeasureReportGroup {
    * When a measure includes multiple stratifiers, there will be a
    * stratifier group for each stratifier defined by the measure.
    */
-  readonly stratifier?: MeasureReportStratifier[];
+  readonly stratifier?: MeasureReportGroupStratifier[];
 }
 
 /**
- * The MeasureReport resource contains the results of the calculation of
- * a measure; and optionally a reference to the resources involved in
- * that calculation.
+ * The populations that make up the population group, one for each type
+ * of population appropriate for the measure.
  */
-export interface MeasureReportPopulation {
+export interface MeasureReportGroupPopulation {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -346,11 +291,183 @@ export interface MeasureReportPopulation {
 }
 
 /**
- * The MeasureReport resource contains the results of the calculation of
- * a measure; and optionally a reference to the resources involved in
- * that calculation.
+ * When a measure includes multiple stratifiers, there will be a
+ * stratifier group for each stratifier defined by the measure.
  */
-export interface MeasureReportPopulation1 {
+export interface MeasureReportGroupStratifier {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The meaning of this stratifier, as defined in the measure definition.
+   */
+  readonly code?: CodeableConcept[];
+
+  /**
+   * This element contains the results for a single stratum within the
+   * stratifier. For example, when stratifying on administrative gender,
+   * there will be four strata, one for each possible gender value.
+   */
+  readonly stratum?: MeasureReportGroupStratifierStratum[];
+}
+
+/**
+ * This element contains the results for a single stratum within the
+ * stratifier. For example, when stratifying on administrative gender,
+ * there will be four strata, one for each possible gender value.
+ */
+export interface MeasureReportGroupStratifierStratum {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The value for this stratum, expressed as a CodeableConcept. When
+   * defining stratifiers on complex values, the value must be rendered
+   * such that the value for each stratum within the stratifier is unique.
+   */
+  readonly value?: CodeableConcept;
+
+  /**
+   * A stratifier component value.
+   */
+  readonly component?: MeasureReportGroupStratifierStratumComponent[];
+
+  /**
+   * The populations that make up the stratum, one for each type of
+   * population appropriate to the measure.
+   */
+  readonly population?: MeasureReportGroupStratifierStratumPopulation[];
+
+  /**
+   * The measure score for this stratum, calculated as appropriate for the
+   * measure type and scoring method, and based on only the members of this
+   * stratum.
+   */
+  readonly measureScore?: Quantity;
+}
+
+/**
+ * A stratifier component value.
+ */
+export interface MeasureReportGroupStratifierStratumComponent {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * The code for the stratum component value.
+   */
+  readonly code?: CodeableConcept;
+
+  /**
+   * The stratum component value.
+   */
+  readonly value?: CodeableConcept;
+}
+
+/**
+ * The populations that make up the stratum, one for each type of
+ * population appropriate to the measure.
+ */
+export interface MeasureReportGroupStratifierStratumPopulation {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -402,127 +519,4 @@ export interface MeasureReportPopulation1 {
    * resources, one for each subject in this population in this stratum.
    */
   readonly subjectResults?: Reference;
-}
-
-/**
- * The MeasureReport resource contains the results of the calculation of
- * a measure; and optionally a reference to the resources involved in
- * that calculation.
- */
-export interface MeasureReportStratifier {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The meaning of this stratifier, as defined in the measure definition.
-   */
-  readonly code?: CodeableConcept[];
-
-  /**
-   * This element contains the results for a single stratum within the
-   * stratifier. For example, when stratifying on administrative gender,
-   * there will be four strata, one for each possible gender value.
-   */
-  readonly stratum?: MeasureReportStratum[];
-}
-
-/**
- * The MeasureReport resource contains the results of the calculation of
- * a measure; and optionally a reference to the resources involved in
- * that calculation.
- */
-export interface MeasureReportStratum {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * The value for this stratum, expressed as a CodeableConcept. When
-   * defining stratifiers on complex values, the value must be rendered
-   * such that the value for each stratum within the stratifier is unique.
-   */
-  readonly value?: CodeableConcept;
-
-  /**
-   * A stratifier component value.
-   */
-  readonly component?: MeasureReportComponent[];
-
-  /**
-   * The populations that make up the stratum, one for each type of
-   * population appropriate to the measure.
-   */
-  readonly population?: MeasureReportPopulation1[];
-
-  /**
-   * The measure score for this stratum, calculated as appropriate for the
-   * measure type and scoring method, and based on only the members of this
-   * stratum.
-   */
-  readonly measureScore?: Quantity;
 }

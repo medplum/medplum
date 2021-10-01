@@ -121,7 +121,7 @@ export interface AuditEvent {
   /**
    * The time when the event was recorded.
    */
-  readonly recorded?: Date | string;
+  readonly recorded?: string;
 
   /**
    * Indicates whether the event succeeded or failed.
@@ -157,9 +157,8 @@ export interface AuditEvent {
 }
 
 /**
- * A record of an event made for purposes of maintaining a security log.
- * Typical uses include detection of intrusion attempts and monitoring
- * for inappropriate usage.
+ * An actor taking an active role in the event or activity that is
+ * logged.
  */
 export interface AuditEventAgent {
 
@@ -258,7 +257,7 @@ export interface AuditEventAgent {
    * Logical network location for application activity, if the activity has
    * a network location.
    */
-  readonly network?: AuditEventNetwork;
+  readonly network?: AuditEventAgentNetwork;
 
   /**
    * The reason (purpose of use), specific to this agent, that was used
@@ -268,11 +267,10 @@ export interface AuditEventAgent {
 }
 
 /**
- * A record of an event made for purposes of maintaining a security log.
- * Typical uses include detection of intrusion attempts and monitoring
- * for inappropriate usage.
+ * Logical network location for application activity, if the activity has
+ * a network location.
  */
-export interface AuditEventDetail {
+export interface AuditEventAgentNetwork {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -310,25 +308,20 @@ export interface AuditEventDetail {
   readonly modifierExtension?: Extension[];
 
   /**
-   * The type of extra detail provided in the value.
+   * An identifier for the network access point of the user device for the
+   * audit event.
+   */
+  readonly address?: string;
+
+  /**
+   * An identifier for the type of network access point that originated the
+   * audit event.
    */
   readonly type?: string;
-
-  /**
-   * The  value of the extra detail.
-   */
-  readonly valueString?: string;
-
-  /**
-   * The  value of the extra detail.
-   */
-  readonly valueBase64Binary?: string;
 }
 
 /**
- * A record of an event made for purposes of maintaining a security log.
- * Typical uses include detection of intrusion attempts and monitoring
- * for inappropriate usage.
+ * Specific instances of data or objects that have been accessed.
  */
 export interface AuditEventEntity {
 
@@ -413,15 +406,14 @@ export interface AuditEventEntity {
    * Tagged value pairs for conveying additional information about the
    * entity.
    */
-  readonly detail?: AuditEventDetail[];
+  readonly detail?: AuditEventEntityDetail[];
 }
 
 /**
- * A record of an event made for purposes of maintaining a security log.
- * Typical uses include detection of intrusion attempts and monitoring
- * for inappropriate usage.
+ * Tagged value pairs for conveying additional information about the
+ * entity.
  */
-export interface AuditEventNetwork {
+export interface AuditEventEntityDetail {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -459,22 +451,23 @@ export interface AuditEventNetwork {
   readonly modifierExtension?: Extension[];
 
   /**
-   * An identifier for the network access point of the user device for the
-   * audit event.
-   */
-  readonly address?: string;
-
-  /**
-   * An identifier for the type of network access point that originated the
-   * audit event.
+   * The type of extra detail provided in the value.
    */
   readonly type?: string;
+
+  /**
+   * The  value of the extra detail.
+   */
+  readonly valueString?: string;
+
+  /**
+   * The  value of the extra detail.
+   */
+  readonly valueBase64Binary?: string;
 }
 
 /**
- * A record of an event made for purposes of maintaining a security log.
- * Typical uses include detection of intrusion attempts and monitoring
- * for inappropriate usage.
+ * The system that is reporting the event.
  */
 export interface AuditEventSource {
 

@@ -30,6 +30,24 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
               value: patientReference
             }],
             count: 100
+          },
+          {
+            resourceType: 'ServiceRequest',
+            filters: [{
+              code: 'subject',
+              operator: Operator.EQUALS,
+              value: patientReference
+            }],
+            count: 100
+          },
+          {
+            resourceType: 'DiagnosticReport',
+            filters: [{
+              code: 'subject',
+              operator: Operator.EQUALS,
+              value: patientReference
+            }],
+            count: 100
           }
         ];
       }}

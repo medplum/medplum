@@ -189,117 +189,9 @@ export interface MolecularSequence {
 }
 
 /**
- * Raw data describing a biological sequence.
- */
-export interface MolecularSequenceInner {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Structural variant inner start. If the coordinate system is either
-   * 0-based or 1-based, then start position is inclusive.
-   */
-  readonly start?: number;
-
-  /**
-   * Structural variant inner end. If the coordinate system is 0-based then
-   * end is exclusive and does not include the last position. If the
-   * coordinate system is 1-base, then end is inclusive and includes the
-   * last position.
-   */
-  readonly end?: number;
-}
-
-/**
- * Raw data describing a biological sequence.
- */
-export interface MolecularSequenceOuter {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Structural variant outer start. If the coordinate system is either
-   * 0-based or 1-based, then start position is inclusive.
-   */
-  readonly start?: number;
-
-  /**
-   * Structural variant outer end. If the coordinate system is 0-based then
-   * end is exclusive and does not include the last position. If the
-   * coordinate system is 1-base, then end is inclusive and includes the
-   * last position.
-   */
-  readonly end?: number;
-}
-
-/**
- * Raw data describing a biological sequence.
+ * An experimental feature attribute that defines the quality of the
+ * feature in a quantitative way, such as a phred quality score
+ * ([SO:0001686](http://www.sequenceontology.org/browser/current_svn/term/SO:0001686)).
  */
 export interface MolecularSequenceQuality {
 
@@ -435,11 +327,96 @@ export interface MolecularSequenceQuality {
    * Receiver Operator Characteristic (ROC) Curve  to give
    * sensitivity/specificity tradeoff.
    */
-  readonly roc?: MolecularSequenceRoc;
+  readonly roc?: MolecularSequenceQualityRoc;
 }
 
 /**
- * Raw data describing a biological sequence.
+ * Receiver Operator Characteristic (ROC) Curve  to give
+ * sensitivity/specificity tradeoff.
+ */
+export interface MolecularSequenceQualityRoc {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Invidual data point representing the GQ (genotype quality) score
+   * threshold.
+   */
+  readonly score?: number[];
+
+  /**
+   * The number of true positives if the GQ score threshold was set to
+   * &quot;score&quot; field value.
+   */
+  readonly numTP?: number[];
+
+  /**
+   * The number of false positives if the GQ score threshold was set to
+   * &quot;score&quot; field value.
+   */
+  readonly numFP?: number[];
+
+  /**
+   * The number of false negatives if the GQ score threshold was set to
+   * &quot;score&quot; field value.
+   */
+  readonly numFN?: number[];
+
+  /**
+   * Calculated precision if the GQ score threshold was set to &quot;score&quot;
+   * field value.
+   */
+  readonly precision?: number[];
+
+  /**
+   * Calculated sensitivity if the GQ score threshold was set to &quot;score&quot;
+   * field value.
+   */
+  readonly sensitivity?: number[];
+
+  /**
+   * Calculated fScore if the GQ score threshold was set to &quot;score&quot; field
+   * value.
+   */
+  readonly fMeasure?: number[];
+}
+
+/**
+ * A sequence that is used as a reference to describe variants that are
+ * present in a sequence analyzed.
  */
 export interface MolecularSequenceReferenceSeq {
 
@@ -543,7 +520,8 @@ export interface MolecularSequenceReferenceSeq {
 }
 
 /**
- * Raw data describing a biological sequence.
+ * Configurations of the external repository. The repository shall store
+ * target's observedSeq or records related with target's observedSeq.
  */
 export interface MolecularSequenceRepository {
 
@@ -621,90 +599,7 @@ export interface MolecularSequenceRepository {
 }
 
 /**
- * Raw data describing a biological sequence.
- */
-export interface MolecularSequenceRoc {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Invidual data point representing the GQ (genotype quality) score
-   * threshold.
-   */
-  readonly score?: number[];
-
-  /**
-   * The number of true positives if the GQ score threshold was set to
-   * &quot;score&quot; field value.
-   */
-  readonly numTP?: number[];
-
-  /**
-   * The number of false positives if the GQ score threshold was set to
-   * &quot;score&quot; field value.
-   */
-  readonly numFP?: number[];
-
-  /**
-   * The number of false negatives if the GQ score threshold was set to
-   * &quot;score&quot; field value.
-   */
-  readonly numFN?: number[];
-
-  /**
-   * Calculated precision if the GQ score threshold was set to &quot;score&quot;
-   * field value.
-   */
-  readonly precision?: number[];
-
-  /**
-   * Calculated sensitivity if the GQ score threshold was set to &quot;score&quot;
-   * field value.
-   */
-  readonly sensitivity?: number[];
-
-  /**
-   * Calculated fScore if the GQ score threshold was set to &quot;score&quot; field
-   * value.
-   */
-  readonly fMeasure?: number[];
-}
-
-/**
- * Raw data describing a biological sequence.
+ * Information about chromosome structure variation.
  */
 export interface MolecularSequenceStructureVariant {
 
@@ -762,16 +657,130 @@ export interface MolecularSequenceStructureVariant {
   /**
    * Structural variant outer.
    */
-  readonly outer?: MolecularSequenceOuter;
+  readonly outer?: MolecularSequenceStructureVariantOuter;
 
   /**
    * Structural variant inner.
    */
-  readonly inner?: MolecularSequenceInner;
+  readonly inner?: MolecularSequenceStructureVariantInner;
 }
 
 /**
- * Raw data describing a biological sequence.
+ * Structural variant inner.
+ */
+export interface MolecularSequenceStructureVariantInner {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Structural variant inner start. If the coordinate system is either
+   * 0-based or 1-based, then start position is inclusive.
+   */
+  readonly start?: number;
+
+  /**
+   * Structural variant inner end. If the coordinate system is 0-based then
+   * end is exclusive and does not include the last position. If the
+   * coordinate system is 1-base, then end is inclusive and includes the
+   * last position.
+   */
+  readonly end?: number;
+}
+
+/**
+ * Structural variant outer.
+ */
+export interface MolecularSequenceStructureVariantOuter {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Structural variant outer start. If the coordinate system is either
+   * 0-based or 1-based, then start position is inclusive.
+   */
+  readonly start?: number;
+
+  /**
+   * Structural variant outer end. If the coordinate system is 0-based then
+   * end is exclusive and does not include the last position. If the
+   * coordinate system is 1-base, then end is inclusive and includes the
+   * last position.
+   */
+  readonly end?: number;
+}
+
+/**
+ * The definition of variant here originates from Sequence ontology
+ * ([variant_of](http://www.sequenceontology.org/browser/current_svn/term/variant_of)).
+ * This element can represent amino acid or nucleic sequence
+ * change(including insertion,deletion,SNP,etc.)  It can represent some
+ * complex mutation or segment variation with the assist of CIGAR string.
  */
 export interface MolecularSequenceVariant {
 

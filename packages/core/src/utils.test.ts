@@ -80,7 +80,7 @@ test('Convert ArrayBuffer to base-64 encoded string', () => {
 
 test('Get date property', () => {
   expect(getDateProperty(undefined)).toBeUndefined();
-  expect(getDateProperty(new Date('2020-01-01'))).toEqual(new Date('2020-01-01'));
+  expect(getDateProperty('')).toBeUndefined();
   expect(getDateProperty('2020-01-01')).toEqual(new Date('2020-01-01'));
 });
 

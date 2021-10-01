@@ -120,7 +120,7 @@ export interface NamingSystem {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the naming system changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the naming
@@ -183,9 +183,8 @@ export interface NamingSystem {
 }
 
 /**
- * A curated namespace that issues unique symbols within that namespace
- * for the identification of concepts, people, devices, etc.  Represents
- * a &quot;System&quot; used within the Identifier and Coding data types.
+ * Indicates how the system may be identified when referenced in
+ * electronic exchange.
  */
 export interface NamingSystemUniqueId {
 

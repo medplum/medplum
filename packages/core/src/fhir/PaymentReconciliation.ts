@@ -114,7 +114,7 @@ export interface PaymentReconciliation {
   /**
    * The date when the resource was created.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * The party who generated the payment.
@@ -146,7 +146,7 @@ export interface PaymentReconciliation {
   /**
    * The date of payment as indicated on the financial instrument.
    */
-  readonly paymentDate?: Date | string;
+  readonly paymentDate?: string;
 
   /**
    * Total payment amount as indicated on the financial instrument.
@@ -177,8 +177,8 @@ export interface PaymentReconciliation {
 }
 
 /**
- * This resource provides the details including amount of a payment and
- * allocates the payment items being paid.
+ * Distribution of the payment amount for a previously acknowledged
+ * payable.
  */
 export interface PaymentReconciliationDetail {
 
@@ -254,7 +254,7 @@ export interface PaymentReconciliationDetail {
   /**
    * The date from the response resource containing a commitment to pay.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * A reference to the individual who is responsible for inquiries
@@ -274,8 +274,8 @@ export interface PaymentReconciliationDetail {
 }
 
 /**
- * This resource provides the details including amount of a payment and
- * allocates the payment items being paid.
+ * A note that describes or explains the processing in a human readable
+ * form.
  */
 export interface PaymentReconciliationProcessNote {
 

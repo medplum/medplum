@@ -160,7 +160,7 @@ export interface DiagnosticReport {
    * The date and time that this version of the report was made available
    * to providers, typically after the report was reviewed and verified.
    */
-  readonly issued?: Date | string;
+  readonly issued?: string;
 
   /**
    * The diagnostic service that is responsible for issuing the report.
@@ -221,12 +221,9 @@ export interface DiagnosticReport {
 }
 
 /**
- * The findings and interpretation of diagnostic  tests performed on
- * patients, groups of patients, devices, and locations, and/or specimens
- * derived from these. The report includes clinical context such as
- * requesting and provider information, and some mix of atomic results,
- * images, textual and coded interpretations, and formatted
- * representation of diagnostic reports.
+ * A list of key images associated with this report. The images are
+ * generally created during the diagnostic process, and may be directly
+ * of the patient, or of treated specimens (i.e. slides of interest).
  */
 export interface DiagnosticReportMedia {
 

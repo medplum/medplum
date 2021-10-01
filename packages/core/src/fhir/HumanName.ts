@@ -7,7 +7,8 @@ import { Extension } from './Extension';
 import { Period } from './Period';
 
 /**
- * A human's name with the ability to identify parts and usage.
+ * Base StructureDefinition for HumanName Type: A human's name with the
+ * ability to identify parts and usage.
  */
 export interface HumanName {
 

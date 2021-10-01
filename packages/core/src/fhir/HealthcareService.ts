@@ -241,7 +241,7 @@ export interface HealthcareService {
 }
 
 /**
- * The details of a healthcare service available at a location.
+ * A collection of times that the Service Site is available.
  */
 export interface HealthcareServiceAvailableTime {
 
@@ -296,17 +296,18 @@ export interface HealthcareServiceAvailableTime {
    * The opening time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
-  readonly availableStartTime?: Date | string;
+  readonly availableStartTime?: string;
 
   /**
    * The closing time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
-  readonly availableEndTime?: Date | string;
+  readonly availableEndTime?: string;
 }
 
 /**
- * The details of a healthcare service available at a location.
+ * Does this service have specific eligibility requirements that need to
+ * be met in order to use the service?
  */
 export interface HealthcareServiceEligibility {
 
@@ -357,7 +358,8 @@ export interface HealthcareServiceEligibility {
 }
 
 /**
- * The details of a healthcare service available at a location.
+ * The HealthcareService is not available during this period of time due
+ * to the provided reason.
  */
 export interface HealthcareServiceNotAvailable {
 

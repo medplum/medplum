@@ -161,9 +161,7 @@ export interface BiologicallyDerivedProduct {
 }
 
 /**
- * A material substance originating from a biological entity intended to
- * be transplanted or infused
- * into another (possibly the same) biological entity.
+ * How this product was collected.
  */
 export interface BiologicallyDerivedProductCollection {
 
@@ -225,9 +223,9 @@ export interface BiologicallyDerivedProductCollection {
 }
 
 /**
- * A material substance originating from a biological entity intended to
- * be transplanted or infused
- * into another (possibly the same) biological entity.
+ * Any manipulation of product post-collection that is intended to alter
+ * the product.  For example a buffy-coat enrichment or CD8 reduction of
+ * Peripheral Blood Stem Cells to make it more suitable for infusion.
  */
 export interface BiologicallyDerivedProductManipulation {
 
@@ -283,9 +281,9 @@ export interface BiologicallyDerivedProductManipulation {
 }
 
 /**
- * A material substance originating from a biological entity intended to
- * be transplanted or infused
- * into another (possibly the same) biological entity.
+ * Any processing of the product during collection that does not change
+ * the fundamental nature of the product. For example adding
+ * anti-coagulants during the collection of Peripheral Blood Stem Cells.
  */
 export interface BiologicallyDerivedProductProcessing {
 
@@ -351,9 +349,7 @@ export interface BiologicallyDerivedProductProcessing {
 }
 
 /**
- * A material substance originating from a biological entity intended to
- * be transplanted or infused
- * into another (possibly the same) biological entity.
+ * Product storage.
  */
 export interface BiologicallyDerivedProductStorage {
 

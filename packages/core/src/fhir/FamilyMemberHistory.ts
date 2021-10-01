@@ -138,7 +138,7 @@ export interface FamilyMemberHistory {
    * The date (and possibly time) when the family member history was
    * recorded or last updated.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * This will either be a name or a description; e.g. &quot;Aunt Susan&quot;, &quot;my
@@ -254,8 +254,10 @@ export interface FamilyMemberHistory {
 }
 
 /**
- * Significant health conditions for a person related to the patient
- * relevant in the context of care for the patient.
+ * The significant Conditions (or condition) that the family member had.
+ * This is a repeating section to allow a system to represent more than
+ * one condition per resource, though there is nothing stopping multiple
+ * resources - one per condition.
  */
 export interface FamilyMemberHistoryCondition {
 

@@ -110,7 +110,7 @@ export interface Subscription {
   /**
    * The time for the server to turn the subscription off.
    */
-  readonly end?: Date | string;
+  readonly end?: string;
 
   /**
    * A description of why this subscription is defined.
@@ -137,12 +137,8 @@ export interface Subscription {
 }
 
 /**
- * The subscription resource is used to define a push-based subscription
- * from a server to another system. Once a subscription is registered
- * with the server, the server checks every resource that is created or
- * updated, and if the resource matches the given criteria, it sends a
- * message on the defined &quot;channel&quot; so that another system can take an
- * appropriate action.
+ * Details where to send notifications when resources are received that
+ * meet the criteria.
  */
 export interface SubscriptionChannel {
 

@@ -199,7 +199,7 @@ export interface AllergyIntolerance {
    * record was created in the system, which is often a system-generated
    * date.
    */
-  readonly recordedDate?: Date | string;
+  readonly recordedDate?: string;
 
   /**
    * Individual who recorded the record and takes responsibility for its
@@ -216,7 +216,7 @@ export interface AllergyIntolerance {
    * Represents the date and/or time of the last known occurrence of a
    * reaction event.
    */
-  readonly lastOccurrence?: Date | string;
+  readonly lastOccurrence?: string;
 
   /**
    * Additional narrative about the propensity for the Adverse Reaction,
@@ -232,8 +232,8 @@ export interface AllergyIntolerance {
 }
 
 /**
- * Risk of harmful or undesirable, physiological response which is unique
- * to an individual and associated with exposure to a substance.
+ * Details about each adverse reaction event linked to exposure to the
+ * identified substance.
  */
 export interface AllergyIntoleranceReaction {
 
@@ -302,7 +302,7 @@ export interface AllergyIntoleranceReaction {
   /**
    * Record of the date and/or time of the onset of the Reaction.
    */
-  readonly onset?: Date | string;
+  readonly onset?: string;
 
   /**
    * Clinical assessment of the severity of the reaction event as a whole,

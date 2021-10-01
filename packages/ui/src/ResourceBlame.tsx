@@ -41,7 +41,7 @@ export function ResourceBlame(props: ResourceBlameProps) {
                     <Avatar size="xsmall" value={row.meta.author} />
                     <ResourceName value={row.meta.author} link={true} />
                     <br />
-                    {formatDateTime(row.meta.lastUpdated as string | Date)}
+                    {formatDateTime(row.meta.lastUpdated as string)}
                     <br />
                     <span>{row.meta.versionId}</span>
                   </td>

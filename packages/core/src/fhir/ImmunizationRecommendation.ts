@@ -107,7 +107,7 @@ export interface ImmunizationRecommendation {
   /**
    * The date the immunization recommendation(s) were created.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Indicates the authority who published the protocol (e.g. ACIP).
@@ -121,63 +121,7 @@ export interface ImmunizationRecommendation {
 }
 
 /**
- * A patient's point-in-time set of recommendations (i.e. forecasting)
- * according to a published schedule with optional supporting
- * justification.
- */
-export interface ImmunizationRecommendationDateCriterion {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Date classification of recommendation.  For example, earliest date to
-   * give, latest date to give, etc.
-   */
-  readonly code?: CodeableConcept;
-
-  /**
-   * The date whose meaning is specified by dateCriterion.code.
-   */
-  readonly value?: Date | string;
-}
-
-/**
- * A patient's point-in-time set of recommendations (i.e. forecasting)
- * according to a published schedule with optional supporting
- * justification.
+ * Vaccine administration recommendations.
  */
 export interface ImmunizationRecommendationRecommendation {
 
@@ -246,7 +190,7 @@ export interface ImmunizationRecommendationRecommendation {
    * Vaccine date recommendations.  For example, earliest date to
    * administer, latest date to administer, etc.
    */
-  readonly dateCriterion?: ImmunizationRecommendationDateCriterion[];
+  readonly dateCriterion?: ImmunizationRecommendationRecommendationDateCriterion[];
 
   /**
    * Contains the description about the protocol under which the vaccine
@@ -294,4 +238,57 @@ export interface ImmunizationRecommendationRecommendation {
    * allergy/intolerance information.
    */
   readonly supportingPatientInformation?: Reference[];
+}
+
+/**
+ * Vaccine date recommendations.  For example, earliest date to
+ * administer, latest date to administer, etc.
+ */
+export interface ImmunizationRecommendationRecommendationDateCriterion {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Date classification of recommendation.  For example, earliest date to
+   * give, latest date to give, etc.
+   */
+  readonly code?: CodeableConcept;
+
+  /**
+   * The date whose meaning is specified by dateCriterion.code.
+   */
+  readonly value?: string;
 }

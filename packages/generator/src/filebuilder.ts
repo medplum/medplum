@@ -1,10 +1,12 @@
 
+const DEFAULT_INDENT = ' '.repeat(2);
+
 export class FileBuilder {
   private readonly indent: string;
   private readonly b: string[];
   indentCount: number;
 
-  constructor(indent: string) {
+  constructor(indent = DEFAULT_INDENT) {
     this.indent = indent;
     this.b = [];
     this.indentCount = 0;

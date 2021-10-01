@@ -7,8 +7,8 @@ import { Extension } from './Extension';
 import { Reference } from './Reference';
 
 /**
- * A  text note which also  contains information about who made the
- * statement and when.
+ * Base StructureDefinition for Annotation Type: A  text note which also
+ * contains information about who made the statement and when.
  */
 export interface Annotation {
 
@@ -41,7 +41,7 @@ export interface Annotation {
   /**
    * Indicates when this particular annotation was made.
    */
-  readonly time?: Date | string;
+  readonly time?: string;
 
   /**
    * The text of the annotation in markdown format.

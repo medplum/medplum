@@ -150,7 +150,7 @@ export interface SearchParameter {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the search parameter changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the search
@@ -272,8 +272,7 @@ export interface SearchParameter {
 }
 
 /**
- * A search parameter that defines a named search item that can be used
- * to search/filter on a resource.
+ * Used to define the parts of a composite search parameter.
  */
 export interface SearchParameterComponent {
 

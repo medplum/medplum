@@ -173,8 +173,8 @@ export interface DeviceMetric {
 }
 
 /**
- * Describes a measurement, calculation or setting capability of a
- * medical device.
+ * Describes the calibrations that have been performed or that are
+ * required to be performed.
  */
 export interface DeviceMetricCalibration {
 
@@ -226,5 +226,5 @@ export interface DeviceMetricCalibration {
   /**
    * Describes the time last calibration has been performed.
    */
-  readonly time?: Date | string;
+  readonly time?: string;
 }

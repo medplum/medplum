@@ -147,7 +147,7 @@ export interface ExplanationOfBenefit {
   /**
    * The date this resource was created.
    */
-  readonly created?: Date | string;
+  readonly created?: string;
 
   /**
    * Individual who created the claim, predetermination or
@@ -311,7 +311,7 @@ export interface ExplanationOfBenefit {
    * The adjudication results which are presented at the header level
    * rather than at the line-item or add-item levels.
    */
-  readonly adjudication?: ExplanationOfBenefitAdjudication[];
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
 
   /**
    * Categorized monetary totals for the adjudication.
@@ -352,9 +352,8 @@ export interface ExplanationOfBenefit {
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * Details of a accident which resulted in injuries which required the
+ * products and services listed in the claim.
  */
 export interface ExplanationOfBenefitAccident {
 
@@ -397,7 +396,7 @@ export interface ExplanationOfBenefitAccident {
    * Date of an accident event  related to the products and services
    * contained in the claim.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The type or context of the accident event for the purposes of
@@ -418,9 +417,8 @@ export interface ExplanationOfBenefitAccident {
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * The first-tier service adjudications for payor added product or
+ * service lines.
  */
 export interface ExplanationOfBenefitAddItem {
 
@@ -573,20 +571,18 @@ export interface ExplanationOfBenefitAddItem {
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ExplanationOfBenefitAdjudication[];
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
 
   /**
    * The second-tier service adjudications for payor added services.
    */
-  readonly detail?: ExplanationOfBenefitDetail1[];
+  readonly detail?: ExplanationOfBenefitAddItemDetail[];
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * The second-tier service adjudications for payor added services.
  */
-export interface ExplanationOfBenefitAdjudication {
+export interface ExplanationOfBenefitAddItemDetail {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -624,37 +620,154 @@ export interface ExplanationOfBenefitAdjudication {
   readonly modifierExtension?: Extension[];
 
   /**
-   * A code to indicate the information type of this adjudication record.
-   * Information types may include: the value submitted, maximum values or
-   * percentages allowed or payable under the plan, amounts that the
-   * patient is responsible for in-aggregate or pertaining to this item,
-   * amounts paid by other coverages, and the benefit payable for this
-   * item.
+   * When the value is a group code then this item collects a set of
+   * related claim details, otherwise this contains the product, service,
+   * drug or other billing code for the item.
    */
-  readonly category?: CodeableConcept;
+  readonly productOrService?: CodeableConcept;
 
   /**
-   * A code supporting the understanding of the adjudication result and
-   * explaining variance from expected amount.
+   * Item typification or modifiers codes to convey additional context for
+   * the product or service.
    */
-  readonly reason?: CodeableConcept;
+  readonly modifier?: CodeableConcept[];
 
   /**
-   * Monetary amount associated with the category.
+   * The number of repetitions of a service or product.
    */
-  readonly amount?: Money;
+  readonly quantity?: Quantity;
 
   /**
-   * A non-monetary value associated with the category. Mutually exclusive
-   * to the amount element above.
+   * If the item is not a group then this is the fee for the product or
+   * service, otherwise this is the total of the fees for the details of
+   * the group.
    */
-  readonly value?: number;
+  readonly unitPrice?: Money;
+
+  /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  readonly factor?: number;
+
+  /**
+   * The quantity times the unit price for an additional service or product
+   * or charge.
+   */
+  readonly net?: Money;
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  readonly noteNumber?: number[];
+
+  /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+
+  /**
+   * The third-tier service adjudications for payor added services.
+   */
+  readonly subDetail?: ExplanationOfBenefitAddItemDetailSubDetail[];
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * The third-tier service adjudications for payor added services.
+ */
+export interface ExplanationOfBenefitAddItemDetailSubDetail {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * When the value is a group code then this item collects a set of
+   * related claim details, otherwise this contains the product, service,
+   * drug or other billing code for the item.
+   */
+  readonly productOrService?: CodeableConcept;
+
+  /**
+   * Item typification or modifiers codes to convey additional context for
+   * the product or service.
+   */
+  readonly modifier?: CodeableConcept[];
+
+  /**
+   * The number of repetitions of a service or product.
+   */
+  readonly quantity?: Quantity;
+
+  /**
+   * If the item is not a group then this is the fee for the product or
+   * service, otherwise this is the total of the fees for the details of
+   * the group.
+   */
+  readonly unitPrice?: Money;
+
+  /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  readonly factor?: number;
+
+  /**
+   * The quantity times the unit price for an additional service or product
+   * or charge.
+   */
+  readonly net?: Money;
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  readonly noteNumber?: number[];
+
+  /**
+   * The adjudication results.
+   */
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+}
+
+/**
+ * Balance by Benefit Category.
  */
 export interface ExplanationOfBenefitBenefitBalance {
 
@@ -736,13 +849,82 @@ export interface ExplanationOfBenefitBenefitBalance {
   /**
    * Benefits Used to date.
    */
-  readonly financial?: ExplanationOfBenefitFinancial[];
+  readonly financial?: ExplanationOfBenefitBenefitBalanceFinancial[];
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * Benefits Used to date.
+ */
+export interface ExplanationOfBenefitBenefitBalanceFinancial {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Classification of benefit being provided.
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * The quantity of the benefit which is permitted under the coverage.
+   */
+  readonly allowedUnsignedInt?: number;
+
+  /**
+   * The quantity of the benefit which is permitted under the coverage.
+   */
+  readonly allowedString?: string;
+
+  /**
+   * The quantity of the benefit which is permitted under the coverage.
+   */
+  readonly allowedMoney?: Money;
+
+  /**
+   * The quantity of the benefit which have been consumed to date.
+   */
+  readonly usedUnsignedInt?: number;
+
+  /**
+   * The quantity of the benefit which have been consumed to date.
+   */
+  readonly usedMoney?: Money;
+}
+
+/**
+ * The members of the team who provided the products and services.
  */
 export interface ExplanationOfBenefitCareTeam {
 
@@ -811,233 +993,7 @@ export interface ExplanationOfBenefitCareTeam {
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
- */
-export interface ExplanationOfBenefitDetail {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * A claim detail line. Either a simple (a product or service) or a
-   * 'group' of sub-details which are simple items.
-   */
-  readonly sequence?: number;
-
-  /**
-   * The type of revenue or cost center providing the product and/or
-   * service.
-   */
-  readonly revenue?: CodeableConcept;
-
-  /**
-   * Code to identify the general type of benefits under which products and
-   * services are provided.
-   */
-  readonly category?: CodeableConcept;
-
-  /**
-   * When the value is a group code then this item collects a set of
-   * related claim details, otherwise this contains the product, service,
-   * drug or other billing code for the item.
-   */
-  readonly productOrService?: CodeableConcept;
-
-  /**
-   * Item typification or modifiers codes to convey additional context for
-   * the product or service.
-   */
-  readonly modifier?: CodeableConcept[];
-
-  /**
-   * Identifies the program under which this may be recovered.
-   */
-  readonly programCode?: CodeableConcept[];
-
-  /**
-   * The number of repetitions of a service or product.
-   */
-  readonly quantity?: Quantity;
-
-  /**
-   * If the item is not a group then this is the fee for the product or
-   * service, otherwise this is the total of the fees for the details of
-   * the group.
-   */
-  readonly unitPrice?: Money;
-
-  /**
-   * A real number that represents a multiplier used in determining the
-   * overall value of services delivered and/or goods received. The concept
-   * of a Factor allows for a discount or surcharge multiplier to be
-   * applied to a monetary amount.
-   */
-  readonly factor?: number;
-
-  /**
-   * The quantity times the unit price for an additional service or product
-   * or charge.
-   */
-  readonly net?: Money;
-
-  /**
-   * Unique Device Identifiers associated with this line item.
-   */
-  readonly udi?: Reference[];
-
-  /**
-   * The numbers associated with notes below which apply to the
-   * adjudication of this item.
-   */
-  readonly noteNumber?: number[];
-
-  /**
-   * The adjudication results.
-   */
-  readonly adjudication?: ExplanationOfBenefitAdjudication[];
-
-  /**
-   * Third-tier of goods and services.
-   */
-  readonly subDetail?: ExplanationOfBenefitSubDetail[];
-}
-
-/**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
- */
-export interface ExplanationOfBenefitDetail1 {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * When the value is a group code then this item collects a set of
-   * related claim details, otherwise this contains the product, service,
-   * drug or other billing code for the item.
-   */
-  readonly productOrService?: CodeableConcept;
-
-  /**
-   * Item typification or modifiers codes to convey additional context for
-   * the product or service.
-   */
-  readonly modifier?: CodeableConcept[];
-
-  /**
-   * The number of repetitions of a service or product.
-   */
-  readonly quantity?: Quantity;
-
-  /**
-   * If the item is not a group then this is the fee for the product or
-   * service, otherwise this is the total of the fees for the details of
-   * the group.
-   */
-  readonly unitPrice?: Money;
-
-  /**
-   * A real number that represents a multiplier used in determining the
-   * overall value of services delivered and/or goods received. The concept
-   * of a Factor allows for a discount or surcharge multiplier to be
-   * applied to a monetary amount.
-   */
-  readonly factor?: number;
-
-  /**
-   * The quantity times the unit price for an additional service or product
-   * or charge.
-   */
-  readonly net?: Money;
-
-  /**
-   * The numbers associated with notes below which apply to the
-   * adjudication of this item.
-   */
-  readonly noteNumber?: number[];
-
-  /**
-   * The adjudication results.
-   */
-  readonly adjudication?: ExplanationOfBenefitAdjudication[];
-
-  /**
-   * The third-tier service adjudications for payor added services.
-   */
-  readonly subDetail?: ExplanationOfBenefitSubDetail1[];
-}
-
-/**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * Information about diagnoses relevant to the claim items.
  */
 export interface ExplanationOfBenefitDiagnosis {
 
@@ -1113,82 +1069,8 @@ export interface ExplanationOfBenefitDiagnosis {
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
- */
-export interface ExplanationOfBenefitFinancial {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Classification of benefit being provided.
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * The quantity of the benefit which is permitted under the coverage.
-   */
-  readonly allowedUnsignedInt?: number;
-
-  /**
-   * The quantity of the benefit which is permitted under the coverage.
-   */
-  readonly allowedString?: string;
-
-  /**
-   * The quantity of the benefit which is permitted under the coverage.
-   */
-  readonly allowedMoney?: Money;
-
-  /**
-   * The quantity of the benefit which have been consumed to date.
-   */
-  readonly usedUnsignedInt?: number;
-
-  /**
-   * The quantity of the benefit which have been consumed to date.
-   */
-  readonly usedMoney?: Money;
-}
-
-/**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * Financial instruments for reimbursement for the health care products
+ * and services specified on the claim.
  */
 export interface ExplanationOfBenefitInsurance {
 
@@ -1250,9 +1132,8 @@ export interface ExplanationOfBenefitInsurance {
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * A claim line. Either a simple (a product or service) or a 'group' of
+ * details which can also be a simple items or groups of sub-details.
  */
 export interface ExplanationOfBenefitItem {
 
@@ -1433,20 +1314,20 @@ export interface ExplanationOfBenefitItem {
    * adjudication of the detail items. If this item is a simple product or
    * service then this is the result of the adjudication of this item.
    */
-  readonly adjudication?: ExplanationOfBenefitAdjudication[];
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
 
   /**
    * Second-tier of goods and services.
    */
-  readonly detail?: ExplanationOfBenefitDetail[];
+  readonly detail?: ExplanationOfBenefitItemDetail[];
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * If this item is a group then the values here are a summary of the
+ * adjudication of the detail items. If this item is a simple product or
+ * service then this is the result of the adjudication of this item.
  */
-export interface ExplanationOfBenefitPayee {
+export interface ExplanationOfBenefitItemAdjudication {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -1484,296 +1365,37 @@ export interface ExplanationOfBenefitPayee {
   readonly modifierExtension?: Extension[];
 
   /**
-   * Type of Party to be reimbursed: Subscriber, provider, other.
+   * A code to indicate the information type of this adjudication record.
+   * Information types may include: the value submitted, maximum values or
+   * percentages allowed or payable under the plan, amounts that the
+   * patient is responsible for in-aggregate or pertaining to this item,
+   * amounts paid by other coverages, and the benefit payable for this
+   * item.
    */
-  readonly type?: CodeableConcept;
+  readonly category?: CodeableConcept;
 
   /**
-   * Reference to the individual or organization to whom any payment will
-   * be made.
+   * A code supporting the understanding of the adjudication result and
+   * explaining variance from expected amount.
    */
-  readonly party?: Reference;
-}
-
-/**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
- */
-export interface ExplanationOfBenefitPayment {
+  readonly reason?: CodeableConcept;
 
   /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Whether this represents partial or complete payment of the benefits
-   * payable.
-   */
-  readonly type?: CodeableConcept;
-
-  /**
-   * Total amount of all adjustments to this payment included in this
-   * transaction which are not related to this claim's adjudication.
-   */
-  readonly adjustment?: Money;
-
-  /**
-   * Reason for the payment adjustment.
-   */
-  readonly adjustmentReason?: CodeableConcept;
-
-  /**
-   * Estimated date the payment will be issued or the actual issue date of
-   * payment.
-   */
-  readonly date?: Date | string;
-
-  /**
-   * Benefits payable less any payment adjustment.
+   * Monetary amount associated with the category.
    */
   readonly amount?: Money;
 
   /**
-   * Issuer's unique identifier for the payment instrument.
+   * A non-monetary value associated with the category. Mutually exclusive
+   * to the amount element above.
    */
-  readonly identifier?: Identifier;
+  readonly value?: number;
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * Second-tier of goods and services.
  */
-export interface ExplanationOfBenefitProcedure {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * A number to uniquely identify procedure entries.
-   */
-  readonly sequence?: number;
-
-  /**
-   * When the condition was observed or the relative ranking.
-   */
-  readonly type?: CodeableConcept[];
-
-  /**
-   * Date and optionally time the procedure was performed.
-   */
-  readonly date?: Date | string;
-
-  /**
-   * The code or reference to a Procedure resource which identifies the
-   * clinical intervention performed.
-   */
-  readonly procedureCodeableConcept?: CodeableConcept;
-
-  /**
-   * The code or reference to a Procedure resource which identifies the
-   * clinical intervention performed.
-   */
-  readonly procedureReference?: Reference;
-
-  /**
-   * Unique Device Identifiers associated with this line item.
-   */
-  readonly udi?: Reference[];
-}
-
-/**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
- */
-export interface ExplanationOfBenefitProcessNote {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * A number to uniquely identify a note entry.
-   */
-  readonly number?: number;
-
-  /**
-   * The business purpose of the note text.
-   */
-  readonly type?: string;
-
-  /**
-   * The explanation or description associated with the processing.
-   */
-  readonly text?: string;
-
-  /**
-   * A code to define the language used in the text of the note.
-   */
-  readonly language?: CodeableConcept;
-}
-
-/**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
- */
-export interface ExplanationOfBenefitRelated {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Reference to a related claim.
-   */
-  readonly claim?: Reference;
-
-  /**
-   * A code to convey how the claims are related.
-   */
-  readonly relationship?: CodeableConcept;
-
-  /**
-   * An alternate organizational reference to the case or file to which
-   * this particular claim pertains.
-   */
-  readonly reference?: Identifier;
-}
-
-/**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
- */
-export interface ExplanationOfBenefitSubDetail {
+export interface ExplanationOfBenefitItemDetail {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -1886,15 +1508,18 @@ export interface ExplanationOfBenefitSubDetail {
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ExplanationOfBenefitAdjudication[];
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+
+  /**
+   * Third-tier of goods and services.
+   */
+  readonly subDetail?: ExplanationOfBenefitItemDetailSubDetail[];
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * Third-tier of goods and services.
  */
-export interface ExplanationOfBenefitSubDetail1 {
+export interface ExplanationOfBenefitItemDetailSubDetail {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -1932,6 +1557,24 @@ export interface ExplanationOfBenefitSubDetail1 {
   readonly modifierExtension?: Extension[];
 
   /**
+   * A claim detail line. Either a simple (a product or service) or a
+   * 'group' of sub-details which are simple items.
+   */
+  readonly sequence?: number;
+
+  /**
+   * The type of revenue or cost center providing the product and/or
+   * service.
+   */
+  readonly revenue?: CodeableConcept;
+
+  /**
+   * Code to identify the general type of benefits under which products and
+   * services are provided.
+   */
+  readonly category?: CodeableConcept;
+
+  /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
@@ -1943,6 +1586,11 @@ export interface ExplanationOfBenefitSubDetail1 {
    * the product or service.
    */
   readonly modifier?: CodeableConcept[];
+
+  /**
+   * Identifies the program under which this may be recovered.
+   */
+  readonly programCode?: CodeableConcept[];
 
   /**
    * The number of repetitions of a service or product.
@@ -1971,6 +1619,11 @@ export interface ExplanationOfBenefitSubDetail1 {
   readonly net?: Money;
 
   /**
+   * Unique Device Identifiers associated with this line item.
+   */
+  readonly udi?: Reference[];
+
+  /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
@@ -1979,13 +1632,333 @@ export interface ExplanationOfBenefitSubDetail1 {
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ExplanationOfBenefitAdjudication[];
+  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * The party to be reimbursed for cost of the products and services
+ * according to the terms of the policy.
+ */
+export interface ExplanationOfBenefitPayee {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Type of Party to be reimbursed: Subscriber, provider, other.
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * Reference to the individual or organization to whom any payment will
+   * be made.
+   */
+  readonly party?: Reference;
+}
+
+/**
+ * Payment details for the adjudication of the claim.
+ */
+export interface ExplanationOfBenefitPayment {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Whether this represents partial or complete payment of the benefits
+   * payable.
+   */
+  readonly type?: CodeableConcept;
+
+  /**
+   * Total amount of all adjustments to this payment included in this
+   * transaction which are not related to this claim's adjudication.
+   */
+  readonly adjustment?: Money;
+
+  /**
+   * Reason for the payment adjustment.
+   */
+  readonly adjustmentReason?: CodeableConcept;
+
+  /**
+   * Estimated date the payment will be issued or the actual issue date of
+   * payment.
+   */
+  readonly date?: string;
+
+  /**
+   * Benefits payable less any payment adjustment.
+   */
+  readonly amount?: Money;
+
+  /**
+   * Issuer's unique identifier for the payment instrument.
+   */
+  readonly identifier?: Identifier;
+}
+
+/**
+ * Procedures performed on the patient relevant to the billing items with
+ * the claim.
+ */
+export interface ExplanationOfBenefitProcedure {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * A number to uniquely identify procedure entries.
+   */
+  readonly sequence?: number;
+
+  /**
+   * When the condition was observed or the relative ranking.
+   */
+  readonly type?: CodeableConcept[];
+
+  /**
+   * Date and optionally time the procedure was performed.
+   */
+  readonly date?: string;
+
+  /**
+   * The code or reference to a Procedure resource which identifies the
+   * clinical intervention performed.
+   */
+  readonly procedureCodeableConcept?: CodeableConcept;
+
+  /**
+   * The code or reference to a Procedure resource which identifies the
+   * clinical intervention performed.
+   */
+  readonly procedureReference?: Reference;
+
+  /**
+   * Unique Device Identifiers associated with this line item.
+   */
+  readonly udi?: Reference[];
+}
+
+/**
+ * A note that describes or explains adjudication results in a human
+ * readable form.
+ */
+export interface ExplanationOfBenefitProcessNote {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * A number to uniquely identify a note entry.
+   */
+  readonly number?: number;
+
+  /**
+   * The business purpose of the note text.
+   */
+  readonly type?: string;
+
+  /**
+   * The explanation or description associated with the processing.
+   */
+  readonly text?: string;
+
+  /**
+   * A code to define the language used in the text of the note.
+   */
+  readonly language?: CodeableConcept;
+}
+
+/**
+ * Other claims which are related to this claim such as prior submissions
+ * or claims for related services or for the same event.
+ */
+export interface ExplanationOfBenefitRelated {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Reference to a related claim.
+   */
+  readonly claim?: Reference;
+
+  /**
+   * A code to convey how the claims are related.
+   */
+  readonly relationship?: CodeableConcept;
+
+  /**
+   * An alternate organizational reference to the case or file to which
+   * this particular claim pertains.
+   */
+  readonly reference?: Identifier;
+}
+
+/**
+ * Additional information codes regarding exceptions, special
+ * considerations, the condition, situation, prior or concurrent issues.
  */
 export interface ExplanationOfBenefitSupportingInfo {
 
@@ -2095,9 +2068,7 @@ export interface ExplanationOfBenefitSupportingInfo {
 }
 
 /**
- * This resource provides: the claim details; adjudication details from
- * the processing of a Claim; and optionally account balance information,
- * for informing the subscriber of the benefits provided.
+ * Categorized monetary totals for the adjudication.
  */
 export interface ExplanationOfBenefitTotal {
 

@@ -157,7 +157,7 @@ export interface MessageDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the message definition changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the message
@@ -253,18 +253,17 @@ export interface MessageDefinition {
 
   /**
    * Canonical reference to a GraphDefinition. If a URL is provided, it is
-   * the canonical reference to a [[[GraphDefinition]]] that it controls
-   * what resources are to be added to the bundle when building the
-   * document. The GraphDefinition can also specify profiles that apply to
-   * the various resources.
+   * the canonical reference to a [GraphDefinition](graphdefinition.html)
+   * that it controls what resources are to be added to the bundle when
+   * building the document. The GraphDefinition can also specify profiles
+   * that apply to the various resources.
    */
   readonly graph?: string[];
 }
 
 /**
- * Defines the characteristics of a message that can be shared between
- * systems, including the type of event that initiates the message, the
- * content to be transmitted and what response(s), if any, are permitted.
+ * Indicates what types of messages may be sent as an application-level
+ * response to this message.
  */
 export interface MessageDefinitionAllowedResponse {
 
@@ -317,9 +316,9 @@ export interface MessageDefinitionAllowedResponse {
 }
 
 /**
- * Defines the characteristics of a message that can be shared between
- * systems, including the type of event that initiates the message, the
- * content to be transmitted and what response(s), if any, are permitted.
+ * Identifies the resource (or resources) that are being addressed by the
+ * event.  For example, the Encounter for an admit message or two Account
+ * records for a merge.
  */
 export interface MessageDefinitionFocus {
 

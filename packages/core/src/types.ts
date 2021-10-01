@@ -1,3 +1,4 @@
+import { capitalize } from '.';
 import { ElementDefinition, SearchParameter, StructureDefinition } from './fhir';
 
 /**
@@ -69,7 +70,6 @@ export enum PropertyType {
   uuid = 'uuid',
 }
 
-
 /**
  * An IndexedStructureDefinition is a lookup-optimized version of a StructureDefinition.
  *
@@ -112,7 +112,7 @@ export interface TypeSchema {
   properties: { [name: string]: ElementDefinition };
   searchParams?: SearchParameter[];
   description?: string;
-  backboneElement?: boolean;
+  parentType?: string;
 }
 
 /**
@@ -121,26 +121,34 @@ export interface TypeSchema {
  * @param structureDefinition The original StructureDefinition.
  * @return An indexed IndexedStructureDefinition.
  */
-export function indexStructureDefinition(structureDefinition: StructureDefinition): IndexedStructureDefinition {
+export function indexStructureDefinition(structureDefinition: StructureDefinition, output?: IndexedStructureDefinition): IndexedStructureDefinition {
   const typeName = structureDefinition.name;
-  if (!typeName || typeName === 'Resource') {
+  if (!typeName) {
     throw new Error('Invalid StructureDefinition');
   }
 
-  const output = {
-    types: {}
-  } as IndexedStructureDefinition;
+  if (!output) {
+    output = {
+      types: {}
+    } as IndexedStructureDefinition;
+  }
+
+  output.types[typeName] = {
+    display: typeName,
+    description: structureDefinition.description,
+    properties: {}
+  };
 
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
     // Filter out any elements missing path or type
-    const filtered = elements.filter(e => e.path !== typeName && e.path && e.type && e.type.length > 0);
+    const filtered = elements.filter(e => e.path !== typeName && e.path);// && e.type && e.type.length > 0);
 
     // First pass, build types
-    filtered.forEach(element => indexType(output, element));
+    filtered.forEach(element => indexType(output as IndexedStructureDefinition, element));
 
     // Second pass, build properties
-    filtered.forEach(element => indexProperty(output, element));
+    filtered.forEach(element => indexProperty(output as IndexedStructureDefinition, element));
   }
 
   return output;
@@ -155,11 +163,17 @@ export function indexStructureDefinition(structureDefinition: StructureDefinitio
  */
 function indexType(output: IndexedStructureDefinition, element: ElementDefinition): void {
   const path = element.path as string;
+  const typeCode = element.type?.[0]?.code;
+  if (typeCode !== 'Element' && typeCode !== 'BackboneElement') {
+    return;
+  }
   const parts = path.split('.');
-  const typeName = buildTypeName(parts.slice(0, parts.length - 1));
+  const typeName = buildTypeName(parts);
   if (!(typeName in output.types)) {
     output.types[typeName] = {
       display: typeName,
+      description: element.definition,
+      parentType: buildTypeName(parts.slice(0, parts.length - 1)),
       properties: {}
     };
   }
@@ -173,6 +187,9 @@ function indexType(output: IndexedStructureDefinition, element: ElementDefinitio
 function indexProperty(output: IndexedStructureDefinition, element: ElementDefinition): void {
   const path = element.path as string;
   const parts = path.split('.');
+  if (parts.length === 1) {
+    return;
+  }
   const typeName = buildTypeName(parts.slice(0, parts.length - 1));
   const typeSchema = output.types[typeName];
   const key = parts[parts.length - 1];
@@ -180,11 +197,7 @@ function indexProperty(output: IndexedStructureDefinition, element: ElementDefin
 }
 
 export function buildTypeName(components: string[]): string {
-  return components.map(capitalize).join('_');
-}
-
-export function capitalize(word: string): string {
-  return word.charAt(0).toUpperCase() + word.substr(1);
+  return components.map(capitalize).join('');
 }
 
 export function getPropertyDisplayName(property: ElementDefinition): string {

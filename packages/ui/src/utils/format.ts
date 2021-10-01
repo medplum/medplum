@@ -5,12 +5,11 @@ import { Bundle, BundleEntry, Resource } from '@medplum/core';
  * @param dateTime A date that can be either a ISO 8601 string or a Date object.
  * @returns A user-friendly formatted date string.
  */
-export function formatDateTime(dateTime: string | Date | undefined): string {
+export function formatDateTime(dateTime: string | undefined): string {
   if (!dateTime) {
     return '';
   }
-  const date = dateTime instanceof Date ? dateTime : new Date(dateTime);
-  return date.toLocaleString();
+  return new Date(dateTime).toLocaleString();
 }
 
 export function sortByDate(resources: Resource[]): void {
@@ -21,12 +20,11 @@ function resourceDateComparator(a: Resource, b: Resource): number {
   return getIsoDateString(a.meta?.lastUpdated).localeCompare(getIsoDateString(b.meta?.lastUpdated));
 }
 
-function getIsoDateString(dateTime: string | Date | undefined): string {
+function getIsoDateString(dateTime: string | undefined): string {
   if (!dateTime) {
     return '';
   }
-  const date = dateTime instanceof Date ? dateTime : new Date(dateTime);
-  return date.toISOString();
+  return new Date(dateTime).toISOString();
 }
 
 export function sortBundleByDate(bundle: Bundle): void {

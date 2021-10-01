@@ -303,9 +303,9 @@ export interface Procedure {
 }
 
 /**
- * An action that is or was performed on or for a patient. This can be a
- * physical intervention like an operation, or less invasive like long
- * term services, counseling, or hypnotherapy.
+ * A device that is implanted, removed or otherwise manipulated
+ * (calibration, battery replacement, fitting a prosthesis, attaching a
+ * wound-vac, etc.) as a focal portion of the Procedure.
  */
 export interface ProcedureFocalDevice {
 
@@ -356,9 +356,7 @@ export interface ProcedureFocalDevice {
 }
 
 /**
- * An action that is or was performed on or for a patient. This can be a
- * physical intervention like an operation, or less invasive like long
- * term services, counseling, or hypnotherapy.
+ * Limited to &quot;real&quot; people rather than equipment.
  */
 export interface ProcedurePerformer {
 

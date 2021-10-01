@@ -188,7 +188,7 @@ export interface ActivityDefinition {
    * change when the substantive content of the activity definition
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the activity
@@ -247,14 +247,14 @@ export interface ActivityDefinition {
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: Date | string;
+  readonly approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: Date | string;
+  readonly lastReviewDate?: string;
 
   /**
    * The period during which the activity definition content was or is
@@ -459,9 +459,11 @@ export interface ActivityDefinition {
 }
 
 /**
- * This resource allows for the definition of some activity to be
- * performed, independent of a particular patient, practitioner, or other
- * performance context.
+ * Dynamic values that will be evaluated to produce values for elements
+ * of the resulting resource. For example, if the dosage of a medication
+ * must be computed based on the patient's weight, a dynamic value would
+ * be used to specify an expression that calculated the weight, and the
+ * path on the request resource that would contain the result.
  */
 export interface ActivityDefinitionDynamicValue {
 
@@ -520,9 +522,7 @@ export interface ActivityDefinitionDynamicValue {
 }
 
 /**
- * This resource allows for the definition of some activity to be
- * performed, independent of a particular patient, practitioner, or other
- * performance context.
+ * Indicates who should participate in performing the action described.
  */
 export interface ActivityDefinitionParticipant {
 

@@ -193,7 +193,7 @@ export interface CommunicationRequest {
    * For draft requests, indicates the date of initial creation.  For
    * requests with other statuses, indicates the date of activation.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The device, individual, or organization who initiated the request and
@@ -232,9 +232,8 @@ export interface CommunicationRequest {
 }
 
 /**
- * A request to convey information; e.g. the CDS system proposes that an
- * alert be sent to a responsible provider, the CDS system proposes that
- * the public health agency be notified about a reportable condition.
+ * Text, attachment(s), or resource(s) to be communicated to the
+ * recipient.
  */
 export interface CommunicationRequestPayload {
 

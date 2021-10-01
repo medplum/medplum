@@ -133,7 +133,7 @@ export interface Invoice {
   /**
    * Date/time(s) of when this Invoice was posted.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * Indicates who or what performed or participated in the charged
@@ -165,7 +165,7 @@ export interface Invoice {
    * transparency to the recipient of the Invoice of how the total price
    * was calculated.
    */
-  readonly totalPriceComponent?: InvoicePriceComponent[];
+  readonly totalPriceComponent?: InvoiceLineItemPriceComponent[];
 
   /**
    * Invoice total , taxes excluded.
@@ -191,8 +191,9 @@ export interface Invoice {
 }
 
 /**
- * Invoice containing collected ChargeItems from an Account with
- * calculated individual and total price for Billing purpose.
+ * Each line item represents one charge for goods and services rendered.
+ * Details such as date, code and amount are found in the referenced
+ * ChargeItem resource.
  */
 export interface InvoiceLineItem {
 
@@ -261,69 +262,19 @@ export interface InvoiceLineItem {
    * transparency to the recipient of the Invoice as to how the prices have
    * been calculated.
    */
-  readonly priceComponent?: InvoicePriceComponent[];
+  readonly priceComponent?: InvoiceLineItemPriceComponent[];
 }
 
 /**
- * Invoice containing collected ChargeItems from an Account with
- * calculated individual and total price for Billing purpose.
+ * The price for a ChargeItem may be calculated as a base price with
+ * surcharges/deductions that apply in certain conditions. A
+ * ChargeItemDefinition resource that defines the prices, factors and
+ * conditions that apply to a billing code is currently under
+ * development. The priceComponent element can be used to offer
+ * transparency to the recipient of the Invoice as to how the prices have
+ * been calculated.
  */
-export interface InvoiceParticipant {
-
-  /**
-   * Unique id for the element within a resource (for internal references).
-   * This may be any string value that does not contain spaces.
-   */
-  readonly id?: string;
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element. To make the use of extensions
-   * safe and manageable, there is a strict set of governance  applied to
-   * the definition and use of extensions. Though any implementer can
-   * define an extension, there is a set of requirements that SHALL be met
-   * as part of the definition of the extension.
-   */
-  readonly extension?: Extension[];
-
-  /**
-   * May be used to represent additional information that is not part of
-   * the basic definition of the element and that modifies the
-   * understanding of the element in which it is contained and/or the
-   * understanding of the containing element's descendants. Usually
-   * modifier elements provide negation or qualification. To make the use
-   * of extensions safe and manageable, there is a strict set of governance
-   * applied to the definition and use of extensions. Though any
-   * implementer can define an extension, there is a set of requirements
-   * that SHALL be met as part of the definition of the extension.
-   * Applications processing a resource are required to check for modifier
-   * extensions.
-   *
-   * Modifier extensions SHALL NOT change the meaning of any elements on
-   * Resource or DomainResource (including cannot change the meaning of
-   * modifierExtension itself).
-   */
-  readonly modifierExtension?: Extension[];
-
-  /**
-   * Describes the type of involvement (e.g. transcriptionist, creator
-   * etc.). If the invoice has been created automatically, the Participant
-   * may be a billing engine or another kind of device.
-   */
-  readonly role?: CodeableConcept;
-
-  /**
-   * The device, practitioner, etc. who performed or participated in the
-   * service.
-   */
-  readonly actor?: Reference;
-}
-
-/**
- * Invoice containing collected ChargeItems from an Account with
- * calculated individual and total price for Billing purpose.
- */
-export interface InvoicePriceComponent {
+export interface InvoiceLineItemPriceComponent {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -381,4 +332,59 @@ export interface InvoicePriceComponent {
    * The amount calculated for this component.
    */
   readonly amount?: Money;
+}
+
+/**
+ * Indicates who or what performed or participated in the charged
+ * service.
+ */
+export interface InvoiceParticipant {
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  readonly id?: string;
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element. To make the use of extensions
+   * safe and manageable, there is a strict set of governance  applied to
+   * the definition and use of extensions. Though any implementer can
+   * define an extension, there is a set of requirements that SHALL be met
+   * as part of the definition of the extension.
+   */
+  readonly extension?: Extension[];
+
+  /**
+   * May be used to represent additional information that is not part of
+   * the basic definition of the element and that modifies the
+   * understanding of the element in which it is contained and/or the
+   * understanding of the containing element's descendants. Usually
+   * modifier elements provide negation or qualification. To make the use
+   * of extensions safe and manageable, there is a strict set of governance
+   * applied to the definition and use of extensions. Though any
+   * implementer can define an extension, there is a set of requirements
+   * that SHALL be met as part of the definition of the extension.
+   * Applications processing a resource are required to check for modifier
+   * extensions.
+   *
+   * Modifier extensions SHALL NOT change the meaning of any elements on
+   * Resource or DomainResource (including cannot change the meaning of
+   * modifierExtension itself).
+   */
+  readonly modifierExtension?: Extension[];
+
+  /**
+   * Describes the type of involvement (e.g. transcriptionist, creator
+   * etc.). If the invoice has been created automatically, the Participant
+   * may be a billing engine or another kind of device.
+   */
+  readonly role?: CodeableConcept;
+
+  /**
+   * The device, practitioner, etc. who performed or participated in the
+   * service.
+   */
+  readonly actor?: Reference;
 }

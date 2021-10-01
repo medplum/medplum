@@ -128,7 +128,7 @@ export interface Specimen {
   /**
    * Time when specimen was received for processing or testing.
    */
-  readonly receivedTime?: Date | string;
+  readonly receivedTime?: string;
 
   /**
    * Reference to the parent (source) specimen which is used when the
@@ -172,7 +172,7 @@ export interface Specimen {
 }
 
 /**
- * A sample to be used for analysis.
+ * Details concerning the specimen collection.
  */
 export interface SpecimenCollection {
 
@@ -266,7 +266,8 @@ export interface SpecimenCollection {
 }
 
 /**
- * A sample to be used for analysis.
+ * The container holding the specimen.  The recursive nature of
+ * containers; i.e. blood in tube in tray in rack is not addressed here.
  */
 export interface SpecimenContainer {
 
@@ -348,7 +349,7 @@ export interface SpecimenContainer {
 }
 
 /**
- * A sample to be used for analysis.
+ * Details concerning processing and processing steps for the specimen.
  */
 export interface SpecimenProcessing {
 

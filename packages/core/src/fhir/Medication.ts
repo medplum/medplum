@@ -148,10 +148,7 @@ export interface Medication {
 }
 
 /**
- * This resource is primarily used for the identification and definition
- * of a medication for the purposes of prescribing, dispensing, and
- * administering a medication as well as for making statements about
- * medication use.
+ * Information that only applies to packages (not products).
  */
 export interface MedicationBatch {
 
@@ -198,14 +195,11 @@ export interface MedicationBatch {
   /**
    * When this specific batch of product will expire.
    */
-  readonly expirationDate?: Date | string;
+  readonly expirationDate?: string;
 }
 
 /**
- * This resource is primarily used for the identification and definition
- * of a medication for the purposes of prescribing, dispensing, and
- * administering a medication as well as for making statements about
- * medication use.
+ * Identifies a particular constituent of interest in the product.
  */
 export interface MedicationIngredient {
 

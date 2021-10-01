@@ -134,8 +134,7 @@ export interface MedicinalProductPharmaceutical {
 }
 
 /**
- * A pharmaceutical product described in terms of its composition and
- * dose form.
+ * Characteristics e.g. a products onset of action.
  */
 export interface MedicinalProductPharmaceuticalCharacteristics {
 
@@ -186,8 +185,8 @@ export interface MedicinalProductPharmaceuticalCharacteristics {
 }
 
 /**
- * A pharmaceutical product described in terms of its composition and
- * dose form.
+ * The path by which the pharmaceutical product is taken into or makes
+ * contact with the body.
  */
 export interface MedicinalProductPharmaceuticalRouteOfAdministration {
 
@@ -268,14 +267,13 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministration {
   /**
    * A species for which this route applies.
    */
-  readonly targetSpecies?: MedicinalProductPharmaceuticalTargetSpecies[];
+  readonly targetSpecies?: MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecies[];
 }
 
 /**
- * A pharmaceutical product described in terms of its composition and
- * dose form.
+ * A species for which this route applies.
  */
-export interface MedicinalProductPharmaceuticalTargetSpecies {
+export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecies {
 
   /**
    * Unique id for the element within a resource (for internal references).
@@ -321,14 +319,14 @@ export interface MedicinalProductPharmaceuticalTargetSpecies {
    * A species specific time during which consumption of animal product is
    * not appropriate.
    */
-  readonly withdrawalPeriod?: MedicinalProductPharmaceuticalWithdrawalPeriod[];
+  readonly withdrawalPeriod?: MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpeciesWithdrawalPeriod[];
 }
 
 /**
- * A pharmaceutical product described in terms of its composition and
- * dose form.
+ * A species specific time during which consumption of animal product is
+ * not appropriate.
  */
-export interface MedicinalProductPharmaceuticalWithdrawalPeriod {
+export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpeciesWithdrawalPeriod {
 
   /**
    * Unique id for the element within a resource (for internal references).

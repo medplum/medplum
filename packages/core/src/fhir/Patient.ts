@@ -136,7 +136,7 @@ export interface Patient {
   /**
    * The date of birth for the individual.
    */
-  readonly birthDate?: Date | string;
+  readonly birthDate?: string;
 
   /**
    * Indicates if the individual is deceased or not.
@@ -204,8 +204,8 @@ export interface Patient {
 }
 
 /**
- * Demographics and other administrative information about an individual
- * or animal receiving care or other health-related services.
+ * A language which may be used to communicate with the patient about his
+ * or her health.
  */
 export interface PatientCommunication {
 
@@ -260,8 +260,7 @@ export interface PatientCommunication {
 }
 
 /**
- * Demographics and other administrative information about an individual
- * or animal receiving care or other health-related services.
+ * A contact party (e.g. guardian, partner, friend) for the patient.
  */
 export interface PatientContact {
 
@@ -342,8 +341,8 @@ export interface PatientContact {
 }
 
 /**
- * Demographics and other administrative information about an individual
- * or animal receiving care or other health-related services.
+ * Link to another patient resource that concerns the same actual
+ * patient.
  */
 export interface PatientLink {
 

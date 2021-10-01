@@ -1,4 +1,4 @@
-import { ElementDefinition, ValueSet, ValueSetContains, ValueSetExpansion } from '@medplum/core';
+import { ElementDefinition, ValueSet, ValueSetExpansion, ValueSetExpansionContains } from '@medplum/core';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
 import { useMedplum } from './MedplumProvider';
@@ -25,7 +25,7 @@ export function CodeInput(props: CodeInputProps) {
         const system = props.property.binding?.valueSet as string;
         return medplum.searchValueSet(system, input)
           .then((valueSet: ValueSet) => {
-            const contains = (valueSet.expansion as ValueSetExpansion).contains as ValueSetContains[];
+            const contains = (valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[];
             contains.forEach(e => cachedDisplayValues[e.code as string] = e.display as string);
             return contains.map(e => e.code as string);
           });

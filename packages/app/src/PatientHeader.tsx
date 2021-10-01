@@ -1,5 +1,5 @@
 import { Patient, Reference } from '@medplum/core';
-import { Avatar, HumanNameDisplay, useResource } from '@medplum/ui';
+import { Avatar, HumanNameDisplay, MedplumLink, useResource } from '@medplum/ui';
 import React from 'react';
 import './PatientHeader.css';
 
@@ -17,7 +17,11 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
       <Avatar value={patient} size="large" color={getDefaultColor(patient)} />
       <dl>
         <dt>Name</dt>
-        <dd><HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} /></dd>
+        <dd>
+          <MedplumLink to={patient}>
+            <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} />
+          </MedplumLink>
+        </dd>
       </dl>
       {patient.birthDate && (
         <>
@@ -32,10 +36,10 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
         </>
       )}
       {patient.gender && (
-          <dl>
-            <dt>Gender</dt>
-            <dd>{patient.gender}</dd>
-          </dl>
+        <dl>
+          <dt>Gender</dt>
+          <dd>{patient.gender}</dd>
+        </dl>
       )}
       {patient.identifier?.map(identifier => (
         <dl key={identifier.system}>

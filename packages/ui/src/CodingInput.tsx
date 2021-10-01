@@ -1,4 +1,4 @@
-import { Coding, ElementDefinition, ValueSet, ValueSetContains, ValueSetExpansion } from '@medplum/core';
+import { Coding, ElementDefinition, ValueSet, ValueSetExpansion, ValueSetExpansionContains } from '@medplum/core';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
 import { useMedplum } from './MedplumProvider';
@@ -23,7 +23,7 @@ export function CodingInput(props: CodingInputProps) {
         const system = props.property.binding?.valueSet as string;
         return medplum.searchValueSet(system, input)
           .then((valueSet: ValueSet) => {
-            return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetContains[]).map(e => ({
+            return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[]).map(e => ({
               system: e.system,
               code: e.code,
               display: e.display

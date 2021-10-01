@@ -225,12 +225,12 @@ export interface Task {
   /**
    * The date and time this task was created.
    */
-  readonly authoredOn?: Date | string;
+  readonly authoredOn?: string;
 
   /**
    * The date and time of last modification to this task.
    */
-  readonly lastModified?: Date | string;
+  readonly lastModified?: string;
 
   /**
    * The creator of the task.
@@ -302,7 +302,8 @@ export interface Task {
 }
 
 /**
- * A task to be performed.
+ * Additional information that may be needed in the execution of the
+ * task.
  */
 export interface TaskInput {
 
@@ -599,7 +600,7 @@ export interface TaskInput {
 }
 
 /**
- * A task to be performed.
+ * Outputs produced by the Task.
  */
 export interface TaskOutput {
 
@@ -895,7 +896,10 @@ export interface TaskOutput {
 }
 
 /**
- * A task to be performed.
+ * If the Task.focus is a request resource and the task is seeking
+ * fulfillment (i.e. is asking for the request to be actioned), this
+ * element identifies any limitations on what parts of the referenced
+ * request should be actioned.
  */
 export interface TaskRestriction {
 

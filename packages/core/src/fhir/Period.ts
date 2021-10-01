@@ -6,7 +6,8 @@
 import { Extension } from './Extension';
 
 /**
- * A time period defined by a start and end date and optionally time.
+ * Base StructureDefinition for Period Type: A time period defined by a
+ * start and end date and optionally time.
  */
 export interface Period {
 
@@ -29,7 +30,7 @@ export interface Period {
   /**
    * The start of the period. The boundary is inclusive.
    */
-  readonly start?: Date | string;
+  readonly start?: string;
 
   /**
    * The end of the period. If the end of the period is missing, it means
@@ -37,5 +38,5 @@ export interface Period {
    * start may be in the past, and the end date in the future, which means
    * that period is expected/planned to end at that time.
    */
-  readonly end?: Date | string;
+  readonly end?: string;
 }

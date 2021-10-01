@@ -1,4 +1,4 @@
-import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
@@ -9,9 +9,10 @@ import { getClient } from '../database';
 import { logger } from '../logger';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
-import { definitions, validateResource, validateResourceType } from './schema';
+import { validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
 import { InsertQuery, Operator, SelectQuery } from './sql';
+import { getStructureDefinitions } from './structure';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -403,41 +404,43 @@ export class Repository {
     }
 
     const lookupTable = this.getLookupTable(param);
-    const columnName = convertCodeToColumnName(param.code);
     if (lookupTable) {
       lookupTable.addWhere(builder, filter);
-    } else if (param.type === 'string') {
-      this.addStringSearchFilter(builder, columnName, filter);
+      return;
+    }
+
+    const details = getSearchParameterDetails(getStructureDefinitions(), resourceType, param);
+    if (param.type === 'string') {
+      this.addStringSearchFilter(builder, details, filter);
     } else if (param.type === 'token') {
-      this.addTokenSearchFilter(builder, resourceType, columnName, filter.value);
+      this.addTokenSearchFilter(builder, details, filter.value);
     } else if (param.type === 'reference') {
-      this.addReferenceSearchFilter(builder, param, filter);
+      this.addReferenceSearchFilter(builder, details, filter);
     } else {
-      builder.where(columnName, Operator.EQUALS, filter.value);
+      builder.where(details.columnName, Operator.EQUALS, filter.value);
     }
   }
 
-  private addStringSearchFilter(builder: SelectQuery, columnName: string, filter: Filter): void {
+  private addStringSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
     if (filter.operator === FhirOperator.EXACT) {
-      builder.where(columnName, Operator.EQUALS, filter.value);
+      builder.where(details.columnName, Operator.EQUALS, filter.value);
     } else {
-      builder.where(columnName, Operator.LIKE, '%' + filter.value + '%');
+      builder.where(details.columnName, Operator.LIKE, '%' + filter.value + '%');
     }
   }
 
-  private addTokenSearchFilter(builder: SelectQuery, resourceType: string, columnName: string, query: string): void {
-    if (this.isArrayParam(resourceType, columnName)) {
-      builder.where(columnName, Operator.ARRAY_CONTAINS, query);
+  private addTokenSearchFilter(builder: SelectQuery, details: SearchParameterDetails, query: string): void {
+    if (details.array) {
+      builder.where(details.columnName, Operator.ARRAY_CONTAINS, query);
     } else {
-      builder.where(columnName, Operator.EQUALS, query);
+      builder.where(details.columnName, Operator.EQUALS, query);
     }
   }
 
-  private addReferenceSearchFilter(builder: SelectQuery, param: SearchParameter, filter: Filter): void {
-    const columnName = convertCodeToColumnName(param.code as string);
+  private addReferenceSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
     // TODO: Support optional resource type when known (param.target.length === 1)
     // TODO: Support reference queries (filter.value === 'Patient?identifier=123')
-    builder.where(columnName, Operator.EQUALS, filter.value);
+    builder.where(details.columnName, Operator.EQUALS, filter.value);
   }
 
   /**
@@ -468,12 +471,13 @@ export class Repository {
     }
 
     const lookupTable = this.getLookupTable(param);
-    const columnName = convertCodeToColumnName(param.code);
     if (lookupTable) {
       lookupTable.addOrderBy(builder, sortRule);
-    } else {
-      builder.orderBy(columnName, !!sortRule.descending);
+      return;
     }
+
+    const details = getSearchParameterDetails(getStructureDefinitions(), resourceType, param);
+    builder.orderBy(details.columnName, !!sortRule.descending);
   }
 
   private async write(resource: Resource): Promise<void> {
@@ -525,37 +529,17 @@ export class Repository {
       return;
     }
 
-    const columnName = convertCodeToColumnName(searchParam.code as string);
+    const details = getSearchParameterDetails(getStructureDefinitions(), resource.resourceType, searchParam);
     const fhirPath = parseFhirPath(searchParam.expression as string);
     const values = fhirPath.eval(resource);
 
     if (values.length > 0) {
-      if (this.isArrayParam(resource.resourceType, columnName)) {
-        columns[columnName] = values.map(v => this.buildColumnValue(searchParam, v));
+      if (details.array) {
+        columns[details.columnName] = values.map(v => this.buildColumnValue(searchParam, v));
       } else {
-        columns[columnName] = this.buildColumnValue(searchParam, values[0]);
+        columns[details.columnName] = this.buildColumnValue(searchParam, values[0]);
       }
     }
-  }
-
-  /**
-   * Determines if the property is an array value.
-   * @param resourceType The FHIR resource type.
-   * @param propertyName The property name.
-   * @returns True if the property is an array.
-   */
-  private isArrayParam(resourceType: string, propertyName: string): boolean {
-    const typeDef = definitions[resourceType];
-    if (!typeDef?.properties) {
-      return false;
-    }
-
-    const propertyDef = typeDef.properties[propertyName];
-    if (!propertyDef) {
-      return false;
-    }
-
-    return propertyDef.type === 'array';
   }
 
   private buildColumnValue(searchParam: SearchParameter, value: any): any {
@@ -611,7 +595,7 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns The last updated date.
    */
-  private getLastUpdated(resource: Resource): Date | string {
+  private getLastUpdated(resource: Resource): string {
     // If the resource has a specified "lastUpdated",
     // and the current context is a ClientApplication (i.e., OAuth client credentials),
     // then allow the ClientApplication to set the date.
@@ -621,7 +605,7 @@ export class Repository {
     }
 
     // Otherwise, use "now"
-    return new Date();
+    return new Date().toISOString();
   }
 
   /**
@@ -817,20 +801,6 @@ function getPatientIdFromReference(reference: Reference): string | undefined {
  */
 function resolveId(reference: Reference | undefined): string | undefined {
   return reference?.reference?.split('/')[1];
-}
-
-/**
- * Converts a hyphen-delimited code to camelCase string.
- * @param code The search parameter code.
- * @returns The SQL column name.
- */
-function convertCodeToColumnName(code: string): string {
-  return code.split('-')
-    .reduce((result, word, index) => result + (index ? upperFirst(word) : word), '');
-}
-
-function upperFirst(word: string): string {
-  return word.charAt(0).toUpperCase() + word.substr(1);
 }
 
 /**

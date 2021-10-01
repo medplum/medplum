@@ -177,8 +177,8 @@ export interface PractitionerRole {
 }
 
 /**
- * A specific set of Roles/Locations/specialties/services that a
- * practitioner may perform at an organization for a period of time.
+ * A collection of times the practitioner is available or performing this
+ * role at the location and/or healthcareservice.
  */
 export interface PractitionerRoleAvailableTime {
 
@@ -233,18 +233,18 @@ export interface PractitionerRoleAvailableTime {
    * The opening time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
-  readonly availableStartTime?: Date | string;
+  readonly availableStartTime?: string;
 
   /**
    * The closing time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
-  readonly availableEndTime?: Date | string;
+  readonly availableEndTime?: string;
 }
 
 /**
- * A specific set of Roles/Locations/specialties/services that a
- * practitioner may perform at an organization for a period of time.
+ * The practitioner is not available or performing this role during this
+ * period of time due to the provided reason.
  */
 export interface PractitionerRoleNotAvailable {
 

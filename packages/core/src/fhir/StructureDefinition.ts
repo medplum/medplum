@@ -160,7 +160,7 @@ export interface StructureDefinition {
    * change when the substantive content of the structure definition
    * changes.
    */
-  readonly date?: Date | string;
+  readonly date?: string;
 
   /**
    * The name of the organization or individual that published the
@@ -292,9 +292,8 @@ export interface StructureDefinition {
 }
 
 /**
- * A definition of a FHIR structure. This resource is used to describe
- * the underlying resources, data types defined in FHIR, and also for
- * describing extensions and constraints on resources and data types.
+ * Identifies the types of resource or data type elements to which the
+ * extension can be applied.
  */
 export interface StructureDefinitionContext {
 
@@ -347,9 +346,8 @@ export interface StructureDefinitionContext {
 }
 
 /**
- * A definition of a FHIR structure. This resource is used to describe
- * the underlying resources, data types defined in FHIR, and also for
- * describing extensions and constraints on resources and data types.
+ * A differential view is expressed relative to the base
+ * StructureDefinition - a statement of differences that it applies.
  */
 export interface StructureDefinitionDifferential {
 
@@ -395,9 +393,7 @@ export interface StructureDefinitionDifferential {
 }
 
 /**
- * A definition of a FHIR structure. This resource is used to describe
- * the underlying resources, data types defined in FHIR, and also for
- * describing extensions and constraints on resources and data types.
+ * An external specification that the content is mapped to.
  */
 export interface StructureDefinitionMapping {
 
@@ -461,9 +457,8 @@ export interface StructureDefinitionMapping {
 }
 
 /**
- * A definition of a FHIR structure. This resource is used to describe
- * the underlying resources, data types defined in FHIR, and also for
- * describing extensions and constraints on resources and data types.
+ * A snapshot view is expressed in a standalone form that can be used and
+ * interpreted without considering the base StructureDefinition.
  */
 export interface StructureDefinitionSnapshot {
 
