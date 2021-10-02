@@ -1,4 +1,4 @@
-import { Account, assertOk, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter } from '@medplum/core';
+import { Account, assertOk, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -476,6 +476,81 @@ test('Search for Communications by Encounter', async () => {
       code: 'encounter',
       operator: Operator.EQUALS,
       value: getReferenceString(encounter1 as Encounter)
+    }]
+  });
+
+  expect(searchOutcome.id).toEqual('ok');
+  expect(searchResult?.entry?.length).toEqual(1);
+  expect(searchResult?.entry?.[0]?.resource?.id).toEqual(comm1?.id);
+});
+
+test('Search for Communications by ServiceRequest', async () => {
+  const [outcome1, patient1] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }]
+  });
+
+  expect(outcome1.id).toEqual('created');
+  expect(patient1).not.toBeUndefined();
+
+  const [outcome2, serviceRequest1] = await repo.createResource<ServiceRequest>({
+    resourceType: 'ServiceRequest',
+    code: {
+      text: 'text'
+    },
+    subject: createReference(patient1 as Patient)
+  });
+
+  expect(outcome2.id).toEqual('created');
+  expect(serviceRequest1).not.toBeUndefined();
+
+  const [outcome3, comm1] = await repo.createResource<Communication>({
+    resourceType: 'Communication',
+    basedOn: [createReference(serviceRequest1 as ServiceRequest)],
+    subject: createReference(patient1 as Patient),
+    sender: createReference(patient1 as Patient),
+    payload: [{ contentString: 'This is a test' }]
+  });
+
+  expect(outcome3.id).toEqual('created');
+  expect(comm1).not.toBeUndefined();
+
+  const [outcome4, patient2] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Bob'], family: 'Jones' }]
+  });
+
+  expect(outcome4.id).toEqual('created');
+  expect(patient2).not.toBeUndefined();
+
+  const [outcome5, serviceRequest2] = await repo.createResource<ServiceRequest>({
+    resourceType: 'ServiceRequest',
+    code: {
+      text: 'test'
+    },
+    subject: createReference(patient2 as Patient)
+  });
+
+  expect(outcome5.id).toEqual('created');
+  expect(serviceRequest2).not.toBeUndefined();
+
+  const [outcome6, comm2] = await repo.createResource<Communication>({
+    resourceType: 'Communication',
+    basedOn: [createReference(serviceRequest2 as ServiceRequest)],
+    subject: createReference(patient2 as Patient),
+    sender: createReference(patient2 as Patient),
+    payload: [{ contentString: 'This is another test' }]
+  });
+
+  expect(outcome6.id).toEqual('created');
+  expect(comm2).not.toBeUndefined();
+
+  const [searchOutcome, searchResult] = await repo.search({
+    resourceType: 'Communication',
+    filters: [{
+      code: 'based-on',
+      operator: Operator.EQUALS,
+      value: getReferenceString(serviceRequest1 as ServiceRequest)
     }]
   });
 
