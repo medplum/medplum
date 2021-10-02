@@ -3,6 +3,7 @@ import { MedplumDatabaseConfig } from './config';
 import * as v1 from './migrations/v1';
 import * as v2 from './migrations/v2';
 import * as v3 from './migrations/v3';
+import * as v4 from './migrations/v4';
 
 let pool: Pool | undefined;
 
@@ -66,5 +67,10 @@ async function migrate(client: PoolClient): Promise<void> {
   if (version < 3) {
     await v3.run(client);
     await client.query('UPDATE "DatabaseMigration" SET "version"=3 WHERE "id"=1');
+  }
+
+  if (version < 4) {
+    await v4.run(client);
+    await client.query('UPDATE "DatabaseMigration" SET "version"=4 WHERE "id"=1');
   }
 }
