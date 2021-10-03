@@ -6,7 +6,6 @@ import { FileBuilder } from './filebuilder';
 
 const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const searchParams = readJson('fhir/r4/search-parameters.json');
-const v3Builder = new FileBuilder();
 
 export function main() {
   buildStructureDefinitions('profiles-types.json');
@@ -31,18 +30,9 @@ function buildStructureDefinitions(fileName: string): void {
 }
 
 function writeMigrations(): void {
-  v3Builder.append('import { PoolClient } from \'pg\';');
-  v3Builder.newLine();
-  v3Builder.append('export async function run(client: PoolClient) {');
-  v3Builder.indentCount++;
-
   const b = new FileBuilder();
   buildMigrationUp(b);
-  // writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
-
-  v3Builder.indentCount--;
-  v3Builder.append('}');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v3.ts'), v3Builder.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
@@ -84,7 +74,6 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
 
   if (!isResourceType(fhirType)) {
     // Don't create a table if fhirType is a subtype or not a resource type
-    console.log('Not a resource type', resourceType, fhirType.display);
     return;
   }
 
@@ -133,40 +122,8 @@ function buildSearchColumns(resourceType: string): string[] {
 
     const details = getSearchParameterDetails(structureDefinitions, resourceType, searchParam);
     const columnName = details.columnName;
-    let oldColumnType;
-    if (searchParam.code === 'active') {
-      oldColumnType = 'BOOLEAN';
-    } else if (isArrayParam(resourceType, columnName)) {
-      oldColumnType = 'TEXT[]';
-    } else {
-      oldColumnType = 'TEXT';
-    }
-
     const newColumnType = getColumnType(details);
     result.push(`"${columnName}" ${newColumnType}`);
-
-    if (oldColumnType !== newColumnType) {
-      let conversion;
-      if (oldColumnType === 'TEXT' && newColumnType === 'TEXT[]') {
-        conversion = `USING array["${columnName}"]::TEXT[]`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'DATE') {
-        conversion = `USING "${columnName}"::DATE`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'DATE[]') {
-        conversion = `USING array["${columnName}"]::DATE[]`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'BOOLEAN') {
-        conversion = `USING "${columnName}"::BOOLEAN`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'BOOLEAN[]') {
-        conversion = `USING array["${columnName}"]::BOOLEAN[]`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'DOUBLE PRECISION') {
-        conversion = `USING "${columnName}"::DOUBLE PRECISION`;
-      } else if (oldColumnType === 'TEXT' && newColumnType === 'DOUBLE PRECISION[]') {
-        conversion = `USING array["${columnName}"]::DOUBLE PRECISION[]`;
-      } else {
-        console.log('UNKNOWN conversion: ', oldColumnType, newColumnType);
-      }
-
-      v3Builder.appendNoWrap(`await client.query('ALTER TABLE "${resourceType}" ALTER COLUMN "${columnName}" TYPE ${newColumnType} ${conversion}');`);
-    }
   }
   return result;
 }
@@ -206,7 +163,6 @@ function isLookupTableParam(searchParam: any) {
 }
 
 function getColumnType(details: SearchParameterDetails): string {
-  // const details = getSearchParameterDetails(structureDefinitions, resourceType, searchParam);
   let baseColumnType = 'TEXT';
   switch (details.type) {
     case SearchParameterType.BOOLEAN:
@@ -222,21 +178,6 @@ function getColumnType(details: SearchParameterDetails): string {
   }
 
   return details.array ? baseColumnType + '[]' : baseColumnType;
-}
-
-/** @deprecated */
-function isArrayParam(resourceType: string, propertyName: string): boolean {
-  const typeDef = structureDefinitions.types[resourceType];
-  if (!typeDef) {
-    return false;
-  }
-
-  const propertyDef = typeDef.properties?.[propertyName];
-  if (!propertyDef) {
-    return false;
-  }
-
-  return propertyDef.max === '*';
 }
 
 function buildSearchIndexes(b: FileBuilder, resourceType: string): void {

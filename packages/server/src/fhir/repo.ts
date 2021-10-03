@@ -440,7 +440,11 @@ export class Repository {
   private addReferenceSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
     // TODO: Support optional resource type when known (param.target.length === 1)
     // TODO: Support reference queries (filter.value === 'Patient?identifier=123')
-    builder.where(details.columnName, Operator.EQUALS, filter.value);
+    if (details.array) {
+      builder.where(details.columnName, Operator.ARRAY_CONTAINS, filter.value);
+    } else {
+      builder.where(details.columnName, Operator.EQUALS, filter.value);
+    }
   }
 
   /**
