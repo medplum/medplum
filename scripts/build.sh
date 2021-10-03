@@ -8,6 +8,9 @@ set -e
 # Echo commands
 set -x
 
+# Increase heap size
+export NODE_OPTIONS="--max_old_space_size=4096"
+
 # Diagnostics
 node --version
 npm --version
