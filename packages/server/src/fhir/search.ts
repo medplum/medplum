@@ -45,13 +45,27 @@ const modifierMap: Record<string, Operator> = {
 /**
  * The original search parameters bundle from the FHIR spec.
  */
-const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
+let searchParams: Bundle | undefined = undefined;
 
 /**
  * The pre-indexed search mappings.
  * @see buildMappings
  */
-const searchMappings = buildMappings();
+let searchMappings: Record<string, Record<string, SearchParameter>> | undefined = undefined;
+
+function getSearchParams(): Bundle {
+  if (!searchParams) {
+    searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
+  }
+  return searchParams;
+}
+
+function getSearchMappings(): Record<string, Record<string, SearchParameter>> {
+  if (!searchMappings) {
+    searchMappings = buildMappings();
+  }
+  return searchMappings;
+}
 
 /**
  * Returns a search parameter lookup table indexed by resource type and search code.
@@ -62,7 +76,7 @@ const searchMappings = buildMappings();
  */
 function buildMappings(): Record<string, Record<string, SearchParameter>> {
   const mappings: Record<string, Record<string, SearchParameter>> = {};
-  for (const entry of (searchParams.entry as BundleEntry[])) {
+  for (const entry of (getSearchParams().entry as BundleEntry[])) {
     const searchParam = entry.resource as SearchParameter;
     if (!searchParam.expression || !searchParam.code || !searchParam.base) {
       // Ignore special case search parameters
@@ -87,7 +101,7 @@ function buildMappings(): Record<string, Record<string, SearchParameter>> {
  * @returns The SearchParameters.
  */
 export function getSearchParameters(resourceType: string): Record<string, SearchParameter> {
-  return searchMappings[resourceType];
+  return getSearchMappings()[resourceType];
 }
 
 /**
@@ -97,7 +111,7 @@ export function getSearchParameters(resourceType: string): Record<string, Search
  * @returns The SearchParameter if found; otherwise undefined.
  */
 export function getSearchParameter(resourceType: string, code: string): SearchParameter | undefined {
-  return searchMappings[resourceType]?.[code];
+  return getSearchMappings()[resourceType]?.[code];
 }
 
 /**

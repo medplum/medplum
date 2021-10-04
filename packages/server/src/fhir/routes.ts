@@ -58,9 +58,9 @@ fhirRouter.use('/Binary/', binaryRouter);
 fhirRouter.get('/ValueSet/([$]|%24)expand', expandOperator);
 
 // GraphQL
-fhirRouter.use('/([$]|%24)graphql', graphqlHTTP({
+fhirRouter.use('/([$]|%24)graphql', graphqlHTTP(() => ({
   schema: getRootSchema()
-}));
+})));
 
 // Create batch
 fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {

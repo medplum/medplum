@@ -53,7 +53,7 @@ export type RepositoryResult<T extends Resource | undefined> = Promise<[Operatio
  * Patient compartment definitions.
  * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
  */
-const patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json') as CompartmentDefinition;
+let patientCompartment: CompartmentDefinition | undefined = undefined;
 
 /**
  * Public resource types are in the "public" project.
@@ -720,13 +720,20 @@ export function getCompartments(resource: Resource): string[] {
  * @returns List of property names if in patient compartment; undefined otherwise.
  */
 function getPatientCompartmentProperties(resourceType: string): string[] | undefined {
-  const resourceList = patientCompartment.resource as CompartmentDefinitionResource[];
+  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
   for (const resource of resourceList) {
     if (resource.code === resourceType) {
       return resource.param;
     }
   }
   return undefined;
+}
+
+function getPatientCompartments(): CompartmentDefinition {
+  if (!patientCompartment) {
+    patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json') as CompartmentDefinition;
+  }
+  return patientCompartment;
 }
 
 /**

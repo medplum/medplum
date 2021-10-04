@@ -17,7 +17,7 @@ import {
 } from 'graphql';
 import { JSONSchema4 } from 'json-schema';
 import { repo } from './repo';
-import { definitions, resourceTypes } from './schema';
+import { getResourceTypes, getSchemaDefinition } from './schema';
 import { getSearchParameters } from './search';
 
 const typeCache: Record<string, GraphQLOutputType> = {
@@ -53,8 +53,7 @@ export function getRootSchema(): GraphQLSchema {
 
 function buildRootSchema(): GraphQLSchema {
   const fields: GraphQLFieldConfigMap<any, any> = {};
-
-  for (const resourceType of resourceTypes) {
+  for (const resourceType of getResourceTypes()) {
     const graphQLType = getGraphQLType(resourceType);
     if (!graphQLType) {
       continue;
@@ -121,14 +120,13 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
   if (resourceType === 'ResourceList') {
     return new GraphQLUnionType({
       name: 'ResourceList',
-      types: () => resourceTypes.map(getGraphQLType).filter(t => !!t) as GraphQLObjectType[],
+      types: () => getResourceTypes().map(getGraphQLType).filter(t => !!t) as GraphQLObjectType[],
       resolveType: resolveTypeByReference
     });
   }
 
-  const schema = definitions[resourceType];
+  const schema = getSchemaDefinition(resourceType);
   const properties = schema.properties as { [k: string]: JSONSchema4 };
-
   const fields: GraphQLFieldConfigMap<any, any> = {};
 
   for (const [propertyName, property] of Object.entries(properties)) {
