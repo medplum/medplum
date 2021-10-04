@@ -2,88 +2,92 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { HumanNameInput } from './HumanNameInput';
 
-test('HumanNameInput renders', () => {
-  render(
-    <HumanNameInput name="test" defaultValue={{ given: ['Alice'], family: 'Smith' }} />
-  );
+describe('HumanNameInput', () => {
 
-  const given = screen.getByTestId('given') as HTMLInputElement;
-  expect(given).not.toBeUndefined();
-  expect(given.value).toEqual('Alice');
+  test('Renders', () => {
+    render(
+      <HumanNameInput name="test" defaultValue={{ given: ['Alice'], family: 'Smith' }} />
+    );
 
-  const family = screen.getByTestId('family') as HTMLInputElement;
-  expect(family).not.toBeUndefined();
-  expect(family.value).toEqual('Smith');
-});
+    const given = screen.getByPlaceholderText('Given') as HTMLInputElement;
+    expect(given).not.toBeUndefined();
+    expect(given.value).toEqual('Alice');
 
-test('HumanNameInput change events', async () => {
-  render(
-    <HumanNameInput name="test" defaultValue={{}} />
-  );
-
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('use'), { target: { value: 'official' } });
+    const family = screen.getByPlaceholderText('Family') as HTMLInputElement;
+    expect(family).not.toBeUndefined();
+    expect(family.value).toEqual('Smith');
   });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('prefix'), { target: { value: 'Mr' } });
-  });
+  test('Change events', async () => {
+    render(
+      <HumanNameInput name="test" defaultValue={{}} />
+    );
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('given'), { target: { value: 'Homer J' } });
-  });
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('use'), { target: { value: 'official' } });
+    });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('family'), { target: { value: 'Simpson' } });
-  });
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Prefix'), { target: { value: 'Mr' } });
+    });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('suffix'), { target: { value: 'Sr' } });
-  });
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Given'), { target: { value: 'Homer J' } });
+    });
 
-  const hidden = screen.getByTestId('hidden') as HTMLInputElement;
-  expect(hidden).not.toBeUndefined();
-  expect(JSON.parse(hidden.value)).toMatchObject({
-    use: 'official',
-    prefix: ['Mr'],
-    given: ['Homer', 'J'],
-    family: 'Simpson',
-    suffix: ['Sr']
-  });
-});
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Family'), { target: { value: 'Simpson' } });
+    });
 
-test('HumanNameInput set blanks', async () => {
-  render(
-    <HumanNameInput name="test" defaultValue={{
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Suffix'), { target: { value: 'Sr' } });
+    });
+
+    const hidden = screen.getByTestId('hidden') as HTMLInputElement;
+    expect(hidden).not.toBeUndefined();
+    expect(JSON.parse(hidden.value)).toMatchObject({
       use: 'official',
       prefix: ['Mr'],
       given: ['Homer', 'J'],
       family: 'Simpson',
       suffix: ['Sr']
-    }} />
-  );
-
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('use'), { target: { value: '' } });
+    });
   });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('prefix'), { target: { value: '' } });
+  test('Set blanks', async () => {
+    render(
+      <HumanNameInput name="test" defaultValue={{
+        use: 'official',
+        prefix: ['Mr'],
+        given: ['Homer', 'J'],
+        family: 'Simpson',
+        suffix: ['Sr']
+      }} />
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('use'), { target: { value: '' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Prefix'), { target: { value: '' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Given'), { target: { value: '' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Family'), { target: { value: '' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Suffix'), { target: { value: '' } });
+    });
+
+    const hidden = screen.getByTestId('hidden') as HTMLInputElement;
+    expect(hidden).not.toBeUndefined();
+    expect(hidden.value).toEqual('{}');
   });
 
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('given'), { target: { value: '' } });
-  });
-
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('family'), { target: { value: '' } });
-  });
-
-  await act(async () => {
-    fireEvent.change(screen.getByTestId('suffix'), { target: { value: '' } });
-  });
-
-  const hidden = screen.getByTestId('hidden') as HTMLInputElement;
-  expect(hidden).not.toBeUndefined();
-  expect(hidden.value).toEqual('{}');
 });

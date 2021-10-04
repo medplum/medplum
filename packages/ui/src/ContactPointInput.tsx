@@ -13,15 +13,15 @@ export function ContactPointInput(props: ContactPointInputProps) {
   ref.current = contactPoint;
 
   function setSystem(system: string) {
-    setContactPoint({ ...ref.current, system });
+    setContactPoint({ ...ref.current, system: system ? system : undefined });
   }
 
   function setUse(use: string) {
-    setContactPoint({ ...ref.current, use });
+    setContactPoint({ ...ref.current, use: use ? use : undefined });
   }
 
   function setValue(value: string) {
-    setContactPoint({ ...ref.current, value });
+    setContactPoint({ ...ref.current, value: value ? value : undefined });
   }
 
   return (
@@ -33,10 +33,14 @@ export function ContactPointInput(props: ContactPointInputProps) {
               name={props.name}
               type="hidden"
               value={JSON.stringify(contactPoint)}
-              readOnly={true} />
+              readOnly={true}
+              data-testid="hidden"
+            />
             <select
               defaultValue={contactPoint?.system}
-              onChange={e => setSystem(e.currentTarget.value)}>
+              onChange={e => setSystem(e.currentTarget.value)}
+              data-testid="system"
+            >
               <option></option>
               <option>email</option>
               <option>fax</option>
@@ -50,7 +54,9 @@ export function ContactPointInput(props: ContactPointInputProps) {
           <td>
             <select
               defaultValue={contactPoint?.use}
-              onChange={e => setUse(e.currentTarget.value)}>
+              onChange={e => setUse(e.currentTarget.value)}
+              data-testid="use"
+            >
               <option></option>
               <option>home</option>
               <option>mobile</option>
@@ -62,6 +68,7 @@ export function ContactPointInput(props: ContactPointInputProps) {
           <td>
             <input
               type="text"
+              placeholder="Value"
               defaultValue={contactPoint?.value}
               onChange={e => setValue(e.currentTarget.value)} />
           </td>
