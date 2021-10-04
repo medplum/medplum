@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { JSONSchema4 } from 'json-schema';
 import { ComponentsObject, OpenAPIObject, ReferenceObject, SchemaObject, SecurityRequirementObject, TagObject } from 'openapi3-ts';
 import { getConfig } from './config';
-import { definitions } from './fhir';
+import { getSchemaDefinitions } from './fhir';
 
 const whitelist = [
   'Account',
@@ -92,6 +92,7 @@ function getSpec(): any {
 
 function buildSpec(): any {
   const result = buildBaseSpec();
+  const definitions = getSchemaDefinitions();
   Object.entries(definitions).forEach(([name, definition]) => buildFhirType(result, name, definition));
   return result;
 }

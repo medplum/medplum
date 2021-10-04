@@ -3,12 +3,29 @@ import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { JSONSchema4 } from 'json-schema';
 
-export const schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema4;
-export const definitions = schema.definitions as { [k: string]: JSONSchema4; };
-export const resourceTypes = Object.keys(schema.discriminator.mapping);
+let schema: JSONSchema4 | undefined = undefined;
+
+export function getSchema(): JSONSchema4 {
+  if (!schema) {
+    schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema4;
+  }
+  return schema;
+}
+
+export function getSchemaDefinitions(): { [k: string]: JSONSchema4; } {
+  return getSchema().definitions as { [k: string]: JSONSchema4; };
+}
+
+export function getSchemaDefinition(resourceType: string): JSONSchema4 {
+  return getSchemaDefinitions()[resourceType];
+}
+
+export function getResourceTypes(): string[] {
+  return Object.keys((getSchema() as any).discriminator.mapping);
+}
 
 export function isResourceType(resourceType: string): boolean {
-  return resourceType in definitions;
+  return resourceType in getSchemaDefinitions();
 }
 
 export function validateResourceType(resourceType: string): OperationOutcome {
@@ -28,7 +45,7 @@ export function validateResource(resource: Resource): OperationOutcome {
     return validationError('Missing resource type');
   }
 
-  const definition = definitions[resourceType];
+  const definition = getSchemaDefinitions()[resourceType];
   if (!definition) {
     return validationError('Unknown resource type');
   }

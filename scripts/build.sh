@@ -8,9 +8,6 @@ set -e
 # Echo commands
 set -x
 
-# Increase heap size
-NODE_OPTIONS="--max_old_space_size=4096"
-
 # Diagnostics
 node --version
 npm --version
@@ -27,7 +24,7 @@ npm run build --workspace=packages/graphiql
 npm run build --workspace=packages/server
 
 # Test
-npx jest --runInBand
+NODE_OPTIONS=--max_old_space_size=2048 npx jest --runInBand
 
 # Lint
 npm run lint --workspaces
