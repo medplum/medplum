@@ -62,33 +62,33 @@ export function HumanNameInput(props: HumanNameInputProps) {
           <td>
             <input
               type="text"
+              placeholder="Prefix"
               defaultValue={value?.prefix?.join(' ')}
               onChange={e => setPrefix(e.currentTarget.value)}
-              data-testid="prefix"
             />
           </td>
           <td>
             <input
               type="text"
+              placeholder="Given"
               defaultValue={value?.given?.join(' ')}
               onChange={e => setGiven(e.currentTarget.value)}
-              data-testid="given"
             />
           </td>
           <td>
             <input
               type="text"
+              placeholder="Family"
               defaultValue={value?.family}
               onChange={e => setFamily(e.currentTarget.value)}
-              data-testid="family"
             />
           </td>
           <td>
             <input
               type="text"
+              placeholder="Suffix"
               defaultValue={value?.suffix?.join(' ')}
               onChange={e => setSuffix(e.currentTarget.value)}
-              data-testid="suffix"
             />
           </td>
         </tr>
