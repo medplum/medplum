@@ -11,7 +11,6 @@ export function SubMenu(props: SubMenuProps): JSX.Element {
   const [hover, setHover] = useState(false);
   const [visible, setVisible] = useState(false);
   const [x, setX] = useState(0);
-  const [y, setY] = useState(0);
   const menuItemRef = useRef<HTMLDivElement>(null);
 
   const hoverRef = useRef<boolean>(false);
@@ -27,16 +26,14 @@ export function SubMenu(props: SubMenuProps): JSX.Element {
     }
 
     const rect = el.getBoundingClientRect();
-    let x = 0;
-    const y = 0;
+    let x2 = 0;
 
     if (rect.right + 250 < window.innerWidth) {
-      x = rect.width;
+      x2 = rect.width;
     }
 
     setVisible(true);
-    setX(x);
-    setY(y);
+    setX(x2);
   }
 
   useEffect(() => {
@@ -62,7 +59,7 @@ export function SubMenu(props: SubMenuProps): JSX.Element {
       <Popup
         visible={visible}
         x={x}
-        y={y}
+        y={0}
         autoClose={true}
         onClose={() => setVisible(false)}>
         {props.children}
