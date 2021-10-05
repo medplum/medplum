@@ -1,6 +1,6 @@
 import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, DiagnosticReport, Media, ProfileResource, Reference, Resource, SearchRequest, stringify } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { DiagnosticReportDisplay } from '.';
+import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
 import { Form } from './Form';

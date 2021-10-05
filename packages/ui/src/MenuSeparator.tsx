@@ -1,8 +1,8 @@
 import React from 'react';
 import './MenuSeparator.css';
 
-export class MenuSeparator extends React.Component {
-  render() {
-    return <div className="medplum-menu-separator" />
-  }
+export function MenuSeparator(): JSX.Element {
+  return (
+    <div className="medplum-menu-separator" />
+  );
 }

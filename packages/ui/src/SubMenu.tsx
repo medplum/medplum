@@ -1,105 +1,69 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Popup } from './Popup';
 import './SubMenu.css';
 
-interface SubMenuProps {
+export interface SubMenuProps {
   title: string;
+  children: React.ReactNode;
 }
 
-interface SubMenuState {
-  visible: boolean;
-  x: number;
-  y: number;
-}
+export function SubMenu(props: SubMenuProps): JSX.Element {
+  const [hover, setHover] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [x, setX] = useState(0);
+  const menuItemRef = useRef<HTMLDivElement>(null);
 
-export class SubMenu extends React.Component<SubMenuProps, SubMenuState> {
-  private menuItemRef: React.RefObject<HTMLDivElement>;
-  private timerId?: number;
-  private hover = false;
+  const hoverRef = useRef<boolean>(false);
+  hoverRef.current = hover;
 
-  constructor(props: SubMenuProps) {
-    super(props);
+  const visibleRef = useRef<boolean>(false);
+  visibleRef.current = visible;
 
-    this.state = {
-      visible: false,
-      x: 0,
-      y: 0
-    };
-
-    this.menuItemRef = React.createRef();
-  }
-
-  render() {
-    return (
-      <div
-        ref={this.menuItemRef}
-        className="medplum-menu-item medplum-submenu-item"
-        onClick={() => this.handleClick()}
-        onMouseOver={() => this.handleMouseOver()}
-        onMouseLeave={() => this.handleMouseLeave()}>
-        {this.props.title}
-        <span className="medplum-submenu-arrow" style={{ userSelect: 'none' }}>{'\u25BA'}</span>
-        <Popup
-          visible={this.state.visible}
-          x={this.state.x}
-          y={this.state.y}
-          autoClose={true}
-          onClose={() => this.setState({ visible: false })}>
-          {this.props.children}
-        </Popup>
-      </div>
-    );
-  }
-
-  componentDidMount() {
-    this.timerId = window.setInterval(() => this.handleTick(), 150);
-  }
-
-  componentWillUnmount() {
-    if (this.timerId !== undefined) {
-      window.clearInterval(this.timerId);
-      this.timerId = undefined;
-    }
-  }
-
-  handleMouseOver() {
-    this.hover = true;
-  }
-
-  handleMouseLeave() {
-    this.hover = false;
-  }
-
-  handleTick() {
-    if (!this.state.visible && this.hover) {
-      this.show();
-    } else if (this.state.visible && !this.hover) {
-      this.hide();
-    }
-  }
-
-  handleClick() {
-    this.show();
-  }
-
-  show() {
-    const el = this.menuItemRef.current;
+  function show() {
+    const el = menuItemRef.current;
     if (!el) {
       return;
     }
 
     const rect = el.getBoundingClientRect();
-    let x = 0;
-    const y = 0;
+    let x2 = 0;
 
     if (rect.right + 250 < window.innerWidth) {
-      x = rect.width;
+      x2 = rect.width;
     }
 
-    this.setState({ visible: true, x: x, y: y });
+    setVisible(true);
+    setX(x2);
   }
 
-  hide() {
-    this.setState({ visible: false, x: 0, y: 0 });
-  }
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      if (!visibleRef.current && hoverRef.current) {
+        show();
+      } else if (visibleRef.current && !hoverRef.current) {
+        setVisible(false);
+      }
+    }, 150);
+    return () => window.clearInterval(timerId);
+  }, []);
+
+  return (
+    <div
+      ref={menuItemRef}
+      className="medplum-menu-item medplum-submenu-item"
+      onClick={() => show()}
+      onMouseOver={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}>
+      {props.title}
+      <span className="medplum-submenu-arrow">{'\u25BA'}</span>
+      <Popup
+        visible={visible}
+        x={x}
+        y={0}
+        autoClose={true}
+        onClose={() => setVisible(false)}>
+        {props.children}
+      </Popup>
+    </div>
+  );
 }
