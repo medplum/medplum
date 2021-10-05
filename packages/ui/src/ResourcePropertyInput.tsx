@@ -1,6 +1,6 @@
 import { ElementDefinition, IndexedStructureDefinition, OperationOutcome, PropertyType } from '@medplum/core';
 import React from 'react';
-import { TextField } from '.';
+import { TextField } from './TextField';
 import { AddressInput } from './AddressInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
 import { AttachmentInput } from './AttachmentInput';

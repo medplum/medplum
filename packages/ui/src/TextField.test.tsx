@@ -1,7 +1,7 @@
 import { OperationOutcome } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import { Select, TextField } from '.';
+import { Select, TextField } from './TextField';
 
 describe('TextField', () => {
 

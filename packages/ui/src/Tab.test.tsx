@@ -1,7 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import React, { useState } from 'react';
 import { act } from 'react-dom/test-utils';
-import { Document, Tab, TabBar, TabPanel, TabSwitch } from '.';
+import { Document } from './Document';
+import { Tab } from './Tab';
+import { TabBar } from './TabBar';
+import { TabPanel } from './TabPanel';
+import { TabSwitch } from './TabSwitch';
 
 function TabTest() {
   const [value, setValue] = useState('first');

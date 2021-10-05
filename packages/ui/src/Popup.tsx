@@ -73,7 +73,8 @@ export function Popup(props: PopupProps) {
       <div
         ref={ref}
         className={'medplum-popup ' + (props.visible ? props.activeClassName : props.inactiveClassName)}
-        style={style}>
+        style={style}
+        data-testid="popup">
         {props.children}
       </div>
     </>

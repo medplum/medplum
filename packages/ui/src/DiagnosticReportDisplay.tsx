@@ -1,6 +1,6 @@
 import { DiagnosticReport, Observation, ObservationReferenceRange, Reference } from '@medplum/core';
 import React from 'react';
-import { MedplumLink } from '.';
+import { MedplumLink } from './MedplumLink';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { useResource } from './useResource';
 import './DiagnosticReportDisplay.css';
