@@ -1,7 +1,7 @@
 import { assertOk, AuditEvent, Bot, BundleEntry, createReference, Extension, Filter, Operator, parseFhirPath, Resource, SearchRequest, stringify, Subscription } from '@medplum/core';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
-import fetch from 'node-fetch';
+import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import vm from 'vm';
 import { MedplumRedisConfig } from '../config';
@@ -271,21 +271,12 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
     return;
   }
 
-  const headers: HeadersInit = {
-    'Content-Type': 'application/fhir+json'
-  };
-
+  const headers = buildRestHookHeaders(subscription, resource);
   const body = stringify(resource);
-
-  const secret = getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
-  if (secret) {
-    headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
-  }
-
-  logger.info('Sending rest hook to: ' + url);
   let error: Error | undefined = undefined;
 
   try {
+    logger.info('Sending rest hook to: ' + url);
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
     await createSubscriptionAuditEvent(
@@ -311,6 +302,33 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
   if (error) {
     throw error;
   }
+}
+
+/**
+ * Builds a collection of HTTP request headers for the rest-hook subscription.
+ * @param subscription The subscription resource.
+ * @param resource The trigger resource.
+ * @returns The HTTP request headers.
+ */
+function buildRestHookHeaders(subscription: Subscription, resource: Resource): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/fhir+json'
+  };
+
+  if (subscription.channel?.header) {
+    for (const header of subscription.channel.header) {
+      const [key, value] = header.split(/:/);
+      headers[key.trim()] = value.trim();
+    }
+  }
+
+  const secret = getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
+  if (secret) {
+    const body = stringify(resource);
+    headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
+  }
+
+  return headers;
 }
 
 /**
