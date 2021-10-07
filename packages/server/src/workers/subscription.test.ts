@@ -67,6 +67,51 @@ describe('Subscription Worker', () => {
     }));
   });
 
+  test('Send subscription with custom headers', async () => {
+    const url = 'https://example.com/subscription';
+
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: url,
+        header: [
+          'Authorization: Basic xyz'
+        ]
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).not.toBeUndefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    (fetch as any).mockImplementation(() => ({ status: 200 }));
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    await sendSubscription(job);
+
+    expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
+      method: 'POST',
+      body: stringify(patient),
+      headers: {
+        'Content-Type': 'application/fhir+json',
+        'Authorization': 'Basic xyz'
+      }
+    }));
+  });
+
   test('Send subscriptions with signature', async () => {
     const url = 'https://example.com/subscription';
     const secret = '0123456789';
