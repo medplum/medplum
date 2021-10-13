@@ -766,3 +766,81 @@ test('Compartment permissions', async () => {
   expect(patientOutcome3.id).toEqual('not-found');
   expect(patient3).toBeUndefined();
 });
+
+test('Search birthDate after delete', async () => {
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    birthDate: '1971-02-02'
+  });
+
+  expect(createOutcome.id).toEqual('created');
+
+  const [searchOutcome1, searchResult1] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'birthdate',
+      operator: Operator.EQUALS,
+      value: '1971-02-02'
+    }]
+  });
+
+  expect(searchOutcome1.id).toEqual('ok');
+  expect(searchResult1?.entry?.length).toEqual(1);
+  expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+
+  const [deleteOutcome] = await repo.deleteResource('Patient', patient?.id as string);
+  expect(deleteOutcome.id).toEqual('ok');
+
+  const [searchOutcome2, searchResult2] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'birthdate',
+      operator: Operator.EQUALS,
+      value: '1971-02-02'
+    }]
+  });
+
+  expect(searchOutcome2.id).toEqual('ok');
+  expect(searchResult2?.entry?.length).toEqual(0);
+});
+
+test('Search identifier after delete', async () => {
+  const identifier = randomUUID();
+
+  const [createOutcome, patient] = await repo.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [{ given: ['Alice'], family: 'Smith' }],
+    identifier: [{ system: 'https://www.example.com', value: identifier }]
+  });
+
+  expect(createOutcome.id).toEqual('created');
+
+  const [searchOutcome1, searchResult1] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'identifier',
+      operator: Operator.EQUALS,
+      value: identifier
+    }]
+  });
+
+  expect(searchOutcome1.id).toEqual('ok');
+  expect(searchResult1?.entry?.length).toEqual(1);
+  expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+
+  const [deleteOutcome] = await repo.deleteResource('Patient', patient?.id as string);
+  expect(deleteOutcome.id).toEqual('ok');
+
+  const [searchOutcome2, searchResult2] = await repo.search({
+    resourceType: 'Patient',
+    filters: [{
+      code: 'identifier',
+      operator: Operator.EQUALS,
+      value: identifier
+    }]
+  });
+
+  expect(searchOutcome2.id).toEqual('ok');
+  expect(searchResult2?.entry?.length).toEqual(0);
+});

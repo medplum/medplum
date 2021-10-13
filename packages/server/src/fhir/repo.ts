@@ -313,6 +313,7 @@ export class Repository {
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
 
+    this.addDeletedFilter(builder);
     this.addCompartments(builder);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
@@ -347,11 +348,20 @@ export class Repository {
     const builder = new SelectQuery(searchRequest.resourceType)
       .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
 
+    this.addDeletedFilter(builder);
     this.addCompartments(builder);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
+  }
+
+  /**
+   * Adds filters to ignore soft-deleted resources.
+   * @param builder The select query builder.
+   */
+  private addDeletedFilter(builder: SelectQuery): void {
+    builder.where('deleted', Operator.EQUALS, false);
   }
 
   /**
