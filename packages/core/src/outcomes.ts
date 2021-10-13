@@ -2,6 +2,7 @@ import { OperationOutcome } from './fhir';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
+const GONE_ID = 'gone';
 const NOT_MODIFIED_ID = 'not-modified';
 const NOT_FOUND_ID = 'not-found';
 
@@ -53,10 +54,21 @@ export const notFound: OperationOutcome = {
   }]
 };
 
+export const gone: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: GONE_ID,
+  issue: [{
+    severity: 'error',
+    code: 'gone',
+    details: {
+      text: 'Gone'
+    }
+  }]
+};
+
 export function badRequest(details: string, expression?: string): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
-    // id: randomUUID(),
     issue: [{
       severity: 'error',
       code: 'invalid',
@@ -76,6 +88,10 @@ export function isNotFound(outcome: OperationOutcome): boolean {
   return outcome.id === NOT_FOUND_ID;
 }
 
+export function isGone(outcome: OperationOutcome): boolean {
+  return outcome.id === GONE_ID;
+}
+
 export function getStatus(outcome: OperationOutcome): number {
   if (outcome.id === OK_ID) {
     return 200;
@@ -85,6 +101,8 @@ export function getStatus(outcome: OperationOutcome): number {
     return 304;
   } else if (outcome.id === NOT_FOUND_ID) {
     return 404;
+  } else if (outcome.id === GONE_ID) {
+    return 410;
   } else {
     return 400;
   }

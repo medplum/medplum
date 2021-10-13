@@ -30,6 +30,18 @@ export class IdentifierTable implements LookupTable {
   }
 
   /**
+   * Deletes a resource from the index.
+   * @param resource The resource to delete.
+   */
+  async deleteResource(resource: Resource): Promise<void> {
+    const resourceId = resource.id as string;
+    const client = getClient();
+    await new DeleteQuery('Identifier')
+      .where('resourceId', Operator.EQUALS, resourceId)
+      .execute(client);
+  }
+
+  /**
    * Indexes a resource identifier values.
    * Attempts to reuse existing identifiers if they are correct.
    * @param resource The resource to index.
@@ -52,9 +64,7 @@ export class IdentifierTable implements LookupTable {
       const client = getClient();
 
       if (existing.length > 0) {
-        await new DeleteQuery('Identifier')
-          .where('resourceId', Operator.EQUALS, resourceId)
-          .execute(client);
+        await this.deleteResource(resource);
       }
 
       for (let i = 0; i < identifiers.length; i++) {

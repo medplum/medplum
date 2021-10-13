@@ -1,4 +1,4 @@
-import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
@@ -133,6 +133,7 @@ export class Repository {
     const client = getClient();
     const builder = new SelectQuery(resourceType)
       .column('content')
+      .column('deleted')
       .where('id', Operator.EQUALS, id);
 
     this.addCompartments(builder);
@@ -140,6 +141,10 @@ export class Repository {
     const rows = await builder.execute(client);
     if (rows.length === 0) {
       return [notFound, undefined];
+    }
+
+    if (rows[0].deleted) {
+      return [gone, undefined];
     }
 
     return [allOk, JSON.parse(rows[0].content as string)];
@@ -154,13 +159,17 @@ export class Repository {
   }
 
   async readHistory(resourceType: string, id: string): RepositoryResult<Bundle> {
-    if (!validator.isUUID(id)) {
-      return [badRequest('Invalid UUID'), undefined];
-    }
+    // if (!validator.isUUID(id)) {
+    //   return [badRequest('Invalid UUID'), undefined];
+    // }
 
-    const validateOutcome = validateResourceType(resourceType);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
+    // const validateOutcome = validateResourceType(resourceType);
+    // if (!isOk(validateOutcome)) {
+    //   return [validateOutcome, undefined];
+    // }
+    const [resourceOutcome] = await this.readResource(resourceType, id);
+    if (!isOk(resourceOutcome)) {
+      return [resourceOutcome, undefined];
     }
 
     const client = getClient();
@@ -179,13 +188,18 @@ export class Repository {
   }
 
   async readVersion(resourceType: string, id: string, vid: string): RepositoryResult<Resource> {
-    if (!validator.isUUID(id) || !validator.isUUID(vid)) {
-      return [badRequest('Invalid UUID'), undefined];
-    }
+    // if (!validator.isUUID(id) || !validator.isUUID(vid)) {
+    //   return [badRequest('Invalid UUID'), undefined];
+    // }
 
-    const validateOutcome = validateResourceType(resourceType);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
+    // const validateOutcome = validateResourceType(resourceType);
+    // if (!isOk(validateOutcome)) {
+    //   return [validateOutcome, undefined];
+    // }
+
+    const [resourceOutcome] = await this.readResource(resourceType, id);
+    if (!isOk(resourceOutcome) && !isGone(resourceOutcome)) {
+      return [resourceOutcome, undefined];
     }
 
     const client = getClient();
@@ -218,7 +232,7 @@ export class Repository {
     }
 
     const [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
-    if (!isOk(existingOutcome) && !isNotFound(existingOutcome)) {
+    if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
       return [existingOutcome, undefined];
     }
 
@@ -260,14 +274,14 @@ export class Repository {
   }
 
   async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {
-    if (!validator.isUUID(id)) {
-      return [badRequest('Invalid UUID'), undefined];
-    }
+    // if (!validator.isUUID(id)) {
+    //   return [badRequest('Invalid UUID'), undefined];
+    // }
 
-    const validateOutcome = validateResourceType(resourceType);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
-    }
+    // const validateOutcome = validateResourceType(resourceType);
+    // if (!isOk(validateOutcome)) {
+    //   return [validateOutcome, undefined];
+    // }
 
     const [readOutcome, resource] = await this.readResource(resourceType, id);
     if (!isOk(readOutcome)) {
@@ -275,7 +289,41 @@ export class Repository {
     }
 
     // TODO
-    logger.info(`DELETE resourceType=${resource?.resourceType} / id=${resource?.id}`);
+    // logger.info(`DELETE resourceType=${resource?.resourceType} / id=${resource?.id}`);
+
+
+    const client = getClient();
+    const lastUpdated = new Date();
+    const content = '';
+    // const resourceType = resource.resourceType;
+    // const meta = resource.meta as Meta;
+    // const content = stringify(resource);
+
+    const columns: Record<string, any> = {
+      id,
+      lastUpdated,
+      deleted: true,
+      compartments: [],
+      content
+    };
+
+    // const searchParams = getSearchParameters(resourceType);
+    // if (searchParams) {
+    //   for (const searchParam of Object.values(searchParams)) {
+    //     this.buildColumn(resource, columns, searchParam);
+    //   }
+    // }
+
+    await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(client);
+
+    await new InsertQuery(resourceType + '_History', {
+      id,
+      versionId: randomUUID(),
+      lastUpdated,
+      content
+    }).execute(client);
+
+    await this.deleteFromLookupTables(resource as Resource);
 
     return [allOk, undefined];
   }
@@ -499,6 +547,7 @@ export class Repository {
     const columns: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
+      deleted: false,
       compartments: getCompartments(resource),
       content
     };
@@ -576,6 +625,12 @@ export class Repository {
   private async writeLookupTables(resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(resource);
+    }
+  }
+
+  private async deleteFromLookupTables(resource: Resource): Promise<void> {
+    for (const lookupTable of lookupTables) {
+      await lookupTable.deleteResource(resource);
     }
   }
 

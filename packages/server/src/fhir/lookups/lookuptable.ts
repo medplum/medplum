@@ -49,4 +49,10 @@ export interface LookupTable {
    * @param sortRule The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void;
+
+  /**
+   * Deletes the resource from the lookup table.
+   * @param resource The resource to delete.
+   */
+  deleteResource(resource: Resource): Promise<void>;
 }

@@ -6,6 +6,7 @@ import { FileBuilder } from './filebuilder';
 
 const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const searchParams = readJson('fhir/r4/search-parameters.json');
+const v5Builder = new FileBuilder();
 
 export function main() {
   buildStructureDefinitions('profiles-types.json');
@@ -32,7 +33,8 @@ function buildStructureDefinitions(fileName: string): void {
 function writeMigrations(): void {
   const b = new FileBuilder();
   buildMigrationUp(b);
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
+  // writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v5.ts'), v5Builder.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
@@ -40,6 +42,11 @@ function buildMigrationUp(b: FileBuilder): void {
   b.newLine();
   b.append('export async function run(client: PoolClient) {');
   b.indentCount++;
+
+  v5Builder.append('import { PoolClient } from \'pg\';');
+  v5Builder.newLine();
+  v5Builder.append('export async function run(client: PoolClient) {');
+  v5Builder.indentCount++;
 
   for (const [resourceType, typeSchema] of Object.entries(structureDefinitions.types)) {
     buildCreateTables(b, resourceType, typeSchema);
@@ -52,6 +59,9 @@ function buildMigrationUp(b: FileBuilder): void {
   buildValueSetElementTable(b);
   b.indentCount--;
   b.append('}');
+
+  v5Builder.indentCount--;
+  v5Builder.append('}');
 }
 
 function isResourceType(typeSchema: TypeSchema): boolean {
@@ -81,8 +91,11 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
     '"id" UUID NOT NULL PRIMARY KEY',
     '"content" TEXT NOT NULL',
     '"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL',
+    '"deleted" BOOLEAN NOT NULL DEFAULT FALSE',
     '"compartments" UUID[] NOT NULL',
   ];
+
+  v5Builder.append(`await client.query('ALTER TABLE "${resourceType}" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');`);
 
   columns.push(...buildSearchColumns(resourceType));
 
