@@ -139,7 +139,7 @@ export async function initKeys(config: MedplumServerConfig) {
     jwks.keys.push(publicKey);
 
     // Convert from JWK to PKCS and add to the collection of public keys
-    publicKeys[jwk.id as string] = await parseJwk(publicKey);
+    publicKeys[jwk.id as string] = await parseJwk(publicKey) as KeyLike;
   }
 
   // Use the first key as the signing key
@@ -148,7 +148,7 @@ export async function initKeys(config: MedplumServerConfig) {
     ...jsonWebKeys[0],
     alg: ALG,
     use: 'sig',
-  });
+  }) as KeyLike;
 }
 
 /**
