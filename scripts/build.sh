@@ -24,7 +24,8 @@ npm run build --workspace=packages/graphiql
 npm run build --workspace=packages/server
 
 # Test
-NODE_OPTIONS=--max_old_space_size=2048 npx jest --runInBand
+#npx jest --runInBand
+node --expose-gc --max_old_space_size=4096 ./node_modules/jest/bin/jest.js --runInBand --logHeapUsage
 
 # Lint
 npm run lint --workspaces
