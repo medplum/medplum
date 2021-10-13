@@ -6,7 +6,6 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
-import { logger } from '../logger';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { validateResource, validateResourceType } from './schema';
@@ -159,14 +158,6 @@ export class Repository {
   }
 
   async readHistory(resourceType: string, id: string): RepositoryResult<Bundle> {
-    // if (!validator.isUUID(id)) {
-    //   return [badRequest('Invalid UUID'), undefined];
-    // }
-
-    // const validateOutcome = validateResourceType(resourceType);
-    // if (!isOk(validateOutcome)) {
-    //   return [validateOutcome, undefined];
-    // }
     const [resourceOutcome] = await this.readResource(resourceType, id);
     if (!isOk(resourceOutcome)) {
       return [resourceOutcome, undefined];
@@ -188,14 +179,9 @@ export class Repository {
   }
 
   async readVersion(resourceType: string, id: string, vid: string): RepositoryResult<Resource> {
-    // if (!validator.isUUID(id) || !validator.isUUID(vid)) {
-    //   return [badRequest('Invalid UUID'), undefined];
-    // }
-
-    // const validateOutcome = validateResourceType(resourceType);
-    // if (!isOk(validateOutcome)) {
-    //   return [validateOutcome, undefined];
-    // }
+    if (!validator.isUUID(vid)) {
+      return [badRequest('Invalid UUID'), undefined];
+    }
 
     const [resourceOutcome] = await this.readResource(resourceType, id);
     if (!isOk(resourceOutcome) && !isGone(resourceOutcome)) {
@@ -274,31 +260,14 @@ export class Repository {
   }
 
   async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {
-    // if (!validator.isUUID(id)) {
-    //   return [badRequest('Invalid UUID'), undefined];
-    // }
-
-    // const validateOutcome = validateResourceType(resourceType);
-    // if (!isOk(validateOutcome)) {
-    //   return [validateOutcome, undefined];
-    // }
-
     const [readOutcome, resource] = await this.readResource(resourceType, id);
     if (!isOk(readOutcome)) {
       return [readOutcome, undefined];
     }
 
-    // TODO
-    // logger.info(`DELETE resourceType=${resource?.resourceType} / id=${resource?.id}`);
-
-
     const client = getClient();
     const lastUpdated = new Date();
     const content = '';
-    // const resourceType = resource.resourceType;
-    // const meta = resource.meta as Meta;
-    // const content = stringify(resource);
-
     const columns: Record<string, any> = {
       id,
       lastUpdated,
@@ -306,13 +275,6 @@ export class Repository {
       compartments: [],
       content
     };
-
-    // const searchParams = getSearchParameters(resourceType);
-    // if (searchParams) {
-    //   for (const searchParam of Object.values(searchParams)) {
-    //     this.buildColumn(resource, columns, searchParam);
-    //   }
-    // }
 
     await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(client);
 
