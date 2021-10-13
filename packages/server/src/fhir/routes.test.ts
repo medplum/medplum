@@ -285,9 +285,20 @@ describe('FHIR Routes', () => {
 
   test('Delete resource', async () => {
     const res = await request(app)
-      .delete(`/fhir/R4/Patient/${patientId}`)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .delete(`/fhir/R4/Patient/${patient.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res2.status).toBe(200);
+    const res3 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(410);
   });
 
   test('Delete resource invalid UUID', async () => {

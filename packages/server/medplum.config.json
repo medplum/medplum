@@ -11,6 +11,7 @@
   "supportEmail": "Medplum <support@medplum.com>",
   "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
   "googleClientSecret": "",
+  "adminClientId": "861e555d-82aa-4fb8-a7fd-9542377aeb2d",
   "database": {
     "host": "localhost",
     "port": 5432,

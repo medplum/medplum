@@ -1,4 +1,4 @@
-import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
@@ -6,7 +6,6 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
-import { logger } from '../logger';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { validateResource, validateResourceType } from './schema';
@@ -133,6 +132,7 @@ export class Repository {
     const client = getClient();
     const builder = new SelectQuery(resourceType)
       .column('content')
+      .column('deleted')
       .where('id', Operator.EQUALS, id);
 
     this.addCompartments(builder);
@@ -140,6 +140,10 @@ export class Repository {
     const rows = await builder.execute(client);
     if (rows.length === 0) {
       return [notFound, undefined];
+    }
+
+    if (rows[0].deleted) {
+      return [gone, undefined];
     }
 
     return [allOk, JSON.parse(rows[0].content as string)];
@@ -154,13 +158,9 @@ export class Repository {
   }
 
   async readHistory(resourceType: string, id: string): RepositoryResult<Bundle> {
-    if (!validator.isUUID(id)) {
-      return [badRequest('Invalid UUID'), undefined];
-    }
-
-    const validateOutcome = validateResourceType(resourceType);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
+    const [resourceOutcome] = await this.readResource(resourceType, id);
+    if (!isOk(resourceOutcome)) {
+      return [resourceOutcome, undefined];
     }
 
     const client = getClient();
@@ -179,13 +179,13 @@ export class Repository {
   }
 
   async readVersion(resourceType: string, id: string, vid: string): RepositoryResult<Resource> {
-    if (!validator.isUUID(id) || !validator.isUUID(vid)) {
+    if (!validator.isUUID(vid)) {
       return [badRequest('Invalid UUID'), undefined];
     }
 
-    const validateOutcome = validateResourceType(resourceType);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
+    const [resourceOutcome] = await this.readResource(resourceType, id);
+    if (!isOk(resourceOutcome) && !isGone(resourceOutcome)) {
+      return [resourceOutcome, undefined];
     }
 
     const client = getClient();
@@ -218,7 +218,7 @@ export class Repository {
     }
 
     const [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
-    if (!isOk(existingOutcome) && !isNotFound(existingOutcome)) {
+    if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
       return [existingOutcome, undefined];
     }
 
@@ -260,22 +260,32 @@ export class Repository {
   }
 
   async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {
-    if (!validator.isUUID(id)) {
-      return [badRequest('Invalid UUID'), undefined];
-    }
-
-    const validateOutcome = validateResourceType(resourceType);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
-    }
-
     const [readOutcome, resource] = await this.readResource(resourceType, id);
     if (!isOk(readOutcome)) {
       return [readOutcome, undefined];
     }
 
-    // TODO
-    logger.info(`DELETE resourceType=${resource?.resourceType} / id=${resource?.id}`);
+    const client = getClient();
+    const lastUpdated = new Date();
+    const content = '';
+    const columns: Record<string, any> = {
+      id,
+      lastUpdated,
+      deleted: true,
+      compartments: [],
+      content
+    };
+
+    await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(client);
+
+    await new InsertQuery(resourceType + '_History', {
+      id,
+      versionId: randomUUID(),
+      lastUpdated,
+      content
+    }).execute(client);
+
+    await this.deleteFromLookupTables(resource as Resource);
 
     return [allOk, undefined];
   }
@@ -303,6 +313,7 @@ export class Repository {
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
 
+    this.addDeletedFilter(builder);
     this.addCompartments(builder);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
@@ -337,11 +348,20 @@ export class Repository {
     const builder = new SelectQuery(searchRequest.resourceType)
       .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
 
+    this.addDeletedFilter(builder);
     this.addCompartments(builder);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
+  }
+
+  /**
+   * Adds filters to ignore soft-deleted resources.
+   * @param builder The select query builder.
+   */
+  private addDeletedFilter(builder: SelectQuery): void {
+    builder.where('deleted', Operator.EQUALS, false);
   }
 
   /**
@@ -499,6 +519,7 @@ export class Repository {
     const columns: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
+      deleted: false,
       compartments: getCompartments(resource),
       content
     };
@@ -576,6 +597,12 @@ export class Repository {
   private async writeLookupTables(resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(resource);
+    }
+  }
+
+  private async deleteFromLookupTables(resource: Resource): Promise<void> {
+    for (const lookupTable of lookupTables) {
+      await lookupTable.deleteResource(resource);
     }
   }
 
