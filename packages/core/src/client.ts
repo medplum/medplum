@@ -236,7 +236,6 @@ export class MedplumClient extends EventTarget {
    */
   private handleLoginResponse(response: LoginResponse): ProfileResource {
     this.setActiveLogin(response);
-    this.dispatchEvent({ type: 'change' });
     return response.profile;
   }
 
@@ -468,6 +467,7 @@ export class MedplumClient extends EventTarget {
   setActiveLogin(login: LoginResponse): void {
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
+    this.dispatchEvent({ type: 'change' });
   }
 
   getLogins(): LoginResponse[] {
