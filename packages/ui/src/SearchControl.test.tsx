@@ -101,386 +101,466 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-beforeAll(async () => {
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-});
+describe('SearchControl', () => {
 
-const setup = (args: SearchControlProps) => {
-  return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <SearchControl {...args} />
-    </MedplumProvider>
-  );
-};
+  beforeAll(async () => {
+    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
+  });
 
-test('SearchControl renders', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onLoad: jest.fn()
+  const setup = (args: SearchControlProps) => {
+    return render(
+      <MedplumProvider medplum={medplum} router={mockRouter}>
+        <SearchControl {...args} />
+      </MedplumProvider>
+    );
   };
 
-  setup(props)
+  test('Renders', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onLoad: jest.fn()
+    };
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
+    setup(props)
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
+    expect(props.onLoad).toBeCalled();
   });
 
-  const control = screen.getByTestId('search-control');
-  expect(control).not.toBeUndefined();
-  expect(props.onLoad).toBeCalled();
-});
+  test('Renders empty results', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Bob'
+        }]
+      },
+      onLoad: jest.fn()
+    };
 
-test('SearchControl renders empty results', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Bob'
-      }]
-    },
-    onLoad: jest.fn()
-  };
+    setup(props)
 
-  setup(props)
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('empty-search'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('empty-search'));
+    const control = screen.getByTestId('empty-search');
+    expect(control).not.toBeUndefined();
+    expect(props.onLoad).toBeCalled();
   });
 
-  const control = screen.getByTestId('empty-search');
-  expect(control).not.toBeUndefined();
-  expect(props.onLoad).toBeCalled();
-});
+  test('Renders with checkboxes', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onLoad: jest.fn(),
+      checkboxesEnabled: true
+    };
 
-test('SearchControl renders with checkboxes', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onLoad: jest.fn(),
-    checkboxesEnabled: true
-  };
+    setup(props)
 
-  setup(props)
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
+    expect(props.onLoad).toBeCalled();
   });
 
-  const control = screen.getByTestId('search-control');
-  expect(control).not.toBeUndefined();
-  expect(props.onLoad).toBeCalled();
-});
+  test('Renders empty results with checkboxes', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Bob'
+        }]
+      },
+      onLoad: jest.fn(),
+      checkboxesEnabled: true
+    };
 
-test('SearchControl renders empty results with checkboxes', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Bob'
-      }]
-    },
-    onLoad: jest.fn(),
-    checkboxesEnabled: true
-  };
+    setup(props)
 
-  setup(props)
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('empty-search'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('empty-search'));
+    const control = screen.getByTestId('empty-search');
+    expect(control).not.toBeUndefined();
+    expect(props.onLoad).toBeCalled();
   });
 
-  const control = screen.getByTestId('empty-search');
-  expect(control).not.toBeUndefined();
-  expect(props.onLoad).toBeCalled();
-});
+  test('Renders filters', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['id', 'name'],
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onLoad: jest.fn()
+    };
 
-test('SearchControl renders filters', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      fields: ['id', 'name'],
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onLoad: jest.fn()
-  };
+    setup(props)
 
-  setup(props)
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
+    expect(props.onLoad).toBeCalled();
   });
 
-  const control = screen.getByTestId('search-control');
-  expect(control).not.toBeUndefined();
-  expect(props.onLoad).toBeCalled();
-});
+  test('Next page button', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onChange: jest.fn()
+    };
 
-test('SearchControl next page button', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onChange: jest.fn()
-  };
+    setup(props);
 
-  setup(props);
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('next-page-button'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('next-page-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('next-page-button'));
+    });
+
+    expect(props.onChange).toBeCalled();
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('next-page-button'));
+  test('Next page button without onChange listener', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      }
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('next-page-button'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('next-page-button'));
+    });
+
   });
 
-  expect(props.onChange).toBeCalled();
-});
+  test('Prev page button', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onChange: jest.fn()
+    };
 
-test('SearchControl next page button without onChange listener', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    }
-  };
+    setup(props);
 
-  setup(props);
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('prev-page-button'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('next-page-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('prev-page-button'));
+    });
+
+    expect(props.onChange).toBeCalled();
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('next-page-button'));
+  test('New button', async () => {
+    mockRouter.push = jest.fn();
+
+    setup({
+      search: {
+        resourceType: 'Patient'
+      }
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('new-button'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('new-button'));
+    });
+
+    expect(mockRouter.push).toBeCalled();
   });
 
-});
+  test('Click on row', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onClick: jest.fn()
+    };
 
-test('SearchControl prev page button', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onChange: jest.fn()
-  };
+    setup(props);
 
-  setup(props);
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('prev-page-button'));
+    await act(async () => {
+      await waitFor(() => screen.getAllByTestId('search-control-row'));
+    });
+
+    await act(async () => {
+      const rows = screen.getAllByTestId('search-control-row');
+      fireEvent.click(rows[0]);
+    });
+
+    expect(props.onClick).toBeCalled();
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('prev-page-button'));
+  test('Open field editor', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onLoad: jest.fn()
+    };
+
+    setup(props)
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('fields-button'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
+    expect(props.onLoad).toBeCalled();
   });
 
-  expect(props.onChange).toBeCalled();
-});
+  test('Field editor onOk', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onLoad: jest.fn()
+    };
 
-test('SearchControl new button', async () => {
-  mockRouter.push = jest.fn();
+    setup(props)
 
-  setup({
-    search: {
-      resourceType: 'Patient'
-    }
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('fields-button'));
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('dialog-ok'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('dialog-ok'));
+    });
+
   });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('new-button'));
+  test('Field editor onCancel', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onLoad: jest.fn()
+    };
+
+    setup(props)
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('fields-button'));
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('dialog-cancel'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('dialog-cancel'));
+    });
+
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('new-button'));
+  test('Open filter editor', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onLoad: jest.fn()
+    };
+
+    setup(props)
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('filters-button'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
+    expect(props.onLoad).toBeCalled();
   });
 
-  expect(mockRouter.push).toBeCalled();
-});
+  test('Click all checkbox', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onLoad: jest.fn(),
+      checkboxesEnabled: true
+    };
 
-test('SearchControl click on row', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onClick: jest.fn()
-  };
+    setup(props)
 
-  setup(props);
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
 
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
+    expect(props.onLoad).toBeCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('all-checkbox'));
+    });
+
+    const allCheckbox = screen.getByTestId('all-checkbox');
+    expect(allCheckbox).not.toBeUndefined();
+    expect((allCheckbox as HTMLInputElement).checked).toEqual(true);
+
+    const rowCheckboxes = screen.queryAllByTestId('row-checkbox');
+    expect(rowCheckboxes).not.toBeUndefined();
+    expect(rowCheckboxes.length).toEqual(1);
+    expect((rowCheckboxes[0] as HTMLInputElement).checked).toEqual(true);
   });
 
-  await act(async () => {
-    await waitFor(() => screen.getAllByTestId('search-control-row'));
+  test('Click row checkbox', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [{
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice'
+        }]
+      },
+      onLoad: jest.fn(),
+      checkboxesEnabled: true
+    };
+
+    setup(props)
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
+    expect(props.onLoad).toBeCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('row-checkbox'));
+    });
+
+    const allCheckbox = screen.getByTestId('all-checkbox');
+    expect(allCheckbox).not.toBeUndefined();
+    expect((allCheckbox as HTMLInputElement).checked).toEqual(true);
+
+    const rowCheckboxes = screen.queryAllByTestId('row-checkbox');
+    expect(rowCheckboxes).not.toBeUndefined();
+    expect(rowCheckboxes.length).toEqual(1);
+    expect((rowCheckboxes[0] as HTMLInputElement).checked).toEqual(true);
   });
 
-  await act(async () => {
-    const rows = screen.getAllByTestId('search-control-row');
-    fireEvent.click(rows[0]);
-  });
-
-  expect(props.onClick).toBeCalled();
-});
-
-test('SearchControl open field editor', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onLoad: jest.fn()
-  };
-
-  setup(props)
-
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('fields-button'));
-  });
-
-  const control = screen.getByTestId('search-control');
-  expect(control).not.toBeUndefined();
-  expect(props.onLoad).toBeCalled();
-});
-
-test('SearchControl field editor onOk', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onLoad: jest.fn()
-  };
-
-  setup(props)
-
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('fields-button'));
-  });
-
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('dialog-ok'));
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('dialog-ok'));
-  });
-
-});
-
-test('SearchControl field editor onCancel', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onLoad: jest.fn()
-  };
-
-  setup(props)
-
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('fields-button'));
-  });
-
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('dialog-cancel'));
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('dialog-cancel'));
-  });
-
-});
-
-test('SearchControl open filter editor', async () => {
-  const props = {
-    search: {
-      resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
-    },
-    onLoad: jest.fn()
-  };
-
-  setup(props)
-
-  await act(async () => {
-    await waitFor(() => screen.getByTestId('search-control'));
-  });
-
-  await act(async () => {
-    fireEvent.click(screen.getByTestId('filters-button'));
-  });
-
-  const control = screen.getByTestId('search-control');
-  expect(control).not.toBeUndefined();
-  expect(props.onLoad).toBeCalled();
 });
