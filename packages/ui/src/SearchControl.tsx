@@ -3,13 +3,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum, useMedplumRouter } from './MedplumProvider';
-import './SearchControl.css';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import { buildFieldNameString, getFilterValueString, getValue, movePage, renderValue } from './SearchUtils';
 import { TitleBar } from './TitleBar';
 import { killEvent } from './utils/dom';
+import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -132,9 +132,9 @@ export function SearchControl(props: SearchControlProps) {
     const newSelected = {} as { [id: string]: boolean };
     const searchResponse = stateRef.current?.searchResponse;
     if (checked && searchResponse?.entry) {
-      searchResponse.entry.forEach(e => {
-        if (e.resource?.id) {
-          newSelected[e.resource.id] = true;
+      searchResponse.entry.forEach(entry => {
+        if (entry.resource?.id) {
+          newSelected[entry.resource.id] = true;
         }
       });
     }
