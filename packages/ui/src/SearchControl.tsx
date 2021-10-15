@@ -114,14 +114,13 @@ export function SearchControl(props: SearchControlProps) {
     const checked = el.checked;
     const id = el.dataset['id'];
     if (id) {
-      const state = stateRef.current;
-      const newSelected = { ...state.selected };
+      const newSelected = { ...stateRef.current.selected };
       if (checked) {
         newSelected[id] = true;
       } else {
         delete newSelected[id];
       }
-      setState({ ...state, selected: newSelected })
+      setState({ ...stateRef.current, selected: newSelected })
     }
   }
 
@@ -131,15 +130,15 @@ export function SearchControl(props: SearchControlProps) {
     const el = e.target as HTMLInputElement;
     const checked = el.checked;
     const newSelected = {} as { [id: string]: boolean };
-    const state = stateRef.current;
-    if (checked && state.searchResponse?.entry) {
-      state.searchResponse.entry.forEach(e => {
-        if (e.resource?.id) {
-          newSelected[e.resource.id] = true;
+    const searchResponse = stateRef.current?.searchResponse;
+    if (checked && searchResponse?.entry) {
+      searchResponse.entry.forEach(entry => {
+        if (entry.resource?.id) {
+          newSelected[entry.resource.id] = true;
         }
       });
     }
-    setState({ ...state, selected: newSelected });
+    setState({ ...stateRef.current, selected: newSelected });
     return true;
   }
 
@@ -284,6 +283,7 @@ export function SearchControl(props: SearchControlProps) {
                 <input
                   type="checkbox"
                   value="checked"
+                  data-testid="all-checkbox"
                   checked={isAllSelected()}
                   onChange={e => handleAllCheckboxClick(e)}
                 />
@@ -319,6 +319,7 @@ export function SearchControl(props: SearchControlProps) {
                     type="checkbox"
                     value="checked"
                     data-id={resource.id}
+                    data-testid="row-checkbox"
                     checked={!!(resource.id && state.selected[resource.id])}
                     onChange={e => handleSingleCheckboxClick(e)}
                   />
