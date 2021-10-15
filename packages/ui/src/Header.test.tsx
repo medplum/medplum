@@ -164,7 +164,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByTestId('header-profile-menu-button'));
     });
 
-    expect(screen.getByText('Sign out')).not.toBeUndefined();
+    expect(screen.getByText('Sign out of all accounts')).not.toBeUndefined();
   });
 
 });
