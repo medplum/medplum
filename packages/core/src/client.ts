@@ -465,6 +465,7 @@ export class MedplumClient extends EventTarget {
   }
 
   setActiveLogin(login: LoginResponse): void {
+    this.activeLogin = login;
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
     this.dispatchEvent({ type: 'change' });
