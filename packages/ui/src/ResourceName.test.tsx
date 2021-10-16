@@ -42,52 +42,56 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-beforeAll(async () => {
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-});
+describe('ResourceName', () => {
 
-const setup = (args: ResourceNameProps) => {
-  return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <ResourceName {...args} />
-    </MedplumProvider>
-  );
-};
-
-test('ResourceName renders system', () => {
-  const utils = setup({ value: { reference: 'system' } });
-  expect(utils.getByText('System')).not.toBeUndefined();
-});
-
-test('ResourceName renders resource directly', async () => {
-  const utils = setup({
-    value: patient
+  beforeAll(async () => {
+    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  await waitFor(() => utils.getByText('Alice Smith'));
+  const setup = (args: ResourceNameProps) => {
+    return render(
+      <MedplumProvider medplum={medplum} router={mockRouter}>
+        <ResourceName {...args} />
+      </MedplumProvider>
+    );
+  };
 
-  expect(utils.getByText('Alice Smith')).not.toBeUndefined();
-});
-
-test('ResourceName renders resource directly as link', async () => {
-  const utils = setup({
-    value: patient,
-    link: true
+  test('Renders system', () => {
+    const utils = setup({ value: { reference: 'system' } });
+    expect(utils.getByText('System')).not.toBeUndefined();
   });
 
-  await waitFor(() => utils.getByText('Alice Smith'));
+  test('Renders resource directly', async () => {
+    const utils = setup({
+      value: patient
+    });
 
-  expect(utils.getByText('Alice Smith')).not.toBeUndefined();
-});
+    await waitFor(() => utils.getByText('Alice Smith'));
 
-test('ResourceName renders after loading the resource', async () => {
-  const utils = setup({
-    value: {
-      reference: 'Patient/' + patient.id
-    }
+    expect(utils.getByText('Alice Smith')).not.toBeUndefined();
   });
 
-  await waitFor(() => utils.getByText('Alice Smith'));
+  test('Renders resource directly as link', async () => {
+    const utils = setup({
+      value: patient,
+      link: true
+    });
 
-  expect(utils.getByText('Alice Smith')).not.toBeUndefined();
+    await waitFor(() => utils.getByText('Alice Smith'));
+
+    expect(utils.getByText('Alice Smith')).not.toBeUndefined();
+  });
+
+  test('Renders after loading the resource', async () => {
+    const utils = setup({
+      value: {
+        reference: 'Patient/' + patient.id
+      }
+    });
+
+    await waitFor(() => utils.getByText('Alice Smith'));
+
+    expect(utils.getByText('Alice Smith')).not.toBeUndefined();
+  });
+
 });

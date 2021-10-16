@@ -2,19 +2,23 @@ import { loadTestConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 import { seedDatabase } from './seed';
 
-beforeAll(async () => {
-  const config = await loadTestConfig();
-  await initDatabase(config.database);
-});
+describe('Seed', () => {
 
-afterAll(async () => {
-  await closeDatabase();
-});
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config.database);
+  });
 
-test('Seeder completes successfully', async () => {
-  // First time, seeder should run
-  await seedDatabase();
+  afterAll(async () => {
+    await closeDatabase();
+  });
 
-  // Second time, seeder should silently ignore
-  await seedDatabase();
+  test('Seeder completes successfully', async () => {
+    // First time, seeder should run
+    await seedDatabase();
+
+    // Second time, seeder should silently ignore
+    await seedDatabase();
+  });
+
 });

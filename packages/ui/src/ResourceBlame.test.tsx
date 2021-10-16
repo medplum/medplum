@@ -78,45 +78,49 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-beforeAll(async () => {
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-});
+describe('ResourceBlame', () => {
 
-const setup = (args: ResourceBlameProps) => {
-  return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <ResourceBlame {...args} />
-    </MedplumProvider>
-  );
-};
-
-test('ResourceBlame renders', async () => {
-  const utils = setup({
-    resourceType: 'Patient',
-    id: patientId
+  beforeAll(async () => {
+    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  const el = await utils.findByText('Loading...');
-  expect(el).not.toBeUndefined();
-});
+  const setup = (args: ResourceBlameProps) => {
+    return render(
+      <MedplumProvider medplum={medplum} router={mockRouter}>
+        <ResourceBlame {...args} />
+      </MedplumProvider>
+    );
+  };
 
-test('ResourceBlame renders preloaded history', async () => {
-  const utils = setup({
-    history: historyBundle
+  test('ResourceBlame renders', async () => {
+    const utils = setup({
+      resourceType: 'Patient',
+      id: patientId
+    });
+
+    const el = await utils.findByText('Loading...');
+    expect(el).not.toBeUndefined();
   });
 
-  const el = await utils.findAllByText(version1Id);
-  expect(el).not.toBeUndefined();
-  expect(el.length).not.toBe(0);
-});
+  test('ResourceBlame renders preloaded history', async () => {
+    const utils = setup({
+      history: historyBundle
+    });
 
-test('ResourceBlame renders after loading the resource', async () => {
-  const utils = setup({
-    resourceType: 'Patient',
-    id: patientId
+    const el = await utils.findAllByText(version1Id);
+    expect(el).not.toBeUndefined();
+    expect(el.length).not.toBe(0);
   });
 
-  const el = await utils.findAllByText(version1Id);
-  expect(el).not.toBeUndefined();
-  expect(el.length).not.toBe(0);
+  test('ResourceBlame renders after loading the resource', async () => {
+    const utils = setup({
+      resourceType: 'Patient',
+      id: patientId
+    });
+
+    const el = await utils.findAllByText(version1Id);
+    expect(el).not.toBeUndefined();
+    expect(el.length).not.toBe(0);
+  });
+
 });

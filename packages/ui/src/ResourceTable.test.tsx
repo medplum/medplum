@@ -112,10 +112,6 @@ describe('ResourceTable', () => {
     );
   }
 
-  // test('Error on missing resource type', async () => {
-  //   expect(() => setup({ value: {} })).rejects.toEqual('Missing reference');
-  // });
-
   test('Renders empty Practitioner form', async () => {
     setup({
       value: {

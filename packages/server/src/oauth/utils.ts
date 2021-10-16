@@ -202,8 +202,6 @@ export async function finalizeLogin(login: Login): Promise<LoginResult> {
   const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
   assertOk(profileOutcome);
 
-  console.log('login', JSON.stringify(login, undefined, 2));
-
   const [projectOutcome, project] = await repo.readReference<Project>(login?.defaultProject as Reference);
   assertOk(projectOutcome);
 

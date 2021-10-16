@@ -127,19 +127,19 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-beforeAll(async () => {
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-});
-
-const setup = (args: DiagnosticReportDisplayProps) => {
-  return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <DiagnosticReportDisplay {...args} />
-    </MedplumProvider>
-  );
-};
-
 describe('DiagnosticReportDisplay', () => {
+
+  beforeAll(async () => {
+    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
+  });
+
+  const setup = (args: DiagnosticReportDisplayProps) => {
+    return render(
+      <MedplumProvider medplum={medplum} router={mockRouter}>
+        <DiagnosticReportDisplay {...args} />
+      </MedplumProvider>
+    );
+  };
 
   test('Renders by value', async () => {
     await act(async () => {

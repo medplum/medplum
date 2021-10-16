@@ -1,5 +1,9 @@
 import { main } from './index';
 
-test('Synth stack', () => {
-  expect(main()).not.toBeNull();
+describe('Infra', () => {
+
+  test('Synth stack', () => {
+    expect(main()).not.toBeNull();
+  });
+
 });

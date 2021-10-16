@@ -46,58 +46,62 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-beforeAll(async () => {
-  global.URL.createObjectURL = jest.fn(() => 'details');
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-});
+describe('Avatar', () => {
 
-const setup = (args: AvatarProps) => {
-  return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <Avatar {...args} />
-    </MedplumProvider>
-  );
-};
-
-test('Avatar renders system', () => {
-  const utils = setup({ value: { reference: 'system' } });
-  expect(utils.getByText('S')).not.toBeUndefined();
-});
-
-test('Avatar renders initials', () => {
-  const utils = setup({ alt: 'Alice Smith' });
-  expect(utils.getByTestId('avatar')).not.toBeUndefined();
-});
-
-test('Avatar renders resource directly', async () => {
-  const utils = setup({
-    value: patient
+  beforeAll(async () => {
+    global.URL.createObjectURL = jest.fn(() => 'details');
+    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  await waitFor(() => utils.getByTestId('avatar'));
+  const setup = (args: AvatarProps) => {
+    return render(
+      <MedplumProvider medplum={medplum} router={mockRouter}>
+        <Avatar {...args} />
+      </MedplumProvider>
+    );
+  };
 
-  expect(utils.getByTestId('avatar')).not.toBeUndefined();
-});
-
-test('Avatar renders resource directly as link', async () => {
-  const utils = setup({
-    value: patient,
-    link: true
+  test('Avatar renders system', () => {
+    const utils = setup({ value: { reference: 'system' } });
+    expect(utils.getByText('S')).not.toBeUndefined();
   });
 
-  await waitFor(() => utils.getByTestId('avatar'));
-
-  expect(utils.getByTestId('avatar')).not.toBeUndefined();
-});
-
-test('Avatar renders after loading the resource', async () => {
-  const utils = setup({
-    value: {
-      reference: 'Patient/' + patient.id
-    }
+  test('Avatar renders initials', () => {
+    const utils = setup({ alt: 'Alice Smith' });
+    expect(utils.getByTestId('avatar')).not.toBeUndefined();
   });
 
-  await waitFor(() => utils.getByTestId('avatar'));
+  test('Avatar renders resource directly', async () => {
+    const utils = setup({
+      value: patient
+    });
 
-  expect(utils.getByTestId('avatar')).not.toBeUndefined();
+    await waitFor(() => utils.getByTestId('avatar'));
+
+    expect(utils.getByTestId('avatar')).not.toBeUndefined();
+  });
+
+  test('Avatar renders resource directly as link', async () => {
+    const utils = setup({
+      value: patient,
+      link: true
+    });
+
+    await waitFor(() => utils.getByTestId('avatar'));
+
+    expect(utils.getByTestId('avatar')).not.toBeUndefined();
+  });
+
+  test('Avatar renders after loading the resource', async () => {
+    const utils = setup({
+      value: {
+        reference: 'Patient/' + patient.id
+      }
+    });
+
+    await waitFor(() => utils.getByTestId('avatar'));
+
+    expect(utils.getByTestId('avatar')).not.toBeUndefined();
+  });
+
 });

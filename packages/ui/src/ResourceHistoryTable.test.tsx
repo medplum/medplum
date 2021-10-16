@@ -78,43 +78,47 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-beforeAll(async () => {
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-});
+describe('ResourceHistoryTable', () => {
 
-const setup = (args: ResourceHistoryTableProps) => {
-  return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <ResourceHistoryTable {...args} />
-    </MedplumProvider>
-  );
-};
-
-test('ResourceHistoryTable renders', async () => {
-  const utils = setup({
-    resourceType: 'Patient',
-    id: patientId
+  beforeAll(async () => {
+    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  const el = await utils.findByText('Loading...');
-  expect(el).not.toBeUndefined();
-});
+  const setup = (args: ResourceHistoryTableProps) => {
+    return render(
+      <MedplumProvider medplum={medplum} router={mockRouter}>
+        <ResourceHistoryTable {...args} />
+      </MedplumProvider>
+    );
+  };
 
-test('ResourceHistoryTable renders preloaded history', async () => {
-  const utils = setup({
-    history: historyBundle
+  test('Renders', async () => {
+    const utils = setup({
+      resourceType: 'Patient',
+      id: patientId
+    });
+
+    const el = await utils.findByText('Loading...');
+    expect(el).not.toBeUndefined();
   });
 
-  const el = await utils.findByText(version1Id);
-  expect(el).not.toBeUndefined();
-});
+  test('Renders preloaded history', async () => {
+    const utils = setup({
+      history: historyBundle
+    });
 
-test('ResourceHistoryTable renders after loading the resource', async () => {
-  const utils = setup({
-    resourceType: 'Patient',
-    id: patientId
+    const el = await utils.findByText(version1Id);
+    expect(el).not.toBeUndefined();
   });
 
-  const el = await utils.findByText(version1Id);
-  expect(el).not.toBeUndefined();
+  test('Renders after loading the resource', async () => {
+    const utils = setup({
+      resourceType: 'Patient',
+      id: patientId
+    });
+
+    const el = await utils.findByText(version1Id);
+    expect(el).not.toBeUndefined();
+  });
+
 });
