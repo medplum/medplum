@@ -42,11 +42,11 @@ const setup = (args?: AttachmentDisplayProps) => {
   );
 };
 
-beforeAll(async () => {
-  global.URL.createObjectURL = jest.fn(() => 'details');
-});
-
 describe('AttachmentDisplay', () => {
+
+  beforeAll(async () => {
+    global.URL.createObjectURL = jest.fn(() => 'details');
+  });
 
   test('Renders empty', () => {
     setup();
