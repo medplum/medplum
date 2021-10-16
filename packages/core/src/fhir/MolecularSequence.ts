@@ -4,13 +4,18 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Specimen } from './Specimen';
 
 /**
  * Raw data describing a biological sequence.
@@ -114,22 +119,22 @@ export interface MolecularSequence {
   /**
    * The patient whose sequencing results are described by this resource.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * Specimen used for sequencing.
    */
-  readonly specimen?: Reference;
+  readonly specimen?: Reference<Specimen>;
 
   /**
    * The method for sequencing, for example, chip information.
    */
-  readonly device?: Reference;
+  readonly device?: Reference<Device>;
 
   /**
    * The organization or lab that should be responsible for this result.
    */
-  readonly performer?: Reference;
+  readonly performer?: Reference<Organization>;
 
   /**
    * The number of copies of the sequence of interest. (RNASeq).
@@ -180,7 +185,7 @@ export interface MolecularSequence {
   /**
    * Pointer to next atomic sequence which at most contains one variant.
    */
-  readonly pointer?: Reference[];
+  readonly pointer?: Reference<MolecularSequence>[];
 
   /**
    * Information about chromosome structure variation.
@@ -489,7 +494,7 @@ export interface MolecularSequenceReferenceSeq {
   /**
    * A pointer to another MolecularSequence entity as reference sequence.
    */
-  readonly referenceSeqPointer?: Reference;
+  readonly referenceSeqPointer?: Reference<MolecularSequence>;
 
   /**
    * A string like &quot;ACGT&quot;.
@@ -866,5 +871,5 @@ export interface MolecularSequenceVariant {
   /**
    * A pointer to an Observation containing variant information.
    */
-  readonly variantPointer?: Reference;
+  readonly variantPointer?: Reference<Observation>;
 }

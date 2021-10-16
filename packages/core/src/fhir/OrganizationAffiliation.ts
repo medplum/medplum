@@ -5,10 +5,14 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { ContactPoint } from './ContactPoint';
+import { Endpoint } from './Endpoint';
 import { Extension } from './Extension';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -116,21 +120,21 @@ export interface OrganizationAffiliation {
    * Organization where the role is available (primary organization/has
    * members).
    */
-  readonly organization?: Reference;
+  readonly organization?: Reference<Organization>;
 
   /**
    * The Participating Organization provides/performs the role(s) defined
    * by the code to the Primary Organization (e.g. providing services or is
    * a member of).
    */
-  readonly participatingOrganization?: Reference;
+  readonly participatingOrganization?: Reference<Organization>;
 
   /**
    * Health insurance provider network in which the
    * participatingOrganization provides the role's services (if defined) at
    * the indicated locations (if defined).
    */
-  readonly network?: Reference[];
+  readonly network?: Reference<Organization>[];
 
   /**
    * Definition of the role the participatingOrganization plays in the
@@ -147,12 +151,12 @@ export interface OrganizationAffiliation {
   /**
    * The location(s) at which the role occurs.
    */
-  readonly location?: Reference[];
+  readonly location?: Reference<Location>[];
 
   /**
    * Healthcare services provided through the role.
    */
-  readonly healthcareService?: Reference[];
+  readonly healthcareService?: Reference<HealthcareService>[];
 
   /**
    * Contact details at the participatingOrganization relevant to this
@@ -164,5 +168,5 @@ export interface OrganizationAffiliation {
    * Technical endpoints providing access to services operated for this
    * role.
    */
-  readonly endpoint?: Reference[];
+  readonly endpoint?: Reference<Endpoint>[];
 }

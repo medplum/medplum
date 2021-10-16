@@ -6,9 +6,16 @@
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
 import { Extension } from './Extension';
+import { Group } from './Group';
+import { HealthcareService } from './HealthcareService';
+import { InsurancePlan } from './InsurancePlan';
+import { Location } from './Location';
+import { Organization } from './Organization';
+import { PlanDefinition } from './PlanDefinition';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
+import { ResearchStudy } from './ResearchStudy';
 
 /**
  * Base StructureDefinition for UsageContext Type: Specifies
@@ -63,5 +70,5 @@ export interface UsageContext {
    * A value that defines the context specified in this context of use. The
    * interpretation of the value is defined by the code.
    */
-  readonly valueReference?: Reference;
+  readonly valueReference?: Reference<PlanDefinition | ResearchStudy | InsurancePlan | HealthcareService | Group | Location | Organization>;
 }

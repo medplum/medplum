@@ -6,10 +6,14 @@
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactPoint } from './ContactPoint';
+import { DeviceDefinition } from './DeviceDefinition';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -106,7 +110,7 @@ export interface Device {
   /**
    * The reference to the definition for the device.
    */
-  readonly definition?: Reference;
+  readonly definition?: Reference<DeviceDefinition>;
 
   /**
    * Unique device identifier (UDI) assigned to device label or package.
@@ -205,13 +209,13 @@ export interface Device {
   /**
    * Patient information, If the device is affixed to a person.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * An organization that is responsible for the provision and ongoing
    * maintenance of the device.
    */
-  readonly owner?: Reference;
+  readonly owner?: Reference<Organization>;
 
   /**
    * Contact details for an organization or a particular human that is
@@ -222,7 +226,7 @@ export interface Device {
   /**
    * The place where the device can be found.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * A network address on which the device may be contacted directly.
@@ -244,7 +248,7 @@ export interface Device {
   /**
    * The parent device.
    */
-  readonly parent?: Reference;
+  readonly parent?: Reference<Device>;
 }
 
 /**

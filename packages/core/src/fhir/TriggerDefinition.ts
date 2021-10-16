@@ -7,6 +7,7 @@ import { DataRequirement } from './DataRequirement';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
 import { Reference } from './Reference';
+import { Schedule } from './Schedule';
 import { Timing } from './Timing';
 
 /**
@@ -52,7 +53,7 @@ export interface TriggerDefinition {
   /**
    * The timing of the event (if this is a periodic trigger).
    */
-  readonly timingReference?: Reference;
+  readonly timingReference?: Reference<Schedule>;
 
   /**
    * The timing of the event (if this is a periodic trigger).

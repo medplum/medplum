@@ -5,11 +5,21 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -104,13 +114,13 @@ export interface RiskAssessment {
   /**
    * A reference to the request that is fulfilled by this risk assessment.
    */
-  readonly basedOn?: Reference;
+  readonly basedOn?: Reference<Resource>;
 
   /**
    * A reference to a resource that this risk assessment is part of, such
    * as a Procedure.
    */
-  readonly parent?: Reference;
+  readonly parent?: Reference<Resource>;
 
   /**
    * The status of the RiskAssessment, using the same statuses as an
@@ -131,12 +141,12 @@ export interface RiskAssessment {
   /**
    * The patient or group the risk assessment applies to.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The encounter where the assessment was performed.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The date (and possibly time) the risk assessment was performed.
@@ -152,12 +162,12 @@ export interface RiskAssessment {
    * For assessments or prognosis specific to a particular condition,
    * indicates the condition being assessed.
    */
-  readonly condition?: Reference;
+  readonly condition?: Reference<Condition>;
 
   /**
    * The provider or software application that performed the assessment.
    */
-  readonly performer?: Reference;
+  readonly performer?: Reference<Practitioner | PractitionerRole | Device>;
 
   /**
    * The reason the risk assessment was performed.
@@ -167,13 +177,13 @@ export interface RiskAssessment {
   /**
    * Resources supporting the reason the risk assessment was performed.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Indicates the source data considered as part of the assessment (for
    * example, FamilyHistory, Observations, Procedures, Conditions, etc.).
    */
-  readonly basis?: Reference[];
+  readonly basis?: Reference<Resource>[];
 
   /**
    * Describes the expected outcome for the subject.

@@ -3,13 +3,34 @@
  * Do not edit manually.
  */
 
+import { AllergyIntolerance } from './AllergyIntolerance';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { FamilyMemberHistory } from './FamilyMemberHistory';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Immunization } from './Immunization';
+import { Location } from './Location';
+import { Media } from './Media';
+import { Medication } from './Medication';
+import { MedicationAdministration } from './MedicationAdministration';
+import { MedicationStatement } from './MedicationStatement';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
+import { ResearchStudy } from './ResearchStudy';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
 
 /**
  * Actual or  potential/avoided event causing unintended physical injury
@@ -123,13 +144,13 @@ export interface AdverseEvent {
   /**
    * This subject or group impacted by the event.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group | Practitioner | RelatedPerson>;
 
   /**
    * The Encounter during which AdverseEvent was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The date (and perhaps time) when the adverse event occurred.
@@ -152,12 +173,12 @@ export interface AdverseEvent {
    * Includes information about the reaction that occurred as a result of
    * exposure to a substance (for example, a drug or a chemical).
    */
-  readonly resultingCondition?: Reference[];
+  readonly resultingCondition?: Reference<Condition>[];
 
   /**
    * The information about where the adverse event occurred.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * Assessment whether this event was of real importance.
@@ -180,7 +201,7 @@ export interface AdverseEvent {
    * Information on who recorded the adverse event.  May be the patient or
    * a practitioner.
    */
-  readonly recorder?: Reference;
+  readonly recorder?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * Parties that may or should contribute or have contributed information
@@ -191,7 +212,7 @@ export interface AdverseEvent {
    * (e.g. informant of clinical history), or information about what
    * activity was performed (e.g. informant witness).
    */
-  readonly contributor?: Reference[];
+  readonly contributor?: Reference<Practitioner | PractitionerRole | Device>[];
 
   /**
    * Describes the entity that is suspected to have caused the adverse
@@ -202,17 +223,18 @@ export interface AdverseEvent {
   /**
    * AdverseEvent.subjectMedicalHistory.
    */
-  readonly subjectMedicalHistory?: Reference[];
+  readonly subjectMedicalHistory?: Reference<Condition | Observation | AllergyIntolerance | FamilyMemberHistory |
+      Immunization | Procedure | Media | DocumentReference>[];
 
   /**
    * AdverseEvent.referenceDocument.
    */
-  readonly referenceDocument?: Reference[];
+  readonly referenceDocument?: Reference<DocumentReference>[];
 
   /**
    * AdverseEvent.study.
    */
-  readonly study?: Reference[];
+  readonly study?: Reference<ResearchStudy>[];
 }
 
 /**
@@ -261,7 +283,7 @@ export interface AdverseEventSuspectEntity {
    * be a substance, medication, medication administration, medication
    * statement or a device.
    */
-  readonly instance?: Reference;
+  readonly instance?: Reference<Immunization | Procedure | Substance | Medication | MedicationAdministration | MedicationStatement | Device>;
 
   /**
    * Information on the possible cause of the event.
@@ -322,7 +344,7 @@ export interface AdverseEventSuspectEntityCausality {
   /**
    * AdverseEvent.suspectEntity.causalityAuthor.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * ProbabilityScale | Bayesian | Checklist.

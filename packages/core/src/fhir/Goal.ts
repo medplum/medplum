@@ -5,16 +5,28 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
 import { Duration } from './Duration';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { MedicationStatement } from './MedicationStatement';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { NutritionOrder } from './NutritionOrder';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { RiskAssessment } from './RiskAssessment';
+import { ServiceRequest } from './ServiceRequest';
 
 /**
  * Describes the intended objective(s) for a patient, group or
@@ -140,7 +152,7 @@ export interface Goal {
    * Identifies the patient, group or organization for whom the goal is
    * being established.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group | Organization>;
 
   /**
    * The date or event after which the goal should begin being pursued.
@@ -171,13 +183,13 @@ export interface Goal {
   /**
    * Indicates whose goal this is - patient goal, practitioner goal, etc.
    */
-  readonly expressedBy?: Reference;
+  readonly expressedBy?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * The identified conditions and other health record elements that are
    * intended to be addressed by the goal.
    */
-  readonly addresses?: Reference[];
+  readonly addresses?: Reference<Condition | Observation | MedicationStatement | NutritionOrder | ServiceRequest | RiskAssessment>[];
 
   /**
    * Any comments related to the goal.
@@ -193,7 +205,7 @@ export interface Goal {
   /**
    * Details of what's changed (or not changed).
    */
-  readonly outcomeReference?: Reference[];
+  readonly outcomeReference?: Reference<Observation>[];
 }
 
 /**

@@ -5,13 +5,27 @@
 
 import { Annotation } from './Annotation';
 import { Attachment } from './Attachment';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -108,13 +122,13 @@ export interface CommunicationRequest {
    * A plan or proposal that is fulfilled in whole or in part by this
    * request.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<Resource>[];
 
   /**
    * Completed or terminated request(s) whose function is taken by this new
    * request.
    */
-  readonly replaces?: Reference[];
+  readonly replaces?: Reference<CommunicationRequest>[];
 
   /**
    * A shared identifier common to all requests that were authorized more
@@ -159,19 +173,19 @@ export interface CommunicationRequest {
   /**
    * The patient or group that is the focus of this communication request.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * Other resources that pertain to this communication request and to
    * which this communication request should be associated.
    */
-  readonly about?: Reference[];
+  readonly about?: Reference<Resource>[];
 
   /**
    * The Encounter during which this CommunicationRequest was created or to
    * which the creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Text, attachment(s), or resource(s) to be communicated to the
@@ -199,20 +213,20 @@ export interface CommunicationRequest {
    * The device, individual, or organization who initiated the request and
    * has responsibility for its activation.
    */
-  readonly requester?: Reference;
+  readonly requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
 
   /**
    * The entity (e.g. person, organization, clinical information system,
    * device, group, or care team) which is the intended target of the
    * communication.
    */
-  readonly recipient?: Reference[];
+  readonly recipient?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson | Group | CareTeam | HealthcareService>[];
 
   /**
    * The entity (e.g. person, organization, clinical information system, or
    * device) which is to be the source of the communication.
    */
-  readonly sender?: Reference;
+  readonly sender?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson | HealthcareService>;
 
   /**
    * Describes why the request is being made in coded or textual form.
@@ -222,7 +236,7 @@ export interface CommunicationRequest {
   /**
    * Indicates another resource whose existence justifies this request.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Comments made about the request by the requester, sender, recipient,
@@ -288,5 +302,5 @@ export interface CommunicationRequestPayload {
    * The communicated content (or for multi-part communications, one
    * portion of the communication).
    */
-  readonly contentReference?: Reference;
+  readonly contentReference?: Reference<Resource>;
 }

@@ -4,13 +4,25 @@
  */
 
 import { Annotation } from './Annotation';
+import { CarePlan } from './CarePlan';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
 import { DataRequirement } from './DataRequirement';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { OperationOutcome } from './OperationOutcome';
+import { Parameters } from './Parameters';
+import { Patient } from './Patient';
 import { Reference } from './Reference';
+import { RequestGroup } from './RequestGroup';
 import { Resource } from './Resource';
 
 /**
@@ -144,13 +156,13 @@ export interface GuidanceResponse {
   /**
    * The patient for which the request was processed.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The encounter during which this response was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Indicates when the guidance response was processed.
@@ -160,7 +172,7 @@ export interface GuidanceResponse {
   /**
    * Provides a reference to the device that performed the guidance.
    */
-  readonly performer?: Reference;
+  readonly performer?: Reference<Device>;
 
   /**
    * Describes the reason for the guidance response in coded or textual
@@ -174,7 +186,7 @@ export interface GuidanceResponse {
    * although for some use cases, such as subscription- or event-based
    * scenarios, it may provide an indication of the cause for the response.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Provides a mechanism to communicate additional information about the
@@ -188,7 +200,7 @@ export interface GuidanceResponse {
    * informational or warning messages. These messages will be provided by
    * this element.
    */
-  readonly evaluationMessage?: Reference[];
+  readonly evaluationMessage?: Reference<OperationOutcome>[];
 
   /**
    * The output parameters of the evaluation, if any. Many modules will
@@ -198,12 +210,12 @@ export interface GuidanceResponse {
    * returned as the result of the evaluation, and these would be returned
    * in this element.
    */
-  readonly outputParameters?: Reference;
+  readonly outputParameters?: Reference<Parameters>;
 
   /**
    * The actions, if any, produced by the evaluation of the artifact.
    */
-  readonly result?: Reference;
+  readonly result?: Reference<CarePlan | RequestGroup>;
 
   /**
    * If the evaluation could not be completed due to lack of information,

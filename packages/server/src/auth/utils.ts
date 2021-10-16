@@ -47,9 +47,6 @@ export async function createProjectMembership(
     project: createReference(project),
     user: createReference(user),
     profile: createReference(practitioner),
-    compartments: [
-      createReference(project)
-    ],
     admin
   });
   assertOk(outcome);

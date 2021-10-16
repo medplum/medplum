@@ -4,12 +4,19 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Coverage } from './Coverage';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -127,7 +134,7 @@ export interface CoverageEligibilityRequest {
    * The party who is the beneficiary of the supplied coverage and for whom
    * eligibility is sought.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The date or dates when the enclosed suite of services were performed
@@ -149,23 +156,23 @@ export interface CoverageEligibilityRequest {
   /**
    * Person who created the request.
    */
-  readonly enterer?: Reference;
+  readonly enterer?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The provider which is responsible for the request.
    */
-  readonly provider?: Reference;
+  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The Insurer who issued the coverage in question and is the recipient
    * of the request.
    */
-  readonly insurer?: Reference;
+  readonly insurer?: Reference<Organization>;
 
   /**
    * Facility where the services are intended to be provided.
    */
-  readonly facility?: Reference;
+  readonly facility?: Reference<Location>;
 
   /**
    * Additional information codes regarding exceptions, special
@@ -240,7 +247,7 @@ export interface CoverageEligibilityRequestInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  readonly coverage?: Reference;
+  readonly coverage?: Reference<Coverage>;
 
   /**
    * A business agreement number established between the provider and the
@@ -319,7 +326,7 @@ export interface CoverageEligibilityRequestItem {
    * The practitioner who is responsible for the product or service to be
    * rendered to the patient.
    */
-  readonly provider?: Reference;
+  readonly provider?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The number of repetitions of a service or product.
@@ -334,7 +341,7 @@ export interface CoverageEligibilityRequestItem {
   /**
    * Facility where the services will be provided.
    */
-  readonly facility?: Reference;
+  readonly facility?: Reference<Location | Organization>;
 
   /**
    * Patient diagnosis for which care is sought.
@@ -344,7 +351,7 @@ export interface CoverageEligibilityRequestItem {
   /**
    * The plan/proposal/order describing the proposed service in detail.
    */
-  readonly detail?: Reference[];
+  readonly detail?: Reference<Resource>[];
 }
 
 /**
@@ -397,7 +404,7 @@ export interface CoverageEligibilityRequestItemDiagnosis {
    * The nature of illness or problem in a coded form or as a reference to
    * an external defined Condition.
    */
-  readonly diagnosisReference?: Reference;
+  readonly diagnosisReference?: Reference<Condition>;
 }
 
 /**
@@ -451,7 +458,7 @@ export interface CoverageEligibilityRequestSupportingInfo {
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
-  readonly information?: Reference;
+  readonly information?: Reference<Resource>;
 
   /**
    * The supporting materials are applicable for all detail items,

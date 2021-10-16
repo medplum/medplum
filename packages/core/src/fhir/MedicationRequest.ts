@@ -4,17 +4,36 @@
  */
 
 import { Annotation } from './Annotation';
+import { CarePlan } from './CarePlan';
+import { CareTeam } from './CareTeam';
+import { ClaimResponse } from './ClaimResponse';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Coverage } from './Coverage';
+import { DetectedIssue } from './DetectedIssue';
+import { Device } from './Device';
 import { Dosage } from './Dosage';
 import { Duration } from './Duration';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { ImmunizationRecommendation } from './ImmunizationRecommendation';
+import { Medication } from './Medication';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
 
 /**
  * An order or request for both supply of the medication and the
@@ -159,7 +178,7 @@ export interface MedicationRequest {
    * rather than as an original primary source-of-truth record.  It may
    * also indicate the source of the report.
    */
-  readonly reportedReference?: Reference;
+  readonly reportedReference?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>;
 
   /**
    * Identifies the medication being requested. This is a link to a
@@ -175,25 +194,25 @@ export interface MedicationRequest {
    * the medication or simply an attribute carrying a code that identifies
    * the medication from a known list of medications.
    */
-  readonly medicationReference?: Reference;
+  readonly medicationReference?: Reference<Medication>;
 
   /**
    * A link to a resource representing the person or set of individuals to
    * whom the medication will be given.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this [x] was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Include additional information (for example, patient height and
    * weight) that supports the ordering of the medication.
    */
-  readonly supportingInformation?: Reference[];
+  readonly supportingInformation?: Reference<Resource>[];
 
   /**
    * The date (and perhaps time) when the prescription was initially
@@ -205,13 +224,13 @@ export interface MedicationRequest {
    * The individual, organization, or device that initiated the request and
    * has responsibility for its activation.
    */
-  readonly requester?: Reference;
+  readonly requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
 
   /**
    * The specified desired performer of the medication treatment (e.g. the
    * performer of the medication administration).
    */
-  readonly performer?: Reference;
+  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | Patient | Device | RelatedPerson | CareTeam>;
 
   /**
    * Indicates the type of performer of the administration of the
@@ -223,7 +242,7 @@ export interface MedicationRequest {
    * The person who entered the order on behalf of another individual for
    * example in the case of a verbal or a telephone order.
    */
-  readonly recorder?: Reference;
+  readonly recorder?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The reason or the indication for ordering or not ordering the
@@ -234,7 +253,7 @@ export interface MedicationRequest {
   /**
    * Condition or observation that supports why the medication was ordered.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation>[];
 
   /**
    * The URL pointing to a protocol, guideline, orderset, or other
@@ -254,7 +273,7 @@ export interface MedicationRequest {
    * A plan or request that is fulfilled in whole or in part by this
    * medication request.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<CarePlan | MedicationRequest | ServiceRequest | ImmunizationRecommendation>[];
 
   /**
    * A shared identifier common to all requests that were authorized more
@@ -274,7 +293,7 @@ export interface MedicationRequest {
    * pre-determinations that may be required for delivering the requested
    * service.
    */
-  readonly insurance?: Reference[];
+  readonly insurance?: Reference<Coverage | ClaimResponse>[];
 
   /**
    * Extra information about the prescription that could not be conveyed by
@@ -309,14 +328,14 @@ export interface MedicationRequest {
    * A link to a resource representing an earlier order related order or
    * prescription.
    */
-  readonly priorPrescription?: Reference;
+  readonly priorPrescription?: Reference<MedicationRequest>;
 
   /**
    * Indicates an actual or potential clinical issue with or between one or
    * more active or proposed clinical actions for a patient; e.g. Drug-drug
    * interaction, duplicate therapy, dosage alert etc.
    */
-  readonly detectedIssue?: Reference[];
+  readonly detectedIssue?: Reference<DetectedIssue>[];
 
   /**
    * Links to Provenance records for past versions of this resource or
@@ -324,7 +343,7 @@ export interface MedicationRequest {
    * transitions or updates that are likely to be relevant to a user
    * looking at the current version of the resource.
    */
-  readonly eventHistory?: Reference[];
+  readonly eventHistory?: Reference<Provenance>[];
 }
 
 /**
@@ -417,7 +436,7 @@ export interface MedicationRequestDispenseRequest {
    * Indicates the intended dispensing Organization specified by the
    * prescriber.
    */
-  readonly performer?: Reference;
+  readonly performer?: Reference<Organization>;
 }
 
 /**

@@ -3,15 +3,29 @@
  * Do not edit manually.
  */
 
+import { AllergyIntolerance } from './AllergyIntolerance';
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { DiagnosticReport } from './DiagnosticReport';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { FamilyMemberHistory } from './FamilyMemberHistory';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { ImagingStudy } from './ImagingStudy';
+import { Media } from './Media';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { QuestionnaireResponse } from './QuestionnaireResponse';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { RiskAssessment } from './RiskAssessment';
 
 /**
  * A record of a clinical assessment performed to determine what
@@ -132,13 +146,13 @@ export interface ClinicalImpression {
   /**
    * The patient or group of individuals assessed as part of this record.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this ClinicalImpression was created or to
    * which the creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The point in time or period over which the subject was assessed.
@@ -158,7 +172,7 @@ export interface ClinicalImpression {
   /**
    * The clinician performing the assessment.
    */
-  readonly assessor?: Reference;
+  readonly assessor?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * A reference to the last assessment that was conducted on this patient.
@@ -166,12 +180,12 @@ export interface ClinicalImpression {
    * (practitioner or team) will make new assessments on an ongoing basis
    * as new data arises or the patient's conditions changes.
    */
-  readonly previous?: Reference;
+  readonly previous?: Reference<ClinicalImpression>;
 
   /**
    * A list of the relevant problems/conditions for a patient.
    */
-  readonly problem?: Reference[];
+  readonly problem?: Reference<Condition | AllergyIntolerance>[];
 
   /**
    * One or more sets of investigations (signs, symptoms, etc.). The actual
@@ -208,12 +222,12 @@ export interface ClinicalImpression {
   /**
    * RiskAssessment expressing likely outcome.
    */
-  readonly prognosisReference?: Reference[];
+  readonly prognosisReference?: Reference<RiskAssessment>[];
 
   /**
    * Information supporting the clinical impression.
    */
-  readonly supportingInfo?: Reference[];
+  readonly supportingInfo?: Reference<Resource>[];
 
   /**
    * Commentary about the impression, typically recorded after the
@@ -274,7 +288,7 @@ export interface ClinicalImpressionFinding {
    * Specific reference for finding or diagnosis, which may include
    * ruled-out or resolved conditions.
    */
-  readonly itemReference?: Reference;
+  readonly itemReference?: Reference<Condition | Observation | Media>;
 
   /**
    * Which investigations support finding or diagnosis.
@@ -337,5 +351,5 @@ export interface ClinicalImpressionInvestigation {
   /**
    * A record of a specific investigation that was undertaken.
    */
-  readonly item?: Reference[];
+  readonly item?: Reference<Observation | QuestionnaireResponse | FamilyMemberHistory | DiagnosticReport | RiskAssessment | ImagingStudy | Media>[];
 }

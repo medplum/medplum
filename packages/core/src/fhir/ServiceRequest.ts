@@ -4,17 +4,38 @@
  */
 
 import { Annotation } from './Annotation';
+import { CarePlan } from './CarePlan';
+import { CareTeam } from './CareTeam';
+import { ClaimResponse } from './ClaimResponse';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Coverage } from './Coverage';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { MedicationRequest } from './MedicationRequest';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { Specimen } from './Specimen';
 import { Timing } from './Timing';
 
 /**
@@ -122,13 +143,13 @@ export interface ServiceRequest {
   /**
    * Plan/proposal/order fulfilled by this request.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<CarePlan | ServiceRequest | MedicationRequest>[];
 
   /**
    * The request takes the place of the referenced completed or terminated
    * request(s).
    */
-  readonly replaces?: Reference[];
+  readonly replaces?: Reference<ServiceRequest>[];
 
   /**
    * A shared identifier common to all service requests that were
@@ -209,13 +230,13 @@ export interface ServiceRequest {
    * or animals, devices such as dialysis machines, or even locations
    * (typically for environmental scans).
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group | Location | Device>;
 
   /**
    * An encounter that provides additional information about the healthcare
    * context in which this request is made.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The date/time at which the requested service should occur.
@@ -253,7 +274,7 @@ export interface ServiceRequest {
    * The individual who initiated the request and has responsibility for
    * its activation.
    */
-  readonly requester?: Reference;
+  readonly requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
 
   /**
    * Desired type of performer for doing the requested service.
@@ -264,7 +285,7 @@ export interface ServiceRequest {
    * The desired performer for doing the requested service.  For example,
    * the surgeon, dermatopathologist, endoscopist, etc.
    */
-  readonly performer?: Reference[];
+  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | HealthcareService | Patient | Device | RelatedPerson>[];
 
   /**
    * The preferred location(s) where the procedure should actually happen
@@ -276,7 +297,7 @@ export interface ServiceRequest {
    * A reference to the the preferred location(s) where the procedure
    * should actually happen. E.g. at home or nursing day care center.
    */
-  readonly locationReference?: Reference[];
+  readonly locationReference?: Reference<Location>[];
 
   /**
    * An explanation or justification for why this service is being
@@ -291,14 +312,14 @@ export interface ServiceRequest {
    * service is being requested.   May relate to the resources referred to
    * in `supportingInfo`.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Insurance plans, coverage extensions, pre-authorizations and/or
    * pre-determinations that may be needed for delivering the requested
    * service.
    */
-  readonly insurance?: Reference[];
+  readonly insurance?: Reference<Coverage | ClaimResponse>[];
 
   /**
    * Additional clinical information about the patient or specimen that may
@@ -310,12 +331,12 @@ export interface ServiceRequest {
    * information needed to complete the order. For example,  reporting the
    * amount of inspired oxygen for blood gas measurements.
    */
-  readonly supportingInfo?: Reference[];
+  readonly supportingInfo?: Reference<Resource>[];
 
   /**
    * One or more specimens that the laboratory procedure will use.
    */
-  readonly specimen?: Reference[];
+  readonly specimen?: Reference<Specimen>[];
 
   /**
    * Anatomic location where the procedure should be performed. This is the
@@ -337,5 +358,5 @@ export interface ServiceRequest {
   /**
    * Key events in the history of the request.
    */
-  readonly relevantHistory?: Reference[];
+  readonly relevantHistory?: Reference<Provenance>[];
 }

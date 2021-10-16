@@ -4,12 +4,18 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Coverage } from './Coverage';
+import { CoverageEligibilityRequest } from './CoverageEligibilityRequest';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -118,7 +124,7 @@ export interface CoverageEligibilityResponse {
    * The party who is the beneficiary of the supplied coverage and for whom
    * eligibility is sought.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The date or dates when the enclosed suite of services were performed
@@ -140,12 +146,12 @@ export interface CoverageEligibilityResponse {
   /**
    * The provider which is responsible for the request.
    */
-  readonly requestor?: Reference;
+  readonly requestor?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Reference to the original request resource.
    */
-  readonly request?: Reference;
+  readonly request?: Reference<CoverageEligibilityRequest>;
 
   /**
    * The outcome of the request processing.
@@ -161,7 +167,7 @@ export interface CoverageEligibilityResponse {
    * The Insurer who issued the coverage in question and is the author of
    * the response.
    */
-  readonly insurer?: Reference;
+  readonly insurer?: Reference<Organization>;
 
   /**
    * Financial instruments for reimbursement for the health care products
@@ -280,7 +286,7 @@ export interface CoverageEligibilityResponseInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  readonly coverage?: Reference;
+  readonly coverage?: Reference<Coverage>;
 
   /**
    * Flag indicating if the coverage provided is inforce currently if no
@@ -364,7 +370,7 @@ export interface CoverageEligibilityResponseInsuranceItem {
    * The practitioner who is eligible for the provision of the product or
    * service.
    */
-  readonly provider?: Reference;
+  readonly provider?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * True if the indicated class of service is excluded from the plan,

@@ -5,10 +5,14 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -114,14 +118,14 @@ export interface VisionPrescription {
    * A resource reference to the person to whom the vision prescription
    * applies.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * A reference to a resource that identifies the particular occurrence of
    * contact between patient and health care provider during which the
    * prescription was issued.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The date (and perhaps time) when the prescription was written.
@@ -132,7 +136,7 @@ export interface VisionPrescription {
    * The healthcare professional responsible for authorizing the
    * prescription.
    */
-  readonly prescriber?: Reference;
+  readonly prescriber?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * Contain the details of  the individual lens specifications and serves

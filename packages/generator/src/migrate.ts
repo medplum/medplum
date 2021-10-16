@@ -11,6 +11,7 @@ const v5Builder = new FileBuilder();
 export function main() {
   buildStructureDefinitions('profiles-types.json');
   buildStructureDefinitions('profiles-resources.json');
+  buildStructureDefinitions('profiles-medplum.json');
   writeMigrations();
 }
 

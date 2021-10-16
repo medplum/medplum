@@ -7,6 +7,9 @@ import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { Signature } from './Signature';
@@ -97,7 +100,7 @@ export interface VerificationResult {
   /**
    * A resource that was validated.
    */
-  readonly target?: Reference[];
+  readonly target?: Reference<Resource>[];
 
   /**
    * The fhirpath location(s) within the resource that was validated.
@@ -213,13 +216,13 @@ export interface VerificationResultAttestation {
   /**
    * The individual or organization attesting to information.
    */
-  readonly who?: Reference;
+  readonly who?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * When the who is asserting on behalf of another (organization or
    * individual).
    */
-  readonly onBehalfOf?: Reference;
+  readonly onBehalfOf?: Reference<Organization | Practitioner | PractitionerRole>;
 
   /**
    * The method by which attested information was submitted/retrieved
@@ -300,7 +303,7 @@ export interface VerificationResultPrimarySource {
   /**
    * Reference to the primary source.
    */
-  readonly who?: Reference;
+  readonly who?: Reference<Organization | Practitioner | PractitionerRole>;
 
   /**
    * Type of primary source (License Board; Primary Education; Continuing
@@ -381,7 +384,7 @@ export interface VerificationResultValidator {
   /**
    * Reference to the organization validating information.
    */
-  readonly organization?: Reference;
+  readonly organization?: Reference<Organization>;
 
   /**
    * A digital identity certificate associated with the validator.

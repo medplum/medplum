@@ -10,6 +10,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { ProdCharacteristic } from './ProdCharacteristic';
 import { ProductShelfLife } from './ProductShelfLife';
 import { Quantity } from './Quantity';
@@ -120,7 +121,7 @@ export interface DeviceDefinition {
   /**
    * A name of the manufacturer.
    */
-  readonly manufacturerReference?: Reference;
+  readonly manufacturerReference?: Reference<Organization>;
 
   /**
    * A name given to the device to identify it.
@@ -185,7 +186,7 @@ export interface DeviceDefinition {
    * An organization that is responsible for the provision and ongoing
    * maintenance of the device.
    */
-  readonly owner?: Reference;
+  readonly owner?: Reference<Organization>;
 
   /**
    * Contact details for an organization or a particular human that is
@@ -219,7 +220,7 @@ export interface DeviceDefinition {
   /**
    * The parent device it can be part of.
    */
-  readonly parentDevice?: Reference;
+  readonly parentDevice?: Reference<DeviceDefinition>;
 
   /**
    * A substance used to create the material(s) of which the device is

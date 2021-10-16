@@ -6,6 +6,9 @@
 import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -102,7 +105,7 @@ export interface Linkage {
    * linkages as well as the user or organization who establishes the
    * context in which the nature of each linkage is evaluated.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Identifies which record considered as the reference to the same
@@ -163,5 +166,5 @@ export interface LinkageItem {
   /**
    * The resource instance being linked as part of the group.
    */
-  readonly resource?: Reference;
+  readonly resource?: Reference<Resource>;
 }

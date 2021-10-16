@@ -3,14 +3,25 @@
  * Do not edit manually.
  */
 
+import { ActivityDefinition } from './ActivityDefinition';
+import { Binary } from './Binary';
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Medication } from './Medication';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { ObservationDefinition } from './ObservationDefinition';
+import { Organization } from './Organization';
 import { Period } from './Period';
+import { PlanDefinition } from './PlanDefinition';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { SpecimenDefinition } from './SpecimenDefinition';
 
 /**
  * Catalog entries are wrappers that contextualize items included in a
@@ -113,7 +124,8 @@ export interface CatalogEntry {
   /**
    * The item in a catalog or definition.
    */
-  readonly referencedItem?: Reference;
+  readonly referencedItem?: Reference<Medication | Device | Organization | Practitioner | PractitionerRole |
+      HealthcareService | ActivityDefinition | PlanDefinition | SpecimenDefinition | ObservationDefinition | Binary>;
 
   /**
    * Used in supporting related concepts, e.g. NDC to RxNorm.
@@ -214,5 +226,5 @@ export interface CatalogEntryRelatedEntry {
   /**
    * The reference to the related item.
    */
-  readonly item?: Reference;
+  readonly item?: Reference<CatalogEntry>;
 }

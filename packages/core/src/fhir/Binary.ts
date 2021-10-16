@@ -5,6 +5,7 @@
 
 import { Meta } from './Meta';
 import { Reference } from './Reference';
+import { Resource } from './Resource';
 
 /**
  * A resource that represents the data of a single raw artifact as
@@ -63,7 +64,7 @@ export interface Binary {
    * patient, and access should only be granted to applications that have
    * access to the patient.
    */
-  readonly securityContext?: Reference;
+  readonly securityContext?: Reference<Resource>;
 
   /**
    * The actual content, base64 encoded.

@@ -7,10 +7,12 @@ import { Address } from './Address';
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
 import { ContactPoint } from './ContactPoint';
+import { Endpoint } from './Endpoint';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -172,12 +174,12 @@ export interface Location {
    * The organization responsible for the provisioning and upkeep of the
    * location.
    */
-  readonly managingOrganization?: Reference;
+  readonly managingOrganization?: Reference<Organization>;
 
   /**
    * Another Location of which this Location is physically a part of.
    */
-  readonly partOf?: Reference;
+  readonly partOf?: Reference<Location>;
 
   /**
    * What days/times during a week is this location usually open.
@@ -196,7 +198,7 @@ export interface Location {
    * Technical endpoints providing access to services operated for the
    * location.
    */
-  readonly endpoint?: Reference[];
+  readonly endpoint?: Reference<Endpoint>[];
 }
 
 /**

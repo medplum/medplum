@@ -9,6 +9,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { TestScript } from './TestScript';
 
 /**
  * A summary of information based on the results of executing a
@@ -113,7 +114,7 @@ export interface TestReport {
    * version-specific TestScript that was executed, matching the
    * `TestScript.url`.
    */
-  readonly testScript?: Reference;
+  readonly testScript?: Reference<TestScript>;
 
   /**
    * The overall result from the execution of the TestScript.

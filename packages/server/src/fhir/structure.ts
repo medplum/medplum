@@ -7,6 +7,7 @@ export function getStructureDefinitions(): IndexedStructureDefinition {
   if (Object.keys(structureDefinitions.types).length === 0) {
     buildStructureDefinitions('profiles-types.json');
     buildStructureDefinitions('profiles-resources.json');
+    buildStructureDefinitions('profiles-medplum.json');
   }
 
   return structureDefinitions;

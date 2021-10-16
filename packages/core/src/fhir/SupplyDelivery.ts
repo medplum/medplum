@@ -4,14 +4,24 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Contract } from './Contract';
+import { Device } from './Device';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { Medication } from './Medication';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
+import { SupplyRequest } from './SupplyRequest';
 import { Timing } from './Timing';
 
 /**
@@ -105,12 +115,12 @@ export interface SupplyDelivery {
    * A plan, proposal or order that is fulfilled in whole or in part by
    * this event.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<SupplyRequest>[];
 
   /**
    * A larger event of which this particular event is a component or step.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<SupplyDelivery | Contract>[];
 
   /**
    * A code specifying the state of the dispense event.
@@ -121,7 +131,7 @@ export interface SupplyDelivery {
    * A link to a resource representing the person whom the delivered item
    * is for.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * Indicates the type of dispensing event that is performed. Examples
@@ -154,18 +164,18 @@ export interface SupplyDelivery {
    * The individual responsible for dispensing the medication, supplier or
    * device.
    */
-  readonly supplier?: Reference;
+  readonly supplier?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Identification of the facility/location where the Supply was shipped
    * to, as part of the dispense event.
    */
-  readonly destination?: Reference;
+  readonly destination?: Reference<Location>;
 
   /**
    * Identifies the person who picked up the Supply.
    */
-  readonly receiver?: Reference[];
+  readonly receiver?: Reference<Practitioner | PractitionerRole>[];
 }
 
 /**
@@ -226,5 +236,5 @@ export interface SupplyDeliverySuppliedItem {
    * is either a link to a resource representing the details of the item or
    * a code that identifies the item from a known list.
    */
-  readonly itemReference?: Reference;
+  readonly itemReference?: Reference<Medication | Substance | Device>;
 }

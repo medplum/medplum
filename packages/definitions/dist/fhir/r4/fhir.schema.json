@@ -61071,12 +61071,9 @@
           "description": "User that is granted access to the project.",
           "$ref": "#/definitions/Reference"
         },
-        "compartments": {
-          "description": "Collection of compartments that the user has been granted access.",
-          "items": {
-            "$ref": "#/definitions/Reference"
-          },
-          "type": "array"
+        "accessPolicy": {
+          "description": "User that is granted access to the project.",
+          "$ref": "#/definitions/Reference"
         },
         "admin": {
           "description": "Whether this user is a project administrator.",
@@ -61086,8 +61083,7 @@
       "required": [
         "project",
         "user",
-        "profile",
-        "compartments"
+        "profile"
       ]
     },
     "ClientApplication": {
@@ -61283,7 +61279,7 @@
           },
           "type": "array"
         },
-        "defaultProject": {
+        "project": {
           "description": "Reference to the default project for the duration of the login.",
           "$ref": "#/definitions/Reference"
         },

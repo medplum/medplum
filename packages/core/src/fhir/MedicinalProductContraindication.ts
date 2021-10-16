@@ -5,11 +5,16 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
+import { Medication } from './Medication';
+import { MedicinalProduct } from './MedicinalProduct';
+import { MedicinalProductIndication } from './MedicinalProductIndication';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Population } from './Population';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
+import { SubstanceSpecification } from './SubstanceSpecification';
 
 /**
  * The clinical particulars - indications, contraindications etc. of a
@@ -96,7 +101,7 @@ export interface MedicinalProductContraindication {
   /**
    * The medication for which this is an indication.
    */
-  readonly subject?: Reference[];
+  readonly subject?: Reference<MedicinalProduct | Medication>[];
 
   /**
    * The disease, symptom or procedure for the contraindication.
@@ -117,7 +122,7 @@ export interface MedicinalProductContraindication {
    * Information about the use of the medicinal product in relation to
    * other therapies as part of the indication.
    */
-  readonly therapeuticIndication?: Reference[];
+  readonly therapeuticIndication?: Reference<MedicinalProductIndication>[];
 
   /**
    * Information about the use of the medicinal product in relation to
@@ -190,5 +195,5 @@ export interface MedicinalProductContraindicationOtherTherapy {
    * product or class of products) as part of an indication or
    * contraindication.
    */
-  readonly medicationReference?: Reference;
+  readonly medicationReference?: Reference<MedicinalProduct | Medication | Substance | SubstanceSpecification>;
 }

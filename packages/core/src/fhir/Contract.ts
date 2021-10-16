@@ -5,18 +5,38 @@
 
 import { Annotation } from './Annotation';
 import { Attachment } from './Attachment';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
+import { Composition } from './Composition';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
+import { EpisodeOfCare } from './EpisodeOfCare';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
+import { Questionnaire } from './Questionnaire';
+import { QuestionnaireResponse } from './QuestionnaireResponse';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 import { Signature } from './Signature';
+import { Substance } from './Substance';
 import { Timing } from './Timing';
 
 /**
@@ -137,7 +157,7 @@ export interface Contract {
    * The URL pointing to a FHIR-defined Contract Definition that is adhered
    * to in whole or part by this Contract.
    */
-  readonly instantiatesCanonical?: Reference;
+  readonly instantiatesCanonical?: Reference<Contract>;
 
   /**
    * The URL pointing to an externally maintained definition that is
@@ -171,7 +191,7 @@ export interface Contract {
    * The target entity impacted by or of interest to parties to the
    * agreement.
    */
-  readonly subject?: Reference[];
+  readonly subject?: Reference<Resource>[];
 
   /**
    * A formally or informally recognized grouping of people, principals,
@@ -179,7 +199,7 @@ export interface Contract {
    * some form of collective action such as the promulgation,
    * administration and enforcement of contracts and policies.
    */
-  readonly authority?: Reference[];
+  readonly authority?: Reference<Organization>[];
 
   /**
    * Recognized governance framework or system operating with a
@@ -187,12 +207,12 @@ export interface Contract {
    * processes or procedures for managing rights, actions, or behaviors of
    * parties or principals relative to resources.
    */
-  readonly domain?: Reference[];
+  readonly domain?: Reference<Location>[];
 
   /**
    * Sites in which the contract is complied with,  exercised, or in force.
    */
-  readonly site?: Reference[];
+  readonly site?: Reference<Location>[];
 
   /**
    * A natural language name identifying this Contract definition,
@@ -228,7 +248,7 @@ export interface Contract {
    * The individual or organization that authored the Contract definition,
    * derivative, or instance in any legal state.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Patient | Practitioner | PractitionerRole | Organization>;
 
   /**
    * A selector of legal concerns for this Contract definition, derivative,
@@ -246,7 +266,7 @@ export interface Contract {
    * Narrows the range of legal concerns to focus on the achievement of
    * specific contractual objectives.
    */
-  readonly topicReference?: Reference;
+  readonly topicReference?: Reference<Resource>;
 
   /**
    * A high-level category for the legal instrument, whether constructed as
@@ -281,7 +301,7 @@ export interface Contract {
    * Information that may be needed by/relevant to the performer in their
    * execution of this term action.
    */
-  readonly supportingInfo?: Reference[];
+  readonly supportingInfo?: Reference<Resource>[];
 
   /**
    * Links to Provenance records for past versions of this Contract
@@ -291,7 +311,7 @@ export interface Contract {
    * indicates the target that was changed in the update.
    * http://build.fhir.org/provenance-definitions.html#Provenance.entity.
    */
-  readonly relevantHistory?: Reference[];
+  readonly relevantHistory?: Reference<Provenance>[];
 
   /**
    * Parties with legal standing in the Contract, including the principal
@@ -337,7 +357,7 @@ export interface Contract {
    * truth&quot; and which would be the basis for legal action related to
    * enforcement of this Contract.
    */
-  readonly legallyBindingReference?: Reference;
+  readonly legallyBindingReference?: Reference<Composition | DocumentReference | QuestionnaireResponse | Contract>;
 }
 
 /**
@@ -398,7 +418,7 @@ export interface ContractContentDefinition {
    * The  individual or organization that published the Contract precursor
    * content.
    */
-  readonly publisher?: Reference;
+  readonly publisher?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The date (and optionally time) when the contract was published. The
@@ -481,7 +501,7 @@ export interface ContractFriendly {
    * representation intended to enhance comprehension and ensure
    * understandability.
    */
-  readonly contentReference?: Reference;
+  readonly contentReference?: Reference<Composition | DocumentReference | QuestionnaireResponse>;
 }
 
 /**
@@ -532,7 +552,7 @@ export interface ContractLegal {
   /**
    * Contract legal text in human renderable form.
    */
-  readonly contentReference?: Reference;
+  readonly contentReference?: Reference<Composition | DocumentReference | QuestionnaireResponse>;
 }
 
 /**
@@ -586,7 +606,7 @@ export interface ContractRule {
    * Computable Contract conveyed using a policy rule language (e.g. XACML,
    * DKAL, SecPal).
    */
-  readonly contentReference?: Reference;
+  readonly contentReference?: Reference<DocumentReference>;
 }
 
 /**
@@ -640,7 +660,7 @@ export interface ContractSigner {
   /**
    * Party which is a signator to this Contract.
    */
-  readonly party?: Reference;
+  readonly party?: Reference<Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * Legally binding Contract DSIG signature contents in Base64.
@@ -713,7 +733,7 @@ export interface ContractTerm {
   /**
    * The entity that the term applies to.
    */
-  readonly topicReference?: Reference;
+  readonly topicReference?: Reference<Resource>;
 
   /**
    * A legal clause or condition contained within a contract that requires
@@ -841,7 +861,7 @@ export interface ContractTermAction {
    * Encounter or Episode with primary association to specified term
    * activity.
    */
-  readonly context?: Reference;
+  readonly context?: Reference<Encounter | EpisodeOfCare>;
 
   /**
    * Id [identifier??] of the clause or question text related to the
@@ -869,7 +889,7 @@ export interface ContractTermAction {
    * Who or what initiated the action and has responsibility for its
    * activation.
    */
-  readonly requester?: Reference[];
+  readonly requester?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
 
   /**
    * Id [identifier??] of the clause or question text related to the
@@ -894,7 +914,7 @@ export interface ContractTermAction {
    * Indicates who or what is being asked to perform (or not perform) the
    * ction.
    */
-  readonly performer?: Reference;
+  readonly performer?: Reference<RelatedPerson | Patient | Practitioner | PractitionerRole | CareTeam | Device | Substance | Organization | Location>;
 
   /**
    * Id [identifier??] of the clause or question text related to the reason
@@ -913,7 +933,7 @@ export interface ContractTermAction {
    * Indicates another resource whose existence justifies permitting or not
    * permitting this action.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference | Questionnaire | QuestionnaireResponse>[];
 
   /**
    * Describes why the action is to be performed or not performed in
@@ -983,7 +1003,7 @@ export interface ContractTermActionSubject {
   /**
    * The entity the action is performed or not performed on or for.
    */
-  readonly reference?: Reference[];
+  readonly reference?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
 
   /**
    * Role type of agent assigned roles in this Contract.
@@ -1044,7 +1064,7 @@ export interface ContractTermAsset {
   /**
    * Associated entities.
    */
-  readonly typeReference?: Reference[];
+  readonly typeReference?: Reference<Resource>[];
 
   /**
    * May be a subtype or part of an offered asset.
@@ -1158,7 +1178,7 @@ export interface ContractTermAssetContext {
    * Person or Organization (e.g., bank, repository),  location held, e.g.,
    * building,  jurisdiction.
    */
-  readonly reference?: Reference;
+  readonly reference?: Reference<Resource>;
 
   /**
    * Coded representation of the context generally or of the Referenced
@@ -1220,7 +1240,7 @@ export interface ContractTermAssetValuedItem {
   /**
    * Specific type of Contract Valued Item that may be priced.
    */
-  readonly entityReference?: Reference;
+  readonly entityReference?: Reference<Resource>;
 
   /**
    * Identifies a Contract Valued Item instance.
@@ -1283,12 +1303,12 @@ export interface ContractTermAssetValuedItem {
   /**
    * Who will make payment.
    */
-  readonly responsible?: Reference;
+  readonly responsible?: Reference<Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * Who will receive payment.
    */
-  readonly recipient?: Reference;
+  readonly recipient?: Reference<Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * Id  of the clause or question text related to the context of this
@@ -1360,7 +1380,7 @@ export interface ContractTermOffer {
    * inconsistent with a prior contract, custom, or law (Hart, 1995, p.
    * 30).
    */
-  readonly topic?: Reference;
+  readonly topic?: Reference<Resource>;
 
   /**
    * Type of Contract Provision such as specific requirements, purposes for
@@ -1535,7 +1555,7 @@ export interface ContractTermOfferAnswer {
    * of occupancy of a rental, warrently duration, or whether biospecimen
    * may be used for further research.
    */
-  readonly valueReference?: Reference;
+  readonly valueReference?: Reference<Resource>;
 }
 
 /**
@@ -1581,7 +1601,7 @@ export interface ContractTermOfferParty {
   /**
    * Participant in the offer.
    */
-  readonly reference?: Reference[];
+  readonly reference?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
 
   /**
    * How the party participates in the offer.

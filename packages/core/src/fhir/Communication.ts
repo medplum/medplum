@@ -5,12 +5,26 @@
 
 import { Annotation } from './Annotation';
 import { Attachment } from './Attachment';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -121,17 +135,17 @@ export interface Communication {
    * An order, proposal or plan fulfilled in whole or in part by this
    * Communication.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<Resource>[];
 
   /**
    * Part of this action.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<Resource>[];
 
   /**
    * Prior communication that this communication is in response to.
    */
-  readonly inResponseTo?: Reference[];
+  readonly inResponseTo?: Reference<Communication>[];
 
   /**
    * The status of the transmission.
@@ -163,7 +177,7 @@ export interface Communication {
   /**
    * The patient or group that was the focus of this communication.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * Description of the purpose/content, similar to a subject line in an
@@ -175,13 +189,13 @@ export interface Communication {
    * Other resources that pertain to this communication and to which this
    * communication should be associated.
    */
-  readonly about?: Reference[];
+  readonly about?: Reference<Resource>[];
 
   /**
    * The Encounter during which this Communication was created or to which
    * the creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The time when this communication was sent.
@@ -202,13 +216,13 @@ export interface Communication {
    * tracked (e.g. a mass mail-out) or a receipt is captured in aggregate
    * (all emails confirmed received by a particular time).
    */
-  readonly recipient?: Reference[];
+  readonly recipient?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson | Group | CareTeam | HealthcareService>[];
 
   /**
    * The entity (e.g. person, organization, clinical information system, or
    * device) which was the source of the communication.
    */
-  readonly sender?: Reference;
+  readonly sender?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson | HealthcareService>;
 
   /**
    * The reason or justification for the communication.
@@ -219,7 +233,7 @@ export interface Communication {
    * Indicates another resource whose existence justifies this
    * communication.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Text, attachment(s), or resource(s) that was communicated to the
@@ -291,5 +305,5 @@ export interface CommunicationPayload {
    * A communicated content (or for multi-part communications, one portion
    * of the communication).
    */
-  readonly contentReference?: Reference;
+  readonly contentReference?: Reference<Resource>;
 }

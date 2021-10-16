@@ -7,6 +7,7 @@ import { CodeableConcept } from './CodeableConcept';
 import { ContactDetail } from './ContactDetail';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
@@ -173,7 +174,7 @@ export interface Measure {
    * provided, a Patient subject is assumed, but the subject of the measure
    * can be anything.
    */
-  readonly subjectReference?: Reference;
+  readonly subjectReference?: Reference<Group>;
 
   /**
    * The date  (and optionally time) when the measure was published. The

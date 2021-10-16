@@ -9,9 +9,13 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Task } from './Task';
 
 /**
  * This resource provides the details including amount of a payment and
@@ -119,18 +123,18 @@ export interface PaymentReconciliation {
   /**
    * The party who generated the payment.
    */
-  readonly paymentIssuer?: Reference;
+  readonly paymentIssuer?: Reference<Organization>;
 
   /**
    * Original request resource reference.
    */
-  readonly request?: Reference;
+  readonly request?: Reference<Task>;
 
   /**
    * The practitioner who is responsible for the services rendered to the
    * patient.
    */
-  readonly requestor?: Reference;
+  readonly requestor?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The outcome of a request for a reconciliation.
@@ -238,18 +242,18 @@ export interface PaymentReconciliationDetail {
    * A resource, such as a Claim, the evaluation of which could lead to
    * payment.
    */
-  readonly request?: Reference;
+  readonly request?: Reference<Resource>;
 
   /**
    * The party which submitted the claim or financial transaction.
    */
-  readonly submitter?: Reference;
+  readonly submitter?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * A resource, such as a ClaimResponse, which contains a commitment to
    * payment.
    */
-  readonly response?: Reference;
+  readonly response?: Reference<Resource>;
 
   /**
    * The date from the response resource containing a commitment to pay.
@@ -260,12 +264,12 @@ export interface PaymentReconciliationDetail {
    * A reference to the individual who is responsible for inquiries
    * regarding the response and its payment.
    */
-  readonly responsible?: Reference;
+  readonly responsible?: Reference<PractitionerRole>;
 
   /**
    * The party which is receiving the payment.
    */
-  readonly payee?: Reference;
+  readonly payee?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The monetary amount allocated from the total payment to the payable.

@@ -1,4 +1,4 @@
-import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { AccessPolicy, allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
@@ -37,7 +37,7 @@ export interface RepositoryContext {
    * If the compartments array is provided,
    * all queries will be restricted to those compartments.
    */
-  compartments?: Reference[];
+  accessPolicy?: Reference<AccessPolicy>;
 
   /**
    * Optional flag for system administrators,
@@ -98,13 +98,14 @@ const lookupTables: LookupTable[] = [
  */
 export class Repository {
   private readonly context: RepositoryContext;
-  private readonly compartmentIds: string[] | undefined;
+  private readonly accessPolicy: AccessPolicy;
 
   constructor(context: RepositoryContext) {
     this.context = context;
-    this.compartmentIds = context.compartments
-      ?.map(c => c.reference?.split('/')[1])
-      ?.filter(c => !!c) as string[] | undefined;
+    // TODO: Resolve context.accessPolicy
+    this.accessPolicy = {
+      resourceType: 'AccessPolicy'
+    };
   }
 
   async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
@@ -369,8 +370,20 @@ export class Repository {
    * @param builder The select query builder.
    */
   private addCompartments(builder: SelectQuery): void {
-    if (this.compartmentIds && this.compartmentIds.length > 0) {
-      builder.where('compartments', Operator.ARRAY_CONTAINS, this.compartmentIds, 'UUID[]');
+    const compartmentIds = [];
+    if (this.context.project !== undefined && this.context.project !== MEDPLUM_PROJECT_ID) {
+      compartmentIds.push(this.context.project);
+    }
+    if (this.accessPolicy.resource) {
+      for (const policy of this.accessPolicy.resource) {
+        const policyCompartmentId = resolveId(policy.compartment);
+        if (policyCompartmentId) {
+          compartmentIds.push(policyCompartmentId);
+        }
+      }
+    }
+    if (compartmentIds.length > 0) {
+      builder.where('compartments', Operator.ARRAY_CONTAINS, compartmentIds, 'UUID[]');
     }
   }
 
@@ -851,9 +864,9 @@ function resolveId(reference: Reference | undefined): string | undefined {
  */
 export function getRepoForLogin(login: Login): Repository {
   return new Repository({
-    project: resolveId(login.defaultProject) as string,
+    project: resolveId(login.project) as string,
     author: login.profile as Reference,
-    compartments: login.compartments,
+    accessPolicy: login.accessPolicy,
     admin: login.admin
   });
 }

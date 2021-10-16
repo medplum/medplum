@@ -4,15 +4,33 @@
  */
 
 import { Annotation } from './Annotation';
+import { CarePlan } from './CarePlan';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { DiagnosticReport } from './DiagnosticReport';
 import { Dosage } from './Dosage';
+import { Encounter } from './Encounter';
+import { EpisodeOfCare } from './EpisodeOfCare';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Medication } from './Medication';
+import { MedicationAdministration } from './MedicationAdministration';
+import { MedicationDispense } from './MedicationDispense';
+import { MedicationRequest } from './MedicationRequest';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
 
 /**
  * A record of a medication that is being consumed by a patient.   A
@@ -133,12 +151,12 @@ export interface MedicationStatement {
    * A plan, proposal or order that is fulfilled in whole or in part by
    * this event.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<MedicationRequest | CarePlan | ServiceRequest>[];
 
   /**
    * A larger event of which this particular event is a component or step.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<MedicationAdministration | MedicationDispense | MedicationStatement | Procedure | Observation>[];
 
   /**
    * A code representing the patient or other source's judgment about the
@@ -172,18 +190,18 @@ export interface MedicationStatement {
    * attribute carrying a code that identifies the medication from a known
    * list of medications.
    */
-  readonly medicationReference?: Reference;
+  readonly medicationReference?: Reference<Medication>;
 
   /**
    * The person, animal or group who is/was taking the medication.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The encounter or episode of care that establishes the context for this
    * MedicationStatement.
    */
-  readonly context?: Reference;
+  readonly context?: Reference<Encounter | EpisodeOfCare>;
 
   /**
    * The interval of time during which it is being asserted that the
@@ -211,14 +229,14 @@ export interface MedicationStatement {
    * MedicationStatement is derived from other resources, e.g. Claim or
    * MedicationRequest.
    */
-  readonly informationSource?: Reference;
+  readonly informationSource?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>;
 
   /**
    * Allows linking the MedicationStatement to the underlying
    * MedicationRequest, or to other information that supports or is used to
    * derive the MedicationStatement.
    */
-  readonly derivedFrom?: Reference[];
+  readonly derivedFrom?: Reference<Resource>[];
 
   /**
    * A reason for why the medication is being/was taken.
@@ -229,7 +247,7 @@ export interface MedicationStatement {
    * Condition or observation that supports why the medication is being/was
    * taken.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport>[];
 
   /**
    * Provides extra information about the medication statement that is not

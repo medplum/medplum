@@ -8,7 +8,7 @@ export type ProfileResource = Patient | Practitioner | RelatedPerson;
  * @param resource The FHIR reesource.
  * @returns A reference resource.
  */
-export function createReference(resource: Resource): Reference {
+export function createReference<T extends Resource>(resource: T): Reference<T> {
   const reference = getReferenceString(resource);
   const display = getDisplayString(resource);
   return (display === reference) ? { reference } : { reference, display };

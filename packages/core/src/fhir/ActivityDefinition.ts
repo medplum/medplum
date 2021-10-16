@@ -10,15 +10,21 @@ import { Dosage } from './Dosage';
 import { Duration } from './Duration';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { Medication } from './Medication';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { ObservationDefinition } from './ObservationDefinition';
 import { Period } from './Period';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { Resource } from './Resource';
+import { SpecimenDefinition } from './SpecimenDefinition';
+import { Substance } from './Substance';
 import { Timing } from './Timing';
 import { UsageContext } from './UsageContext';
 
@@ -179,7 +185,7 @@ export interface ActivityDefinition {
    * A code or group definition that describes the intended subject of the
    * activity being defined.
    */
-  readonly subjectReference?: Reference;
+  readonly subjectReference?: Reference<Group>;
 
   /**
    * The date  (and optionally time) when the activity definition was
@@ -386,7 +392,7 @@ export interface ActivityDefinition {
    * Identifies the facility where the activity will occur; e.g. home,
    * hospital, specific clinic, etc.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * Indicates who should participate in performing the action described.
@@ -397,7 +403,7 @@ export interface ActivityDefinition {
    * Identifies the food, drug or other product being consumed or supplied
    * in the activity.
    */
-  readonly productReference?: Reference;
+  readonly productReference?: Reference<Medication | Substance>;
 
   /**
    * Identifies the food, drug or other product being consumed or supplied
@@ -427,19 +433,19 @@ export interface ActivityDefinition {
    * Defines specimen requirements for the action to be performed, such as
    * required specimens for a lab test.
    */
-  readonly specimenRequirement?: Reference[];
+  readonly specimenRequirement?: Reference<SpecimenDefinition>[];
 
   /**
    * Defines observation requirements for the action to be performed, such
    * as body weight or surface area.
    */
-  readonly observationRequirement?: Reference[];
+  readonly observationRequirement?: Reference<ObservationDefinition>[];
 
   /**
    * Defines the observations that are expected to be produced by the
    * action.
    */
-  readonly observationResultRequirement?: Reference[];
+  readonly observationResultRequirement?: Reference<ObservationDefinition>[];
 
   /**
    * A reference to a StructureMap resource that defines a transform that

@@ -9,6 +9,7 @@ import { DataRequirement } from './DataRequirement';
 import { Duration } from './Duration';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
@@ -186,7 +187,7 @@ export interface ResearchElementDefinition {
    * element is not provided, a Patient subject is assumed, but the subject
    * of the ResearchElementDefinition can be anything.
    */
-  readonly subjectReference?: Reference;
+  readonly subjectReference?: Reference<Group>;
 
   /**
    * The date  (and optionally time) when the research element definition

@@ -4,14 +4,29 @@
  */
 
 import { Annotation } from './Annotation';
+import { Claim } from './Claim';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Media } from './Media';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
+import { QuestionnaireResponse } from './QuestionnaireResponse';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
 import { Timing } from './Timing';
 
 /**
@@ -105,7 +120,7 @@ export interface DeviceUseStatement {
    * A plan, proposal or order that is fulfilled in whole or in part by
    * this DeviceUseStatement.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<ServiceRequest>[];
 
   /**
    * A code representing the patient or other source's judgment about the
@@ -117,14 +132,14 @@ export interface DeviceUseStatement {
   /**
    * The patient who used the device.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * Allows linking the DeviceUseStatement to the underlying Request, or to
    * other information that supports or is used to derive the
    * DeviceUseStatement.
    */
-  readonly derivedFrom?: Reference[];
+  readonly derivedFrom?: Reference<ServiceRequest | Procedure | Claim | Observation | QuestionnaireResponse | DocumentReference>[];
 
   /**
    * How often the device was used.
@@ -149,12 +164,12 @@ export interface DeviceUseStatement {
   /**
    * Who reported the device was being used by the patient.
    */
-  readonly source?: Reference;
+  readonly source?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * The details of the device used.
    */
-  readonly device?: Reference;
+  readonly device?: Reference<Device>;
 
   /**
    * Reason or justification for the use of the device.
@@ -165,7 +180,7 @@ export interface DeviceUseStatement {
    * Indicates another resource whose existence justifies this
    * DeviceUseStatement.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference | Media>[];
 
   /**
    * Indicates the anotomic location on the subject's body where the device

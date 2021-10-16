@@ -4,14 +4,37 @@
  */
 
 import { Annotation } from './Annotation';
+import { Appointment } from './Appointment';
+import { AppointmentResponse } from './AppointmentResponse';
+import { CarePlan } from './CarePlan';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
+import { Endpoint } from './Endpoint';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { Media } from './Media';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
+import { Specimen } from './Specimen';
+import { Task } from './Task';
 
 /**
  * Representation of the content produced in a DICOM imaging study. A
@@ -120,13 +143,13 @@ export interface ImagingStudy {
   /**
    * The subject, typically a patient, of the imaging study.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Device | Group>;
 
   /**
    * The healthcare event (e.g. a patient and healthcare provider
    * interaction) during which this ImagingStudy is made.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Date and time the study started.
@@ -137,17 +160,17 @@ export interface ImagingStudy {
    * A list of the diagnostic requests that resulted in this imaging study
    * being performed.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<CarePlan | ServiceRequest | Appointment | AppointmentResponse | Task>[];
 
   /**
    * The requesting/referring physician.
    */
-  readonly referrer?: Reference;
+  readonly referrer?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * Who read the study and interpreted the images or other content.
    */
-  readonly interpreter?: Reference[];
+  readonly interpreter?: Reference<Practitioner | PractitionerRole>[];
 
   /**
    * The network service providing access (e.g., query, view, or retrieval)
@@ -156,7 +179,7 @@ export interface ImagingStudy {
    * study, unless overridden by a series-level endpoint with the same
    * Endpoint.connectionType.
    */
-  readonly endpoint?: Reference[];
+  readonly endpoint?: Reference<Endpoint>[];
 
   /**
    * Number of Series in the Study. This value given may be larger than the
@@ -177,7 +200,7 @@ export interface ImagingStudy {
   /**
    * The procedure which this ImagingStudy was part of.
    */
-  readonly procedureReference?: Reference;
+  readonly procedureReference?: Reference<Procedure>;
 
   /**
    * The code for the performed procedure type.
@@ -187,7 +210,7 @@ export interface ImagingStudy {
   /**
    * The principal physical location where the ImagingStudy was performed.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * Description of clinical condition indicating why the ImagingStudy was
@@ -198,7 +221,7 @@ export interface ImagingStudy {
   /**
    * Indicates another resource whose existence justifies this Study.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | Media | DiagnosticReport | DocumentReference>[];
 
   /**
    * Per the recommended DICOM mapping, this element is derived from the
@@ -294,7 +317,7 @@ export interface ImagingStudySeries {
    * DICOM endpoints. A series-level endpoint, if present, has precedence
    * over a study-level endpoint with the same Endpoint.connectionType.
    */
-  readonly endpoint?: Reference[];
+  readonly endpoint?: Reference<Endpoint>[];
 
   /**
    * The anatomic structures examined. See DICOM Part 16 Annex L
@@ -316,7 +339,7 @@ export interface ImagingStudySeries {
   /**
    * The specimen imaged, e.g., for whole slide imaging of a biopsy.
    */
-  readonly specimen?: Reference[];
+  readonly specimen?: Reference<Specimen>[];
 
   /**
    * The date and time the series was started.
@@ -445,5 +468,5 @@ export interface ImagingStudySeriesPerformer {
   /**
    * Indicates who or what performed the series.
    */
-  readonly actor?: Reference;
+  readonly actor?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | Device | RelatedPerson>;
 }

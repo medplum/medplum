@@ -10,6 +10,7 @@ import { DataRequirement } from './DataRequirement';
 import { Duration } from './Duration';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
@@ -343,7 +344,7 @@ export interface EvidenceVariableCharacteristic {
    * language such as FHIRPath or CQL) or DataRequirements (such as
    * Diabetes diagnosis onset in the last year).
    */
-  readonly definitionReference?: Reference;
+  readonly definitionReference?: Reference<Group>;
 
   /**
    * Define members of the evidence element using Codes (such as condition,

@@ -4,11 +4,15 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -121,7 +125,7 @@ export interface DetectedIssue {
    * Indicates the patient whose record the detected issue is associated
    * with.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The date or period when the detected issue was initially identified.
@@ -138,13 +142,13 @@ export interface DetectedIssue {
    * example, a decision support application or a pharmacist conducting a
    * medication review.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Practitioner | PractitionerRole | Device>;
 
   /**
    * Indicates the resource representing the current activity or proposed
    * activity that is potentially problematic.
    */
-  readonly implicated?: Reference[];
+  readonly implicated?: Reference<Resource>[];
 
   /**
    * Supporting evidence or manifestations that provide the basis for
@@ -224,7 +228,7 @@ export interface DetectedIssueEvidence {
    * Links to resources that constitute evidence for the detected issue
    * such as a GuidanceResponse or MeasureReport.
    */
-  readonly detail?: Reference[];
+  readonly detail?: Reference<Resource>[];
 }
 
 /**
@@ -285,5 +289,5 @@ export interface DetectedIssueMitigation {
    * Identifies the practitioner who determined the mitigation and takes
    * responsibility for the mitigation step occurring.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Practitioner | PractitionerRole>;
 }

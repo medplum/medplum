@@ -6,6 +6,7 @@
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactDetail } from './ContactDetail';
+import { EvidenceVariable } from './EvidenceVariable';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
@@ -276,19 +277,19 @@ export interface RiskEvidenceSynthesis {
    * A reference to a EvidenceVariable resource that defines the population
    * for the research.
    */
-  readonly population?: Reference;
+  readonly population?: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resource that defines the exposure
    * for the research.
    */
-  readonly exposure?: Reference;
+  readonly exposure?: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resomece that defines the outcome
    * for the research.
    */
-  readonly outcome?: Reference;
+  readonly outcome?: Reference<EvidenceVariable>;
 
   /**
    * A description of the size of the sample involved in the synthesis.

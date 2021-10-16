@@ -6,16 +6,27 @@
 import { Age } from './Age';
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
 import { Duration } from './Duration';
+import { Encounter } from './Encounter';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 import { Timing } from './Timing';
 
@@ -126,13 +137,13 @@ export interface RequestGroup {
    * A plan, proposal or order that is fulfilled in whole or in part by
    * this request.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<Resource>[];
 
   /**
    * Completed or terminated request(s) whose function is taken by this new
    * request.
    */
-  readonly replaces?: Reference[];
+  readonly replaces?: Reference<Resource>[];
 
   /**
    * A shared identifier common to all requests that were authorized more
@@ -167,12 +178,12 @@ export interface RequestGroup {
   /**
    * The subject for which the request group was created.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * Describes the context of the request group, if any.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Indicates when the request group was created.
@@ -182,7 +193,7 @@ export interface RequestGroup {
   /**
    * Provides a reference to the author of the request group.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Device | Practitioner | PractitionerRole>;
 
   /**
    * Describes the reason for the request group in coded or textual form.
@@ -193,7 +204,7 @@ export interface RequestGroup {
    * Indicates another resource whose existence justifies this request
    * group.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Provides a mechanism to communicate additional information about the
@@ -336,7 +347,7 @@ export interface RequestGroupAction {
   /**
    * The participant that should perform or be responsible for this action.
    */
-  readonly participant?: Reference[];
+  readonly participant?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device>[];
 
   /**
    * The type of action to perform (create, update, remove).
@@ -372,7 +383,7 @@ export interface RequestGroupAction {
    * The resource that is the target of the action (e.g.
    * CommunicationRequest).
    */
-  readonly resource?: Reference;
+  readonly resource?: Reference<Resource>;
 
   /**
    * Sub actions.

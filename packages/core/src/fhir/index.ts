@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+export * from './AccessPolicy';
 export * from './Account';
 export * from './ActivityDefinition';
 export * from './Address';

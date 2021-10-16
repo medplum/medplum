@@ -279,7 +279,7 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
     logger.info('Sending rest hook to: ' + url);
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
-    await createSubscriptionAuditEvent(
+    await createSubscriptionEvent(
       subscription,
       resource,
       response.status === 200 ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
@@ -291,7 +291,7 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
 
   } catch (ex) {
     logger.info('Subscription exception: ' + ex);
-    await createSubscriptionAuditEvent(
+    await createSubscriptionEvent(
       subscription,
       resource,
       AuditEventOutcome.MinorFailure,
@@ -387,7 +387,7 @@ export async function execBot(job: Job<SubscriptionJobData>, subscription: Subsc
     botLog.push('Error:', (error as Error).message);
   }
 
-  await createSubscriptionAuditEvent(subscription, resource, outcome, JSON.stringify(botLog, undefined, 2));
+  await createSubscriptionEvent(subscription, resource, outcome, JSON.stringify(botLog, undefined, 2));
 }
 
 /**
@@ -415,7 +415,7 @@ function getExtensionValue(resource: Resource, ...urls: string[]): string | unde
  * @param outcome The outcome code.
  * @param outcomeDesc The outcome description text.
  */
-async function createSubscriptionAuditEvent(
+async function createSubscriptionEvent(
   subscription: Subscription,
   resource: Resource,
   outcome: AuditEventOutcome,
@@ -433,14 +433,29 @@ async function createSubscriptionAuditEvent(
     agent: [{
       type: {
         text: 'subscription'
-      }
+      },
+      requestor: false
     }],
     source: {
-      observer: createReference(subscription)
+      // Observer cannot be a Subscription resource
+      // observer: createReference(subscription)
     },
-    entity: [{
-      what: createReference(resource)
-    }],
+    entity: [
+      {
+        what: createReference(resource),
+        role: {
+          code: '4',
+          display: 'Domain'
+        }
+      },
+      {
+        what: createReference(subscription),
+        role: {
+          code: '9',
+          display: 'Subscriber'
+        }
+      }
+    ],
     outcome,
     outcomeDesc
   });

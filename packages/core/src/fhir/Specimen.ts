@@ -5,15 +5,23 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Duration } from './Duration';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
+import { Substance } from './Substance';
 
 /**
  * A sample to be used for analysis.
@@ -123,7 +131,7 @@ export interface Specimen {
    * location (e.g., the source of an environmental sample), or a sampling
    * of a substance or a device.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group | Device | Substance | Location>;
 
   /**
    * Time when specimen was received for processing or testing.
@@ -134,13 +142,13 @@ export interface Specimen {
    * Reference to the parent (source) specimen which is used when the
    * specimen was either derived from or a component of another specimen.
    */
-  readonly parent?: Reference[];
+  readonly parent?: Reference<Specimen>[];
 
   /**
    * Details concerning a service request that required a specimen to be
    * collected.
    */
-  readonly request?: Reference[];
+  readonly request?: Reference<ServiceRequest>[];
 
   /**
    * Details concerning the specimen collection.
@@ -214,7 +222,7 @@ export interface SpecimenCollection {
   /**
    * Person who collected the specimen.
    */
-  readonly collector?: Reference;
+  readonly collector?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * Time when specimen was collected from subject - the physiologically
@@ -345,7 +353,7 @@ export interface SpecimenContainer {
    * Introduced substance to preserve, maintain or enhance the specimen.
    * Examples: Formalin, Citrate, EDTA.
    */
-  readonly additiveReference?: Reference;
+  readonly additiveReference?: Reference<Substance>;
 }
 
 /**
@@ -401,7 +409,7 @@ export interface SpecimenProcessing {
   /**
    * Material used in the processing step.
    */
-  readonly additive?: Reference[];
+  readonly additive?: Reference<Substance>[];
 
   /**
    * A record of the time or period when the specimen processing occurred.

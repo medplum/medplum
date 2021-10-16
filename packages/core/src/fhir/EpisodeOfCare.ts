@@ -3,14 +3,22 @@
  * Do not edit manually.
  */
 
+import { Account } from './Account';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
 
 /**
  * An association between a patient and an organization / healthcare
@@ -128,13 +136,13 @@ export interface EpisodeOfCare {
   /**
    * The patient who is the focus of this episode of care.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The organization that has assumed the specific responsibilities for
    * the specified duration.
    */
-  readonly managingOrganization?: Reference;
+  readonly managingOrganization?: Reference<Organization>;
 
   /**
    * The interval during which the managing organization assumes the
@@ -146,25 +154,25 @@ export interface EpisodeOfCare {
    * Referral Request(s) that are fulfilled by this EpisodeOfCare, incoming
    * referrals.
    */
-  readonly referralRequest?: Reference[];
+  readonly referralRequest?: Reference<ServiceRequest>[];
 
   /**
    * The practitioner that is the care manager/care coordinator for this
    * patient.
    */
-  readonly careManager?: Reference;
+  readonly careManager?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The list of practitioners that may be facilitating this episode of
    * care for specific purposes.
    */
-  readonly team?: Reference[];
+  readonly team?: Reference<CareTeam>[];
 
   /**
    * The set of accounts that may be used for billing for this
    * EpisodeOfCare.
    */
-  readonly account?: Reference[];
+  readonly account?: Reference<Account>[];
 }
 
 /**
@@ -211,7 +219,7 @@ export interface EpisodeOfCareDiagnosis {
    * A list of conditions/problems/diagnoses that this episode of care is
    * intended to be providing care for.
    */
-  readonly condition?: Reference;
+  readonly condition?: Reference<Condition>;
 
   /**
    * Role that this diagnosis has within the episode of care (e.g.

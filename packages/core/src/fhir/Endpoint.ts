@@ -10,6 +10,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -126,7 +127,7 @@ export interface Endpoint {
    * another organization is hosting this in the cloud, it is the
    * organization associated with the data).
    */
-  readonly managingOrganization?: Reference;
+  readonly managingOrganization?: Reference<Organization>;
 
   /**
    * Contact details for a human to contact about the subscription. The

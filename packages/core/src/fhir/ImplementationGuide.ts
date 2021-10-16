@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { Binary } from './Binary';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactDetail } from './ContactDetail';
 import { Extension } from './Extension';
@@ -417,7 +418,7 @@ export interface ImplementationGuideDefinitionPage {
   /**
    * The source address for the page.
    */
-  readonly nameReference?: Reference;
+  readonly nameReference?: Reference<Binary>;
 
   /**
    * A short title used to represent this page in navigational structures
@@ -535,7 +536,7 @@ export interface ImplementationGuideDefinitionResource {
   /**
    * Where this resource is found.
    */
-  readonly reference?: Reference;
+  readonly reference?: Reference<Resource>;
 
   /**
    * Indicates the FHIR Version(s) this artifact is intended to apply to.
@@ -920,7 +921,7 @@ export interface ImplementationGuideManifestResource {
   /**
    * Where this resource is found.
    */
-  readonly reference?: Reference;
+  readonly reference?: Reference<Resource>;
 
   /**
    * If true or a reference, indicates the resource is an example instance.

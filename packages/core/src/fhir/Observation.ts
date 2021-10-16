@@ -4,18 +4,46 @@
  */
 
 import { Annotation } from './Annotation';
+import { CarePlan } from './CarePlan';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
+import { DeviceMetric } from './DeviceMetric';
+import { DeviceRequest } from './DeviceRequest';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { ImagingStudy } from './ImagingStudy';
+import { Immunization } from './Immunization';
+import { ImmunizationRecommendation } from './ImmunizationRecommendation';
+import { Location } from './Location';
+import { Media } from './Media';
+import { MedicationAdministration } from './MedicationAdministration';
+import { MedicationDispense } from './MedicationDispense';
+import { MedicationRequest } from './MedicationRequest';
+import { MedicationStatement } from './MedicationStatement';
 import { Meta } from './Meta';
+import { MolecularSequence } from './MolecularSequence';
 import { Narrative } from './Narrative';
+import { NutritionOrder } from './NutritionOrder';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Quantity } from './Quantity';
+import { QuestionnaireResponse } from './QuestionnaireResponse';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 import { SampledData } from './SampledData';
+import { ServiceRequest } from './ServiceRequest';
+import { Specimen } from './Specimen';
 import { Timing } from './Timing';
 
 /**
@@ -110,13 +138,13 @@ export interface Observation {
    * this event.  For example, a MedicationRequest may require a patient to
    * have laboratory test performed before  it is dispensed.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<CarePlan | DeviceRequest | ImmunizationRecommendation | MedicationRequest | NutritionOrder | ServiceRequest>[];
 
   /**
    * A larger event of which this particular Observation is a component or
    * step.  For example,  an observation as part of a procedure.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<MedicationAdministration | MedicationDispense | MedicationStatement | Procedure | Immunization | ImagingStudy>[];
 
   /**
    * The status of the result value.
@@ -141,7 +169,7 @@ export interface Observation {
    * (or a sample of, part, or region of the subject), the `focus` element
    * or the `code` itself specifies the actual focus of the observation.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group | Device | Location>;
 
   /**
    * The actual focus of an observation when it is not the patient of
@@ -155,13 +183,13 @@ export interface Observation {
    * change her child's tracheostomy tube. In this example, the child is
    * the patient of record and the mother is the focus.
    */
-  readonly focus?: Reference[];
+  readonly focus?: Reference<Resource>[];
 
   /**
    * The healthcare event  (e.g. a patient and healthcare provider
    * interaction) during which this observation is made.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The time or time-period the observed value is asserted as being true.
@@ -209,7 +237,7 @@ export interface Observation {
   /**
    * Who was responsible for asserting the observed value as &quot;true&quot;.
    */
-  readonly performer?: Reference[];
+  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | RelatedPerson>[];
 
   /**
    * The information determined as a result of making the observation, if
@@ -308,12 +336,12 @@ export interface Observation {
   /**
    * The specimen that was used when this observation was made.
    */
-  readonly specimen?: Reference;
+  readonly specimen?: Reference<Specimen>;
 
   /**
    * The device used to generate the observation data.
    */
-  readonly device?: Reference;
+  readonly device?: Reference<Device | DeviceMetric>;
 
   /**
    * Guidance on how to interpret the value by comparison to a normal or
@@ -328,14 +356,14 @@ export interface Observation {
    * tests, a set of vital sign measurements) that includes the target as a
    * member of the group.
    */
-  readonly hasMember?: Reference[];
+  readonly hasMember?: Reference<Observation | QuestionnaireResponse | MolecularSequence>[];
 
   /**
    * The target resource that represents a measurement from which this
    * observation value is derived. For example, a calculated anion gap or a
    * fetal measurement based on an ultrasound image.
    */
-  readonly derivedFrom?: Reference[];
+  readonly derivedFrom?: Reference<DocumentReference | ImagingStudy | Media | QuestionnaireResponse | Observation | MolecularSequence>[];
 
   /**
    * Some observations have multiple component observations.  These

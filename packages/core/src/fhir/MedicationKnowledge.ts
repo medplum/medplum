@@ -4,16 +4,23 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { DetectedIssue } from './DetectedIssue';
+import { DocumentReference } from './DocumentReference';
 import { Dosage } from './Dosage';
 import { Duration } from './Duration';
 import { Extension } from './Extension';
+import { Media } from './Media';
+import { Medication } from './Medication';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { ObservationDefinition } from './ObservationDefinition';
+import { Organization } from './Organization';
 import { Quantity } from './Quantity';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
 
 /**
  * Information about a medication that is used to support knowledge.
@@ -117,7 +124,7 @@ export interface MedicationKnowledge {
    * This is not intended to represent the distributor of a medication
    * product.
    */
-  readonly manufacturer?: Reference;
+  readonly manufacturer?: Reference<Organization>;
 
   /**
    * Describes the form of the item.  Powder; tablets; capsule.
@@ -151,7 +158,7 @@ export interface MedicationKnowledge {
    * Rosuvastatin) or if this is a generic medication (e.g. Rosuvastatin),
    * this would link to a branded product (e.g. Crestor).
    */
-  readonly associatedMedication?: Reference[];
+  readonly associatedMedication?: Reference<Medication>[];
 
   /**
    * Category of the medication or product (e.g. branded product,
@@ -216,7 +223,7 @@ export interface MedicationKnowledge {
    * drug-drug interaction, drug-disease contraindication, drug-allergy
    * interaction, etc.).
    */
-  readonly contraindication?: Reference[];
+  readonly contraindication?: Reference<DetectedIssue>[];
 
   /**
    * Regulatory information about a medication.
@@ -285,7 +292,7 @@ export interface MedicationKnowledgeAdministrationGuidelines {
    * Indication for use that apply to the specific administration
    * guidelines.
    */
-  readonly indicationReference?: Reference;
+  readonly indicationReference?: Reference<ObservationDefinition>;
 
   /**
    * Characteristics of the patient that are relevant to the administration
@@ -580,7 +587,7 @@ export interface MedicationKnowledgeIngredient {
    * The actual ingredient - either a substance (simple ingredient) or
    * another medication.
    */
-  readonly itemReference?: Reference;
+  readonly itemReference?: Reference<Substance>;
 
   /**
    * Indication of whether this ingredient affects the therapeutic action
@@ -808,7 +815,7 @@ export interface MedicationKnowledgeMonograph {
   /**
    * Associated documentation about the medication.
    */
-  readonly source?: Reference;
+  readonly source?: Reference<DocumentReference | Media>;
 }
 
 /**
@@ -906,7 +913,7 @@ export interface MedicationKnowledgeRegulatory {
   /**
    * The authority that is specifying the regulations.
    */
-  readonly regulatoryAuthority?: Reference;
+  readonly regulatoryAuthority?: Reference<Organization>;
 
   /**
    * Specifies if changes are allowed when dispensing a medication from a
@@ -1125,5 +1132,5 @@ export interface MedicationKnowledgeRelatedMedicationKnowledge {
   /**
    * Associated documentation about the associated medication knowledge.
    */
-  readonly reference?: Reference[];
+  readonly reference?: Reference<MedicationKnowledge>[];
 }

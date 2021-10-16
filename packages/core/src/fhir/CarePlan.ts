@@ -4,16 +4,43 @@
  */
 
 import { Annotation } from './Annotation';
+import { Appointment } from './Appointment';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
+import { CommunicationRequest } from './CommunicationRequest';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DeviceRequest } from './DeviceRequest';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Goal } from './Goal';
+import { Group } from './Group';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { Medication } from './Medication';
+import { MedicationRequest } from './MedicationRequest';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { NutritionOrder } from './NutritionOrder';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
+import { RequestGroup } from './RequestGroup';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
+import { Substance } from './Substance';
+import { Task } from './Task';
 import { Timing } from './Timing';
+import { VisionPrescription } from './VisionPrescription';
 
 /**
  * Describes the intention of how one or more practitioners intend to
@@ -123,19 +150,19 @@ export interface CarePlan {
   /**
    * A care plan that is fulfilled in whole or in part by this care plan.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<CarePlan>[];
 
   /**
    * Completed or terminated care plan whose function is taken by this new
    * care plan.
    */
-  readonly replaces?: Reference[];
+  readonly replaces?: Reference<CarePlan>[];
 
   /**
    * A larger care plan of which this particular care plan is a component
    * or step.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<CarePlan>[];
 
   /**
    * Indicates whether the plan is currently being acted upon, represents
@@ -170,13 +197,13 @@ export interface CarePlan {
    * Identifies the patient or group whose intended care is described by
    * the plan.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this CarePlan was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Indicates when the plan did (or is intended to) come into effect and
@@ -194,25 +221,25 @@ export interface CarePlan {
    * When populated, the author is responsible for the care plan.  The care
    * plan is attributed to the author.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Patient | Practitioner | PractitionerRole | Device | RelatedPerson | Organization | CareTeam>;
 
   /**
    * Identifies the individual(s) or organization who provided the contents
    * of the care plan.
    */
-  readonly contributor?: Reference[];
+  readonly contributor?: Reference<Patient | Practitioner | PractitionerRole | Device | RelatedPerson | Organization | CareTeam>[];
 
   /**
    * Identifies all people and organizations who are expected to be
    * involved in the care envisioned by this plan.
    */
-  readonly careTeam?: Reference[];
+  readonly careTeam?: Reference<CareTeam>[];
 
   /**
    * Identifies the conditions/problems/concerns/diagnoses/etc. whose
    * management and/or mitigation are handled by this plan.
    */
-  readonly addresses?: Reference[];
+  readonly addresses?: Reference<Condition>[];
 
   /**
    * Identifies portions of the patient's record that specifically
@@ -220,12 +247,12 @@ export interface CarePlan {
    * comorbidities, recent procedures, limitations, recent assessments,
    * etc.
    */
-  readonly supportingInfo?: Reference[];
+  readonly supportingInfo?: Reference<Resource>[];
 
   /**
    * Describes the intended objective(s) of carrying out the care plan.
    */
-  readonly goal?: Reference[];
+  readonly goal?: Reference<Goal>[];
 
   /**
    * Identifies a planned action to occur as part of the plan.  For
@@ -296,7 +323,7 @@ export interface CarePlanActivity {
    * activity can be conveyed using CarePlan.activity.detail OR using the
    * CarePlan.activity.reference (a reference to a &ldquo;request&rdquo; resource).
    */
-  readonly outcomeReference?: Reference[];
+  readonly outcomeReference?: Reference<Resource>[];
 
   /**
    * Notes about the adherence/status/progress of the activity.
@@ -307,7 +334,8 @@ export interface CarePlanActivity {
    * The details of the proposed activity represented in a specific
    * resource.
    */
-  readonly reference?: Reference;
+  readonly reference?: Reference<Appointment | CommunicationRequest | DeviceRequest | MedicationRequest |
+      NutritionOrder | Task | ServiceRequest | VisionPrescription | RequestGroup>;
 
   /**
    * A simple summary of a planned activity suitable for a general care
@@ -400,13 +428,13 @@ export interface CarePlanActivityDetail {
    * existence justifies this request and drove the inclusion of this
    * particular activity as part of the plan.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Internal reference that identifies the goals that this activity is
    * intended to contribute towards meeting.
    */
-  readonly goal?: Reference[];
+  readonly goal?: Reference<Goal>[];
 
   /**
    * Identifies what progress is being made for the specific activity.
@@ -449,12 +477,12 @@ export interface CarePlanActivityDetail {
    * Identifies the facility where the activity will occur; e.g. home,
    * hospital, specific clinic, etc.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * Identifies who's expected to be involved in the activity.
    */
-  readonly performer?: Reference[];
+  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | RelatedPerson | Patient | CareTeam | HealthcareService | Device>[];
 
   /**
    * Identifies the food, drug or other product to be consumed or supplied
@@ -466,7 +494,7 @@ export interface CarePlanActivityDetail {
    * Identifies the food, drug or other product to be consumed or supplied
    * in the activity.
    */
-  readonly productReference?: Reference;
+  readonly productReference?: Reference<Medication | Substance>;
 
   /**
    * Identifies the quantity expected to be consumed in a given day.

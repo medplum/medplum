@@ -4,11 +4,16 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { DeviceDefinition } from './DeviceDefinition';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { MarketingStatus } from './MarketingStatus';
+import { MedicinalProduct } from './MedicinalProduct';
+import { MedicinalProductAuthorization } from './MedicinalProductAuthorization';
+import { MedicinalProductManufactured } from './MedicinalProductManufactured';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { ProdCharacteristic } from './ProdCharacteristic';
 import { ProductShelfLife } from './ProductShelfLife';
 import { Quantity } from './Quantity';
@@ -104,7 +109,7 @@ export interface MedicinalProductPackaged {
   /**
    * The product with this is a pack for.
    */
-  readonly subject?: Reference[];
+  readonly subject?: Reference<MedicinalProduct>[];
 
   /**
    * Textual description.
@@ -125,12 +130,12 @@ export interface MedicinalProductPackaged {
   /**
    * Manufacturer of this Package Item.
    */
-  readonly marketingAuthorization?: Reference;
+  readonly marketingAuthorization?: Reference<MedicinalProductAuthorization>;
 
   /**
    * Manufacturer of this Package Item.
    */
-  readonly manufacturer?: Reference[];
+  readonly manufacturer?: Reference<Organization>[];
 
   /**
    * Batch numbering.
@@ -266,12 +271,12 @@ export interface MedicinalProductPackagedPackageItem {
   /**
    * A device accompanying a medicinal product.
    */
-  readonly device?: Reference[];
+  readonly device?: Reference<DeviceDefinition>[];
 
   /**
    * The manufactured item as contained in the packaged medicinal product.
    */
-  readonly manufacturedItem?: Reference[];
+  readonly manufacturedItem?: Reference<MedicinalProductManufactured>[];
 
   /**
    * Allows containers within containers.
@@ -296,5 +301,5 @@ export interface MedicinalProductPackagedPackageItem {
   /**
    * Manufacturer of this Package Item.
    */
-  readonly manufacturer?: Reference[];
+  readonly manufacturer?: Reference<Organization>[];
 }

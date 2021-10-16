@@ -4,12 +4,19 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -134,13 +141,13 @@ export interface Composition {
    * machine) or even a group of subjects (such as a document about a herd
    * of livestock, or a set of patients that share a common exposure).
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Resource>;
 
   /**
    * Describes the clinical encounter or type of care this documentation is
    * associated with.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The composition editing time, when the composition was last logically
@@ -152,7 +159,7 @@ export interface Composition {
    * Identifies who is responsible for the information in the composition,
    * not necessarily who typed it in.
    */
-  readonly author?: Reference[];
+  readonly author?: Reference<Practitioner | PractitionerRole | Device | Patient | RelatedPerson | Organization>[];
 
   /**
    * Official human-readable label for the composition.
@@ -174,7 +181,7 @@ export interface Composition {
    * Identifies the organization or group who is responsible for ongoing
    * maintenance of and access to the composition/document information.
    */
-  readonly custodian?: Reference;
+  readonly custodian?: Reference<Organization>;
 
   /**
    * Relationships that this composition has with other compositions or
@@ -248,7 +255,7 @@ export interface CompositionAttester {
   /**
    * Who attested the composition in the specified way.
    */
-  readonly party?: Reference;
+  readonly party?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Organization>;
 }
 
 /**
@@ -313,7 +320,7 @@ export interface CompositionEvent {
    * example, this could be used to document such a colonoscopy or an
    * appendectomy.
    */
-  readonly detail?: Reference[];
+  readonly detail?: Reference<Resource>[];
 }
 
 /**
@@ -371,7 +378,7 @@ export interface CompositionRelatesTo {
   /**
    * The target composition/document of this relationship.
    */
-  readonly targetReference?: Reference;
+  readonly targetReference?: Reference<Composition>;
 }
 
 /**
@@ -431,7 +438,7 @@ export interface CompositionSection {
    * Identifies who is responsible for the information in this section, not
    * necessarily who typed it in.
    */
-  readonly author?: Reference[];
+  readonly author?: Reference<Practitioner | PractitionerRole | Device | Patient | RelatedPerson | Organization>[];
 
   /**
    * The actual focus of the section when it is not the subject of the
@@ -444,7 +451,7 @@ export interface CompositionSection {
    * focus, etc.) matches the section focus, or the resources have no
    * logical subject (few resources).
    */
-  readonly focus?: Reference;
+  readonly focus?: Reference<Resource>;
 
   /**
    * A human-readable narrative that contains the attested content of the
@@ -472,7 +479,7 @@ export interface CompositionSection {
    * A reference to the actual resource from which the narrative in the
    * section is derived.
    */
-  readonly entry?: Reference[];
+  readonly entry?: Reference<Resource>[];
 
   /**
    * If the section is empty, why the list is empty. An empty section

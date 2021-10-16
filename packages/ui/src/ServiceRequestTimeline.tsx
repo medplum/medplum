@@ -1,9 +1,9 @@
-import { Attachment, createReference, getReferenceString, Operator, ProfileResource, Reference, Resource, ServiceRequest } from '@medplum/core';
+import { Attachment, createReference, getReferenceString, Group, Operator, Patient, ProfileResource, Reference, Resource, ServiceRequest } from '@medplum/core';
 import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 
 export interface ServiceRequestTimelineProps {
-  serviceRequest: ServiceRequest | Reference;
+  serviceRequest: ServiceRequest | Reference<ServiceRequest>;
 }
 
 export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.Element {
@@ -42,17 +42,17 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
           }
         ];
       }}
-      createCommunication={(resource: Resource, sender: ProfileResource, text: string) => ({
+      createCommunication={(resource: ServiceRequest, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         basedOn: [createReference(resource)],
-        subject: (resource as ServiceRequest).subject,
+        subject: resource.subject as Reference<Group | Patient>,
         sender: createReference(sender),
         payload: [{ contentString: text }]
       })}
-      createMedia={(resource: Resource, operator: ProfileResource, content: Attachment) => ({
+      createMedia={(resource: ServiceRequest, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         basedOn: [createReference(resource)],
-        subject: (resource as ServiceRequest).subject,
+        subject: resource.subject,
         operator: createReference(operator),
         content
       })}

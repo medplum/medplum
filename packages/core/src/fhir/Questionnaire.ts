@@ -477,7 +477,7 @@ export interface QuestionnaireItemAnswerOption {
   /**
    * A potential answer that's allowed as the answer to this question.
    */
-  readonly valueReference?: Reference;
+  readonly valueReference?: Reference<Resource>;
 
   /**
    * Indicates whether the answer value is selected when the list of
@@ -597,7 +597,7 @@ export interface QuestionnaireItemEnableWhen {
    * A value that the referenced question is tested using the specified
    * operator in order for the item to be enabled.
    */
-  readonly answerReference?: Reference;
+  readonly answerReference?: Reference<Resource>;
 }
 
 /**
@@ -699,5 +699,5 @@ export interface QuestionnaireItemInitial {
   /**
    * The actual value to for an initial answer.
    */
-  readonly valueReference?: Reference;
+  readonly valueReference?: Reference<Resource>;
 }

@@ -4,15 +4,33 @@
  */
 
 import { Annotation } from './Annotation';
+import { CareTeam } from './CareTeam';
+import { ClaimResponse } from './ClaimResponse';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Coverage } from './Coverage';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 import { Timing } from './Timing';
 
@@ -121,13 +139,13 @@ export interface DeviceRequest {
   /**
    * Plan/proposal/order fulfilled by this request.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<Resource>[];
 
   /**
    * The request takes the place of the referenced completed or terminated
    * request(s).
    */
-  readonly priorRequest?: Reference[];
+  readonly priorRequest?: Reference<Resource>[];
 
   /**
    * Composite request this is part of.
@@ -154,7 +172,7 @@ export interface DeviceRequest {
   /**
    * The details of the device to be used.
    */
-  readonly codeReference?: Reference;
+  readonly codeReference?: Reference<Device>;
 
   /**
    * The details of the device to be used.
@@ -170,13 +188,13 @@ export interface DeviceRequest {
   /**
    * The patient who will use the device.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group | Location | Device>;
 
   /**
    * An encounter that provides additional context in which this request is
    * made.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The timing schedule for the use of the device. The Schedule data type
@@ -211,7 +229,7 @@ export interface DeviceRequest {
    * The individual who initiated the request and has responsibility for
    * its activation.
    */
-  readonly requester?: Reference;
+  readonly requester?: Reference<Device | Practitioner | PractitionerRole | Organization>;
 
   /**
    * Desired type of performer for doing the diagnostic testing.
@@ -221,7 +239,7 @@ export interface DeviceRequest {
   /**
    * The desired performer for doing the diagnostic testing.
    */
-  readonly performer?: Reference;
+  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | HealthcareService | Patient | Device | RelatedPerson>;
 
   /**
    * Reason or justification for the use of this device.
@@ -231,21 +249,21 @@ export interface DeviceRequest {
   /**
    * Reason or justification for the use of this device.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Insurance plans, coverage extensions, pre-authorizations and/or
    * pre-determinations that may be required for delivering the requested
    * service.
    */
-  readonly insurance?: Reference[];
+  readonly insurance?: Reference<Coverage | ClaimResponse>[];
 
   /**
    * Additional clinical information about the patient that may influence
    * the request fulfilment.  For example, this may include where on the
    * subject's body the device will be used (i.e. the target site).
    */
-  readonly supportingInfo?: Reference[];
+  readonly supportingInfo?: Reference<Resource>[];
 
   /**
    * Details about this request that were not represented at all or
@@ -258,7 +276,7 @@ export interface DeviceRequest {
   /**
    * Key events in the history of the request.
    */
-  readonly relevantHistory?: Reference[];
+  readonly relevantHistory?: Reference<Provenance>[];
 }
 
 /**

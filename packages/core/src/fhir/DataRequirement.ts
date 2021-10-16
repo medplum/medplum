@@ -7,6 +7,7 @@ import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
 import { Duration } from './Duration';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Period } from './Period';
 import { Reference } from './Reference';
 
@@ -56,7 +57,7 @@ export interface DataRequirement {
    * The intended subjects of the data requirement. If this element is not
    * provided, a Patient subject is assumed.
    */
-  readonly subjectReference?: Reference;
+  readonly subjectReference?: Reference<Group>;
 
   /**
    * Indicates that specific elements of the type are referenced by the

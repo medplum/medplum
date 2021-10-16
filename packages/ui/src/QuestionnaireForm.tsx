@@ -1,4 +1,4 @@
-import { createReference, ElementDefinition, getReferenceString, PropertyType, Questionnaire, QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem, Reference, Resource } from '@medplum/core';
+import { createReference, ElementDefinition, getReferenceString, ProfileResource, PropertyType, Questionnaire, QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/core';
 import React from 'react';
 import { AddressInput } from './AddressInput';
 import { AttachmentInput } from './AttachmentInput';
@@ -44,7 +44,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
         const response: QuestionnaireResponse = {
           resourceType: 'QuestionnaireResponse',
           questionnaire: getReferenceString(questionnaire),
-          source: createReference(source as Resource),
+          source: createReference(source as ProfileResource),
           authored: new Date().toISOString(),
           item: items
         };

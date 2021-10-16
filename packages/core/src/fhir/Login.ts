@@ -3,8 +3,15 @@
  * Do not edit manually.
  */
 
+import { AccessPolicy } from './AccessPolicy';
+import { ClientApplication } from './ClientApplication';
 import { Meta } from './Meta';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { Project } from './Project';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
+import { User } from './User';
 
 /**
  * OAuth login.
@@ -45,18 +52,18 @@ export interface Login {
   /**
    * The client requesting the code.
    */
-  readonly client?: Reference;
+  readonly client?: Reference<ClientApplication>;
 
   /**
    * The user requesting the code.
    */
-  readonly user?: Reference;
+  readonly user?: Reference<User>;
 
   /**
    * Reference to the user's FHIR identity for this login (patient,
    * practitioner, etc).
    */
-  readonly profile?: Reference;
+  readonly profile?: Reference<Patient | Practitioner | RelatedPerson | ClientApplication>;
 
   /**
    * OAuth scope or scopes.
@@ -125,12 +132,12 @@ export interface Login {
    * This is a flattened collection of all ProjectMembership compartments
    * at the time of login.
    */
-  readonly compartments?: Reference[];
+  readonly accessPolicy?: Reference<AccessPolicy>;
 
   /**
    * Reference to the default project for the duration of the login.
    */
-  readonly defaultProject?: Reference;
+  readonly project?: Reference<Project>;
 
   /**
    * Whether this login has system administrator privileges.

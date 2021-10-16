@@ -3,14 +3,23 @@
  * Do not edit manually.
  */
 
+import { Account } from './Account';
 import { Annotation } from './Annotation';
+import { ChargeItem } from './ChargeItem';
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -122,13 +131,13 @@ export interface Invoice {
    * The individual or set of individuals receiving the goods and services
    * billed in this invoice.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The individual or Organization responsible for balancing of this
    * invoice.
    */
-  readonly recipient?: Reference;
+  readonly recipient?: Reference<Organization | Patient | RelatedPerson>;
 
   /**
    * Date/time(s) of when this Invoice was posted.
@@ -144,12 +153,12 @@ export interface Invoice {
   /**
    * The organizationissuing the Invoice.
    */
-  readonly issuer?: Reference;
+  readonly issuer?: Reference<Organization>;
 
   /**
    * Account which is supposed to be balanced with this Invoice.
    */
-  readonly account?: Reference;
+  readonly account?: Reference<Account>;
 
   /**
    * Each line item represents one charge for goods and services rendered.
@@ -243,7 +252,7 @@ export interface InvoiceLineItem {
    * inline billing codes can be added using the CodeableConcept data type
    * instead of the Reference.
    */
-  readonly chargeItemReference?: Reference;
+  readonly chargeItemReference?: Reference<ChargeItem>;
 
   /**
    * The ChargeItem contains information such as the billing code, date,
@@ -386,5 +395,5 @@ export interface InvoiceParticipant {
    * The device, practitioner, etc. who performed or participated in the
    * service.
    */
-  readonly actor?: Reference;
+  readonly actor?: Reference<Practitioner | Organization | Patient | PractitionerRole | Device | RelatedPerson>;
 }

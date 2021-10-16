@@ -3,16 +3,31 @@
  * Do not edit manually.
  */
 
+import { Account } from './Account';
+import { Appointment } from './Appointment';
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
+import { Condition } from './Condition';
 import { Duration } from './Duration';
+import { EpisodeOfCare } from './EpisodeOfCare';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { ImmunizationRecommendation } from './ImmunizationRecommendation';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
 
 /**
  * An interaction between a patient and healthcare provider(s) for the
@@ -154,7 +169,7 @@ export interface Encounter {
   /**
    * The patient or group present at the encounter.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * Where a specific encounter should be classified as a part of a
@@ -166,13 +181,13 @@ export interface Encounter {
    * grouped on entry rather than editing the episode of care to append
    * another encounter to it (the episode of care could span years).
    */
-  readonly episodeOfCare?: Reference[];
+  readonly episodeOfCare?: Reference<EpisodeOfCare>[];
 
   /**
    * The request this encounter satisfies (e.g. incoming referral or
    * procedure request).
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<ServiceRequest>[];
 
   /**
    * The list of people responsible for providing the service.
@@ -182,7 +197,7 @@ export interface Encounter {
   /**
    * The appointment that scheduled this encounter.
    */
-  readonly appointment?: Reference[];
+  readonly appointment?: Reference<Appointment>[];
 
   /**
    * The start and end time of the encounter.
@@ -205,7 +220,7 @@ export interface Encounter {
    * Reason the encounter takes place, expressed as a code. For admissions,
    * this can be used for a coded admission diagnosis.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Procedure | Observation | ImmunizationRecommendation>[];
 
   /**
    * The list of diagnosis relevant to this encounter.
@@ -215,7 +230,7 @@ export interface Encounter {
   /**
    * The set of accounts that may be used for billing for this Encounter.
    */
-  readonly account?: Reference[];
+  readonly account?: Reference<Account>[];
 
   /**
    * Details about the admission to a healthcare service.
@@ -235,13 +250,13 @@ export interface Encounter {
    * seperately) for an external consultation.  Refer to the example bundle
    * showing an abbreviated set of Encounters for a colonoscopy.
    */
-  readonly serviceProvider?: Reference;
+  readonly serviceProvider?: Reference<Organization>;
 
   /**
    * Another Encounter of which this encounter is a part of
    * (administratively or in time).
    */
-  readonly partOf?: Reference;
+  readonly partOf?: Reference<Encounter>;
 }
 
 /**
@@ -348,7 +363,7 @@ export interface EncounterDiagnosis {
    * indication will typically be a Condition (with other resources
    * referenced in the evidence.detail), or a Procedure.
    */
-  readonly condition?: Reference;
+  readonly condition?: Reference<Condition | Procedure>;
 
   /**
    * Role that this diagnosis has within the encounter (e.g. admission,
@@ -411,7 +426,7 @@ export interface EncounterHospitalization {
    * The location/organization from which the patient came before
    * admission.
    */
-  readonly origin?: Reference;
+  readonly origin?: Reference<Location | Organization>;
 
   /**
    * From where patient was admitted (physician referral, transfer).
@@ -443,7 +458,7 @@ export interface EncounterHospitalization {
   /**
    * Location/organization to which the patient is discharged.
    */
-  readonly destination?: Reference;
+  readonly destination?: Reference<Location | Organization>;
 
   /**
    * Category or kind of location after discharge.
@@ -494,7 +509,7 @@ export interface EncounterLocation {
   /**
    * The location where the encounter takes place.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * The status of the participants' presence at the specified location
@@ -570,7 +585,7 @@ export interface EncounterParticipant {
   /**
    * Persons involved in the encounter other than the patient.
    */
-  readonly individual?: Reference;
+  readonly individual?: Reference<Practitioner | PractitionerRole | RelatedPerson>;
 }
 
 /**

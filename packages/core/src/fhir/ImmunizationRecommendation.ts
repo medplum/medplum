@@ -6,8 +6,12 @@
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Immunization } from './Immunization';
+import { ImmunizationEvaluation } from './ImmunizationEvaluation';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -102,7 +106,7 @@ export interface ImmunizationRecommendation {
   /**
    * The patient the recommendation(s) are for.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The date the immunization recommendation(s) were created.
@@ -112,7 +116,7 @@ export interface ImmunizationRecommendation {
   /**
    * Indicates the authority who published the protocol (e.g. ACIP).
    */
-  readonly authority?: Reference;
+  readonly authority?: Reference<Organization>;
 
   /**
    * Vaccine administration recommendations.
@@ -230,14 +234,14 @@ export interface ImmunizationRecommendationRecommendation {
    * Immunization event history and/or evaluation that supports the status
    * and recommendation.
    */
-  readonly supportingImmunization?: Reference[];
+  readonly supportingImmunization?: Reference<Immunization | ImmunizationEvaluation>[];
 
   /**
    * Patient Information that supports the status and recommendation.  This
    * includes patient observations, adverse reactions and
    * allergy/intolerance information.
    */
-  readonly supportingPatientInformation?: Reference[];
+  readonly supportingPatientInformation?: Reference<Resource>[];
 }
 
 /**

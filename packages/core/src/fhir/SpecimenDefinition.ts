@@ -13,6 +13,7 @@ import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
 
 /**
  * A kind of specimen with associated set of requirements.
@@ -352,7 +353,7 @@ export interface SpecimenDefinitionTypeTestedContainerAdditive {
    * Substance introduced in the kind of container to preserve, maintain or
    * enhance the specimen. Examples: Formalin, Citrate, EDTA.
    */
-  readonly additiveReference?: Reference;
+  readonly additiveReference?: Reference<Substance>;
 }
 
 /**

@@ -5,13 +5,28 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { DetectedIssue } from './DetectedIssue';
+import { Device } from './Device';
 import { Dosage } from './Dosage';
+import { Encounter } from './Encounter';
+import { EpisodeOfCare } from './EpisodeOfCare';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { Medication } from './Medication';
+import { MedicationRequest } from './MedicationRequest';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
+import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -112,7 +127,7 @@ export interface MedicationDispense {
   /**
    * The procedure that trigger the dispense.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<Procedure>[];
 
   /**
    * A code specifying the state of the set of dispense events.
@@ -127,7 +142,7 @@ export interface MedicationDispense {
   /**
    * Indicates the reason why a dispense was not performed.
    */
-  readonly statusReasonReference?: Reference;
+  readonly statusReasonReference?: Reference<DetectedIssue>;
 
   /**
    * Indicates the type of medication dispense (for example, where the
@@ -150,24 +165,24 @@ export interface MedicationDispense {
    * attribute carrying a code that identifies the medication from a known
    * list of medications.
    */
-  readonly medicationReference?: Reference;
+  readonly medicationReference?: Reference<Medication>;
 
   /**
    * A link to a resource representing the person or the group to whom the
    * medication will be given.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The encounter or episode of care that establishes the context for this
    * event.
    */
-  readonly context?: Reference;
+  readonly context?: Reference<Encounter | EpisodeOfCare>;
 
   /**
    * Additional information that supports the medication being dispensed.
    */
-  readonly supportingInformation?: Reference[];
+  readonly supportingInformation?: Reference<Resource>[];
 
   /**
    * Indicates who or what performed the event.
@@ -177,12 +192,12 @@ export interface MedicationDispense {
   /**
    * The principal physical location where the dispense was performed.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * Indicates the medication order that is being dispensed against.
    */
-  readonly authorizingPrescription?: Reference[];
+  readonly authorizingPrescription?: Reference<MedicationRequest>[];
 
   /**
    * Indicates the type of dispensing event that is performed. For example,
@@ -217,14 +232,14 @@ export interface MedicationDispense {
    * Identification of the facility/location where the medication was
    * shipped to, as part of the dispense event.
    */
-  readonly destination?: Reference;
+  readonly destination?: Reference<Location>;
 
   /**
    * Identifies the person who picked up the medication.  This will usually
    * be a patient or their caregiver, but some cases exist where it can be
    * a healthcare professional.
    */
-  readonly receiver?: Reference[];
+  readonly receiver?: Reference<Patient | Practitioner>[];
 
   /**
    * Extra information about the dispense that could not be conveyed in the
@@ -251,13 +266,13 @@ export interface MedicationDispense {
    * more active or proposed clinical actions for a patient; e.g. drug-drug
    * interaction, duplicate therapy, dosage alert etc.
    */
-  readonly detectedIssue?: Reference[];
+  readonly detectedIssue?: Reference<DetectedIssue>[];
 
   /**
    * A summary of the events of interest that have occurred, such as when
    * the dispense was verified.
    */
-  readonly eventHistory?: Reference[];
+  readonly eventHistory?: Reference<Provenance>[];
 }
 
 /**
@@ -310,7 +325,7 @@ export interface MedicationDispensePerformer {
    * The device, practitioner, etc. who performed the action.  It should be
    * assumed that the actor is the dispenser of the medication.
    */
-  readonly actor?: Reference;
+  readonly actor?: Reference<Practitioner | PractitionerRole | Organization | Patient | Device | RelatedPerson>;
 }
 
 /**
@@ -379,5 +394,5 @@ export interface MedicationDispenseSubstitution {
    * The person or organization that has primary responsibility for the
    * substitution.
    */
-  readonly responsibleParty?: Reference[];
+  readonly responsibleParty?: Reference<Practitioner | PractitionerRole>[];
 }

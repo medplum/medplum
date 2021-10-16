@@ -11,7 +11,11 @@ import { HumanName } from './HumanName';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -136,7 +140,7 @@ export interface Person {
   /**
    * The organization that is the custodian of the person record.
    */
-  readonly managingOrganization?: Reference;
+  readonly managingOrganization?: Reference<Organization>;
 
   /**
    * Whether this person's record is in active use.
@@ -192,7 +196,7 @@ export interface PersonLink {
   /**
    * The resource to which this actual person is associated.
    */
-  readonly target?: Reference;
+  readonly target?: Reference<Patient | Practitioner | RelatedPerson | Person>;
 
   /**
    * Level of assurance that this link is associated with the target

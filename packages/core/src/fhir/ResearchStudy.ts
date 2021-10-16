@@ -7,10 +7,16 @@ import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactDetail } from './ContactDetail';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
+import { PlanDefinition } from './PlanDefinition';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { Resource } from './Resource';
@@ -117,13 +123,13 @@ export interface ResearchStudy {
    * The set of steps expected to be performed as part of the execution of
    * the study.
    */
-  readonly protocol?: Reference[];
+  readonly protocol?: Reference<PlanDefinition>[];
 
   /**
    * A larger research study of which this particular study is a component
    * or step.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<ResearchStudy>[];
 
   /**
    * The current state of the study.
@@ -196,7 +202,7 @@ export interface ResearchStudy {
    * subjects participating in the study.  E.g. &quot; 200 female Europeans
    * between the ages of 20 and 45 with early onset diabetes&quot;.
    */
-  readonly enrollment?: Reference[];
+  readonly enrollment?: Reference<Group>[];
 
   /**
    * Identifies the start date and the expected (or actual, depending on
@@ -208,7 +214,7 @@ export interface ResearchStudy {
    * An organization that initiates the investigation and is legally
    * responsible for the study.
    */
-  readonly sponsor?: Reference;
+  readonly sponsor?: Reference<Organization>;
 
   /**
    * A researcher in a study who oversees multiple aspects of the study,
@@ -216,12 +222,12 @@ export interface ResearchStudy {
    * IRB approval, participant recruitment, informed consent, data
    * collection, analysis, interpretation and presentation.
    */
-  readonly principalInvestigator?: Reference;
+  readonly principalInvestigator?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * A facility in which study activities are conducted.
    */
-  readonly site?: Reference[];
+  readonly site?: Reference<Location>[];
 
   /**
    * A description and/or code explaining the premature termination of the

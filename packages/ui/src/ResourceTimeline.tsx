@@ -7,21 +7,21 @@ import { Form } from './Form';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiff } from './ResourceDiff';
-import './ResourceTimeline.css';
 import { TextField } from './TextField';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
 import { sortBundleByDate, sortByDate } from './utils/format';
+import './ResourceTimeline.css';
 
-export interface ResourceTimelineProps {
-  value: Resource | Reference;
-  buildSearchRequests: (resource: Resource) => SearchRequest[];
-  createCommunication?: (resource: Resource, sender: ProfileResource, text: string) => Communication;
-  createMedia?: (resource: Resource, operator: ProfileResource, attachment: Attachment) => Media;
+export interface ResourceTimelineProps<T extends Resource> {
+  value: T | Reference<T>;
+  buildSearchRequests: (resource: T) => SearchRequest[];
+  createCommunication?: (resource: T, sender: ProfileResource, text: string) => Communication;
+  createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
 }
 
-export const ResourceTimeline = (props: ResourceTimelineProps) => {
+export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProps<T>) {
   const medplum = useMedplum();
   const sender = medplum.getProfile() as ProfileResource;
   const inputRef = useRef<HTMLInputElement>(null);
@@ -153,7 +153,7 @@ export const ResourceTimeline = (props: ResourceTimelineProps) => {
       })}
     </Timeline>
   );
-};
+}
 
 interface HistoryTimelineItemProps {
   history: Bundle;

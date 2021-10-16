@@ -11,6 +11,7 @@ import { Narrative } from './Narrative';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { ValueSet } from './ValueSet';
 
 /**
  * Set of definitional characteristics for a kind of observation or
@@ -149,25 +150,25 @@ export interface ObservationDefinition {
    * The set of valid coded results for the observations  conforming to
    * this ObservationDefinition.
    */
-  readonly validCodedValueSet?: Reference;
+  readonly validCodedValueSet?: Reference<ValueSet>;
 
   /**
    * The set of normal coded results for the observations conforming to
    * this ObservationDefinition.
    */
-  readonly normalCodedValueSet?: Reference;
+  readonly normalCodedValueSet?: Reference<ValueSet>;
 
   /**
    * The set of abnormal coded results for the observation conforming to
    * this ObservationDefinition.
    */
-  readonly abnormalCodedValueSet?: Reference;
+  readonly abnormalCodedValueSet?: Reference<ValueSet>;
 
   /**
    * The set of critical coded results for the observation conforming to
    * this ObservationDefinition.
    */
-  readonly criticalCodedValueSet?: Reference;
+  readonly criticalCodedValueSet?: Reference<ValueSet>;
 }
 
 /**

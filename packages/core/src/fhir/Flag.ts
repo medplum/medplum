@@ -4,11 +4,22 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { Medication } from './Medication';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { PlanDefinition } from './PlanDefinition';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -123,7 +134,7 @@ export interface Flag {
    * The patient, location, group, organization, or practitioner etc. this
    * is about record this flag is associated with.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Location | Group | Organization | Practitioner | PlanDefinition | Medication | Procedure>;
 
   /**
    * The period of time from the activation of the flag to inactivation of
@@ -135,10 +146,10 @@ export interface Flag {
   /**
    * This alert is only relevant during the encounter.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The person, organization or device that created the flag.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole>;
 }

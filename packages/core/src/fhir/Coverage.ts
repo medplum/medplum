@@ -4,14 +4,18 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Contract } from './Contract';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -116,14 +120,14 @@ export interface Coverage {
   /**
    * The party who 'owns' the insurance policy.
    */
-  readonly policyHolder?: Reference;
+  readonly policyHolder?: Reference<Patient | RelatedPerson | Organization>;
 
   /**
    * The party who has signed-up for or 'owns' the contractual relationship
    * to the policy or to whom the benefit of the policy for services
    * rendered to them or their family is due.
    */
-  readonly subscriber?: Reference;
+  readonly subscriber?: Reference<Patient | RelatedPerson>;
 
   /**
    * The insurer assigned ID for the Subscriber.
@@ -134,7 +138,7 @@ export interface Coverage {
    * The party who benefits from the insurance coverage; the patient when
    * products and/or services are provided.
    */
-  readonly beneficiary?: Reference;
+  readonly beneficiary?: Reference<Patient>;
 
   /**
    * A unique identifier for a dependent under the coverage.
@@ -157,7 +161,7 @@ export interface Coverage {
    * The program or plan underwriter or payor including both insurance and
    * non-insurance agreements, such as patient-pay agreements.
    */
-  readonly payor?: Reference[];
+  readonly payor?: Reference<Organization | Patient | RelatedPerson>[];
 
   /**
    * A suite of underwriter specific classifiers.
@@ -197,7 +201,7 @@ export interface Coverage {
   /**
    * The policy(s) which constitute this insurance coverage.
    */
-  readonly contract?: Reference[];
+  readonly contract?: Reference<Contract>[];
 }
 
 /**

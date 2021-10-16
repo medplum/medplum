@@ -5,6 +5,7 @@
 
 import { Meta } from './Meta';
 import { Reference } from './Reference';
+import { User } from './User';
 
 /**
  * Password change request for the 'forgot password' flow.
@@ -45,7 +46,7 @@ export interface PasswordChangeRequest {
   /**
    * The user requesting the password change.
    */
-  readonly user?: Reference;
+  readonly user?: Reference<User>;
 
   /**
    * Secret string used to verify the identity of the user.

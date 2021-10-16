@@ -6,10 +6,13 @@
 import { Attachment } from './Attachment';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactPoint } from './ContactPoint';
+import { Endpoint } from './Endpoint';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -110,7 +113,7 @@ export interface HealthcareService {
   /**
    * The organization that provides this healthcare service.
    */
-  readonly providedBy?: Reference;
+  readonly providedBy?: Reference<Organization>;
 
   /**
    * Identifies the broad category of service being performed or delivered.
@@ -131,7 +134,7 @@ export interface HealthcareService {
   /**
    * The location(s) where this healthcare service may be provided.
    */
-  readonly location?: Reference[];
+  readonly location?: Reference<Location>[];
 
   /**
    * Further description of the service as it would be presented to a
@@ -168,7 +171,7 @@ export interface HealthcareService {
    * The location(s) that this service is available to (not where the
    * service is provided).
    */
-  readonly coverageArea?: Reference[];
+  readonly coverageArea?: Reference<Location>[];
 
   /**
    * The code(s) that detail the conditions under which the healthcare
@@ -237,7 +240,7 @@ export interface HealthcareService {
    * Technical endpoints providing access to services operated for the
    * specific healthcare services defined at this resource.
    */
-  readonly endpoint?: Reference[];
+  readonly endpoint?: Reference<Endpoint>[];
 }
 
 /**

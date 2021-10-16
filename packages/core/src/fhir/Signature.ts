@@ -4,8 +4,14 @@
  */
 
 import { Coding } from './Coding';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 
 /**
  * Base StructureDefinition for Signature Type: A signature along with
@@ -50,13 +56,13 @@ export interface Signature {
    * A reference to an application-usable description of the identity that
    * signed  (e.g. the signature used their private key).
    */
-  readonly who?: Reference;
+  readonly who?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 
   /**
    * A reference to an application-usable description of the identity that
    * is represented by the signature.
    */
-  readonly onBehalfOf?: Reference;
+  readonly onBehalfOf?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 
   /**
    * A mime type that indicates the technical format of the target

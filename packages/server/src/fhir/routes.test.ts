@@ -127,7 +127,7 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Read resource', async () => {
+  test('Read resourcex', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken);

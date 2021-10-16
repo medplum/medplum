@@ -4,14 +4,32 @@
  */
 
 import { Attachment } from './Attachment';
+import { CarePlan } from './CarePlan';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { ImagingStudy } from './ImagingStudy';
+import { ImmunizationRecommendation } from './ImmunizationRecommendation';
+import { Location } from './Location';
+import { Media } from './Media';
+import { MedicationRequest } from './MedicationRequest';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { NutritionOrder } from './NutritionOrder';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
+import { Specimen } from './Specimen';
 
 /**
  * The findings and interpretation of diagnostic  tests performed on
@@ -107,7 +125,7 @@ export interface DiagnosticReport {
   /**
    * Details concerning a service requested.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<CarePlan | ImmunizationRecommendation | MedicationRequest | NutritionOrder | ServiceRequest>[];
 
   /**
    * The status of the diagnostic report.
@@ -132,13 +150,13 @@ export interface DiagnosticReport {
    * However, diagnostic services also perform analyses on specimens
    * collected from a variety of other sources.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group | Device | Location>;
 
   /**
    * The healthcare event  (e.g. a patient and healthcare provider
    * interaction) which this DiagnosticReport is about.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The time or time-period the observed values are related to. When the
@@ -165,24 +183,24 @@ export interface DiagnosticReport {
   /**
    * The diagnostic service that is responsible for issuing the report.
    */
-  readonly performer?: Reference[];
+  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam>[];
 
   /**
    * The practitioner or organization that is responsible for the report's
    * conclusions and interpretations.
    */
-  readonly resultsInterpreter?: Reference[];
+  readonly resultsInterpreter?: Reference<Practitioner | PractitionerRole | Organization | CareTeam>[];
 
   /**
    * Details about the specimens on which this diagnostic report is based.
    */
-  readonly specimen?: Reference[];
+  readonly specimen?: Reference<Specimen>[];
 
   /**
    * [Observations](observation.html)  that are part of this diagnostic
    * report.
    */
-  readonly result?: Reference[];
+  readonly result?: Reference<Observation>[];
 
   /**
    * One or more links to full details of any imaging performed during the
@@ -191,7 +209,7 @@ export interface DiagnosticReport {
    * PACS viewer can use this information to provide views of the source
    * images.
    */
-  readonly imagingStudy?: Reference[];
+  readonly imagingStudy?: Reference<ImagingStudy>[];
 
   /**
    * A list of key images associated with this report. The images are
@@ -272,5 +290,5 @@ export interface DiagnosticReportMedia {
   /**
    * Reference to the image source.
    */
-  readonly link?: Reference;
+  readonly link?: Reference<Media>;
 }
