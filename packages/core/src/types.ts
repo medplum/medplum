@@ -1,5 +1,5 @@
-import { capitalize } from '.';
 import { ElementDefinition, SearchParameter, StructureDefinition } from './fhir';
+import { capitalize } from './utils';
 
 /**
  * List of property types.

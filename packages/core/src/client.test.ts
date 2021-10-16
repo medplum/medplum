@@ -266,7 +266,6 @@ describe('Client', () => {
       lastName: 'Foo',
       projectName: 'Sally World'
     });
-    //.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
     expect(result).not.toBeUndefined();
     expect(result.resourceType).toBe('Practitioner');
   });
@@ -275,6 +274,8 @@ describe('Client', () => {
     tokenExpired = true;
 
     const client = new MedplumClient(defaultOptions);
+    await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
+
     const result = await client.get('expired');
     expect(result).not.toBeUndefined();
   });
@@ -285,6 +286,8 @@ describe('Client', () => {
 
     const onUnauthenticated = jest.fn();
     const client = new MedplumClient({ ...defaultOptions, onUnauthenticated });
+    await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
+
     const result = client.get('expired');
     await expect(result).rejects.toEqual('Failed to fetch tokens');
     expect(onUnauthenticated).toBeCalled();

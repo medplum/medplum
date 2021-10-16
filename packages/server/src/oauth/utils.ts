@@ -1,4 +1,4 @@
-import { allOk, assertOk, badRequest, ClientApplication, createReference, getDateProperty, getReferenceString, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, ProjectMembership, Reference, Resource, User } from '@medplum/core';
+import { allOk, assertOk, badRequest, ClientApplication, createReference, getDateProperty, getReferenceString, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, Project, ProjectMembership, Reference, Resource, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { JWTPayload } from 'jose/types';
 import { PUBLIC_PROJECT_ID } from '../constants';
@@ -27,6 +27,7 @@ export interface TokenResult {
 
 export interface LoginResult {
   readonly tokens: TokenResult;
+  readonly project: Project;
   readonly profile: Resource;
 }
 
@@ -162,7 +163,7 @@ export function validateLoginRequest(request: LoginRequest): OperationOutcome | 
   return undefined;
 }
 
-export async function authenticate(request: LoginRequest, user: User): Promise<OperationOutcome> {
+async function authenticate(request: LoginRequest, user: User): Promise<OperationOutcome> {
   if (request.password) {
     const passwordHash = user?.passwordHash;
     if (!passwordHash) {
@@ -201,8 +202,14 @@ export async function finalizeLogin(login: Login): Promise<LoginResult> {
   const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
   assertOk(profileOutcome);
 
+  console.log('login', JSON.stringify(login, undefined, 2));
+
+  const [projectOutcome, project] = await repo.readReference<Project>(login?.defaultProject as Reference);
+  assertOk(projectOutcome);
+
   return {
     tokens: tokens as TokenResult,
+    project: project as Project,
     profile: profile as ProfileResource
   };
 }

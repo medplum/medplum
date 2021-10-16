@@ -4,11 +4,11 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
+import { Binary, Bundle, Project, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
-import { LocalStorage, MemoryStorage, Storage } from './storage';
+import { ClientStorage } from './storage';
 import { IndexedStructureDefinition, indexStructureDefinition } from './types';
 import { arrayBufferToBase64, ProfileResource, stringify } from './utils';
 
@@ -88,7 +88,8 @@ export interface FetchLike {
 }
 
 interface LoginResponse {
-  profile: any;
+  project: Project;
+  profile: ProfileResource;
   accessToken: string;
   refreshToken: string;
 }
@@ -117,7 +118,7 @@ export interface GoogleCredentialResponse {
 
 export class MedplumClient extends EventTarget {
   private readonly fetch: FetchLike;
-  private readonly storage: Storage;
+  private readonly storage: ClientStorage;
   private readonly schema: Map<string, IndexedStructureDefinition>;
   private readonly resourceCache: LRUCache<Resource | Promise<Resource>>;
   private readonly blobUrlCache: LRUCache<string | Promise<string>>;
@@ -127,7 +128,7 @@ export class MedplumClient extends EventTarget {
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
   private readonly onUnauthenticated?: () => void;
-  private profile?: ProfileResource;
+  private activeLogin?: LoginResponse;
 
   constructor(options: MedplumClientOptions) {
     super();
@@ -146,7 +147,7 @@ export class MedplumClient extends EventTarget {
     }
 
     this.fetch = options.fetch || window.fetch.bind(window);
-    this.storage = typeof localStorage !== 'undefined' ? new LocalStorage() : new MemoryStorage();
+    this.storage = new ClientStorage();
     this.schema = new Map();
     this.resourceCache = new LRUCache(options.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.blobUrlCache = new LRUCache(options.blobCacheSize ?? DEFAULT_BLOB_CACHE_SIZE);
@@ -163,7 +164,7 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
-    this.profile = undefined;
+    this.activeLogin = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -234,10 +235,7 @@ export class MedplumClient extends EventTarget {
    * @returns The user profile.
    */
   private handleLoginResponse(response: LoginResponse): ProfileResource {
-    this.setAccessToken(response.accessToken);
-    this.setRefreshToken(response.refreshToken);
-    this.setProfile(response.profile);
-    this.dispatchEvent({ type: 'change' });
+    this.setActiveLogin(response);
     return response.profile;
   }
 
@@ -459,32 +457,32 @@ export class MedplumClient extends EventTarget {
     });
   }
 
-  getProfile(): ProfileResource | undefined {
-    if (!this.profile) {
-      this.profile = this.storage.getObject<ProfileResource>('profile');
+  getActiveLogin(): LoginResponse | undefined {
+    if (!this.activeLogin) {
+      this.activeLogin = this.storage.getObject<LoginResponse>('activeLogin');
     }
-    return this.profile;
+    return this.activeLogin;
   }
 
-  private setProfile(profile: ProfileResource): void {
-    this.storage.setObject('profile', profile);
-    this.profile = profile;
+  setActiveLogin(login: LoginResponse): void {
+    this.activeLogin = login;
+    this.storage.setObject('activeLogin', login);
+    this.addLogin(login);
+    this.dispatchEvent({ type: 'change' });
   }
 
-  private getAccessToken(): string | undefined {
-    return this.storage.getString('accessToken');
+  getLogins(): LoginResponse[] {
+    return this.storage.getObject<LoginResponse[]>('logins') ?? [];
   }
 
-  private setAccessToken(accessToken: string | undefined): void {
-    this.storage.setString('accessToken', accessToken);
+  addLogin(newLogin: LoginResponse): void {
+    const logins = this.getLogins().filter(login => login.profile?.id !== newLogin.profile?.id);
+    logins.push(newLogin);
+    this.storage.setObject('logins', logins);
   }
 
-  private getRefreshToken(): string | undefined {
-    return this.storage.getString('refreshToken');
-  }
-
-  private setRefreshToken(refreshToken: string | undefined): void {
-    this.storage.setString('refreshToken', refreshToken);
+  getProfile(): ProfileResource | undefined {
+    return this.getActiveLogin()?.profile;
   }
 
   /**
@@ -510,7 +508,7 @@ export class MedplumClient extends EventTarget {
       'Content-Type': contentType || FHIR_CONTENT_TYPE
     };
 
-    const accessToken = this.getAccessToken();
+    const accessToken = this.getActiveLogin()?.accessToken;
     if (accessToken) {
       headers['Authorization'] = 'Bearer ' + accessToken;
     }
@@ -640,7 +638,7 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
   private async refresh(): Promise<void> {
-    const refreshToken = this.getRefreshToken();
+    const refreshToken = this.getActiveLogin()?.refreshToken;
     if (!refreshToken) {
       this.clear();
       return Promise.reject('Invalid refresh token');
@@ -676,7 +674,7 @@ export class MedplumClient extends EventTarget {
         return response.json();
       })
       .then(tokens => this.verifyTokens(tokens))
-      .then(() => this.getProfile() as ProfileResource);
+      .then(() => this.getActiveLogin()?.profile as ProfileResource);
   }
 
   /**
@@ -701,8 +699,11 @@ export class MedplumClient extends EventTarget {
       return Promise.reject('Token was not issued for this audience');
     }
 
-    this.setAccessToken(token);
-    this.setRefreshToken(tokens.refresh_token);
+    this.setActiveLogin({
+      ...(this.getActiveLogin() as LoginResponse),
+      accessToken: token,
+      refreshToken: tokens.refresh_token
+    });
   }
 }
 

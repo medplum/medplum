@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, HumanName, Operator, Resource } from '@medplum/core';
+import { Bundle, BundleEntry, getDisplayString, HumanName, Operator, Resource } from '@medplum/core';
 import React, { useState } from 'react';
 import { Autocomplete } from './Autocomplete';
 import { Avatar } from './Avatar';
@@ -31,6 +31,7 @@ export function Header(props: HeaderProps) {
   const context = useMedplumContext();
   const medplum = context.medplum;
   const router = context.router;
+  const logins = medplum.getLogins();
   const [userMenuVisible, setUserMenuVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
 
@@ -99,6 +100,21 @@ export function Header(props: HeaderProps) {
                     }
                   }}>Manage your account</Button>
                 </div>
+                {logins.length > 1 && (
+                  <div>
+                    <hr />
+                    {logins.map(login => login.profile.id !== context.profile?.id && (
+                      <div key={login.profile.id} onClick={() => {
+                        medplum.setActiveLogin(login);
+                        setUserMenuVisible(false);
+                        window.location.reload();
+                      }}>
+                        <div>{getDisplayString(login.profile)}</div>
+                        <div>Project: {getDisplayString(login.project)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>
                   <Button testid="header-signout-button" onClick={() => {
@@ -106,7 +122,7 @@ export function Header(props: HeaderProps) {
                     if (props.onSignOut) {
                       props.onSignOut();
                     }
-                  }}>Sign out</Button>
+                  }}>Sign out of all accounts</Button>
                 </div>
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px', fontSize: '12px' }}>
