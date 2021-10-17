@@ -6,6 +6,7 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
+import { logger } from '../logger';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { validateResource, validateResourceType } from './schema';
@@ -254,7 +255,7 @@ export class Repository {
     try {
       await this.write(result);
     } catch (error) {
-      console.log('write error', error);
+      logger.debug('Write error: ' + error);
       return [badRequest((error as Error).message), undefined];
     }
 

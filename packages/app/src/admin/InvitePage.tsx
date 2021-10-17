@@ -13,20 +13,12 @@ export function InvitePage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    console.log('InvitePage useEffect', id);
-    let isMounted = false;
     medplum.get('admin/projects/' + id)
       .then(response => {
-        if (isMounted) {
-          setResult(response);
-          setLoading(false);
-        }
+        setResult(response);
+        setLoading(false);
       })
       .catch(reason => setError(reason));
-    return () => {
-      console.log('Unmount InvitePage');
-      isMounted = false;
-    };
   }, [id]);
 
   if (error) {
