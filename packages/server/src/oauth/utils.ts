@@ -1,6 +1,6 @@
 import { allOk, assertOk, badRequest, ClientApplication, createReference, getDateProperty, getReferenceString, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, Project, ProjectMembership, Reference, Resource, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
-import { JWTPayload } from 'jose/types';
+import { JWTPayload } from 'jose';
 import { repo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
