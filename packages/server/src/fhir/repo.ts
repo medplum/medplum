@@ -1,4 +1,4 @@
-import { AccessPolicy, allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { AccessPolicy, allOk, assertOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
@@ -38,7 +38,7 @@ export interface RepositoryContext {
    * If the compartments array is provided,
    * all queries will be restricted to those compartments.
    */
-  accessPolicy?: Reference<AccessPolicy>;
+  accessPolicy?: AccessPolicy;
 
   /**
    * Optional flag for system administrators,
@@ -99,14 +99,9 @@ const lookupTables: LookupTable[] = [
  */
 export class Repository {
   private readonly context: RepositoryContext;
-  private readonly accessPolicy: AccessPolicy;
 
   constructor(context: RepositoryContext) {
     this.context = context;
-    // TODO: Resolve context.accessPolicy
-    this.accessPolicy = {
-      resourceType: 'AccessPolicy'
-    };
   }
 
   async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
@@ -137,7 +132,7 @@ export class Repository {
       .column('deleted')
       .where('id', Operator.EQUALS, id);
 
-    this.addCompartments(builder);
+    this.addCompartments(builder, resourceType);
 
     const rows = await builder.execute(client);
     if (rows.length === 0) {
@@ -151,7 +146,7 @@ export class Repository {
     return [allOk, JSON.parse(rows[0].content as string)];
   }
 
-  async readReference<T extends Resource>(reference: Reference): RepositoryResult<T> {
+  async readReference<T extends Resource>(reference: Reference<T>): RepositoryResult<T> {
     const parts = reference.reference?.split('/');
     if (!parts || parts.length !== 2) {
       return [badRequest('Invalid reference'), undefined];
@@ -317,7 +312,7 @@ export class Repository {
       .column({ tableName: resourceType, columnName: 'content' });
 
     this.addDeletedFilter(builder);
-    this.addCompartments(builder);
+    this.addCompartments(builder, resourceType);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     this.addSortRules(builder, searchRequest);
@@ -352,7 +347,7 @@ export class Repository {
       .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
 
     this.addDeletedFilter(builder);
-    this.addCompartments(builder);
+    this.addCompartments(builder, searchRequest.resourceType as string);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
@@ -370,20 +365,24 @@ export class Repository {
   /**
    * Adds compartment restrictions to the query.
    * @param builder The select query builder.
+   * @param resourceType The resource type for compartments.
    */
-  private addCompartments(builder: SelectQuery): void {
+  private addCompartments(builder: SelectQuery, resourceType: string): void {
     const compartmentIds = [];
-    if (this.context.project !== undefined && this.context.project !== MEDPLUM_PROJECT_ID) {
-      compartmentIds.push(this.context.project);
-    }
-    if (this.accessPolicy.resource) {
-      for (const policy of this.accessPolicy.resource) {
-        const policyCompartmentId = resolveId(policy.compartment);
-        if (policyCompartmentId) {
-          compartmentIds.push(policyCompartmentId);
+
+    if (this.context.accessPolicy?.resource) {
+      for (const policy of this.context.accessPolicy.resource) {
+        if (policy.resourceType === resourceType) {
+          const policyCompartmentId = resolveId(policy.compartment);
+          if (policyCompartmentId) {
+            compartmentIds.push(policyCompartmentId);
+          }
         }
       }
+    } else if (this.context.project !== undefined && this.context.project !== MEDPLUM_PROJECT_ID) {
+      compartmentIds.push(this.context.project);
     }
+
     if (compartmentIds.length > 0) {
       builder.where('compartments', Operator.ARRAY_CONTAINS, compartmentIds, 'UUID[]');
     }
@@ -864,12 +863,20 @@ function resolveId(reference: Reference | undefined): string | undefined {
  * @param login The user login.
  * @returns A repository configured for the login details.
  */
-export function getRepoForLogin(login: Login): Repository {
+export async function getRepoForLogin(login: Login): Promise<Repository> {
+  let accessPolicy = undefined;
+
+  if (login.accessPolicy) {
+    const [accessPolicyOutcome, accessPolicyResource] = await repo.readReference(login.accessPolicy);
+    assertOk(accessPolicyOutcome);
+    accessPolicy = accessPolicyResource as AccessPolicy;
+  }
+
   return new Repository({
     project: resolveId(login.project) as string,
     author: login.profile as Reference,
-    accessPolicy: login.accessPolicy,
-    admin: login.admin
+    admin: login.admin,
+    accessPolicy
   });
 }
 

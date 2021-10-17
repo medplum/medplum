@@ -197,12 +197,12 @@ export async function finalizeLogin(login: Login): Promise<LoginResult> {
   const [tokensOutcome, tokens] = await getAuthTokens(login);
   assertOk(tokensOutcome);
 
-  const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
+  const [profileOutcome, profile] = await repo.readReference(login?.profile as Reference<ProfileResource>);
   assertOk(profileOutcome);
 
   let project = undefined;
   if (login?.project) {
-    const [projectOutcome, projectResource] = await repo.readReference<Project>(login?.project as Reference);
+    const [projectOutcome, projectResource] = await repo.readReference(login?.project as Reference<Project>);
     assertOk(projectOutcome);
     project = projectResource;
   }

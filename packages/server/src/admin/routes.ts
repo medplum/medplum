@@ -29,7 +29,7 @@ adminRouter.get('/projects', asyncWrap(async (req: Request, res: Response) => {
 
   const projects = [];
   for (const membership of memberships) {
-    const [projectOutcome, project] = await repo.readReference<Project>(membership.project as Reference)
+    const [projectOutcome, project] = await repo.readReference(membership.project as Reference<Project>)
     assertOk(projectOutcome);
     projects.push({
       id: project?.id,

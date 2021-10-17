@@ -27,7 +27,7 @@ export async function setPasswordHandler(req: Request, res: Response) {
     return sendOutcome(res, badRequest('Incorrect secret'));
   }
 
-  const [userOutcome, user] = await repo.readReference<User>(pcr?.user as Reference);
+  const [userOutcome, user] = await repo.readReference(pcr?.user as Reference<User>);
   assertOk(userOutcome);
 
   const passwordHash = await bcrypt.hash(req.body.password, 10);

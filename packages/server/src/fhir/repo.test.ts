@@ -724,7 +724,7 @@ describe('FHIR Repo', () => {
     assertOk(loginOutcome1);
     expect(login1).not.toBeUndefined();
 
-    const repo1 = getRepoForLogin(login1 as Login);
+    const repo1 = await getRepoForLogin(login1 as Login);
     const [patientOutcome1, patient1] = await repo1.createResource<Patient>({
       resourceType: 'Patient'
     });
@@ -763,7 +763,7 @@ describe('FHIR Repo', () => {
     assertOk(loginOutcome2);
     expect(login2).not.toBeUndefined();
 
-    const repo2 = getRepoForLogin(login2 as Login);
+    const repo2 = await getRepoForLogin(login2 as Login);
     const [patientOutcome3, patient3] = await repo2.readResource('Patient', patient1?.id as string);
     expect(patientOutcome3.id).toEqual('not-found');
     expect(patient3).toBeUndefined();
