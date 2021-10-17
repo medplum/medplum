@@ -254,6 +254,7 @@ export class Repository {
     try {
       await this.write(result);
     } catch (error) {
+      console.log('write error', error);
       return [badRequest((error as Error).message), undefined];
     }
 
