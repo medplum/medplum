@@ -77,6 +77,7 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
       fields.push('name', 'birthDate', 'gender');
       break;
     case 'AccessPolicy':
+    case 'ClientApplication':
     case 'Practitioner':
     case 'Project':
     case 'Organization':
@@ -86,8 +87,10 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
     case 'DiagnosticReport':
     case 'Encounter':
     case 'Observation':
-    case 'ServiceRequest':
       fields.push('subject');
+      break;
+    case 'ServiceRequest':
+      fields.push('subject', 'code', 'status', 'orderDetail');
       break;
     case 'Subscription':
       fields.push('criteria');

@@ -100,6 +100,10 @@ export async function closeSubscriptionWorker(): Promise<void> {
  * @param resource The resource that was created or updated.
  */
 export async function addSubscriptionJobs(resource: Resource): Promise<void> {
+  if (resource.resourceType === 'AuditEvent') {
+    // Never send subscriptions for audit events
+    return;
+  }
   const subscriptions = await getSubscriptions();
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
@@ -277,6 +281,7 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
 
   try {
     logger.info('Sending rest hook to: ' + url);
+    logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
     await createSubscriptionEvent(

@@ -15,7 +15,7 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
           {
             resourceType: 'AuditEvent',
             filters: [{
-              code: 'source',
+              code: 'entity',
               operator: Operator.EQUALS,
               value: getReferenceString(resource)
             }],
