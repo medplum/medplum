@@ -266,13 +266,13 @@ export class Repository {
   }
 
   async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {
-    if (!this.canReadResourceType(resourceType)) {
-      return [accessDenied, undefined];
-    }
-
     const [readOutcome, resource] = await this.readResource(resourceType, id);
     if (!isOk(readOutcome)) {
       return [readOutcome, undefined];
+    }
+
+    if (!this.canWriteResourceType(resourceType)) {
+      return [accessDenied, undefined];
     }
 
     const client = getClient();
@@ -363,7 +363,7 @@ export class Repository {
       .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
 
     this.addDeletedFilter(builder);
-    this.addCompartments(builder, searchRequest.resourceType as string);
+    this.addCompartments(builder, searchRequest.resourceType);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);

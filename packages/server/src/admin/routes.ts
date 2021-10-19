@@ -87,8 +87,7 @@ adminRouter.post('/projects/:projectId/members/:membershipId', asyncWrap(async (
   }
 
   const resource = req.body;
-  const repo = res.locals.repo as Repository;
-  const [outcome, result] = await repo.updateResource(resource);
+  const [outcome, result] = await (res.locals.repo as Repository).updateResource(resource);
   assertOk(outcome);
   res.status(getStatus(outcome)).json(result);
 }));
